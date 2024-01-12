@@ -550,7 +550,7 @@ namespace MinorShift.Emuera.GameView
 
 		Timer timer = null;
 		Int64 timerID = -1;
-		Int64 timer_startTime;//現在のタイマーを開始した時のミリ秒数（WinmmTimer.TickCount基準）
+		DateTime timer_startTime;//現在のタイマーを開始した時のミリ秒数（WinmmTimer.TickCount基準）
 		Int64 timer_nextDisplayTime;//TINPUT系で次に残り時間を表示する時のTickCountミリ秒数
 		Int64 timer_endTime;//現在のタイマーを終了する時のTickCountミリ秒数
 		bool wait_timeout = false;
@@ -580,11 +580,11 @@ namespace MinorShift.Emuera.GameView
 			isTimeout = false;
 			timerID = inputReq.ID;
 			timer.Enabled = true;
-			timer_startTime = DateTime.Now.Millisecond;
-			timer_endTime = timer_startTime + inputReq.Timelimit;
+			timer_startTime = DateTime.Now;
+			timer_endTime = timer_startTime.Millisecond + inputReq.Timelimit;
 			//if (inputReq.DisplayTime)
 			//次に残り時間を表示するタイミングの設定。inputReq.DisplayTime==tureでないなら設定するだけで参照はされない（はず
-			timer_nextDisplayTime = timer_startTime + 100;
+			timer_nextDisplayTime = timer_startTime.Millisecond + 100;
 
 		}
 
@@ -602,17 +602,17 @@ namespace MinorShift.Emuera.GameView
 				return;
 #endif
 			}
-			long curtime = DateTime.Now.Millisecond;
-			if (curtime >= timer_endTime)
+			var elapsedMs = (DateTime.Now - timer_startTime).TotalMilliseconds;
+			if (elapsedMs >= timer_endTime)
 			{
 				endTimer();
 				return;
 			}
-			if (inputReq.DisplayTime && curtime >= timer_nextDisplayTime)
+			if (inputReq.DisplayTime && elapsedMs >= timer_nextDisplayTime)
 			{
 				//表示に時間がかかってタイマーが止まるので次の描画は100ms後。場合によっては表示が0.2一気に飛ぶ。
-				timer_nextDisplayTime = curtime + 100;
-				long time = (timer_endTime - curtime) / 100;
+				timer_nextDisplayTime = Convert.ToInt64(elapsedMs) + 100;
+				var time = (timer_endTime - elapsedMs) / 100;
 				string timeString1 = "残り ";
 				string timeString2 = ((double)time / 10.0).ToString();
 				changeLastLine(timeString1 + timeString2);
@@ -1133,6 +1133,7 @@ namespace MinorShift.Emuera.GameView
 		#endregion
 
 		#region 描画系
+		DateTime _startTime = DateTime.Now;
 		int lastUpdate = 0;
 		uint msPerFrame = 1000 / 60;//60FPS
 		ConsoleRedraw redraw = ConsoleRedraw.Normal;
@@ -1201,8 +1202,7 @@ namespace MinorShift.Emuera.GameView
 			 //履歴表示中でなく、最終行を表示済みであり、選択中ボタンが変更されていないなら更新不要
 				if ((!isBackLog) && (lastDrawnLineNo == lineNo) && (lastSelectingButton == selectingButton))
 					return;
-				//Environment.TickCountは分解能が悪すぎるのでwinmmのタイマーを呼んで来る
-				int sec = DateTime.Now.Millisecond - lastUpdate;
+				int sec = (DateTime.Now - _startTime).Milliseconds - lastUpdate;
 				//まだ書き換えるタイミングでないなら次の更新を待ってみる
 				//ただし、入力待ちなど、しばらく更新のタイミングがない場合には強制的に書き換えてみる
 				if (sec < msPerFrame && (state == ConsoleState.Running || state == ConsoleState.Initializing))
@@ -1210,15 +1210,15 @@ namespace MinorShift.Emuera.GameView
 			}
 			if (forceTextBoxColor)
 			{
-				int sec = DateTime.Now.Millisecond - lastBgColorChange;
+				int sec = (DateTime.Now - _startTime).Milliseconds - lastBgColorChange;
 				//色変化が速くなりすぎないように一定時間以内の再呼び出しは強制待ちにする
 				while (sec < 200)
 				{
 					Application.DoEvents();
-					sec = DateTime.Now.Millisecond - lastBgColorChange;
+					sec = (DateTime.Now - _startTime).Milliseconds - lastBgColorChange;
 				}
 				window.TextBox.BackColor = this.bgColor;
-				lastBgColorChange = DateTime.Now.Millisecond;
+				lastBgColorChange = (DateTime.Now - _startTime).Milliseconds;
 			}
 			verticalScrollBarUpdate();
 			window.Refresh();//OnPaint発行
@@ -1241,7 +1241,7 @@ namespace MinorShift.Emuera.GameView
 			if (!this.Enabled)
 				return;
 			//1824 アニメスプライト用・現在フレームの時間を決定
-			lastUpdate = DateTime.Now.Millisecond;//WinmmTimer.TickCount;
+			lastUpdate = (DateTime.Now - _startTime).Milliseconds;
 
 			bool isBackLog = window.ScrollBar.Value != window.ScrollBar.Maximum;
 			int pointY = window.MainPicBox.Height - Config.LineHeight;

@@ -84,15 +84,15 @@ namespace MinorShift.Emuera.GameView
 			//最初の再描画時に現在の背景色に合わせる
 			if (redraw == ConsoleRedraw.None && window.ScrollBar.Value == window.ScrollBar.Maximum)
 				return;
-			var sec = DateTime.Now.Millisecond - lastBgColorChange;
+			var sec = (DateTime.Now - _startTime).Milliseconds - lastBgColorChange;
 			//色変化が速くなりすぎないように一定時間以内の再呼び出しは強制待ちにする
 			while (sec < 200)
 			{
 				Application.DoEvents();
-				sec = DateTime.Now.Millisecond - lastBgColorChange;
+				sec = (DateTime.Now - _startTime).Milliseconds - lastBgColorChange;
 			}
 			RefreshStrings(true);
-			lastBgColorChange = DateTime.Now.Millisecond;
+			lastBgColorChange = (DateTime.Now - _startTime).Milliseconds;
 		}
 
 		/// <summary>

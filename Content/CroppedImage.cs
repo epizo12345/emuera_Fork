@@ -208,16 +208,16 @@ namespace MinorShift.Emuera.Content
 		/// </summary>
 		internal void ResetTime()
 		{
-			StartTime = -1;
-			lastFrameTime = 0;
+			StartTime = DateTime.Now;
+			lastFrameTime = DateTime.Now;
 			lastFrame = -1;
 		}
 
 		/// <summary>
 		/// 開始時間調整用の値。ミリ秒でUInt32の範囲まで想定。
 		/// </summary>
-		Int64 StartTime = -1;
-		uint lastFrameTime = 0;
+		DateTime StartTime;
+		DateTime lastFrameTime;
 		int lastFrame = -1;
 		private AnimeFrame GetCurrentFrame()
 		{
@@ -230,24 +230,22 @@ namespace MinorShift.Emuera.Content
 				throw new ExeEE("SpriteAnime:最終フレームが範囲外");
 #endif
 			//一度もフレーム取得したことがない場合は現在時間を記録して最初のフレームを返す。
-			if (StartTime < 0)
+			if (lastFrame == -1)
 			{
-				StartTime = DateTime.Now.Millisecond;
+				StartTime = DateTime.Now;
 				lastFrame = 0;
 				return FrameList[0];
 			}
 			//時間経過なしに複数回呼ばれた場合はさっき返したフレームをもう一度返す。
-			if (DateTime.Now.Millisecond == lastFrameTime && lastFrame >= 0)
+			if (DateTime.Now == lastFrameTime && lastFrame >= 0)
 				return FrameList[lastFrame];
-			//StartTimeからの経過時間をtotaltimeで剰余計算
-			var time = (DateTime.Now.Millisecond - StartTime) % totaltime;
-			//winmmtimerは一周して0になることがあり得るのでその場合の対策。C#の剰余の結果の符号は左辺値の符号に等しい。
-			if (time < 0)
-				time += totaltime;
+			//StartTimeからの経過時間(ms)をtotaltimeで剰余計算
+			var elapsedTime = (DateTime.Now - StartTime).Milliseconds % totaltime;
+
 			foreach (AnimeFrame frame in FrameList)
 			{
-				time -= frame.DelayTimeMs;
-				if (time <= 0)
+				elapsedTime -= frame.DelayTimeMs;
+				if (elapsedTime <= 0)
 				{
 					lastFrame = frame.index;
 					return frame;
@@ -268,8 +266,6 @@ namespace MinorShift.Emuera.Content
 				frame.Dispose();
 			FrameList.Clear();
 			totaltime = 0;
-			lastFrameTime = 0;
-			StartTime = -1;
 			lastFrame = -1;
 		}
 
