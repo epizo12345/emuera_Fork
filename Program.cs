@@ -50,25 +50,28 @@ static class Program
 		);
 		rootCommand.AddOption(exeDirOption);
 
-		var debugModeOption = new Option<List<string>>(
+		var debugModeOption = new Option<bool>(
 			name: "-DEBUG"
 		);
 		rootCommand.AddOption(debugModeOption);
 
 		var result = rootCommand.Parse(args);
-		ExeDir = (result.CommandResult.GetValueForOption(exeDirOption) ?? "") + "\\";
+		ExeDir = Path.Join((result.CommandResult.GetValueForOption(exeDirOption) ?? "").AsSpan(), [Path.DirectorySeparatorChar]);
 
-		CsvDir = ExeDir + "csv\\";
-		ErbDir = ExeDir + "erb\\";
-		DebugDir = ExeDir + "debug\\";
-		DatDir = ExeDir + "dat\\";
-		ContentDir = ExeDir + "resources\\";
+		CsvDir = Path.Join(ExeDir.AsSpan(), "csv", [Path.DirectorySeparatorChar]);
+		ErbDir = Path.Join(ExeDir.AsSpan(), "erb", [Path.DirectorySeparatorChar]);
+		DebugDir = Path.Join(ExeDir.AsSpan(), "debug", [Path.DirectorySeparatorChar]);
+		DatDir = Path.Join(ExeDir.AsSpan(), "dat", [Path.DirectorySeparatorChar]);
+		ContentDir = Path.Join(ExeDir.AsSpan(), "resources", [Path.DirectorySeparatorChar]);
 
 		//解析モードの判定だけ先に行う
 		DebugMode = result.HasOption(debugModeOption);
 
-		var analysisRequestFiles = result.UnmatchedTokens;
-		if (analysisRequestFiles.Count > 0)
+		var matchFiles = result.CommandResult.GetValueForOption(debugModeOption);
+
+		//引数の後ろにある他のフラグにマッチしなかった文字列を解析指定されたファイルとみなす
+		var analysisRequestPaths = result.UnmatchedTokens;
+		if (analysisRequestPaths.Count > 0)
 		{
 			//必要なファイルのチェックにはConfig読み込みが必須なので、ここではフラグだけ立てておく
 			AnalysisMode = true;
@@ -110,28 +113,28 @@ static class Program
 		}
 		if (AnalysisMode)
 		{
-			foreach (var item in analysisRequestFiles)
+			foreach (var path in analysisRequestPaths)
 			{
-				if (!Path.Exists(item))
+				if (!Path.Exists(path))
 				{
 					MessageBox.Show("与えられたファイル・フォルダは存在しません");
 					return;
 				}
-				if (File.GetAttributes(item).HasFlag(FileAttributes.Directory))
+				if (File.GetAttributes(path).HasFlag(FileAttributes.Directory))
 				{
-					foreach (var file in Config.GetFiles(item + "\\", "*.ERB"))
+					foreach (var file in Config.GetFiles(path + "\\", "*.ERB"))
 					{
 						analysisFiles.Add(file.Value);
 					}
 				}
 				else
 				{
-					if (!Path.GetExtension(item).Equals(".ERB", StringComparison.CurrentCultureIgnoreCase))
+					if (!Path.GetExtension(path).Equals(".ERB", StringComparison.CurrentCultureIgnoreCase))
 					{
 						MessageBox.Show("ドロップ可能なファイルはERBファイルのみです");
 						return;
 					}
-					analysisFiles.Add(item);
+					analysisFiles.Add(path);
 				}
 			}
 		}
