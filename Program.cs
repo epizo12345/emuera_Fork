@@ -4,8 +4,11 @@ using System.Collections.Generic;
 using System.Windows.Forms;
 using MinorShift._Library;
 using System.IO;
+using System.CommandLine;
+using System.CommandLine.Parsing;
 
 namespace MinorShift.Emuera;
+#nullable enable
 
 static class Program
 {
@@ -40,16 +43,20 @@ static class Program
 		// memo: Shift-JISを扱うためのおまじない
 		System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
-		ExeDir = Path.GetDirectoryName(Sys.ExePath) + "\\"; ;
-#if DEBUG
-		//debugMode = true;
+		var rootCommand = new RootCommand("Emuera");
 
-		//ExeDirにバリアントのパスを代入することでテスト実行するためのコード。
-		//ローカルパスの末尾には\必須。
-		//ローカルパスを記載した場合は頒布前に削除すること。
-		ExeDir = @"";
+		var exeDirOption = new Option<string>(
+			name: "--exeDir"
+		);
+		rootCommand.AddOption(exeDirOption);
 
-#endif
+		var debugModeOption = new Option<List<string>>(
+			name: "-DEBUG"
+		);
+
+		var result = rootCommand.Parse(args);
+		ExeDir = (result.CommandResult.GetValueForOption(exeDirOption) ?? "") + "\\";
+
 		CsvDir = ExeDir + "csv\\";
 		ErbDir = ExeDir + "erb\\";
 		DebugDir = ExeDir + "debug\\";
@@ -57,19 +64,13 @@ static class Program
 		ContentDir = ExeDir + "resources\\";
 
 		//解析モードの判定だけ先に行う
-		int argsStart = 0;
-		if (args.Length > 0)
+		DebugMode = result.HasOption(debugModeOption);
+
+		var analysisRequestFiles = result.UnmatchedTokens;
+		if (analysisRequestFiles.Count > 0)
 		{
-			if (args[0].Equals("-DEBUG", StringComparison.CurrentCultureIgnoreCase))
-			{
-				argsStart = 1;//デバッグモードかつ解析モード時に最初の1っこ(-DEBUG)を飛ばす
-				DebugMode = true;
-			}
-			if (args.Length > argsStart)
-			{
-				//必要なファイルのチェックにはConfig読み込みが必須なので、ここではフラグだけ立てておく
-				AnalysisMode = true;
-			}
+			//必要なファイルのチェックにはConfig読み込みが必須なので、ここではフラグだけ立てておく
+			AnalysisMode = true;
 		}
 
 		ApplicationConfiguration.Initialize();
@@ -108,28 +109,28 @@ static class Program
 		}
 		if (AnalysisMode)
 		{
-			for (int i = argsStart; i < args.Length; i++)
+			foreach (var item in analysisRequestFiles)
 			{
-				if (!Path.Exists(args[i]))
+				if (!Path.Exists(item))
 				{
 					MessageBox.Show("与えられたファイル・フォルダは存在しません");
 					return;
 				}
-				if (File.GetAttributes(args[i]).HasFlag(FileAttributes.Directory))
+				if (File.GetAttributes(item).HasFlag(FileAttributes.Directory))
 				{
-					foreach (var file in Config.GetFiles(args[i] + "\\", "*.ERB"))
+					foreach (var file in Config.GetFiles(item + "\\", "*.ERB"))
 					{
 						analysisFiles.Add(file.Value);
 					}
 				}
 				else
 				{
-					if (!Path.GetExtension(args[i]).Equals(".ERB", StringComparison.CurrentCultureIgnoreCase))
+					if (!Path.GetExtension(item).Equals(".ERB", StringComparison.CurrentCultureIgnoreCase))
 					{
 						MessageBox.Show("ドロップ可能なファイルはERBファイルのみです");
 						return;
 					}
-					analysisFiles.Add(args[i]);
+					analysisFiles.Add(item);
 				}
 			}
 		}
