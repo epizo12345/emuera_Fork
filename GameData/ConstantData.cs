@@ -976,7 +976,7 @@ namespace MinorShift.Emuera.GameData
 		{
 			CharacterTemplate tmpl = null;
 			EraStreamReader eReader = new(false);
-			if (!eReader.Open(csvPath, csvName))
+			if (!eReader.OpenOnCache(csvPath, csvName))
 			{
 				output.PrintError(eReader.Filename + "のオープンに失敗しました");
 				return;
@@ -1274,7 +1274,7 @@ namespace MinorShift.Emuera.GameData
 			string[] target = names[targetIndex];
 			HashSet<int> defined = [];
 			EraStreamReader eReader = new(false);
-			if (!eReader.Open(csvPath))
+			if (!eReader.OpenOnCache(csvPath))
 			{
 				output.PrintError(eReader.Filename + "のオープンに失敗しました");
 				return;
