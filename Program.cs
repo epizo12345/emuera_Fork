@@ -173,12 +173,12 @@ static class Program
 	/// <summary>
 	/// 実行ファイルのディレクトリ。最後に\を付けたstring
 	/// </summary>
-	public static string ExeDir { get; private set; }
-	public static string CsvDir { get; private set; }
-	public static string ErbDir { get; private set; }
-	public static string DebugDir { get; private set; }
-	public static string DatDir { get; private set; }
-	public static string ContentDir { get; private set; }
+	public static string? ExeDir { get; private set; }
+	public static string? CsvDir { get; private set; }
+	public static string? ErbDir { get; private set; }
+	public static string? DebugDir { get; private set; }
+	public static string? DatDir { get; private set; }
+	public static string? ContentDir { get; private set; }
 
 	public static bool AnalysisMode { get; private set; }
 	public static List<string> analysisFiles = [];
