@@ -11,18 +11,16 @@ using MinorShift.Emuera.GameData.Variable;
 using MinorShift.Emuera.GameProc.Function;
 using MinorShift.Emuera.GameData.Function;
 using System.Linq;
+using MinorShift._Library;
 
 namespace MinorShift.Emuera.GameProc
 {
 
-	internal sealed partial class Process
+	internal sealed partial class Process(EmueraConsole view, bool analysisMode)
 	{
-		public Process(EmueraConsole view)
-		{
-			console = view;
-		}
+		readonly bool analysisMode = analysisMode;
 
-        public LogicalLine getCurrentLine { get { return state.CurrentLine; } }
+		public LogicalLine getCurrentLine { get { return state.CurrentLine; } }
 
 		/// <summary>
 		/// @~~と$~~を集めたもの。CALL命令などで使う
@@ -38,29 +36,29 @@ namespace MinorShift.Emuera.GameProc
 		public VariableEvaluator VEvaluator { get { return vEvaluator; } }
 		private ExpressionMediator exm;
 		private GameBase gamebase;
-		readonly EmueraConsole console;
+		readonly EmueraConsole console = view;
 		private IdentifierDictionary idDic;
 		ProcessState state;
 		ProcessState originalState;//リセットする時のために
-        bool noError = false;
-        //色々あって復活させてみる
-        bool initialiing;
-        public bool inInitializeing { get { return initialiing;  } }
+		bool noError = false;
+		//色々あって復活させてみる
+		bool initialiing;
+		public bool inInitializeing { get { return initialiing; } }
 
-        public bool Initialize()
+		public bool Initialize()
 		{
 			LexicalAnalyzer.UseMacro = false;
-            state = new ProcessState(console);
-            originalState = state;
-            initialiing = true;
-            try
-            {
+			state = new ProcessState(console);
+			originalState = state;
+			initialiing = true;
+			try
+			{
 				ParserMediator.Initialize(console);
 				//コンフィグファイルに関するエラーの処理（コンフィグファイルはこの関数に入る前に読込済み）
 				if (ParserMediator.HasWarning)
 				{
 					ParserMediator.FlushWarningList();
-					if(MessageBox.Show("コンフィグファイルに異常があります\nEmueraを終了しますか","コンフィグエラー", MessageBoxButtons.YesNo)
+					if (MessageBox.Show("コンフィグファイルに異常があります\nEmueraを終了しますか", "コンフィグエラー", MessageBoxButtons.YesNo)
 						== DialogResult.Yes)
 					{
 						console.PrintSystemLine("コンフィグファイルに異常があり、終了が選択されたため処理を終了しました");
@@ -76,18 +74,18 @@ namespace MinorShift.Emuera.GameProc
 				}
 				ParserMediator.FlushWarningList();
 				//キーマクロ読み込み
-                if (Config.UseKeyMacro && !Program.AnalysisMode)
-                {
-                    if (File.Exists(Program.ExeDir + "macro.txt"))
-                    {
-                        if (Config.DisplayReport)
+				if (Config.UseKeyMacro && !analysisMode)
+				{
+					if (File.Exists(Program.ExeDir + "macro.txt"))
+					{
+						if (Config.DisplayReport)
 							console.PrintSystemLine("macro.txt読み込み中・・・");
-                        KeyMacro.LoadMacroFile(Program.ExeDir + "macro.txt");
-                    }
+						KeyMacro.LoadMacroFile(Program.ExeDir + "macro.txt");
+					}
 				}
 				//_replace.csv読み込み
-                if (Config.UseReplaceFile && !Program.AnalysisMode)
-                {
+				if (Config.UseReplaceFile && !analysisMode)
+				{
 					if (File.Exists(Program.CsvDir + "_Replace.csv"))
 					{
 						if (Config.DisplayReport)
@@ -104,46 +102,46 @@ namespace MinorShift.Emuera.GameProc
 							}
 						}
 					}
-                }
-                Config.SetReplace(ConfigData.Instance);
-                //ここでBARを設定すれば、いいことに気づいた予感
-                console.setStBar(Config.DrawLineString);
+				}
+				Config.SetReplace(ConfigData.Instance);
+				//ここでBARを設定すれば、いいことに気づいた予感
+				console.setStBar(Config.DrawLineString);
 
 				//_rename.csv読み込み
 				if (Config.UseRenameFile)
-                {
+				{
 					if (File.Exists(Program.CsvDir + "_Rename.csv"))
-                    {
-                        if (Config.DisplayReport || Program.AnalysisMode)
+					{
+						if (Config.DisplayReport || analysisMode)
 							console.PrintSystemLine("_Rename.csv読み込み中・・・");
 						ParserMediator.LoadEraExRenameFile(Program.CsvDir + "_Rename.csv");
-                    }
-                    else
-                        console.PrintError("csv\\_Rename.csvが見つかりません");
-                }
-                if (!Config.DisplayReport)
-                {
-                    console.PrintSingleLine(Config.LoadLabel);
-                    console.RefreshStrings(true);
+					}
+					else
+						console.PrintError("csv\\_Rename.csvが見つかりません");
+				}
+				if (!Config.DisplayReport)
+				{
+					console.PrintSingleLine(Config.LoadLabel);
+					console.RefreshStrings(true);
 				}
 				//gamebase.csv読み込み
 				gamebase = new GameBase();
-                if (!gamebase.LoadGameBaseCsv(Program.CsvDir + "GAMEBASE.CSV"))
-                {
+				if (!gamebase.LoadGameBaseCsv(Program.CsvDir + "GAMEBASE.CSV"))
+				{
 					ParserMediator.FlushWarningList();
-                    console.PrintSystemLine("GAMEBASE.CSVの読み込み中に問題が発生したため処理を終了しました");
-                    return false;
-                }
+					console.PrintSystemLine("GAMEBASE.CSVの読み込み中に問題が発生したため処理を終了しました");
+					return false;
+				}
 				console.SetWindowTitle(gamebase.ScriptWindowTitle);
 				GlobalStatic.GameBaseData = gamebase;
 
 				//前記以外のcsvを全て読み込み
-				ConstantData constant = new ConstantData();
+				ConstantData constant = new();
 				constant.LoadData(Program.CsvDir, console, Config.DisplayReport);
 				GlobalStatic.ConstantData = constant;
 				TrainName = constant.GetCsvNameList(VariableCode.TRAINNAME);
 
-                vEvaluator = new VariableEvaluator(gamebase, constant);
+				vEvaluator = new VariableEvaluator(gamebase, constant);
 				GlobalStatic.VEvaluator = vEvaluator;
 
 				idDic = new IdentifierDictionary(vEvaluator.VariableData);
@@ -157,7 +155,7 @@ namespace MinorShift.Emuera.GameProc
 
 				labelDic = new LabelDictionary();
 				GlobalStatic.LabelDictionary = labelDic;
-				HeaderFileLoader hLoader = new HeaderFileLoader(console, idDic, this);
+				HeaderFileLoader hLoader = new(console, idDic, this);
 
 				LexicalAnalyzer.UseMacro = false;
 
@@ -173,17 +171,17 @@ namespace MinorShift.Emuera.GameProc
 				//TODO:ユーザー定義変数用のcsvの適用
 
 				//ERB読込
-				ErbLoader loader = new ErbLoader(console, exm, this);
-                if (Program.AnalysisMode)
-                    noError = loader.loadErbs(Program.AnalysisFiles, labelDic);
-                else
-                    noError = loader.LoadErbFiles(Program.ErbDir, Config.DisplayReport, labelDic);
-                initSystemProcess();
-                initialiing = false;
-            }
+				var loader = new ErbLoader(console, exm, this);
+				if (analysisMode)
+					noError = loader.loadErbs(Program.analysisFiles, labelDic);
+				else
+					noError = loader.LoadErbFiles(Program.ErbDir, Config.DisplayReport, labelDic);
+				initSystemProcess();
+				initialiing = false;
+			}
 			catch (Exception e)
 			{
-                handleException(e, null, true);
+				handleException(e, null, true);
 				console.PrintSystemLine("初期化中に致命的なエラーが発生したため処理を終了しました");
 				return false;
 			}
@@ -192,16 +190,15 @@ namespace MinorShift.Emuera.GameProc
 				return false;
 			}
 			state.Begin(BeginType.TITLE);
-			GC.Collect();
-            return true;
+			return true;
 		}
 
 		public void ReloadErb()
 		{
 			saveCurrentState(false);
 			state.SystemState = SystemStateCode.System_Reloaderb;
-			ErbLoader loader = new ErbLoader(console, exm, this);
-            loader.LoadErbFiles(Program.ErbDir, false, labelDic);
+			ErbLoader loader = new(console, exm, this);
+			loader.LoadErbFiles(Program.ErbDir, false, labelDic);
 			console.ReadAnyKey();
 		}
 
@@ -209,7 +206,7 @@ namespace MinorShift.Emuera.GameProc
 		{
 			saveCurrentState(false);
 			state.SystemState = SystemStateCode.System_Reloaderb;
-			ErbLoader loader = new ErbLoader(console, exm, this);
+			ErbLoader loader = new(console, exm, this);
 			loader.loadErbs(path, labelDic);
 			console.ReadAnyKey();
 		}
@@ -229,14 +226,14 @@ namespace MinorShift.Emuera.GameProc
 			}
 		}
 
-        public bool ClearCommands()
-        {
-            coms.Clear();
-            count = 0;
-            isCTrain = false;
-            skipPrint = true;
-            return (callFunction("CALLTRAINEND", false, false));
-        }
+		public bool ClearCommands()
+		{
+			coms.Clear();
+			count = 0;
+			isCTrain = false;
+			skipPrint = true;
+			return callFunction("CALLTRAINEND", false, false);
+		}
 
 		public void InputResult5(int r0, int r1, int r2, int r3, int r4)
 		{
@@ -260,11 +257,11 @@ namespace MinorShift.Emuera.GameProc
 			vEvaluator.RESULTS = s;
 		}
 
-		private uint startTime = 0;
-		
+		private int startTime = 0;
+
 		public void DoScript()
 		{
-			startTime = _Library.WinmmTimer.TickCount;
+			startTime = DateTime.Now.Millisecond;
 			state.lineCount = 0;
 			bool systemProcRunning = true;
 			try
@@ -292,7 +289,7 @@ namespace MinorShift.Emuera.GameProc
 					handleException(ec, currentLine, true);
 			}
 		}
-		
+
 		public void BeginTitle()
 		{
 			vEvaluator.ResetData();
@@ -302,7 +299,7 @@ namespace MinorShift.Emuera.GameProc
 
 		public void UpdateCheckInfiniteLoopState()
 		{
-			startTime = _Library.WinmmTimer.TickCount;
+			startTime = DateTime.Now.Millisecond;
 			state.lineCount = 0;
 		}
 
@@ -319,7 +316,7 @@ namespace MinorShift.Emuera.GameProc
 			//    console.ReadAnyKey();
 			//    return;
 			//}
-			uint time = _Library.WinmmTimer.TickCount - startTime;
+			var time = DateTime.Now.Millisecond - startTime;
 			if (time < Config.InfiniteLoopAlertTime)
 				return;
 			LogicalLine currentLine = state.CurrentLine;
@@ -339,7 +336,7 @@ namespace MinorShift.Emuera.GameProc
 			else
 			{
 				state.lineCount = 0;
-				startTime = _Library.WinmmTimer.TickCount;
+				startTime = DateTime.Now.Millisecond;
 			}
 		}
 
@@ -347,44 +344,44 @@ namespace MinorShift.Emuera.GameProc
 		public SingleTerm GetValue(SuperUserDefinedMethodTerm udmt)
 		{
 			methodStack++;
-            if (methodStack > 100)
-            {
-                //StackOverflowExceptionはcatchできない上に再現性がないので発生前に一定数で打ち切る。
-                //環境によっては100以前にStackOverflowExceptionがでるかも？
-                throw new CodeEE("関数の呼び出しスタックが溢れました(無限に再帰呼び出しされていませんか？)");
-            }
-            SingleTerm ret = null;
-            int temp_current = state.currentMin;
-            state.currentMin = state.functionCount;
-            udmt.Call.updateRetAddress(state.CurrentLine);
-            try
-            {
+			if (methodStack > 100)
+			{
+				//StackOverflowExceptionはcatchできない上に再現性がないので発生前に一定数で打ち切る。
+				//環境によっては100以前にStackOverflowExceptionがでるかも？
+				throw new CodeEE("関数の呼び出しスタックが溢れました(無限に再帰呼び出しされていませんか？)");
+			}
+			SingleTerm ret = null;
+			int temp_current = state.currentMin;
+			state.currentMin = state.functionCount;
+			udmt.Call.updateRetAddress(state.CurrentLine);
+			try
+			{
 				state.IntoFunction(udmt.Call, udmt.Argument, exm);
-                //do whileの中でthrow されたエラーはここではキャッチされない。
+				//do whileの中でthrow されたエラーはここではキャッチされない。
 				//#functionを全て抜けてDoScriptでキャッチされる。
-    			runScriptProc();
-                ret = state.MethodReturnValue;
+				runScriptProc();
+				ret = state.MethodReturnValue;
 			}
 			finally
 			{
 				if (udmt.Call.TopLabel.hasPrivDynamicVar)
 					udmt.Call.TopLabel.Out();
-                //1756beta2+v3:こいつらはここにないとデバッグコンソールで式中関数が事故った時に大事故になる
-                state.currentMin = temp_current;
-                methodStack--;
-            }
+				//1756beta2+v3:こいつらはここにないとデバッグコンソールで式中関数が事故った時に大事故になる
+				state.currentMin = temp_current;
+				methodStack--;
+			}
 			return ret;
 		}
 
-        public void clearMethodStack()
-        {
-            methodStack = 0;
-        }
+		public void clearMethodStack()
+		{
+			methodStack = 0;
+		}
 
-        public int MethodStack()
-        {
-            return methodStack;
-        }
+		public int MethodStack()
+		{
+			return methodStack;
+		}
 
 		public ScriptPosition GetRunningPosition()
 		{
@@ -393,15 +390,15 @@ namespace MinorShift.Emuera.GameProc
 				return null;
 			return line.Position;
 		}
-/*
-		private readonly string scaningScope = null;
-		private string GetScaningScope()
-		{
-			if (scaningScope != null)
-				return scaningScope;
-			return state.Scope;
-		}
-*/
+		/*
+				private readonly string scaningScope = null;
+				private string GetScaningScope()
+				{
+					if (scaningScope != null)
+						return scaningScope;
+					return state.Scope;
+				}
+		*/
 		public LogicalLine scaningLine = null;
 		internal LogicalLine GetScaningLine()
 		{
@@ -412,24 +409,24 @@ namespace MinorShift.Emuera.GameProc
 				return null;
 			return line;
 		}
-		
-		
+
+
 		private void handleExceptionInSystemProc(Exception exc, LogicalLine current, bool playSound)
 		{
 			console.ThrowError(playSound);
 			if (exc is CodeEE)
 			{
-				console.PrintError("関数の終端でエラーが発生しました:" + Program.ExeName);
+				console.PrintError("関数の終端でエラーが発生しました:" + Sys.ExeName);
 				console.PrintError(exc.Message);
 			}
 			else if (exc is ExeEE)
 			{
-				console.PrintError("関数の終端でEmueraのエラーが発生しました:" + Program.ExeName);
+				console.PrintError("関数の終端でEmueraのエラーが発生しました:" + Sys.ExeName);
 				console.PrintError(exc.Message);
 			}
 			else
 			{
-				console.PrintError("関数の終端で予期しないエラーが発生しました:" + Program.ExeName);
+				console.PrintError("関数の終端で予期しないエラーが発生しました:" + Sys.ExeName);
 				console.PrintError(exc.GetType().ToString() + ":" + exc.Message);
 				string[] stack = exc.StackTrace.Split('\n');
 				for (int i = 0; i < stack.Length; i++)
@@ -438,66 +435,66 @@ namespace MinorShift.Emuera.GameProc
 				}
 			}
 		}
-		
+
 		private void handleException(Exception exc, LogicalLine current, bool playSound)
 		{
 			console.ThrowError(playSound);
 			ScriptPosition position = null;
-            if ((exc is EmueraException ee) && (ee.Position != null))
-                position = ee.Position;
-            else if ((current != null) && (current.Position != null))
-                position = current.Position;
-            string posString = "";
+			if ((exc is EmueraException ee) && (ee.Position != null))
+				position = ee.Position;
+			else if ((current != null) && (current.Position != null))
+				position = current.Position;
+			string posString = "";
 			if (position != null)
 			{
 				if (position.LineNo >= 0)
 					posString = position.Filename + "の" + position.LineNo.ToString() + "行目で";
 				else
 					posString = position.Filename + "で";
-					
+
 			}
 			if (exc is CodeEE)
 			{
-                if (position != null)
+				if (position != null)
 				{
-                    if (current is InstructionLine procline && procline.FunctionCode == FunctionCode.THROW)
-                    {
-                        console.PrintErrorButton(posString + "THROWが発生しました", position);
-                        printRawLine(position);
-                        console.PrintError("THROW内容：" + exc.Message);
-                    }
-                    else
-                    {
-                        console.PrintErrorButton(posString + "エラーが発生しました:" + Program.ExeName, position);
+					if (current is InstructionLine procline && procline.FunctionCode == FunctionCode.THROW)
+					{
+						console.PrintErrorButton(posString + "THROWが発生しました", position);
+						printRawLine(position);
+						console.PrintError("THROW内容：" + exc.Message);
+					}
+					else
+					{
+						console.PrintErrorButton(posString + "エラーが発生しました:" + Sys.ExeName, position);
 						printRawLine(position);
 						console.PrintError("エラー内容：" + exc.Message);
-                    }
-                    console.PrintError("現在の関数：@" + current.ParentLabelLine.LabelName + "（" + current.ParentLabelLine.Position.Filename + "の" + current.ParentLabelLine.Position.LineNo.ToString() + "行目）");
-                    console.PrintError("関数呼び出しスタック：");
-                    LogicalLine parent;
-                    int depth = 0;
-                    while ((parent = state.GetReturnAddressSequensial(depth++)) != null)
-                    {
-                        if (parent.Position != null)
-                        {
-                            console.PrintErrorButton("↑" + parent.Position.Filename + "の" + parent.Position.LineNo.ToString() + "行目（関数@" + parent.ParentLabelLine.LabelName + "内）", parent.Position);
-                        }
-                    } 
+					}
+					console.PrintError("現在の関数：@" + current.ParentLabelLine.LabelName + "（" + current.ParentLabelLine.Position.Filename + "の" + current.ParentLabelLine.Position.LineNo.ToString() + "行目）");
+					console.PrintError("関数呼び出しスタック：");
+					LogicalLine parent;
+					int depth = 0;
+					while ((parent = state.GetReturnAddressSequensial(depth++)) != null)
+					{
+						if (parent.Position != null)
+						{
+							console.PrintErrorButton("↑" + parent.Position.Filename + "の" + parent.Position.LineNo.ToString() + "行目（関数@" + parent.ParentLabelLine.LabelName + "内）", parent.Position);
+						}
+					}
 				}
 				else
 				{
-					console.PrintError(posString + "エラーが発生しました:" + Program.ExeName);
+					console.PrintError(posString + "エラーが発生しました:" + Sys.ExeName);
 					console.PrintError(exc.Message);
 				}
 			}
 			else if (exc is ExeEE)
 			{
-				console.PrintError(posString + "Emueraのエラーが発生しました:" + Program.ExeName);
+				console.PrintError(posString + "Emueraのエラーが発生しました:" + Sys.ExeName);
 				console.PrintError(exc.Message);
 			}
 			else
-            {
-				console.PrintError(posString + "予期しないエラーが発生しました:" + Program.ExeName);
+			{
+				console.PrintError(posString + "予期しないエラーが発生しました:" + Sys.ExeName);
 				console.PrintError(exc.GetType().ToString() + ":" + exc.Message);
 				string[] stack = exc.StackTrace.Split('\n');
 				for (int i = 0; i < stack.Length; i++)
@@ -515,7 +512,7 @@ namespace MinorShift.Emuera.GameProc
 		}
 
 		public string getRawTextFormFilewithLine(ScriptPosition position)
-        {
+		{
 			string extents = position.Filename.Substring(position.Filename.Length - 4).ToLower();
 			if (extents == ".erb")
 			{

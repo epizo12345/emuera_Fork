@@ -17,21 +17,21 @@ namespace MinorShift.Emuera.GameData.Function
 		private FunctionMethod method;
 		private IOperandTerm[] arguments;
 
-        public override long GetIntValue(ExpressionMediator exm)
-        {
+		public override long GetIntValue(ExpressionMediator exm)
+		{
 			return method.GetIntValue(exm, arguments);
-        }
-        public override string GetStrValue(ExpressionMediator exm)
-        {
+		}
+		public override string GetStrValue(ExpressionMediator exm)
+		{
 			return method.GetStrValue(exm, arguments);
-        }
+		}
 		public override SingleTerm GetValue(ExpressionMediator exm)
 		{
 			return method.GetReturnValue(exm, arguments);
 		}
-		
-        public override IOperandTerm Restructure(ExpressionMediator exm)
-        {
+
+		public override IOperandTerm Restructure(ExpressionMediator exm)
+		{
 			if (method.HasUniqueRestructure)
 			{
 				if (method.UniqueRestructure(exm, arguments) && method.CanRestructure)
@@ -39,18 +39,18 @@ namespace MinorShift.Emuera.GameData.Function
 				return this;
 			}
 			bool argIsConst = true;
-			for(int i = 0; i< arguments.Length;i++)
+			for (int i = 0; i < arguments.Length; i++)
 			{
-				if(arguments[i] == null)
+				if (arguments[i] == null)
 					continue;
 				arguments[i] = arguments[i].Restructure(exm);
 				argIsConst &= arguments[i] is SingleTerm;
 			}
-			if ((method.CanRestructure) && (argIsConst))
+			if (method.CanRestructure && argIsConst)
 				return GetValue(exm);
 			return this;
-			
-        }
-        
+
+		}
+
 	}
 }

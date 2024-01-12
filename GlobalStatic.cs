@@ -21,6 +21,7 @@ namespace MinorShift.Emuera
 		//これは生成される順序で並んでいる。
 		//下から上を参照した場合、nullを返されることがある。
 		//Config Replace
+
 		public static MainWindow MainWindow;
 		public static EmueraConsole Console;
 		public static Process Process;
@@ -38,9 +39,9 @@ namespace MinorShift.Emuera
 
 		//ERBloaderに引数解析の結果を渡すための橋渡し変数
 		//1756 Processから移動。Program.AnalysisMode用
-		public static Dictionary<string, Int64> tempDic = new Dictionary<string, long>();
+		public static Dictionary<string, Int64> tempDic = [];
 #if DEBUG
-		public static List<FunctionLabelLine> StackList = new List<FunctionLabelLine>();
+		public static List<FunctionLabelLine> StackList = [];
 #endif
 		public static void Reset()
 		{

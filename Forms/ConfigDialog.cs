@@ -6,10 +6,12 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 using System.Drawing.Text;
+using System.Runtime.Versioning;
+using System.Threading.Tasks;
 
 namespace MinorShift.Emuera.Forms
 {
-	[global::System.Reflection.Obfuscation(Exclude=false)]
+	[global::System.Reflection.Obfuscation(Exclude = false)]
 	internal enum ConfigDialogResult
 	{
 		Cancel = 0,
@@ -22,31 +24,47 @@ namespace MinorShift.Emuera.Forms
 		public ConfigDialog()
 		{
 			InitializeComponent();
-            numericUpDown1.Minimum = 1;//PrintCPerLine
-            numericUpDown1.Maximum = 100;
-            numericUpDown2.Minimum = 128;//ConfigCode.WindowX(Width)
+			numericUpDown1.Minimum = 1;//PrintCPerLine
+			numericUpDown1.Maximum = 100;
+			numericUpDown2.Minimum = 128;//ConfigCode.WindowX(Width)
 			numericUpDown2.Maximum = 5000;
-            numericUpDown3.Minimum = 128;//ConfigCode.WindowY(Height)
+			numericUpDown3.Minimum = 128;//ConfigCode.WindowY(Height)
 			numericUpDown3.Maximum = 5000;
-            numericUpDown4.Minimum = 500;//MaxLog
+			numericUpDown4.Minimum = 500;//MaxLog
 			numericUpDown4.Maximum = 1000000;
-            numericUpDown5.Minimum = 8;//FontSize
-            numericUpDown5.Maximum = 144;
-            numericUpDown6.Minimum = 8;//LineHeight
-            numericUpDown6.Maximum = 144;
-            numericUpDown7.Minimum = 1;//FPS
+			numericUpDown5.Minimum = 8;//FontSize
+			numericUpDown5.Maximum = 144;
+			numericUpDown6.Minimum = 8;//LineHeight
+			numericUpDown6.Maximum = 144;
+			numericUpDown7.Minimum = 1;//FPS
 			numericUpDown7.Maximum = 240;
-            numericUpDown8.Minimum = 1;//ScrollHeight
+			numericUpDown8.Minimum = 1;//ScrollHeight
 			numericUpDown8.Maximum = 10;
-            numericUpDown9.Minimum = 1;//PrintCLength
-            numericUpDown9.Maximum = 100;
+			numericUpDown9.Minimum = 1;//PrintCLength
+			numericUpDown9.Maximum = 100;
 			numericUpDown10.Minimum = 0;//InfiniteLoopAlertTime
 			numericUpDown10.Maximum = 100000;
-            numericUpDown11.Minimum = 20;//SaveDataNos
-            numericUpDown11.Maximum = 80;
+			numericUpDown11.Minimum = 20;//SaveDataNos
+			numericUpDown11.Maximum = 80;
 			numericUpDownPosX.Maximum = 10000;//WindowPosX
 			numericUpDownPosY.Maximum = 10000;
 
+		}
+
+		private void shown(object sender, EventArgs e)
+		{
+			//フォントを事前読み込み
+			foreach (var ff in new InstalledFontCollection().Families)
+			{
+				if (ff.IsStyleAvailable(FontStyle.Regular) &&
+					ff.IsStyleAvailable(FontStyle.Bold) &&
+					ff.IsStyleAvailable(FontStyle.Italic) &&
+					ff.IsStyleAvailable(FontStyle.Strikeout) &&
+					ff.IsStyleAvailable(FontStyle.Underline))
+				{
+					comboBox2.Items.Add(ff.Name);
+				}
+			}
 		}
 
 		private void buttonSave_Click(object sender, EventArgs e)
@@ -94,13 +112,13 @@ namespace MinorShift.Emuera.Forms
 			colorBox.SelectingColor = item.Value;
 			colorBox.Enabled = !item.Fixed;
 		}
-/*		void setTextBox(TextBox textBox, ConfigCode code)
-		{
-			ConfigItem<string> item = (ConfigItem<string>)ConfigData.Instance.GetConfigItem(code);
-			textBox.Text = item.Value;
-			textBox.Enabled = !item.Fixed;
-		}
-*/
+		/*		void setTextBox(TextBox textBox, ConfigCode code)
+				{
+					ConfigItem<string> item = (ConfigItem<string>)ConfigData.Instance.GetConfigItem(code);
+					textBox.Text = item.Value;
+					textBox.Enabled = !item.Fixed;
+				}
+		*/
 		MainWindow parent = null;
 		public void SetConfig(MainWindow mainWindow)
 		{
@@ -125,8 +143,8 @@ namespace MinorShift.Emuera.Forms
 			setCheckBox(checkBox18, ConfigCode.UseKeyMacro);
 			setCheckBox(checkBox20, ConfigCode.AllowFunctionOverloading);
 			setCheckBox(checkBox19, ConfigCode.WarnFunctionOverloading);
-            setCheckBox(checkBox21, ConfigCode.WindowMaximixed);
-            setCheckBox(checkBox22, ConfigCode.WarnNormalFunctionOverloading);
+			setCheckBox(checkBox21, ConfigCode.WindowMaximixed);
+			setCheckBox(checkBox22, ConfigCode.WarnNormalFunctionOverloading);
 			setCheckBox(checkBox23, ConfigCode.WarnBackCompatibility);
 			setCheckBox(checkBoxCompatiErrorLine, ConfigCode.CompatiErrorLine);
 			setCheckBox(checkBoxCompatiCALLNAME, ConfigCode.CompatiCALLNAME);
@@ -154,7 +172,7 @@ namespace MinorShift.Emuera.Forms
 			setNumericUpDown(numericUpDown8, ConfigCode.ScrollHeight);
 			setNumericUpDown(numericUpDown5, ConfigCode.FontSize);
 			setNumericUpDown(numericUpDown10, ConfigCode.InfiniteLoopAlertTime);
-            setNumericUpDown(numericUpDown11, ConfigCode.SaveDataNos);
+			setNumericUpDown(numericUpDown11, ConfigCode.SaveDataNos);
 
 			setNumericUpDown(numericUpDownPosX, ConfigCode.WindowPosX);
 			setNumericUpDown(numericUpDownPosY, ConfigCode.WindowPosY);
@@ -242,37 +260,37 @@ namespace MinorShift.Emuera.Forms
 			}
 			comboBox4.Enabled = !itemDWF.Fixed;
 
-            ConfigItem<UseLanguage> itemLang = (ConfigItem<UseLanguage>)ConfigData.Instance.GetConfigItem(ConfigCode.useLanguage);
-            switch (itemLang.Value)
-            {
-                case UseLanguage.JAPANESE:
-                    comboBox1.SelectedIndex = 0; break;
-                case UseLanguage.KOREAN:
-                    comboBox1.SelectedIndex = 1; break;
-                case UseLanguage.CHINESE_HANS:
-                    comboBox1.SelectedIndex = 2; break;
-                case UseLanguage.CHINESE_HANT:
-                    comboBox1.SelectedIndex = 3; break;
-            }
+			ConfigItem<UseLanguage> itemLang = (ConfigItem<UseLanguage>)ConfigData.Instance.GetConfigItem(ConfigCode.useLanguage);
+			switch (itemLang.Value)
+			{
+				case UseLanguage.JAPANESE:
+					comboBox1.SelectedIndex = 0; break;
+				case UseLanguage.KOREAN:
+					comboBox1.SelectedIndex = 1; break;
+				case UseLanguage.CHINESE_HANS:
+					comboBox1.SelectedIndex = 2; break;
+				case UseLanguage.CHINESE_HANT:
+					comboBox1.SelectedIndex = 3; break;
+			}
 
-            ConfigItem<TextEditorType> itemET = (ConfigItem<TextEditorType>)ConfigData.Instance.GetConfigItem(ConfigCode.EditorType);
-            switch (itemET.Value)
-            {
-                case TextEditorType.SAKURA:
-                    comboBox6.SelectedIndex = 0; break;
-                case TextEditorType.TERAPAD:
-                    comboBox6.SelectedIndex = 1; break;
-                case TextEditorType.EMEDITOR:
-                    comboBox6.SelectedIndex = 2; break;
-                case TextEditorType.USER_SETTING:
-                    comboBox6.SelectedIndex = 3; break;
-            }
-            comboBox6.Enabled = !itemET.Fixed;
+			ConfigItem<TextEditorType> itemET = (ConfigItem<TextEditorType>)ConfigData.Instance.GetConfigItem(ConfigCode.EditorType);
+			switch (itemET.Value)
+			{
+				case TextEditorType.SAKURA:
+					comboBox6.SelectedIndex = 0; break;
+				case TextEditorType.TERAPAD:
+					comboBox6.SelectedIndex = 1; break;
+				case TextEditorType.EMEDITOR:
+					comboBox6.SelectedIndex = 2; break;
+				case TextEditorType.USER_SETTING:
+					comboBox6.SelectedIndex = 3; break;
+			}
+			comboBox6.Enabled = !itemET.Fixed;
 
 
-            textBox1.Text = Config.TextEditor;
-            textBox2.Text = Config.EditorArg;
-            textBox2.Enabled = itemET.Value == TextEditorType.USER_SETTING;
+			textBox1.Text = Config.TextEditor;
+			textBox2.Text = Config.EditorArg;
+			textBox2.Enabled = itemET.Value == TextEditorType.USER_SETTING;
 		}
 
 		private void SaveConfig()
@@ -297,8 +315,8 @@ namespace MinorShift.Emuera.Forms
 			config.GetConfigItem(ConfigCode.UseKeyMacro).SetValue<bool>(checkBox18.Checked);
 			config.GetConfigItem(ConfigCode.AllowFunctionOverloading).SetValue<bool>(checkBox20.Checked);
 			config.GetConfigItem(ConfigCode.WarnFunctionOverloading).SetValue<bool>(checkBox19.Checked);
-            config.GetConfigItem(ConfigCode.WindowMaximixed).SetValue<bool>(checkBox21.Checked);
-            config.GetConfigItem(ConfigCode.WarnNormalFunctionOverloading).SetValue<bool>(checkBox22.Checked);
+			config.GetConfigItem(ConfigCode.WindowMaximixed).SetValue<bool>(checkBox21.Checked);
+			config.GetConfigItem(ConfigCode.WarnNormalFunctionOverloading).SetValue<bool>(checkBox22.Checked);
 			config.GetConfigItem(ConfigCode.WarnBackCompatibility).SetValue<bool>(checkBox23.Checked);
 			config.GetConfigItem(ConfigCode.CompatiErrorLine).SetValue<bool>(checkBoxCompatiErrorLine.Checked);
 			config.GetConfigItem(ConfigCode.CompatiCALLNAME).SetValue<bool>(checkBoxCompatiCALLNAME.Checked);
@@ -329,7 +347,7 @@ namespace MinorShift.Emuera.Forms
 			config.GetConfigItem(ConfigCode.FPS).SetValue<int>((int)numericUpDown7.Value);
 			config.GetConfigItem(ConfigCode.ScrollHeight).SetValue<int>((int)numericUpDown8.Value);
 			config.GetConfigItem(ConfigCode.InfiniteLoopAlertTime).SetValue<int>((int)numericUpDown10.Value);
-            config.GetConfigItem(ConfigCode.SaveDataNos).SetValue<int>((int)numericUpDown11.Value);
+			config.GetConfigItem(ConfigCode.SaveDataNos).SetValue<int>((int)numericUpDown11.Value);
 
 			config.GetConfigItem(ConfigCode.WindowPosX).SetValue<int>((int)numericUpDownPosX.Value);
 			config.GetConfigItem(ConfigCode.WindowPosY).SetValue<int>((int)numericUpDownPosY.Value);
@@ -392,31 +410,31 @@ namespace MinorShift.Emuera.Forms
 				case 3:
 					config.GetConfigItem(ConfigCode.FunctionNotCalledWarning).SetValue<DisplayWarningFlag>(DisplayWarningFlag.DISPLAY); break;
 			}
-            switch (comboBox1.SelectedIndex)
-            {
-                case 0:
-                    config.GetConfigItem(ConfigCode.useLanguage).SetValue<UseLanguage>(UseLanguage.JAPANESE); break;
-                case 1:
-                    config.GetConfigItem(ConfigCode.useLanguage).SetValue<UseLanguage>(UseLanguage.KOREAN); break;
-                case 2:
-                    config.GetConfigItem(ConfigCode.useLanguage).SetValue<UseLanguage>(UseLanguage.CHINESE_HANS); break;
-                case 3:
-                    config.GetConfigItem(ConfigCode.useLanguage).SetValue<UseLanguage>(UseLanguage.CHINESE_HANT); break;
-            }
-            switch (comboBox6.SelectedIndex)
-            {
-                case 0:
-                    config.GetConfigItem(ConfigCode.EditorType).SetValue<TextEditorType>(TextEditorType.SAKURA); break;
-                case 1:
-                    config.GetConfigItem(ConfigCode.EditorType).SetValue<TextEditorType>(TextEditorType.TERAPAD); break;
-                case 2:
-                    config.GetConfigItem(ConfigCode.EditorType).SetValue<TextEditorType>(TextEditorType.EMEDITOR); break;
-                case 3:
-                    config.GetConfigItem(ConfigCode.EditorType).SetValue<TextEditorType>(TextEditorType.USER_SETTING); break;
-            }
+			switch (comboBox1.SelectedIndex)
+			{
+				case 0:
+					config.GetConfigItem(ConfigCode.useLanguage).SetValue<UseLanguage>(UseLanguage.JAPANESE); break;
+				case 1:
+					config.GetConfigItem(ConfigCode.useLanguage).SetValue<UseLanguage>(UseLanguage.KOREAN); break;
+				case 2:
+					config.GetConfigItem(ConfigCode.useLanguage).SetValue<UseLanguage>(UseLanguage.CHINESE_HANS); break;
+				case 3:
+					config.GetConfigItem(ConfigCode.useLanguage).SetValue<UseLanguage>(UseLanguage.CHINESE_HANT); break;
+			}
+			switch (comboBox6.SelectedIndex)
+			{
+				case 0:
+					config.GetConfigItem(ConfigCode.EditorType).SetValue<TextEditorType>(TextEditorType.SAKURA); break;
+				case 1:
+					config.GetConfigItem(ConfigCode.EditorType).SetValue<TextEditorType>(TextEditorType.TERAPAD); break;
+				case 2:
+					config.GetConfigItem(ConfigCode.EditorType).SetValue<TextEditorType>(TextEditorType.EMEDITOR); break;
+				case 3:
+					config.GetConfigItem(ConfigCode.EditorType).SetValue<TextEditorType>(TextEditorType.USER_SETTING); break;
+			}
 
-            config.GetConfigItem(ConfigCode.TextEditor).SetValue<string>(textBox1.Text);
-            config.GetConfigItem(ConfigCode.EditorArgument).SetValue<string>(textBox2.Text);
+			config.GetConfigItem(ConfigCode.TextEditor).SetValue<string>(textBox1.Text);
+			config.GetConfigItem(ConfigCode.EditorArgument).SetValue<string>(textBox2.Text);
 
 			config.SaveConfig();
 		}
@@ -483,62 +501,59 @@ namespace MinorShift.Emuera.Forms
 		{
 			if (!comboBox2.Enabled)
 				return;
-			InstalledFontCollection ifc = new InstalledFontCollection();
-			foreach (FontFamily ff in ifc.Families)
+			foreach (var ff in new InstalledFontCollection().Families)
 			{
-				if (!ff.IsStyleAvailable(FontStyle.Regular))
-					continue;
-				if (!ff.IsStyleAvailable(FontStyle.Bold))
-					continue;
-				if (!ff.IsStyleAvailable(FontStyle.Italic))
-					continue;
-				if (!ff.IsStyleAvailable(FontStyle.Strikeout))
-					continue;
-				if (!ff.IsStyleAvailable(FontStyle.Underline))
-					continue;
-				comboBox2.Items.Add(ff.Name);
+				if (ff.IsStyleAvailable(FontStyle.Regular) &&
+					ff.IsStyleAvailable(FontStyle.Bold) &&
+					ff.IsStyleAvailable(FontStyle.Italic) &&
+					ff.IsStyleAvailable(FontStyle.Strikeout) &&
+					ff.IsStyleAvailable(FontStyle.Underline))
+				{
+					comboBox2.Items.Add(ff.Name);
+				}
 			}
-			string fontname = comboBox2.Text;
-			if (!string.IsNullOrEmpty(fontname))
+
+			var selectedFontName = comboBox2.Text;
+			if (!string.IsNullOrEmpty(selectedFontName))
 			{
-				int nameIndex = comboBox2.Items.IndexOf(fontname);
-				if (nameIndex >= 0)
-					comboBox2.SelectedIndex = nameIndex;
+				int nowFontIndex = comboBox2.Items.IndexOf(selectedFontName);
+				if (nowFontIndex >= 0)
+					comboBox2.SelectedIndex = nowFontIndex;
 			}
 		}
 
-        private void button4_Click(object sender, EventArgs e)
-        {
-            openFileDialog1.InitialDirectory = @"c:\Program Files";
-            openFileDialog1.FileName = "";
-            DialogResult res = openFileDialog1.ShowDialog();
-            if (res == DialogResult.OK)
-            {
-                textBox1.Text = openFileDialog1.FileName;
-            }
-        }
-        
+		private void button4_Click(object sender, EventArgs e)
+		{
+			openFileDialog1.InitialDirectory = @"c:\Program Files";
+			openFileDialog1.FileName = "";
+			DialogResult res = openFileDialog1.ShowDialog();
+			if (res == DialogResult.OK)
+			{
+				textBox1.Text = openFileDialog1.FileName;
+			}
+		}
+
 
 		int setCheckBoxChecked(CheckBox checkbox, bool flag)
 		{
-			if(checkbox.Checked == flag)
+			if (checkbox.Checked == flag)
 				return 0;//変更不要
-			if(!checkbox.Enabled)
+			if (!checkbox.Enabled)
 				return -1;//変更したいけど許可されなかった
 			checkbox.Checked = flag;
 			return 1;//変更した
 		}
 
-        int setComboBoxChanged(ComboBox combobox, int value)
-        {
-            if (combobox.SelectedIndex == value)
-                return 0;//変更不要
-            if (!combobox.Enabled)
-                return -1;//変更したいけど許可されなかった
-            combobox.SelectedIndex = value;
-            return 1;//変更した
-        }
-		
+		int setComboBoxChanged(ComboBox combobox, int value)
+		{
+			if (combobox.SelectedIndex == value)
+				return 0;//変更不要
+			if (!combobox.Enabled)
+				return -1;//変更したいけど許可されなかった
+			combobox.SelectedIndex = value;
+			return 1;//変更した
+		}
+
 		private void button7_Click(object sender, EventArgs e)
 		{//eramaker仕様
 			bool disenabled = false;
@@ -551,10 +566,10 @@ namespace MinorShift.Emuera.Forms
 			disenabled |= setCheckBoxChecked(checkBoxCompatiLinefeedAs1739, false) < 0;
 			disenabled |= setCheckBoxChecked(checkBox12, false) < 0;
 			disenabled |= setCheckBoxChecked(checkBox25, false) < 0;
-            disenabled |= setCheckBoxChecked(checkBox9, true) < 0;
-			if(disenabled)
-                MessageBox.Show("いくつかの設定は_fixed.configにより変更を許可されていないために変更できませんでした", "設定変更不可");
-        }
+			disenabled |= setCheckBoxChecked(checkBox9, true) < 0;
+			if (disenabled)
+				MessageBox.Show("いくつかの設定は_fixed.configにより変更を許可されていないために変更できませんでした", "設定変更不可");
+		}
 
 		private void button8_Click(object sender, EventArgs e)
 		{//最新Emuera仕様 - 全部false
@@ -568,43 +583,43 @@ namespace MinorShift.Emuera.Forms
 			disenabled |= setCheckBoxChecked(checkBox12, false) < 0;
 			disenabled |= setCheckBoxChecked(checkBox25, false) < 0;
 			disenabled |= setCheckBoxChecked(checkBoxCompatiSP, false) < 0;
-            disenabled |= setCheckBoxChecked(checkBox9, false) < 0;
+			disenabled |= setCheckBoxChecked(checkBox9, false) < 0;
 			if (disenabled)
-                MessageBox.Show("いくつかの設定は_fixed.configにより変更を許可されていないために変更できませんでした", "設定変更不可");
+				MessageBox.Show("いくつかの設定は_fixed.configにより変更を許可されていないために変更できませんでした", "設定変更不可");
 		}
 
-        //互換性チェックはいじらないように変更
-        private void button5_Click(object sender, EventArgs e)
-        {//解析のユーザー向け設定（デフォルト設定と同じ）
-            bool disenabled = false;
-            //disenabled |= setCheckBoxChecked(checkBox23, true) < 0;
-            disenabled |= setCheckBoxChecked(checkBox13, false) < 0;
-            disenabled |= setComboBoxChanged(comboBoxReduceArgumentOnLoad, 0) < 0;
-            disenabled |= setComboBoxChanged(comboBox5, 1) < 0;
-            disenabled |= setCheckBoxChecked(checkBox11, true) < 0;
-            disenabled |= setComboBoxChanged(comboBox3, 0) < 0;
-            disenabled |= setComboBoxChanged(comboBox4, 0) < 0;
-            if (disenabled)
-                MessageBox.Show("いくつかの設定は_fixed.configにより変更を許可されていないために変更できませんでした", "設定変更不可");
-        }
+		//互換性チェックはいじらないように変更
+		private void button5_Click(object sender, EventArgs e)
+		{//解析のユーザー向け設定（デフォルト設定と同じ）
+			bool disenabled = false;
+			//disenabled |= setCheckBoxChecked(checkBox23, true) < 0;
+			disenabled |= setCheckBoxChecked(checkBox13, false) < 0;
+			disenabled |= setComboBoxChanged(comboBoxReduceArgumentOnLoad, 0) < 0;
+			disenabled |= setComboBoxChanged(comboBox5, 1) < 0;
+			disenabled |= setCheckBoxChecked(checkBox11, true) < 0;
+			disenabled |= setComboBoxChanged(comboBox3, 0) < 0;
+			disenabled |= setComboBoxChanged(comboBox4, 0) < 0;
+			if (disenabled)
+				MessageBox.Show("いくつかの設定は_fixed.configにより変更を許可されていないために変更できませんでした", "設定変更不可");
+		}
 
-        private void button6_Click(object sender, EventArgs e)
-        {//解析の開発者向け設定（関数名以外はしっかりチェックする）
-            bool disenabled = false;
-            //disenabled |= setCheckBoxChecked(checkBox23, true) < 0;
-            disenabled |= setCheckBoxChecked(checkBox13, true) < 0;
-            disenabled |= setComboBoxChanged(comboBoxReduceArgumentOnLoad, 2) < 0;
-            disenabled |= setComboBoxChanged(comboBox5, 0) < 0;
-            disenabled |= setCheckBoxChecked(checkBox11, true) < 0;
-            disenabled |= setComboBoxChanged(comboBox3, 0) < 0;
-            disenabled |= setComboBoxChanged(comboBox4, 0) < 0;
-            if (disenabled)
-                MessageBox.Show("いくつかの設定は_fixed.configにより変更を許可されていないために変更できませんでした", "設定変更不可");
-        }
+		private void button6_Click(object sender, EventArgs e)
+		{//解析の開発者向け設定（関数名以外はしっかりチェックする）
+			bool disenabled = false;
+			//disenabled |= setCheckBoxChecked(checkBox23, true) < 0;
+			disenabled |= setCheckBoxChecked(checkBox13, true) < 0;
+			disenabled |= setComboBoxChanged(comboBoxReduceArgumentOnLoad, 2) < 0;
+			disenabled |= setComboBoxChanged(comboBox5, 0) < 0;
+			disenabled |= setCheckBoxChecked(checkBox11, true) < 0;
+			disenabled |= setComboBoxChanged(comboBox3, 0) < 0;
+			disenabled |= setComboBoxChanged(comboBox4, 0) < 0;
+			if (disenabled)
+				MessageBox.Show("いくつかの設定は_fixed.configにより変更を許可されていないために変更できませんでした", "設定変更不可");
+		}
 
-        private void comboBox6_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            textBox2.Enabled = ((ComboBox)sender).SelectedIndex == 3;
-        }
+		private void comboBox6_SelectedIndexChanged(object sender, EventArgs e)
+		{
+			textBox2.Enabled = ((ComboBox)sender).SelectedIndex == 3;
+		}
 	}
 }

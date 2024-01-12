@@ -11,7 +11,7 @@ namespace MinorShift.Emuera.Sub
 	/// </summary>
 	internal sealed class WordCollection
 	{
-		public List<Word> Collection = new List<Word>();
+		public List<Word> Collection = [];
 		public int Pointer = 0;
 		private static Word nullToken = new NullWord();
 		public void Add(Word token)
@@ -35,8 +35,8 @@ namespace MinorShift.Emuera.Sub
 			{
 				if (Pointer >= Collection.Count)
 					return nullToken;
-				return Collection[Pointer]; 
-			} 
+				return Collection[Pointer];
+			}
 		}
 		public bool EOL { get { return Pointer >= Collection.Count; } }
 
@@ -52,39 +52,39 @@ namespace MinorShift.Emuera.Sub
 		{
 			Collection.RemoveAt(Pointer);
 		}
-		
+
 		public void SetIsMacro()
 		{
-			foreach(Word word in Collection)
+			foreach (Word word in Collection)
 			{
 				word.SetIsMacro();
 			}
 		}
-		
+
 		public WordCollection Clone()
 		{
-			WordCollection ret = new WordCollection();
-			for(int i = 0;i < this.Collection.Count;i++)
+			WordCollection ret = new();
+			for (int i = 0; i < this.Collection.Count; i++)
 			{
 				ret.Collection.Add(this.Collection[i]);
-			} 
+			}
 			return ret;
 		}
 		public WordCollection Clone(int start, int count)
 		{
-			WordCollection ret = new WordCollection();
+			WordCollection ret = new();
 			if (start > this.Collection.Count)
 				return ret;
 			int end = start + count;
 			if (end > this.Collection.Count)
 				end = this.Collection.Count;
-			for(int i = start;i < end;i++)
+			for (int i = start; i < end; i++)
 			{
 				ret.Collection.Add(this.Collection[i]);
-			} 
+			}
 			return ret;
 		}
-		
+
 	}
 }
 

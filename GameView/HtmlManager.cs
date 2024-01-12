@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using MinorShift.Emuera.Sub;
 using System.Drawing;
 using MinorShift.Emuera.GameData.Expression;
+using System.Runtime.Versioning;
 
 namespace MinorShift.Emuera.GameView
 {
@@ -45,7 +46,7 @@ namespace MinorShift.Emuera.GameView
 			repDic.Add('\'', "&apos;");
 		}
 		static readonly char[] rep = new char[] { '&', '>', '<', '\"', '\'' };
-		static readonly Dictionary<char, string> repDic = new Dictionary<char, string>();
+		static readonly Dictionary<char, string> repDic = [];
 		private sealed class HtmlAnalzeStateFontTag
 		{
 			public int Color = -1;
@@ -71,7 +72,7 @@ namespace MinorShift.Emuera.GameView
 		{
 			public bool LineHead = true;//行頭フラグ。一度もテキストが出てきてない状態
 			public FontStyle FontStyle = FontStyle.Regular;
-			public List<HtmlAnalzeStateFontTag> FonttagList = new List<HtmlAnalzeStateFontTag>();
+			public List<HtmlAnalzeStateFontTag> FonttagList = [];
 			public bool FlagNobr = false;//falseの時に</nobr>するとエラー
 			public bool FlagP = false;//falseの時に</p>するとエラー
 			public bool FlagNobrClosed = false;//trueの時に</nobr>するとエラー
@@ -123,7 +124,7 @@ namespace MinorShift.Emuera.GameView
 		{
 			if (lines == null || lines.Length == 0)
 				return "";
-			StringBuilder b = new StringBuilder();
+			StringBuilder b = new();
 			if (needPandN)
 			{
 				switch (lines[0].Align)
@@ -218,7 +219,7 @@ namespace MinorShift.Emuera.GameView
 
 				}
 			}
-			if(needPandN)
+			if (needPandN)
 			{
 				b.Append("</nobr>");
 				b.Append("</p>");
@@ -228,8 +229,8 @@ namespace MinorShift.Emuera.GameView
 
 		public static string[] HtmlTagSplit(string str)
 		{
-			List<string> strList = new List<string>();
-			StringStream st = new StringStream(str);
+			List<string> strList = [];
+			StringStream st = new(str);
 			int found;
 			while (!st.EOS)
 			{
@@ -245,7 +246,7 @@ namespace MinorShift.Emuera.GameView
 					st.CurrentPosition += found;
 				}
 				found = st.Find('>');
-				if(found < 0)
+				if (found < 0)
 					return null;
 				found++;
 				strList.Add(st.Substring(st.CurrentPosition, found));
@@ -255,7 +256,7 @@ namespace MinorShift.Emuera.GameView
 			strList.CopyTo(ret);
 			return ret;
 		}
-		
+
 		/// <summary>
 		/// htmlから表示行の作成
 		/// </summary>
@@ -265,13 +266,13 @@ namespace MinorShift.Emuera.GameView
 		/// <returns></returns>
 		public static ConsoleDisplayLine[] Html2DisplayLine(string str, StringMeasure sm, EmueraConsole console)
 		{
-			List<AConsoleDisplayPart> cssList = new List<AConsoleDisplayPart>();
-			List<ConsoleButtonString> buttonList = new List<ConsoleButtonString>();
-			StringStream st = new StringStream(str);
+			List<AConsoleDisplayPart> cssList = [];
+			List<ConsoleButtonString> buttonList = [];
+			StringStream st = new(str);
 			int found;
 			bool hasComment = str.IndexOf("<!--") >= 0;
 			bool hasReturn = str.IndexOf('\n') >= 0;
-			HtmlAnalzeState state = new HtmlAnalzeState();
+			HtmlAnalzeState state = new();
 			while (!st.EOS)
 			{
 				found = st.Find('<');
@@ -345,7 +346,7 @@ namespace MinorShift.Emuera.GameView
 			if (cssList.Count > 0)
 				buttonList.Add(cssToButton(cssList, state, console));
 
-			foreach(ConsoleButtonString button in buttonList)
+			foreach (ConsoleButtonString button in buttonList)
 			{
 				if (button != null && button.PointXisLocked)
 				{
@@ -378,7 +379,7 @@ namespace MinorShift.Emuera.GameView
 
 			int index = 0;
 			int found;
-			StringBuilder b = new StringBuilder();
+			StringBuilder b = new();
 			while (index < str.Length)
 			{
 				found = str.IndexOfAny(rep, index);
@@ -402,7 +403,7 @@ namespace MinorShift.Emuera.GameView
 			int found = str.IndexOf('&', index);
 			if (found < 0)
 				return str;
-			StringBuilder b = new StringBuilder();
+			StringBuilder b = new();
 			// &～; をひたすら置換するだけ
 			while (index < str.Length)
 			{
@@ -489,13 +490,15 @@ namespace MinorShift.Emuera.GameView
 			}
 			else
 			{
-				ret = new ConsoleButtonString(console, css);
-				ret.Title = null;
+				ret = new ConsoleButtonString(console, css)
+				{
+					Title = null
+				};
 			}
 			if (state.LastButtonTag != null)
 			{
 				ret.Title = state.LastButtonTag.ButtonTitle;
-				if(state.LastButtonTag.PointXisLocked)
+				if (state.LastButtonTag.PointXisLocked)
 				{
 					ret.LockPointX(state.LastButtonTag.PointX);
 				}
@@ -505,7 +508,7 @@ namespace MinorShift.Emuera.GameView
 
 		public static string GetColorToString(Color color)
 		{
-			StringBuilder b = new StringBuilder();
+			StringBuilder b = new();
 			b.Append("#");
 			int colorValue = color.R * 0x10000 + color.G * 0x100 + color.B;
 			b.Append(colorValue.ToString("X6"));
@@ -513,10 +516,10 @@ namespace MinorShift.Emuera.GameView
 		}
 		private static string getStringStyleStartingTag(StringStyle style)
 		{
-			bool fontChanged = !((style.Fontname == null || style.Fontname == Config.FontName)&& !style.ColorChanged && (style.ButtonColor == Config.FocusColor));
+			bool fontChanged = !((style.Fontname == null || style.Fontname == Config.FontName) && !style.ColorChanged && (style.ButtonColor == Config.FocusColor));
 			if (!fontChanged && style.FontStyle == FontStyle.Regular)
 				return "";
-			StringBuilder b = new StringBuilder();
+			StringBuilder b = new();
 			if (fontChanged)
 			{
 				b.Append("<font");
@@ -562,7 +565,7 @@ namespace MinorShift.Emuera.GameView
 			bool fontChanged = !((style.Fontname == null || style.Fontname == Config.FontName) && !style.ColorChanged && (style.ButtonColor == Config.FocusColor));
 			if (!fontChanged && style.FontStyle == FontStyle.Regular)
 				return "";
-			StringBuilder b = new StringBuilder();
+			StringBuilder b = new();
 			if (style.FontStyle != FontStyle.Regular)
 			{
 				if ((style.FontStyle & FontStyle.Bold) != FontStyle.Regular)
@@ -581,7 +584,7 @@ namespace MinorShift.Emuera.GameView
 
 		private static AConsoleDisplayPart tagAnalyze(HtmlAnalzeState state, StringStream st)
 		{
-			bool endTag = (st.Current == '/');
+			bool endTag = st.Current == '/';
 			string tag;
 			if (endTag)
 			{
@@ -606,12 +609,12 @@ namespace MinorShift.Emuera.GameView
 						state.FontStyle ^= endStyle;
 						return null;
 					case "p":
-						if ((!state.FlagP) || (state.FlagPClosed))
+						if ((!state.FlagP) || state.FlagPClosed)
 							throw new CodeEE("</p>の前に<p>がありません");
 						state.FlagPClosed = true;
 						return null;
 					case "nobr":
-						if ((!state.FlagNobr) || (state.FlagNobrClosed))
+						if ((!state.FlagNobr) || state.FlagNobrClosed)
 							throw new CodeEE("</nobr>の前に<nobr>がありません");
 						state.FlagNobrClosed = true;
 						return null;
@@ -633,7 +636,7 @@ namespace MinorShift.Emuera.GameView
 						state.FlagButton = true;
 						return null;
 					default:
-						throw new CodeEE("終了タグ</"+tag+">は解釈できません");
+						throw new CodeEE("終了タグ</" + tag + ">は解釈できません");
 				}
 				//goto error;
 			}
@@ -657,7 +660,7 @@ namespace MinorShift.Emuera.GameView
 				goto error;
 			IdentifierWord word;
 			FontStyle newStyle = FontStyle.Strikeout;
-            switch (tag.ToLower())
+			switch (tag.ToLower())
 			{
 				case "b": newStyle = FontStyle.Bold; goto case "s";
 				case "i": newStyle = FontStyle.Italic; goto case "s";
@@ -668,12 +671,12 @@ namespace MinorShift.Emuera.GameView
 					if ((state.FontStyle & newStyle) != FontStyle.Regular)
 						throw new CodeEE("<" + tag + ">が二重に使われています");
 					state.FontStyle |= newStyle;
-						return null;
+					return null;
 				case "br":
 					if (wc != null)
 						throw new CodeEE("<" + tag + ">タグにに属性が設定されています");
 					state.FlagBr = true;
-						return null;
+					return null;
 				case "nobr":
 					if (wc != null)
 						throw new CodeEE("<" + tag + ">タグに属性が設定されています");
@@ -682,7 +685,7 @@ namespace MinorShift.Emuera.GameView
 					if (state.FlagNobr)
 						throw new CodeEE("<nobr>が2度以上使われています");
 					state.FlagNobr = true;
-						return null;
+					return null;
 				case "p":
 					{
 						if (wc == null)
@@ -855,7 +858,7 @@ namespace MinorShift.Emuera.GameView
 					{
 						if (state.CurrentButtonTag != null)
 							throw new CodeEE("<button>又は<nonbutton>が入れ子にされています");
-						HtmlAnalzeStateButtonTag buttonTag = new HtmlAnalzeStateButtonTag();
+						HtmlAnalzeStateButtonTag buttonTag = new();
 						bool isButton = tag.ToLower() == "button";
 						string attrValue;
 						string value = null;
@@ -877,21 +880,21 @@ namespace MinorShift.Emuera.GameView
 								if (!isButton)
 									throw new CodeEE("<" + tag + ">タグにvalue属性が設定されています");
 								if (value != null)
-                                    throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
+									throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
 								value = attrValue;
 							}
 							else if (word.Code.Equals("title", StringComparison.OrdinalIgnoreCase))
 							{
 								if (buttonTag.ButtonTitle != null)
-										throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
+									throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
 								buttonTag.ButtonTitle = attrValue;
 							}
 							else if (word.Code.Equals("pos", StringComparison.OrdinalIgnoreCase))
 							{
-                                //throw new NotImplCodeEE();
-                                if (buttonTag.PointXisLocked)
-                                    throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
-                                if (!int.TryParse(attrValue, out int pos))
+								//throw new NotImplCodeEE();
+								if (buttonTag.PointXisLocked)
+									throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
+								if (!int.TryParse(attrValue, out int pos))
 									throw new CodeEE("<" + tag + ">タグのpos属性の属性値が数値として解釈できません");
 								buttonTag.PointX = pos;
 								buttonTag.PointXisLocked = true;
@@ -901,10 +904,10 @@ namespace MinorShift.Emuera.GameView
 						}
 						if (isButton)
 						{
-                            //if (value == null)
-                            //	throw new CodeEE("<" + tag + ">タグにvalue属性が設定されていません");
-                            buttonTag.ButtonIsInteger = (Int64.TryParse(value, out long intValue));
-                            buttonTag.ButtonValueInt = intValue;
+							//if (value == null)
+							//	throw new CodeEE("<" + tag + ">タグにvalue属性が設定されていません");
+							buttonTag.ButtonIsInteger = Int64.TryParse(value, out long intValue);
+							buttonTag.ButtonValueInt = intValue;
 							buttonTag.ButtonValueStr = value;
 						}
 						buttonTag.IsButton = value != null;
@@ -917,7 +920,7 @@ namespace MinorShift.Emuera.GameView
 					{
 						if (wc == null)
 							throw new CodeEE("<" + tag + ">タグに属性が設定されていません");
-						HtmlAnalzeStateFontTag font = new HtmlAnalzeStateFontTag();
+						HtmlAnalzeStateFontTag font = new();
 						while (!wc.EOL)
 						{
 							word = wc.Current as IdentifierWord;
@@ -959,7 +962,7 @@ namespace MinorShift.Emuera.GameView
 								//		break;
 								//	}
 								default:
-								throw new CodeEE("<" + tag + ">タグの属性名" + word.Code + "は解釈できません");
+									throw new CodeEE("<" + tag + ">タグの属性名" + word.Code + "は解釈できません");
 							}
 						}
 						//他のfontタグの内側であるなら未設定項目については外側のfontタグの設定を受け継ぐ(posは除く)
@@ -987,7 +990,7 @@ namespace MinorShift.Emuera.GameView
 
 		private static int stringToColorInt32(string str)
 		{
-			if(str.Length == 0)
+			if (str.Length == 0)
 				throw new CodeEE("色を表す単語又は#RRGGBB値が必要です");
 			int i;
 			if (str[0] == '#')
@@ -1009,7 +1012,7 @@ namespace MinorShift.Emuera.GameView
 				Color color = Color.FromName(str);
 				if (color.A == 0)//色名として解釈失敗 エラー確定
 				{
-					if(str.Equals("transparent", StringComparison.OrdinalIgnoreCase))
+					if (str.Equals("transparent", StringComparison.OrdinalIgnoreCase))
 						throw new CodeEE("無色透明(Transparent)は色として指定できません");
 					try
 					{

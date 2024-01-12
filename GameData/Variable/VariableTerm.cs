@@ -212,7 +212,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			if (!allArgIsConst)
 				for (int i = 0; i < arguments.Length; i++)
 					transporter[i] = arguments[i].GetIntValue(exm);
-			FixedVariableTerm fp = new FixedVariableTerm(Identifier);
+			FixedVariableTerm fp = new(Identifier);
 			if (transporter.Length >= 1)
 				fp.Index1 = transporter[0];
 			if (transporter.Length >= 2)
@@ -249,51 +249,51 @@ namespace MinorShift.Emuera.GameData.Variable
 			}
 			if (!Identifier.IsReference)
 				Identifier.CheckElement(transporter, canCheck);
-			if ((Identifier.CanRestructure) && (allArgIsConst))
+			if (Identifier.CanRestructure && allArgIsConst)
 				return GetValue(exm);
 			else if (allArgIsConst)
 				return new FixedVariableTerm(Identifier, transporter);
 			return this;
 		}
 
-        //以下添え字解析用の追加関数
-        public bool checkSameTerm(VariableTerm term)
-        {
-            //添え字が全部定数があることがこの関数の前提(そもそもそうでないと使い道がない)
-            if (!allArgIsConst)
-                return false;
-            if (this.Identifier.Name != term.Identifier.Name)
-                return false;
-            else
-            {
-                for (int i = 0; i < transporter.Length; i++)
-                {
-                    if (this.transporter[i] != term.transporter[i])
-                        return false;
-                }
-            }
-            return true;
-        }
+		//以下添え字解析用の追加関数
+		public bool checkSameTerm(VariableTerm term)
+		{
+			//添え字が全部定数があることがこの関数の前提(そもそもそうでないと使い道がない)
+			if (!allArgIsConst)
+				return false;
+			if (this.Identifier.Name != term.Identifier.Name)
+				return false;
+			else
+			{
+				for (int i = 0; i < transporter.Length; i++)
+				{
+					if (this.transporter[i] != term.transporter[i])
+						return false;
+				}
+			}
+			return true;
+		}
 
-        public string GetFullString()
-        {
-            //添え字が全部定数があることがこの関数の前提(IOperandTermから変数名を取れないため)
-            if (!allArgIsConst)
-                return "";
-            if (Identifier.IsArray1D)
-                return Identifier.Name + ":" + transporter[0].ToString();
-            else if (Identifier.IsArray2D)
-                return Identifier.Name + ":" + transporter[0].ToString() + ":" + transporter[1].ToString();
-            else if (Identifier.IsArray3D)
-                return Identifier.Name + ":" + transporter[0].ToString() + ":" + transporter[1].ToString() + ":" + transporter[2].ToString();
-            else
-                return Identifier.Name;
-        }
+		public string GetFullString()
+		{
+			//添え字が全部定数があることがこの関数の前提(IOperandTermから変数名を取れないため)
+			if (!allArgIsConst)
+				return "";
+			if (Identifier.IsArray1D)
+				return Identifier.Name + ":" + transporter[0].ToString();
+			else if (Identifier.IsArray2D)
+				return Identifier.Name + ":" + transporter[0].ToString() + ":" + transporter[1].ToString();
+			else if (Identifier.IsArray3D)
+				return Identifier.Name + ":" + transporter[0].ToString() + ":" + transporter[1].ToString() + ":" + transporter[2].ToString();
+			else
+				return Identifier.Name;
+		}
 	}
 
-	
-    internal sealed class FixedVariableTerm : VariableTerm
-    {
+
+	internal sealed class FixedVariableTerm : VariableTerm
+	{
 		public FixedVariableTerm(VariableToken token)
 			: base(token)
 		{
@@ -307,29 +307,29 @@ namespace MinorShift.Emuera.GameData.Variable
 			allArgIsConst = true;
 			this.Identifier = token;
 			transporter = new Int64[3];
-			for(int i = 0;i< args.Length;i++)
+			for (int i = 0; i < args.Length; i++)
 				transporter[i] = args[i];
 		}
-		public Int64 Index1{get{return transporter[0];} set{transporter[0] = value;}}
-		public Int64 Index2{get{return transporter[1];} set{transporter[1] = value;}}
-        public Int64 Index3{get{return transporter[2];} set{transporter[2] = value;}}
-        
-		
-        public override Int64 GetIntValue(ExpressionMediator exm)
-        {
+		public Int64 Index1 { get { return transporter[0]; } set { transporter[0] = value; } }
+		public Int64 Index2 { get { return transporter[1]; } set { transporter[1] = value; } }
+		public Int64 Index3 { get { return transporter[2]; } set { transporter[2] = value; } }
+
+
+		public override Int64 GetIntValue(ExpressionMediator exm)
+		{
 			try
 			{
 				return Identifier.GetIntValue(exm, transporter);
 			}
-			catch(Exception e)
+			catch (Exception e)
 			{
 				if ((e is IndexOutOfRangeException) || (e is ArgumentOutOfRangeException) || (e is OverflowException))
 					Identifier.CheckElement(transporter);
 				throw;
 			}
-        }
-        public override string GetStrValue(ExpressionMediator exm)
-        {
+		}
+		public override string GetStrValue(ExpressionMediator exm)
+		{
 			try
 			{
 				string ret = Identifier.GetStrValue(exm, transporter);
@@ -337,67 +337,67 @@ namespace MinorShift.Emuera.GameData.Variable
 					return "";
 				return ret;
 			}
-			catch(Exception e)
+			catch (Exception e)
 			{
 				if ((e is IndexOutOfRangeException) || (e is ArgumentOutOfRangeException) || (e is OverflowException))
 					Identifier.CheckElement(transporter);
 				throw;
 			}
-        }
+		}
 
 		public override void SetValue(Int64 value, ExpressionMediator exm)
-        {
+		{
 			try
 			{
 				Identifier.SetValue(value, transporter);
 			}
-			catch(Exception e)
+			catch (Exception e)
 			{
 				if ((e is IndexOutOfRangeException) || (e is ArgumentOutOfRangeException) || (e is OverflowException))
 					Identifier.CheckElement(transporter);
 				throw;
 			}
-        }
+		}
 		public override void SetValue(string value, ExpressionMediator exm)
-        {
+		{
 			try
 			{
 				Identifier.SetValue(value, transporter);
 			}
-			catch(Exception e)
+			catch (Exception e)
 			{
 				if ((e is IndexOutOfRangeException) || (e is ArgumentOutOfRangeException) || (e is OverflowException))
 					Identifier.CheckElement(transporter);
 				throw;
 			}
-        }
+		}
 
 		public override Int64 PlusValue(Int64 value, ExpressionMediator exm)
-        {
+		{
 			try
 			{
 				return Identifier.PlusValue(value, transporter);
 			}
-			catch(Exception e)
+			catch (Exception e)
 			{
 				if ((e is IndexOutOfRangeException) || (e is ArgumentOutOfRangeException) || (e is OverflowException))
 					Identifier.CheckElement(transporter);
 				throw;
 			}
-        }
-        
-        public override IOperandTerm Restructure(ExpressionMediator exm)
-        {
+		}
+
+		public override IOperandTerm Restructure(ExpressionMediator exm)
+		{
 			if (Identifier.CanRestructure)
 				return GetValue(exm);
 			return this;
-        }
-        
+		}
+
 		public void IsArrayRangeValid(Int64 index1, Int64 index2, string funcName, Int64 i1, Int64 i2)
 		{
 			Identifier.IsArrayRangeValid(transporter, index1, index2, funcName, i1, i2);
 		}
-    }
+	}
 
 
 	/// <summary>
@@ -439,7 +439,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			return this;
 		}
 
-	
+
 
 	}
 }

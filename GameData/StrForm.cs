@@ -32,27 +32,29 @@ namespace MinorShift.Emuera.GameData
 			VariableToken nameID = GlobalStatic.VariableData.GetSystemVariableToken("NAME");
 			VariableToken callnameID = GlobalStatic.VariableData.GetSystemVariableToken("CALLNAME");
 			IOperandTerm[] zeroArg = new IOperandTerm[] { new SingleTerm(0) };
-			VariableTerm target = new VariableTerm(GlobalStatic.VariableData.GetSystemVariableToken("TARGET"), zeroArg);
-			VariableTerm master = new VariableTerm(GlobalStatic.VariableData.GetSystemVariableToken("MASTER"), zeroArg);
-			VariableTerm player = new VariableTerm(GlobalStatic.VariableData.GetSystemVariableToken("PLAYER"), zeroArg);
-			VariableTerm assi = new VariableTerm(GlobalStatic.VariableData.GetSystemVariableToken("ASSI"), zeroArg);
+			VariableTerm target = new(GlobalStatic.VariableData.GetSystemVariableToken("TARGET"), zeroArg);
+			VariableTerm master = new(GlobalStatic.VariableData.GetSystemVariableToken("MASTER"), zeroArg);
+			VariableTerm player = new(GlobalStatic.VariableData.GetSystemVariableToken("PLAYER"), zeroArg);
+			VariableTerm assi = new(GlobalStatic.VariableData.GetSystemVariableToken("ASSI"), zeroArg);
 
-			VariableTerm nametarget = new VariableTerm(nameID, new IOperandTerm[] { target });
-			VariableTerm callnamemaster = new VariableTerm(callnameID, new IOperandTerm[] { master });
-			VariableTerm callnameplayer = new VariableTerm(callnameID, new IOperandTerm[] { player });
-			VariableTerm nameassi = new VariableTerm(nameID, new IOperandTerm[] { assi });
-			VariableTerm callnametarget = new VariableTerm(callnameID, new IOperandTerm[] { target });
+			VariableTerm nametarget = new(nameID, new IOperandTerm[] { target });
+			VariableTerm callnamemaster = new(callnameID, new IOperandTerm[] { master });
+			VariableTerm callnameplayer = new(callnameID, new IOperandTerm[] { player });
+			VariableTerm nameassi = new(nameID, new IOperandTerm[] { assi });
+			VariableTerm callnametarget = new(callnameID, new IOperandTerm[] { target });
 			NameTarget = new FunctionMethodTerm(formatPercent, new IOperandTerm[] { nametarget, null, null });
-            CallnameMaster = new FunctionMethodTerm(formatPercent, new IOperandTerm[] { callnamemaster, null, null });
-            CallnamePlayer = new FunctionMethodTerm(formatPercent, new IOperandTerm[] { callnameplayer, null, null });
-            NameAssi = new FunctionMethodTerm(formatPercent, new IOperandTerm[] { nameassi, null, null });
-            CallnameTarget = new FunctionMethodTerm(formatPercent, new IOperandTerm[] { callnametarget, null, null });
+			CallnameMaster = new FunctionMethodTerm(formatPercent, new IOperandTerm[] { callnamemaster, null, null });
+			CallnamePlayer = new FunctionMethodTerm(formatPercent, new IOperandTerm[] { callnameplayer, null, null });
+			NameAssi = new FunctionMethodTerm(formatPercent, new IOperandTerm[] { nameassi, null, null });
+			CallnameTarget = new FunctionMethodTerm(formatPercent, new IOperandTerm[] { callnametarget, null, null });
 		}
 
 		public static StrForm FromWordToken(StrFormWord wt)
 		{
-			StrForm ret = new StrForm();
-			ret.strs = wt.Strs;
+			StrForm ret = new()
+			{
+				strs = wt.Strs
+			};
 			IOperandTerm[] termArray = new IOperandTerm[wt.SubWords.Length];
 			for (int i = 0; i < wt.SubWords.Length; i++)
 			{
@@ -80,20 +82,20 @@ namespace MinorShift.Emuera.GameData
 					}
 					throw new ExeEE("何かおかしい");
 				}
-                WordCollection wc;
+				WordCollection wc;
 				IOperandTerm operand;
 				YenAtSubWord yenat = SWT as YenAtSubWord;
 				if (yenat != null)
 				{
 					wc = yenat.Words;
-                    if (wc != null)
-                    {
-                        operand = ExpressionParser.ReduceIntegerTerm(wc, TermEndWith.EoL);
-                        if (!wc.EOL)
-                            throw new CodeEE("三項演算子\\@の第一オペランドが異常です");
-                    }
-                    else
-                        operand = new SingleTerm(0);
+					if (wc != null)
+					{
+						operand = ExpressionParser.ReduceIntegerTerm(wc, TermEndWith.EoL);
+						if (!wc.EOL)
+							throw new CodeEE("三項演算子\\@の第一オペランドが異常です");
+					}
+					else
+						operand = new SingleTerm(0);
 					IOperandTerm left = new StrFormTerm(StrForm.FromWordToken(yenat.Left));
 					IOperandTerm right;
 					if (yenat.Right == null)
@@ -103,37 +105,37 @@ namespace MinorShift.Emuera.GameData
 					termArray[i] = new FunctionMethodTerm(formatYenAt, new IOperandTerm[] { operand, left, right });
 					continue;
 				}
-                wc = SWT.Words;
-                operand = ExpressionParser.ReduceExpressionTerm(wc, TermEndWith.Comma);
-                if (operand == null)
-                {
-                    if (SWT is CurlyBraceSubWord)
-                        throw new CodeEE("{}の中に式が存在しません");
-                    else
-                        throw new CodeEE("%%の中に式が存在しません");
-                }
-                IOperandTerm second = null;
+				wc = SWT.Words;
+				operand = ExpressionParser.ReduceExpressionTerm(wc, TermEndWith.Comma);
+				if (operand == null)
+				{
+					if (SWT is CurlyBraceSubWord)
+						throw new CodeEE("{}の中に式が存在しません");
+					else
+						throw new CodeEE("%%の中に式が存在しません");
+				}
+				IOperandTerm second = null;
 				SingleTerm third = null;
 				wc.ShiftNext();
-                if (!wc.EOL)
-                {
-                    second = ExpressionParser.ReduceIntegerTerm(wc, TermEndWith.Comma);
+				if (!wc.EOL)
+				{
+					second = ExpressionParser.ReduceIntegerTerm(wc, TermEndWith.Comma);
 
-                    wc.ShiftNext();
-                    if (!wc.EOL)
-                    {
-                        IdentifierWord id = wc.Current as IdentifierWord;
-                        if (id == null)
-                            throw new CodeEE("','の後にRIGHT又はLEFTがありません");
-                        if (string.Equals(id.Code, "LEFT", Config.SCVariable))//標準RIGHT
-                            third = new SingleTerm(1);
-                        else if (!string.Equals(id.Code, "RIGHT", Config.SCVariable))
-                            throw new CodeEE("','の後にRIGHT又はLEFT以外の単語があります");
-                        wc.ShiftNext();
-                    }
-                    if (!wc.EOL)
-                        throw new CodeEE("RIGHT又はLEFTの後に余分な文字があります");
-                }
+					wc.ShiftNext();
+					if (!wc.EOL)
+					{
+						IdentifierWord id = wc.Current as IdentifierWord;
+						if (id == null)
+							throw new CodeEE("','の後にRIGHT又はLEFTがありません");
+						if (string.Equals(id.Code, "LEFT", Config.SCVariable))//標準RIGHT
+							third = new SingleTerm(1);
+						else if (!string.Equals(id.Code, "RIGHT", Config.SCVariable))
+							throw new CodeEE("','の後にRIGHT又はLEFT以外の単語があります");
+						wc.ShiftNext();
+					}
+					if (!wc.EOL)
+						throw new CodeEE("RIGHT又はLEFTの後に余分な文字があります");
+				}
 				if (SWT is CurlyBraceSubWord)
 				{
 					if (operand.GetOperandType() != typeof(Int64))
@@ -145,7 +147,7 @@ namespace MinorShift.Emuera.GameData
 					throw new CodeEE("%%の中の式が文字列式ではありません");
 				termArray[i] = new FunctionMethodTerm(formatPercent, new IOperandTerm[] { operand, second, third });
 			}
-            ret.terms = termArray;
+			ret.terms = termArray;
 			return ret;
 		}
 		#endregion
@@ -154,13 +156,13 @@ namespace MinorShift.Emuera.GameData
 		{
 			get
 			{
-				return (strs.Length == 1);
+				return strs.Length == 1;
 			}
 		}
 
 		public IOperandTerm GetIOperandTerm()
 		{
-			if((strs.Length == 2) && (strs[0].Length == 0) && (strs[1].Length == 0))
+			if ((strs.Length == 2) && (strs[0].Length == 0) && (strs[1].Length == 0))
 				return terms[0];
 			return null;
 		}
@@ -180,8 +182,8 @@ namespace MinorShift.Emuera.GameData
 			}
 			if (!canRestructure)
 				return;
-			List<string> strList = new List<string>();
-			List<IOperandTerm> termList = new List<IOperandTerm>();
+			List<string> strList = [];
+			List<IOperandTerm> termList = [];
 			strList.AddRange(strs);
 			termList.AddRange(terms);
 			for (int i = 0; i < termList.Count; i++)
@@ -206,7 +208,7 @@ namespace MinorShift.Emuera.GameData
 		{
 			if (strs.Length == 1)
 				return strs[0];
-			StringBuilder builder = new StringBuilder(100);
+			StringBuilder builder = new(100);
 			for (int i = 0; i < strs.Length - 1; i++)
 			{
 				builder.Append(strs[i]);

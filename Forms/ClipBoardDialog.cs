@@ -24,7 +24,7 @@ namespace MinorShift.Emuera.Forms
 
         public void Setup(EmueraConsole console)
         {
-            StringBuilder builder = new StringBuilder();
+            StringBuilder builder = new();
             console.GetDisplayStrings(builder);
             textBox1.Text = builder.ToString();
         }

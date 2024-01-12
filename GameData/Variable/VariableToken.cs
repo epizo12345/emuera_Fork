@@ -160,42 +160,42 @@ namespace MinorShift.Emuera.GameData.Variable
 		{
 			get
 			{
-				return ((Code & VariableCode.__CHARACTER_DATA__) == VariableCode.__CHARACTER_DATA__);
+				return (Code & VariableCode.__CHARACTER_DATA__) == VariableCode.__CHARACTER_DATA__;
 			}
 		}
 		public bool IsInteger
 		{
 			get
 			{
-				return ((Code & VariableCode.__INTEGER__) == VariableCode.__INTEGER__);
+				return (Code & VariableCode.__INTEGER__) == VariableCode.__INTEGER__;
 			}
 		}
 		public bool IsString
 		{
 			get
 			{
-				return ((Code & VariableCode.__STRING__) == VariableCode.__STRING__);
+				return (Code & VariableCode.__STRING__) == VariableCode.__STRING__;
 			}
 		}
 		public bool IsArray1D
 		{
 			get
 			{
-				return ((Code & VariableCode.__ARRAY_1D__) == VariableCode.__ARRAY_1D__);
+				return (Code & VariableCode.__ARRAY_1D__) == VariableCode.__ARRAY_1D__;
 			}
 		}
 		public bool IsArray2D
 		{
 			get
 			{
-				return ((Code & VariableCode.__ARRAY_2D__) == VariableCode.__ARRAY_2D__);
+				return (Code & VariableCode.__ARRAY_2D__) == VariableCode.__ARRAY_2D__;
 			}
 		}
 		public bool IsArray3D
 		{
 			get
 			{
-				return ((Code & VariableCode.__ARRAY_3D__) == VariableCode.__ARRAY_3D__);
+				return (Code & VariableCode.__ARRAY_3D__) == VariableCode.__ARRAY_3D__;
 			}
 		}
 		/// <summary>
@@ -205,30 +205,30 @@ namespace MinorShift.Emuera.GameData.Variable
 		{
 			get
 			{
-				return ((Code & VariableCode.__UNCHANGEABLE__) == VariableCode.__UNCHANGEABLE__);
+				return (Code & VariableCode.__UNCHANGEABLE__) == VariableCode.__UNCHANGEABLE__;
 			}
 		}
 		public bool IsCalc
 		{
 			get
 			{
-				return ((Code & VariableCode.__CALC__) == VariableCode.__CALC__);
+				return (Code & VariableCode.__CALC__) == VariableCode.__CALC__;
 			}
 		}
 		public bool IsLocal
 		{
 			get
 			{
-				return ((Code & VariableCode.__LOCAL__) == VariableCode.__LOCAL__);
+				return (Code & VariableCode.__LOCAL__) == VariableCode.__LOCAL__;
 			}
 		}
-        public bool CanForbid
-        {
-            get
-            {
-                return ((Code & VariableCode.__CAN_FORBID__) == VariableCode.__CAN_FORBID__);
-            }
-        }
+		public bool CanForbid
+		{
+			get
+			{
+				return (Code & VariableCode.__CAN_FORBID__) == VariableCode.__CAN_FORBID__;
+			}
+		}
 		public bool IsForbid { get; protected set; }
 		public bool IsPrivate { get; protected set; }
 		public bool IsGlobal { get; protected set; }
@@ -412,7 +412,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			CanRestructure = false;
 			IsStatic = !data.Private;
 			IsReference = true;
-			arrayList = new List<Array>();
+			arrayList = [];
 			IsForbid = false;
 		}
 		protected List<Array> arrayList = null;
@@ -742,7 +742,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				array = varData.DataIntegerArray3D[VarCodeInt];
 				IsForbid = array.Length == 0;
 			}
-			Int64[, ,] array;
+			Int64[,,] array;
 			public override Int64 GetIntValue(ExpressionMediator exm, Int64[] arguments)
 			{
 				return array[arguments[0], arguments[1], arguments[2]];
@@ -959,7 +959,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				array = varData.DataStringArray3D[VarCodeInt];
 				IsForbid = array.Length == 0;
 			}
-			string[, ,] array;
+			string[,,] array;
 			public override string GetStrValue(ExpressionMediator exm, Int64[] arguments)
 			{
 				return array[arguments[0], arguments[1], arguments[2]];
@@ -1691,19 +1691,19 @@ namespace MinorShift.Emuera.GameData.Variable
 			}
 		}
 
-        private sealed class EMUERA_VERSIONToken : PseudoVariableToken
-        {
-            public EMUERA_VERSIONToken(VariableCode varCode, VariableData varData)
-                :base(varCode, varData)
-            {
-                CanRestructure = true;
-            }
-            public override string GetStrValue(ExpressionMediator exm, long[] arguments)
-            {
-                return GlobalStatic.MainWindow.InternalEmueraVer;
-            }
+		private sealed class EMUERA_VERSIONToken : PseudoVariableToken
+		{
+			public EMUERA_VERSIONToken(VariableCode varCode, VariableData varData)
+				: base(varCode, varData)
+			{
+				CanRestructure = true;
+			}
+			public override string GetStrValue(ExpressionMediator exm, long[] arguments)
+			{
+				return GlobalStatic.MainWindow.InternalEmueraVer;
+			}
 
-        }
+		}
 
 		#endregion
 		#region LOCAL
@@ -1957,7 +1957,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				IsStatic = true;
 				array = new Int64[sizes[0], sizes[1], sizes[2]];
 			}
-			Int64[, ,] array = null;
+			Int64[,,] array = null;
 			public override void SetDefault()
 			{
 				Array.Clear(array, 0, totalSize);
@@ -2099,7 +2099,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				IsStatic = true;
 				array = new string[sizes[0], sizes[1], sizes[2]];
 			}
-			string[, ,] array = null;
+			string[,,] array = null;
 			public override void SetDefault()
 			{
 				Array.Clear(array, 0, totalSize);
@@ -2145,7 +2145,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			{
 				int[] sizes = data.Lengths;
 				IsStatic = false;
-				arrayList = new List<Int64[]>();
+				arrayList = [];
 				defArray = data.DefaultInt;
 			}
 			readonly List<Int64[]> arrayList = null;
@@ -2216,7 +2216,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			{
 				int[] sizes = data.Lengths;
 				IsStatic = false;
-				arrayList = new List<Int64[,]>();
+				arrayList = [];
 			}
 			readonly List<Int64[,]> arrayList = null;
 			Int64[,] array = null;
@@ -2282,10 +2282,10 @@ namespace MinorShift.Emuera.GameData.Variable
 			{
 				int[] sizes = data.Lengths;
 				IsStatic = false;
-				arrayList = new List<Int64[, ,]>();
+				arrayList = [];
 			}
-			readonly List<Int64[, ,]> arrayList = null;
-			Int64[, ,] array = null;
+			readonly List<Int64[,,]> arrayList = null;
+			Int64[,,] array = null;
 			//int counter = 0;
 			public override void SetDefault() { }
 			public override Int64 GetIntValue(ExpressionMediator exm, Int64[] arguments)
@@ -2352,7 +2352,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			{
 				int[] sizes = data.Lengths;
 				IsStatic = false;
-				arrayList = new List<string[]>();
+				arrayList = [];
 				defArray = data.DefaultStr;
 			}
 			//int counter = 0;
@@ -2417,7 +2417,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			{
 				int[] sizes = data.Lengths;
 				IsStatic = false;
-				arrayList = new List<string[,]>();
+				arrayList = [];
 			}
 			//int counter = 0;
 			readonly List<string[,]> arrayList = null;
@@ -2482,11 +2482,11 @@ namespace MinorShift.Emuera.GameData.Variable
 			{
 				int[] sizes = data.Lengths;
 				IsStatic = false;
-				arrayList = new List<string[, ,]>();
+				arrayList = [];
 			}
 			//int counter = 0;
-			readonly List<string[, ,]> arrayList = null;
-			string[, ,] array = null;
+			readonly List<string[,,]> arrayList = null;
+			string[,,] array = null;
 			public override void SetDefault() { }
 
 			public override string GetStrValue(ExpressionMediator exm, Int64[] arguments)
@@ -2663,14 +2663,14 @@ namespace MinorShift.Emuera.GameData.Variable
 			{
 				if (array == null)
 					throw new CodeEE("参照型変数" + varName + "は何も参照していません");
-				return ((Int64[, ,])array)[arguments[0], arguments[1], arguments[2]];
+				return ((Int64[,,])array)[arguments[0], arguments[1], arguments[2]];
 			}
 
 			public override void SetValue(Int64 value, Int64[] arguments)
 			{
 				if (array == null)
 					throw new CodeEE("参照型変数" + varName + "は何も参照していません");
-				((Int64[, ,])array)[arguments[0], arguments[1], arguments[2]] = value;
+				((Int64[,,])array)[arguments[0], arguments[1], arguments[2]] = value;
 			}
 
 			public override void SetValue(Int64[] values, Int64[] arguments)
@@ -2680,7 +2680,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				int start = (int)arguments[2];
 				int end = start + values.Length;
 				for (int i = start; i < end; i++)
-					((Int64[, ,])array)[arguments[0], arguments[1], i] = values[i - start];
+					((Int64[,,])array)[arguments[0], arguments[1], i] = values[i - start];
 			}
 
 			public override void SetValueAll(long value, int start, int end, int charaPos)
@@ -2693,7 +2693,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				for (int i = 0; i < a1; i++)
 					for (int j = 0; j < a2; j++)
 						for (int k = 0; k < a3; k++)
-							((Int64[, ,])array)[i, j, k] = value;
+							((Int64[,,])array)[i, j, k] = value;
 			}
 
 
@@ -2701,8 +2701,8 @@ namespace MinorShift.Emuera.GameData.Variable
 			{
 				if (array == null)
 					throw new CodeEE("参照型変数" + varName + "は何も参照していません");
-				((Int64[, ,])array)[arguments[0], arguments[1], arguments[2]] += value;
-				return ((Int64[, ,])array)[arguments[0], arguments[1], arguments[2]];
+				((Int64[,,])array)[arguments[0], arguments[1], arguments[2]] += value;
+				return ((Int64[,,])array)[arguments[0], arguments[1], arguments[2]];
 			}
 
 		}
@@ -2803,14 +2803,14 @@ namespace MinorShift.Emuera.GameData.Variable
 			{
 				if (array == null)
 					throw new CodeEE("参照型変数" + varName + "は何も参照していません");
-				return ((string[, ,])array)[arguments[0], arguments[1], arguments[2]];
+				return ((string[,,])array)[arguments[0], arguments[1], arguments[2]];
 			}
 
 			public override void SetValue(string value, Int64[] arguments)
 			{
 				if (array == null)
 					throw new CodeEE("参照型変数" + varName + "は何も参照していません");
-				((string[, ,])array)[arguments[0], arguments[1], arguments[2]] = value;
+				((string[,,])array)[arguments[0], arguments[1], arguments[2]] = value;
 			}
 
 			public override void SetValue(string[] values, Int64[] arguments)
@@ -2820,7 +2820,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				int start = (int)arguments[2];
 				int end = start + values.Length;
 				for (int i = start; i < end; i++)
-					((string[, ,])array)[arguments[0], arguments[1], i] = values[i - start];
+					((string[,,])array)[arguments[0], arguments[1], i] = values[i - start];
 			}
 
 			public override void SetValueAll(string value, int start, int end, int charaPos)
@@ -2833,7 +2833,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				for (int i = 0; i < a1; i++)
 					for (int j = 0; j < a2; j++)
 						for (int k = 0; k < a3; k++)
-							((string[, ,])array)[i, j, k] = value;
+							((string[,,])array)[i, j, k] = value;
 			}
 
 		}

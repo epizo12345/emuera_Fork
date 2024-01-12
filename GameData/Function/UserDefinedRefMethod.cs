@@ -15,8 +15,10 @@ namespace MinorShift.Emuera.GameData.Function
 
 		internal static UserDefinedRefMethod Create(UserDefinedFunctionData funcData)
 		{
-			UserDefinedRefMethod ret = new UserDefinedRefMethod();
-			ret.Name = funcData.Name;
+			UserDefinedRefMethod ret = new()
+			{
+				Name = funcData.Name
+			};
 			if (funcData.TypeIsStr)
 				ret.RetType = typeof(string);
 			else
@@ -55,7 +57,7 @@ namespace MinorShift.Emuera.GameData.Function
 				}
 				else
 				{
-					if (vToken.IsInteger && ArgTypeList[i] !=  UserDifinedFunctionDataArgType.Int)
+					if (vToken.IsInteger && ArgTypeList[i] != UserDifinedFunctionDataArgType.Int)
 						return false;
 					if (vToken.IsString && ArgTypeList[i] != UserDifinedFunctionDataArgType.Str)
 						return false;

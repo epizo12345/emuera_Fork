@@ -53,7 +53,7 @@ namespace MinorShift.Emuera.Content
 		//	//locked = false;
 		//}
 
-#region Bitmap書き込み・作成
+		#region Bitmap書き込み・作成
 
 		/// <summary>
 		/// GCREATE(int ID, int width, int height)
@@ -67,13 +67,13 @@ namespace MinorShift.Emuera.Content
 			Bitmap = new Bitmap(x, y, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 			size = new Size(x, y);
 			g = Graphics.FromImage(Bitmap);
-            //こうしないとbmpファイルの拡縮が綺麗に出ない
-            g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
+			//こうしないとbmpファイルの拡縮が綺麗に出ない
+			g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
 			g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bicubic;
 
-        }
+		}
 
-        internal void GCreateFromF(Bitmap bmp, bool useGDI)
+		internal void GCreateFromF(Bitmap bmp, bool useGDI)
 		{
 			if (useGDI)
 				throw new NotImplementedException();
@@ -82,16 +82,16 @@ namespace MinorShift.Emuera.Content
 			size = new Size(bmp.Width, bmp.Height);
 			g = Graphics.FromImage(Bitmap);
 			g.DrawImage(bmp, 0, 0, bmp.Width, bmp.Height);
-            //こうしないとbmpファイルの拡縮が綺麗に出ない
-            g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
-            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bicubic;
-        }
+			//こうしないとbmpファイルの拡縮が綺麗に出ない
+			g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
+			g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bicubic;
+		}
 
-        /// <summary>
-        /// GCLEAR(int ID, int cARGB)
-        /// エラーチェックは呼び出し元でのみ行う
-        /// </summary>
-        public void GClear(Color c)
+		/// <summary>
+		/// GCLEAR(int ID, int cARGB)
+		/// エラーチェックは呼び出し元でのみ行う
+		/// </summary>
+		public void GClear(Color c)
 		{
 			if (g == null)
 				throw new NullReferenceException();
@@ -115,7 +115,7 @@ namespace MinorShift.Emuera.Content
 			}
 			else
 			{
-				using (SolidBrush b = new SolidBrush(Config.ForeColor))
+				using (SolidBrush b = new(Config.ForeColor))
 					g.DrawString(text, usingFont, b, x, y);
 			}
 		}
@@ -132,11 +132,11 @@ namespace MinorShift.Emuera.Content
 				usingFont = Config.Font;
 			if (brush != null)
 			{
-				g.DrawString(text, usingFont, brush, new RectangleF(x,y,width,height));
+				g.DrawString(text, usingFont, brush, new RectangleF(x, y, width, height));
 			}
 			else
 			{
-				using (SolidBrush b = new SolidBrush(Config.ForeColor))
+				using (SolidBrush b = new(Config.ForeColor))
 					g.DrawString(text, usingFont, b, new RectangleF(x, y, width, height));
 			}
 		}
@@ -155,7 +155,7 @@ namespace MinorShift.Emuera.Content
 			}
 			else
 			{
-				using (Pen p = new Pen(Config.ForeColor))
+				using (Pen p = new(Config.ForeColor))
 					g.DrawRectangle(p, rect);
 			}
 		}
@@ -174,7 +174,7 @@ namespace MinorShift.Emuera.Content
 			}
 			else
 			{
-				using (SolidBrush b = new SolidBrush(Config.BackColor))
+				using (SolidBrush b = new(Config.BackColor))
 					g.FillRectangle(b, rect);
 			}
 		}
@@ -198,8 +198,8 @@ namespace MinorShift.Emuera.Content
 		{
 			if (g == null)
 				throw new NullReferenceException();
-			ImageAttributes imageAttributes = new ImageAttributes();
-			ColorMatrix colorMatrix = new ColorMatrix(cm);
+			ImageAttributes imageAttributes = new();
+			ColorMatrix colorMatrix = new(cm);
 			imageAttributes.SetColorMatrix(colorMatrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
 
 			img.GraphicsDraw(g, destRect, imageAttributes);
@@ -227,9 +227,9 @@ namespace MinorShift.Emuera.Content
 			if (g == null)
 				throw new NullReferenceException();
 			Bitmap src = srcGra.GetBitmap();
-			ImageAttributes imageAttributes = new ImageAttributes();
-			ColorMatrix colorMatrix = new ColorMatrix(cm);
-			imageAttributes.SetColorMatrix(colorMatrix, ColorMatrixFlag.Default,ColorAdjustType.Bitmap);
+			ImageAttributes imageAttributes = new();
+			ColorMatrix colorMatrix = new(cm);
+			imageAttributes.SetColorMatrix(colorMatrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
 			//g.DrawImage(img.Bitmap, destRect, srcRect, GraphicsUnit.Pixel, imageAttributes);なんでこのパターンないのさ
 			g.DrawImage(src, destRect, srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height, GraphicsUnit.Pixel, imageAttributes);
 
@@ -250,7 +250,7 @@ namespace MinorShift.Emuera.Content
 			//Rectangle destRect = new Rectangle(destPoint.X, destPoint.Y, srcGra.Width, srcGra.Height);
 
 			System.Drawing.Imaging.BitmapData bmpData =
-				destImg.LockBits(new Rectangle(0,0, destImg.Width,destImg.Height),
+				destImg.LockBits(new Rectangle(0, 0, destImg.Width, destImg.Height),
 				System.Drawing.Imaging.ImageLockMode.ReadWrite,
 				PixelFormat.Format32bppArgb);
 			try
@@ -332,7 +332,7 @@ namespace MinorShift.Emuera.Content
 				throw new Exception();//変な形式のが送られてくることはありえないはずだが一応
 			byte[] pixels = new byte[bmpData.Stride * bmp.Height];
 			try
-			{ 
+			{
 				IntPtr ptr = bmpData.Scan0;
 				System.Runtime.InteropServices.Marshal.Copy(ptr, pixels, 0, pixels.Length);
 			}
@@ -356,7 +356,7 @@ namespace MinorShift.Emuera.Content
 			int h = Bitmap.Height;
 			if (xstart + w > array.GetLength(0) || ystart + h > array.GetLength(1))
 				return false;
-			Rectangle rect = new Rectangle(0, 0, w, h);
+			Rectangle rect = new(0, 0, w, h);
 			System.Drawing.Imaging.BitmapData bmpData =
 				Bitmap.LockBits(rect, System.Drawing.Imaging.ImageLockMode.ReadOnly,
 				PixelFormat.Format32bppArgb);
@@ -406,7 +406,7 @@ namespace MinorShift.Emuera.Content
 					rgbValues[i++] = (byte)((c >> 24) & 0xFF);//A
 				}
 			}
-			Rectangle rect = new Rectangle(0, 0, w, h);
+			Rectangle rect = new(0, 0, w, h);
 			System.Drawing.Imaging.BitmapData bmpData =
 				Bitmap.LockBits(rect, System.Drawing.Imaging.ImageLockMode.WriteOnly,
 				PixelFormat.Format32bppArgb);
@@ -415,8 +415,8 @@ namespace MinorShift.Emuera.Content
 			Bitmap.UnlockBits(bmpData);
 			return true;
 		}
-#endregion
-#region Bitmap読み込み・削除
+		#endregion
+		#region Bitmap読み込み・削除
 		/// <summary>
 		/// 未作成ならエラー
 		/// </summary>
@@ -488,13 +488,13 @@ namespace MinorShift.Emuera.Content
 			this.GDispose();
 		}
 
-        ~GraphicsImage()
-        {
-            Dispose();
-        }
-#endregion
+		~GraphicsImage()
+		{
+			Dispose();
+		}
+		#endregion
 
-#region 状態判定（Bitmap読み書きを伴わない）
+		#region 状態判定（Bitmap読み書きを伴わない）
 		public override bool IsCreated { get { return g != null; } }
 		/// <summary>
 		/// int GWIDTH(int ID)
@@ -508,7 +508,7 @@ namespace MinorShift.Emuera.Content
 
 
 
-#endregion
+		#endregion
 
 
 	}

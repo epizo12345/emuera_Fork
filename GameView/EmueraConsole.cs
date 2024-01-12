@@ -18,8 +18,6 @@ using MinorShift.Emuera.Content;
 namespace MinorShift.Emuera.GameView
 {
 	//入出力待ちの状況。
-	//難読化用属性。enum.ToString()やenum.Parse()を行うなら(Exclude=true)にすること。
-	[global::System.Reflection.Obfuscation(Exclude=false)]
 	internal enum ConsoleState
 	{
 		Initializing = 0,
@@ -45,18 +43,17 @@ namespace MinorShift.Emuera.GameView
 		//WaitOneStringWithTimer = 17,
 		//WaitAnyKey = 18,
 
-    }
+	}
 
-	//難読化用属性。enum.ToString()やenum.Parse()を行うなら(Exclude=true)にすること。
-	[global::System.Reflection.Obfuscation(Exclude=false)]
 	internal enum ConsoleRedraw
 	{
 		None = 0,
 		Normal = 1,
 	}
 
-	internal sealed partial class EmueraConsole :IDisposable
+	internal sealed partial class EmueraConsole : IDisposable
 	{
+
 		public EmueraConsole(MainWindow parent)
 		{
 			window = parent;
@@ -66,22 +63,26 @@ namespace MinorShift.Emuera.GameView
 			state = ConsoleState.Initializing;
 			if (Config.FPS > 0)
 				msPerFrame = 1000 / (uint)Config.FPS;
-			displayLineList = new List<ConsoleDisplayLine>();
+			displayLineList = [];
 			printBuffer = new PrintStringBuffer(this);
 
-			timer = new Timer();
-			timer.Enabled = false;
+			timer = new Timer
+			{
+				Enabled = false
+			};
 			timer.Tick += new EventHandler(tickTimer);
 			timer.Interval = 10;
 			CBG_Clear();//文字列描画用ダミー追加
 
-			redrawTimer = new Timer();
-			redrawTimer.Enabled = false;//TODO:1824アニメ用再描画タイマー有効化関数の追加
+			redrawTimer = new Timer
+			{
+				Enabled = false//TODO:1824アニメ用再描画タイマー有効化関数の追加
+			};
 			redrawTimer.Tick += new EventHandler(tickRedrawTimer);
 			redrawTimer.Interval = 10;
-        }
-#region 1823 cbg関連
-		private readonly List<ClientBackGroundImage> cbgList = new List<ClientBackGroundImage>();
+		}
+		#region 1823 cbg関連
+		private readonly List<ClientBackGroundImage> cbgList = [];
 		private GraphicsImage cbgButtonMap = null;
 		private int selectingCBGButtonInt = -1;
 		private int lastSelectingCBGButtonInt = -1;
@@ -113,7 +114,7 @@ namespace MinorShift.Emuera.GameView
 		}
 		public void CBG_Clear()
 		{
-			foreach(ClientBackGroundImage cimg in cbgList)
+			foreach (ClientBackGroundImage cimg in cbgList)
 			{
 				//使い捨て無名Imageを一応disposeしておく
 				if (cimg.Img != null && cimg.Img.Name.Length == 0)
@@ -128,7 +129,7 @@ namespace MinorShift.Emuera.GameView
 		{
 			if (zmin > zmax)
 				return;
-			for (int i = 0; i < cbgList.Count;i++)
+			for (int i = 0; i < cbgList.Count; i++)
 			{
 				ClientBackGroundImage cimg = cbgList[i];
 				if (cimg.zdepth < zmin || cimg.zdepth > zmax || cimg.zdepth == 0)//0はダミーなので削除しない
@@ -178,10 +179,12 @@ namespace MinorShift.Emuera.GameView
 				return false;
 			if (zdepth == 0)
 				throw new ArgumentOutOfRangeException();
-			ClientBackGroundImage cbg = new ClientBackGroundImage(zdepth);
-			cbg.Img = image;
-			cbg.x = x;
-			cbg.y = y;
+			ClientBackGroundImage cbg = new(zdepth)
+			{
+				Img = image,
+				x = x,
+				y = y
+			};
 			//cbg.zdepth = zdepth;
 			cbgList.Add(cbg);
 			cbgList.Sort();
@@ -204,25 +207,27 @@ namespace MinorShift.Emuera.GameView
 		{
 			if (zdepth == 0)
 				throw new ArgumentOutOfRangeException();
-			ClientBackGroundImage cbg = new ClientBackGroundImage(zdepth);
-			cbg.Img = imageN;
-			cbg.ImgB = imageB;
-			cbg.x = x;
-			cbg.y = y;
-			//cbg.zdepth = zdepth;
-			cbg.isButton = true;
-			cbg.buttonValue = buttonValue;
-			cbg.tooltipString = tooltip;
+			ClientBackGroundImage cbg = new(zdepth)
+			{
+				Img = imageN,
+				ImgB = imageB,
+				x = x,
+				y = y,
+				//cbg.zdepth = zdepth;
+				isButton = true,
+				buttonValue = buttonValue,
+				tooltipString = tooltip
+			};
 			cbgList.Add(cbg);
 			cbgList.Sort();
 			return true;
 		}
 		public int ClientWidth { get { return window.MainPicBox.Width; } }
 		public int ClientHeight { get { return window.MainPicBox.Height; } }
-#endregion
+		#endregion
 
 		const string ErrorButtonsText = "__openFileWithDebug__";
-        private readonly MainWindow window;
+		private readonly MainWindow window;
 
 		MinorShift.Emuera.GameProc.Process emuera;
 		ConsoleState state = ConsoleState.Initializing;
@@ -244,7 +249,7 @@ namespace MinorShift.Emuera.GameView
 			{
 				if (state == ConsoleState.Initializing)
 					return true;
-				return (state == ConsoleState.Running || runningERBfromMemory);
+				return state == ConsoleState.Running || runningERBfromMemory;
 			}
 		}
 
@@ -258,7 +263,7 @@ namespace MinorShift.Emuera.GameView
 					return true;
 				if (inProcess)
 					return true;
-				return (state == ConsoleState.Running || runningERBfromMemory);
+				return state == ConsoleState.Running || runningERBfromMemory;
 			}
 		}
 
@@ -276,33 +281,33 @@ namespace MinorShift.Emuera.GameView
 			{
 				if ((state == ConsoleState.Quit) || (state == ConsoleState.Error))
 					return true;
-				if(state == ConsoleState.WaitInput)
-					return (inputReq.InputType == InputType.AnyKey || inputReq.InputType == InputType.EnterKey);
+				if (state == ConsoleState.WaitInput)
+					return inputReq.InputType == InputType.AnyKey || inputReq.InputType == InputType.EnterKey;
 				return false;
 			}
 		}
 
-        internal bool IsWaitAnyKey
-        {
-            get
+		internal bool IsWaitAnyKey
+		{
+			get
 			{
-				return (state == ConsoleState.WaitInput && inputReq.InputType == InputType.AnyKey);
-            }
-        }
+				return state == ConsoleState.WaitInput && inputReq.InputType == InputType.AnyKey;
+			}
+		}
 
-        internal bool IsWaintingOnePhrase
-        {
-            get
-            {
-				return (state == ConsoleState.WaitInput && inputReq.OneInput);
-            }
-        }
+		internal bool IsWaintingOnePhrase
+		{
+			get
+			{
+				return state == ConsoleState.WaitInput && inputReq.OneInput;
+			}
+		}
 
 		internal bool IsRunningTimer
 		{
 			get
 			{
-				return (state == ConsoleState.WaitInput && inputReq.Timelimit > 0 && !isTimeout);
+				return state == ConsoleState.WaitInput && inputReq.Timelimit > 0 && !isTimeout;
 			}
 		}
 
@@ -311,11 +316,11 @@ namespace MinorShift.Emuera.GameView
 			get
 			{
 				if (state == ConsoleState.WaitInput)
-					return (inputReq.InputType == InputType.PrimitiveMouseKey);
+					return inputReq.InputType == InputType.PrimitiveMouseKey;
 				return false;
 			}
 		}
-		
+
 		internal string SelectedString
 		{
 			get
@@ -326,7 +331,7 @@ namespace MinorShift.Emuera.GameView
 					return selectingButton.Inputs;
 				if (state != ConsoleState.WaitInput)
 					return null;
-				if (inputReq.InputType == InputType.IntValue && (selectingButton.IsInteger))
+				if (inputReq.InputType == InputType.IntValue && selectingButton.IsInteger)
 					return selectingButton.Input.ToString();
 				if (inputReq.InputType == InputType.StrValue)
 					return selectingButton.Inputs;
@@ -338,7 +343,7 @@ namespace MinorShift.Emuera.GameView
 		{
 			GlobalStatic.Console = this;
 			GlobalStatic.MainWindow = window;
-            emuera = new GameProc.Process(this);
+			emuera = new GameProc.Process(this, Program.AnalysisMode);
 			GlobalStatic.Process = emuera;
 			if (Program.DebugMode && Config.DebugShowWindow)
 			{
@@ -357,9 +362,9 @@ namespace MinorShift.Emuera.GameView
 			callEmueraProgram("");
 			RefreshStrings(true);
 		}
-		
 
-        public void Quit() { state = ConsoleState.Quit; }
+
+		public void Quit() { state = ConsoleState.Quit; }
 		public void ThrowTitleError(bool error)
 		{
 			state = ConsoleState.Error;
@@ -377,34 +382,34 @@ namespace MinorShift.Emuera.GameView
 			state = ConsoleState.Error;
 		}
 
-        public bool notToTitle = false;
-        public bool byError = false;
-        //public ScriptPosition ErrPos = null;
+		public bool notToTitle = false;
+		public bool byError = false;
+		//public ScriptPosition ErrPos = null;
 
 		#region button関連
 		bool lastButtonIsInput = true;
-        public bool updatedGeneration = false;
+		public bool updatedGeneration = false;
 		int lastButtonGeneration = 0;//最後に追加された選択肢の世代。これと世代が一致しない選択肢は選択できない。
 		int newButtonGeneration = 0;//次に追加される選択肢の世代。Input又はInputsごとに増加
-		//public int LastButtonGeneration { get { return lastButtonGeneration; } }
+									//public int LastButtonGeneration { get { return lastButtonGeneration; } }
 		public int NewButtonGeneration { get { return newButtonGeneration; } }
-        public void UpdateGeneration() { lastButtonGeneration = newButtonGeneration; updatedGeneration = true; }
-        public void forceUpdateGeneration() { newButtonGeneration++; lastButtonGeneration = newButtonGeneration; updatedGeneration = true; }
-        LogicalLine lastInputLine;
+		public void UpdateGeneration() { lastButtonGeneration = newButtonGeneration; updatedGeneration = true; }
+		public void forceUpdateGeneration() { newButtonGeneration++; lastButtonGeneration = newButtonGeneration; updatedGeneration = true; }
+		LogicalLine lastInputLine;
 
 		private void newGeneration()
 		{
-            //値の入力を求められない時は更新は必要ないはず
+			//値の入力を求められない時は更新は必要ないはず
 			if (state != ConsoleState.WaitInput || !inputReq.NeedValue)
 				return;
-            if (!updatedGeneration && emuera.getCurrentLine != lastInputLine)
-            {
-                //ボタン無しで次の入力に来たなら強制で世代更新
-                lastButtonGeneration = newButtonGeneration;
-            }
-            else
-                updatedGeneration = false;
-            lastInputLine = emuera.getCurrentLine;
+			if (!updatedGeneration && emuera.getCurrentLine != lastInputLine)
+			{
+				//ボタン無しで次の入力に来たなら強制で世代更新
+				lastButtonGeneration = newButtonGeneration;
+			}
+			else
+				updatedGeneration = false;
+			lastInputLine = emuera.getCurrentLine;
 			//古い選択肢を選択できないように。INPUTで使った選択肢をINPUTSには流用できないように。
 			if (inputReq.InputType == InputType.IntValue)
 			{
@@ -483,7 +488,7 @@ namespace MinorShift.Emuera.GameView
 				if (req.OneInput)
 					window.update_lastinput();
 				presetTimer();
-//				setTimer();
+				//				setTimer();
 			}
 			//updateMousePosition();
 			//Point point = window.MainPicBox.PointToClient(Control.MousePosition);
@@ -496,7 +501,7 @@ namespace MinorShift.Emuera.GameView
 
 		public void ReadAnyKey(bool anykey = false, bool stopMesskip = false)
 		{
-			InputRequest req = new InputRequest();
+			InputRequest req = new();
 			if (!anykey)
 				req.InputType = InputType.EnterKey;
 			else
@@ -548,9 +553,9 @@ namespace MinorShift.Emuera.GameView
 		Int64 timer_startTime;//現在のタイマーを開始した時のミリ秒数（WinmmTimer.TickCount基準）
 		Int64 timer_nextDisplayTime;//TINPUT系で次に残り時間を表示する時のTickCountミリ秒数
 		Int64 timer_endTime;//現在のタイマーを終了する時のTickCountミリ秒数
-        bool wait_timeout = false;
-        bool isTimeout = false;
-        public bool IsTimeOut { get { return isTimeout; } }
+		bool wait_timeout = false;
+		bool isTimeout = false;
+		public bool IsTimeOut { get { return isTimeout; } }
 
 		/// <summary>
 		/// 1824 TINPUT時に直接タイマーをセットせずに最初の再描画が終わってからタイマーをセットする（そうしないとTINPUTと再描画だけでループしてしまうので）
@@ -575,7 +580,7 @@ namespace MinorShift.Emuera.GameView
 			isTimeout = false;
 			timerID = inputReq.ID;
 			timer.Enabled = true;
-			timer_startTime = WinmmTimer.TickCount;
+			timer_startTime = DateTime.Now.Millisecond;
 			timer_endTime = timer_startTime + inputReq.Timelimit;
 			//if (inputReq.DisplayTime)
 			//次に残り時間を表示するタイミングの設定。inputReq.DisplayTime==tureでないなら設定するだけで参照はされない（はず
@@ -597,7 +602,7 @@ namespace MinorShift.Emuera.GameView
 				return;
 #endif
 			}
-			long curtime = WinmmTimer.TickCount;
+			long curtime = DateTime.Now.Millisecond;
 			if (curtime >= timer_endTime)
 			{
 				endTimer();
@@ -626,7 +631,7 @@ namespace MinorShift.Emuera.GameView
 			//	wait_timeout = false;
 			//}
 			timer.Enabled = false;
-            //timer.Dispose();
+			//timer.Dispose();
 		}
 
 		/// <summary>
@@ -634,14 +639,14 @@ namespace MinorShift.Emuera.GameView
 		/// </summary>
 		private void endTimer()
 		{
-            if (wait_timeout)
-                return;
+			if (wait_timeout)
+				return;
 			stopTimer();
-            isTimeout = true;
-			if(IsWaitingPrimitive)
+			isTimeout = true;
+			if (IsWaitingPrimitive)
 			{
 				//callEmueraProgramは呼び出し先で行う。
-				InputMouseKey(4, 0, 0, 0,0);
+				InputMouseKey(4, 0, 0, 0, 0);
 				return;
 			}
 			if (inputReq.DisplayTime)
@@ -658,13 +663,13 @@ namespace MinorShift.Emuera.GameView
 			RefreshStrings(true);
 		}
 
-        public void forceStopTimer()
-        {
-            if (timer.Enabled)
-            {
-                timer.Enabled = false;
-            }
-        }
+		public void forceStopTimer()
+		{
+			if (timer.Enabled)
+			{
+				timer.Enabled = false;
+			}
+		}
 		#endregion
 
 		#region Call系
@@ -688,7 +693,7 @@ namespace MinorShift.Emuera.GameView
 			if (state == ConsoleState.Running)
 			{//RunningならProcessは処理を継続するべき
 				state = ConsoleState.Error;
-                PrintError("emueraのエラー：プログラムの状態を特定できません");
+				PrintError("emueraのエラー：プログラムの状態を特定できません");
 			}
 			if (state == ConsoleState.Error && !noOutputLog)
 				OutputLog(Program.ExeDir + "emuera.log");
@@ -742,7 +747,7 @@ namespace MinorShift.Emuera.GameView
 		public bool MesSkip = false;
 		private bool inProcess = false;
 		volatile public bool KillMacro = false;
-		
+
 		internal void MouseWheel(Point point, int delta)
 		{
 			if (!IsWaitingPrimitive)
@@ -763,15 +768,15 @@ namespace MinorShift.Emuera.GameView
 			Point clientPoint = point;
 			clientPoint.Y = point.Y - ClientHeight;
 			int buttonNum = -1;
-			if(cbgButtonMap != null && cbgButtonMap.IsCreated)
+			if (cbgButtonMap != null && cbgButtonMap.IsCreated)
 			{
 				//マップ画像の左上基準の座標に置き換え
 				Point mapPoint = clientPoint;
 				mapPoint.Y = clientPoint.Y + cbgButtonMap.Height;
-				if(mapPoint.X >= 0 && mapPoint.Y >= 0 && mapPoint.X < cbgButtonMap.Width && mapPoint.Y < cbgButtonMap.Height)
+				if (mapPoint.X >= 0 && mapPoint.Y >= 0 && mapPoint.X < cbgButtonMap.Width && mapPoint.Y < cbgButtonMap.Height)
 				{
 					Color c = cbgButtonMap.Bitmap.GetPixel(mapPoint.X, mapPoint.Y);
-					if(c.A == 255)
+					if (c.A == 255)
 					{
 						buttonNum = c.ToArgb() & 0xFFFFFF;
 					}
@@ -817,7 +822,7 @@ namespace MinorShift.Emuera.GameView
 			MesSkip = keySkip;
 			if ((state == ConsoleState.Running) || (state == ConsoleState.Initializing))
 				return;
-			else if ((state == ConsoleState.Quit))
+			else if (state == ConsoleState.Quit)
 			{
 				window.Close();
 				return;
@@ -826,7 +831,7 @@ namespace MinorShift.Emuera.GameView
 			{
 				if (str == ErrorButtonsText && selectingButton != null && selectingButton.ErrPos != null)
 				{
-					openErrorFile(selectingButton.ErrPos);
+					OpenErrorFile(selectingButton.ErrPos);
 					return;
 				}
 				window.Close();
@@ -840,7 +845,7 @@ namespace MinorShift.Emuera.GameView
 			try
 			{
 				string[] text;
-				if(changedByMouse)//1823 マウスによって入力されたならマクロ解析を行わない
+				if (changedByMouse)//1823 マウスによって入力されたならマクロ解析を行わない
 				{ text = new string[] { str }; }
 				else
 				{
@@ -859,7 +864,7 @@ namespace MinorShift.Emuera.GameView
 						str = parseInput(new StringStream(str), false);
 					text = str.Split(spliter, StringSplitOptions.None);
 				}
-				
+
 				inProcess = true;
 				for (int i = 0; i < text.Length; i++)
 				{
@@ -913,8 +918,8 @@ namespace MinorShift.Emuera.GameView
 			{
 				inProcess = false;
 			}
-			endMacro:
-			if(state == ConsoleState.WaitInput && inputReq.NeedValue)
+		endMacro:
+			if (state == ConsoleState.WaitInput && inputReq.NeedValue)
 			{
 				Point point = window.MainPicBox.PointToClient(Control.MousePosition);
 				if (window.MainPicBox.ClientRectangle.Contains(point))
@@ -923,14 +928,16 @@ namespace MinorShift.Emuera.GameView
 			RefreshStrings(true);
 		}
 
-		private void openErrorFile(ScriptPosition pos)
+		private void OpenErrorFile(ScriptPosition pos)
 		{
-			ProcessStartInfo pInfo = new ProcessStartInfo();
-			pInfo.FileName = Config.TextEditor;
+			ProcessStartInfo pInfo = new()
+			{
+				FileName = Config.TextEditor
+			};
 			string fname = pos.Filename.ToUpper();
 			if (fname.EndsWith(".CSV"))
 			{
-				if (fname.Contains(Program.CsvDir.ToUpper()))
+				if (fname.Contains(Program.CsvDir, StringComparison.CurrentCultureIgnoreCase))
 					fname = fname.Replace(Program.CsvDir.ToUpper(), "");
 				fname = Program.CsvDir + fname;
 			}
@@ -939,7 +946,7 @@ namespace MinorShift.Emuera.GameView
 				//解析モードの場合は見ているファイルがERB\の下にあるとは限らないかつフルパスを持っているのでこの補正はしなくてよい
 				if (!Program.AnalysisMode)
 				{
-					if (fname.Contains(Program.ErbDir.ToUpper()))
+					if (fname.Contains(Program.ErbDir, StringComparison.CurrentCultureIgnoreCase))
 						fname = fname.Replace(Program.ErbDir.ToUpper(), "");
 					fname = Program.ErbDir + fname;
 				}
@@ -975,79 +982,79 @@ namespace MinorShift.Emuera.GameView
 			return;
 		}
 
-        string parseInput(StringStream st, bool isNest)
-        {
-            StringBuilder sb = new StringBuilder(20);
-            StringBuilder num = new StringBuilder(20);
-            bool hasRet = false;
-            int res;
-            while (!st.EOS && (!isNest || st.Current != ')'))
-            {
-                if (st.Current == '(')
-                {
-                    st.ShiftNext();
-                    string tstr = parseInput(st, true);
+		string parseInput(StringStream st, bool isNest)
+		{
+			StringBuilder sb = new(20);
+			StringBuilder num = new(20);
+			bool hasRet = false;
+			while (!st.EOS && (!isNest || st.Current != ')'))
+			{
+				if (st.Current == '(')
+				{
+					st.ShiftNext();
+					string tstr = parseInput(st, true);
 
-                    if (!st.EOS)
-                    {
-                        st.ShiftNext();
-                        if (st.Current == '*')
-                        {
-                            st.ShiftNext();
-                            while (char.IsNumber(st.Current))
-                            {
-                                num.Append(st.Current);
-                                st.ShiftNext();
-                            }
-                            if (num.ToString() != "" && num.ToString() != null)
-                            {
-                                int.TryParse(num.ToString(), out res);
-                                for (int i = 0; i < res; i++)
-                                    sb.Append(tstr);
-                                num.Remove(0, num.Length);
-                            }
-                        }
-                        else
-                            sb.Append(tstr);
-                        continue;
-                    }
-                    else
-                    {
-                        sb.Append(tstr);
-                        break;
-                    }
-                }
-                else if (st.Current == '\\')
-                {
-                    st.ShiftNext();
-                    switch (st.Current)
-                    {
-                        case 'n':
-                            if (!hasRet)
-                                sb.Append('\n');
-                            else
-                                hasRet = false;
-                            break;
-                        case 'r':
-                            sb.Append('\r');
-                            break;
-                        case 'e':
-                            sb.Append("\\e\n");
-                            hasRet = true;
-                            break;
-                        case '\n':
-                            break;
-                        default:
-                            sb.Append(st.Current);
-                            break;
-                    }
-                }
-                else
-                    sb.Append(st.Current);
-                st.ShiftNext();
-            }
-            return sb.ToString();
-        }
+					if (!st.EOS)
+					{
+						st.ShiftNext();
+						if (st.Current == '*')
+						{
+							st.ShiftNext();
+							while (char.IsNumber(st.Current))
+							{
+								num.Append(st.Current);
+								st.ShiftNext();
+							}
+							var numStr = num.ToString();
+							if (!string.IsNullOrEmpty(numStr))
+							{
+								var res = int.Parse(numStr);
+								for (int i = 0; i < res; i++)
+									sb.Append(tstr);
+								num.Remove(0, num.Length);
+							}
+						}
+						else
+							sb.Append(tstr);
+						continue;
+					}
+					else
+					{
+						sb.Append(tstr);
+						break;
+					}
+				}
+				else if (st.Current == '\\')
+				{
+					st.ShiftNext();
+					switch (st.Current)
+					{
+						case 'n':
+							if (!hasRet)
+								sb.Append('\n');
+							else
+								hasRet = false;
+							break;
+						case 'r':
+							sb.Append('\r');
+							break;
+						case 'e':
+							sb.Append("\\e\n");
+							hasRet = true;
+							break;
+						case '\n':
+							break;
+						default:
+							sb.Append(st.Current);
+							break;
+					}
+				}
+				else
+					sb.Append(st.Current);
+				st.ShiftNext();
+			}
+			return sb.ToString();
+		}
 
 
 		bool runningERBfromMemory = false;
@@ -1059,7 +1066,7 @@ namespace MinorShift.Emuera.GameView
 		public bool RunERBFromMemory { get { return runningERBfromMemory; } set { runningERBfromMemory = value; } }
 		void doSystemCommand(string command)
 		{
-			if(timer.Enabled)
+			if (timer.Enabled)
 			{
 				PrintError("タイマー系命令の待ち時間中はコマンドを入力できません");
 				PrintError("");//タイマー表示処理に消されちゃうかもしれないので
@@ -1089,7 +1096,7 @@ namespace MinorShift.Emuera.GameView
 				this.OutputLog(Program.ExeDir + "emuera.log");
 				return;
 			}
-			else if ((com.Equals("QUIT", sc)) || (com.Equals("EXIT", sc)))
+			else if (com.Equals("QUIT", sc) || com.Equals("EXIT", sc))
 			{
 				window.Close();
 				return;
@@ -1126,10 +1133,10 @@ namespace MinorShift.Emuera.GameView
 		#endregion
 
 		#region 描画系
-		uint lastUpdate = 0;
+		int lastUpdate = 0;
 		uint msPerFrame = 1000 / 60;//60FPS
 		ConsoleRedraw redraw = ConsoleRedraw.Normal;
-        public ConsoleRedraw Redraw { get { return redraw; } }
+		public ConsoleRedraw Redraw { get { return redraw; } }
 		public void SetRedraw(Int64 i)
 		{
 			if ((i & 1) == 0)
@@ -1152,10 +1159,10 @@ namespace MinorShift.Emuera.GameView
 				window.Text = str;
 		}
 
-        public void SetEmueraVersionInfo(string str)
-        {
-            window.TextBox.Text = str;
-        }
+		public void SetEmueraVersionInfo(string str)
+		{
+			window.TextBox.Text = str;
+		}
 		public string GetWindowTitle()
 		{
 			if (Program.DebugMode && debugTitle != null)
@@ -1181,9 +1188,9 @@ namespace MinorShift.Emuera.GameView
 				//if (isBackLog)
 				//	selectingButton = null;
 				//数値か文字列の入力待ち状態でなければ無効
-				if(state != ConsoleState.Error && state != ConsoleState.WaitInput)
+				if (state != ConsoleState.Error && state != ConsoleState.WaitInput)
 					selectingButton = null;
-				else if((state == ConsoleState.WaitInput) && !inputReq.NeedValue)
+				else if ((state == ConsoleState.WaitInput) && !inputReq.NeedValue)
 					selectingButton = null;
 				//選択肢が最新でないなら無効
 				else if (selectingButton.Generation != lastButtonGeneration)
@@ -1191,11 +1198,11 @@ namespace MinorShift.Emuera.GameView
 			}
 			if (!force_Paint)
 			{//forceならば確実に再描画。
-				//履歴表示中でなく、最終行を表示済みであり、選択中ボタンが変更されていないなら更新不要
+			 //履歴表示中でなく、最終行を表示済みであり、選択中ボタンが変更されていないなら更新不要
 				if ((!isBackLog) && (lastDrawnLineNo == lineNo) && (lastSelectingButton == selectingButton))
 					return;
 				//Environment.TickCountは分解能が悪すぎるのでwinmmのタイマーを呼んで来る
-				uint sec = WinmmTimer.TickCount - lastUpdate;
+				int sec = DateTime.Now.Millisecond - lastUpdate;
 				//まだ書き換えるタイミングでないなら次の更新を待ってみる
 				//ただし、入力待ちなど、しばらく更新のタイミングがない場合には強制的に書き換えてみる
 				if (sec < msPerFrame && (state == ConsoleState.Running || state == ConsoleState.Initializing))
@@ -1203,15 +1210,15 @@ namespace MinorShift.Emuera.GameView
 			}
 			if (forceTextBoxColor)
 			{
-				uint sec = WinmmTimer.TickCount - lastBgColorChange;
+				int sec = DateTime.Now.Millisecond - lastBgColorChange;
 				//色変化が速くなりすぎないように一定時間以内の再呼び出しは強制待ちにする
 				while (sec < 200)
 				{
 					Application.DoEvents();
-					sec = WinmmTimer.TickCount - lastBgColorChange;
+					sec = DateTime.Now.Millisecond - lastBgColorChange;
 				}
 				window.TextBox.BackColor = this.bgColor;
-				lastBgColorChange = WinmmTimer.TickCount;
+				lastBgColorChange = DateTime.Now.Millisecond;
 			}
 			verticalScrollBarUpdate();
 			window.Refresh();//OnPaint発行
@@ -1228,14 +1235,13 @@ namespace MinorShift.Emuera.GameView
 
 			//デバッグ用。描画が超重い環境を想定1
 			//System.Threading.Thread.Sleep(100);
-			
+
 			//描画中にEmueraが閉じられると廃棄されたPictureBoxにアクセスしてしまったりするので
 			//OnPaintからgraphをもらった直後だから大丈夫だとは思うけど一応
 			if (!this.Enabled)
 				return;
 			//1824 アニメスプライト用・現在フレームの時間を決定
-			WinmmTimer.FrameStart();
-			lastUpdate = WinmmTimer.CurrentFrameTime;//WinmmTimer.TickCount;
+			lastUpdate = DateTime.Now.Millisecond;//WinmmTimer.TickCount;
 
 			bool isBackLog = window.ScrollBar.Value != window.ScrollBar.Maximum;
 			int pointY = window.MainPicBox.Height - Config.LineHeight;
@@ -1316,10 +1322,10 @@ namespace MinorShift.Emuera.GameView
 				}
 				if (!string.IsNullOrEmpty(title))
 				{
-                    if (tooltip_duration == 0)
+					if (tooltip_duration == 0)
 						window.ToolTip.SetToolTip(window.MainPicBox, title);
-                    else
-                    {
+					else
+					{
 						if (window.ToolTip.InitialDelay == 0)
 						{
 							Point mousePos = window.MainPicBox.PointToClient(MainWindow.MousePosition);
@@ -1358,7 +1364,7 @@ namespace MinorShift.Emuera.GameView
 			System.Threading.Thread.Sleep(50);
 			*/
 			forceTextBoxColor = false;
-			if(need_settimer)
+			if (need_settimer)
 			{
 				need_settimer = false;
 				setTimer();
@@ -1376,32 +1382,32 @@ namespace MinorShift.Emuera.GameView
 			window.ToolTip.InitialDelay = delay;
 		}
 
-        int tooltip_duration = 0;
-        public void SetToolTipDuration(int duration)
-        {
-            tooltip_duration = duration;
-        }
+		int tooltip_duration = 0;
+		public void SetToolTipDuration(int duration)
+		{
+			tooltip_duration = duration;
+		}
 
 
-        //private Graphics getGraphics()
-        //{
-        //	//消したいが怖いので残し
-        //	if (!window.Created)
-        //		throw new ExeEE("存在しないウィンドウにアクセスした");
-        //	//if (Config.UseImageBuffer)
-        //	//	return Graphics.FromImage(window.MainPicBox.Image);
-        //	//else
-        //		return window.MainPicBox.CreateGraphics();
-        //}
+		//private Graphics getGraphics()
+		//{
+		//	//消したいが怖いので残し
+		//	if (!window.Created)
+		//		throw new ExeEE("存在しないウィンドウにアクセスした");
+		//	//if (Config.UseImageBuffer)
+		//	//	return Graphics.FromImage(window.MainPicBox.Image);
+		//	//else
+		//		return window.MainPicBox.CreateGraphics();
+		//}
 
-        #endregion
+		#endregion
 
-        #region DebugMode系
-        DebugDialog dd = null;
+		#region DebugMode系
+		DebugDialog dd = null;
 		public DebugDialog DebugDialog { get { return dd; } }
-		StringBuilder dConsoleLog = new StringBuilder("");
+		StringBuilder dConsoleLog = new("");
 		public string DebugConsoleLog { get { return dConsoleLog.ToString(); } }
-		List<string> dTraceLogList = new List<string>();
+		List<string> dTraceLogList = [];
 #pragma warning disable CS0414 // フィールド 'EmueraConsole.dTraceLogChanged' が割り当てられていますが、値は使用されていません。
 		bool dTraceLogChanged = true;
 #pragma warning restore CS0414 // フィールド 'EmueraConsole.dTraceLogChanged' が割り当てられていますが、値は使用されていません。
@@ -1409,7 +1415,7 @@ namespace MinorShift.Emuera.GameView
 		{
 			//if (!dTraceLogChanged && !force)
 			//	return null;
-			StringBuilder builder = new StringBuilder("");
+			StringBuilder builder = new("");
 			LogicalLine line = emuera.GetScaningLine();
 			builder.AppendLine("*実行中の行");
 			if ((line == null) || (line.Position == null))
@@ -1486,8 +1492,8 @@ namespace MinorShift.Emuera.GameView
 			if (!Program.DebugMode || runningERBfromMemory)
 				return;
 			dTraceLogChanged = true;
-			if(dTraceLogList.Count > 0)
-				dTraceLogList.RemoveAt(dTraceLogList.Count-1);
+			if (dTraceLogList.Count > 0)
+				dTraceLogList.RemoveAt(dTraceLogList.Count - 1);
 		}
 		public void DebugClearTraceLog()
 		{
@@ -1501,9 +1507,9 @@ namespace MinorShift.Emuera.GameView
 		{
 			ConsoleState temp_state = state;
 			runningERBfromMemory = true;
-            //スクリプト等が失敗した場合に備えて念のための保存
-            GlobalStatic.Process.saveCurrentState(false);
-            try
+			//スクリプト等が失敗した場合に備えて念のための保存
+			GlobalStatic.Process.saveCurrentState(false);
+			try
 			{
 				LogicalLine line = null;
 				if (!com.StartsWith("@") && !com.StartsWith("\"") && !com.StartsWith("\\"))
@@ -1550,7 +1556,7 @@ namespace MinorShift.Emuera.GameView
 					throw new CodeEE(func.Function.Name + "命令は使用できません");
 				switch (func.FunctionCode)
 				{//取りこぼし
-					//逆にOUTPUTLOG、QUITはDebugCommandの前に捕まえる
+				 //逆にOUTPUTLOG、QUITはDebugCommandの前に捕まえる
 					case FunctionCode.PUTFORM:
 					case FunctionCode.UPCHECK:
 					case FunctionCode.CUPCHECK:
@@ -1581,9 +1587,9 @@ namespace MinorShift.Emuera.GameView
 			}
 			finally
 			{
-                //確実に元の状態に戻す
-                GlobalStatic.Process.loadPrevState();
-                runningERBfromMemory = false;
+				//確実に元の状態に戻す
+				GlobalStatic.Process.loadPrevState();
+				runningERBfromMemory = false;
 				state = temp_state;
 			}
 		}
@@ -1630,7 +1636,7 @@ namespace MinorShift.Emuera.GameView
 				}
 				if (buttonNum >= 0)
 				{
-					bool ret = (pointingString != null || selectingButton != null || buttonNum != selectingCBGButtonInt);
+					bool ret = pointingString != null || selectingButton != null || buttonNum != selectingCBGButtonInt;
 					selectingCBGButtonInt = buttonNum;
 					pointingString = null;
 					selectingButton = null;
@@ -1654,7 +1660,7 @@ namespace MinorShift.Emuera.GameView
 			else if (state == ConsoleState.WaitInput && inputReq.NeedValue)
 				canSelect = true;
 			//スクリプト実行中は無視//入力・マクロ処理中は無視
-			if(this.IsInProcess)
+			if (this.IsInProcess)
 				goto end;
 			//履歴表示中は無視
 			//if (window.ScrollBar.Value != window.ScrollBar.Maximum)
@@ -1666,7 +1672,7 @@ namespace MinorShift.Emuera.GameView
 			int bottomLineNo = window.ScrollBar.Value - 1;
 			if (displayLineList.Count - 1 < bottomLineNo)
 				bottomLineNo = displayLineList.Count - 1;//1820 この処理不要な気がするけどエラー報告があったので入れとく
-			int topLineNo = bottomLineNo - (window.MainPicBox.Height/ Config.LineHeight);
+			int topLineNo = bottomLineNo - (window.MainPicBox.Height / Config.LineHeight);
 			if (topLineNo < 0)
 				topLineNo = 0;
 			int relPointY = pointY - window.MainPicBox.Height;
@@ -1675,11 +1681,11 @@ namespace MinorShift.Emuera.GameView
 			{
 				relPointY += Config.LineHeight;
 				curLine = displayLineList[i];
-				
+
 				for (int b = 0; b < curLine.Buttons.Length; b++)
 				{
 					ConsoleButtonString button = curLine.Buttons[curLine.Buttons.Length - b - 1];
-					if(button == null || button.StrArray == null)
+					if (button == null || button.StrArray == null)
 						continue;
 					if ((button.PointX <= pointX) && (button.PointX + button.Width >= pointX))
 					{
@@ -1689,9 +1695,9 @@ namespace MinorShift.Emuera.GameView
 						//	if(pointing.IsButton)
 						//		goto breakfor;
 						//}
-						foreach(AConsoleDisplayPart part in button.StrArray)
+						foreach (AConsoleDisplayPart part in button.StrArray)
 						{
-							if(part == null)
+							if (part == null)
 								continue;
 							if ((part.PointX <= pointX) && (part.PointX + part.Width >= pointX)
 								&& (relPointY >= part.Top) && (relPointY <= part.Bottom))
@@ -1706,27 +1712,27 @@ namespace MinorShift.Emuera.GameView
 			}
 
 
-			//int posy_bottom2up = window.MainPicBox.Height - pointY;
-			//int logNum = window.ScrollBar.Maximum - window.ScrollBar.Value;
-			////表示中の一番下の行番号
-			//int curBottomLineNo = displayLineList.Count - logNum;
-			//int curPointingLineNo = curBottomLineNo - (posy_bottom2up / Config.LineHeight + 1);
-			//if ((curPointingLineNo < 0) || (curPointingLineNo >= displayLineList.Count))
-			//	curLine = null;
-			//else
-			//	curLine =  displayLineList[curPointingLineNo];
-			//if (curLine == null)
-			//	goto end;
-			
-			//pointing = curLine.GetPointingButton(pointX);
+		//int posy_bottom2up = window.MainPicBox.Height - pointY;
+		//int logNum = window.ScrollBar.Maximum - window.ScrollBar.Value;
+		////表示中の一番下の行番号
+		//int curBottomLineNo = displayLineList.Count - logNum;
+		//int curPointingLineNo = curBottomLineNo - (posy_bottom2up / Config.LineHeight + 1);
+		//if ((curPointingLineNo < 0) || (curPointingLineNo >= displayLineList.Count))
+		//	curLine = null;
+		//else
+		//	curLine =  displayLineList[curPointingLineNo];
+		//if (curLine == null)
+		//	goto end;
+
+		//pointing = curLine.GetPointingButton(pointX);
 		breakfor:
 			if ((pointing == null) || (pointing.Generation != lastButtonGeneration))
 				canSelect = false;
 			else if (!pointing.IsButton)
 				canSelect = false;
-			else if ((state == ConsoleState.WaitInput && inputReq.InputType == InputType.IntValue) && (!pointing.IsInteger))
+			else if (state == ConsoleState.WaitInput && inputReq.InputType == InputType.IntValue && (!pointing.IsInteger))
 				canSelect = false;
-		end:
+			end:
 			if (canSelect)
 				select = pointing;
 			bool needRefresh = select != selectingButton || pointing != pointingString;
@@ -1741,7 +1747,7 @@ namespace MinorShift.Emuera.GameView
 			bool needRefresh = selectingButton != null || pointingString != null;
 			selectingButton = null;
 			pointingString = null;
-			if(needRefresh)
+			if (needRefresh)
 			{
 				RefreshStrings(true);
 			}
@@ -1776,21 +1782,21 @@ namespace MinorShift.Emuera.GameView
 			//{
 			//    MessageBox.Show("エラー発生時はこの機能は使えません");
 			//}
-            forceStopTimer();
+			forceStopTimer();
 			ClearDisplay();
 			//動的作成の分だけは削除する
 			AppContents.UnloadGraphicList();
-            redraw = ConsoleRedraw.Normal;
-            UseUserStyle = false;
-            userStyle = new StringStyle(Config.ForeColor, FontStyle.Regular, null);
-            emuera.BeginTitle();
+			redraw = ConsoleRedraw.Normal;
+			UseUserStyle = false;
+			userStyle = new StringStyle(Config.ForeColor, FontStyle.Regular, null);
+			emuera.BeginTitle();
 			ReadAnyKey(false, false);
 			callEmueraProgram("");
 			RefreshStrings(true);
 		}
 
 		bool force_temporary = false;
-        bool timer_suspended = false;
+		bool timer_suspended = false;
 		ConsoleState prevState;
 		InputRequest prevReq;
 
@@ -1806,43 +1812,43 @@ namespace MinorShift.Emuera.GameView
 				MessageBox.Show("初期化中はこの機能は使えません");
 				return;
 			}
-            bool notRedraw = false;
-            if (redraw == ConsoleRedraw.None)
-            {
-                notRedraw = true;
-                redraw = ConsoleRedraw.Normal;
-            }
-            if (timer.Enabled)
-            {
+			bool notRedraw = false;
+			if (redraw == ConsoleRedraw.None)
+			{
+				notRedraw = true;
+				redraw = ConsoleRedraw.Normal;
+			}
+			if (timer.Enabled)
+			{
 				timer.Enabled = false;
-                timer_suspended = true;
-            }
-            prevState = state;
+				timer_suspended = true;
+			}
+			prevState = state;
 			prevReq = inputReq;
 			state = ConsoleState.Initializing;
 			PrintSingleLine("ERB再読み込み中……", true);
 			force_temporary = true;
 			emuera.ReloadErb();
 			force_temporary = false;
-            PrintSingleLine("再読み込み完了", true);
+			PrintSingleLine("再読み込み完了", true);
 			RefreshStrings(true);
-            //強制的にボタン世代が切り替わるのを防ぐ
-            updatedGeneration = true;
-            if (notRedraw)
-                redraw = ConsoleRedraw.None;
-        }
+			//強制的にボタン世代が切り替わるのを防ぐ
+			updatedGeneration = true;
+			if (notRedraw)
+				redraw = ConsoleRedraw.None;
+		}
 
 		public void ReloadErbFinished()
 		{
 			state = prevState;
 			inputReq = prevReq;
 			PrintSingleLine(" ");
-            if (timer_suspended)
-            {
-                timer_suspended = false;
-                timer.Enabled = true;
+			if (timer_suspended)
+			{
+				timer_suspended = false;
+				timer.Enabled = true;
 				//タイマー待機中の時間ずれは修正しない。タイマー中にリロードしたらほぼ強制タイムアウトする程度は仕様のうちであろう。
-            }
+			}
 		}
 
 		public void ReloadPartialErb(List<string> path)
@@ -1857,35 +1863,35 @@ namespace MinorShift.Emuera.GameView
 				MessageBox.Show("初期化中はこの機能は使えません");
 				return;
 			}
-            bool notRedraw = false;
-            if (redraw == ConsoleRedraw.None)
-            {
-                notRedraw = true;
-                redraw = ConsoleRedraw.Normal;
-            }
-            if (timer.Enabled)
-            {
+			bool notRedraw = false;
+			if (redraw == ConsoleRedraw.None)
+			{
+				notRedraw = true;
+				redraw = ConsoleRedraw.Normal;
+			}
+			if (timer.Enabled)
+			{
 				timer.Enabled = false;
-                timer_suspended = true;
-            }
+				timer_suspended = true;
+			}
 			prevState = state;
 			prevReq = inputReq;
 			state = ConsoleState.Initializing;
-            PrintSingleLine("ERB再読み込み中……", true);
+			PrintSingleLine("ERB再読み込み中……", true);
 			force_temporary = true;
 			emuera.ReloadPartialErb(path);
 			force_temporary = false;
-            PrintSingleLine("再読み込み完了", true);
+			PrintSingleLine("再読み込み完了", true);
 			RefreshStrings(true);
-            //強制的にボタン世代が切り替わるのを防ぐ
-            updatedGeneration = true;
-            if (notRedraw)
-                redraw = ConsoleRedraw.None;
-        }
+			//強制的にボタン世代が切り替わるのを防ぐ
+			updatedGeneration = true;
+			if (notRedraw)
+				redraw = ConsoleRedraw.None;
+		}
 
 		public void ReloadFolder(string erbPath)
 		{
-            if (state == ConsoleState.Error)
+			if (state == ConsoleState.Error)
 			{
 				MessageBox.Show("エラー発生時はこの機能は使えません");
 				return;
@@ -1895,12 +1901,12 @@ namespace MinorShift.Emuera.GameView
 				MessageBox.Show("初期化中はこの機能は使えません");
 				return;
 			}
-            if (timer.Enabled)
-            {
+			if (timer.Enabled)
+			{
 				timer.Enabled = false;
-                timer_suspended = true;
-            }
-            List<string> paths = new List<string>();
+				timer_suspended = true;
+			}
+			List<string> paths = [];
 			SearchOption op = SearchOption.AllDirectories;
 			if (!Config.SearchSubdirectory)
 				op = SearchOption.TopDirectoryOnly;
@@ -1908,30 +1914,30 @@ namespace MinorShift.Emuera.GameView
 			for (int i = 0; i < fnames.Length; i++)
 				if (Path.GetExtension(fnames[i]).ToUpper() == ".ERB")
 					paths.Add(fnames[i]);
-            bool notRedraw = false;
-            if (redraw == ConsoleRedraw.None)
-            {
-                notRedraw = true;
-                redraw = ConsoleRedraw.Normal;
-            }
+			bool notRedraw = false;
+			if (redraw == ConsoleRedraw.None)
+			{
+				notRedraw = true;
+				redraw = ConsoleRedraw.Normal;
+			}
 			prevState = state;
 			prevReq = inputReq;
 			state = ConsoleState.Initializing;
-            PrintSingleLine("ERB再読み込み中……", true);
+			PrintSingleLine("ERB再読み込み中……", true);
 			force_temporary = true;
-            emuera.ReloadPartialErb(paths);
+			emuera.ReloadPartialErb(paths);
 			force_temporary = false;
-            PrintSingleLine("再読み込み完了", true);
+			PrintSingleLine("再読み込み完了", true);
 			RefreshStrings(true);
-            //強制的にボタン世代が切り替わるのを防ぐ
-            updatedGeneration = true;
-            if (notRedraw)
-                redraw = ConsoleRedraw.None;
-        }
+			//強制的にボタン世代が切り替わるのを防ぐ
+			updatedGeneration = true;
+			if (notRedraw)
+				redraw = ConsoleRedraw.None;
+		}
 
 		public void Dispose()
 		{
-			if(timer != null)
+			if (timer != null)
 				timer.Dispose();
 			//timer = null;
 			//stringMeasure.Dispose();

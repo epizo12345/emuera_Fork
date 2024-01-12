@@ -22,8 +22,8 @@ namespace MinorShift.Emuera.GameView
 		public static List<string> Split(string printBuffer)
 		{
 			List<ButtonPrimitive> list = syn(printBuffer);
-			List<string> ret = new List<string>();
-			foreach(ButtonPrimitive p in list)
+			List<string> ret = [];
+			foreach (ButtonPrimitive p in list)
 				ret.Add(p.Str);
 			return ret;
 		}
@@ -35,7 +35,7 @@ namespace MinorShift.Emuera.GameView
 		private static List<ButtonPrimitive> syn(string printBuffer)
 		{
 			string printString = printBuffer.ToString();
-			List<ButtonPrimitive> ret = new List<ButtonPrimitive>();
+			List<ButtonPrimitive> ret = [];
 			if (printString.Length == 0)
 				goto nonButton;
 			List<string> strs;
@@ -65,20 +65,20 @@ namespace MinorShift.Emuera.GameView
 				}
 				else
 				{//選択肢の説明になるかもしれない文字列
-                    afterButton = true;
+					afterButton = true;
 					if (buttonCount == 0)
 						beforeButton = true;
 				}
 			}
 			if (buttonCount <= 1)
 			{
-                ButtonPrimitive button = new ButtonPrimitive
-                {
-                    Str = printBuffer.ToString(),
-                    CanSelect = (buttonCount >= 1),
-                    Input = inpL
-                };
-                ret.Add(button);
+				ButtonPrimitive button = new()
+				{
+					Str = printBuffer.ToString(),
+					CanSelect = buttonCount >= 1,
+					Input = inpL
+				};
+				ret.Add(button);
 				return ret;
 			}
 			buttonCount = 0;
@@ -89,33 +89,33 @@ namespace MinorShift.Emuera.GameView
 			Int64 input = 0;
 
 			int state = 0;
-			StringBuilder buffer = new StringBuilder();
-            void reduce()
-            {
-                if (buffer.Length == 0)
-                    return;
-                ButtonPrimitive button = new ButtonPrimitive
-                {
-                    Str = buffer.ToString(),
-                    CanSelect = canSelect,
-                    Input = input
-                };
-                ret.Add(button);
-                buffer.Remove(0, buffer.Length);
-                canSelect = false;
-                input = 0;
-            }
-            for (int i = 0; i < strs.Count; i++)
+			StringBuilder buffer = new();
+			void reduce()
+			{
+				if (buffer.Length == 0)
+					return;
+				ButtonPrimitive button = new()
+				{
+					Str = buffer.ToString(),
+					CanSelect = canSelect,
+					Input = input
+				};
+				ret.Add(button);
+				buffer.Remove(0, buffer.Length);
+				canSelect = false;
+				input = 0;
+			}
+			for (int i = 0; i < strs.Count; i++)
 			{
 				if (strs[i].Length == 0)
 					continue;
 				char c = strs[i][0];
 				if (LexicalAnalyzer.IsWhiteSpace(c))
 				{//ただの空白
-					if (((state & 3) == 3) && (alignmentEtc) && (strs[i].Length >= 2))
+					if (((state & 3) == 3) && alignmentEtc && (strs[i].Length >= 2))
 					{//核と説明を含んだものが完成していればボタン生成。
-						//一文字以下のスペースはキニシナイ。キャラ購入画面対策
-                        reduce();
+					 //一文字以下のスペースはキニシナイ。キャラ購入画面対策
+						reduce();
 						buffer.Append(strs[i]);
 						state = 0;
 					}
@@ -125,7 +125,7 @@ namespace MinorShift.Emuera.GameView
 					}
 					continue;
 				}
-				if(isButtonCore(strs[i], ref inpL))
+				if (isButtonCore(strs[i], ref inpL))
 				{
 					buttonCount++;
 					if (((state & 1) == 1) || alignmentRight)
@@ -155,24 +155,24 @@ namespace MinorShift.Emuera.GameView
 				}
 				//else
 				//{//選択肢の説明になるかもしれない文字列
-					
-					buffer.Append(strs[i]);
-					state |= 2;
+
+				buffer.Append(strs[i]);
+				state |= 2;
 				//}
-				
+
 			};
 			reduce();
 			return ret;
 		nonButton:
-			ret = new List<ButtonPrimitive>();
-            ButtonPrimitive singleButton = new ButtonPrimitive
-            {
-                Str = printString
-            };
-            ret.Add(singleButton);
+			ret = [];
+			ButtonPrimitive singleButton = new()
+			{
+				Str = printString
+			};
+			ret.Add(singleButton);
 			return ret;
 		}
-		readonly static Regex numReg = new Regex(@"\[\s*([0][xXbB])?[+-]?[0-9]+([eEpP][0-9]+)?\s*\]");
+		readonly static Regex numReg = new(@"\[\s*([0][xXbB])?[+-]?[0-9]+([eEpP][0-9]+)?\s*\]");
 
 		/// <summary>
 		/// []付き文字列が数値的であるかどうかを調べる
@@ -193,12 +193,12 @@ namespace MinorShift.Emuera.GameView
 		/// <returns></returns>
 		private static bool isButtonCore(string str, ref long input)
 		{
-			if((str == null)||(str.Length < 3)||(str[0] != '[')||(str[str.Length-1] != ']'))
+			if ((str == null) || (str.Length < 3) || (str[0] != '[') || (str[str.Length - 1] != ']'))
 				return false;
 			if (!isNumericWord(str))
 				return false;
 			string buttonStr = str.Substring(1, str.Length - 2);
-			StringStream stInt = new StringStream(buttonStr);
+			StringStream stInt = new(buttonStr);
 			LexicalAnalyzer.SkipAllSpace(stInt);
 			try
 			{
@@ -206,7 +206,7 @@ namespace MinorShift.Emuera.GameView
 			}
 			catch
 			{
-				return false; 
+				return false;
 			}
 			return true;
 		}
@@ -219,18 +219,18 @@ namespace MinorShift.Emuera.GameView
 		/// <returns></returns>
 		private static List<string> lex(StringStream st)
 		{
-			List<string> strs = new List<string>();
+			List<string> strs = [];
 			int state = 0;
 			int startIndex = 0;
-            void reduce()
-            {
-                if (st.CurrentPosition == startIndex)
-                    return;
-                int length = st.CurrentPosition - startIndex;
-                strs.Add(st.Substring(startIndex, length));
-                startIndex = st.CurrentPosition;
-            }
-            while (!st.EOS)
+			void reduce()
+			{
+				if (st.CurrentPosition == startIndex)
+					return;
+				int length = st.CurrentPosition - startIndex;
+				strs.Add(st.Substring(startIndex, length));
+				startIndex = st.CurrentPosition;
+			}
+			while (!st.EOS)
 			{
 				if (st.Current == '[')
 				{
@@ -248,7 +248,7 @@ namespace MinorShift.Emuera.GameView
 					reduce();
 					state = 0;
 				}
-				else if ((state == 0) && (LexicalAnalyzer.IsWhiteSpace(st.Current)))
+				else if ((state == 0) && LexicalAnalyzer.IsWhiteSpace(st.Current))
 				{
 					reduce();
 					LexicalAnalyzer.SkipAllSpace(st);

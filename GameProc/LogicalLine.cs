@@ -162,13 +162,13 @@ namespace MinorShift.Emuera.GameProc
 		}
 
 		private LogicalLine jumpto = null;
-        private LogicalLine jumptoendcatch = null;
+		private LogicalLine jumptoendcatch = null;
 		//IF文とSELECT文のみが使う。
 		public List<InstructionLine> IfCaseList = null;
-        //PRINTDATA文のみが使う。
-        public List<List<InstructionLine>> dataList = null;
-        //TRYCALLLIST系が使う
-        public List<InstructionLine> callList = null;
+		//PRINTDATA文のみが使う。
+		public List<List<InstructionLine>> dataList = null;
+		//TRYCALLLIST系が使う
+		public List<InstructionLine> callList = null;
 
 		public LogicalLine JumpTo
 		{
@@ -176,11 +176,11 @@ namespace MinorShift.Emuera.GameProc
 			set { jumpto = value; }
 		}
 
-        public LogicalLine JumpToEndCatch
-        {
-            get { return jumptoendcatch; }
-            set { jumptoendcatch = value; }
-        }
+		public LogicalLine JumpToEndCatch
+		{
+			get { return jumptoendcatch; }
+			set { jumptoendcatch = value; }
+		}
 
 	}
 
@@ -188,7 +188,7 @@ namespace MinorShift.Emuera.GameProc
 	/// ファイルの始端と終端
 	/// </summary>
 	internal sealed class NullLine : LogicalLine { }
-	
+
 	/// <summary>
 	/// ラベルがエラーになっている関数行専用のクラス
 	/// </summary>
@@ -264,7 +264,7 @@ namespace MinorShift.Emuera.GameProc
 		public Type MethodType { get; set; }
 		public VariableTerm[] Arg { get; set; }
 		public SingleTerm[] Def { get; set; }
-        //public SingleTerm[] SubNames { get; set; }
+		//public SingleTerm[] SubNames { get; set; }
 		public int Depth { get; set; }
 
 		#region IComparable<FunctionLabelLine> メンバ
@@ -280,9 +280,9 @@ namespace MinorShift.Emuera.GameProc
 				return position.LineNo.CompareTo(other.position.LineNo);
 			return Index.CompareTo(other.Index);
 		}
-        #endregion
-        #region private変数
-        readonly Dictionary<string, UserDefinedVariableToken> privateVar = new Dictionary<string, UserDefinedVariableToken>();
+		#endregion
+		#region private変数
+		readonly Dictionary<string, UserDefinedVariableToken> privateVar = [];
 		internal bool AddPrivateVariable(UserDefinedVariableData data)
 		{
 			if (privateVar.ContainsKey(data.Name))
@@ -296,8 +296,8 @@ namespace MinorShift.Emuera.GameProc
 		}
 		internal UserDefinedVariableToken GetPrivateVariable(string key)
 		{
-            privateVar.TryGetValue(key, out UserDefinedVariableToken var);
-            return var;
+			privateVar.TryGetValue(key, out UserDefinedVariableToken var);
+			return var;
 		}
 
 		/// <summary>
@@ -347,7 +347,7 @@ namespace MinorShift.Emuera.GameProc
 		{
 			if ((x == null) || (y == null))
 				return false;
-			return ((x.ParentLabelLine == y.ParentLabelLine) && (x.labelname == y.labelname));
+			return (x.ParentLabelLine == y.ParentLabelLine) && (x.labelname == y.labelname);
 		}
 
 		public int GetHashCode(GotoLabelLine obj)

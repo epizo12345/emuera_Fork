@@ -15,7 +15,7 @@ namespace MinorShift._Library
 	///     rectangle to achieve the final color.
 	/// </summary>
 	/// 
-	[global::System.Reflection.Obfuscation(Exclude=false)]
+	[global::System.Reflection.Obfuscation(Exclude = false)]
 	internal enum TernaryRasterOperations : uint
 	{
 		/// <summary>dest = source</summary>
@@ -83,7 +83,7 @@ namespace MinorShift._Library
 
 	internal static class GDI
 	{
-        [DllImport("gdi32.dll", CharSet = CharSet.Auto)]
+		[DllImport("gdi32.dll", CharSet = CharSet.Auto)]
 		static extern bool TextOut(IntPtr hdc, int nXStart, int nYStart, string lpString, int cbString);
 		[DllImport("gdi32.dll")]
 		static extern uint SetTextColor(IntPtr hdc, int crColor);
@@ -99,7 +99,7 @@ namespace MinorShift._Library
 		static extern IntPtr CreateSolidBrush(int crColor);
 		[DllImport("gdi32.dll")]
 		static extern IntPtr CreatePen(int fnPenStyle, int nWidth, int crColor);
-        [DllImport("gdi32.dll", CharSet = CharSet.Auto)]
+		[DllImport("gdi32.dll", CharSet = CharSet.Auto)]
 		static extern bool GetTextExtentPoint32(IntPtr hdc, string lpString, int cbString, out Size lpSize);
 		[DllImport("gdi32.dll")]
 		static extern bool BitBlt(IntPtr hObject, int nXDest, int nYDest, int nWidth,
@@ -112,10 +112,10 @@ namespace MinorShift._Library
 		[DllImport("gdi32.dll")]
 		static extern bool SetStretchBltMode(IntPtr hdc, StretchMode iStretchMode);
 
-        [DllImport("user32", EntryPoint = "TabbedTextOut", CharSet = CharSet.Auto)]
-        static extern int TabbedTextOutW(IntPtr hdc, int x, int y, string lpString, int nCount, int nTabPositions, ref int lpnTabStopPositions, int nTabOrigin);
-        [DllImport("user32", EntryPoint = "GetTabbedTextExtent", CharSet = CharSet.Auto)]
-        static extern int GetTabbedTextExtentW(IntPtr hdc, string lpString, int nCount, int nTabPositions, ref int lpnTabStopPositions);
+		[DllImport("user32", EntryPoint = "TabbedTextOut", CharSet = CharSet.Auto)]
+		static extern int TabbedTextOutW(IntPtr hdc, int x, int y, string lpString, int nCount, int nTabPositions, ref int lpnTabStopPositions, int nTabOrigin);
+		[DllImport("user32", EntryPoint = "GetTabbedTextExtent", CharSet = CharSet.Auto)]
+		static extern int GetTabbedTextExtentW(IntPtr hdc, string lpString, int nCount, int nTabPositions, ref int lpnTabStopPositions);
 		[DllImport("gdi32.dll")]
 		static extern IntPtr GetStockObject(StockObjects fnObject);
 		[DllImport("gdi32.dll")]
@@ -295,7 +295,7 @@ namespace MinorShift._Library
 		/// <summary>
 		/// 必要に応じてStretch。アルファブレンドなし。
 		/// </summary>
-		public static void DrawImage(int destX, int destY,int width, int height, IntPtr srchDC, Rectangle srcRect)
+		public static void DrawImage(int destX, int destY, int width, int height, IntPtr srchDC, Rectangle srcRect)
 		{
 			if (srcRect.Height == height && srcRect.Width == width)
 				BitBlt(hDC, destX, destY, width, height, srchDC, srcRect.X, srcRect.Y, TernaryRasterOperations.SRCCOPY);
@@ -325,7 +325,7 @@ namespace MinorShift._Library
 				GetTextExtentPoint32(hDCMesureText, "あ", "あ".Length, out fontMetrics);
 			}
 			int ret = GetTabbedTextExtentW(hDCMesureText, str, LangManager.GetStrlenLang(str), 0, ref devnull);
-			Size size = new Size(ret & 0xffff, (ret >> 16) & 0xffff);
+			Size size = new(ret & 0xffff, (ret >> 16) & 0xffff);
 			return size;
 		}
 		static Size MeasureTextNT(string str, Font font)
@@ -342,7 +342,7 @@ namespace MinorShift._Library
 				GetTextExtentPoint32(hDCMesureText, "あ", "あ".Length, out fontMetrics);
 			}
 			int ret = GetTabbedTextExtentW(hDCMesureText, str, str.Length, 0, ref devnull);
-			Size size = new Size(ret & 0xffff, (ret >> 16) & 0xffff);
+			Size size = new(ret & 0xffff, (ret >> 16) & 0xffff);
 			return size;
 		}
 

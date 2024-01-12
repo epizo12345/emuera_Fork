@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using MinorShift.Emuera.Sub;
 using MinorShift.Emuera.GameData;
+using System.Runtime.Versioning;
 
 namespace MinorShift.Emuera.GameProc
 {
@@ -10,7 +11,7 @@ namespace MinorShift.Emuera.GameProc
 	{
 		private string[] TrainName = null;
 		delegate void SystemProcess();
-		Dictionary<SystemStateCode, SystemProcess> systemProcessDictionary = new Dictionary<SystemStateCode, SystemProcess>();
+		Dictionary<SystemStateCode, SystemProcess> systemProcessDictionary = [];
 		private void initSystemProcess()
 		{
 			comAble = new int[TrainName.Length];
@@ -102,9 +103,11 @@ namespace MinorShift.Emuera.GameProc
 
 		void setWaitInput()
 		{
-			InputRequest req = new InputRequest();
-			req.InputType = InputType.IntValue;
-			req.IsSystemInput = true;
+			InputRequest req = new()
+			{
+				InputType = InputType.IntValue,
+				IsSystemInput = true
+			};
 			console.WaitInput(req);
 		}
 
@@ -130,6 +133,7 @@ namespace MinorShift.Emuera.GameProc
 
 		//CheckState()から呼ばれる関数群。ScriptEndに達したときの処理。
 
+		[SupportedOSPlatform("windows")]
 		void beginTitle()
 		{
 			//連続調教コマンド処理中の状態が持ち越されていたらここで消しておく
@@ -139,7 +143,7 @@ namespace MinorShift.Emuera.GameProc
 			skipPrint = false;
 			console.ResetStyle();
 			deleteAllPrevState();
-			if (Program.AnalysisMode)
+			if (analysisMode)
 			{
 				console.PrintSystemLine("ファイル解析終了：Analysis.logに出力します");
 				console.OutputLog(Program.ExeDir + "Analysis.log");
@@ -258,7 +262,7 @@ namespace MinorShift.Emuera.GameProc
 			}
 		}
 
-		List<Int64> coms = new List<long>();
+		List<Int64> coms = [];
 		bool isCTrain = false;
 		int count = 0;
 		bool skipPrint = false;
@@ -486,11 +490,11 @@ namespace MinorShift.Emuera.GameProc
 		{
 			if (console.LastLineIsTemporary && !isCTrain && needCheck)
 			{
-                if (console.LastLineIsEmpty)
-                {
-                    console.deleteLine(2);
-                    console.PrintTemporaryLine("無効な値です");
-                }
+				if (console.LastLineIsEmpty)
+				{
+					console.deleteLine(2);
+					console.PrintTemporaryLine("無効な値です");
+				}
 				console.updatedGeneration = true;
 				endCallShowUserCom();
 			}
@@ -587,11 +591,11 @@ namespace MinorShift.Emuera.GameProc
 		{
 			if (console.LastLineIsTemporary)
 			{
-                if (console.LastLineIsEmpty)
-                {
-                    console.deleteLine(2);
-                    console.PrintTemporaryLine("無効な値です");
-                }
+				if (console.LastLineIsEmpty)
+				{
+					console.deleteLine(2);
+					console.PrintTemporaryLine("無効な値です");
+				}
 				console.updatedGeneration = true;
 				endCallShowAblupSelect();
 			}
@@ -738,11 +742,11 @@ namespace MinorShift.Emuera.GameProc
 		{
 			if (console.LastLineIsTemporary)
 			{
-                if (console.LastLineIsEmpty)
-                {
-                    console.deleteLine(2);
-                    console.PrintTemporaryLine("無効な値です");
-                }
+				if (console.LastLineIsEmpty)
+				{
+					console.deleteLine(2);
+					console.PrintTemporaryLine("無効な値です");
+				}
 				console.updatedGeneration = true;
 				endCallShowShop();
 			}
@@ -757,7 +761,7 @@ namespace MinorShift.Emuera.GameProc
 		void beginDataLoaded()
 		{
 			state.SystemState = SystemStateCode.LoadData_CallSystemLoad;
-			
+
 			if (!callFunction("SYSTEM_LOADEND", false, false))
 				endSystemLoad();//存在しなければスキップ
 		}
@@ -868,7 +872,7 @@ namespace MinorShift.Emuera.GameProc
 				loadPrevState();
 				return;
 			}
-			else if (((int)systemResult / 20) != page && systemResult != AutoSaveIndex && (systemResult >= 0 && systemResult < dataIsAvailable.Length - 1))
+			else if (((int)systemResult / 20) != page && systemResult != AutoSaveIndex && systemResult >= 0 && systemResult < dataIsAvailable.Length - 1)
 			{
 				page = (int)systemResult / 20;
 				state.SystemState = SystemStateCode.SaveGame_Begin;
@@ -937,7 +941,7 @@ namespace MinorShift.Emuera.GameProc
 		{
 			if (systemResult == 100)
 			{//キャンセルなら
-				//オープニングならオープニングへ戻る
+			 //オープニングならオープニングへ戻る
 				if (state.SystemState == SystemStateCode.LoadGameOpenning_WaitInput)
 				{
 					beginTitle();
@@ -947,7 +951,7 @@ namespace MinorShift.Emuera.GameProc
 				loadPrevState();
 				return;
 			}
-			else if (((int)systemResult / 20) != page && systemResult != AutoSaveIndex && (systemResult >= 0 && systemResult < dataIsAvailable.Length - 1))
+			else if (((int)systemResult / 20) != page && systemResult != AutoSaveIndex && systemResult >= 0 && systemResult < dataIsAvailable.Length - 1)
 			{
 				page = (int)systemResult / 20;
 				if (state.SystemState == SystemStateCode.LoadGameOpenning_WaitInput)

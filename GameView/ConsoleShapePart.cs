@@ -12,24 +12,24 @@ namespace MinorShift.Emuera.GameView
 		{
 			string type = shapeType.ToLower();
 			colorchanged = colorchanged || color != Config.ForeColor;
-			StringBuilder sb = new StringBuilder();
+			StringBuilder sb = new();
 			sb.Append("<shape type='");
 			sb.Append(type);
 			sb.Append("' param='");
-			for (int i = 0; i < param.Length;i++ )
+			for (int i = 0; i < param.Length; i++)
 			{
 				sb.Append(param[i].ToString());
 				if (i < param.Length - 1)
 					sb.Append(", ");
 			}
 			sb.Append("'");
-			if(colorchanged)
+			if (colorchanged)
 			{
 				sb.Append(" color='");
 				sb.Append(HtmlManager.GetColorToString(color));
 				sb.Append("'");
 			}
-			if(bcolor != Config.FocusColor)
+			if (bcolor != Config.FocusColor)
 			{
 				sb.Append(" bcolor='");
 				sb.Append(HtmlManager.GetColorToString(bcolor));
@@ -41,7 +41,7 @@ namespace MinorShift.Emuera.GameView
 			float[] paramPixel = new float[param.Length];
 			for (int i = 0; i < param.Length; i++)
 			{
-				paramPixel[i] = ((float)param[i] * lineHeight) / 100f;
+				paramPixel[i] = (float)param[i] * lineHeight / 100f;
 			}
 			RectangleF rectF;
 
@@ -97,7 +97,7 @@ namespace MinorShift.Emuera.GameView
 			return AltText;
 		}
 	}
-	
+
 	internal sealed class ConsoleRectangleShapePart : ConsoleShapePart
 	{
 		public ConsoleRectangleShapePart(RectangleF theRect)
@@ -144,13 +144,13 @@ namespace MinorShift.Emuera.GameView
 		}
 		public override void SetWidth(StringMeasure sm, float subPixel)
 		{
-			float widF = (subPixel + WidthF);
-			Width = (int)(widF);
+			float widF = subPixel + WidthF;
+			Width = (int)widF;
 			XsubPixel = widF - Width;
 			rect.X = (int)(subPixel + originalRectF.X);
 			rect.Width = Width - rect.X;
 			rect.X += Config.DrawingParam_ShapePositionShift;
-			visible = (rect.X >= 0 && rect.Width > 0);// && rect.Y >= 0 && (rect.Y + rect.Height) <= Config.FontSize);
+			visible = rect.X >= 0 && rect.Width > 0;// && rect.Y >= 0 && (rect.Y + rect.Height) <= Config.FontSize);
 		}
 	}
 
@@ -166,10 +166,10 @@ namespace MinorShift.Emuera.GameView
 		public override void DrawTo(System.Drawing.Graphics graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode) { }
 
 		public override void GDIDrawTo(int pointY, bool isSelecting, bool isBackLog) { }
-		public override void SetWidth(StringMeasure sm,float subPixel)
+		public override void SetWidth(StringMeasure sm, float subPixel)
 		{
-			float widF = (subPixel + WidthF);
-			Width = (int)(widF);
+			float widF = subPixel + WidthF;
+			Width = (int)widF;
 			XsubPixel = widF - Width;
 		}
 	}

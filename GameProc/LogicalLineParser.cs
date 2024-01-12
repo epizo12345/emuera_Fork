@@ -20,13 +20,13 @@ namespace MinorShift.Emuera.GameProc
 			string token = LexicalAnalyzer.ReadSingleIdentifier(st);//#～自体にはマクロ非適用
 			if (Config.ICFunction)
 				token = token.ToUpper();
-            //#行として不正な行でもAnalyzeに行って引っかかることがあるので、先に存在しない#～は弾いてしまう
-            if (token == null || (token != "SINGLE" && token != "LATER" && token != "PRI" && token != "ONLY" && token != "FUNCTION" && token != "FUNCTIONS" 
-                && token != "LOCALSIZE" && token != "LOCALSSIZE" && token != "DIM" && token != "DIMS"))
-            {
-                ParserMediator.Warn("解釈できない#行です", position, 1);
-                return false;
-            }
+			//#行として不正な行でもAnalyzeに行って引っかかることがあるので、先に存在しない#～は弾いてしまう
+			if (token == null || (token != "SINGLE" && token != "LATER" && token != "PRI" && token != "ONLY" && token != "FUNCTION" && token != "FUNCTIONS"
+				&& token != "LOCALSIZE" && token != "LOCALSSIZE" && token != "DIM" && token != "DIMS"))
+			{
+				ParserMediator.Warn("解釈できない#行です", position, 1);
+				return false;
+			}
 			try
 			{
 				WordCollection wc = LexicalAnalyzer.Analyse(st, LexEndWith.EoL, LexAnalyzeFlag.AllowAssignment);
@@ -203,19 +203,19 @@ namespace MinorShift.Emuera.GameProc
 								ParserMediator.Warn("#" + token + "の後に有効な数値が指定されていません", position, 2);
 								break;
 							}
-                            //イベント関数では指定しても無視される
-                            if (label.IsEvent)
-                            {
-                                ParserMediator.Warn("イベント関数では#" + token + "による" + token.Substring(0, token.Length - 4)+ "のサイズ指定は無視されます", position, 1);
-                                break;
-                            }
+							//イベント関数では指定しても無視される
+							if (label.IsEvent)
+							{
+								ParserMediator.Warn("イベント関数では#" + token + "による" + token.Substring(0, token.Length - 4) + "のサイズ指定は無視されます", position, 1);
+								break;
+							}
 							IOperandTerm arg = ExpressionParser.ReduceIntegerTerm(wc, TermEndWith.EoL);
-                            if ((!(arg.Restructure(null) is SingleTerm sizeTerm)) || (sizeTerm.GetOperandType() != typeof(Int64)))
-                            {
-                                ParserMediator.Warn("#" + token + "の後に有効な定数式が指定されていません", position, 2);
-                                break;
-                            }
-                            if (sizeTerm.Int <= 0)
+							if ((!(arg.Restructure(null) is SingleTerm sizeTerm)) || (sizeTerm.GetOperandType() != typeof(Int64)))
+							{
+								ParserMediator.Warn("#" + token + "の後に有効な定数式が指定されていません", position, 2);
+								break;
+							}
+							if (sizeTerm.Int <= 0)
 							{
 								ParserMediator.Warn("#" + token + "に0以下の値(" + sizeTerm.Int.ToString() + ")が与えられました。設定は無視されます", position, 1);
 								break;
@@ -277,24 +277,24 @@ namespace MinorShift.Emuera.GameProc
 		err:
 			return false;
 		}
-		
+
 		public static LogicalLine ParseLine(string str, EmueraConsole console)
 		{
-			ScriptPosition position = new ScriptPosition();
-			StringStream stream = new StringStream(str);
+			ScriptPosition position = new();
+			StringStream stream = new(str);
 			return ParseLine(stream, position, console);
 		}
 
 		public static LogicalLine ParseLabelLine(StringStream stream, ScriptPosition position, EmueraConsole console)
 		{
-			bool isFunction = (stream.Current == '@');
+			bool isFunction = stream.Current == '@';
 			//int lineNo = position.LineNo;
 			string labelName = "";
 			string errMes = "";
 			try
 			{
 				int warnLevel = -1;
-                stream.ShiftNext();//@か$を除去
+				stream.ShiftNext();//@か$を除去
 				WordCollection wc = LexicalAnalyzer.Analyse(stream, LexEndWith.EoL, LexAnalyzeFlag.AllowAssignment);
 				if (wc.EOL || !(wc.Current is IdentifierWord))
 				{
@@ -352,7 +352,7 @@ namespace MinorShift.Emuera.GameProc
 				//wc = LexicalAnalyzer.Analyse(stream, LexEndWith.EoL, LexAnalyzeFlag.AllowAssignment);
 				if (Program.AnalysisMode)
 					console.PrintC("@" + labelName, false);
-				FunctionLabelLine funclabelLine = new FunctionLabelLine(position, labelName, wc);
+				FunctionLabelLine funclabelLine = new(position, labelName, wc);
 				if (IdentifierDictionary.IsEventLabelName(labelName))
 				{
 					funclabelLine.IsEvent = true;
@@ -374,14 +374,14 @@ namespace MinorShift.Emuera.GameProc
 			System.Media.SystemSounds.Hand.Play();
 			if (isFunction)
 			{
-				if(labelName.Length == 0)
+				if (labelName.Length == 0)
 					labelName = "<Error>";
 				return new InvalidLabelLine(position, labelName, errMes);
 			}
 			return new InvalidLine(position, errMes);
 		}
-		
-		
+
+
 		public static LogicalLine ParseLine(StringStream stream, ScriptPosition position, EmueraConsole console)
 		{
 			//int lineNo = position.LineNo;
@@ -397,15 +397,15 @@ namespace MinorShift.Emuera.GameProc
 				{
 					char op = stream.Current;
 					WordCollection wc = LexicalAnalyzer.Analyse(stream, LexEndWith.EoL, LexAnalyzeFlag.None);
-                    if ((!(wc.Current is OperatorWord opWT)) || ((opWT.Code != OperatorCode.Increment) && (opWT.Code != OperatorCode.Decrement)))
-                    {
-                        if (op == '+')
-                            errMes = "行が\'+\'から始まっていますが、インクリメントではありません";
-                        else
-                            errMes = "行が\'-\'から始まっていますが、デクリメントではありません";
-                        goto err;
-                    }
-                    wc.ShiftNext();
+					if ((!(wc.Current is OperatorWord opWT)) || ((opWT.Code != OperatorCode.Increment) && (opWT.Code != OperatorCode.Decrement)))
+					{
+						if (op == '+')
+							errMes = "行が\'+\'から始まっていますが、インクリメントではありません";
+						else
+							errMes = "行が\'-\'から始まっていますが、デクリメントではありません";
+						goto err;
+					}
+					wc.ShiftNext();
 					//token = EpressionParser.単語一個分取得(wc)
 					//token非変数
 					//token文字列形
@@ -452,7 +452,7 @@ namespace MinorShift.Emuera.GameProc
 				{
 					assignOP = LexicalAnalyzer.ReadAssignmentOperator(stream);
 				}
-				catch(CodeEE)
+				catch (CodeEE)
 				{
 					errMes = "解釈できない行です";
 					goto err;
@@ -484,6 +484,6 @@ namespace MinorShift.Emuera.GameProc
 				return new InvalidLine(position, e.Message);
 			}
 		}
-		
+
 	}
 }

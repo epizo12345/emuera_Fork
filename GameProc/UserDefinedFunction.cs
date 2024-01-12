@@ -40,8 +40,10 @@ namespace MinorShift.Emuera.GameProc
 		public static UserDefinedFunctionData Create(WordCollection wc, bool dims, ScriptPosition sc)
 		{
 			string dimtype = dims ? "#FUNCTION" : "#FUNCTIONS";
-			UserDefinedFunctionData ret = new UserDefinedFunctionData();
-			ret.TypeIsStr = dims;
+			UserDefinedFunctionData ret = new()
+			{
+				TypeIsStr = dims
+			};
 			IdentifierWord idw;
 			string keyword = dimtype;
 			while (!wc.EOL && (idw = wc.Current as IdentifierWord) != null)
@@ -81,7 +83,7 @@ namespace MinorShift.Emuera.GameProc
 					throw new CodeEE(errMes, sc);
 				ParserMediator.Warn(errMes, sc, errLevel);
 			}
-			List<UserDifinedFunctionDataArgType> argList = new List<UserDifinedFunctionDataArgType>();
+			List<UserDifinedFunctionDataArgType> argList = [];
 			UserDifinedFunctionDataArgType argType = UserDifinedFunctionDataArgType.Null;
 
 			int state = 0;

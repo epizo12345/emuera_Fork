@@ -22,10 +22,10 @@ namespace MinorShift.Emuera.GameData.Expression
 
 	internal static class OperatorMethodManager
 	{
-		readonly static Dictionary<OperatorCode, OperatorMethod> unaryDic = new Dictionary<OperatorCode, OperatorMethod>();
-		readonly static Dictionary<OperatorCode, OperatorMethod> unaryAfterDic = new Dictionary<OperatorCode, OperatorMethod>();
-		readonly static Dictionary<OperatorCode, OperatorMethod> binaryIntIntDic = new Dictionary<OperatorCode, OperatorMethod>();
-		readonly static Dictionary<OperatorCode, OperatorMethod> binaryStrStrDic = new Dictionary<OperatorCode, OperatorMethod>();
+		readonly static Dictionary<OperatorCode, OperatorMethod> unaryDic = [];
+		readonly static Dictionary<OperatorCode, OperatorMethod> unaryAfterDic = [];
+		readonly static Dictionary<OperatorCode, OperatorMethod> binaryIntIntDic = [];
+		readonly static Dictionary<OperatorCode, OperatorMethod> binaryStrStrDic = [];
 		readonly static OperatorMethod binaryMultIntStr = null;
 		readonly static OperatorMethod ternaryIntIntInt = null;
 		readonly static OperatorMethod ternaryIntStrStr = null;
@@ -76,17 +76,17 @@ namespace MinorShift.Emuera.GameData.Expression
 			ternaryIntIntInt = new TernaryIntIntInt();
 			ternaryIntStrStr = new TernaryIntStrStr();
 		}
-		
-		
-		
+
+
+
 		public static IOperandTerm ReduceUnaryTerm(OperatorCode op, IOperandTerm o1)
 		{
-            OperatorMethod method = null;
+			OperatorMethod method = null;
 			if (op == OperatorCode.Increment || op == OperatorCode.Decrement)
 			{
-                if (!(o1 is VariableTerm var))
-                    throw new CodeEE("変数以外をインクリメントすることはできません");
-                if (var.Identifier.IsConst)
+				if (!(o1 is VariableTerm var))
+					throw new CodeEE("変数以外をインクリメントすることはできません");
+				if (var.Identifier.IsConst)
 					throw new CodeEE("変更できない変数をインクリメントすることはできません");
 			}
 			if (o1.GetOperandType() == typeof(Int64))
@@ -96,27 +96,27 @@ namespace MinorShift.Emuera.GameData.Expression
 				if (unaryDic.ContainsKey(op))
 					method = unaryDic[op];
 			}
-			if(method != null)
+			if (method != null)
 				return new FunctionMethodTerm(method, new IOperandTerm[] { o1 });
-            string errMes = "";
-            if (o1.GetOperandType() == typeof(Int64))
-                errMes += "数値型";
-            else if (o1.GetOperandType() == typeof(string))
-                errMes += "文字列型";
-            else
-                errMes += "不定型";
-            errMes += "に単項演算子\'" + OperatorManager.ToOperatorString(op) + "\'は適用できません";
-            throw new CodeEE(errMes);
+			string errMes = "";
+			if (o1.GetOperandType() == typeof(Int64))
+				errMes += "数値型";
+			else if (o1.GetOperandType() == typeof(string))
+				errMes += "文字列型";
+			else
+				errMes += "不定型";
+			errMes += "に単項演算子\'" + OperatorManager.ToOperatorString(op) + "\'は適用できません";
+			throw new CodeEE(errMes);
 		}
-		
+
 		public static IOperandTerm ReduceUnaryAfterTerm(OperatorCode op, IOperandTerm o1)
 		{
-            OperatorMethod method = null;
+			OperatorMethod method = null;
 			if (op == OperatorCode.Increment || op == OperatorCode.Decrement)
 			{
-                if (!(o1 is VariableTerm var))
-                    throw new CodeEE("変数以外をインクリメントすることはできません");
-                if (var.Identifier.IsConst)
+				if (!(o1 is VariableTerm var))
+					throw new CodeEE("変数以外をインクリメントすることはできません");
+				if (var.Identifier.IsConst)
 					throw new CodeEE("変更できない変数をインクリメントすることはできません");
 			}
 			if (o1.GetOperandType() == typeof(Int64))
@@ -126,20 +126,20 @@ namespace MinorShift.Emuera.GameData.Expression
 			}
 			if (method != null)
 				return new FunctionMethodTerm(method, new IOperandTerm[] { o1 });
-            string errMes = "";
-            if (o1.GetOperandType() == typeof(Int64))
-                errMes += "数値型";
-            else if (o1.GetOperandType() == typeof(string))
-                errMes += "文字列型";
-            else
-                errMes += "不定型";
-            errMes += "に後置単項演算子\'" + OperatorManager.ToOperatorString(op) + "\'は適用できません";
-            throw new CodeEE(errMes);
+			string errMes = "";
+			if (o1.GetOperandType() == typeof(Int64))
+				errMes += "数値型";
+			else if (o1.GetOperandType() == typeof(string))
+				errMes += "文字列型";
+			else
+				errMes += "不定型";
+			errMes += "に後置単項演算子\'" + OperatorManager.ToOperatorString(op) + "\'は適用できません";
+			throw new CodeEE(errMes);
 		}
-		
+
 		public static IOperandTerm ReduceBinaryTerm(OperatorCode op, IOperandTerm left, IOperandTerm right)
 		{
-            OperatorMethod method = null;
+			OperatorMethod method = null;
 			if ((left.GetOperandType() == typeof(Int64)) && (right.GetOperandType() == typeof(Int64)))
 			{
 				if (binaryIntIntDic.ContainsKey(op))
@@ -159,25 +159,25 @@ namespace MinorShift.Emuera.GameData.Expression
 			if (method != null)
 				return new FunctionMethodTerm(method, new IOperandTerm[] { left, right });
 			string errMes = "";
-                if (left.GetOperandType() == typeof(Int64))
-                    errMes += "数値型と";
-                else if (left.GetOperandType() == typeof(string))
-                    errMes += "文字列型と";
-                else
-                    errMes += "不定型と";
-                if (right.GetOperandType() == typeof(Int64))
-                    errMes += "数値型の";
-                else if (right.GetOperandType() == typeof(string))
-                    errMes += "文字列型の";
-                else
-                    errMes += "不定型の";
-                errMes += "演算に二項演算子\'" + OperatorManager.ToOperatorString(op) + "\'は適用できません";
-                throw new CodeEE(errMes);
+			if (left.GetOperandType() == typeof(Int64))
+				errMes += "数値型と";
+			else if (left.GetOperandType() == typeof(string))
+				errMes += "文字列型と";
+			else
+				errMes += "不定型と";
+			if (right.GetOperandType() == typeof(Int64))
+				errMes += "数値型の";
+			else if (right.GetOperandType() == typeof(string))
+				errMes += "文字列型の";
+			else
+				errMes += "不定型の";
+			errMes += "演算に二項演算子\'" + OperatorManager.ToOperatorString(op) + "\'は適用できません";
+			throw new CodeEE(errMes);
 		}
-		
+
 		public static IOperandTerm ReduceTernaryTerm(IOperandTerm o1, IOperandTerm o2, IOperandTerm o3)
 		{
-            OperatorMethod method = null;
+			OperatorMethod method = null;
 			if ((o1.GetOperandType() == typeof(Int64)) && (o2.GetOperandType() == typeof(Int64)) && (o3.GetOperandType() == typeof(Int64)))
 				method = ternaryIntIntInt;
 			else if ((o1.GetOperandType() == typeof(Int64)) && (o2.GetOperandType() == typeof(string)) && (o3.GetOperandType() == typeof(string)))
@@ -185,7 +185,7 @@ namespace MinorShift.Emuera.GameData.Expression
 			if (method != null)
 				return new FunctionMethodTerm(method, new IOperandTerm[] { o1, o2, o3 });
 			throw new CodeEE("三項演算子の使用法が不正です");
-			
+
 		}
 
 
@@ -265,29 +265,29 @@ namespace MinorShift.Emuera.GameData.Expression
 			}
 			public override string GetStrValue(ExpressionMediator exm, IOperandTerm[] arguments)
 			{
-                string str;
-                long value;
-                if (arguments[0].GetOperandType() == typeof(Int64))
-                {
-                    value = arguments[0].GetIntValue(exm);
-                    str = arguments[1].GetStrValue(exm);
-                }
-                else
-                {
-                    str = arguments[0].GetStrValue(exm);
-                    value = arguments[1].GetIntValue(exm);
-                }
-                if (value < 0)
+				string str;
+				long value;
+				if (arguments[0].GetOperandType() == typeof(Int64))
+				{
+					value = arguments[0].GetIntValue(exm);
+					str = arguments[1].GetStrValue(exm);
+				}
+				else
+				{
+					str = arguments[0].GetStrValue(exm);
+					value = arguments[1].GetIntValue(exm);
+				}
+				if (value < 0)
 					throw new CodeEE("文字列に負の値(" + value.ToString() + ")を乗算しようとしました");
 				if (value >= 10000)
 					throw new CodeEE("文字列に10000以上の値(" + value.ToString() + ")を乗算しようとしました");
 				if ((str == "") || (value == 0))
 					return "";
-                StringBuilder builder = new StringBuilder
-                {
-                    Capacity = str.Length * (int)value
-                };
-                for (int i = 0; i < value; i++)
+				StringBuilder builder = new()
+				{
+					Capacity = str.Length * (int)value
+				};
+				for (int i = 0; i < value; i++)
 				{
 					builder.Append(str);
 				}
@@ -304,7 +304,7 @@ namespace MinorShift.Emuera.GameData.Expression
 			}
 
 			public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
-	        {
+			{
 				Int64 right = arguments[1].GetIntValue(exm);
 				if (right == 0)
 					throw new CodeEE("0による除算が行なわれました");
@@ -321,7 +321,7 @@ namespace MinorShift.Emuera.GameData.Expression
 			}
 
 			public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
-	        {
+			{
 				Int64 right = arguments[1].GetIntValue(exm);
 				if (right == 0)
 					throw new CodeEE("0による除算が行なわれました");
@@ -658,7 +658,7 @@ namespace MinorShift.Emuera.GameData.Expression
 
 			public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
 			{
-				return arguments[0].GetIntValue(exm) >> (Int32)(arguments[1].GetIntValue(exm));
+				return arguments[0].GetIntValue(exm) >> (Int32)arguments[1].GetIntValue(exm);
 			}
 		}
 
@@ -672,7 +672,7 @@ namespace MinorShift.Emuera.GameData.Expression
 
 			public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
 			{
-				return arguments[0].GetIntValue(exm) << (Int32)(arguments[1].GetIntValue(exm));
+				return arguments[0].GetIntValue(exm) << (Int32)arguments[1].GetIntValue(exm);
 			}
 		}
 
@@ -700,12 +700,12 @@ namespace MinorShift.Emuera.GameData.Expression
 
 			public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
 			{
-                long ret = arguments[0].GetIntValue(exm);
-                if (ret == long.MinValue)
-                {
-                    exm.Console.PrintSystemLine("整数型最小値(" + long.MinValue.ToString() + ")は-を取っても値は変化しません");
-                }
-                return -arguments[0].GetIntValue(exm);
+				long ret = arguments[0].GetIntValue(exm);
+				if (ret == long.MinValue)
+				{
+					exm.Console.PrintSystemLine("整数型最小値(" + long.MinValue.ToString() + ")は-を取っても値は変化しません");
+				}
+				return -arguments[0].GetIntValue(exm);
 			}
 		}
 

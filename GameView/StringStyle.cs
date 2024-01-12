@@ -47,7 +47,7 @@ namespace MinorShift.Emuera.GameView
 			if ((obj == null) || (!(obj is StringStyle)))
 				return false;
 			StringStyle ss = (StringStyle)obj;
-			return ((this.Color == ss.Color) && (this.ButtonColor == ss.ButtonColor) && (this.ColorChanged == ss.ColorChanged) && (this.FontStyle == ss.FontStyle) && (this.Fontname.Equals(ss.Fontname,  Config.SCIgnoreCase)));
+			return (this.Color == ss.Color) && (this.ButtonColor == ss.ButtonColor) && (this.ColorChanged == ss.ColorChanged) && (this.FontStyle == ss.FontStyle) && this.Fontname.Equals(ss.Fontname, Config.SCIgnoreCase);
 		}
 		public override int GetHashCode()
 		{
@@ -55,7 +55,7 @@ namespace MinorShift.Emuera.GameView
 		}
 		public static bool operator ==(StringStyle x, StringStyle y)
 		{
-			return ((x.Color == y.Color) && (x.ButtonColor == y.ButtonColor) && (x.ColorChanged == y.ColorChanged) && (x.FontStyle == y.FontStyle) && (x.Fontname.Equals(y.Fontname, Config.SCIgnoreCase)));
+			return (x.Color == y.Color) && (x.ButtonColor == y.ButtonColor) && (x.ColorChanged == y.ColorChanged) && (x.FontStyle == y.FontStyle) && x.Fontname.Equals(y.Fontname, Config.SCIgnoreCase);
 		}
 		public static bool operator !=(StringStyle x, StringStyle y)
 		{

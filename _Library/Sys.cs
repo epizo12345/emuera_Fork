@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Windows.Forms;
-using System.IO;
+﻿using System.IO;
+using System.Reflection;
 
 namespace MinorShift._Library
 {
@@ -10,20 +7,16 @@ namespace MinorShift._Library
 	{
 		static Sys()
 		{
-			ExePath = Application.ExecutablePath;
-			ExeDir = Path.GetDirectoryName(ExePath) + "\\";
-			ExeName = Path.GetFileName(ExePath);
+			ExePath = Assembly.GetEntryAssembly().Location;
+			//エラー出力用
+			//1815 .exeが東方板のNGワードに引っかかるそうなので除去
+			ExeName = Path.GetFileNameWithoutExtension(ExePath);
 		}
 
 		/// <summary>
 		/// 実行ファイルのパス
 		/// </summary>
 		public static readonly string ExePath;
-
-		/// <summary>
-		/// 実行ファイルのディレクトリ。最後に\を付けたstring
-		/// </summary>
-		public static readonly string ExeDir;
 
 		/// <summary>
 		/// 実行ファイルの名前。ディレクトリなし

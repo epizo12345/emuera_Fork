@@ -78,7 +78,7 @@ namespace MinorShift.Emuera.Forms
 		private void updateTrace()
 		{
 			string str = mainConsole.GetDebugTraceLog(false);
-			if(str != null)
+			if (str != null)
 				textBoxTrace.Text = str;
 			//textBoxTrace.SelectionStart = textBoxTrace.Text.Length;
 			//textBoxTrace.Focus();
@@ -95,7 +95,7 @@ namespace MinorShift.Emuera.Forms
 
 		private void updateVarWatch()
 		{
-            GlobalStatic.Process.saveCurrentState(false);
+			GlobalStatic.Process.saveCurrentState(false);
 			for (int i = 0; i < listViewWatch.Items.Count - 1; i++)
 			{//無名のアイテムを削除
 				if (listViewWatch.Items[i].Text.Length == 0)
@@ -106,16 +106,16 @@ namespace MinorShift.Emuera.Forms
 			}
 			if ((listViewWatch.Items.Count == 0) || (!string.IsNullOrEmpty(listViewWatch.Items[listViewWatch.Items.Count - 1].Text)))
 			{
-				ListViewItem newLVI = new ListViewItem("");
+				ListViewItem newLVI = new("");
 				newLVI.SubItems.Add(new ListViewItem.ListViewSubItem(newLVI, ""));
 				listViewWatch.Items.Add(newLVI);
 			}
-			foreach(ListViewItem lvi in listViewWatch.Items)
+			foreach (ListViewItem lvi in listViewWatch.Items)
 			{
 				lvi.SubItems[1].Text = getValueString(lvi.Text);
 			}
 			GlobalStatic.Process.clearMethodStack();
-            GlobalStatic.Process.loadPrevState();
+			GlobalStatic.Process.loadPrevState();
 			this.Update();
 		}
 		private string getValueString(string str)
@@ -127,7 +127,7 @@ namespace MinorShift.Emuera.Forms
 			mainConsole.RunERBFromMemory = true;
 			try
 			{
-				StringStream st = new StringStream(str);
+				StringStream st = new(str);
 				WordCollection wc = LexicalAnalyzer.Analyse(st, LexEndWith.EoL, LexAnalyzeFlag.None);
 				IOperandTerm term = ExpressionParser.ReduceExpressionTerm(wc, TermEndWith.EoL);
 				SingleTerm value = term.GetValue(GlobalStatic.EMediator);
@@ -151,46 +151,46 @@ namespace MinorShift.Emuera.Forms
 		{
 			if (string.IsNullOrEmpty(e.Label))
 			{
-			//	if (e.Item != listViewWatch.Items.Count - 1)
-			//		listViewWatch.Items.RemoveAt(e.Item);
+				//	if (e.Item != listViewWatch.Items.Count - 1)
+				//		listViewWatch.Items.RemoveAt(e.Item);
 			}
 			else
 			{
 				listViewWatch.Items[e.Item].SubItems[1].Text = getValueString(e.Label);
 				if (e.Item == listViewWatch.Items.Count - 1)
 				{
-					ListViewItem newLVI = new ListViewItem("");
+					ListViewItem newLVI = new("");
 					newLVI.SubItems.Add(new ListViewItem.ListViewSubItem(newLVI, ""));
 					listViewWatch.Items.Add(newLVI);
 				}
 			}
 		}
 
-        private void checkBoxTopMost_CheckedChanged(object sender, EventArgs e)
-        {
-            this.TopMost = checkBoxTopMost.Checked;
-        }
+		private void checkBoxTopMost_CheckedChanged(object sender, EventArgs e)
+		{
+			this.TopMost = checkBoxTopMost.Checked;
+		}
 
-        private void button1_Click(object sender, EventArgs e)
-        {
-            this.Close();
-        }
+		private void button1_Click(object sender, EventArgs e)
+		{
+			this.Close();
+		}
 
-        private void 閉じるToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            this.Close();
-        }
+		private void 閉じるToolStripMenuItem_Click(object sender, EventArgs e)
+		{
+			this.Close();
+		}
 
-        private void ウォッチリストの読込ToolStripMenuItem_Click(object sender, EventArgs e)
-        {
+		private void ウォッチリストの読込ToolStripMenuItem_Click(object sender, EventArgs e)
+		{
 			loadWatchList();
 			updateVarWatch();
-        }
+		}
 
-        private void ウォッチリストの保存ToolStripMenuItem_Click(object sender, EventArgs e)
-        {
+		private void ウォッチリストの保存ToolStripMenuItem_Click(object sender, EventArgs e)
+		{
 			saveWatchList();
-        }
+		}
 
 
 		private readonly string watchFilepath = Program.DebugDir + "watchlist.csv";
@@ -262,7 +262,7 @@ namespace MinorShift.Emuera.Forms
 		{
 			if (!File.Exists(watchFilepath))
 				return;
-			List<string> saveStrList = new List<string>();
+			List<string> saveStrList = [];
 
 			StreamReader reader = null;
 			try
@@ -289,17 +289,17 @@ namespace MinorShift.Emuera.Forms
 			{
 				if (!string.IsNullOrEmpty(str))
 				{
-					ListViewItem newLVI = new ListViewItem(str);
+					ListViewItem newLVI = new(str);
 					newLVI.SubItems.Add(new ListViewItem.ListViewSubItem(newLVI, ""));
 					listViewWatch.Items.Add(newLVI);
 				}
 			}
 		}
 
-        private void DebugDialog_Activated(object sender, EventArgs e)
-        {
-            UpdateData();
-        }
+		private void DebugDialog_Activated(object sender, EventArgs e)
+		{
+			UpdateData();
+		}
 
 
 		private void updateSize()
@@ -309,7 +309,7 @@ namespace MinorShift.Emuera.Forms
 
 			if (tabControlMain.SelectedTab == tabPageConsole)
 			{//タブ切り替え直後の時点ではtabPageConsole.Heightは更新されていないのでtabControlMain.Heightより推定するしかない
-				//textBoxConsole.Height = tabPageConsole.Height - textBoxCommand.Height - 9;
+			 //textBoxConsole.Height = tabPageConsole.Height - textBoxCommand.Height - 9;
 				textBoxConsole.Height = tabControlMain.Height - 26 - textBoxCommand.Height - 9;
 			}
 		}
@@ -321,7 +321,7 @@ namespace MinorShift.Emuera.Forms
 			//環境依存かもしれない。誰かに指摘されたら考えよう。
 			tabControlMain.Height = this.Size.Height - 103;
 			updateSize();
-			
+
 		}
 
 		private void listViewWatch_KeyUp(object sender, KeyEventArgs e)
@@ -455,8 +455,10 @@ namespace MinorShift.Emuera.Forms
 		{
 			bool tempTopMost = TopMost;
 			this.TopMost = false;
-			DebugConfigDialog dialog = new DebugConfigDialog();
-            dialog.StartPosition = FormStartPosition.CenterParent;
+			DebugConfigDialog dialog = new()
+			{
+				StartPosition = FormStartPosition.CenterParent
+			};
 			dialog.SetConfig(this);
 			dialog.ShowDialog();
 			this.TopMost = tempTopMost;

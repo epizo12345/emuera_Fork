@@ -64,8 +64,8 @@ namespace MinorShift.Emuera.Sub
 		{
 			if (reader == null)
 				throw new FileEE("無効なストリームです");
-            string str = reader.ReadLine();
-            if (str == null)
+			string str = reader.ReadLine();
+			if (str == null)
 				throw new FileEE("読み取るべき数値がありません");
 			if (!Int64.TryParse(str, out long ret))
 				throw new FileEE("数値として認識できません");
@@ -81,21 +81,21 @@ namespace MinorShift.Emuera.Sub
 				throw new FileEE("無効な配列が渡されました");
 			int i = -1;
 			string str;
-            while (true)
-            {
-                i++;
-                str = reader.ReadLine();
-                if (str == null)
-                    throw new FileEE("予期しないセーブデータの終端です");
-                if (str.Equals(FINISHER, StringComparison.Ordinal))
-                    break;
-                if (i >= array.Length)//配列を超えて保存されていても動じないで読み飛ばす。
-                    continue;
-                if (!Int64.TryParse(str, out long integer))
-                    throw new FileEE("数値として認識できません");
-                array[i] = integer;
-            }
-            for (; i < array.Length; i++)//保存されている値が無いなら0に初期化
+			while (true)
+			{
+				i++;
+				str = reader.ReadLine();
+				if (str == null)
+					throw new FileEE("予期しないセーブデータの終端です");
+				if (str.Equals(FINISHER, StringComparison.Ordinal))
+					break;
+				if (i >= array.Length)//配列を超えて保存されていても動じないで読み飛ばす。
+					continue;
+				if (!Int64.TryParse(str, out long integer))
+					throw new FileEE("数値として認識できません");
+				array[i] = integer;
+			}
+			for (; i < array.Length; i++)//保存されている値が無いなら0に初期化
 				array[i] = 0;
 		}
 
@@ -170,7 +170,7 @@ namespace MinorShift.Emuera.Sub
 		{
 			if (reader == null)
 				throw new FileEE("無効なストリームです");
-			Dictionary<string, string> strList = new Dictionary<string, string>();
+			Dictionary<string, string> strList = [];
 			string str;
 			while (true)
 			{
@@ -195,7 +195,7 @@ namespace MinorShift.Emuera.Sub
 		{
 			if (reader == null)
 				throw new FileEE("無効なストリームです");
-			Dictionary<string, Int64> intList = new Dictionary<string, Int64>();
+			Dictionary<string, Int64> intList = [];
 			string str;
 			while (true)
 			{
@@ -211,9 +211,9 @@ namespace MinorShift.Emuera.Sub
 					throw new FileEE("セーブデータの形式が不正です");
 				string key = str.Substring(0, index);
 				string valueStr = str.Substring(index + 1, str.Length - index - 1);
-                if (!Int64.TryParse(valueStr, out long value))
-                    throw new FileEE("数値として認識できません");
-                if (!intList.ContainsKey(key))
+				if (!Int64.TryParse(valueStr, out long value))
+					throw new FileEE("数値として認識できません");
+				if (!intList.ContainsKey(key))
 					intList.Add(key, value);
 			}
 			return intList;
@@ -223,7 +223,7 @@ namespace MinorShift.Emuera.Sub
 		{
 			if (reader == null)
 				throw new FileEE("無効なストリームです");
-			Dictionary<string, List<Int64>> ret = new Dictionary<string, List<Int64>>();
+			Dictionary<string, List<Int64>> ret = [];
 			string str;
 			while (true)
 			{
@@ -235,7 +235,7 @@ namespace MinorShift.Emuera.Sub
 				if (str.Equals(EMU_SEPARATOR, StringComparison.Ordinal))
 					break;
 				string key = str;
-				List<Int64> valueList = new List<Int64>();
+				List<Int64> valueList = [];
 				while (true)
 				{
 					str = reader.ReadLine();
@@ -245,9 +245,9 @@ namespace MinorShift.Emuera.Sub
 						throw new FileEE("セーブデータの形式が不正です");
 					if (str.Equals(FINISHER, StringComparison.Ordinal))
 						break;
-                    if (!Int64.TryParse(str, out long value))
-                        throw new FileEE("数値として認識できません");
-                    valueList.Add(value);
+					if (!Int64.TryParse(str, out long value))
+						throw new FileEE("数値として認識できません");
+					valueList.Add(value);
 				}
 				if (!ret.ContainsKey(key))
 					ret.Add(key, valueList);
@@ -259,7 +259,7 @@ namespace MinorShift.Emuera.Sub
 		{
 			if (reader == null)
 				throw new FileEE("無効なストリームです");
-			Dictionary<string, List<string>> ret = new Dictionary<string, List<string>>();
+			Dictionary<string, List<string>> ret = [];
 			string str;
 			while (true)
 			{
@@ -271,7 +271,7 @@ namespace MinorShift.Emuera.Sub
 				if (str.Equals(EMU_SEPARATOR, StringComparison.Ordinal))
 					break;
 				string key = str;
-				List<string> valueList = new List<string>();
+				List<string> valueList = [];
 				while (true)
 				{
 					str = reader.ReadLine();
@@ -293,7 +293,7 @@ namespace MinorShift.Emuera.Sub
 		{
 			if (reader == null)
 				throw new FileEE("無効なストリームです");
-			Dictionary<string, List<Int64[]>> ret = new Dictionary<string, List<Int64[]>>();
+			Dictionary<string, List<Int64[]>> ret = [];
 			if (emu_version < 1708)
 				return ret;
 			string str;
@@ -307,7 +307,7 @@ namespace MinorShift.Emuera.Sub
 				if (str.Equals(EMU_SEPARATOR, StringComparison.Ordinal))
 					break;
 				string key = str;
-				List<Int64[]> valueList = new List<Int64[]>();
+				List<Int64[]> valueList = [];
 				while (true)
 				{
 					str = reader.ReadLine();
@@ -340,7 +340,7 @@ namespace MinorShift.Emuera.Sub
 		{
 			if (reader == null)
 				throw new FileEE("無効なストリームです");
-			Dictionary<string, List<string[]>> ret = new Dictionary<string, List<string[]>>();
+			Dictionary<string, List<string[]>> ret = [];
 			if (emu_version < 1708)
 				return ret;
 			string str;
@@ -362,7 +362,7 @@ namespace MinorShift.Emuera.Sub
 		{
 			if (reader == null)
 				throw new FileEE("無効なストリームです");
-			Dictionary<string, List<List<Int64[]>>> ret = new Dictionary<string, List<List<Int64[]>>>();
+			Dictionary<string, List<List<Int64[]>>> ret = [];
 			if (emu_version < 1729)
 				return ret;
 			string str;
@@ -376,7 +376,7 @@ namespace MinorShift.Emuera.Sub
 				if (str.Equals(EMU_SEPARATOR, StringComparison.Ordinal))
 					break;
 				string key = str;
-				List<List<Int64[]>> valueList = new List<List<Int64[]>>();
+				List<List<Int64[]>> valueList = [];
 				while (true)
 				{
 					str = reader.ReadLine();
@@ -388,7 +388,7 @@ namespace MinorShift.Emuera.Sub
 						break;
 					if (str.Contains("{"))
 					{
-						List<Int64[]> tokenList = new List<long[]>();
+						List<Int64[]> tokenList = [];
 						while (true)
 						{
 							str = reader.ReadLine();
@@ -420,7 +420,7 @@ namespace MinorShift.Emuera.Sub
 		{
 			if (reader == null)
 				throw new FileEE("無効なストリームです");
-			Dictionary<string, List<List<string[]>>> ret = new Dictionary<string, List<List<string[]>>>();
+			Dictionary<string, List<List<string[]>>> ret = [];
 			if (emu_version < 1729)
 				return ret;
 			string str;
@@ -475,7 +475,7 @@ namespace MinorShift.Emuera.Sub
 			this.file = file;
 			writer = new StreamWriter(file, Config.SaveEncode);
 		}
-		
+
 		public const string FINISHER = EraDataReader.FINISHER;
 		public const string EMU_START = EraDataReader.EMU_1808_START;
 		public const string EMU_SEPARATOR = EraDataReader.EMU_SEPARATOR;
@@ -643,7 +643,7 @@ namespace MinorShift.Emuera.Sub
 					writer.WriteLine("");
 					continue;
 				}
-				StringBuilder builder = new StringBuilder("");
+				StringBuilder builder = new("");
 				for (int y = 0; y < countY[x]; y++)
 				{
 					builder.Append(array2D[x, y].ToString());
@@ -660,7 +660,7 @@ namespace MinorShift.Emuera.Sub
 			throw new NotImplementedException("まだ実装してないよ");
 		}
 
-		public void WriteExtended(string key, Int64[, ,] array3D)
+		public void WriteExtended(string key, Int64[,,] array3D)
 		{
 			if (writer == null)
 				throw new FileEE("無効なストリームです");
@@ -700,7 +700,7 @@ namespace MinorShift.Emuera.Sub
 				}
 				for (int y = 0; y < countY[x]; y++)
 				{
-					StringBuilder builder = new StringBuilder("");
+					StringBuilder builder = new("");
 					if (countZ[x, y] == 0)
 					{
 						writer.WriteLine("");
@@ -719,7 +719,7 @@ namespace MinorShift.Emuera.Sub
 			writer.WriteLine(FINISHER);
 		}
 
-		public void WriteExtended(string key, string[, ,] array2D)
+		public void WriteExtended(string key, string[,,] array2D)
 		{
 			throw new NotImplementedException("まだ実装してないよ");
 		}

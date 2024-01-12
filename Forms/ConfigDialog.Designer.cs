@@ -232,10 +232,10 @@
 			this.comboBox6.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
 			this.comboBox6.FormattingEnabled = true;
 			this.comboBox6.Items.AddRange(new object[] {
-            resources.GetString("comboBox6.Items"),
-            resources.GetString("comboBox6.Items1"),
-            resources.GetString("comboBox6.Items2"),
-            resources.GetString("comboBox6.Items3")});
+			resources.GetString("comboBox6.Items"),
+			resources.GetString("comboBox6.Items1"),
+			resources.GetString("comboBox6.Items2"),
+			resources.GetString("comboBox6.Items3")});
 			resources.ApplyResources(this.comboBox6, "comboBox6");
 			this.comboBox6.Name = "comboBox6";
 			this.comboBox6.SelectedIndexChanged += new System.EventHandler(this.comboBox6_SelectedIndexChanged);
@@ -370,9 +370,9 @@
 			this.comboBoxTextDrawingMode.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
 			this.comboBoxTextDrawingMode.FormattingEnabled = true;
 			this.comboBoxTextDrawingMode.Items.AddRange(new object[] {
-            resources.GetString("comboBoxTextDrawingMode.Items"),
-            resources.GetString("comboBoxTextDrawingMode.Items1"),
-            resources.GetString("comboBoxTextDrawingMode.Items2")});
+			resources.GetString("comboBoxTextDrawingMode.Items"),
+			resources.GetString("comboBoxTextDrawingMode.Items1"),
+			resources.GetString("comboBoxTextDrawingMode.Items2")});
 			resources.ApplyResources(this.comboBoxTextDrawingMode, "comboBoxTextDrawingMode");
 			this.comboBoxTextDrawingMode.Name = "comboBoxTextDrawingMode";
 			// 
@@ -614,10 +614,10 @@
 			this.comboBox1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
 			this.comboBox1.FormattingEnabled = true;
 			this.comboBox1.Items.AddRange(new object[] {
-            resources.GetString("comboBox1.Items"),
-            resources.GetString("comboBox1.Items1"),
-            resources.GetString("comboBox1.Items2"),
-            resources.GetString("comboBox1.Items3")});
+			resources.GetString("comboBox1.Items"),
+			resources.GetString("comboBox1.Items1"),
+			resources.GetString("comboBox1.Items2"),
+			resources.GetString("comboBox1.Items3")});
 			resources.ApplyResources(this.comboBox1, "comboBox1");
 			this.comboBox1.Name = "comboBox1";
 			// 
@@ -881,10 +881,10 @@
 			this.comboBox5.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
 			this.comboBox5.FormattingEnabled = true;
 			this.comboBox5.Items.AddRange(new object[] {
-            resources.GetString("comboBox5.Items"),
-            resources.GetString("comboBox5.Items1"),
-            resources.GetString("comboBox5.Items2"),
-            resources.GetString("comboBox5.Items3")});
+			resources.GetString("comboBox5.Items"),
+			resources.GetString("comboBox5.Items1"),
+			resources.GetString("comboBox5.Items2"),
+			resources.GetString("comboBox5.Items3")});
 			resources.ApplyResources(this.comboBox5, "comboBox5");
 			this.comboBox5.Name = "comboBox5";
 			// 
@@ -898,10 +898,10 @@
 			this.comboBox4.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
 			this.comboBox4.FormattingEnabled = true;
 			this.comboBox4.Items.AddRange(new object[] {
-            resources.GetString("comboBox4.Items"),
-            resources.GetString("comboBox4.Items1"),
-            resources.GetString("comboBox4.Items2"),
-            resources.GetString("comboBox4.Items3")});
+			resources.GetString("comboBox4.Items"),
+			resources.GetString("comboBox4.Items1"),
+			resources.GetString("comboBox4.Items2"),
+			resources.GetString("comboBox4.Items3")});
 			resources.ApplyResources(this.comboBox4, "comboBox4");
 			this.comboBox4.Name = "comboBox4";
 			// 
@@ -915,10 +915,10 @@
 			this.comboBox3.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
 			this.comboBox3.FormattingEnabled = true;
 			this.comboBox3.Items.AddRange(new object[] {
-            resources.GetString("comboBox3.Items"),
-            resources.GetString("comboBox3.Items1"),
-            resources.GetString("comboBox3.Items2"),
-            resources.GetString("comboBox3.Items3")});
+			resources.GetString("comboBox3.Items"),
+			resources.GetString("comboBox3.Items1"),
+			resources.GetString("comboBox3.Items2"),
+			resources.GetString("comboBox3.Items3")});
 			resources.ApplyResources(this.comboBox3, "comboBox3");
 			this.comboBox3.Name = "comboBox3";
 			// 
@@ -932,9 +932,9 @@
 			this.comboBoxReduceArgumentOnLoad.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
 			this.comboBoxReduceArgumentOnLoad.FormattingEnabled = true;
 			this.comboBoxReduceArgumentOnLoad.Items.AddRange(new object[] {
-            resources.GetString("comboBoxReduceArgumentOnLoad.Items"),
-            resources.GetString("comboBoxReduceArgumentOnLoad.Items1"),
-            resources.GetString("comboBoxReduceArgumentOnLoad.Items2")});
+			resources.GetString("comboBoxReduceArgumentOnLoad.Items"),
+			resources.GetString("comboBoxReduceArgumentOnLoad.Items1"),
+			resources.GetString("comboBoxReduceArgumentOnLoad.Items2")});
 			resources.ApplyResources(this.comboBoxReduceArgumentOnLoad, "comboBoxReduceArgumentOnLoad");
 			this.comboBoxReduceArgumentOnLoad.Name = "comboBoxReduceArgumentOnLoad";
 			this.comboBoxReduceArgumentOnLoad.SelectedIndexChanged += new System.EventHandler(this.comboBoxReduceArgumentOnLoad_SelectedIndexChanged);
@@ -1008,6 +1008,7 @@
 			this.ResumeLayout(false);
 			this.PerformLayout();
 
+			this.Shown += shown;
 		}
 
 		#endregion
@@ -1015,13 +1016,13 @@
 		private System.Windows.Forms.Button buttonSave;
 		private System.Windows.Forms.Button buttonCancel;
 		private System.Windows.Forms.Button buttonReboot;
-        private System.Windows.Forms.TabControl tabControl;
+		private System.Windows.Forms.TabControl tabControl;
 		private System.Windows.Forms.TabPage tabPageFont;
 		private System.Windows.Forms.TabPage tabPageDebug;
 		private MinorShift.Emuera.Forms.ColorBox colorBoxFG;
 		private MinorShift.Emuera.Forms.ColorBox colorBoxBG;
 		private MinorShift.Emuera.Forms.ColorBox colorBoxBacklog;
-        private MinorShift.Emuera.Forms.ColorBox colorBoxSelecting;
+		private MinorShift.Emuera.Forms.ColorBox colorBoxSelecting;
 		private System.Windows.Forms.Label label7;
 		private System.Windows.Forms.Label label8;
 		private System.Windows.Forms.NumericUpDown numericUpDown6;
@@ -1039,7 +1040,7 @@
 		private System.Windows.Forms.Label label15;
 		private System.Windows.Forms.ComboBox comboBox5;
 		private System.Windows.Forms.Label label16;
-        private System.Windows.Forms.TabPage tabPageView;
+		private System.Windows.Forms.TabPage tabPageView;
 		private System.Windows.Forms.Label label9;
 		private System.Windows.Forms.NumericUpDown numericUpDown7;
 		private System.Windows.Forms.Label label1;
@@ -1048,7 +1049,7 @@
 		private System.Windows.Forms.NumericUpDown numericUpDown1;
 		private System.Windows.Forms.Label label18;
 		private System.Windows.Forms.ComboBox comboBoxTextDrawingMode;
-        private System.Windows.Forms.CheckBox checkBox14;
+		private System.Windows.Forms.CheckBox checkBox14;
 		private System.Windows.Forms.Button button2;
 		private System.Windows.Forms.TabPage tabPageWindow;
 		private System.Windows.Forms.CheckBox checkBox17;
@@ -1063,7 +1064,7 @@
 		private System.Windows.Forms.NumericUpDown numericUpDown3;
 		private System.Windows.Forms.NumericUpDown numericUpDown2;
 		private System.Windows.Forms.CheckBox checkBox8;
-        private System.Windows.Forms.Label ScrollRange;
+		private System.Windows.Forms.Label ScrollRange;
 		private System.Windows.Forms.NumericUpDown numericUpDown8;
 		private System.Windows.Forms.TabPage tabEnvironment;
 		private System.Windows.Forms.NumericUpDown numericUpDown11;
@@ -1077,14 +1078,14 @@
 		private System.Windows.Forms.CheckBox checkBox3;
 		private System.Windows.Forms.Label label20;
 		private System.Windows.Forms.Label label17;
-        private System.Windows.Forms.Label label6;
-        private System.Windows.Forms.CheckBox checkBox21;
-        private System.Windows.Forms.TextBox textBox2;
-        private System.Windows.Forms.Label label23;
-        private System.Windows.Forms.Button button4;
-        private System.Windows.Forms.TextBox textBox1;
-        private System.Windows.Forms.Label label22;
-        private System.Windows.Forms.OpenFileDialog openFileDialog1;
+		private System.Windows.Forms.Label label6;
+		private System.Windows.Forms.CheckBox checkBox21;
+		private System.Windows.Forms.TextBox textBox2;
+		private System.Windows.Forms.Label label23;
+		private System.Windows.Forms.Button button4;
+		private System.Windows.Forms.TextBox textBox1;
+		private System.Windows.Forms.Label label22;
+		private System.Windows.Forms.OpenFileDialog openFileDialog1;
 		private System.Windows.Forms.TabPage tabPageCompati;
 		private System.Windows.Forms.Label label30;
 		private System.Windows.Forms.CheckBox checkBoxCompatiCALLNAME;
@@ -1092,24 +1093,24 @@
 		private System.Windows.Forms.CheckBox checkBox24;
 		private System.Windows.Forms.CheckBox checkBoxCompatiLinefeedAs1739;
 		private System.Windows.Forms.CheckBox checkBoxCompatiRAND;
-        private System.Windows.Forms.Button button8;
-        private System.Windows.Forms.Button button7;
-        private System.Windows.Forms.ToolTip toolTip1;
+		private System.Windows.Forms.Button button8;
+		private System.Windows.Forms.Button button7;
+		private System.Windows.Forms.ToolTip toolTip1;
 		private System.Windows.Forms.CheckBox checkBox23;
-        private System.Windows.Forms.CheckBox checkBoxFuncNoIgnoreCase;
-        private System.Windows.Forms.TabPage tabPageSystem;
-        private System.Windows.Forms.ComboBox comboBox1;
+		private System.Windows.Forms.CheckBox checkBoxFuncNoIgnoreCase;
+		private System.Windows.Forms.TabPage tabPageSystem;
+		private System.Windows.Forms.ComboBox comboBox1;
 		private System.Windows.Forms.Label label11;
-        private System.Windows.Forms.CheckBox checkBoxSystemFullSpace;
-        private System.Windows.Forms.CheckBox checkBox22;
-        private System.Windows.Forms.Label label21;
-        private System.Windows.Forms.CheckBox checkBox20;
-        private System.Windows.Forms.CheckBox checkBox19;
-        private System.Windows.Forms.CheckBox checkBox16;
-        private System.Windows.Forms.CheckBox checkBox15;
-        private System.Windows.Forms.CheckBox checkBox1;
-        private System.Windows.Forms.CheckBox checkBox10;
-        private System.Windows.Forms.CheckBox checkBox2;
+		private System.Windows.Forms.CheckBox checkBoxSystemFullSpace;
+		private System.Windows.Forms.CheckBox checkBox22;
+		private System.Windows.Forms.Label label21;
+		private System.Windows.Forms.CheckBox checkBox20;
+		private System.Windows.Forms.CheckBox checkBox19;
+		private System.Windows.Forms.CheckBox checkBox16;
+		private System.Windows.Forms.CheckBox checkBox15;
+		private System.Windows.Forms.CheckBox checkBox1;
+		private System.Windows.Forms.CheckBox checkBox10;
+		private System.Windows.Forms.CheckBox checkBox2;
 		private System.Windows.Forms.CheckBox checkBox25;
 		private System.Windows.Forms.CheckBox checkBox12;
 		private System.Windows.Forms.CheckBox checkBox28;
@@ -1119,10 +1120,10 @@
 		private System.Windows.Forms.CheckBox checkBox26;
 		private System.Windows.Forms.CheckBox checkBox27;
 		private System.Windows.Forms.CheckBox checkBoxCompatiSP;
-        private System.Windows.Forms.Button button6;
-        private System.Windows.Forms.Button button5;
-        private System.Windows.Forms.ComboBox comboBox6;
-        private System.Windows.Forms.CheckBox checkBox9;
+		private System.Windows.Forms.Button button6;
+		private System.Windows.Forms.Button button5;
+		private System.Windows.Forms.ComboBox comboBox6;
+		private System.Windows.Forms.CheckBox checkBox9;
 		private System.Windows.Forms.CheckBox checkBox29;
 	}
 }

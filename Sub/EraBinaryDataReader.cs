@@ -61,8 +61,8 @@ namespace MinorShift.Emuera.Sub
 	/// </summary>
 	internal abstract class EraBinaryDataReader : IDisposable
 	{
-		private EraBinaryDataReader() {}
-		
+		private EraBinaryDataReader() { }
+
 		protected EraBinaryDataReader(BinaryReader stream, int ver, UInt32[] buf)
 		{
 			reader = stream;
@@ -86,7 +86,7 @@ namespace MinorShift.Emuera.Sub
 			{
 				if ((fs == null) || (fs.Length < 16))
 					return null;
-				BinaryReader reader = new BinaryReader(fs, Encoding.Unicode);
+				BinaryReader reader = new(fs, Encoding.Unicode);
 
 				if (reader.ReadUInt64() != EraBDConst.Header)
 					return null;
@@ -118,10 +118,10 @@ namespace MinorShift.Emuera.Sub
 		public abstract Int64 ReadInt();
 		public abstract void ReadIntArray(Int64[] refArray, bool needInit);
 		public abstract void ReadIntArray2D(Int64[,] refArray, bool needInit);
-		public abstract void ReadIntArray3D(Int64[, ,] refArray, bool needInit);
+		public abstract void ReadIntArray3D(Int64[,,] refArray, bool needInit);
 		public abstract void ReadStrArray(string[] refArray, bool needInit);
 		public abstract void ReadStrArray2D(string[,] refArray, bool needInit);
-		public abstract void ReadStrArray3D(string[, ,] refArray, bool needInit);
+		public abstract void ReadStrArray3D(string[,,] refArray, bool needInit);
 		public abstract KeyValuePair<string, EraSaveDataType> ReadVariableCode();
 		#region IDisposable メンバ
 
@@ -216,11 +216,11 @@ namespace MinorShift.Emuera.Sub
 				//保存されたデータの方が大きいとき。レアケースのはず
 				if (length0 < saveLength0)
 				{
-                    oriArray = refArray;
-                    //1818修正 サイズ違いの時にあふれないように/配列は最大まで確保、作業するのは重複部分だけ
-                    refArray = new Int64[Math.Max(length0, saveLength0)];
+					oriArray = refArray;
+					//1818修正 サイズ違いの時にあふれないように/配列は最大まで確保、作業するのは重複部分だけ
+					refArray = new Int64[Math.Max(length0, saveLength0)];
 
-                    length0 = Math.Min(length0, saveLength0);
+					length0 = Math.Min(length0, saveLength0);
 				}
 				while (true)
 				{
@@ -273,12 +273,12 @@ namespace MinorShift.Emuera.Sub
 
 				if (length0 < saveLength0 || length1 < saveLength1)
 				{
-                    oriArray = refArray;
-                    //1818修正 サイズ違いの時にあふれないように/配列は最大まで確保、作業するのは重複部分だけ
-                    refArray = new Int64[Math.Max(length0, saveLength0), Math.Max(length1, saveLength1)];
+					oriArray = refArray;
+					//1818修正 サイズ違いの時にあふれないように/配列は最大まで確保、作業するのは重複部分だけ
+					refArray = new Int64[Math.Max(length0, saveLength0), Math.Max(length1, saveLength1)];
 
-                    length0 = Math.Min(length0, saveLength0);
-                    length1 = Math.Min(length1, saveLength1);
+					length0 = Math.Min(length0, saveLength0);
+					length1 = Math.Min(length1, saveLength1);
 				}
 
 				while (true)
@@ -350,9 +350,9 @@ namespace MinorShift.Emuera.Sub
 			/// </summary>
 			/// <param name="refArray">データを書き出す先。読み捨てるならnull</param>
 			/// <param name="needInit">データがない部分を0で埋める必要があるか</param>
-			public override void ReadIntArray3D(Int64[, ,] refArray, bool needInit)
+			public override void ReadIntArray3D(Int64[,,] refArray, bool needInit)
 			{
-				Int64[, ,] oriArray = null;
+				Int64[,,] oriArray = null;
 				byte b;
 				int x = 0;
 				int y = 0;
@@ -369,12 +369,12 @@ namespace MinorShift.Emuera.Sub
 				if (length0 < saveLength0 || length1 < saveLength1 || length2 < saveLength2)
 				{
 					oriArray = refArray;
-                    //1818修正 サイズ違いの時にあふれないように/配列は最大まで確保、作業するのは重複部分だけ
-                    refArray = new Int64[Math.Max(length0, saveLength0), Math.Max(length1, saveLength1), Math.Max(length2, saveLength2)];
+					//1818修正 サイズ違いの時にあふれないように/配列は最大まで確保、作業するのは重複部分だけ
+					refArray = new Int64[Math.Max(length0, saveLength0), Math.Max(length1, saveLength1), Math.Max(length2, saveLength2)];
 
-                    length0 = Math.Min(length0, saveLength0);
-                    length1 = Math.Min(length1, saveLength1);
-                    length2 = Math.Min(length2, saveLength2);
+					length0 = Math.Min(length0, saveLength0);
+					length1 = Math.Min(length1, saveLength1);
+					length2 = Math.Min(length2, saveLength2);
 				}
 
 				while (true)
@@ -491,11 +491,11 @@ namespace MinorShift.Emuera.Sub
 				//保存されたデータの方が大きいとき。レアケースのはず
 				if (length0 < saveLength0)
 				{
-                    oriArray = refArray;
-                    //1818修正 サイズ違いの時にあふれないように/配列は最大まで確保、作業するのは重複部分だけ
-                    refArray = new string[Math.Max(length0, saveLength0)];
+					oriArray = refArray;
+					//1818修正 サイズ違いの時にあふれないように/配列は最大まで確保、作業するのは重複部分だけ
+					refArray = new string[Math.Max(length0, saveLength0)];
 
-                    length0 = Math.Min(length0, saveLength0);
+					length0 = Math.Min(length0, saveLength0);
 				}
 				while (true)
 				{
@@ -542,12 +542,12 @@ namespace MinorShift.Emuera.Sub
 
 				if (length0 < saveLength0 || length1 < saveLength1)
 				{
-                    oriArray = refArray;
-                    //1818修正 サイズ違いの時にあふれないように/配列は最大まで確保、作業するのは重複部分だけ
-                    refArray = new string[Math.Max(length0, saveLength0), Math.Max(length1, saveLength1)];
+					oriArray = refArray;
+					//1818修正 サイズ違いの時にあふれないように/配列は最大まで確保、作業するのは重複部分だけ
+					refArray = new string[Math.Max(length0, saveLength0), Math.Max(length1, saveLength1)];
 
-                    length0 = Math.Min(length0, saveLength0);
-                    length1 = Math.Min(length1, saveLength1);
+					length0 = Math.Min(length0, saveLength0);
+					length1 = Math.Min(length1, saveLength1);
 				}
 
 				while (true)
@@ -608,9 +608,9 @@ namespace MinorShift.Emuera.Sub
 				}
 				return;
 			}
-			public override void ReadStrArray3D(string[, ,] refArray, bool needInit)
+			public override void ReadStrArray3D(string[,,] refArray, bool needInit)
 			{
-				string[, ,] oriArray = null;
+				string[,,] oriArray = null;
 				byte b;
 				int x = 0;
 				int y = 0;
@@ -626,13 +626,13 @@ namespace MinorShift.Emuera.Sub
 
 				if (length0 < saveLength0 || length1 < saveLength1 || length2 < saveLength2)
 				{
-                    oriArray = refArray;
-                    //1818修正 サイズ違いの時にあふれないように/配列は最大まで確保、作業するのは重複部分だけ
-                    refArray = new string[Math.Max(length0, saveLength0), Math.Max(length1, saveLength1), Math.Max(length2, saveLength2)];
+					oriArray = refArray;
+					//1818修正 サイズ違いの時にあふれないように/配列は最大まで確保、作業するのは重複部分だけ
+					refArray = new string[Math.Max(length0, saveLength0), Math.Max(length1, saveLength1), Math.Max(length2, saveLength2)];
 
-                    length0 = Math.Min(length0, saveLength0);
-                    length1 = Math.Min(length1, saveLength1);
-                    length2 = Math.Min(length2, saveLength2);
+					length0 = Math.Min(length0, saveLength0);
+					length1 = Math.Min(length1, saveLength1);
+					length2 = Math.Min(length2, saveLength2);
 				}
 
 				while (true)

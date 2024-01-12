@@ -26,13 +26,13 @@ namespace MinorShift.Emuera.GameData.Expression
 		public readonly VariableEvaluator VEvaluator;
 		public readonly Process Process;
 		public readonly EmueraConsole Console;
-		
-		
-		
+
+
+
 		private bool forceHiragana;
 		private bool forceKatakana;
 		private bool halftoFull;
-		
+
 		public void ForceKana(Int64 flag)
 		{
 			if (flag < 0 || flag > 3)
@@ -41,10 +41,10 @@ namespace MinorShift.Emuera.GameData.Expression
 			forceHiragana = (flag > 1) ? true : false;
 			halftoFull = (flag == 3) ? true : false;
 		}
-		
+
 		public bool ForceKana()
 		{
-			return (forceHiragana | forceKatakana | halftoFull);
+			return forceHiragana | forceKatakana | halftoFull;
 		}
 
 		public void OutputToConsole(string str, FunctionIdentifier func)
@@ -69,21 +69,21 @@ namespace MinorShift.Emuera.GameData.Expression
 			if (!(forceHiragana | forceKatakana | halftoFull))
 				return str;
 			if (forceKatakana)
-                return Strings.StrConv(str, VbStrConv.Katakana, 0x0411);
+				return Strings.StrConv(str, VbStrConv.Katakana, 0x0411);
 			else if (forceHiragana)
 			{
 				if (halftoFull)
-                    return Strings.StrConv(str, VbStrConv.Hiragana | VbStrConv.Wide, 0x0411);
+					return Strings.StrConv(str, VbStrConv.Hiragana | VbStrConv.Wide, 0x0411);
 				else
-                    return Strings.StrConv(str, VbStrConv.Hiragana, 0x0411);
+					return Strings.StrConv(str, VbStrConv.Hiragana, 0x0411);
 			}
 			return str;
 		}
 
 		public string CheckEscape(string str)
 		{
-			StringStream st = new StringStream(str);
-			StringBuilder buffer = new StringBuilder();
+			StringStream st = new(str);
+			StringBuilder buffer = new();
 
 			while (!st.EOS)
 			{
@@ -126,7 +126,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				throw new CodeEE("BARの長さが正の値ではありません");
 			if (length >= 100)//暴走を防ぐため。
 				throw new CodeEE("BARが長すぎます");
-			StringBuilder builder = new StringBuilder();
+			StringBuilder builder = new();
 			builder.Append('[');
 			int count;
 			unchecked

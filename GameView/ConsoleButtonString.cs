@@ -18,10 +18,10 @@ namespace MinorShift.Emuera.GameView
 			IsButton = false;
 			PointX = -1;
 			Width = -1;
-            ErrPos = null;
+			ErrPos = null;
 		}
 		public ConsoleButtonString(EmueraConsole console, AConsoleDisplayPart[] strs, Int64 input)
-			:this(console, strs)
+			: this(console, strs)
 		{
 			this.Input = input;
 			Inputs = input.ToString();
@@ -32,8 +32,8 @@ namespace MinorShift.Emuera.GameView
 				Generation = parent.NewButtonGeneration;
 				console.UpdateGeneration();
 			}
-            ErrPos = null;
-        }
+			ErrPos = null;
+		}
 		public ConsoleButtonString(EmueraConsole console, AConsoleDisplayPart[] strs, string inputs)
 			: this(console, strs)
 		{
@@ -45,8 +45,8 @@ namespace MinorShift.Emuera.GameView
 				Generation = parent.NewButtonGeneration;
 				console.UpdateGeneration();
 			}
-            ErrPos = null;
-        }
+			ErrPos = null;
+		}
 
 		public ConsoleButtonString(EmueraConsole console, AConsoleDisplayPart[] strs, Int64 input, string inputs)
 			: this(console, strs)
@@ -60,21 +60,21 @@ namespace MinorShift.Emuera.GameView
 				Generation = parent.NewButtonGeneration;
 				console.UpdateGeneration();
 			}
-            ErrPos = null;
-        }
+			ErrPos = null;
+		}
 		public ConsoleButtonString(EmueraConsole console, AConsoleDisplayPart[] strs, string inputs, ScriptPosition pos)
-            : this(console, strs)
-        {
-            this.Inputs = inputs;
-            IsButton = true;
-            IsInteger = false;
+			: this(console, strs)
+		{
+			this.Inputs = inputs;
+			IsButton = true;
+			IsInteger = false;
 			if (console != null)
 			{
 				Generation = parent.NewButtonGeneration;
 				console.UpdateGeneration();
 			}
-            ErrPos = pos;
-        }
+			ErrPos = pos;
+		}
 
 		AConsoleDisplayPart[] strArray;
 		public AConsoleDisplayPart[] StrArray { get { return strArray; } }
@@ -108,8 +108,8 @@ namespace MinorShift.Emuera.GameView
 		{
 			if (divIndex <= 0)
 				return null;
-			List<AConsoleDisplayPart> cssListA = new List<AConsoleDisplayPart>();
-			List<AConsoleDisplayPart> cssListB = new List<AConsoleDisplayPart>();
+			List<AConsoleDisplayPart> cssListA = [];
+			List<AConsoleDisplayPart> cssListB = [];
 			int index = 0;
 			int cssIndex;
 			bool b = false;
@@ -149,9 +149,9 @@ namespace MinorShift.Emuera.GameView
 			cssListA.CopyTo(cssArrayA);
 			cssListB.CopyTo(cssArrayB);
 			this.strArray = cssArrayA;
-			ConsoleButtonString ret = new ConsoleButtonString(null, cssArrayB);
+			ConsoleButtonString ret = new(null, cssArrayB);
 			this.CalcWidth(sm, XsubPixel);
-			ret.CalcWidth(sm,0);
+			ret.CalcWidth(sm, 0);
 			this.CalcPointX(this.PointX);
 			ret.CalcPointX(this.PointX + this.Width);
 			ret.parent = this.parent;
@@ -174,8 +174,8 @@ namespace MinorShift.Emuera.GameView
 				Width = 0;
 				foreach (AConsoleDisplayPart css in strArray)
 				{
-					if(css.Width <= 0)
-						css.SetWidth(sm,subpixel);
+					if (css.Width <= 0)
+						css.SetWidth(sm, subpixel);
 					Width += css.Width;
 					subpixel = css.XsubPixel;
 				}
@@ -219,18 +219,18 @@ namespace MinorShift.Emuera.GameView
 
 		public void DrawTo(Graphics graph, int pointY, bool isBackLog, TextDrawingMode mode)
 		{
-			bool isSelecting = (IsButton) && (parent.ButtonIsSelected(this));
+			bool isSelecting = IsButton && parent.ButtonIsSelected(this);
 			foreach (AConsoleDisplayPart css in strArray)
 				css.DrawTo(graph, pointY, isSelecting, isBackLog, mode);
 		}
 
 		public void GDIDrawTo(int pointY, bool isBackLog)
 		{
-			bool isSelecting = (IsButton) && (parent.ButtonIsSelected(this));
+			bool isSelecting = IsButton && parent.ButtonIsSelected(this);
 			foreach (AConsoleDisplayPart css in strArray)
 				css.GDIDrawTo(pointY, isSelecting, isBackLog);
 		}
-		
+
 		public override string ToString()
 		{
 			if (strArray == null)

@@ -98,7 +98,7 @@ namespace MinorShift.Emuera
 			ButtonWrap = instance.GetConfigValue<bool>(ConfigCode.ButtonWrap);
 
 			TextEditor = instance.GetConfigValue<string>(ConfigCode.TextEditor);
-            EditorType = instance.GetConfigValue<TextEditorType>(ConfigCode.EditorType);
+			EditorType = instance.GetConfigValue<TextEditorType>(ConfigCode.EditorType);
 			EditorArg = instance.GetConfigValue<string>(ConfigCode.EditorArgument);
 
 			CompatiErrorLine = instance.GetConfigValue<bool>(ConfigCode.CompatiErrorLine);
@@ -114,31 +114,31 @@ namespace MinorShift.Emuera
 			SystemSaveInBinary = instance.GetConfigValue<bool>(ConfigCode.SystemSaveInBinary);
 			SystemIgnoreTripleSymbol = instance.GetConfigValue<bool>(ConfigCode.SystemIgnoreTripleSymbol);
 			SystemIgnoreStringSet = instance.GetConfigValue<bool>(ConfigCode.SystemIgnoreStringSet);
-			
+
 			CompatiFuncArgAutoConvert = instance.GetConfigValue<bool>(ConfigCode.CompatiFuncArgAutoConvert);
 			CompatiFuncArgOptional = instance.GetConfigValue<bool>(ConfigCode.CompatiFuncArgOptional);
 			CompatiCallEvent = instance.GetConfigValue<bool>(ConfigCode.CompatiCallEvent);
 			CompatiSPChara = instance.GetConfigValue<bool>(ConfigCode.CompatiSPChara);
 
-            AllowLongInputByMouse = instance.GetConfigValue<bool>(ConfigCode.AllowLongInputByMouse);
+			AllowLongInputByMouse = instance.GetConfigValue<bool>(ConfigCode.AllowLongInputByMouse);
 
-           TimesNotRigorousCalculation = instance.GetConfigValue<bool>(ConfigCode.TimesNotRigorousCalculation);
-            //一文字変数の禁止オプションを考えた名残
-		   //ForbidOneCodeVariable = instance.GetConfigValue<bool>(ConfigCode.ForbidOneCodeVariable);
-		   SystemNoTarget = instance.GetConfigValue<bool>(ConfigCode.SystemNoTarget);
-			
-            UseLanguage lang = instance.GetConfigValue<UseLanguage>(ConfigCode.useLanguage);
-            switch (lang)
-            {
-                case UseLanguage.JAPANESE:
-                    Language = 0x0411; LangManager.setEncode(932); break;
-                case UseLanguage.KOREAN:
-                    Language = 0x0412; LangManager.setEncode(949);  break;
-                case UseLanguage.CHINESE_HANS:
-                    Language = 0x0804; LangManager.setEncode(936); break;
-                case UseLanguage.CHINESE_HANT:
-                    Language = 0x0404; LangManager.setEncode(950); break;
-            }
+			TimesNotRigorousCalculation = instance.GetConfigValue<bool>(ConfigCode.TimesNotRigorousCalculation);
+			//一文字変数の禁止オプションを考えた名残
+			//ForbidOneCodeVariable = instance.GetConfigValue<bool>(ConfigCode.ForbidOneCodeVariable);
+			SystemNoTarget = instance.GetConfigValue<bool>(ConfigCode.SystemNoTarget);
+
+			UseLanguage lang = instance.GetConfigValue<UseLanguage>(ConfigCode.useLanguage);
+			switch (lang)
+			{
+				case UseLanguage.JAPANESE:
+					Language = 0x0411; LangManager.setEncode(932); break;
+				case UseLanguage.KOREAN:
+					Language = 0x0412; LangManager.setEncode(949); break;
+				case UseLanguage.CHINESE_HANS:
+					Language = 0x0804; LangManager.setEncode(936); break;
+				case UseLanguage.CHINESE_HANT:
+					Language = 0x0404; LangManager.setEncode(950); break;
+			}
 
 			if (FontSize < 8)
 			{
@@ -180,7 +180,7 @@ namespace MinorShift.Emuera
 		}
 
 
-		static readonly Dictionary<string, Dictionary<FontStyle, Font>> fontDic = new Dictionary<string, Dictionary<FontStyle, Font>>();
+		static readonly Dictionary<string, Dictionary<FontStyle, Font>> fontDic = [];
 		public static Font Font { get { return GetFont(null, FontStyle.Regular); } }
 
 		public static Font GetFont(string theFontname, FontStyle style)
@@ -189,13 +189,13 @@ namespace MinorShift.Emuera
 			if (string.IsNullOrEmpty(theFontname))
 				fn = FontName;
 			if (!fontDic.ContainsKey(fn))
-				fontDic.Add(fn, new Dictionary<FontStyle, Font>());
+				fontDic.Add(fn, []);
 			Dictionary<FontStyle, Font> fontStyleDic = fontDic[fn];
 			if (!fontStyleDic.ContainsKey(style))
 			{
 				int fontsize = FontSize;
-                Font styledFont;
-                try
+				Font styledFont;
+				try
 				{
 					styledFont = new Font(fn, fontsize, style, GraphicsUnit.Pixel);
 				}
@@ -294,9 +294,9 @@ namespace MinorShift.Emuera
 				return false;
 			}
 
-            long key = getUpdateKey();
-            bool updated = LastKey != key;
-            LastKey = key;
+			long key = getUpdateKey();
+			bool updated = LastKey != key;
+			LastKey = key;
 			return updated;
 		}
 
@@ -338,13 +338,13 @@ namespace MinorShift.Emuera
 				return string.Compare(x, y, StringComparison.OrdinalIgnoreCase);
 			}
 		}
-		static readonly StrIgnoreCaseComparer ignoreCaseComparer = new StrIgnoreCaseComparer();
+		static readonly StrIgnoreCaseComparer ignoreCaseComparer = new();
 
 		//KeyValuePair<相対パス, 完全パス>のリストを返す。
 		private static List<KeyValuePair<string, string>> getFiles(string dir, string rootdir, string pattern, bool toponly, bool sort)
 		{
 			StringComparison strComp = StringComparison.OrdinalIgnoreCase;
-			List<KeyValuePair<string, string>> retList = new List<KeyValuePair<string, string>>();
+			List<KeyValuePair<string, string>> retList = [];
 			if (!toponly)
 			{//サブフォルダ内の検索
 				string[] dirList = Directory.GetDirectories(dir, "*", SearchOption.TopDirectoryOnly);
@@ -377,14 +377,14 @@ namespace MinorShift.Emuera
 					retList.Add(new KeyValuePair<string, string>(RelativePath + Path.GetFileName(filepaths[i]), filepaths[i]));
 			return retList;
 		}
-		
+
 
 		/// <summary>
 		/// IgnoreCaseはprivateに。代わりにICFunctionかICVariableを使う。
 		/// </summary>
 		private static bool IgnoreCase { get; set; }
 		private static bool CompatiFunctionNoignoreCase { get; set; }
-		
+
 
 		/// <summary>
 		/// 関数名・属性名的な名前のIgnoreCaseフラグ
@@ -392,7 +392,7 @@ namespace MinorShift.Emuera
 		/// どうせeramaker用の互換処理なのでEmuera専用構文については適当に。
 		/// </summary>
 		public static bool ICFunction { get; private set; }
-		
+
 		/// <summary>
 		/// 変数名、命令名的な名前のIgnoreCaseフラグ 
 		/// 変数・命令・$ラベル名、GOTOの引数 
@@ -478,7 +478,7 @@ namespace MinorShift.Emuera
 		public static bool ButtonWrap { get; private set; }
 
 		public static string TextEditor { get; private set; }
-        public static TextEditorType EditorType { get; private set; }
+		public static TextEditorType EditorType { get; private set; }
 		public static string EditorArg { get; private set; }
 
 		public static bool CompatiErrorLine { get; private set; }
@@ -505,11 +505,11 @@ namespace MinorShift.Emuera
 
 		public static bool NeedReduceArgumentOnLoad { get; private set; }
 
-        public static bool AllowLongInputByMouse { get; private set; }
+		public static bool AllowLongInputByMouse { get; private set; }
 
-        public static bool TimesNotRigorousCalculation { get; private set; }
-        //一文字変数の禁止オプションを考えた名残
-        //public static bool ForbidOneCodeVariable { get; private set; }
+		public static bool TimesNotRigorousCalculation { get; private set; }
+		//一文字変数の禁止オプションを考えた名残
+		//public static bool ForbidOneCodeVariable { get; private set; }
 		#endregion
 
 		#region debug
@@ -554,7 +554,7 @@ namespace MinorShift.Emuera
 			ExpLvDef = instance.GetConfigValue<List<Int64>>(ConfigCode.ExpLvDef);
 			PalamLvDef = instance.GetConfigValue<List<Int64>>(ConfigCode.PalamLvDef);
 			PbandDef = instance.GetConfigValue<Int64>(ConfigCode.pbandDef);
-            RelationDef = instance.GetConfigValue<Int64>(ConfigCode.RelationDef);
+			RelationDef = instance.GetConfigValue<Int64>(ConfigCode.RelationDef);
 		}
 
 		public static string MoneyLabel { get; private set; }
@@ -572,10 +572,10 @@ namespace MinorShift.Emuera
 		public static List<Int64> ExpLvDef { get; private set; }
 		public static List<Int64> PalamLvDef { get; private set; }
 		public static Int64 PbandDef { get; private set; }
-        public static Int64 RelationDef { get; private set; }
+		public static Int64 RelationDef { get; private set; }
 		#endregion
-		
-		
-		
+
+
+
 	}
 }

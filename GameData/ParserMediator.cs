@@ -42,15 +42,15 @@ namespace MinorShift.Emuera
 			if (RenameDic != null)
 				RenameDic.Clear();
 			//とにかく辞書を作る。辞書がnullのときは UseRenameFileがNOの時のみ
-			RenameDic = new Dictionary<string, string>();
-			EraStreamReader eReader = new EraStreamReader(false);
+			RenameDic = [];
+			EraStreamReader eReader = new(false);
 			if ((!File.Exists(filepath)) || (!eReader.Open(filepath)))
 			{
 				return;
 			}
 			string line;
 			ScriptPosition pos = null;
-			Regex reg = new Regex(@"\\,", RegexOptions.Compiled);
+			Regex reg = new(@"\\,", RegexOptions.Compiled);
 			try
 			{
 				while ((line = eReader.ReadLine()) != null)
@@ -112,28 +112,28 @@ namespace MinorShift.Emuera
 		/// <param name="level">警告レベル.0:軽微なミス.1:無視できる行.2:行が実行されなければ無害.3:致命的</param>
 		public static void Warn(string str, LogicalLine line, int level, bool isError, bool isBackComp)
 		{
-            Warn(str, line, level, isError, isBackComp, null);
+			Warn(str, line, level, isError, isBackComp, null);
 		}
 
-        public static void Warn(string str, LogicalLine line, int level, bool isError, bool isBackComp, string stack)
-        {
-            if (isError)
-            {
-                line.IsError = true;
-                line.ErrMes = str;
-            }
-            if (level < Config.DisplayWarningLevel && !Program.AnalysisMode)
-                return;
-            if (isBackComp && !Config.WarnBackCompatibility)
-                return;
-            if (console != null && !console.RunERBFromMemory)
-                warningList.Add(new ParserWarning(str, line.Position, level, stack));
-            //				console.PrintWarning(str, line.Position, level);
-        }
-        
-        private static List<ParserWarning> warningList = new List<ParserWarning>();
+		public static void Warn(string str, LogicalLine line, int level, bool isError, bool isBackComp, string stack)
+		{
+			if (isError)
+			{
+				line.IsError = true;
+				line.ErrMes = str;
+			}
+			if (level < Config.DisplayWarningLevel && !Program.AnalysisMode)
+				return;
+			if (isBackComp && !Config.WarnBackCompatibility)
+				return;
+			if (console != null && !console.RunERBFromMemory)
+				warningList.Add(new ParserWarning(str, line.Position, level, stack));
+			//				console.PrintWarning(str, line.Position, level);
+		}
 
-		public static bool HasWarning{get {return warningList.Count > 0;}}
+		private static List<ParserWarning> warningList = [];
+
+		public static bool HasWarning { get { return warningList.Count > 0; } }
 		public static void ClearWarningList()
 		{
 			warningList.Clear();
@@ -145,15 +145,15 @@ namespace MinorShift.Emuera
 			{
 				ParserWarning warning = warningList[i];
 				console.PrintWarning(warning.WarningMes, warning.WarningPos, warning.WarningLevel);
-                if (warning.StackTrace != null)
-                {
-                    string[] stacks = warning.StackTrace.Split('\n');
-                    for (int j = 0; j < stacks.Length; j++)
-                    {
+				if (warning.StackTrace != null)
+				{
+					string[] stacks = warning.StackTrace.Split('\n');
+					for (int j = 0; j < stacks.Length; j++)
+					{
 						console.PrintSystemLine(stacks[j]);
-                    }
-                }
-            }
+					}
+				}
+			}
 			warningList.Clear();
 		}
 
@@ -164,12 +164,12 @@ namespace MinorShift.Emuera
 				WarningMes = mes;
 				WarningPos = pos;
 				WarningLevel = level;
-                StackTrace = stackTrace;
+				StackTrace = stackTrace;
 			}
 			public string WarningMes;
 			public ScriptPosition WarningPos;
 			public int WarningLevel;
-            public string StackTrace;
+			public string StackTrace;
 		}
 	}
 }

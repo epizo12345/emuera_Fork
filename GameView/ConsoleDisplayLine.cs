@@ -8,7 +8,7 @@ using System.Windows.Forms;
 namespace MinorShift.Emuera.GameView
 {
 	//難読化用属性。enum.ToString()やenum.Parse()を行うなら(Exclude=true)にすること。
-	[global::System.Reflection.Obfuscation(Exclude=false)]
+	[global::System.Reflection.Obfuscation(Exclude = false)]
 	internal enum DisplayLineLastState
 	{
 		None = 0,
@@ -16,9 +16,9 @@ namespace MinorShift.Emuera.GameView
 		Selected = 2,
 		BackLog = 3,
 	}
-	
+
 	//難読化用属性。enum.ToString()やenum.Parse()を行うなら(Exclude=true)にすること。
-	[global::System.Reflection.Obfuscation(Exclude=false)]
+	[global::System.Reflection.Obfuscation(Exclude = false)]
 	internal enum DisplayLineAlignment
 	{
 		LEFT = 0,
@@ -30,7 +30,7 @@ namespace MinorShift.Emuera.GameView
 	/// </summary>
 	internal sealed class ConsoleDisplayLine
 	{
-		
+
 		//public ConsoleDisplayLine(EmueraConsole parentWindow, ConsoleButtonString[] buttons, bool isLogical, bool temporary)
 		public ConsoleDisplayLine(ConsoleButtonString[] buttons, bool isLogical, bool temporary)
 		{
@@ -48,15 +48,15 @@ namespace MinorShift.Emuera.GameView
 			IsTemporary = temporary;
 		}
 		public int LineNo = -1;
-		
+
 		///論理行の最初となる場合だけtrue。表示の都合で改行された2行目以降はfalse
 		readonly public bool IsLogicalLine = true;
 		readonly public bool IsTemporary = false;
 		//EmueraConsole parent;
 		ConsoleButtonString[] buttons;
 		DisplayLineAlignment align;
-		public ConsoleButtonString[] Buttons{get{return buttons;}}
-		public DisplayLineAlignment Align{get{return align;}}
+		public ConsoleButtonString[] Buttons { get { return buttons; } }
+		public DisplayLineAlignment Align { get { return align; } }
 		bool aligned = false;
 		public void SetAlignment(DisplayLineAlignment align)
 		{
@@ -89,7 +89,7 @@ namespace MinorShift.Emuera.GameView
 
 			//移動距離
 			int shiftX = movetoX - pointX;
-			if(shiftX != 0)
+			if (shiftX != 0)
 				this.ShiftPositionX(shiftX);
 		}
 
@@ -100,16 +100,16 @@ namespace MinorShift.Emuera.GameView
 		}
 
 		public void ChangeStr(ConsoleButtonString[] newButtons)
-        {
-            buttons = null;
+		{
+			buttons = null;
 			foreach (ConsoleButtonString button in newButtons)
 				button.ParentLine = this;
 			buttons = newButtons;
-        }
+		}
 
 		public void Clear(Brush brush, Graphics graph, int pointY)
 		{
-            Rectangle rect = new Rectangle(0, pointY, Config.WindowX, Config.LineHeight);
+			Rectangle rect = new(0, pointY, Config.WindowX, Config.LineHeight);
 			graph.FillRectangle(brush, rect);
 		}
 
@@ -133,10 +133,10 @@ namespace MinorShift.Emuera.GameView
 
 		public void DrawTo(Graphics graph, int pointY, bool isBackLog, bool force, TextDrawingMode mode)
 		{
-            foreach (ConsoleButtonString button in buttons)
-                button.DrawTo(graph, pointY, isBackLog, mode);
+			foreach (ConsoleButtonString button in buttons)
+				button.DrawTo(graph, pointY, isBackLog, mode);
 		}
-		
+
 		public void GDIDrawTo(int pointY, bool isBackLog)
 		{
 			foreach (ConsoleButtonString button in buttons)
@@ -163,12 +163,12 @@ namespace MinorShift.Emuera.GameView
 			//	GDI.FillRectBGColor(rect);
 			//}
 		}
-		
+
 		public override string ToString()
 		{
 			if (buttons == null)
 				return "";
-			StringBuilder builder = new StringBuilder();
+			StringBuilder builder = new();
 			foreach (ConsoleButtonString button in buttons)
 				builder.Append(button.ToString());
 			return builder.ToString();

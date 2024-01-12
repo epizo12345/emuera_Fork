@@ -6,7 +6,6 @@ using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.GameData.Expression;
 using MinorShift.Emuera.GameData.Variable;
 using MinorShift.Emuera.GameProc.Function;
-using MinorShift._Library;
 using MinorShift.Emuera.GameData;
 
 namespace MinorShift.Emuera.GameProc
@@ -22,7 +21,7 @@ namespace MinorShift.Emuera.GameProc
 		readonly Process parentProcess;
 		readonly ExpressionMediator exm;
 		readonly EmueraConsole output;
-        readonly List<string> ignoredFNFWarningFileList = new List<string>();
+		readonly List<string> ignoredFNFWarningFileList = [];
 		int ignoredFNFWarningCount = 0;
 
 		int enabledLineCount = 0;
@@ -41,9 +40,9 @@ namespace MinorShift.Emuera.GameProc
 			labelDic = labelDictionary;
 			labelDic.Initialized = false;
 			List<KeyValuePair<string, string>> erbFiles = Config.GetFiles(erbDir, "*.ERB");
-            List<string> isOnlyEvent = new List<string>();
-            noError = true;
-			uint starttime = WinmmTimer.TickCount;
+			List<string> isOnlyEvent = [];
+			noError = true;
+			var starttime = DateTime.Now;
 			try
 			{
 				labelDic.RemoveAll();
@@ -53,7 +52,7 @@ namespace MinorShift.Emuera.GameProc
 					string file = erbFiles[i].Value;
 #if DEBUG
 					if (displayReport)
-						output.PrintSystemLine("経過時間:" + (WinmmTimer.TickCount - starttime).ToString("D4") + "ms:" + filename + "読み込み中・・・");
+						output.PrintSystemLine("経過時間:" + (DateTime.Now - starttime).TotalMilliseconds + "ms:" + filename + "読み込み中・・・");
 #else
 					if (displayReport)
 						output.PrintSystemLine(filename + "読み込み中・・・");
@@ -63,7 +62,7 @@ namespace MinorShift.Emuera.GameProc
 				}
 				ParserMediator.FlushWarningList();
 #if DEBUG
-				output.PrintSystemLine("経過時間:" + (WinmmTimer.TickCount - starttime).ToString("D4") + "ms:");
+				output.PrintSystemLine("経過時間:" + (DateTime.Now - starttime).TotalMilliseconds + "ms:");
 #endif
 				if (displayReport)
 					output.PrintSystemLine("ユーザー定義関数のリストを構築中・・・");
@@ -71,7 +70,7 @@ namespace MinorShift.Emuera.GameProc
 				ParserMediator.FlushWarningList();
 				labelDic.Initialized = true;
 #if DEBUG
-				output.PrintSystemLine("経過時間:" + (WinmmTimer.TickCount - starttime).ToString("D4") + "ms:");
+				output.PrintSystemLine("経過時間:" + (DateTime.Now - starttime).TotalMilliseconds + "ms:");
 #endif
 				if (displayReport)
 					output.PrintSystemLine("スクリプトの構文チェック中・・・");
@@ -79,7 +78,7 @@ namespace MinorShift.Emuera.GameProc
 				ParserMediator.FlushWarningList();
 
 #if DEBUG
-				output.PrintSystemLine("経過時間:" + (WinmmTimer.TickCount - starttime).ToString("D4") + "ms:");
+				output.PrintSystemLine("経過時間:" + (DateTime.Now - starttime).TotalMilliseconds + "ms:");
 #endif
 				if (displayReport)
 					output.PrintSystemLine("ロード完了");
@@ -88,7 +87,7 @@ namespace MinorShift.Emuera.GameProc
 			{
 				ParserMediator.FlushWarningList();
 				System.Media.SystemSounds.Hand.Play();
-				output.PrintError("予期しないエラーが発生しました:" + Program.ExeName);
+				output.PrintError("予期しないエラーが発生しました:" + _Library.Sys.ExeName);
 				output.PrintError(e.GetType().ToString() + ":" + e.Message);
 				return false;
 			}
@@ -96,7 +95,7 @@ namespace MinorShift.Emuera.GameProc
 			{
 				parentProcess.scaningLine = null;
 			}
-            isOnlyEvent.Clear();
+			isOnlyEvent.Clear();
 			return noError;
 		}
 
@@ -107,32 +106,32 @@ namespace MinorShift.Emuera.GameProc
 		public bool loadErbs(List<string> path, LabelDictionary labelDictionary)
 		{
 			string fname;
-            List<string> isOnlyEvent = new List<string>();
-            noError = true;
+			List<string> isOnlyEvent = [];
+			noError = true;
 			labelDic = labelDictionary;
 			labelDic.Initialized = false;
 			foreach (string fpath in path)
 			{
 				if (fpath.StartsWith(Program.ErbDir, Config.SCIgnoreCase) && !Program.AnalysisMode)
-					fname = fpath.Substring(Program.ErbDir.Length);
+					fname = fpath[Program.ErbDir.Length..];
 				else
 					fname = fpath;
 				if (Program.AnalysisMode)
 					output.PrintSystemLine(fname + "読み込み中・・・");
 				System.Windows.Forms.Application.DoEvents();
-                loadErb(fpath, fname, isOnlyEvent);
+				loadErb(fpath, fname, isOnlyEvent);
 			}
-            if (Program.AnalysisMode)
-                output.NewLine();
-            ParserMediator.FlushWarningList();
+			if (Program.AnalysisMode)
+				output.NewLine();
+			ParserMediator.FlushWarningList();
 			setLabelsArg();
 			ParserMediator.FlushWarningList();
 			labelDic.Initialized = true;
-            checkScript();
+			checkScript();
 			ParserMediator.FlushWarningList();
 			parentProcess.scaningLine = null;
-            isOnlyEvent.Clear();
-            return noError;
+			isOnlyEvent.Clear();
+			return noError;
 		}
 
 		private sealed class PPState
@@ -140,9 +139,9 @@ namespace MinorShift.Emuera.GameProc
 			bool skip = false;
 			bool done = false;
 			public bool Disabled = false;
-            readonly Stack<bool> disabledStack = new Stack<bool>();
-            readonly Stack<bool> doneStack = new Stack<bool>();
-            readonly Stack<string> ppMatch = new Stack<string>();
+			readonly Stack<bool> disabledStack = new();
+			readonly Stack<bool> doneStack = new();
+			readonly Stack<string> ppMatch = new();
 
 			internal void AddKeyWord(string token, string token2, ScriptPosition position)
 			{
@@ -298,7 +297,7 @@ namespace MinorShift.Emuera.GameProc
 			//読み込んだファイルのパスを記録
 			//一部ファイルの再読み込み時の処理用
 			labelDic.AddFilename(filename);
-			EraStreamReader eReader = new EraStreamReader(Config.UseRenameFile && ParserMediator.RenameDic != null);
+			var eReader = new EraStreamReader(Config.UseRenameFile && ParserMediator.RenameDic != null);
 			if (!eReader.Open(filepath, filename))
 			{
 				output.PrintError(eReader.Filename + "のオープンに失敗しました");
@@ -306,7 +305,7 @@ namespace MinorShift.Emuera.GameProc
 			}
 			try
 			{
-				PPState ppstate = new PPState();
+				PPState ppstate = new();
 				LogicalLine nextLine = new NullLine();
 				LogicalLine lastLine = new NullLine();
 				FunctionLabelLine lastLabelLine = null;
@@ -326,7 +325,7 @@ namespace MinorShift.Emuera.GameProc
 						string token = LexicalAnalyzer.ReadSingleIdentifier(st);
 						LexicalAnalyzer.SkipWhiteSpace(st);
 						string token2 = LexicalAnalyzer.ReadSingleIdentifier(st);
-						if ((string.IsNullOrEmpty(token)) || (st.Current != ']'))
+						if (string.IsNullOrEmpty(token) || (st.Current != ']'))
 							ParserMediator.Warn("[]の使い方が不正です", position, 1);
 						ppstate.AddKeyWord(token, token2, position);
 						st.ShiftNext();
@@ -353,7 +352,7 @@ namespace MinorShift.Emuera.GameProc
 					}
 					if ((st.Current == '$') || (st.Current == '@'))
 					{
-						bool isFunction = (st.Current == '@');
+						bool isFunction = st.Current == '@';
 						nextLine = LogicalLineParser.ParseLabelLine(st, position, output);
 						if (isFunction)
 						{
@@ -371,15 +370,15 @@ namespace MinorShift.Emuera.GameProc
 								if (!label.IsEvent && (Config.WarnNormalFunctionOverloading || Program.AnalysisMode))
 								{
 									FunctionLabelLine seniorLabel = labelDic.GetSameNameLabel(label);
-                                    if (seniorLabel != null)
-                                    {
-                                        //output.NewLine();
-                                        ParserMediator.Warn("関数@" + label.LabelName + "は既に定義(" + seniorLabel.Position.Filename + "の" + seniorLabel.Position.LineNo.ToString() + "行目)されています", position, 1);
-                                        funcCount = -1;
-                                    }
+									if (seniorLabel != null)
+									{
+										//output.NewLine();
+										ParserMediator.Warn("関数@" + label.LabelName + "は既に定義(" + seniorLabel.Position.Filename + "の" + seniorLabel.Position.LineNo.ToString() + "行目)されています", position, 1);
+										funcCount = -1;
+									}
 								}
 								funcCount++;
-								if (Program.AnalysisMode && (Config.PrintCPerLine > 0 && (funcCount % Config.PrintCPerLine) == 0))
+								if (Program.AnalysisMode && Config.PrintCPerLine > 0 && (funcCount % Config.PrintCPerLine) == 0)
 								{
 									output.NewLine();
 									output.PrintSystemLine("　");
@@ -388,16 +387,16 @@ namespace MinorShift.Emuera.GameProc
 						}
 						else
 						{
-                            if (nextLine is GotoLabelLine gotoLabel)
-                            {
-                                gotoLabel.ParentLabelLine = lastLabelLine;
-                                if (lastLabelLine != null && !labelDic.AddLabelDollar(gotoLabel))
-                                {
-                                    ScriptPosition pos = labelDic.GetLabelDollar(gotoLabel.LabelName, lastLabelLine).Position;
-                                    ParserMediator.Warn("ラベル名$" + gotoLabel.LabelName + "は既に同じ関数内(" + pos.Filename + "の" + pos.LineNo.ToString() + "行目)で使用されています", position, 2);
-                                }
-                            }
-                        }
+							if (nextLine is GotoLabelLine gotoLabel)
+							{
+								gotoLabel.ParentLabelLine = lastLabelLine;
+								if (lastLabelLine != null && !labelDic.AddLabelDollar(gotoLabel))
+								{
+									ScriptPosition pos = labelDic.GetLabelDollar(gotoLabel.LabelName, lastLabelLine).Position;
+									ParserMediator.Warn("ラベル名$" + gotoLabel.LabelName + "は既に同じ関数内(" + pos.Filename + "の" + pos.LineNo.ToString() + "行目)で使用されています", position, 2);
+								}
+							}
+						}
 						if (nextLine is InvalidLine)
 						{
 							noError = false;
@@ -407,22 +406,22 @@ namespace MinorShift.Emuera.GameProc
 					else
 					{
 						//1808alpha006 処理位置変更
-                        ////全置換はここで対応
-                        ////1756beta1+++　最初に全置換してしまうと関数定義を_Renameでとか論外なことができてしまうので永久封印した
-                        //if (ParserMediator.RenameDic != null && st.CurrentEqualTo("[[") && (rowLine.TrimEnd().IndexOf("]]") == rowLine.TrimEnd().Length - 2))
-                        //{
-                        //    string replacedLine = st.Substring();
-                        //    foreach (KeyValuePair<string, string> pair in ParserMediator.RenameDic)
-                        //        replacedLine = replacedLine.Replace(pair.Key, pair.Value);
-                        //    st = new StringStream(replacedLine);
-                        //}
-                        nextLine = LogicalLineParser.ParseLine(st, position, output);
+						////全置換はここで対応
+						////1756beta1+++　最初に全置換してしまうと関数定義を_Renameでとか論外なことができてしまうので永久封印した
+						//if (ParserMediator.RenameDic != null && st.CurrentEqualTo("[[") && (rowLine.TrimEnd().IndexOf("]]") == rowLine.TrimEnd().Length - 2))
+						//{
+						//    string replacedLine = st.Substring();
+						//    foreach (KeyValuePair<string, string> pair in ParserMediator.RenameDic)
+						//        replacedLine = replacedLine.Replace(pair.Key, pair.Value);
+						//    st = new StringStream(replacedLine);
+						//}
+						nextLine = LogicalLineParser.ParseLine(st, position, output);
 						if (nextLine == null)
 							continue;
 						if (nextLine is InvalidLine)
 						{
 							noError = false;
-                            ParserMediator.Warn(nextLine.ErrMes, position, 2);
+							ParserMediator.Warn(nextLine.ErrMes, position, 2);
 						}
 					}
 					if (lastLabelLine == null)
@@ -440,7 +439,7 @@ namespace MinorShift.Emuera.GameProc
 			}
 			return;
 		}
-		
+
 		private LogicalLine addLine(LogicalLine nextLine, LogicalLine lastLine)
 		{
 			if (nextLine == null)
@@ -470,7 +469,7 @@ namespace MinorShift.Emuera.GameProc
 						errmes = exc.GetType().ToString() + ":" + errmes;
 					ParserMediator.Warn("関数@" + label.LabelName + " の引数のエラー:" + errmes, label, 2, true, false);
 					label.ErrMes = "ロード時に解析に失敗した関数が呼び出されました";
-                    label.IsError = true;
+					label.IsError = true;
 				}
 				finally
 				{
@@ -508,7 +507,7 @@ namespace MinorShift.Emuera.GameProc
 					ParserMediator.Warn("システム関数@" + label.LabelName + " に引数が設定されています", label, 1, false, false);
 				SymbolWord symbol = wc.Current as SymbolWord;
 				wc.ShiftNext();
-                if (symbol == null)
+				if (symbol == null)
 				{ errMes = "引数の書式が間違っています"; goto err; }
 				if (symbol.Type == '[')//TODO:subNames 結局実装しないかも
 				{
@@ -533,7 +532,7 @@ namespace MinorShift.Emuera.GameProc
 				if (!wc.EOL)
 				{
 					IOperandTerm[] argsRow;
-                    if (symbol.Type == ',')
+					if (symbol.Type == ',')
 						argsRow = ExpressionParser.ReduceArguments(wc, ArgsEndWith.EoL, true);
 					else if (symbol.Type == '(')
 						argsRow = ExpressionParser.ReduceArguments(wc, ArgsEndWith.RightParenthesis, true);
@@ -541,28 +540,28 @@ namespace MinorShift.Emuera.GameProc
 					{ errMes = "引数の書式が間違っています"; goto err; }
 					int length = argsRow.Length / 2;
 					args = new VariableTerm[length];
-                    defs = new SingleTerm[length];
+					defs = new SingleTerm[length];
 					for (int i = 0; i < length; i++)
 					{
 						SingleTerm def = null;
 						IOperandTerm term = argsRow[i * 2];
-                        //引数読み取り時点で判別されないといけない
-                        //if (term == null)
-                        //{ errMes = "関数定義の引数は省略できません"; goto err; }
-                        if ((!(term.Restructure(exm) is VariableTerm vTerm)) || (vTerm.Identifier.IsConst))
-                        { errMes = "関数定義の引数には代入可能な変数を指定してください"; goto err; }
-                        else if (!vTerm.Identifier.IsReference)//参照型なら添え字不要
-                        {
-                            if (vTerm is VariableNoArgTerm)
-                            { errMes = "関数定義の参照型でない引数\"" + vTerm.Identifier.Name + "\"に添え字が指定されていません"; goto err; }
-                            if (!vTerm.isAllConst)
-                            { errMes = "関数定義の引数の添え字には定数を指定してください"; goto err; }
-                        }
-                        for (int j = 0; j < i; j++)
-                        {
-                            if (vTerm.checkSameTerm(args[j]))
-                                ParserMediator.Warn("第" +  Strings.StrConv((i + 1).ToString(), VbStrConv.Wide, Config.Language) + "引数\"" + vTerm.GetFullString() + "\"はすでに第" + Strings.StrConv((j + 1).ToString(), VbStrConv.Wide, Config.Language) + "引数として宣言されています", label, 1, false, false);
-                        }
+						//引数読み取り時点で判別されないといけない
+						//if (term == null)
+						//{ errMes = "関数定義の引数は省略できません"; goto err; }
+						if ((!(term.Restructure(exm) is VariableTerm vTerm)) || vTerm.Identifier.IsConst)
+						{ errMes = "関数定義の引数には代入可能な変数を指定してください"; goto err; }
+						else if (!vTerm.Identifier.IsReference)//参照型なら添え字不要
+						{
+							if (vTerm is VariableNoArgTerm)
+							{ errMes = "関数定義の参照型でない引数\"" + vTerm.Identifier.Name + "\"に添え字が指定されていません"; goto err; }
+							if (!vTerm.isAllConst)
+							{ errMes = "関数定義の引数の添え字には定数を指定してください"; goto err; }
+						}
+						for (int j = 0; j < i; j++)
+						{
+							if (vTerm.checkSameTerm(args[j]))
+								ParserMediator.Warn("第" + Strings.StrConv((i + 1).ToString(), VbStrConv.Wide, Config.Language) + "引数\"" + vTerm.GetFullString() + "\"はすでに第" + Strings.StrConv((j + 1).ToString(), VbStrConv.Wide, Config.Language) + "引数として宣言されています", label, 1, false, false);
+						}
 						if (vTerm.Identifier.Code == VariableCode.ARG)
 						{
 							if (maxArg < vTerm.getEl1forArg + 1)
@@ -573,7 +572,7 @@ namespace MinorShift.Emuera.GameProc
 							if (maxArgs < vTerm.getEl1forArg + 1)
 								maxArgs = vTerm.getEl1forArg + 1;
 						}
-						bool canDef = (vTerm.Identifier.Code == VariableCode.ARG || vTerm.Identifier.Code == VariableCode.ARGS || vTerm.Identifier.IsPrivate);
+						bool canDef = vTerm.Identifier.Code == VariableCode.ARG || vTerm.Identifier.Code == VariableCode.ARGS || vTerm.Identifier.IsPrivate;
 						term = argsRow[i * 2 + 1];
 						if (term is NullTerm)
 						{
@@ -606,7 +605,7 @@ namespace MinorShift.Emuera.GameProc
 			if (!wc.EOL)
 			{ errMes = "引数の書式が間違っています"; goto err; }
 
-            //label.SubNames = subNames;
+			//label.SubNames = subNames;
 			label.Arg = args;
 			label.Def = defs;
 			label.ArgLength = maxArg;
@@ -646,8 +645,8 @@ namespace MinorShift.Emuera.GameProc
 				if (countInDepth == 0)
 					break;
 			}
-            labelDepth = -1;
-			List<string> ignoredFNCWarningFileList = new List<string>();
+			labelDepth = -1;
+			List<string> ignoredFNCWarningFileList = [];
 			int ignoredFNCWarningCount = 0;
 
 			bool ignoreAll = false;
@@ -661,7 +660,7 @@ namespace MinorShift.Emuera.GameProc
 			}
 			if (useCallForm)
 			{//callform系が使われたら全ての関数が呼び出されたとみなす。
-                if (Program.AnalysisMode)
+				if (Program.AnalysisMode)
 					output.PrintSystemLine("CALLFORM系命令が使われたため、呼び出されない関数のチェックは行われません。");
 				foreach (FunctionLabelLine label in labelList)
 				{
@@ -677,9 +676,9 @@ namespace MinorShift.Emuera.GameProc
 				{
 					if (label.Depth != labelDepth)
 						continue;
-                    //解析モード時は呼ばれなかったものをここで解析
-                    if (Program.AnalysisMode)
-                        checkFunctionWithCatch(label);
+					//解析モード時は呼ばれなかったものをここで解析
+					if (Program.AnalysisMode)
+						checkFunctionWithCatch(label);
 					bool ignore = false;
 					if (notCalledWarning == DisplayWarningFlag.ONCE)
 					{
@@ -697,7 +696,7 @@ namespace MinorShift.Emuera.GameProc
 								ignoredFNCWarningFileList.Add(filename);
 							}
 						}
-                        //break;
+						//break;
 					}
 					if (ignoreAll || ignore)
 						ignoredFNCWarningCount++;
@@ -770,7 +769,7 @@ namespace MinorShift.Emuera.GameProc
 		}
 
 
-		public Dictionary<string, Int64> warningDic = new Dictionary<string, Int64>();
+		public Dictionary<string, Int64> warningDic = [];
 		private void printFunctionNotFoundWarning(string str, LogicalLine line, int level, bool isError)
 		{
 			if (Program.AnalysisMode)
@@ -827,15 +826,15 @@ namespace MinorShift.Emuera.GameProc
 				string filename = label.Position.Filename.ToUpper();
 				setArgument(label);
 				nestCheck(label);
-                setJumpTo(label);
+				setJumpTo(label);
 			}
 			catch (Exception exc)
 			{
 				System.Media.SystemSounds.Hand.Play();
-                //1756beta2+v6.1 修正の効率化のために何かパース関係でハンドリングできてないエラーが出た場合はスタックトレースを投げるようにした
-                string errmes = (exc is EmueraException) ? exc.Message : exc.GetType().ToString() + ":" + exc.Message;
-                ParserMediator.Warn("@" + label.LabelName + " の解析中にエラー:" + errmes, label, 2, true, false, !(exc is EmueraException) ? exc.StackTrace : null);
-                label.ErrMes = "ロード時に解析に失敗した関数が呼び出されました";
+				//1756beta2+v6.1 修正の効率化のために何かパース関係でハンドリングできてないエラーが出た場合はスタックトレースを投げるようにした
+				string errmes = (exc is EmueraException) ? exc.Message : exc.GetType().ToString() + ":" + exc.Message;
+				ParserMediator.Warn("@" + label.LabelName + " の解析中にエラー:" + errmes, label, 2, true, false, !(exc is EmueraException) ? exc.StackTrace : null);
+				label.ErrMes = "ロード時に解析に失敗した関数が呼び出されました";
 			}
 			finally
 			{
@@ -854,13 +853,13 @@ namespace MinorShift.Emuera.GameProc
 			{
 				nextLine = nextLine.NextLine;
 				parentProcess.scaningLine = nextLine;
-                if (!(nextLine is InstructionLine func))
-                {
-                    if ((nextLine is NullLine) || (nextLine is FunctionLabelLine))
-                        break;
-                    continue;
-                }
-                if (inMethod)
+				if (!(nextLine is InstructionLine func))
+				{
+					if ((nextLine is NullLine) || (nextLine is FunctionLabelLine))
+						break;
+					continue;
+				}
+				if (inMethod)
 				{
 					if (!func.Function.IsMethodSafe())
 					{
@@ -868,8 +867,8 @@ namespace MinorShift.Emuera.GameProc
 						continue;
 					}
 				}
-                if (Config.NeedReduceArgumentOnLoad || Program.AnalysisMode || func.Function.IsForceSetArg())
-                    ArgumentParser.SetArgumentTo(func);
+				if (Config.NeedReduceArgumentOnLoad || Program.AnalysisMode || func.Function.IsForceSetArg())
+					ArgumentParser.SetArgumentTo(func);
 			}
 		}
 
@@ -879,50 +878,50 @@ namespace MinorShift.Emuera.GameProc
 			//IF-ELSEIF-ENDIF、REPEAT-RENDの対応チェックなど
 			//PRINTDATA系もここでチェック
 			LogicalLine nextLine = label;
-			List<InstructionLine> tempLineList = new List<InstructionLine>();
-			Stack<InstructionLine> nestStack = new Stack<InstructionLine>();
-            Stack<InstructionLine> SelectcaseStack = new Stack<InstructionLine>();
+			List<InstructionLine> tempLineList = [];
+			Stack<InstructionLine> nestStack = new();
+			Stack<InstructionLine> SelectcaseStack = new();
 			InstructionLine pairLine = null;
 			while (true)
 			{
 				nextLine = nextLine.NextLine;
 				parentProcess.scaningLine = nextLine;
-                if ((nextLine is NullLine) || (nextLine is FunctionLabelLine))
-                    break;
-                if (!(nextLine is InstructionLine))
-                {
-                    if (nextLine is GotoLabelLine)
-                    {
-                        InstructionLine currentBaseFunc = nestStack.Count == 0 ? null : nestStack.Peek();
-                        if (currentBaseFunc != null)
-                        {
-                            if ((currentBaseFunc.FunctionCode == FunctionCode.PRINTDATA)
-                                || (currentBaseFunc.FunctionCode == FunctionCode.PRINTDATAL)
-                                || (currentBaseFunc.FunctionCode == FunctionCode.PRINTDATAW)
-                                || (currentBaseFunc.FunctionCode == FunctionCode.PRINTDATAD)
-                                || (currentBaseFunc.FunctionCode == FunctionCode.PRINTDATADL)
-                                || (currentBaseFunc.FunctionCode == FunctionCode.PRINTDATADW)
-                                || (currentBaseFunc.FunctionCode == FunctionCode.PRINTDATAK)
-                                || (currentBaseFunc.FunctionCode == FunctionCode.PRINTDATAKL)
-                                || (currentBaseFunc.FunctionCode == FunctionCode.PRINTDATAKW)
-                                || (currentBaseFunc.FunctionCode == FunctionCode.STRDATA)
-                                || (currentBaseFunc.FunctionCode == FunctionCode.DATALIST)
-                                || (currentBaseFunc.FunctionCode == FunctionCode.TRYCALLLIST)
-                                || (currentBaseFunc.FunctionCode == FunctionCode.TRYJUMPLIST)
-                                || (currentBaseFunc.FunctionCode == FunctionCode.TRYGOTOLIST))
-                                //|| (currentBaseFunc.FunctionCode == FunctionCode.SELECTCASE))
-                            {
-                                ParserMediator.Warn(currentBaseFunc.Function.Name + "構文中に$ラベルを定義することはできません", nextLine, 2, true, false);
-                            }
-                        }
-                    }
-                    continue;
-                }
+				if ((nextLine is NullLine) || (nextLine is FunctionLabelLine))
+					break;
+				if (!(nextLine is InstructionLine))
+				{
+					if (nextLine is GotoLabelLine)
+					{
+						InstructionLine currentBaseFunc = nestStack.Count == 0 ? null : nestStack.Peek();
+						if (currentBaseFunc != null)
+						{
+							if ((currentBaseFunc.FunctionCode == FunctionCode.PRINTDATA)
+								|| (currentBaseFunc.FunctionCode == FunctionCode.PRINTDATAL)
+								|| (currentBaseFunc.FunctionCode == FunctionCode.PRINTDATAW)
+								|| (currentBaseFunc.FunctionCode == FunctionCode.PRINTDATAD)
+								|| (currentBaseFunc.FunctionCode == FunctionCode.PRINTDATADL)
+								|| (currentBaseFunc.FunctionCode == FunctionCode.PRINTDATADW)
+								|| (currentBaseFunc.FunctionCode == FunctionCode.PRINTDATAK)
+								|| (currentBaseFunc.FunctionCode == FunctionCode.PRINTDATAKL)
+								|| (currentBaseFunc.FunctionCode == FunctionCode.PRINTDATAKW)
+								|| (currentBaseFunc.FunctionCode == FunctionCode.STRDATA)
+								|| (currentBaseFunc.FunctionCode == FunctionCode.DATALIST)
+								|| (currentBaseFunc.FunctionCode == FunctionCode.TRYCALLLIST)
+								|| (currentBaseFunc.FunctionCode == FunctionCode.TRYJUMPLIST)
+								|| (currentBaseFunc.FunctionCode == FunctionCode.TRYGOTOLIST))
+							//|| (currentBaseFunc.FunctionCode == FunctionCode.SELECTCASE))
+							{
+								ParserMediator.Warn(currentBaseFunc.Function.Name + "構文中に$ラベルを定義することはできません", nextLine, 2, true, false);
+							}
+						}
+					}
+					continue;
+				}
 				InstructionLine func = (InstructionLine)nextLine;
 				InstructionLine baseFunc = nestStack.Count == 0 ? null : nestStack.Peek();
 				if (baseFunc != null)
 				{
-					if ((baseFunc.Function.IsPrintData() || baseFunc.FunctionCode == FunctionCode.STRDATA) )
+					if (baseFunc.Function.IsPrintData() || baseFunc.FunctionCode == FunctionCode.STRDATA)
 					{
 						if ((func.FunctionCode != FunctionCode.DATA) && (func.FunctionCode != FunctionCode.DATAFORM) && (func.FunctionCode != FunctionCode.DATALIST)
 							&& (func.FunctionCode != FunctionCode.ENDLIST) && (func.FunctionCode != FunctionCode.ENDDATA))
@@ -965,64 +964,64 @@ namespace MinorShift.Emuera.GameProc
 							{
 								ParserMediator.Warn("REPEAT文が入れ子にされています（無限ループの恐れがあります）", func, 1, false, false);
 							}
-                            else if (iLine.FunctionCode == FunctionCode.FOR)
-                            {
-                                VariableTerm cnt = ((SpForNextArgment)iLine.Argument).Cnt;
-                                if (cnt.Identifier.Name == "COUNT" && (cnt.isAllConst && cnt.getEl1forArg == 0))
-                                {
-                                    ParserMediator.Warn("カウンタ変数にCOUNT:0を用いたFOR文の中でREPEATが呼び出されています", func, 1, false, false);
-                                }
-                            }
-                        }
-                        if (func.IsError)
-                            break;
+							else if (iLine.FunctionCode == FunctionCode.FOR)
+							{
+								VariableTerm cnt = ((SpForNextArgment)iLine.Argument).Cnt;
+								if (cnt.Identifier.Name == "COUNT" && cnt.isAllConst && cnt.getEl1forArg == 0)
+								{
+									ParserMediator.Warn("カウンタ変数にCOUNT:0を用いたFOR文の中でREPEATが呼び出されています", func, 1, false, false);
+								}
+							}
+						}
+						if (func.IsError)
+							break;
 						nestStack.Push(func);
 						break;
 					case FunctionCode.IF:
 						nestStack.Push(func);
-                        func.IfCaseList = new List<InstructionLine>
-                        {
-                            func
-                        };
-                        break;
+						func.IfCaseList =
+						[
+							func
+						];
+						break;
 					case FunctionCode.SELECTCASE:
 						nestStack.Push(func);
-						func.IfCaseList = new List<InstructionLine>();
-                        SelectcaseStack.Push(func);
+						func.IfCaseList = [];
+						SelectcaseStack.Push(func);
 						break;
 					case FunctionCode.FOR:
-                        //ネストエラーチェックのためにコストはかかるが、ここでチェックする
-                        if (func.Argument == null)
-                            ArgumentParser.SetArgumentTo(func);
-                        //上で引数解析がなされていることは保証されているので、
-                        //それでこれがfalseになるのは、引数解析でエラーが起きた場合のみ
-                        if (func.Argument != null)
-                        {
-                            VariableTerm Cnt = ((SpForNextArgment)func.Argument).Cnt;
-                            if (Cnt.Identifier.Name == "COUNT")
-                            {
-                                foreach (InstructionLine iLine in nestStack)
-                                {
-                                    if (iLine.FunctionCode == FunctionCode.REPEAT && (Cnt.isAllConst && Cnt.getEl1forArg == 0))
-                                    {
-                                        ParserMediator.Warn("REPEAT文の中でカウンタ変数にCOUNT:0を用いたFORが使われています（無限ループの恐れがあります）", func, 1, false, false);
-                                    }
-                                    else if (iLine.FunctionCode == FunctionCode.FOR)
-                                    {
-                                        VariableTerm destCnt = ((SpForNextArgment)iLine.Argument).Cnt;
-                                        if (destCnt.Identifier.Name == "COUNT" && (Cnt.isAllConst && destCnt.isAllConst && destCnt.getEl1forArg == Cnt.getEl1forArg))
-                                        {
-                                            ParserMediator.Warn("カウンタ変数にCOUNT:" + Cnt.getEl1forArg.ToString() + "を用いたFOR文が入れ子にされています（無限ループの恐れがあります）", func, 1, false, false);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        if (func.IsError)
-                            break;
-                        nestStack.Push(func);
-                        break;
-                    case FunctionCode.WHILE:
+						//ネストエラーチェックのためにコストはかかるが、ここでチェックする
+						if (func.Argument == null)
+							ArgumentParser.SetArgumentTo(func);
+						//上で引数解析がなされていることは保証されているので、
+						//それでこれがfalseになるのは、引数解析でエラーが起きた場合のみ
+						if (func.Argument != null)
+						{
+							VariableTerm Cnt = ((SpForNextArgment)func.Argument).Cnt;
+							if (Cnt.Identifier.Name == "COUNT")
+							{
+								foreach (InstructionLine iLine in nestStack)
+								{
+									if (iLine.FunctionCode == FunctionCode.REPEAT && Cnt.isAllConst && Cnt.getEl1forArg == 0)
+									{
+										ParserMediator.Warn("REPEAT文の中でカウンタ変数にCOUNT:0を用いたFORが使われています（無限ループの恐れがあります）", func, 1, false, false);
+									}
+									else if (iLine.FunctionCode == FunctionCode.FOR)
+									{
+										VariableTerm destCnt = ((SpForNextArgment)iLine.Argument).Cnt;
+										if (destCnt.Identifier.Name == "COUNT" && Cnt.isAllConst && destCnt.isAllConst && destCnt.getEl1forArg == Cnt.getEl1forArg)
+										{
+											ParserMediator.Warn("カウンタ変数にCOUNT:" + Cnt.getEl1forArg.ToString() + "を用いたFOR文が入れ子にされています（無限ループの恐れがあります）", func, 1, false, false);
+										}
+									}
+								}
+							}
+						}
+						if (func.IsError)
+							break;
+						nestStack.Push(func);
+						break;
+					case FunctionCode.WHILE:
 					case FunctionCode.TRYCGOTO:
 					case FunctionCode.TRYCJUMP:
 					case FunctionCode.TRYCCALL:
@@ -1062,7 +1061,7 @@ namespace MinorShift.Emuera.GameProc
 							if ((ifLine == null) || (ifLine.FunctionCode != FunctionCode.IF))
 							{
 								ParserMediator.Warn("IF～ENDIFの外で" + func.Function.Name + "文が使われました", func, 2, true, false);
-                                break;
+								break;
 							}
 							if (ifLine.IfCaseList[ifLine.IfCaseList.Count - 1].FunctionCode == FunctionCode.ELSE)
 								ParserMediator.Warn("ELSE文より後で" + func.Function.Name + "文が使われました", func, 1, false, false);
@@ -1093,18 +1092,18 @@ namespace MinorShift.Emuera.GameProc
 								ParserMediator.Warn("SELECTCASE～ENDSELECTの外で" + func.Function.Name + "文が使われました", func, 2, true, false);
 								break;
 							}
-                            else if (selectLine.FunctionCode != FunctionCode.SELECTCASE && SelectcaseStack.Count > 0)
-                            {
-                                do
-                                {
-                                    ParserMediator.Warn(selectLine.Function.Name + "文に対応する" + FunctionIdentifier.getMatchFunction(selectLine.FunctionCode) + "がない状態で" + func.Function.Name + "文に到達しました", func, 2, true, false);
-                                    //これを跨いでIF等が閉じられることがないようにする。
-                                    nestStack.Pop();
-                                    //if (nestStack.Count > 0)　//空になってるかは下で判定できるので、これを見る必要がない
-                                    selectLine = nestStack.Count == 0 ? null : nestStack.Peek(); //ちなみにnullになることはない（SELECTCASEがない場合は上で弾けるから）
-                                } while (selectLine != null && selectLine.FunctionCode != FunctionCode.SELECTCASE);
-                                break;
-                            }
+							else if (selectLine.FunctionCode != FunctionCode.SELECTCASE && SelectcaseStack.Count > 0)
+							{
+								do
+								{
+									ParserMediator.Warn(selectLine.Function.Name + "文に対応する" + FunctionIdentifier.getMatchFunction(selectLine.FunctionCode) + "がない状態で" + func.Function.Name + "文に到達しました", func, 2, true, false);
+									//これを跨いでIF等が閉じられることがないようにする。
+									nestStack.Pop();
+									//if (nestStack.Count > 0)　//空になってるかは下で判定できるので、これを見る必要がない
+									selectLine = nestStack.Count == 0 ? null : nestStack.Peek(); //ちなみにnullになることはない（SELECTCASEがない場合は上で弾けるから）
+								} while (selectLine != null && selectLine.FunctionCode != FunctionCode.SELECTCASE);
+								break;
+							}
 							if ((selectLine.IfCaseList.Count > 0) &&
 								(selectLine.IfCaseList[selectLine.IfCaseList.Count - 1].FunctionCode == FunctionCode.CASEELSE))
 								ParserMediator.Warn("CASEELSE文より後で" + func.Function.Name + "文が使われました", func, 1, false, false);
@@ -1117,26 +1116,26 @@ namespace MinorShift.Emuera.GameProc
 							if ((selectLine == null) || (selectLine.FunctionCode != FunctionCode.SELECTCASE && SelectcaseStack.Count == 0))
 							{
 								ParserMediator.Warn("対応するSELECTCASEの無いENDSELECT文です", func, 2, true, false);
-                                break;
+								break;
 							}
-                            else if (selectLine.FunctionCode != FunctionCode.SELECTCASE && SelectcaseStack.Count > 0)
-                            {
-                                do
-                                {
-                                    ParserMediator.Warn(selectLine.Function.Name + "文に対応する" + FunctionIdentifier.getMatchFunction(selectLine.FunctionCode) + "がない状態で" + func.Function.Name + "文に到達しました", func, 2, true, false);
-                                    //これを跨いでIF等が閉じられることがないようにする。
-                                    nestStack.Pop();
-                                    //if (nestStack.Count > 0)　//空になってるかは下で判定できるので、これを見る必要がない
-                                    selectLine = nestStack.Count == 0 ? null : nestStack.Peek(); //ちなみにnullになることはない（SELECTCASEがない場合は上で弾けるから）
-                                } while (selectLine != null && selectLine.FunctionCode != FunctionCode.SELECTCASE);　
-                                //とりあえず、対応するSELECTCASE跨ぎは閉じる
-                                SelectcaseStack.Pop();
-                                //こっちでも抜かないとSELECTCASEが2つのENDSELECTに対応してしまう
-                                nestStack.Pop();
-                                break;
-                            }
-                            nestStack.Pop();
-                            SelectcaseStack.Pop();
+							else if (selectLine.FunctionCode != FunctionCode.SELECTCASE && SelectcaseStack.Count > 0)
+							{
+								do
+								{
+									ParserMediator.Warn(selectLine.Function.Name + "文に対応する" + FunctionIdentifier.getMatchFunction(selectLine.FunctionCode) + "がない状態で" + func.Function.Name + "文に到達しました", func, 2, true, false);
+									//これを跨いでIF等が閉じられることがないようにする。
+									nestStack.Pop();
+									//if (nestStack.Count > 0)　//空になってるかは下で判定できるので、これを見る必要がない
+									selectLine = nestStack.Count == 0 ? null : nestStack.Peek(); //ちなみにnullになることはない（SELECTCASEがない場合は上で弾けるから）
+								} while (selectLine != null && selectLine.FunctionCode != FunctionCode.SELECTCASE);
+								//とりあえず、対応するSELECTCASE跨ぎは閉じる
+								SelectcaseStack.Pop();
+								//こっちでも抜かないとSELECTCASEが2つのENDSELECTに対応してしまう
+								nestStack.Pop();
+								break;
+							}
+							nestStack.Pop();
+							SelectcaseStack.Pop();
 							selectLine.JumpTo = func;
 							if (selectLine.IsError)
 								break;
@@ -1176,7 +1175,7 @@ namespace MinorShift.Emuera.GameProc
 						if ((nestStack.Count == 0)
 							|| (nestStack.Peek().FunctionCode != parentFunc))
 						{
-                            ParserMediator.Warn("対応する" + parentFunc.ToString() + "の無い" + func.Function.Name + "文です", func, 2, true, false);
+							ParserMediator.Warn("対応する" + parentFunc.ToString() + "の無い" + func.Function.Name + "文です", func, 2, true, false);
 							break;
 						}
 						pairLine = nestStack.Pop();//REPEAT
@@ -1210,117 +1209,117 @@ namespace MinorShift.Emuera.GameProc
 						pairLine = nestStack.Pop();//CATCH
 						pairLine.JumpToEndCatch = func;//CATCHにENDCATCHの位置を教える
 						break;
-                    case FunctionCode.PRINTDATA:
-                    case FunctionCode.PRINTDATAL:
-                    case FunctionCode.PRINTDATAW:
-                    case FunctionCode.PRINTDATAD:
-                    case FunctionCode.PRINTDATADL:
-                    case FunctionCode.PRINTDATADW:
-                    case FunctionCode.PRINTDATAK:
-                    case FunctionCode.PRINTDATAKL:
-                    case FunctionCode.PRINTDATAKW:
-                        {
-                            foreach (InstructionLine iLine in nestStack)
-                            {
-                                if (iLine.Function.IsPrintData())
-                                {
-                                    ParserMediator.Warn("PRINTDATA系命令が入れ子にされています", func, 2, true, false);
-                                    break;
-                                }
-                                if (iLine.FunctionCode == FunctionCode.STRDATA)
-                                {
-                                    ParserMediator.Warn("PRINTDATA系命令の中にSTRDATA系命令が含まれています", func, 2, true, false);
-                                    break;
-                                }
-                            }
-                            if (func.IsError)
-                                break;
-                            func.dataList = new List<List<InstructionLine>>();
-                            nestStack.Push(func);
-                            break;
-                        }
-                    case FunctionCode.STRDATA:
-                        {
-                            foreach (InstructionLine iLine in nestStack)
-                            {
-                                if (iLine.FunctionCode == FunctionCode.STRDATA)
-                                {
-                                    ParserMediator.Warn("STRDATA命令が入れ子にされています", func, 2, true, false);
-                                    break;
-                                }
-                                if (iLine.Function.IsPrintData())
-                                {
-                                    ParserMediator.Warn("STRDATA系命令の中にPRINTDATA系命令が含まれています", func, 2, true, false);
-                                    break;
-                                }
-                            }
-                            if (func.IsError)
-                                break;
-                            func.dataList = new List<List<InstructionLine>>();
-                            nestStack.Push(func);
-                            break;
-                        }
-                    case FunctionCode.DATALIST:
-                        {
-                            InstructionLine pline = (nestStack.Count == 0) ? null : nestStack.Peek();
-                            if ((pline == null) || ((!pline.Function.IsPrintData()) && (pline.FunctionCode != FunctionCode.STRDATA)))
-                            {
-                                ParserMediator.Warn("対応するPRINTDATA系命令のないDATALISTです", func, 2, true, false);
-                                break;
-                            }
-                            tempLineList = new List<InstructionLine>();
-                            nestStack.Push(func);
+					case FunctionCode.PRINTDATA:
+					case FunctionCode.PRINTDATAL:
+					case FunctionCode.PRINTDATAW:
+					case FunctionCode.PRINTDATAD:
+					case FunctionCode.PRINTDATADL:
+					case FunctionCode.PRINTDATADW:
+					case FunctionCode.PRINTDATAK:
+					case FunctionCode.PRINTDATAKL:
+					case FunctionCode.PRINTDATAKW:
+						{
+							foreach (InstructionLine iLine in nestStack)
+							{
+								if (iLine.Function.IsPrintData())
+								{
+									ParserMediator.Warn("PRINTDATA系命令が入れ子にされています", func, 2, true, false);
+									break;
+								}
+								if (iLine.FunctionCode == FunctionCode.STRDATA)
+								{
+									ParserMediator.Warn("PRINTDATA系命令の中にSTRDATA系命令が含まれています", func, 2, true, false);
+									break;
+								}
+							}
+							if (func.IsError)
+								break;
+							func.dataList = [];
+							nestStack.Push(func);
+							break;
+						}
+					case FunctionCode.STRDATA:
+						{
+							foreach (InstructionLine iLine in nestStack)
+							{
+								if (iLine.FunctionCode == FunctionCode.STRDATA)
+								{
+									ParserMediator.Warn("STRDATA命令が入れ子にされています", func, 2, true, false);
+									break;
+								}
+								if (iLine.Function.IsPrintData())
+								{
+									ParserMediator.Warn("STRDATA系命令の中にPRINTDATA系命令が含まれています", func, 2, true, false);
+									break;
+								}
+							}
+							if (func.IsError)
+								break;
+							func.dataList = [];
+							nestStack.Push(func);
+							break;
+						}
+					case FunctionCode.DATALIST:
+						{
+							InstructionLine pline = (nestStack.Count == 0) ? null : nestStack.Peek();
+							if ((pline == null) || ((!pline.Function.IsPrintData()) && (pline.FunctionCode != FunctionCode.STRDATA)))
+							{
+								ParserMediator.Warn("対応するPRINTDATA系命令のないDATALISTです", func, 2, true, false);
+								break;
+							}
+							tempLineList = [];
+							nestStack.Push(func);
 
-                            break;
-                        }
-                    case FunctionCode.ENDLIST:
-                        {
-                            if ((nestStack.Count == 0) || (nestStack.Peek().FunctionCode != FunctionCode.DATALIST))
-                            {
-                                ParserMediator.Warn("対応するDATALISTのないENDLISTです", func, 2, true, false);
-                                break;
-                            }
-                            if (tempLineList.Count == 0)
-                                ParserMediator.Warn("DATALIST命令に表示データが与えられていません（このDATALISTは空文字列を表示します）", func, 1, false, false);
-                            nestStack.Pop();
-                            nestStack.Peek().dataList.Add(tempLineList);
-                            break;
-                        }
-                    case FunctionCode.DATA:
-                    case FunctionCode.DATAFORM:
-                        {
-                            InstructionLine pdata = (nestStack.Count == 0) ? null : nestStack.Peek();
-                            if ((pdata == null) || (!pdata.Function.IsPrintData() && pdata.FunctionCode != FunctionCode.DATALIST && pdata.FunctionCode != FunctionCode.STRDATA))
-                            {
-                                ParserMediator.Warn("対応するPRINTDATA系命令のない" + func.Function.Name + "です", func, 2, true, false);
-                                break;
-                            }
-                            List<InstructionLine> iList = new List<InstructionLine>();
-                            if (pdata.FunctionCode != FunctionCode.DATALIST)
-                            {
-                                iList.Add(func);
-                                pdata.dataList.Add(iList);
-                            }
-                            else
-                                tempLineList.Add(func);
-                            break;
-                        }
-                    case FunctionCode.ENDDATA:
-                        {
-                            InstructionLine pline = (nestStack.Count == 0) ? null : nestStack.Peek();
-                            if ((pline == null) || ((!pline.Function.IsPrintData()) && (pline.FunctionCode != FunctionCode.STRDATA)))
-                            {
-                                ParserMediator.Warn("対応するPRINTDATA系命令もしくはSTRDATAのない" + func.Function.Name + "です", func, 2, true, false);
-                                break;
-                            }
-                            if (pline.FunctionCode == FunctionCode.DATALIST)
-                                ParserMediator.Warn("DATALISTが閉じられていません", func, 2, true, false);
-                            if (pline.dataList.Count == 0)
-                                ParserMediator.Warn(pline.Function.Name + "命令に表示データがありません（この命令は無視されます）", func, 1, false, false);
-                            pline.JumpTo = func;
-                            nestStack.Pop();
-                            break;
-                        }
+							break;
+						}
+					case FunctionCode.ENDLIST:
+						{
+							if ((nestStack.Count == 0) || (nestStack.Peek().FunctionCode != FunctionCode.DATALIST))
+							{
+								ParserMediator.Warn("対応するDATALISTのないENDLISTです", func, 2, true, false);
+								break;
+							}
+							if (tempLineList.Count == 0)
+								ParserMediator.Warn("DATALIST命令に表示データが与えられていません（このDATALISTは空文字列を表示します）", func, 1, false, false);
+							nestStack.Pop();
+							nestStack.Peek().dataList.Add(tempLineList);
+							break;
+						}
+					case FunctionCode.DATA:
+					case FunctionCode.DATAFORM:
+						{
+							InstructionLine pdata = (nestStack.Count == 0) ? null : nestStack.Peek();
+							if ((pdata == null) || (!pdata.Function.IsPrintData() && pdata.FunctionCode != FunctionCode.DATALIST && pdata.FunctionCode != FunctionCode.STRDATA))
+							{
+								ParserMediator.Warn("対応するPRINTDATA系命令のない" + func.Function.Name + "です", func, 2, true, false);
+								break;
+							}
+							List<InstructionLine> iList = [];
+							if (pdata.FunctionCode != FunctionCode.DATALIST)
+							{
+								iList.Add(func);
+								pdata.dataList.Add(iList);
+							}
+							else
+								tempLineList.Add(func);
+							break;
+						}
+					case FunctionCode.ENDDATA:
+						{
+							InstructionLine pline = (nestStack.Count == 0) ? null : nestStack.Peek();
+							if ((pline == null) || ((!pline.Function.IsPrintData()) && (pline.FunctionCode != FunctionCode.STRDATA)))
+							{
+								ParserMediator.Warn("対応するPRINTDATA系命令もしくはSTRDATAのない" + func.Function.Name + "です", func, 2, true, false);
+								break;
+							}
+							if (pline.FunctionCode == FunctionCode.DATALIST)
+								ParserMediator.Warn("DATALISTが閉じられていません", func, 2, true, false);
+							if (pline.dataList.Count == 0)
+								ParserMediator.Warn(pline.Function.Name + "命令に表示データがありません（この命令は無視されます）", func, 1, false, false);
+							pline.JumpTo = func;
+							nestStack.Pop();
+							break;
+						}
 					case FunctionCode.TRYCALLLIST:
 					case FunctionCode.TRYJUMPLIST:
 					case FunctionCode.TRYGOTOLIST:
@@ -1334,7 +1333,7 @@ namespace MinorShift.Emuera.GameProc
 						}
 						if (func.IsError)
 							break;
-						func.callList = new List<InstructionLine>();
+						func.callList = [];
 						nestStack.Push(func);
 						break;
 					case FunctionCode.FUNC:
@@ -1346,11 +1345,11 @@ namespace MinorShift.Emuera.GameProc
 								ParserMediator.Warn("対応するTRYCALLLIST系命令のない" + func.Function.Name + "です", func, 2, true, false);
 								break;
 							}
-                            if (func.Argument == null)
-                            {
-                                ParserMediator.Warn("TRYCALLLIST系命令中に無効な" + func.Function.Name + "が存在します", pFunc, 2, true, false);
-                                break;
-                            }
+							if (func.Argument == null)
+							{
+								ParserMediator.Warn("TRYCALLLIST系命令中に無効な" + func.Function.Name + "が存在します", pFunc, 2, true, false);
+								break;
+							}
 							if (pFunc.FunctionCode == FunctionCode.TRYGOTOLIST)
 							{
 								if (((SpCallArgment)func.Argument).SubNames.Length != 0)
@@ -1418,8 +1417,8 @@ namespace MinorShift.Emuera.GameProc
 				else
 					ParserMediator.Warn("ディフォルトエラー（Emuera設定漏れ）", func, 2, true, false);
 			}
-            //使ったスタックをクリア
-            SelectcaseStack.Clear();
+			//使ったスタックをクリア
+			SelectcaseStack.Clear();
 		}
 
 		private void setJumpTo(FunctionLabelLine label)
@@ -1433,13 +1432,13 @@ namespace MinorShift.Emuera.GameProc
 			while (true)
 			{
 				nextLine = nextLine.NextLine;
-                if (!(nextLine is InstructionLine func))
-                {
-                    if ((nextLine is NullLine) || (nextLine is FunctionLabelLine))
-                        break;
-                    continue;
-                }
-                if (func.IsError)
+				if (!(nextLine is InstructionLine func))
+				{
+					if ((nextLine is NullLine) || (nextLine is FunctionLabelLine))
+						break;
+					continue;
+				}
+				if (func.IsError)
 					continue;
 				parentProcess.scaningLine = func;
 
@@ -1462,7 +1461,7 @@ namespace MinorShift.Emuera.GameProc
 						else
 							printFunctionNotFoundWarning(FunctionNotFoundName, func, 2, true);
 					}
-                    continue;
+					continue;
 				}
 				if ((func.FunctionCode == FunctionCode.TRYCALLLIST) || (func.FunctionCode == FunctionCode.TRYJUMPLIST))
 					useCallForm = true;

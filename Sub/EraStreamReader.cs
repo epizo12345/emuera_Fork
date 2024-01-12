@@ -14,7 +14,7 @@ namespace MinorShift.Emuera.Sub
 
 		string filepath;
 		string filename;
-        readonly bool useRename = false;
+		readonly bool useRename = false;
 		int curNo = 0;
 		int nextNo = 0;
 		StreamReader reader;
@@ -98,7 +98,7 @@ namespace MinorShift.Emuera.Sub
 				return st;
 			}
 			//curNoはこの後加算しない(始端記号の行を行番号とする)
-			StringBuilder b = new StringBuilder();
+			StringBuilder b = new();
 			while (true)
 			{
 				line = reader.ReadLine();
@@ -122,10 +122,10 @@ namespace MinorShift.Emuera.Sub
 							throw new CodeEE("行連結終端記号'}'の行に'}'以外の文字を含めることはできません", new ScriptPosition(filename, nextNo));
 						break;
 					}
-                    //行連結文字なら1字でないとおかしい、というか、こうしないとFORMの数値変数処理が誤爆する。
-                    //{
-                    //A}
-                    //みたいなどうしようもないコードは知ったこっちゃない
+					//行連結文字なら1字でないとおかしい、というか、こうしないとFORMの数値変数処理が誤爆する。
+					//{
+					//A}
+					//みたいなどうしようもないコードは知ったこっちゃない
 					if (test[0] == '{' && test.Length == 1)
 						throw new CodeEE("予期しない行連結始端記号'{'が見つかりました", new ScriptPosition(filename, nextNo));
 				}

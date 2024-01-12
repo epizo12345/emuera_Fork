@@ -8,6 +8,7 @@ using MinorShift.Emuera.GameData.Variable;
 using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.GameData.Function;
 using MinorShift.Emuera.GameProc.Function;
+using System.Runtime.Versioning;
 
 namespace MinorShift.Emuera.GameProc
 {
@@ -41,9 +42,9 @@ namespace MinorShift.Emuera.GameProc
 						if (func.IsError)
 							throw new CodeEE(func.ErrMes);
 					}
-					if ((skipPrint) && (func.Function.IsPrint()))
+					if (skipPrint && func.Function.IsPrint())
 					{
-						if ((userDefinedSkip) && (func.Function.IsInput()))
+						if (userDefinedSkip && func.Function.IsInput())
 						{
 							console.PrintError("表示スキップ中にデフォルト値を持たないINPUTに遭遇しました");
 							console.PrintError("INPUTに必要な処理をNOSKIP～ENDNOSKIPで囲むか、SKIPDISP 0～SKIPDISP 1で囲ってください");
@@ -60,8 +61,8 @@ namespace MinorShift.Emuera.GameProc
 				}
 				else if ((line is NullLine) || (line is FunctionLabelLine))
 				{//（関数終端） or ファイル終端
-					//if (sequential)
-					//{//流れ落ちてきた
+				 //if (sequential)
+				 //{//流れ落ちてきた
 					if (!state.IsFunctionMethod)
 						vEvaluator.RESULT = 0;
 					state.Return(0);
@@ -98,6 +99,7 @@ namespace MinorShift.Emuera.GameProc
 		}
 
 		#region normal
+		[SupportedOSPlatform("windows")]
 		void doNormalFunction(InstructionLine func)
 		{
 			Int64 iValue = 0;
@@ -110,9 +112,9 @@ namespace MinorShift.Emuera.GameProc
 					{
 						if (skipPrint)
 							break;
-                        exm.Console.UseUserStyle = true;
-                        exm.Console.UseSetColorStyle = true;
-                        SpButtonArgument bArg = (SpButtonArgument)func.Argument;
+						exm.Console.UseUserStyle = true;
+						exm.Console.UseSetColorStyle = true;
+						SpButtonArgument bArg = (SpButtonArgument)func.Argument;
 						str = bArg.PrintStrTerm.GetStrValue(exm);
 						//ボタン処理に絡んで表示がおかしくなるため、PRINTBUTTONでの改行コードはオミット
 						str = str.Replace("\n", "");
@@ -127,9 +129,9 @@ namespace MinorShift.Emuera.GameProc
 					{
 						if (skipPrint)
 							break;
-                        exm.Console.UseUserStyle = true;
-                        exm.Console.UseSetColorStyle = true;
-                        SpButtonArgument bArg = (SpButtonArgument)func.Argument;
+						exm.Console.UseUserStyle = true;
+						exm.Console.UseSetColorStyle = true;
+						SpButtonArgument bArg = (SpButtonArgument)func.Argument;
 						str = bArg.PrintStrTerm.GetStrValue(exm);
 						//ボタン処理に絡んで表示がおかしくなるため、PRINTBUTTONでの改行コードはオミット
 						str = str.Replace("\n", "");
@@ -145,9 +147,9 @@ namespace MinorShift.Emuera.GameProc
 					{
 						if (skipPrint)
 							break;
-                        exm.Console.UseUserStyle = true;
-                        exm.Console.UseSetColorStyle = true;
-                        term = ((ExpressionArgument)func.Argument).Term;
+						exm.Console.UseUserStyle = true;
+						exm.Console.UseSetColorStyle = true;
+						term = ((ExpressionArgument)func.Argument).Term;
 						exm.Console.PrintPlain(term.GetStrValue(exm));
 					}
 					break;
@@ -389,7 +391,7 @@ namespace MinorShift.Emuera.GameProc
 							Int64 colorRGB = colorArg.RGB.GetIntValue(exm);
 							colorR = (colorRGB & 0xFF0000) >> 16;
 							colorG = (colorRGB & 0x00FF00) >> 8;
-							colorB = (colorRGB & 0x0000FF);
+							colorB = colorRGB & 0x0000FF;
 						}
 						else
 						{
@@ -429,14 +431,14 @@ namespace MinorShift.Emuera.GameProc
 							Int64 colorRGB = colorArg.ConstInt;
 							colorR = (colorRGB & 0xFF0000) >> 16;
 							colorG = (colorRGB & 0x00FF00) >> 8;
-							colorB = (colorRGB & 0x0000FF);
+							colorB = colorRGB & 0x0000FF;
 						}
 						else if (colorArg.RGB != null)
 						{
 							Int64 colorRGB = colorArg.RGB.GetIntValue(exm);
 							colorR = (colorRGB & 0xFF0000) >> 16;
 							colorG = (colorRGB & 0x00FF00) >> 8;
-							colorB = (colorRGB & 0x0000FF);
+							colorB = colorRGB & 0x0000FF;
 						}
 						else
 						{
@@ -557,10 +559,10 @@ namespace MinorShift.Emuera.GameProc
 					break;
 				case FunctionCode.SKIPDISP:
 					{
-						iValue = (func.Argument.IsConst) ? func.Argument.ConstInt : ((ExpressionArgument)func.Argument).Term.GetIntValue(exm);
-						skipPrint = (iValue != 0);
-						userDefinedSkip = (iValue != 0);
-						vEvaluator.RESULT = (skipPrint) ? 1L : 0L;
+						iValue = func.Argument.IsConst ? func.Argument.ConstInt : ((ExpressionArgument)func.Argument).Term.GetIntValue(exm);
+						skipPrint = iValue != 0;
+						userDefinedSkip = iValue != 0;
+						vEvaluator.RESULT = skipPrint ? 1L : 0L;
 					}
 					break;
 				case FunctionCode.NOSKIP:
@@ -815,8 +817,7 @@ namespace MinorShift.Emuera.GameProc
 							if (callto == null)
 								continue;
 							callto.IsJump = func.Function.IsJump();
-							string errMes;
-							UserDefinedFunctionArgument args = callto.ConvertArg(cfa.RowArgs, out errMes);
+							UserDefinedFunctionArgument args = callto.ConvertArg(cfa.RowArgs, out string errMes);
 							if (args == null)
 								throw new CodeEE(errMes);
 							state.IntoFunction(callto, args, exm);
@@ -869,12 +870,12 @@ namespace MinorShift.Emuera.GameProc
 							//case SystemStateCode.Train_Begin://BEGIN TRAINから。
 							case SystemStateCode.Train_CallEventTrain://@EVENTTRAINの呼び出し中。スキップ可能
 							case SystemStateCode.Train_CallShowStatus://@SHOW_STATUSの呼び出し中
-							//case SystemStateCode.Train_CallComAbleXX://@COM_ABLExxの呼び出し中。
+																	  //case SystemStateCode.Train_CallComAbleXX://@COM_ABLExxの呼び出し中。
 							case SystemStateCode.Train_CallShowUserCom://@SHOW_USERCOMの呼び出し中
-							//case SystemStateCode.Train_WaitInput://入力待ち状態。選択が実行可能ならEVENTCOMからCOMxx、そうでなければ@USERCOMにRESULTを渡す
-							//case SystemStateCode.Train_CallEventCom://@EVENTCOMの呼び出し中
-							//case SystemStateCode.Train_CallComXX://@COMxxの呼び出し中
-							//case SystemStateCode.Train_CallSourceCheck://@SOURCE_CHECKの呼び出し中
+																	   //case SystemStateCode.Train_WaitInput://入力待ち状態。選択が実行可能ならEVENTCOMからCOMxx、そうでなければ@USERCOMにRESULTを渡す
+																	   //case SystemStateCode.Train_CallEventCom://@EVENTCOMの呼び出し中
+																	   //case SystemStateCode.Train_CallComXX://@COMxxの呼び出し中
+																	   //case SystemStateCode.Train_CallSourceCheck://@SOURCE_CHECKの呼び出し中
 							case SystemStateCode.Train_CallEventComEnd://@EVENTCOMENDの呼び出し中。スキップ可能。Train_CallEventTrainへ帰る。@USERCOMの呼び出し中もここ
 								break;
 							default:
@@ -905,7 +906,7 @@ namespace MinorShift.Emuera.GameProc
 
 
 
-		List<ProcessState> prevStateList = new List<ProcessState>();
+		List<ProcessState> prevStateList = [];
 		public void saveCurrentState(bool single)
 		{
 			//怖いところだが、現状起こらない現象なので一旦消してみる

@@ -16,10 +16,10 @@ namespace MinorShift.Emuera.GameData
 		public Int64 ScriptUniqueCode = 0;
 		//1.713 訂正。eramakerのバージョンの初期値は1000ではなく0だった
 		public Int64 ScriptVersion = 0;//1000;
-		//1.713 上の変更とあわせて。セーブデータのバージョンが1000であり、現在のバージョンが未定義である場合、セーブデータのバージョンを同じとみなす
+									   //1.713 上の変更とあわせて。セーブデータのバージョンが1000であり、現在のバージョンが未定義である場合、セーブデータのバージョンを同じとみなす
 		public bool ScriptVersionDefined = false;
 		public Int64 ScriptCompatibleMinVersion = -1;
-        public string Compatible_EmueraVer = "0.000.0.0";
+		public string Compatible_EmueraVer = "0.000.0.0";
 
 		//1.727 追加。Form.Text
 		public string ScriptWindowTitle = null;
@@ -27,7 +27,7 @@ namespace MinorShift.Emuera.GameData
 		{
 			get
 			{
-				StringBuilder versionStr = new StringBuilder();
+				StringBuilder versionStr = new();
 				versionStr.Append((ScriptVersion / 1000).ToString());
 				versionStr.Append(".");
 				if ((ScriptVersion % 10) != 0)
@@ -57,20 +57,16 @@ namespace MinorShift.Emuera.GameData
 		public Int64 DefaultCharacter = -1;
 		public Int64 DefaultNoItem = 0;
 
-		private bool tryatoi(string str, out Int64 i)
+		private bool tryatoi(ReadOnlySpan<char> str, out Int64 i)
 		{
 			if (Int64.TryParse(str, out i))
 				return true;
-			StringStream st = new StringStream(str);
-			StringBuilder sb = new StringBuilder(str.Length);
-			while (true)
+			var sb = new StringBuilder(str.Length);
+			foreach (var character in str)
 			{
-				if (st.EOS)
+				if (!char.IsNumber(character))
 					break;
-				if (!char.IsNumber(st.Current))
-					break;
-				sb.Append(st.Current);
-				st.ShiftNext();
+				sb.Append(character);
 			}
 			if (sb.Length > 0)
 				if (Int64.TryParse(sb.ToString(), out i))
@@ -85,12 +81,12 @@ namespace MinorShift.Emuera.GameData
 		/// <returns>読み込み続行するなら真、エラー終了なら偽</returns>
 		public bool LoadGameBaseCsv(string basePath)
 		{
-            if (!File.Exists(basePath))
-            {
-                return true;
-            }
+			if (!File.Exists(basePath))
+			{
+				return true;
+			}
 			ScriptPosition pos = null;
-			EraStreamReader eReader = new EraStreamReader(false);
+			EraStreamReader eReader = new(false);
 			if (!eReader.Open(basePath))
 			{
 				//output.PrintLine(eReader.Filename + "のオープンに失敗しました");
@@ -113,7 +109,7 @@ namespace MinorShift.Emuera.GameData
 							{
 								if (ScriptUniqueCode == 0L)
 									ParserMediator.Warn("コード:0のセーブデータはいかなるコードのスクリプトからも読めるデータとして扱われます", pos, 0);
-							}							
+							}
 							break;
 						case "バージョン":
 							ScriptVersionDefined = tryatoi(tokens[1], out ScriptVersion);
@@ -142,28 +138,28 @@ namespace MinorShift.Emuera.GameData
 						case "ウィンドウタイトル":
 							ScriptWindowTitle = tokens[1];
 							break;
-							
-                        case "動作に必要なEmueraのバージョン":
-                            Compatible_EmueraVer = tokens[1];
-                            if (!Regex.IsMatch(Compatible_EmueraVer, @"^\d+\.\d+\.\d+\.\d+$"))
-                            {
-                                ParserMediator.Warn("バージョン指定を読み取れなかったので処理を省略します", pos, 0);
-                                break;
-                            }
-                            Version curerntVersion = new Version(GlobalStatic.MainWindow.InternalEmueraVer);
-                            Version targetVersoin = new Version(Compatible_EmueraVer);
-                            if (curerntVersion < targetVersoin)
-                            {
-                                ParserMediator.Warn("このバリアント動作させるにはVer. " + GlobalStatic.MainWindow.EmueraVerText + "以降のバージョンのEmueraが必要です", pos, 2);
-                                return false;
-                            }
-                            break;
+
+						case "動作に必要なEmueraのバージョン":
+							Compatible_EmueraVer = tokens[1];
+							if (!Regex.IsMatch(Compatible_EmueraVer, @"^\d+\.\d+\.\d+\.\d+$"))
+							{
+								ParserMediator.Warn("バージョン指定を読み取れなかったので処理を省略します", pos, 0);
+								break;
+							}
+							Version curerntVersion = new(GlobalStatic.MainWindow.InternalEmueraVer);
+							Version targetVersoin = new(Compatible_EmueraVer);
+							if (curerntVersion < targetVersoin)
+							{
+								ParserMediator.Warn("このバリアント動作させるにはVer. " + GlobalStatic.MainWindow.EmueraVerText + "以降のバージョンのEmueraが必要です", pos, 2);
+								return false;
+							}
+							break;
 					}
 				}
 			}
 			catch
 			{
-                ParserMediator.Warn("GAMEBASE.CSVの読み込み中にエラーが発生したため、読みこみを中断します", pos, 1);
+				ParserMediator.Warn("GAMEBASE.CSVの読み込み中にエラーが発生したため、読みこみを中断します", pos, 1);
 				return true;
 			}
 			finally

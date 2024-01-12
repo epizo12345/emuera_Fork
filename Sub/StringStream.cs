@@ -43,14 +43,14 @@ namespace MinorShift.Emuera.Sub
 				return source[pointer];
 			}
 		}
-		
+
 		public void AppendString(string str)
 		{
 			if (pointer > source.Length)
 				pointer = source.Length;
 			source += " " + str;
 		}
-		
+
 		/// <summary>
 		/// 文字列終端に達した
 		/// </summary>
@@ -85,10 +85,28 @@ namespace MinorShift.Emuera.Sub
 			return source.Substring(start, length);
 		}
 
+		public ReadOnlySpan<char> SubstringROS()
+		{
+			if (pointer >= source.Length)
+				return "";
+			else if (pointer == 0)
+				return source;
+			return source.AsSpan()[pointer..]; ;
+		}
+
+		public ReadOnlySpan<char> SubstringROS(int start, int length)
+		{
+			if (start >= source.Length || length == 0)
+				return "";
+			if (start + length > source.Length)
+				length = source.Length - start;
+			return source.AsSpan()[start..(start + length)];
+		}
+
 		internal void Replace(int start, int count, string src)
 		{
 			//引数に正しい数字が送られてくること前提
-			source = (source.Remove(start, count)).Insert(start, src);
+			source = source.Remove(start, count).Insert(start, src);
 			pointer = start;
 		}
 
@@ -97,10 +115,10 @@ namespace MinorShift.Emuera.Sub
 			pointer++;
 		}
 
-        public void Jump(int skip)
-        {
-            pointer += skip;
-        }
+		public void Jump(int skip)
+		{
+			pointer += skip;
+		}
 
 		/// <summary>
 		/// 検索文字列の相対位置を返す。見つからない場合、負の値。
@@ -131,7 +149,7 @@ namespace MinorShift.Emuera.Sub
 			if (pointer + rother.Length > source.Length)
 				return false;
 
-			for (int i = 0;  i < rother.Length;i++)
+			for (int i = 0; i < rother.Length; i++)
 			{
 				if (source[pointer + i] != rother[i])
 					return false;

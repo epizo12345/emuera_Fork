@@ -50,7 +50,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				int length2 = (int)(length64 & 0x7FFFFFFF);
 				dataStringArray2D[i] = new string[length, length2];
 			}
-			UserDefCVarDataList = new List<object>();
+			UserDefCVarDataList = [];
 			for (int i = 0; i < varData.UserDefinedCharaVarList.Count; i++)
 			{
 				UserDefinedVariableData d = varData.UserDefinedCharaVarList[i].DimData;
@@ -173,8 +173,8 @@ namespace MinorShift.Emuera.GameData.Variable
 			int i = (int)(code & VariableCode.__LOWERCASE__);
 			if (i >= 0xF0)
 				return null;
-            long length64;
-            switch (type)
+			long length64;
+			switch (type)
 			{
 				case VariableCode.__STRING__:
 				case VariableCode.__INTEGER__:
@@ -237,48 +237,48 @@ namespace MinorShift.Emuera.GameData.Variable
 					for (int k = 0; k < length2; k++)
 						other.dataStringArray2D[i][j, k] = dataStringArray2D[i][j, k];
 			}
-            if (UserDefCVarDataList.Count > 0)
-            {
-                foreach (UserDefinedCharaVariableToken var in varData.UserDefinedCharaVarList)
-                {
-                    if (!var.IsCharacterData)
-                        continue;
-                    if (var.IsString)
-                    {
-                        if (var.IsArray1D)
-                        {
-                            int length = ((string[])(UserDefCVarDataList[var.ArrayIndex])).GetLength(0);
-                            for (int i = 0; i < length; i++)
-                                ((string[])(other.UserDefCVarDataList[var.ArrayIndex]))[i] = ((string[])(UserDefCVarDataList[var.ArrayIndex]))[i];
-                        }
-                        else if (var.IsArray2D)
-                        {
-                            int length1 = ((string[,])UserDefCVarDataList[var.ArrayIndex]).GetLength(0);
-                            int length2 = ((string[,])UserDefCVarDataList[var.ArrayIndex]).GetLength(1);
-                            for (int i = 0; i < length1; i++)
-                                for (int j = 0; j < length2; j++)
-                                    ((string[,])(other.UserDefCVarDataList[var.ArrayIndex]))[i, j] = ((string[,])(UserDefCVarDataList[var.ArrayIndex]))[i, j];
-                        }
-                    }
-                    else
-                    {
-                        if (var.IsArray1D)
-                        {
-                            int length = ((Int64[])(UserDefCVarDataList[var.ArrayIndex])).GetLength(0);
-                            for (int i = 0; i < length; i++)
-                                ((Int64[])(other.UserDefCVarDataList[var.ArrayIndex]))[i] = ((Int64[])(UserDefCVarDataList[var.ArrayIndex]))[i];
-                        }
-                        else if (var.IsArray2D)
-                        {
-                            int length1 = ((Int64[,])(UserDefCVarDataList[var.ArrayIndex])).GetLength(0);
-                            int length2 = ((Int64[,])(UserDefCVarDataList[var.ArrayIndex])).GetLength(1);
-                            for (int i = 0; i < length1; i++)
-                                for (int j = 0; j < length2; j++)
-                                    ((Int64[,])(other.UserDefCVarDataList[var.ArrayIndex]))[i, j] = ((Int64[,])(UserDefCVarDataList[var.ArrayIndex]))[i, j];
-                        }
-                    }
-                }
-            }
+			if (UserDefCVarDataList.Count > 0)
+			{
+				foreach (UserDefinedCharaVariableToken var in varData.UserDefinedCharaVarList)
+				{
+					if (!var.IsCharacterData)
+						continue;
+					if (var.IsString)
+					{
+						if (var.IsArray1D)
+						{
+							int length = ((string[])UserDefCVarDataList[var.ArrayIndex]).GetLength(0);
+							for (int i = 0; i < length; i++)
+								((string[])other.UserDefCVarDataList[var.ArrayIndex])[i] = ((string[])UserDefCVarDataList[var.ArrayIndex])[i];
+						}
+						else if (var.IsArray2D)
+						{
+							int length1 = ((string[,])UserDefCVarDataList[var.ArrayIndex]).GetLength(0);
+							int length2 = ((string[,])UserDefCVarDataList[var.ArrayIndex]).GetLength(1);
+							for (int i = 0; i < length1; i++)
+								for (int j = 0; j < length2; j++)
+									((string[,])other.UserDefCVarDataList[var.ArrayIndex])[i, j] = ((string[,])UserDefCVarDataList[var.ArrayIndex])[i, j];
+						}
+					}
+					else
+					{
+						if (var.IsArray1D)
+						{
+							int length = ((Int64[])UserDefCVarDataList[var.ArrayIndex]).GetLength(0);
+							for (int i = 0; i < length; i++)
+								((Int64[])other.UserDefCVarDataList[var.ArrayIndex])[i] = ((Int64[])UserDefCVarDataList[var.ArrayIndex])[i];
+						}
+						else if (var.IsArray2D)
+						{
+							int length1 = ((Int64[,])UserDefCVarDataList[var.ArrayIndex]).GetLength(0);
+							int length2 = ((Int64[,])UserDefCVarDataList[var.ArrayIndex]).GetLength(1);
+							for (int i = 0; i < length1; i++)
+								for (int j = 0; j < length2; j++)
+									((Int64[,])other.UserDefCVarDataList[var.ArrayIndex])[i, j] = ((Int64[,])UserDefCVarDataList[var.ArrayIndex])[i, j];
+						}
+					}
+				}
+			}
 		}
 
 		const int strCount = (int)VariableCode.__COUNT_SAVE_CHARACTER_STRING__;
@@ -460,12 +460,12 @@ namespace MinorShift.Emuera.GameData.Variable
 					case VariableCode.__STRING__ | VariableCode.__ARRAY_2D__:
 						writer.WriteWithKey(code.ToString(), dataStringArray2D[CodeInt]);
 						break;
-					//case VariableCode.__INTEGER__ | VariableCode.__ARRAY_3D__:
-					//    writer.Write(code.ToString(), dataIntegerArray3D[CodeInt]);
-					//    break;
-					//case VariableCode.__STRING__ | VariableCode.__ARRAY_3D__:
-					//    writer.Write(code.ToString(), dataStringArray3D[CodeInt]);
-					//    break;
+						//case VariableCode.__INTEGER__ | VariableCode.__ARRAY_3D__:
+						//    writer.Write(code.ToString(), dataIntegerArray3D[CodeInt]);
+						//    break;
+						//case VariableCode.__STRING__ | VariableCode.__ARRAY_3D__:
+						//    writer.Write(code.ToString(), dataStringArray3D[CodeInt]);
+						//    break;
 				}
 			}
 
@@ -496,19 +496,19 @@ namespace MinorShift.Emuera.GameData.Variable
 				object array = null;
 				if (nameAndType.Key != null)
 				{
-                    if (!GlobalStatic.IdentifierDictionary.getVarTokenIsForbid(nameAndType.Key))
-                        vToken = GlobalStatic.IdentifierDictionary.GetVariableToken(nameAndType.Key, null, false);
+					if (!GlobalStatic.IdentifierDictionary.getVarTokenIsForbid(nameAndType.Key))
+						vToken = GlobalStatic.IdentifierDictionary.GetVariableToken(nameAndType.Key, null, false);
 					if (userDefineData)
 					{
 						array = vToken == null || !vToken.IsSavedata || !vToken.IsCharacterData || !(vToken is UserDefinedCharaVariableToken token)
-                            ? null
-                            : UserDefCVarDataList[token.ArrayIndex];
-                        vToken = null;
+							? null
+							: UserDefCVarDataList[token.ArrayIndex];
+						vToken = null;
 					}
 					else
 					{
-                        if (vToken != null)
-                            codeInt = (int)VariableCode.__LOWERCASE__ & (int)vToken.Code;
+						if (vToken != null)
+							codeInt = (int)VariableCode.__LOWERCASE__ & (int)vToken.Code;
 						array = null;
 					}
 				}
@@ -701,46 +701,12 @@ namespace MinorShift.Emuera.GameData.Variable
 			//    throw new ExeEE("キャラクタ変数でない");
 			if (sortkey.IsString)
 			{
-                if (sortkey.IsArray2D)
-                {
-                    string[,] array = sortkey is UserDefinedCharaVariableToken token
-                        ? (string[,])UserDefCVarDataList[token.ArrayIndex]
-                        : dataStringArray2D[sortkey.CodeInt];
-                    int elem1 = (int)(elem64 >> 32);
-                    int elem2 = (int)(elem64 & 0x7FFFFFFF);
-                    if (elem1 < 0 || elem1 >= array.GetLength(0) || elem2 < 0 || elem2 >= array.GetLength(1))
-                        throw new CodeEE("ソートキーが配列外を参照しています");
-                    temp_SortKey = array[elem1, elem2];
-                }
-                else if (sortkey.IsArray1D)
-                {
-                    string[] array = sortkey is UserDefinedCharaVariableToken token
-                        ? (string[])UserDefCVarDataList[token.ArrayIndex]
-                        : dataStringArray[sortkey.CodeInt];
-                    if (elem64 < 0 || elem64 >= array.Length)
-                        throw new CodeEE("ソートキーが配列外を参照しています");
-                    if (array[(int)elem64] != null)
-                        temp_SortKey = array[(int)elem64];
-                    else
-                        temp_SortKey = "";
-                }
-                else
-                {
-                    //ユーザー定義キャラ変数は非配列がない
-                    if (dataString[sortkey.CodeInt] != null)
-                        temp_SortKey = dataString[sortkey.CodeInt];
-                    else
-                        temp_SortKey = "";
-                }
-			}
-			else
-			{
 				if (sortkey.IsArray2D)
 				{
-                    long[,] array = sortkey is UserDefinedCharaVariableToken token
-                        ? (Int64[,])UserDefCVarDataList[token.ArrayIndex]
-                        : dataIntegerArray2D[sortkey.CodeInt];
-                    int elem1 = (int)(elem64 >> 32);
+					string[,] array = sortkey is UserDefinedCharaVariableToken token
+						? (string[,])UserDefCVarDataList[token.ArrayIndex]
+						: dataStringArray2D[sortkey.CodeInt];
+					int elem1 = (int)(elem64 >> 32);
 					int elem2 = (int)(elem64 & 0x7FFFFFFF);
 					if (elem1 < 0 || elem1 >= array.GetLength(0) || elem2 < 0 || elem2 >= array.GetLength(1))
 						throw new CodeEE("ソートキーが配列外を参照しています");
@@ -748,10 +714,44 @@ namespace MinorShift.Emuera.GameData.Variable
 				}
 				else if (sortkey.IsArray1D)
 				{
-                    long[] array = sortkey is UserDefinedCharaVariableToken token
-                        ? (Int64[])UserDefCVarDataList[token.ArrayIndex]
-                        : dataIntegerArray[sortkey.CodeInt];
-                    if (elem64 < 0 || elem64 >= array.Length)
+					string[] array = sortkey is UserDefinedCharaVariableToken token
+						? (string[])UserDefCVarDataList[token.ArrayIndex]
+						: dataStringArray[sortkey.CodeInt];
+					if (elem64 < 0 || elem64 >= array.Length)
+						throw new CodeEE("ソートキーが配列外を参照しています");
+					if (array[(int)elem64] != null)
+						temp_SortKey = array[(int)elem64];
+					else
+						temp_SortKey = "";
+				}
+				else
+				{
+					//ユーザー定義キャラ変数は非配列がない
+					if (dataString[sortkey.CodeInt] != null)
+						temp_SortKey = dataString[sortkey.CodeInt];
+					else
+						temp_SortKey = "";
+				}
+			}
+			else
+			{
+				if (sortkey.IsArray2D)
+				{
+					long[,] array = sortkey is UserDefinedCharaVariableToken token
+						? (Int64[,])UserDefCVarDataList[token.ArrayIndex]
+						: dataIntegerArray2D[sortkey.CodeInt];
+					int elem1 = (int)(elem64 >> 32);
+					int elem2 = (int)(elem64 & 0x7FFFFFFF);
+					if (elem1 < 0 || elem1 >= array.GetLength(0) || elem2 < 0 || elem2 >= array.GetLength(1))
+						throw new CodeEE("ソートキーが配列外を参照しています");
+					temp_SortKey = array[elem1, elem2];
+				}
+				else if (sortkey.IsArray1D)
+				{
+					long[] array = sortkey is UserDefinedCharaVariableToken token
+						? (Int64[])UserDefCVarDataList[token.ArrayIndex]
+						: dataIntegerArray[sortkey.CodeInt];
+					if (elem64 < 0 || elem64 >= array.Length)
 						throw new CodeEE("ソートキーが配列外を参照しています");
 					temp_SortKey = array[(int)elem64];
 				}

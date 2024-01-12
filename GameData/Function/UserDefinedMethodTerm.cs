@@ -13,7 +13,7 @@ namespace MinorShift.Emuera.GameData.Function
 			: base(returnType)
 		{
 		}
-		public abstract UserDefinedFunctionArgument Argument { get;}
+		public abstract UserDefinedFunctionArgument Argument { get; }
 		public abstract CalledFunction Call { get; }
 		public override long GetIntValue(ExpressionMediator exm)
 		{
@@ -45,7 +45,7 @@ namespace MinorShift.Emuera.GameData.Function
 
 	internal sealed class UserDefinedMethodTerm : SuperUserDefinedMethodTerm
 	{
-		
+
 		/// <summary>
 		/// エラーならnullを返す。
 		/// </summary>
@@ -76,7 +76,7 @@ namespace MinorShift.Emuera.GameData.Function
 		}
 
 
-		
+
 	}
 	internal sealed class UserDefinedRefMethodTerm : SuperUserDefinedMethodTerm
 	{
@@ -94,8 +94,7 @@ namespace MinorShift.Emuera.GameData.Function
 			{
 				if (reffunc.CalledFunction == null)
 					throw new CodeEE("何も参照していない関数参照" + reffunc.Name + "を呼び出しました");
-				string errMes;
-				UserDefinedFunctionArgument arg = reffunc.CalledFunction.ConvertArg(srcArgs, out errMes);
+				UserDefinedFunctionArgument arg = reffunc.CalledFunction.ConvertArg(srcArgs, out string errMes);
 				if (arg == null)
 					throw new CodeEE(errMes);
 				return arg;
@@ -106,7 +105,7 @@ namespace MinorShift.Emuera.GameData.Function
 			get
 			{
 				if (reffunc.CalledFunction == null)
-					throw new CodeEE("何も参照していない関数参照" + reffunc .Name+ "を呼び出しました");
+					throw new CodeEE("何も参照していない関数参照" + reffunc.Name + "を呼び出しました");
 				return reffunc.CalledFunction;
 			}
 		}

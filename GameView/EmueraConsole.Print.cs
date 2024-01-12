@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Windows.Forms;
 
@@ -18,7 +19,7 @@ namespace MinorShift.Emuera.GameView
 		public Color bgColor = Config.BackColor;
 
 		private readonly PrintStringBuffer printBuffer;
-		readonly StringMeasure stringMeasure = new StringMeasure();
+		readonly StringMeasure stringMeasure = new();
 
 		public void ClearDisplay()
 		{
@@ -36,8 +37,8 @@ namespace MinorShift.Emuera.GameView
 		//private bool useUserStyle = true;
 		public bool UseUserStyle { get; set; }
 		public bool UseSetColorStyle { get; set; }
-		private StringStyle defaultStyle = new StringStyle(Config.ForeColor, FontStyle.Regular, null);
-		private StringStyle userStyle = new StringStyle(Config.ForeColor, FontStyle.Regular, null);
+		private StringStyle defaultStyle = new(Config.ForeColor, FontStyle.Regular, null);
+		private StringStyle userStyle = new(Config.ForeColor, FontStyle.Regular, null);
 		//private StringStyle style = new StringStyle(Config.ForeColor, FontStyle.Regular, null);
 		private StringStyle Style
 		{
@@ -56,7 +57,7 @@ namespace MinorShift.Emuera.GameView
 		//private StringStyle Style { get { return (useUserStyle ? userStyle : defaultStyle); } }
 		public StringStyle StringStyle { get { return userStyle; } }
 		public void SetStringStyle(FontStyle fs) { userStyle.FontStyle = fs; }
-		public void SetStringStyle(Color color) { userStyle.Color = color; userStyle.ColorChanged = (color != Config.ForeColor); }
+		public void SetStringStyle(Color color) { userStyle.Color = color; userStyle.ColorChanged = color != Config.ForeColor; }
 		public void SetFont(string fontname) { if (!string.IsNullOrEmpty(fontname)) userStyle.Fontname = fontname; else userStyle.Fontname = Config.FontName; }
 		private DisplayLineAlignment alignment = DisplayLineAlignment.LEFT;
 		public DisplayLineAlignment Alignment { get { return alignment; } set { alignment = value; } }
@@ -73,7 +74,7 @@ namespace MinorShift.Emuera.GameView
 		/// </summary>
 		string stBar = null;
 
-		uint lastBgColorChange = 0;
+		int lastBgColorChange = 0;
 		bool forceTextBoxColor = false;
 		public void SetBgColor(Color color)
 		{
@@ -83,15 +84,15 @@ namespace MinorShift.Emuera.GameView
 			//最初の再描画時に現在の背景色に合わせる
 			if (redraw == ConsoleRedraw.None && window.ScrollBar.Value == window.ScrollBar.Maximum)
 				return;
-			uint sec = WinmmTimer.TickCount - lastBgColorChange;
+			var sec = DateTime.Now.Millisecond - lastBgColorChange;
 			//色変化が速くなりすぎないように一定時間以内の再呼び出しは強制待ちにする
 			while (sec < 200)
 			{
 				Application.DoEvents();
-				sec = WinmmTimer.TickCount - lastBgColorChange;
+				sec = DateTime.Now.Millisecond - lastBgColorChange;
 			}
 			RefreshStrings(true);
-			lastBgColorChange = WinmmTimer.TickCount;
+			lastBgColorChange = DateTime.Now.Millisecond;
 		}
 
 		/// <summary>
@@ -186,19 +187,19 @@ namespace MinorShift.Emuera.GameView
 			}
 		}
 
-        //空行であるかのチェック
-        public bool LastLineIsEmpty
-        {
-            get
-            {
-                if (displayLineList.Count == 0)
-                    return false;
-                return string.IsNullOrEmpty(displayLineList[displayLineList.Count - 1].ToString().Trim());
-            }
-        }
+		//空行であるかのチェック
+		public bool LastLineIsEmpty
+		{
+			get
+			{
+				if (displayLineList.Count == 0)
+					return false;
+				return string.IsNullOrEmpty(displayLineList[displayLineList.Count - 1].ToString().Trim());
+			}
+		}
 
-        //最終行を書き換え＋次の行追加時にはその行を再利用するように設定
-        public void PrintTemporaryLine(string str)
+		//最終行を書き換え＋次の行追加時にはその行を再利用するように設定
+		public void PrintTemporaryLine(string str)
 		{
 			PrintSingleLine(str, true);
 		}
@@ -328,7 +329,7 @@ namespace MinorShift.Emuera.GameView
 			return;
 		}
 
-		
+
 		public void PrintImg(string str)
 		{
 			printBuffer.Append(new ConsoleImagePart(str, null, 0, 0, 0));
@@ -368,7 +369,7 @@ namespace MinorShift.Emuera.GameView
 
 		private void calcPrintCWidth(StringMeasure stringMeasure)
 		{
-			string str = new string(' ', Config.PrintCLength);
+			string str = new(' ', Config.PrintCLength);
 			Font font = Config.Font;
 			printCWidth = stringMeasure.GetDisplayLength(str, font);
 
@@ -398,7 +399,7 @@ namespace MinorShift.Emuera.GameView
 				return str;
 			}
 
-			if ((alignmentRight) && (length < printcLength))
+			if (alignmentRight && (length < printcLength))
 			{
 				str = new string(' ', printcLength - length) + str;
 				width = stringMeasure.GetDisplayLength(str, font);
@@ -530,11 +531,11 @@ namespace MinorShift.Emuera.GameView
 				throw new CodeEE("空文字列によるDRAWLINEが行われました");
 			StringStyle ss = userStyle;
 			userStyle.FontStyle = FontStyle.Regular;
-            if (isConst)
-                Print(barStr);
-            else
-                Print(getStBar(barStr));
-            userStyle = ss;
+			if (isConst)
+				Print(barStr);
+			else
+				Print(getStBar(barStr));
+			userStyle = ss;
 		}
 
 		public string getDefStBar()
@@ -544,7 +545,7 @@ namespace MinorShift.Emuera.GameView
 
 		public string getStBar(string barStr)
 		{
-			StringBuilder bar = new StringBuilder();
+			StringBuilder bar = new();
 			bar.Append(barStr);
 			int width = 0;
 			Font font = Config.Font;
@@ -568,6 +569,7 @@ namespace MinorShift.Emuera.GameView
 		#endregion
 
 
+		[SupportedOSPlatform("windows")]
 		private bool outputLog(string fullpath)
 		{
 			StreamWriter writer = null;
@@ -593,16 +595,17 @@ namespace MinorShift.Emuera.GameView
 		}
 
 
+		[SupportedOSPlatform("windows")]
 		public bool OutputLog(string filename)
 		{
-            if (filename == null)
-                filename = Program.ExeDir + "emuera.log";
+			if (filename == null)
+				filename = Program.ExeDir + "emuera.log";
 
-            if (!filename.StartsWith(Program.ExeDir, StringComparison.CurrentCultureIgnoreCase))
-            {
-                MessageBox.Show("ログファイルは実行ファイル以下のディレクトリにのみ保存できます", "ログ出力失敗");
-                return false;
-            }
+			if (!filename.StartsWith(Program.ExeDir, StringComparison.CurrentCultureIgnoreCase))
+			{
+				MessageBox.Show("ログファイルは実行ファイル以下のディレクトリにのみ保存できます", "ログ出力失敗");
+				return false;
+			}
 
 			if (outputLog(filename))
 			{
@@ -632,7 +635,7 @@ namespace MinorShift.Emuera.GameView
 			if (lineNo < 0 || lineNo > displayLineList.Count)
 				return null;
 			int count = 0;
-			List<ConsoleDisplayLine> list = new List<ConsoleDisplayLine>();
+			List<ConsoleDisplayLine> list = [];
 			for (int i = displayLineList.Count - 1; i >= 0; i--)
 			{
 				if (count == lineNo)
@@ -654,8 +657,8 @@ namespace MinorShift.Emuera.GameView
 				return null;
 			if (printBuffer.IsEmpty)
 				return null;
-			return  printBuffer.Flush(stringMeasure, force_temporary);
+			return printBuffer.Flush(stringMeasure, force_temporary);
 		}
-		
+
 	}
 }

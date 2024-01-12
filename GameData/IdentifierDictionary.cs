@@ -40,11 +40,11 @@ namespace MinorShift.Emuera
 			'\\', '@', '$', '#', '?', ';', '\'',
 			//'_'はOK
 		};
-		readonly static Regex regexCom = new Regex("^COM[0-9]+$");
-		readonly static Regex regexComAble = new Regex("^COM_ABLE[0-9]+$");
-		readonly static Regex regexAblup = new Regex("^ABLUP[0-9]+$");
+		readonly static Regex regexCom = new("^COM[0-9]+$");
+		readonly static Regex regexComAble = new("^COM_ABLE[0-9]+$");
+		readonly static Regex regexAblup = new("^ABLUP[0-9]+$");
 		#region static
-		
+
 		public static bool IsEventLabelName(string labelName)
 		{
 			switch (labelName)
@@ -109,10 +109,10 @@ namespace MinorShift.Emuera
 		#endregion
 
 
-		Dictionary<string, DefinedNameType> nameDic = new Dictionary<string, DefinedNameType>();
+		Dictionary<string, DefinedNameType> nameDic = [];
 
-		List<string> privateDimList = new List<string>();
-		List<string> disableList = new List<string>();
+		List<string> privateDimList = [];
+		List<string> disableList = [];
 		//Dictionary<string, VariableToken> userDefinedVarDic = new Dictionary<string, VariableToken>();
 
 		VariableData varData;
@@ -121,7 +121,7 @@ namespace MinorShift.Emuera
 		Dictionary<string, FunctionIdentifier> instructionDic;
 		Dictionary<string, FunctionMethod> methodDic;
 		Dictionary<string, UserDefinedRefMethod> refmethodDic;
-		public List<UserDefinedCharaVariableToken> CharaDimList = new List<UserDefinedCharaVariableToken>();
+		public List<UserDefinedCharaVariableToken> CharaDimList = [];
 		#region initialize
 		public IdentifierDictionary(VariableData varData)
 		{
@@ -149,9 +149,9 @@ namespace MinorShift.Emuera
 			varTokenDic = varData.GetVarTokenDicClone();
 			localvarTokenDic = varData.GetLocalvarTokenDic();
 			methodDic = FunctionMethodCreator.GetMethodList();
-			refmethodDic = new Dictionary<string, UserDefinedRefMethod>();
+			refmethodDic = [];
 
-			foreach(KeyValuePair<string, FunctionMethod> pair in methodDic)
+			foreach (KeyValuePair<string, FunctionMethod> pair in methodDic)
 			{
 				nameDic.Add(pair.Key, DefinedNameType.SystemMethod);
 			}
@@ -161,7 +161,7 @@ namespace MinorShift.Emuera
 				//RANDが衝突している
 				//1808a3 GLOBAL、PRIVATEも
 				//1808beta009 REFも
-				if (!nameDic.ContainsKey(pair.Key)) 
+				if (!nameDic.ContainsKey(pair.Key))
 					nameDic.Add(pair.Key, DefinedNameType.SystemVariable);
 			}
 
@@ -178,11 +178,11 @@ namespace MinorShift.Emuera
 					nameDic.Add(pair.Key, DefinedNameType.SystemInstrument);
 			}
 		}
-		
+
 		//public void SetSystemInstrumentName(List<string> names)
 		//{
 		//}
-		
+
 		public void CheckUserLabelName(ref string errMes, ref int warnLevel, bool isFunction, string labelName)
 		{
 			if (labelName.Length == 0)
@@ -198,9 +198,9 @@ namespace MinorShift.Emuera
 				warnLevel = 1;
 				return;
 			}
-			if (char.IsDigit(labelName[0]) && (labelName[0].ToString()).Length == LangManager.GetStrlenLang(labelName[0].ToString()))
+			if (char.IsDigit(labelName[0]) && labelName[0].ToString().Length == LangManager.GetStrlenLang(labelName[0].ToString()))
 			{
-                errMes = "ラベル名" + labelName + "が半角数字から始まっています";
+				errMes = "ラベル名" + labelName + "が半角数字から始まっています";
 				warnLevel = 0;
 				return;
 			}
@@ -257,7 +257,7 @@ namespace MinorShift.Emuera
 				}
 			}
 		}
-		
+
 		public void CheckUserVarName(ref string errMes, ref int warnLevel, string varName)
 		{
 			//if (varName.Length == 0)
@@ -378,9 +378,9 @@ namespace MinorShift.Emuera
 				warnLevel = 2;
 				return;
 			}
-			if(nameDic.ContainsKey(varName))
+			if (nameDic.ContainsKey(varName))
 			{
-				switch(nameDic[varName])
+				switch (nameDic[varName])
 				{
 					case DefinedNameType.Reserved:
 						errMes = "変数名" + varName + "はEmueraの予約語です";
@@ -394,8 +394,8 @@ namespace MinorShift.Emuera
 						return;
 					case DefinedNameType.SystemVariable:
 						//システム変数の上書きは不可
-                        errMes = "変数名" + varName + "はEmueraの変数名として使われています";
-                        warnLevel = 2;
+						errMes = "変数名" + varName + "はEmueraの変数名として使われています";
+						warnLevel = 2;
 						break;
 					case DefinedNameType.UserMacro:
 						//字句解析がうまくいっていれば本来あり得ないはず
@@ -411,7 +411,7 @@ namespace MinorShift.Emuera
 						errMes = "変数名" + varName + "は参照型関数の名称に使用されています";
 						warnLevel = 2;
 						break;
-                }
+				}
 			}
 			privateDimList.Add(varName);
 		}
@@ -419,7 +419,7 @@ namespace MinorShift.Emuera
 
 		#region header.erb
 		//1807 ErbLoaderに移動
-		Dictionary<string, DefineMacro> macroDic = new Dictionary<string, DefineMacro>();
+		Dictionary<string, DefineMacro> macroDic = [];
 
 		internal void AddUseDefinedVariable(VariableToken var)
 		{
@@ -461,15 +461,15 @@ namespace MinorShift.Emuera
 		public VariableToken GetVariableToken(string key, string subKey, bool allowPrivate)
 		{
 			VariableToken ret;
-            if (Config.ICVariable)
-                key = key.ToUpper();
-            if (allowPrivate)
+			if (Config.ICVariable)
+				key = key.ToUpper();
+			if (allowPrivate)
 			{
 				LogicalLine line = GlobalStatic.Process.GetScaningLine();
 				if ((line != null) && (line.ParentLabelLine != null))
 				{
 					ret = line.ParentLabelLine.GetPrivateVariable(key);
-					if(ret != null)
+					if (ret != null)
 					{
 						if (subKey != null)
 							throw new CodeEE("プライベート変数" + key + "に対して@が使われました");
@@ -480,9 +480,9 @@ namespace MinorShift.Emuera
 			if (localvarTokenDic.ContainsKey(key))
 			{
 				if (localvarTokenDic[key].IsForbid)
-                {
+				{
 					throw new CodeEE("呼び出された変数\"" + key + "\"は設定により使用が禁止されています");
-                }
+				}
 				LogicalLine line = GlobalStatic.Process.GetScaningLine();
 				if (string.IsNullOrEmpty(subKey))
 				{
@@ -497,26 +497,26 @@ namespace MinorShift.Emuera
 					if (Config.ICFunction)
 						subKey = subKey.ToUpper();
 				}
-                LocalVariableToken retLocal = localvarTokenDic[key].GetExistLocalVariableToken(subKey);
-                if (retLocal == null)
-                    retLocal = localvarTokenDic[key].GetNewLocalVariableToken(subKey, line.ParentLabelLine);
-                return retLocal;
+				LocalVariableToken retLocal = localvarTokenDic[key].GetExistLocalVariableToken(subKey);
+				if (retLocal == null)
+					retLocal = localvarTokenDic[key].GetNewLocalVariableToken(subKey, line.ParentLabelLine);
+				return retLocal;
 			}
 			if (varTokenDic.TryGetValue(key, out ret))
 			{
-                //一文字変数の禁止オプションを考えた名残
-                //if (Config.ForbidOneCodeVariable && ret.CanForbid)
-                //    throw new CodeEE("設定によりシステム一文字数値変数の使用が禁止されています(呼び出された変数：" + ret.Name +")");
-                if (ret.IsForbid)
-                {
-					if(!ret.CanForbid)
-						throw new ExeEE("CanForbidでない変数\"" + ret.Name +"\"にIsForbidがついている");
-                    throw new CodeEE("呼び出された変数\"" + ret.Name +"\"は設定により使用が禁止されています");
-                }
+				//一文字変数の禁止オプションを考えた名残
+				//if (Config.ForbidOneCodeVariable && ret.CanForbid)
+				//    throw new CodeEE("設定によりシステム一文字数値変数の使用が禁止されています(呼び出された変数：" + ret.Name +")");
+				if (ret.IsForbid)
+				{
+					if (!ret.CanForbid)
+						throw new ExeEE("CanForbidでない変数\"" + ret.Name + "\"にIsForbidがついている");
+					throw new CodeEE("呼び出された変数\"" + ret.Name + "\"は設定により使用が禁止されています");
+				}
 				if (subKey != null)
 					throw new CodeEE("ローカル変数でない変数" + key + "に対して@が使われました");
-                return ret;
-            }
+				return ret;
+			}
 			if (subKey != null)
 				throw new CodeEE("@の使い方が不正です");
 			return null;
@@ -525,9 +525,9 @@ namespace MinorShift.Emuera
 		public FunctionIdentifier GetFunctionIdentifier(string str)
 		{
 			string key = str;
-            if (string.IsNullOrEmpty(key))
-                return null;
-            if (Config.ICFunction)
+			if (string.IsNullOrEmpty(key))
+				return null;
+			if (Config.ICFunction)
 				key = key.ToUpper();
 			if (instructionDic.TryGetValue(key, out FunctionIdentifier ret))
 				return ret;
@@ -537,7 +537,7 @@ namespace MinorShift.Emuera
 
 		public List<string> GetOverloadedList(LabelDictionary labelDic)
 		{
-			List<string> list = new List<string>();
+			List<string> list = [];
 			foreach (KeyValuePair<string, FunctionMethod> pair in methodDic)
 			{
 				FunctionLabelLine func = labelDic.GetNonEventLabel(pair.Key);
@@ -569,7 +569,7 @@ namespace MinorShift.Emuera
 					return new UserDefinedRefMethodNoArgTerm(refmethodDic[codeStr]);
 				return null;
 			}
-			if ((labelDic != null) && (labelDic.Initialized))
+			if ((labelDic != null) && labelDic.Initialized)
 			{
 				if (refmethodDic.ContainsKey(codeStr))
 					return new UserDefinedRefMethodTerm(refmethodDic[codeStr], arguments);
@@ -582,9 +582,8 @@ namespace MinorShift.Emuera
 					}
 					if (func.IsMethod)
 					{
-						string errMes;
-						IOperandTerm ret = UserDefinedMethodTerm.Create(func, arguments, out errMes);
-						if(ret == null)
+						IOperandTerm ret = UserDefinedMethodTerm.Create(func, arguments, out string errMes);
+						if (ret == null)
 							throw new CodeEE(errMes);
 						return ret;
 					}
@@ -595,9 +594,9 @@ namespace MinorShift.Emuera
 			}
 			if (userDefinedOnly)
 				return null;
-            if (!methodDic.TryGetValue(codeStr, out FunctionMethod method))
-                return null;
-            string errmes = method.CheckArgumentType(codeStr, arguments);
+			if (!methodDic.TryGetValue(codeStr, out FunctionMethod method))
+				return null;
+			string errmes = method.CheckArgumentType(codeStr, arguments);
 			if (errmes != null)
 				throw new CodeEE(errmes);
 			return new FunctionMethodTerm(method, arguments);
@@ -609,7 +608,7 @@ namespace MinorShift.Emuera
 		public void ThrowException(string str, bool isFunc)
 		{
 			string idStr = str;
-			if(Config.ICFunction || Config.ICVariable) //片方だけなのは互換性用オプションなのでレアケースのはず。対応しない。
+			if (Config.ICFunction || Config.ICVariable) //片方だけなのは互換性用オプションなのでレアケースのはず。対応しない。
 				idStr = idStr.ToUpper();
 			if (disableList.Contains(idStr))
 				throw new CodeEE("\"" + str + "\"は#DISABLEが宣言されています");
@@ -639,38 +638,38 @@ namespace MinorShift.Emuera
 							throw new CodeEE("命令名\"" + str + "\"が関数のように使われています");
 						else
 							throw new CodeEE("命令名\"" + str + "\"が変数のように使われています");
-			
+
 				}
 			}
 			throw new IdentifierNotFoundCodeEE("\"" + idStr + "\"は解釈できない識別子です");
 		}
 		#endregion
 
-        #region util
-        public void resizeLocalVars(string key, string subKey, int newSize)
-        {
-            localvarTokenDic[key].ResizeLocalVariableToken(subKey, newSize);
-        }
+		#region util
+		public void resizeLocalVars(string key, string subKey, int newSize)
+		{
+			localvarTokenDic[key].ResizeLocalVariableToken(subKey, newSize);
+		}
 
-        public int getLocalDefaultSize(string key)
-        {
-            return localvarTokenDic[key].GetDefaultSize();
-        }
+		public int getLocalDefaultSize(string key)
+		{
+			return localvarTokenDic[key].GetDefaultSize();
+		}
 
 		public bool getLocalIsForbid(string key)
 		{
 			return localvarTokenDic[key].IsForbid;
 		}
-        public bool getVarTokenIsForbid(string key)
-        {
-            if (localvarTokenDic.ContainsKey(key))
-                return localvarTokenDic[key].IsForbid;
+		public bool getVarTokenIsForbid(string key)
+		{
+			if (localvarTokenDic.ContainsKey(key))
+				return localvarTokenDic[key].IsForbid;
 			varTokenDic.TryGetValue(key, out VariableToken var);
-            if (var != null)
-                    return var.IsForbid;
-            return true;
-        }
-        #endregion
+			if (var != null)
+				return var.IsForbid;
+			return true;
+		}
+		#endregion
 
 
 	}

@@ -48,7 +48,7 @@ namespace MinorShift.Emuera.GameProc
 					if (!noError)
 						break;
 					System.Windows.Forms.Application.DoEvents();
-				}	
+				}
 				//エラーが起きてる場合でも読み込めてる分だけはチェックする
 				if (dimlines.Count > 0)
 				{
@@ -73,7 +73,7 @@ namespace MinorShift.Emuera.GameProc
 			//EraStreamReader eReader = new EraStreamReader(false);
 			//1815修正 _rename.csvの適用
 			//eramakerEXの仕様的には.ERHに適用するのはおかしいけど、もうEmueraの仕様になっちゃってるのでしかたないか
-			EraStreamReader eReader = new EraStreamReader(true);
+			EraStreamReader eReader = new(true);
 
 			if (!eReader.Open(filepath, filename))
 			{
@@ -153,33 +153,33 @@ namespace MinorShift.Emuera.GameProc
 			if (Config.ICVariable)
 				srcID = srcID.ToUpper();
 
-            //ここで名称重複判定しないと、大変なことになる
-            string errMes = "";
-            int errLevel = -1;
-            idDic.CheckUserMacroName(ref errMes, ref errLevel, srcID);
-            if (errLevel >= 0)
-            {
-                ParserMediator.Warn(errMes, position, errLevel);
-                if (errLevel >= 2)
-                {
-                    noError = false;
-                    return;
-                }
-            }
-            
-            bool hasArg = st.Current == '(';//引数を指定する場合には直後に(が続いていなければならない。ホワイトスペースも禁止。
-			//1808a3 代入演算子許可（関数宣言用）
+			//ここで名称重複判定しないと、大変なことになる
+			string errMes = "";
+			int errLevel = -1;
+			idDic.CheckUserMacroName(ref errMes, ref errLevel, srcID);
+			if (errLevel >= 0)
+			{
+				ParserMediator.Warn(errMes, position, errLevel);
+				if (errLevel >= 2)
+				{
+					noError = false;
+					return;
+				}
+			}
+
+			bool hasArg = st.Current == '(';//引数を指定する場合には直後に(が続いていなければならない。ホワイトスペースも禁止。
+											//1808a3 代入演算子許可（関数宣言用）
 			WordCollection wc = LexicalAnalyzer.Analyse(st, LexEndWith.EoL, LexAnalyzeFlag.AllowAssignment);
 			if (wc.EOL)
 			{
 				//throw new CodeEE("置換先の式がありません", position);
 				//1808a3 空マクロの許可
-				DefineMacro nullmac = new DefineMacro(srcID, new WordCollection(), 0);
+				DefineMacro nullmac = new(srcID, new WordCollection(), 0);
 				idDic.AddMacro(nullmac);
 				return;
 			}
 
-			List<string> argID = new List<string>();
+			List<string> argID = [];
 			if (hasArg)//関数型マクロの引数解析
 			{
 				wc.ShiftNext();//'('を読み飛ばす
@@ -212,7 +212,7 @@ namespace MinorShift.Emuera.GameProc
 			}
 			if (wc.EOL)
 				throw new CodeEE("置換先の式がありません", position);
-			WordCollection destWc = new WordCollection();
+			WordCollection destWc = new();
 			while (!wc.EOL)
 			{
 				destWc.Add(wc.Current);
@@ -243,7 +243,7 @@ namespace MinorShift.Emuera.GameProc
 			}
 			if (hasArg)//1808a3 関数型マクロの封印
 				throw new CodeEE("関数型マクロは宣言できません", position);
-			DefineMacro mac = new DefineMacro(srcID, destWc, argID.Count);
+			DefineMacro mac = new(srcID, destWc, argID.Count);
 			idDic.AddMacro(mac);
 		}
 

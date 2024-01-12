@@ -21,7 +21,7 @@ namespace MinorShift.Emuera.GameView
 			layoutSize = new Size(Config.WindowX * 2, Config.LineHeight);
 			layoutRect = new RectangleF(0, 0, Config.WindowX * 2, Config.LineHeight);
 			fontDisplaySize = Config.Font.Size / 2 * 1.04f;//実際には指定したフォントより若干幅をとる？
-			//bmp = new Bitmap(Config.WindowX, Config.LineHeight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+														   //bmp = new Bitmap(Config.WindowX, Config.LineHeight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 			bmp = new Bitmap(16, 16, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 			graph = Graphics.FromImage(bmp);
 			if (textDrawingMode == TextDrawingMode.WINAPI)
@@ -29,8 +29,8 @@ namespace MinorShift.Emuera.GameView
 		}
 
 		readonly TextDrawingMode textDrawingMode;
-		readonly StringFormat sf = new StringFormat(StringFormatFlags.MeasureTrailingSpaces);
-		readonly CharacterRange[] ranges = new CharacterRange[] { new CharacterRange(0, 1) };
+		readonly StringFormat sf = new(StringFormatFlags.MeasureTrailingSpaces);
+		readonly CharacterRange[] ranges = new CharacterRange[] { new(0, 1) };
 		readonly Size layoutSize;
 		readonly RectangleF layoutRect;
 		readonly float fontDisplaySize;
@@ -81,7 +81,7 @@ namespace MinorShift.Emuera.GameView
 				GDI.GdiMesureTextEnd(graph);
 			graph.Dispose();
 			bmp.Dispose();
-            sf.Dispose();
+			sf.Dispose();
 		}
 	}
 }

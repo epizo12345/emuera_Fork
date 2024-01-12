@@ -61,7 +61,7 @@ namespace MinorShift.Emuera.GameProc
 			{
 				if (Arguments[i] == null)
 					continue;
-				if(isRef[i])
+				if (isRef[i])
 					Arguments[i].Restructure(exm);
 				else
 					Arguments[i] = Arguments[i].Restructure(exm);
@@ -79,10 +79,12 @@ namespace MinorShift.Emuera.GameProc
 		private CalledFunction(string label) { FunctionName = label; }
 		public static CalledFunction CallEventFunction(Process parent, string label, LogicalLine retAddress)
 		{
-			CalledFunction called = new CalledFunction(label);
-			//List<FunctionLabelLine> newLabelList = new List<FunctionLabelLine>();
-			called.Finished = false;
-			called.eventLabelList = parent.LabelDictionary.GetEventLabels(label);
+			CalledFunction called = new(label)
+			{
+				//List<FunctionLabelLine> newLabelList = new List<FunctionLabelLine>();
+				Finished = false,
+				eventLabelList = parent.LabelDictionary.GetEventLabels(label)
+			};
 			if (called.eventLabelList == null)
 			{
 				FunctionLabelLine line = parent.LabelDictionary.GetNonEventLabel(label);
@@ -103,8 +105,10 @@ namespace MinorShift.Emuera.GameProc
 
 		public static CalledFunction CallFunction(Process parent, string label, LogicalLine retAddress)
 		{
-			CalledFunction called = new CalledFunction(label);
-			called.Finished = false;
+			CalledFunction called = new(label)
+			{
+				Finished = false
+			};
 			FunctionLabelLine labelline = parent.LabelDictionary.GetNonEventLabel(label);
 			if (labelline == null)
 			{
@@ -114,45 +118,47 @@ namespace MinorShift.Emuera.GameProc
 				}
 				return null;
 			}
-            else if (labelline.IsMethod)
-            {
-                throw new CodeEE("#FUCNTION(S)が定義された関数@" + labelline.LabelName + "(" + labelline.Position.Filename + ":" + labelline.Position.LineNo.ToString() + "行目)に対し通常のCALLが行われました");
-            }
+			else if (labelline.IsMethod)
+			{
+				throw new CodeEE("#FUCNTION(S)が定義された関数@" + labelline.LabelName + "(" + labelline.Position.Filename + ":" + labelline.Position.LineNo.ToString() + "行目)に対し通常のCALLが行われました");
+			}
 			called.TopLabel = labelline;
 			called.CurrentLabel = labelline;
 			called.returnAddress = retAddress;
 			called.IsEvent = false;
-            return called;
+			return called;
 		}
 
 		public static CalledFunction CreateCalledFunctionMethod(FunctionLabelLine labelline, string label)
 		{
-			CalledFunction called = new CalledFunction(label);
-			called.TopLabel = labelline;
-			called.CurrentLabel = labelline;
-			called.returnAddress = null;
-			called.IsEvent = false;
+			CalledFunction called = new(label)
+			{
+				TopLabel = labelline,
+				CurrentLabel = labelline,
+				returnAddress = null,
+				IsEvent = false
+			};
 			return called;
 		}
-		
-		
+
+
 		static FunctionMethod tostrMethod = null;
 		/// <summary>
 		/// 1803beta005 予め引数の数を合わせて規定値を代入しておく
-        /// 1806+v6.99 式中関数の引数に無効な#DIM変数を与えている場合に例外になるのを修正
+		/// 1806+v6.99 式中関数の引数に無効な#DIM変数を与えている場合に例外になるのを修正
 		/// 1808beta009 REF型に対応
 		/// </summary>
 		public UserDefinedFunctionArgument ConvertArg(IOperandTerm[] srcArgs, out string errMes)
 		{
 			errMes = null;
-            if (TopLabel.IsError)
-            {
-                errMes = TopLabel.ErrMes;
-                return null;
-            }
-            FunctionLabelLine func = TopLabel;
-            IOperandTerm[] convertedArg = new IOperandTerm[func.Arg.Length];
-			if(convertedArg.Length < srcArgs.Length)
+			if (TopLabel.IsError)
+			{
+				errMes = TopLabel.ErrMes;
+				return null;
+			}
+			FunctionLabelLine func = TopLabel;
+			IOperandTerm[] convertedArg = new IOperandTerm[func.Arg.Length];
+			if (convertedArg.Length < srcArgs.Length)
 			{
 				errMes = "引数の数が関数\"@" + func.LabelName + "\"に設定された数を超えています";
 				return null;
@@ -189,8 +195,8 @@ namespace MinorShift.Emuera.GameProc
 				else if (term == null)//引数が省略されたとき
 				{
 					term = func.Def[i];//デフォルト値を代入
-					//1808beta001 デフォルト値がない場合はエラーにする
-					//一応逃がす
+									   //1808beta001 デフォルト値がない場合はエラーにする
+									   //一応逃がす
 					if (term == null && !Config.CompatiFuncArgOptional)
 					{
 						errMes = "\"@" + func.LabelName + "\"の" + (i + 1).ToString() + "番目の引数は省略できません(この警告は互換性オプション「" + Config.GetConfigName(ConfigCode.CompatiFuncArgOptional) + "」により無視できます)";
@@ -226,22 +232,24 @@ namespace MinorShift.Emuera.GameProc
 			return parent.LabelDictionary.GetLabelDollar(label, this.CurrentLabel);
 		}
 
-        public void updateRetAddress(LogicalLine line)
-        {
-            returnAddress = line;
-        }
+		public void updateRetAddress(LogicalLine line)
+		{
+			returnAddress = line;
+		}
 
 		public CalledFunction Clone()
 		{
-			CalledFunction called = new CalledFunction(this.FunctionName);
-			called.eventLabelList = this.eventLabelList;
-			called.CurrentLabel = this.CurrentLabel;
-			called.TopLabel = this.TopLabel;
-			called.group = this.group;
-			called.IsEvent = this.IsEvent;
+			CalledFunction called = new(this.FunctionName)
+			{
+				eventLabelList = this.eventLabelList,
+				CurrentLabel = this.CurrentLabel,
+				TopLabel = this.TopLabel,
+				group = this.group,
+				IsEvent = this.IsEvent,
 
-			called.counter = this.counter;
-			called.returnAddress = this.returnAddress;
+				counter = this.counter,
+				returnAddress = this.returnAddress
+			};
 			return called;
 		}
 
@@ -258,7 +266,7 @@ namespace MinorShift.Emuera.GameProc
 		{
 			get { return returnAddress; }
 		}
-		public bool IsEvent{get; private set;}
+		public bool IsEvent { get; private set; }
 
 		public bool HasSingleFlag
 		{
@@ -279,7 +287,7 @@ namespace MinorShift.Emuera.GameProc
 				counter++;
 				if (eventLabelList[group].Count > counter)
 				{
-					CurrentLabel = (eventLabelList[group])[counter];
+					CurrentLabel = eventLabelList[group][counter];
 					return;
 				}
 				group++;
@@ -296,26 +304,26 @@ namespace MinorShift.Emuera.GameProc
 		{
 			counter = -1;
 			group++;
-            if (group >= 4)
-            {
-                CurrentLabel = null;
-                return;
-            }
+			if (group >= 4)
+			{
+				CurrentLabel = null;
+				return;
+			}
 			ShiftNext();
 		}
 
-        public void FinishEvent()
-        {
-            group = 4;
-            counter = -1;
-            CurrentLabel = null;
-            return;
-        }
+		public void FinishEvent()
+		{
+			group = 4;
+			counter = -1;
+			CurrentLabel = null;
+			return;
+		}
 
-        public bool IsOnly
-        {
-            get { return CurrentLabel.IsOnly; }
-        }
+		public bool IsOnly
+		{
+			get { return CurrentLabel.IsOnly; }
+		}
 		#endregion
 	}
 }

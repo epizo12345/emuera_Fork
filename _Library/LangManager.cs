@@ -45,7 +45,7 @@ namespace MinorShift._Library
             if ((length < 0) || (length > totalByte))
                 length = totalByte;
 
-            StringBuilder ret = new StringBuilder();
+            StringBuilder ret = new();
             int UTFcnt = 0;
             int JIScnt = 0;
 

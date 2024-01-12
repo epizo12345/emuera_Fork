@@ -16,8 +16,8 @@ namespace MinorShift.Emuera.GameView
 		private ConsoleStyledString() { }
 		public ConsoleStyledString(string str, StringStyle style)
 		{
-            //if ((StaticConfig.TextDrawingMode != TextDrawingMode.GRAPHICS) && (str.IndexOf('\t') >= 0))
-            //    str = str.Replace("\t", "");
+			//if ((StaticConfig.TextDrawingMode != TextDrawingMode.GRAPHICS) && (str.IndexOf('\t') >= 0))
+			//    str = str.Replace("\t", "");
 			this.Str = str;
 			this.StringStyle = style;
 			Font = Config.GetFont(style.Fontname, style.FontStyle);
@@ -28,14 +28,14 @@ namespace MinorShift.Emuera.GameView
 			}
 			Color = style.Color;
 			ButtonColor = style.ButtonColor;
-            colorChanged = style.ColorChanged;
+			colorChanged = style.ColorChanged;
 			if (!colorChanged && Color != Config.ForeColor)
 				colorChanged = true;
 			PointX = -1;
 			Width = -1;
 		}
-		public Font Font{ get; private set;}
-		public StringStyle StringStyle{ get; private set;}
+		public Font Font { get; private set; }
+		public StringStyle StringStyle { get; private set; }
 		public override bool CanDivide
 		{
 			get { return true; }
@@ -60,14 +60,16 @@ namespace MinorShift.Emuera.GameView
 				return null;
 			string str = Str.Substring(index, Str.Length - index);
 			this.Str = Str.Substring(0, index);
-			ConsoleStyledString ret = new ConsoleStyledString();
-			ret.Font = this.Font;
-			ret.Str = str;
-			ret.Color = this.Color;
-			ret.ButtonColor = this.ButtonColor;
-			ret.colorChanged = this.colorChanged;
-			ret.StringStyle = this.StringStyle;
-			ret.XsubPixel = this.XsubPixel;
+			ConsoleStyledString ret = new()
+			{
+				Font = this.Font,
+				Str = str,
+				Color = this.Color,
+				ButtonColor = this.ButtonColor,
+				colorChanged = this.colorChanged,
+				StringStyle = this.StringStyle,
+				XsubPixel = this.XsubPixel
+			};
 			return ret;
 		}
 
@@ -87,11 +89,11 @@ namespace MinorShift.Emuera.GameView
 			if (this.Error)
 				return;
 			Color color = this.Color;
-			if(isSelecting)
+			if (isSelecting)
 				color = this.ButtonColor;
 			else if (isBackLog && !colorChanged)
-                color = Config.LogColor;
-				
+				color = Config.LogColor;
+
 			if (mode == TextDrawingMode.GRAPHICS)
 				graph.DrawString(Str, Font, new SolidBrush(color), new Point(PointX, pointY));
 			else
@@ -104,11 +106,11 @@ namespace MinorShift.Emuera.GameView
 			if (this.Error)
 				return;
 			Color color = this.Color;
-			if(isSelecting)
-                color = this.ButtonColor;
+			if (isSelecting)
+				color = this.ButtonColor;
 			else if (isBackLog && !colorChanged)
-                color = Config.LogColor;
-			GDI.TabbedTextOutFull(Font,color,Str, PointX, pointY);
+				color = Config.LogColor;
+			GDI.TabbedTextOutFull(Font, color, Str, PointX, pointY);
 			//GDI.SetFont(Font);
 			//GDI.SetTextColor(color);
 			//GDI.TabbedTextOut(Str, PointX, pointY);

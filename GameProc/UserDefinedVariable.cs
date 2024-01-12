@@ -28,7 +28,7 @@ namespace MinorShift.Emuera.GameProc
 		public bool Private = false;
 		public bool CharaData = false;
 		public bool Const = false;
-		
+
 		//1822 Privateの方もDIMだけ遅延させようとしたけどちょっと課題がおおいのでやめとく
 		public static UserDefinedVariableData Create(DimLineWC dimline)
 		{
@@ -38,8 +38,10 @@ namespace MinorShift.Emuera.GameProc
 		public static UserDefinedVariableData Create(WordCollection wc, bool dims, bool isPrivate, ScriptPosition sc)
 		{
 			string dimtype = dims ? "#DIM" : "#DIMS";
-			UserDefinedVariableData ret = new UserDefinedVariableData();
-			ret.TypeIsStr = dims;
+			UserDefinedVariableData ret = new()
+			{
+				TypeIsStr = dims
+			};
 
 			IdentifierWord idw;
 			bool staticDefined = false;
@@ -160,11 +162,11 @@ namespace MinorShift.Emuera.GameProc
 							throw new CodeEE(keyword + "とCONSTキーワードは同時に指定できません", sc);
 						if (staticDefined)
 							if (ret.Static)
-                                throw new CodeEE(keyword + "とSTATICキーワードは同時に指定できません", sc);
+								throw new CodeEE(keyword + "とSTATICキーワードは同時に指定できません", sc);
 							else
-                                throw new CodeEE(keyword + "とDYNAMICキーワードは同時に指定できません", sc);
+								throw new CodeEE(keyword + "とDYNAMICキーワードは同時に指定できません", sc);
 						if (ret.Global)
-                            throw new CodeEE(keyword + "とGLOBALキーワードは同時に指定できません", sc);
+							throw new CodeEE(keyword + "とGLOBALキーワードは同時に指定できません", sc);
 						if (ret.CharaData)
 							throw new CodeEE(keyword + "キーワードが二重に指定されています", sc);
 						ret.CharaData = true;
@@ -191,7 +193,7 @@ namespace MinorShift.Emuera.GameProc
 			}
 
 
-			List<int> sizeNum = new List<int>();
+			List<int> sizeNum = [];
 			if (wc.EOL)//サイズ省略
 			{
 				if (ret.Const)
