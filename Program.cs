@@ -57,7 +57,11 @@ static class Program
 		rootCommand.AddOption(debugModeOption);
 
 		var result = rootCommand.Parse(args);
-		ExeDir = Path.Join((result.CommandResult.GetValueForOption(exeDirOption) ?? "").AsSpan(), [Path.DirectorySeparatorChar]);
+		ExeDir = Path.Join(
+			(result.CommandResult.GetValueForOption(exeDirOption)
+			?? (Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location))).AsSpan(),
+			[Path.DirectorySeparatorChar]
+			);
 
 		CsvDir = Path.Join(ExeDir.AsSpan(), "csv", [Path.DirectorySeparatorChar]);
 		ErbDir = Path.Join(ExeDir.AsSpan(), "erb", [Path.DirectorySeparatorChar]);
@@ -90,7 +94,7 @@ static class Program
 		}
 		if (!Directory.Exists(CsvDir))
 		{
-			MessageBox.Show("csvフォルダが見つかりません", "フォルダなし");
+			MessageBox.Show(CsvDir, "csvフォルダが見つかりません");
 			return;
 		}
 		if (!Directory.Exists(ErbDir))
@@ -149,6 +153,7 @@ static class Program
 		{
 			//必要なソースファイルを事前にメモリに一気に読み込む
 			Preload.Load(ErbDir);
+			Preload.Load(CsvDir);
 
 			var winState = FormWindowState.Normal;
 			var rebootFlag = false;
@@ -193,15 +198,5 @@ static class Program
 	public static List<string> analysisFiles = [];
 
 	public static bool DebugMode { get; private set; }
-
-	static Program()
-	{
-		ExeDir = "";
-		CsvDir = Path.Join(ExeDir.AsSpan(), "csv", [Path.DirectorySeparatorChar]);
-		ErbDir = Path.Join(ExeDir.AsSpan(), "erb", [Path.DirectorySeparatorChar]);
-		DebugDir = Path.Join(ExeDir.AsSpan(), "debug", [Path.DirectorySeparatorChar]);
-		DatDir = Path.Join(ExeDir.AsSpan(), "dat", [Path.DirectorySeparatorChar]);
-		ContentDir = Path.Join(ExeDir.AsSpan(), "resources", [Path.DirectorySeparatorChar]);
-	}
 
 }
