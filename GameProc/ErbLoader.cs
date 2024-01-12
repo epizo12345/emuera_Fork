@@ -103,24 +103,26 @@ namespace MinorShift.Emuera.GameProc
 		/// 指定されたファイルを読み込む
 		/// </summary>
 		/// <param name="filename"></param>
-		public bool loadErbs(List<string> path, LabelDictionary labelDictionary)
+		public bool loadErbs(List<string> paths, LabelDictionary labelDictionary)
 		{
 			string fname;
 			List<string> isOnlyEvent = [];
 			noError = true;
 			labelDic = labelDictionary;
 			labelDic.Initialized = false;
-			foreach (string fpath in path)
+
+			foreach (var fpath in paths)
 			{
 				if (fpath.StartsWith(Program.ErbDir, Config.SCIgnoreCase) && !Program.AnalysisMode)
 					fname = fpath[Program.ErbDir.Length..];
 				else
 					fname = fpath;
 				if (Program.AnalysisMode)
+				{
 					output.PrintSystemLine(fname + "読み込み中・・・");
-				System.Windows.Forms.Application.DoEvents();
+				}
 				loadErb(fpath, fname, isOnlyEvent);
-			}
+			};
 			if (Program.AnalysisMode)
 				output.NewLine();
 			ParserMediator.FlushWarningList();
@@ -298,10 +300,11 @@ namespace MinorShift.Emuera.GameProc
 			//一部ファイルの再読み込み時の処理用
 			labelDic.AddFilename(filename);
 			var eReader = new EraStreamReader(Config.UseRenameFile && ParserMediator.RenameDic != null);
+
 			if (!eReader.Open(filepath, filename))
 			{
 				output.PrintError(eReader.Filename + "のオープンに失敗しました");
-				return;
+
 			}
 			try
 			{
