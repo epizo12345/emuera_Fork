@@ -33,7 +33,6 @@ namespace MinorShift.Emuera.GameData.Variable
 		public void Randomize(long seed)
 		{
 			rand = new((int)seed);
-			File.WriteAllText("rand.json", JsonSerializer.Serialize(rand));
 		}
 
 		public void InitRanddata()
