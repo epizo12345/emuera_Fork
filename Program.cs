@@ -6,6 +6,7 @@ using MinorShift._Library;
 using System.IO;
 using System.CommandLine;
 using System.CommandLine.Parsing;
+using Emuera;
 
 namespace MinorShift.Emuera;
 #nullable enable
@@ -64,6 +65,8 @@ static class Program
 		DatDir = Path.Join(ExeDir.AsSpan(), "dat", [Path.DirectorySeparatorChar]);
 		ContentDir = Path.Join(ExeDir.AsSpan(), "resources", [Path.DirectorySeparatorChar]);
 
+
+
 		//解析モードの判定だけ先に行う
 		DebugMode = result.HasOption(debugModeOption);
 
@@ -95,6 +98,9 @@ static class Program
 			MessageBox.Show("erbフォルダが見つかりません", "フォルダなし");
 			return;
 		}
+
+
+
 		if (DebugMode)
 		{
 			ConfigData.Instance.LoadDebugConfig();
@@ -141,6 +147,9 @@ static class Program
 
 		while (true)
 		{
+			//必要なソースファイルを事前にメモリに一気に読み込む
+			Preload.Load(ErbDir);
+
 			var winState = FormWindowState.Normal;
 			var rebootFlag = false;
 			var rebootClientHeight = 0;

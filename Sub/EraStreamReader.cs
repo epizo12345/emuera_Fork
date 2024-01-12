@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
+using Emuera;
 
 namespace MinorShift.Emuera.Sub
 {
@@ -44,6 +45,16 @@ namespace MinorShift.Emuera.Sub
 				this.Dispose();
 				return false;
 			}
+			return true;
+		}
+
+		public bool OpenOnCache(string path, string name)
+		{
+			filepath = path;
+			filename = name;
+			nextNo = 0;
+			curNo = 0;
+			_fileLine = Preload.files[path];
 			return true;
 		}
 

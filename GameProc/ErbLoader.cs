@@ -301,10 +301,9 @@ namespace MinorShift.Emuera.GameProc
 			labelDic.AddFilename(filename);
 			var eReader = new EraStreamReader(Config.UseRenameFile && ParserMediator.RenameDic != null);
 
-			if (!eReader.Open(filepath, filename))
+			if (!eReader.OpenOnCache(filepath, filename))
 			{
 				output.PrintError(eReader.Filename + "のオープンに失敗しました");
-
 			}
 			try
 			{
