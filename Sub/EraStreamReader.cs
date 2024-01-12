@@ -17,8 +17,7 @@ namespace MinorShift.Emuera.Sub
 		readonly bool useRename = false;
 		int curNo = 0;
 		int nextNo = 0;
-		StreamReader reader;
-		FileStream stream;
+		string[] _fileLine;
 
 		public bool Open(string path)
 		{
@@ -38,8 +37,7 @@ namespace MinorShift.Emuera.Sub
 			curNo = 0;
 			try
 			{
-				stream = new FileStream(filepath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-				reader = new StreamReader(stream, Config.Encode);
+				_fileLine = File.ReadAllLines(filepath, Config.Encode);
 			}
 			catch
 			{
@@ -51,9 +49,14 @@ namespace MinorShift.Emuera.Sub
 
 		public string ReadLine()
 		{
-			nextNo++;
-			curNo = nextNo;
-			return reader.ReadLine();
+			string ret = null;
+			if (_fileLine.Length > curNo)
+			{
+				ret = _fileLine[curNo];
+				nextNo++;
+				curNo = nextNo;
+			}
+			return ret;
 		}
 
 		/// <summary>
@@ -66,9 +69,7 @@ namespace MinorShift.Emuera.Sub
 			curNo = nextNo;
 			while (true)
 			{
-				line = reader.ReadLine();
-				curNo++;
-				nextNo++;
+				line = ReadLine();
 				if (line == null)
 					return null;
 				if (line.Length == 0)
@@ -101,7 +102,7 @@ namespace MinorShift.Emuera.Sub
 			StringBuilder b = new();
 			while (true)
 			{
-				line = reader.ReadLine();
+				line = ReadLine();
 				nextNo++;
 				if (line == null)
 				{
@@ -165,14 +166,8 @@ namespace MinorShift.Emuera.Sub
 		{
 			if (disposed)
 				return;
-			if (reader != null)
-				reader.Close();
-			else if (stream != null)
-				stream.Close();
 			filepath = null;
 			filename = null;
-			reader = null;
-			stream = null;
 			disposed = true;
 		}
 
