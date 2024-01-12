@@ -53,6 +53,7 @@ static class Program
 		var debugModeOption = new Option<List<string>>(
 			name: "-DEBUG"
 		);
+		rootCommand.AddOption(debugModeOption);
 
 		var result = rootCommand.Parse(args);
 		ExeDir = (result.CommandResult.GetValueForOption(exeDirOption) ?? "") + "\\";
