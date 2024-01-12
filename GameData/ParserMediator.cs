@@ -37,41 +37,42 @@ namespace MinorShift.Emuera
 		#region Rename
 		public static Dictionary<string, string> RenameDic { get; private set; }
 		//1756 Process.Load.csより移動
-		public static void LoadEraExRenameFile(string filepath)
+		public static async void LoadEraExRenameFile(string filepath)
 		{
+			if (!File.Exists(filepath))
+			{
+				return;
+			}
 			if (RenameDic != null)
 				RenameDic.Clear();
 			//とにかく辞書を作る。辞書がnullのときは UseRenameFileがNOの時のみ
 			RenameDic = [];
-			EraStreamReader eReader = new(false);
-			if ((!File.Exists(filepath)) || (!eReader.Open(filepath)))
-			{
-				return;
-			}
-			string line;
+			var fileLine = File.ReadLinesAsync(filepath, Config.Encode);
 			ScriptPosition pos = null;
 			Regex reg = new(@"\\,", RegexOptions.Compiled);
 			try
 			{
-				while ((line = eReader.ReadLine()) != null)
+				var lineNo = 0;
+				await foreach (var line in fileLine)
 				{
 					if (line.Length == 0)
 						continue;
-					if (line.StartsWith(";"))
+					if (line.StartsWith(';'))
 						continue;
 					string[] baseTokens = reg.Split(line);
-					if (!baseTokens[baseTokens.Length - 1].Contains(","))
+					if (!baseTokens[^1].Contains(','))
 						continue;
-					string[] last = baseTokens[baseTokens.Length - 1].Split(',');
-					baseTokens[baseTokens.Length - 1] = last[0];
+					string[] last = baseTokens[^1].Split(',');
+					baseTokens[^1] = last[0];
 					string[] tokens = new string[2];
-					tokens[0] = string.Join(",", baseTokens);
+					tokens[0] = string.Join(',', baseTokens);
 					tokens[1] = last[1];
-					pos = new ScriptPosition(eReader.Filename, eReader.LineNo);
+					pos = new ScriptPosition(filepath, lineNo);
 					//右がERB中の表記、左が変換先になる。
 					string value = tokens[0].Trim();
 					string key = string.Format("[[{0}]]", tokens[1].Trim());
 					RenameDic[key] = value;
+					lineNo++;
 					pos = null;
 				}
 			}
@@ -82,10 +83,6 @@ namespace MinorShift.Emuera
 				else
 					throw new CodeEE(e.Message);
 
-			}
-			finally
-			{
-				eReader.Close();
 			}
 		}
 		#endregion
