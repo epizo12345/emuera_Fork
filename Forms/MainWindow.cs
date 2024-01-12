@@ -14,6 +14,8 @@ using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.Forms;
 using System.Runtime.Versioning;
 
+#nullable enable
+
 namespace MinorShift.Emuera
 {
 	internal sealed partial class MainWindow : Form
@@ -49,9 +51,7 @@ namespace MinorShift.Emuera
 			openFileDialog.Multiselect = true;
 			openFileDialog.RestoreDirectory = true;
 
-			string Emuera_verInfo = "Emuera Ver. " + emueraVer.FileVersion.Remove(5);
-			if (emueraVer.FileBuildPart > 0)
-				Emuera_verInfo += "+v" + emueraVer.FileBuildPart.ToString() + ((emueraVer.FilePrivatePart > 0) ? "." + emueraVer.FilePrivatePart.ToString() : "");
+			string Emuera_verInfo = "Emuera Ver. " + emueraVer;
 			EmuVerToolStripTextBox.Text = Emuera_verInfo;
 
 			timer.Enabled = true;
@@ -76,14 +76,14 @@ namespace MinorShift.Emuera
 			vScrollBar.MouseWheel += new System.Windows.Forms.MouseEventHandler(richTextBox1_MouseWheel);
 		}
 		private readonly ToolStripMenuItem[] macroMenuItems = new ToolStripMenuItem[KeyMacro.MaxFkey];
-		private readonly System.Diagnostics.FileVersionInfo emueraVer = System.Diagnostics.FileVersionInfo.GetVersionInfo(System.Reflection.Assembly.GetExecutingAssembly().Location);
+		private readonly Version emueraVer = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 0);
 		public PictureBox MainPicBox { get { return mainPicBox; } }
 		public VScrollBar ScrollBar { get { return vScrollBar; } }
 		public RichTextBox TextBox { get { return richTextBox1; } }
-		public string InternalEmueraVer { get { return emueraVer.FileVersion; } }
+		public string InternalEmueraVer { get { return emueraVer.ToString(); } }
 		public string EmueraVerText { get { return EmuVerToolStripTextBox.Text; } }
 		public ToolTip ToolTip { get { return toolTipButton; } }
-		private EmueraConsole console = null;
+		private EmueraConsole console;
 
 		protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
 		{

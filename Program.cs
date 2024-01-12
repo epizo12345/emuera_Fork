@@ -173,16 +173,26 @@ static class Program
 	/// <summary>
 	/// 実行ファイルのディレクトリ。最後に\を付けたstring
 	/// </summary>
-	public static string? ExeDir { get; private set; }
-	public static string? CsvDir { get; private set; }
-	public static string? ErbDir { get; private set; }
-	public static string? DebugDir { get; private set; }
-	public static string? DatDir { get; private set; }
-	public static string? ContentDir { get; private set; }
+	public static string ExeDir { get; private set; }
+	public static string CsvDir { get; private set; }
+	public static string ErbDir { get; private set; }
+	public static string DebugDir { get; private set; }
+	public static string DatDir { get; private set; }
+	public static string ContentDir { get; private set; }
 
 	public static bool AnalysisMode { get; private set; }
 	public static List<string> analysisFiles = [];
 
 	public static bool DebugMode { get; private set; }
+
+	static Program()
+	{
+		ExeDir = "";
+		CsvDir = Path.Join(ExeDir.AsSpan(), "csv", [Path.DirectorySeparatorChar]);
+		ErbDir = Path.Join(ExeDir.AsSpan(), "erb", [Path.DirectorySeparatorChar]);
+		DebugDir = Path.Join(ExeDir.AsSpan(), "debug", [Path.DirectorySeparatorChar]);
+		DatDir = Path.Join(ExeDir.AsSpan(), "dat", [Path.DirectorySeparatorChar]);
+		ContentDir = Path.Join(ExeDir.AsSpan(), "resources", [Path.DirectorySeparatorChar]);
+	}
 
 }
