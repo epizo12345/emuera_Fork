@@ -34,8 +34,8 @@ namespace MinorShift.Emuera.Sub
 			//    throw new ExeEE("使用中のオブジェクトを別用途に再利用しようとした");
 			filepath = path;
 			filename = name;
-			nextNo = 0;
 			curNo = 0;
+			nextNo = 0;
 			try
 			{
 				_fileLine = File.ReadAllLines(filepath, Config.Encode);
@@ -50,7 +50,6 @@ namespace MinorShift.Emuera.Sub
 
 		public bool OpenOnCache(string path)
 		{
-
 			return OpenOnCache(path, Path.GetFileName(path));
 		}
 
@@ -59,8 +58,8 @@ namespace MinorShift.Emuera.Sub
 		{
 			filepath = path;
 			filename = name;
-			nextNo = 0;
 			curNo = 0;
+			nextNo = 0;
 			_fileLine = Preload.files[path.ToUpperInvariant()];
 			return true;
 		}
@@ -68,11 +67,11 @@ namespace MinorShift.Emuera.Sub
 		public string ReadLine()
 		{
 			string ret = null;
+			curNo = nextNo;
 			if (_fileLine.Length > curNo)
 			{
 				ret = _fileLine[curNo];
 				nextNo++;
-				curNo = nextNo;
 			}
 			return ret;
 		}
@@ -84,7 +83,6 @@ namespace MinorShift.Emuera.Sub
 		{
 			string line;
 			StringStream st;
-			curNo = nextNo;
 			while (true)
 			{
 				line = ReadLine();
@@ -121,7 +119,6 @@ namespace MinorShift.Emuera.Sub
 			while (true)
 			{
 				line = ReadLine();
-				nextNo++;
 				if (line == null)
 				{
 					throw new CodeEE("行連結始端記号'{'が使われましたが終端記号'}'が見つかりません", new ScriptPosition(filename, curNo));
@@ -138,7 +135,7 @@ namespace MinorShift.Emuera.Sub
 					if (test[0] == '}')
 					{
 						if (test.Trim() != "}")
-							throw new CodeEE("行連結終端記号'}'の行に'}'以外の文字を含めることはできません", new ScriptPosition(filename, nextNo));
+							throw new CodeEE("行連結終端記号'}'の行に'}'以外の文字を含めることはできません", new ScriptPosition(filename, curNo));
 						break;
 					}
 					//行連結文字なら1字でないとおかしい、というか、こうしないとFORMの数値変数処理が誤爆する。
@@ -146,7 +143,7 @@ namespace MinorShift.Emuera.Sub
 					//A}
 					//みたいなどうしようもないコードは知ったこっちゃない
 					if (test[0] == '{' && test.Length == 1)
-						throw new CodeEE("予期しない行連結始端記号'{'が見つかりました", new ScriptPosition(filename, nextNo));
+						throw new CodeEE("予期しない行連結始端記号'{'が見つかりました", new ScriptPosition(filename, curNo));
 				}
 				b.Append(line);
 				b.Append(" ");
