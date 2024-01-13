@@ -324,7 +324,7 @@ internal static class LexicalAnalyzer
 	public static IdentifierWord ReadFirstIdentifierWord(StringStream st)
 	{
 		//int startpos = st.CurrentPosition;
-		string str = ReadSingleIdentifier(st);
+		var str = ReadSingleIdentifier(st);
 		if (string.IsNullOrEmpty(str))
 			throw new CodeEE("不正な文字で行が始まっています");
 		//1808a3 先頭1単語の展開をやめる。－命令の置換を禁止。
@@ -387,14 +387,16 @@ internal static class LexicalAnalyzer
 	/// <returns></returns>
 	public static string ReadSingleIdentifier(StringStream st)
 	{
-		//1819 やや遅い。でもいずれやりたい
-		//Match m = idReg.Match(st.RowString, st.CurrentPosition);
-		//st.Jump(m.Length);
-		//return m.Value;
-		int start = st.CurrentPosition;
-		while (!st.EOS)
+		return ReadSingleIdentifierROS(st).ToString();
+	}
+
+	public static ReadOnlySpan<char> ReadSingleIdentifierROS(StringStream st)
+	{
+		var row = st.RowString.AsSpan()[st.CurrentPosition..];
+		var count = 0;
+		foreach (var item in row)
 		{
-			switch (st.Current)
+			switch (item)
 			{
 				case ' ':
 				case '\t':
@@ -428,17 +430,23 @@ internal static class LexicalAnalyzer
 				case '@':
 				case '.':
 				case ';'://コメントに関しては直後に行われるであろうSkipWhiteSpaceなどが対応する。
-					goto end;
+					st.Jump(count);
+					return row[..count];
 				case '　':
 					if (!Config.SystemAllowFullSpace)
 						throw new CodeEE("予期しない全角スペースを発見しました(この警告はシステムオプション「" + Config.GetConfigName(ConfigCode.SystemAllowFullSpace) + "」により無視できます)");
-					goto end;
+
+					st.Jump(count);
+					return row[..count];
 			}
-			st.ShiftNext();
+			count++;
 		}
-	end:
-		return st.Substring(start, st.CurrentPosition - start);
+
+
+		st.Jump(count);
+		return row[..count];
 	}
+
 
 	/// <summary>
 	/// endWithが見つかるまで読み込む。始点と終端のチェックは呼び出し側で行うこと。
