@@ -30,7 +30,6 @@ namespace MinorShift.Emuera
 		private void InitializeComponent()
 		{
 			this.components = new System.ComponentModel.Container();
-			this.timer = new System.Windows.Forms.Timer(this.components);
 			this.vScrollBar = new System.Windows.Forms.VScrollBar();
 			this.menuStrip = new System.Windows.Forms.MenuStrip();
 			this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -92,15 +91,14 @@ namespace MinorShift.Emuera
 			this.AutoVerbMenu.SuspendLayout();
 			((System.ComponentModel.ISupportInitialize)(this.mainPicBox)).BeginInit();
 			this.SuspendLayout();
-			// 
-			// timer
-			// 
-			this.timer.Tick += new System.EventHandler(this.timer_Tick);
+
+			//初期化処理
+			this.Shown += Init;
 			// 
 			// vScrollBar
 			// 
-			this.vScrollBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+			this.vScrollBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+			| System.Windows.Forms.AnchorStyles.Right)));
 			this.vScrollBar.Enabled = false;
 			this.vScrollBar.LargeChange = 1;
 			this.vScrollBar.Location = new System.Drawing.Point(640, 24);
@@ -113,10 +111,10 @@ namespace MinorShift.Emuera
 			// menuStrip
 			// 
 			this.menuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.fileToolStripMenuItem,
-            this.デバッグToolStripMenuItem,
-            this.ヘルプHToolStripMenuItem,
-            this.EmuVerToolStripTextBox});
+			this.fileToolStripMenuItem,
+			this.デバッグToolStripMenuItem,
+			this.ヘルプHToolStripMenuItem,
+			this.EmuVerToolStripTextBox});
 			this.menuStrip.Location = new System.Drawing.Point(0, 0);
 			this.menuStrip.Name = "menuStrip";
 			this.menuStrip.Size = new System.Drawing.Size(657, 26);
@@ -126,14 +124,14 @@ namespace MinorShift.Emuera
 			// fileToolStripMenuItem
 			// 
 			this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.rebootToolStripMenuItem,
-            this.ログを保存するSToolStripMenuItem,
-            this.ログをクリップボードにコピーToolStripMenuItem,
-            this.タイトルへ戻るTToolStripMenuItem,
-            this.コードを読み直すcToolStripMenuItem,
-            this.フォルダを読み直すFToolStripMenuItem,
-            this.ファイルを読み直すFToolStripMenuItem,
-            this.exitToolStripMenuItem});
+			this.rebootToolStripMenuItem,
+			this.ログを保存するSToolStripMenuItem,
+			this.ログをクリップボードにコピーToolStripMenuItem,
+			this.タイトルへ戻るTToolStripMenuItem,
+			this.コードを読み直すcToolStripMenuItem,
+			this.フォルダを読み直すFToolStripMenuItem,
+			this.ファイルを読み直すFToolStripMenuItem,
+			this.exitToolStripMenuItem});
 			this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
 			this.fileToolStripMenuItem.Size = new System.Drawing.Size(85, 22);
 			this.fileToolStripMenuItem.Text = "ファイル(&F)";
@@ -197,8 +195,8 @@ namespace MinorShift.Emuera
 			// デバッグToolStripMenuItem
 			// 
 			this.デバッグToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.デバッグウインドウを開くToolStripMenuItem,
-            this.デバッグ情報の更新ToolStripMenuItem});
+			this.デバッグウインドウを開くToolStripMenuItem,
+			this.デバッグ情報の更新ToolStripMenuItem});
 			this.デバッグToolStripMenuItem.Name = "デバッグToolStripMenuItem";
 			this.デバッグToolStripMenuItem.Size = new System.Drawing.Size(87, 22);
 			this.デバッグToolStripMenuItem.Text = "デバッグ(&D)";
@@ -223,7 +221,7 @@ namespace MinorShift.Emuera
 			// ヘルプHToolStripMenuItem
 			// 
 			this.ヘルプHToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.コンフィグCToolStripMenuItem});
+			this.コンフィグCToolStripMenuItem});
 			this.ヘルプHToolStripMenuItem.Name = "ヘルプHToolStripMenuItem";
 			this.ヘルプHToolStripMenuItem.Size = new System.Drawing.Size(75, 22);
 			this.ヘルプHToolStripMenuItem.Text = "ヘルプ(&H)";
@@ -262,8 +260,8 @@ namespace MinorShift.Emuera
 			// 
 			// richTextBox1
 			// 
-			this.richTextBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+			this.richTextBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)
+			| System.Windows.Forms.AnchorStyles.Right)));
 			this.richTextBox1.BackColor = System.Drawing.SystemColors.Window;
 			this.richTextBox1.BorderStyle = System.Windows.Forms.BorderStyle.None;
 			this.richTextBox1.ContextMenuStrip = this.AutoVerbMenu;
@@ -282,15 +280,15 @@ namespace MinorShift.Emuera
 			// AutoVerbMenu
 			// 
 			this.AutoVerbMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.マクロToolStripMenuItem,
-            this.マクログループToolStripMenuItem,
-            this.toolStripSeparator1,
-            this.切り取り,
-            this.コピー,
-            this.貼り付け,
-            this.削除,
-            this.toolStripSeparator2,
-            this.実行});
+			this.マクロToolStripMenuItem,
+			this.マクログループToolStripMenuItem,
+			this.toolStripSeparator1,
+			this.切り取り,
+			this.コピー,
+			this.貼り付け,
+			this.削除,
+			this.toolStripSeparator2,
+			this.実行});
 			this.AutoVerbMenu.Name = "AutoVerbMenu";
 			this.AutoVerbMenu.ShowImageMargin = false;
 			this.AutoVerbMenu.Size = new System.Drawing.Size(147, 170);
@@ -299,18 +297,18 @@ namespace MinorShift.Emuera
 			// マクロToolStripMenuItem
 			// 
 			this.マクロToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.マクロ01ToolStripMenuItem,
-            this.マクロ02ToolStripMenuItem,
-            this.マクロ03ToolStripMenuItem,
-            this.マクロ04ToolStripMenuItem,
-            this.マクロ05ToolStripMenuItem,
-            this.マクロ06ToolStripMenuItem,
-            this.マクロ07ToolStripMenuItem,
-            this.マクロ08ToolStripMenuItem,
-            this.マクロ09ToolStripMenuItem,
-            this.マクロ10ToolStripMenuItem,
-            this.マクロ11ToolStripMenuItem,
-            this.マクロ12ToolStripMenuItem});
+			this.マクロ01ToolStripMenuItem,
+			this.マクロ02ToolStripMenuItem,
+			this.マクロ03ToolStripMenuItem,
+			this.マクロ04ToolStripMenuItem,
+			this.マクロ05ToolStripMenuItem,
+			this.マクロ06ToolStripMenuItem,
+			this.マクロ07ToolStripMenuItem,
+			this.マクロ08ToolStripMenuItem,
+			this.マクロ09ToolStripMenuItem,
+			this.マクロ10ToolStripMenuItem,
+			this.マクロ11ToolStripMenuItem,
+			this.マクロ12ToolStripMenuItem});
 			this.マクロToolStripMenuItem.Name = "マクロToolStripMenuItem";
 			this.マクロToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
 			this.マクロToolStripMenuItem.Text = "マクロ";
@@ -403,16 +401,16 @@ namespace MinorShift.Emuera
 			// マクログループToolStripMenuItem
 			// 
 			this.マクログループToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.グループ0ToolStripMenuItem,
-            this.グループ1ToolStripMenuItem,
-            this.グループ2ToolStripMenuItem,
-            this.グループ3ToolStripMenuItem,
-            this.グループ4ToolStripMenuItem,
-            this.グループ5ToolStripMenuItem,
-            this.グループ6ToolStripMenuItem,
-            this.グループ7ToolStripMenuItem,
-            this.グループ8ToolStripMenuItem,
-            this.グループ9ToolStripMenuItem});
+			this.グループ0ToolStripMenuItem,
+			this.グループ1ToolStripMenuItem,
+			this.グループ2ToolStripMenuItem,
+			this.グループ3ToolStripMenuItem,
+			this.グループ4ToolStripMenuItem,
+			this.グループ5ToolStripMenuItem,
+			this.グループ6ToolStripMenuItem,
+			this.グループ7ToolStripMenuItem,
+			this.グループ8ToolStripMenuItem,
+			this.グループ9ToolStripMenuItem});
 			this.マクログループToolStripMenuItem.Name = "マクログループToolStripMenuItem";
 			this.マクログループToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
 			this.マクログループToolStripMenuItem.Text = "マクログループ";
@@ -570,9 +568,9 @@ namespace MinorShift.Emuera
 			// 
 			// mainPicBox
 			// 
-			this.mainPicBox.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+			this.mainPicBox.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+			| System.Windows.Forms.AnchorStyles.Left)
+			| System.Windows.Forms.AnchorStyles.Right)));
 			this.mainPicBox.BackColor = System.Drawing.Color.Black;
 			this.mainPicBox.Location = new System.Drawing.Point(0, 24);
 			this.mainPicBox.Margin = new System.Windows.Forms.Padding(0);
@@ -613,8 +611,7 @@ namespace MinorShift.Emuera
 
 		#endregion
 
-		private System.Windows.Forms.Timer timer;
-        private System.Windows.Forms.VScrollBar vScrollBar;
+		private System.Windows.Forms.VScrollBar vScrollBar;
 		private System.Windows.Forms.MenuStrip menuStrip;
 		private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem rebootToolStripMenuItem;
@@ -622,16 +619,16 @@ namespace MinorShift.Emuera
 		private System.Windows.Forms.OpenFileDialog openFileDialog;
 		private System.Windows.Forms.ToolStripMenuItem ヘルプHToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem コンフィグCToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem タイトルへ戻るTToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem コードを読み直すcToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem タイトルへ戻るTToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem コードを読み直すcToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem ログを保存するSToolStripMenuItem;
 		private System.Windows.Forms.SaveFileDialog saveFileDialog;
 		private EraPictureBox mainPicBox;
-        private System.Windows.Forms.ToolStripMenuItem ログをクリップボードにコピーToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem ファイルを読み直すFToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem フォルダを読み直すFToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem ログをクリップボードにコピーToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem ファイルを読み直すFToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem フォルダを読み直すFToolStripMenuItem;
 		private System.Windows.Forms.FolderBrowserDialog folderSelectDialog;
-        private System.Windows.Forms.RichTextBox richTextBox1;
+		private System.Windows.Forms.RichTextBox richTextBox1;
 		private System.Windows.Forms.ToolStripMenuItem デバッグToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem デバッグウインドウを開くToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem デバッグ情報の更新ToolStripMenuItem;
