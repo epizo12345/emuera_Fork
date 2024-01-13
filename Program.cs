@@ -57,19 +57,18 @@ static class Program
 		rootCommand.AddOption(debugModeOption);
 
 		var result = rootCommand.Parse(args);
-		ExeDir = Path.Join(
-			(result.CommandResult.GetValueForOption(exeDirOption)
-			?? (Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location))).AsSpan(),
-			[Path.DirectorySeparatorChar]
-			);
 
-		CsvDir = Path.Join(ExeDir.AsSpan(), "csv", [Path.DirectorySeparatorChar]);
-		ErbDir = Path.Join(ExeDir.AsSpan(), "erb", [Path.DirectorySeparatorChar]);
-		DebugDir = Path.Join(ExeDir.AsSpan(), "debug", [Path.DirectorySeparatorChar]);
-		DatDir = Path.Join(ExeDir.AsSpan(), "dat", [Path.DirectorySeparatorChar]);
-		ContentDir = Path.Join(ExeDir.AsSpan(), "resources", [Path.DirectorySeparatorChar]);
+		//実行ディレクトリが引数で与えられた場合
+		if (result.HasOption(exeDirOption))
+		{
+			ExeDir = Path.Join(result.CommandResult.GetValueForOption(exeDirOption).AsSpan(), [Path.DirectorySeparatorChar]);
 
-
+			CsvDir = Path.Join(ExeDir.AsSpan(), "csv", [Path.DirectorySeparatorChar]);
+			ErbDir = Path.Join(ExeDir.AsSpan(), "erb", [Path.DirectorySeparatorChar]);
+			DebugDir = Path.Join(ExeDir.AsSpan(), "debug", [Path.DirectorySeparatorChar]);
+			DatDir = Path.Join(ExeDir.AsSpan(), "dat", [Path.DirectorySeparatorChar]);
+			ContentDir = Path.Join(ExeDir.AsSpan(), "resources", [Path.DirectorySeparatorChar]);
+		}
 
 		//解析モードの判定だけ先に行う
 		DebugMode = result.HasOption(debugModeOption);
@@ -149,24 +148,27 @@ static class Program
 			}
 		}
 
+		var winState = FormWindowState.Normal;
+		var rebootFlag = false;
+		var rebootClientHeight = 0;
+		var rebootLocation = Point.Empty;
 		while (true)
 		{
 			//必要なソースファイルを事前にメモリに一気に読み込む
 			Preload.Load(ErbDir);
 			Preload.Load(CsvDir);
 
-			var winState = FormWindowState.Normal;
-			var rebootFlag = false;
-			var rebootClientHeight = 0;
-			var rebootLocation = Point.Empty;
 			using var win = new MainWindow(winState, rebootLocation, rebootClientHeight, (_) =>
 			{
 				rebootFlag = true;
 			});
+
 			Application.Run(win);
+
 			Content.AppContents.UnloadContents();
 			if (!rebootFlag)
 				break;
+
 			winState = win.WindowState;
 
 			if (win.WindowState == FormWindowState.Normal)
@@ -198,5 +200,19 @@ static class Program
 	public static List<string> analysisFiles = [];
 
 	public static bool DebugMode { get; private set; }
+
+	static Program()
+	{
+		ExeDir = Path.Join(
+			Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location).AsSpan(),
+			[Path.DirectorySeparatorChar]
+		);
+
+		CsvDir = Path.Join(ExeDir.AsSpan(), "csv", [Path.DirectorySeparatorChar]);
+		ErbDir = Path.Join(ExeDir.AsSpan(), "erb", [Path.DirectorySeparatorChar]);
+		DebugDir = Path.Join(ExeDir.AsSpan(), "debug", [Path.DirectorySeparatorChar]);
+		DatDir = Path.Join(ExeDir.AsSpan(), "dat", [Path.DirectorySeparatorChar]);
+		ContentDir = Path.Join(ExeDir.AsSpan(), "resources", [Path.DirectorySeparatorChar]);
+	}
 
 }
