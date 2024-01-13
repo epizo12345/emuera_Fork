@@ -37,7 +37,7 @@ namespace MinorShift.Emuera
 		#region Rename
 		public static Dictionary<string, string> RenameDic { get; private set; }
 		//1756 Process.Load.csより移動
-		public static async void LoadEraExRenameFile(string filepath)
+		public static void LoadEraExRenameFile(string filepath)
 		{
 			if (!File.Exists(filepath))
 			{
@@ -47,13 +47,13 @@ namespace MinorShift.Emuera
 				RenameDic.Clear();
 			//とにかく辞書を作る。辞書がnullのときは UseRenameFileがNOの時のみ
 			RenameDic = [];
-			var fileLine = File.ReadLinesAsync(filepath, Config.Encode);
+			var fileLine = File.ReadLines(filepath, Config.Encode);
 			ScriptPosition pos = null;
 			Regex reg = new(@"\\,", RegexOptions.Compiled);
 			try
 			{
 				var lineNo = 0;
-				await foreach (var line in fileLine)
+				foreach (var line in fileLine)
 				{
 					if (line.Length == 0)
 						continue;
