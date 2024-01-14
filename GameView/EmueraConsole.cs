@@ -581,7 +581,7 @@ namespace MinorShift.Emuera.GameView
 			timerID = inputReq.ID;
 			timer.Enabled = true;
 			timer_startTime = DateTime.Now;
-			timer_endTime = timer_startTime.Millisecond + inputReq.Timelimit;
+			timer_endTime = inputReq.Timelimit;
 			//if (inputReq.DisplayTime)
 			//次に残り時間を表示するタイミングの設定。inputReq.DisplayTime==tureでないなら設定するだけで参照はされない（はず
 			timer_nextDisplayTime = timer_startTime.Millisecond + 100;
