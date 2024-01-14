@@ -149,11 +149,11 @@ static class Program
 		}
 
 		var winState = FormWindowState.Normal;
-		var rebootFlag = false;
 		var rebootClientHeight = 0;
 		var rebootLocation = Point.Empty;
 		while (true)
 		{
+			var rebootFlag = false;
 			//必要なソースファイルを事前にメモリに一気に読み込む
 			Preload.Load(ErbDir);
 			Preload.Load(CsvDir);
@@ -183,6 +183,8 @@ static class Program
 			GlobalStatic.Reset();
 			//GC.Collect();
 			ConfigData.Instance.ReLoadConfig();
+
+			Preload.Clear();
 		}
 	}
 

@@ -28,4 +28,9 @@ static class Preload
             files.Add(path.ToUpperInvariant(), File.ReadAllLines(path, Config.Encode));
         }
     }
+
+    public static void Clear()
+    {
+        files.Clear();
+    }
 }
