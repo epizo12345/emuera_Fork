@@ -115,11 +115,12 @@ namespace MinorShift.Emuera
 			}
 			else if (((keyData & Keys.KeyCode) == Keys.V && (keyData & Keys.Modifiers & Keys.Control) == Keys.Control) || (keyData & Keys.KeyCode) == Keys.Insert && (keyData & Keys.Modifiers & Keys.Shift) == Keys.Shift)
 			{
-				if (Clipboard.GetDataObject() == null || !Clipboard.ContainsText())
+				var dateObject = Clipboard.GetDataObject();
+				if (dateObject == null || !Clipboard.ContainsText())
 					return true;
 				else
 				{
-					if (Clipboard.GetDataObject().GetDataPresent(DataFormats.Text) == true)
+					if (dateObject.GetDataPresent(DataFormats.Text) == true)
 						richTextBox1.Paste(DataFormats.GetFormat(DataFormats.UnicodeText));
 					return true;
 				}
@@ -685,7 +686,6 @@ namespace MinorShift.Emuera
 				if (Program.DebugMode && (console.DebugDialog != null) && console.DebugDialog.Created)
 					console.DebugDialog.Close();
 				console.Dispose();
-				console = null;
 			}
 		}
 
@@ -791,8 +791,6 @@ namespace MinorShift.Emuera
 
 		private void richTextBox1_KeyDown(object sender, KeyEventArgs e)
 		{
-			if (console == null)
-				return;
 			//1823 INPUTMOUSEKEY Key入力全てを捕まえてERB側で処理する
 			//if (console.IsWaitingPrimitiveKey)
 			if (console.IsWaitingPrimitive)
@@ -1013,7 +1011,7 @@ namespace MinorShift.Emuera
 			if (!Config.UseKeyMacro)
 				return;
 			ToolStripMenuItem item = (ToolStripMenuItem)sender;
-			setNewMacroGroup(int.Parse((string)item.Tag));//とても無駄なキャスト&Parse
+			setNewMacroGroup(int.Parse(item.Tag as string));//とても無駄なキャスト&Parse
 		}
 
 		private void timerKeyMacroChanged_Tick(object sender, EventArgs e)
