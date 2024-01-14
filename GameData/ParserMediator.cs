@@ -13,7 +13,7 @@ namespace MinorShift.Emuera
 {
 	//1756 新設。ParserやLexicalAnalyzerなどが知りたい情報をまとめる
 	//本当は引数として渡すべきなのかもしれないが全てのParserの引数を書きなおすのが面倒なのでstatic
-	internal static class ParserMediator
+	internal static partial class ParserMediator
 	{
 		/// <summary>
 		/// emuera.config等で発生した警告
@@ -49,7 +49,7 @@ namespace MinorShift.Emuera
 			RenameDic = [];
 			var fileLine = File.ReadLines(filepath, Config.Encode);
 			ScriptPosition pos = null;
-			Regex reg = new(@"\\,", RegexOptions.Compiled);
+			Regex reg = preCompiledRegex();
 			try
 			{
 				var lineNo = 0;
@@ -168,5 +168,8 @@ namespace MinorShift.Emuera
 			public int WarningLevel;
 			public string StackTrace;
 		}
+
+		[GeneratedRegex(@"\\,")]
+		private static partial Regex preCompiledRegex();
 	}
 }

@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Text;
 using System.IO;
 using Emuera;
+using System.Text.RegularExpressions;
+using System.Linq;
 
 namespace MinorShift.Emuera.Sub
 {
-	internal sealed class EraStreamReader : IDisposable
+	internal sealed partial class EraStreamReader : IDisposable
 	{
 		public EraStreamReader(bool useRename)
 		{
@@ -76,6 +78,10 @@ namespace MinorShift.Emuera.Sub
 			return ret;
 		}
 
+
+		[GeneratedRegex(@"\[\[.*?\]\]")]
+		private static partial Regex regexRenameIdentifer();
+
 		/// <summary>
 		/// 次の有効な行を読む。LexicalAnalyzer経由でConfigを参照するのでConfig完成までつかわないこと。
 		/// </summary>
@@ -91,10 +97,19 @@ namespace MinorShift.Emuera.Sub
 				if (line.Length == 0)
 					continue;
 
-				if (useRename && (line.IndexOf("[[") >= 0) && (line.IndexOf("]]") >= 0))
+				if (useRename && regexRenameIdentifer().IsMatch(line))
 				{
-					foreach (KeyValuePair<string, string> pair in ParserMediator.RenameDic)
-						line = line.Replace(pair.Key, pair.Value);
+					var match = regexRenameIdentifer().Match(line);
+					while (match.Success)
+					{
+						//この段階でマッチしないパターンもある
+						if (ParserMediator.RenameDic.TryGetValue(match.Value, out var targetStr))
+						{
+							line = line.Replace(match.Value, targetStr);
+						}
+
+						match = match.NextMatch();
+					}
 				}
 				st = new StringStream(line);
 				LexicalAnalyzer.SkipWhiteSpace(st);
