@@ -343,7 +343,7 @@ namespace MinorShift.Emuera.GameView
 		{
 			GlobalStatic.Console = this;
 			GlobalStatic.MainWindow = window;
-			emuera = new GameProc.Process(this, Program.AnalysisMode);
+			emuera = new GameProc.Process(this);
 			GlobalStatic.Process = emuera;
 			if (Program.DebugMode && Config.DebugShowWindow)
 			{

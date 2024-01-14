@@ -86,7 +86,7 @@ static class Program
 		ApplicationConfiguration.Initialize();
 		ConfigData.Instance.LoadConfig();
 		//二重起動の禁止かつ二重起動
-		if ((!Config.AllowMultipleInstances) && Sys.PrevInstance())
+		if ((!Config.AllowMultipleInstances) && AssemblyData.PrevInstance())
 		{
 			System.Windows.MessageBox.Show("多重起動を許可する場合、emuera.configを書き換えて下さい", "既に起動しています");
 			return;
@@ -133,7 +133,7 @@ static class Program
 				{
 					foreach (var file in Config.GetFiles(path + "\\", "*.ERB"))
 					{
-						analysisFiles.Add(file.Value);
+						AnalysisFiles.Add(file.Value);
 					}
 				}
 				else
@@ -143,7 +143,7 @@ static class Program
 						System.Windows.MessageBox.Show("ドロップ可能なファイルはERBファイルのみです");
 						return;
 					}
-					analysisFiles.Add(path);
+					AnalysisFiles.Add(path);
 				}
 			}
 		}
@@ -199,7 +199,7 @@ static class Program
 	public static string ContentDir { get; private set; }
 
 	public static bool AnalysisMode { get; private set; }
-	public static List<string> analysisFiles = [];
+	public static List<string> AnalysisFiles = [];
 
 	public static bool DebugMode { get; private set; }
 

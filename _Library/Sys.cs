@@ -3,9 +3,9 @@ using System.Reflection;
 
 namespace MinorShift._Library
 {
-	public static class Sys
+	public static class ExecutebleData
 	{
-		static Sys()
+		static ExecutebleData()
 		{
 			ExePath = Assembly.GetEntryAssembly().Location;
 			//エラー出力用

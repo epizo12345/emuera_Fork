@@ -16,9 +16,8 @@ using MinorShift._Library;
 namespace MinorShift.Emuera.GameProc
 {
 
-	internal sealed partial class Process(EmueraConsole view, bool analysisMode)
+	internal sealed partial class Process(EmueraConsole view)
 	{
-		readonly bool analysisMode = analysisMode;
 
 		public LogicalLine getCurrentLine { get { return state.CurrentLine; } }
 
@@ -74,7 +73,7 @@ namespace MinorShift.Emuera.GameProc
 				}
 				ParserMediator.FlushWarningList();
 				//キーマクロ読み込み
-				if (Config.UseKeyMacro && !analysisMode)
+				if (Config.UseKeyMacro && !Program.AnalysisMode)
 				{
 					if (File.Exists(Program.ExeDir + "macro.txt"))
 					{
@@ -84,7 +83,7 @@ namespace MinorShift.Emuera.GameProc
 					}
 				}
 				//_replace.csv読み込み
-				if (Config.UseReplaceFile && !analysisMode)
+				if (Config.UseReplaceFile && !Program.AnalysisMode)
 				{
 					if (File.Exists(Program.CsvDir + "_Replace.csv"))
 					{
@@ -112,7 +111,7 @@ namespace MinorShift.Emuera.GameProc
 				{
 					if (File.Exists(Program.CsvDir + "_Rename.csv"))
 					{
-						if (Config.DisplayReport || analysisMode)
+						if (Config.DisplayReport || Program.AnalysisMode)
 							console.PrintSystemLine("_Rename.csv読み込み中・・・");
 						ParserMediator.LoadEraExRenameFile(Program.CsvDir + "_Rename.csv");
 					}
@@ -172,8 +171,8 @@ namespace MinorShift.Emuera.GameProc
 
 				//ERB読込
 				var loader = new ErbLoader(console, exm, this);
-				if (analysisMode)
-					noError = loader.loadErbs(Program.analysisFiles, labelDic);
+				if (Program.AnalysisMode)
+					noError = loader.loadErbs(Program.AnalysisFiles, labelDic);
 				else
 					noError = loader.LoadErbFiles(Program.ErbDir, Config.DisplayReport, labelDic);
 				initSystemProcess();
@@ -416,17 +415,17 @@ namespace MinorShift.Emuera.GameProc
 			console.ThrowError(playSound);
 			if (exc is CodeEE)
 			{
-				console.PrintError("関数の終端でエラーが発生しました:" + Sys.ExeName);
+				console.PrintError("関数の終端でエラーが発生しました:" + AssemblyData.ExeName);
 				console.PrintError(exc.Message);
 			}
 			else if (exc is ExeEE)
 			{
-				console.PrintError("関数の終端でEmueraのエラーが発生しました:" + Sys.ExeName);
+				console.PrintError("関数の終端でEmueraのエラーが発生しました:" + AssemblyData.ExeName);
 				console.PrintError(exc.Message);
 			}
 			else
 			{
-				console.PrintError("関数の終端で予期しないエラーが発生しました:" + Sys.ExeName);
+				console.PrintError("関数の終端で予期しないエラーが発生しました:" + AssemblyData.ExeName);
 				console.PrintError(exc.GetType().ToString() + ":" + exc.Message);
 				string[] stack = exc.StackTrace.Split('\n');
 				for (int i = 0; i < stack.Length; i++)
@@ -465,7 +464,7 @@ namespace MinorShift.Emuera.GameProc
 					}
 					else
 					{
-						console.PrintErrorButton(posString + "エラーが発生しました:" + Sys.ExeName, position);
+						console.PrintErrorButton(posString + "エラーが発生しました:" + AssemblyData.ExeName, position);
 						printRawLine(position);
 						console.PrintError("エラー内容：" + exc.Message);
 					}
@@ -483,18 +482,18 @@ namespace MinorShift.Emuera.GameProc
 				}
 				else
 				{
-					console.PrintError(posString + "エラーが発生しました:" + Sys.ExeName);
+					console.PrintError(posString + "エラーが発生しました:" + AssemblyData.ExeName);
 					console.PrintError(exc.Message);
 				}
 			}
 			else if (exc is ExeEE)
 			{
-				console.PrintError(posString + "Emueraのエラーが発生しました:" + Sys.ExeName);
+				console.PrintError(posString + "Emueraのエラーが発生しました:" + AssemblyData.ExeName);
 				console.PrintError(exc.Message);
 			}
 			else
 			{
-				console.PrintError(posString + "予期しないエラーが発生しました:" + Sys.ExeName);
+				console.PrintError(posString + "予期しないエラーが発生しました:" + AssemblyData.ExeName);
 				console.PrintError(exc.GetType().ToString() + ":" + exc.Message);
 				string[] stack = exc.StackTrace.Split('\n');
 				for (int i = 0; i < stack.Length; i++)
