@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Drawing;
 using System.Collections.Generic;
-using System.Windows.Forms;
 using MinorShift._Library;
 using System.IO;
 using System.CommandLine;
 using System.CommandLine.Parsing;
 using Emuera;
+using System.Windows.Forms;
 
 namespace MinorShift.Emuera;
 #nullable enable
@@ -88,17 +88,17 @@ static class Program
 		//二重起動の禁止かつ二重起動
 		if ((!Config.AllowMultipleInstances) && Sys.PrevInstance())
 		{
-			MessageBox.Show("多重起動を許可する場合、emuera.configを書き換えて下さい", "既に起動しています");
+			System.Windows.MessageBox.Show("多重起動を許可する場合、emuera.configを書き換えて下さい", "既に起動しています");
 			return;
 		}
 		if (!Directory.Exists(CsvDir))
 		{
-			MessageBox.Show(CsvDir, "csvフォルダが見つかりません");
+			System.Windows.MessageBox.Show(CsvDir, "csvフォルダが見つかりません");
 			return;
 		}
 		if (!Directory.Exists(ErbDir))
 		{
-			MessageBox.Show("erbフォルダが見つかりません", "フォルダなし");
+			System.Windows.MessageBox.Show("erbフォルダが見つかりません", "フォルダなし");
 			return;
 		}
 
@@ -115,7 +115,7 @@ static class Program
 				}
 				catch
 				{
-					MessageBox.Show("debugフォルダの作成に失敗しました", "フォルダなし");
+					System.Windows.MessageBox.Show("debugフォルダの作成に失敗しました", "フォルダなし");
 					return;
 				}
 			}
@@ -126,7 +126,7 @@ static class Program
 			{
 				if (!Path.Exists(path))
 				{
-					MessageBox.Show("与えられたファイル・フォルダは存在しません");
+					System.Windows.MessageBox.Show("与えられたファイル・フォルダは存在しません");
 					return;
 				}
 				if (File.GetAttributes(path).HasFlag(FileAttributes.Directory))
@@ -140,7 +140,7 @@ static class Program
 				{
 					if (!Path.GetExtension(path).Equals(".ERB", StringComparison.CurrentCultureIgnoreCase))
 					{
-						MessageBox.Show("ドロップ可能なファイルはERBファイルのみです");
+						System.Windows.MessageBox.Show("ドロップ可能なファイルはERBファイルのみです");
 						return;
 					}
 					analysisFiles.Add(path);

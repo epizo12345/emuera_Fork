@@ -486,8 +486,8 @@ namespace MinorShift.Emuera
 
 		private void exitToolStripMenuItem_Click(object sender, EventArgs e)
 		{
-			DialogResult result = MessageBox.Show("ゲームを終了します", "終了", MessageBoxButtons.OKCancel);
-			if (result != DialogResult.OK)
+			var result = System.Windows.MessageBox.Show("ゲームを終了します", "終了", System.Windows.MessageBoxButton.OKCancel);
+			if (result != System.Windows.MessageBoxResult.OK)
 				return;
 			Close();
 
@@ -495,8 +495,8 @@ namespace MinorShift.Emuera
 
 		private void rebootToolStripMenuItem_Click(object sender, EventArgs e)
 		{
-			DialogResult result = MessageBox.Show("ゲームを再起動します", "再起動", MessageBoxButtons.OKCancel);
-			if (result != DialogResult.OK)
+			var result = System.Windows.MessageBox.Show("ゲームを再起動します", "再起動", System.Windows.MessageBoxButton.OKCancel);
+			if (result != System.Windows.MessageBoxResult.OK)
 				return;
 			Reboot();
 		}
@@ -570,19 +570,19 @@ namespace MinorShift.Emuera
 				return;
 			if (console.IsInProcess)
 			{
-				MessageBox.Show("スクリプト動作中には使用できません");
+				System.Windows.MessageBox.Show("スクリプト動作中には使用できません");
 				return;
 			}
 			if (console.notToTitle)
 			{
 				if (console.byError)
-					MessageBox.Show("コード解析でエラーが発見されたため、タイトルへは飛べません");
+					System.Windows.MessageBox.Show("コード解析でエラーが発見されたため、タイトルへは飛べません");
 				else
-					MessageBox.Show("解析モードのためタイトルへは飛べません");
+					System.Windows.MessageBox.Show("解析モードのためタイトルへは飛べません");
 				return;
 			}
-			DialogResult result = MessageBox.Show("タイトル画面へ戻ります", "タイトル画面に戻る", MessageBoxButtons.OKCancel);
-			if (result != DialogResult.OK)
+			var result = System.Windows.MessageBox.Show("タイトル画面へ戻ります", "タイトル画面に戻る", System.Windows.MessageBoxButton.OKCancel);
+			if (result != System.Windows.MessageBoxResult.OK)
 				return;
 			GotoTitle();
 		}
@@ -593,11 +593,11 @@ namespace MinorShift.Emuera
 				return;
 			if (console.IsInProcess)
 			{
-				MessageBox.Show("スクリプト動作中には使用できません");
+				System.Windows.MessageBox.Show("スクリプト動作中には使用できません");
 				return;
 			}
-			DialogResult result = MessageBox.Show("ERBファイルを読み直します", "ERBファイル読み直し", MessageBoxButtons.OKCancel);
-			if (result != DialogResult.OK)
+			var result = System.Windows.MessageBox.Show("ERBファイルを読み直します", "ERBファイル読み直し", System.Windows.MessageBoxButton.OKCancel);
+			if (result != System.Windows.MessageBoxResult.OK)
 				return;
 			ReloadErb();
 
@@ -636,7 +636,7 @@ namespace MinorShift.Emuera
 			}
 			catch (Exception)
 			{
-				MessageBox.Show("予期せぬエラーが発生したためクリップボードを開けません");
+				System.Windows.MessageBox.Show("予期せぬエラーが発生したためクリップボードを開けません");
 				return;
 			}
 		}
@@ -647,7 +647,7 @@ namespace MinorShift.Emuera
 				return;
 			if (console.IsInProcess)
 			{
-				MessageBox.Show("スクリプト動作中には使用できません");
+				System.Windows.MessageBox.Show("スクリプト動作中には使用できません");
 				return;
 			}
 			DialogResult result = openFileDialog.ShowDialog();
@@ -658,12 +658,12 @@ namespace MinorShift.Emuera
 				{
 					if (!File.Exists(fname))
 					{
-						MessageBox.Show("ファイルがありません", "File Not Found");
+						System.Windows.MessageBox.Show("ファイルがありません", "File Not Found");
 						return;
 					}
 					if (Path.GetExtension(fname).ToUpper() != ".ERB")
 					{
-						MessageBox.Show("ERBファイル以外は読み込めません", "ファイル形式エラー");
+						System.Windows.MessageBox.Show("ERBファイル以外は読み込めません", "ファイル形式エラー");
 						return;
 					}
 					if (fname.StartsWith(Program.ErbDir, StringComparison.OrdinalIgnoreCase))
@@ -695,7 +695,7 @@ namespace MinorShift.Emuera
 				return;
 			if (console.IsInProcess)
 			{
-				MessageBox.Show("スクリプト動作中には使用できません");
+				System.Windows.MessageBox.Show("スクリプト動作中には使用できません");
 				return;
 			}
 			//List<KeyValuePair<string, string>> filepath = new List<KeyValuePair<string, string>>();

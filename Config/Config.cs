@@ -142,27 +142,27 @@ namespace MinorShift.Emuera
 
 			if (FontSize < 8)
 			{
-				MessageBox.Show("フォントサイズが小さすぎます(8が下限)", "設定のエラー");
+				System.Windows.MessageBox.Show("フォントサイズが小さすぎます(8が下限)", "設定のエラー");
 				FontSize = 8;
 			}
 			if (LineHeight < FontSize)
 			{
-				MessageBox.Show("行の高さがフォントサイズより小さいため、フォントサイズと同じ高さと解釈されます", "設定のエラー");
+				System.Windows.MessageBox.Show("行の高さがフォントサイズより小さいため、フォントサイズと同じ高さと解釈されます", "設定のエラー");
 				LineHeight = FontSize;
 			}
 			if (SaveDataNos < 20)
 			{
-				MessageBox.Show("表示するセーブデータ数が少なすぎます(20が下限)", "設定のエラー");
+				System.Windows.MessageBox.Show("表示するセーブデータ数が少なすぎます(20が下限)", "設定のエラー");
 				SaveDataNos = 20;
 			}
 			if (SaveDataNos > 80)
 			{
-				MessageBox.Show("表示するセーブデータ数が多すぎます(80が上限)", "設定のエラー");
+				System.Windows.MessageBox.Show("表示するセーブデータ数が多すぎます(80が上限)", "設定のエラー");
 				SaveDataNos = 80;
 			}
 			if (MaxLog < 500)
 			{
-				MessageBox.Show("ログ表示行数が少なすぎます(500が下限)", "設定のエラー");
+				System.Windows.MessageBox.Show("ログ表示行数が少なすぎます(500が下限)", "設定のエラー");
 				MaxLog = 500;
 			}
 
@@ -251,20 +251,20 @@ namespace MinorShift.Emuera
 			}
 			catch
 			{
-				MessageBox.Show("savフォルダの作成に失敗しました", "フォルダ作成失敗");
+				System.Windows.MessageBox.Show("savフォルダの作成に失敗しました", "フォルダ作成失敗");
 				return;
 			}
 			bool existGlobal = File.Exists(Program.ExeDir + "global.sav");
 			string[] savFiles = Directory.GetFiles(Program.ExeDir, "save*.sav", SearchOption.TopDirectoryOnly);
 			if (!existGlobal && savFiles.Length == 0)
 				return;
-			DialogResult result = MessageBox.Show("savフォルダを作成しました\n現在のデータをsavフォルダ内に移動しますか？", "データ移動", MessageBoxButtons.YesNo);
-			if (result != DialogResult.Yes)
+			var result = System.Windows.MessageBox.Show("savフォルダを作成しました\n現在のデータをsavフォルダ内に移動しますか？", "データ移動", System.Windows.MessageBoxButton.YesNo);
+			if (result != System.Windows.MessageBoxResult.OK)
 				return;
 			//ダイアログが開いている間にフォルダを消してしまうような邪悪なユーザーがいるかもしれない
 			if (!Directory.Exists(SavDir))
 			{
-				MessageBox.Show("savフォルダの作成が見当たりません", "フォルダ作成失敗");
+				System.Windows.MessageBox.Show("savフォルダの作成が見当たりません", "フォルダ作成失敗");
 				return;
 			}
 			//ダイアログが開いている間にファイルを変更するような邪悪なユーザーがいるかもしれない
@@ -278,7 +278,7 @@ namespace MinorShift.Emuera
 			}
 			catch
 			{
-				MessageBox.Show("savファイルの移動に失敗しました", "移動失敗");
+				System.Windows.MessageBox.Show("savファイルの移動に失敗しました", "移動失敗");
 			}
 		}
 		//先にSetConfigを呼ぶこと
