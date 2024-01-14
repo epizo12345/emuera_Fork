@@ -185,43 +185,34 @@ namespace MinorShift.Emuera
 		}
 
 
-		static readonly Dictionary<string, Dictionary<FontStyle, Font>> fontDic = [];
+		static readonly Dictionary<(string fontname, FontStyle fontStyle), Font> fontDic = [];
 		public static Font Font { get { return GetFont(null, FontStyle.Regular); } }
 
-		public static Font GetFont(string theFontname, FontStyle style)
+		public static Font GetFont(string requestFontName, FontStyle style)
 		{
-			string fn = theFontname;
-			if (string.IsNullOrEmpty(theFontname))
-				fn = FontName;
-			if (!fontDic.ContainsKey(fn))
-				fontDic.Add(fn, []);
-			Dictionary<FontStyle, Font> fontStyleDic = fontDic[fn];
-			if (!fontStyleDic.ContainsKey(style))
+			string fontname = requestFontName;
+			if (string.IsNullOrEmpty(requestFontName))
+				fontname = FontName;
+			if (!fontDic.ContainsKey((fontname, style)))
 			{
-				int fontsize = FontSize;
-				Font styledFont;
-				try
-				{
-					styledFont = new Font(fn, fontsize, style, GraphicsUnit.Pixel);
-				}
-				catch
+				var font = new Font(fontname, FontSize, style, GraphicsUnit.Pixel);
+				if (font == null)
 				{
 					return null;
 				}
-				fontStyleDic.Add(style, styledFont);
+				else
+				{
+					fontDic.Add((fontname, style), font);
+				}
 			}
-			return fontStyleDic[style];
+			return fontDic[(fontname, style)];
 		}
 
 		public static void ClearFont()
 		{
-			foreach (KeyValuePair<string, Dictionary<FontStyle, Font>> fontStyleDicPair in fontDic)
+			foreach (var font in fontDic)
 			{
-				foreach (KeyValuePair<FontStyle, Font> pair in fontStyleDicPair.Value)
-				{
-					pair.Value.Dispose();
-				}
-				fontStyleDicPair.Value.Clear();
+				font.Value.Dispose();
 			}
 			fontDic.Clear();
 		}
