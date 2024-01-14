@@ -158,7 +158,7 @@ static class Program
 			Preload.Load(ErbDir);
 			Preload.Load(CsvDir);
 
-			using var win = new MainWindow(winState, rebootLocation, rebootClientHeight, (_) =>
+			using var win = new Forms.MainWindow(winState, rebootLocation, rebootClientHeight, (_) =>
 			{
 				rebootFlag = true;
 			});

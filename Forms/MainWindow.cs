@@ -16,7 +16,7 @@ using System.Runtime.Versioning;
 
 #nullable enable
 
-namespace MinorShift.Emuera
+namespace MinorShift.Emuera.Forms
 {
 	internal sealed partial class MainWindow : Form
 	{

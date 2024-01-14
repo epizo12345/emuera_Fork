@@ -1,5 +1,5 @@
 ﻿using MinorShift.Emuera.Forms;
-namespace MinorShift.Emuera
+namespace MinorShift.Emuera.Forms
 {
 	partial class MainWindow
 	{
