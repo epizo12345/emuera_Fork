@@ -412,7 +412,6 @@ namespace MinorShift.Emuera
 
 		public bool LoadConfig()
 		{
-			Config.ClearFont();
 			string defaultConfigPath = Program.CsvDir + "_default.config";
 			string fixedConfigPath = Program.CsvDir + "_fixed.config";
 			if (!File.Exists(defaultConfigPath))

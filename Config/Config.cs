@@ -5,6 +5,7 @@ using System.IO;
 using System;
 using System.Windows.Forms;
 using MinorShift._Library;
+using Emuera;
 
 namespace MinorShift.Emuera
 {
@@ -185,37 +186,7 @@ namespace MinorShift.Emuera
 		}
 
 
-		static readonly Dictionary<(string fontname, FontStyle fontStyle), Font> fontDic = [];
-		public static Font Font { get { return GetFont(null, FontStyle.Regular); } }
-
-		public static Font GetFont(string requestFontName, FontStyle style)
-		{
-			string fontname = requestFontName;
-			if (string.IsNullOrEmpty(requestFontName))
-				fontname = FontName;
-			if (!fontDic.ContainsKey((fontname, style)))
-			{
-				var font = new Font(fontname, FontSize, style, GraphicsUnit.Pixel);
-				if (font == null)
-				{
-					return null;
-				}
-				else
-				{
-					fontDic.Add((fontname, style), font);
-				}
-			}
-			return fontDic[(fontname, style)];
-		}
-
-		public static void ClearFont()
-		{
-			foreach (var font in fontDic)
-			{
-				font.Value.Dispose();
-			}
-			fontDic.Clear();
-		}
+		public static Font Font { get { return FontFactory.GetFont("", FontStyle.Regular); } }
 
 		/// <summary>
 		/// ディレクトリ作成失敗のExceptionは呼び出し元で処理すること
