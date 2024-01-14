@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using Microsoft.VisualBasic;
 using MinorShift.Emuera.Sub;
 using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.GameData.Expression;
@@ -562,7 +561,7 @@ namespace MinorShift.Emuera.GameProc
 						for (int j = 0; j < i; j++)
 						{
 							if (vTerm.checkSameTerm(args[j]))
-								ParserMediator.Warn("第" + Strings.StrConv((i + 1).ToString(), VbStrConv.Wide, Config.Language) + "引数\"" + vTerm.GetFullString() + "\"はすでに第" + Strings.StrConv((j + 1).ToString(), VbStrConv.Wide, Config.Language) + "引数として宣言されています", label, 1, false, false);
+								ParserMediator.Warn($"第{i + 1}引数\"{vTerm.GetFullString()}\"はすでに第{j + 1}引数として宣言されています", label, 1, false, false);
 						}
 						if (vTerm.Identifier.Code == VariableCode.ARG)
 						{

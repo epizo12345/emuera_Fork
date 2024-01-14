@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using Microsoft.VisualBasic;
 using MinorShift.Emuera.Sub;
 using MinorShift.Emuera.GameData.Expression;
 using MinorShift.Emuera.GameData.Variable;
@@ -1330,7 +1329,7 @@ namespace MinorShift.Emuera.GameProc.Function
 						Int64 bit = term.Int;
 						if ((bit < 0) || (bit > 63))
 						{
-							warn("第" + Strings.StrConv((i + 2).ToString(), VbStrConv.Wide, Config.Language) + "引数(" + bit.ToString() + ")が範囲(０～６３)を超えています", line, 2, false);
+							warn("第" + (i + 2) + "引数(" + bit.ToString() + ")が範囲(０～６３)を超えています", line, 2, false);
 							return null;
 						}
 					}

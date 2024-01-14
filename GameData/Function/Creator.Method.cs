@@ -8,7 +8,6 @@ using MinorShift.Emuera.GameProc;
 using MinorShift._Library;
 using MinorShift.Emuera.GameData.Variable;
 using System.Drawing;
-using Microsoft.VisualBasic;
 using System.Windows.Forms;
 using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.Content;
@@ -2428,9 +2427,9 @@ namespace MinorShift.Emuera.GameData.Function
                     case StrFormType.Lower:
                         return str.ToLower();
                     case StrFormType.Half:
-                        return Strings.StrConv(str, VbStrConv.Narrow, Config.Language);
+                        return Microsoft.VisualBasic.Strings.StrConv(str, Microsoft.VisualBasic.VbStrConv.Narrow, Config.Language);
                     case StrFormType.Full:
-                        return Strings.StrConv(str, VbStrConv.Wide, Config.Language);
+                        return Microsoft.VisualBasic.Strings.StrConv(str, Microsoft.VisualBasic.VbStrConv.Wide, Config.Language);
                 }
                 return "";
             }
