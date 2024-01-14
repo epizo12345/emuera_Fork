@@ -3161,12 +3161,8 @@ namespace MinorShift.Emuera.GameData.Function
                 string fontname = arguments[1].GetStrValue(exm);
                 Int64 fontsize = arguments[2].GetIntValue(exm);
 
-                Font styledFont;
-                try
-                {
-                    styledFont = new Font(fontname, fontsize, FontStyle.Regular, GraphicsUnit.Pixel);
-                }
-                catch
+                var styledFont = new Font(fontname, fontsize, FontStyle.Regular, GraphicsUnit.Pixel);
+                if (styledFont == null)
                 {
                     return 0;
                 }

@@ -389,12 +389,8 @@ namespace MinorShift.Emuera.GameView
 			if (str != null)
 				length = Config.Encode.GetByteCount(str);
 			int printcLength = Config.PrintCLength;
-			Font font;
-			try
-			{
-				font = new Font(Style.Fontname, Config.Font.Size, Style.FontStyle, GraphicsUnit.Pixel);
-			}
-			catch
+			var font = new Font(Style.Fontname, Config.Font.Size, Style.FontStyle, GraphicsUnit.Pixel);
+			if (font == null)
 			{
 				return str;
 			}
