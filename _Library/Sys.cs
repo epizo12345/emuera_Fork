@@ -1,11 +1,12 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Reflection;
 
 namespace MinorShift._Library
 {
-	public static class ExecutebleData
+	public static class AssemblyData
 	{
-		static ExecutebleData()
+		static AssemblyData()
 		{
 			ExePath = Assembly.GetEntryAssembly().Location;
 			//エラー出力用
@@ -22,6 +23,9 @@ namespace MinorShift._Library
 		/// 実行ファイルの名前。ディレクトリなし
 		/// </summary>
 		public static readonly string ExeName;
+
+
+		public static Version emueraVer = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 0);
 
 		/// <summary>
 		/// 2重起動防止。既に同名exeが実行されているならばtrueを返す

@@ -133,7 +133,6 @@ namespace MinorShift.Emuera.GameProc
 
 		//CheckState()から呼ばれる関数群。ScriptEndに達したときの処理。
 
-		[SupportedOSPlatform("windows")]
 		void beginTitle()
 		{
 			//連続調教コマンド処理中の状態が持ち越されていたらここで消しておく
@@ -143,7 +142,7 @@ namespace MinorShift.Emuera.GameProc
 			skipPrint = false;
 			console.ResetStyle();
 			deleteAllPrevState();
-			if (analysisMode)
+			if (Program.AnalysisMode)
 			{
 				console.PrintSystemLine("ファイル解析終了：Analysis.logに出力します");
 				console.OutputLog(Program.ExeDir + "Analysis.log");

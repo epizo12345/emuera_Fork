@@ -22,7 +22,6 @@ namespace MinorShift.Emuera
 		//下から上を参照した場合、nullを返されることがある。
 		//Config Replace
 
-		public static MainWindow MainWindow;
 		public static EmueraConsole Console;
 		public static Process Process;
 		//Config.RenameDic
@@ -52,7 +51,6 @@ namespace MinorShift.Emuera
 			VEvaluator = null;
 			VariableData = null;
 			Console = null;
-			MainWindow = null;
 			LabelDictionary = null;
 			IdentifierDictionary = null;
 			tempDic.Clear();

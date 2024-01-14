@@ -32,7 +32,7 @@ namespace MinorShift.Emuera
 			if (Program.DebugMode)
 				デバッグToolStripMenuItem.Visible = true;
 
-			((EraPictureBox)mainPicBox).SetStyle();
+			mainPicBox.SetStyle();
 			initControlSizeAndLocation(windowLocation, windowHeight);
 			richTextBox1.ForeColor = Config.ForeColor;
 			richTextBox1.BackColor = Config.BackColor;
@@ -51,7 +51,7 @@ namespace MinorShift.Emuera
 			openFileDialog.Multiselect = true;
 			openFileDialog.RestoreDirectory = true;
 
-			string Emuera_verInfo = "Emuera Ver. " + emueraVer;
+			string Emuera_verInfo = "Emuera Ver. " + AssemblyData.emueraVer;
 			EmuVerToolStripTextBox.Text = Emuera_verInfo;
 
 			console = new EmueraConsole(this);
@@ -75,12 +75,9 @@ namespace MinorShift.Emuera
 			vScrollBar.MouseWheel += new System.Windows.Forms.MouseEventHandler(richTextBox1_MouseWheel);
 		}
 		private readonly ToolStripMenuItem[] macroMenuItems = new ToolStripMenuItem[KeyMacro.MaxFkey];
-		private readonly Version emueraVer = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 0);
 		public PictureBox MainPicBox { get { return mainPicBox; } }
 		public VScrollBar ScrollBar { get { return vScrollBar; } }
 		public RichTextBox TextBox { get { return richTextBox1; } }
-		public string InternalEmueraVer { get { return emueraVer.ToString(); } }
-		public string EmueraVerText { get { return EmuVerToolStripTextBox.Text; } }
 		public ToolTip ToolTip { get { return toolTipButton; } }
 		private EmueraConsole console;
 
@@ -140,7 +137,7 @@ namespace MinorShift.Emuera
 				int keyCode = (int)(keyData & Keys.KeyCode);
 				bool shiftPressed = (keyData & Keys.Modifiers) == Keys.Shift;
 				bool ctrlPressed = (keyData & Keys.Modifiers) == Keys.Control;
-				bool unPressed = (int)(keyData & Keys.Modifiers) == 0;
+				bool unPressed = (keyData & Keys.Modifiers) == 0;
 				if (keyCode >= (int)Keys.F1 && keyCode <= (int)Keys.F12)
 				{
 					int macroNum = keyCode - (int)Keys.F1;
@@ -537,8 +534,6 @@ namespace MinorShift.Emuera
 
 		private void mainPicBox_MouseLeave(object sender, EventArgs e)
 		{
-			if (console == null)
-				return;
 			if (Config.UseMouse)
 				console.LeaveMouse();
 		}

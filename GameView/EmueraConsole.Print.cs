@@ -476,6 +476,11 @@ namespace MinorShift.Emuera.GameView
 			return dispLine;
 		}
 
+		public void ClearText()
+		{
+			window.clear_richText();
+		}
+
 		internal ConsoleDisplayLine PrintPlainwithSingleLine(string str)
 		{
 			if (!this.Enabled)

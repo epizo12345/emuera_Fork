@@ -727,7 +727,7 @@ namespace MinorShift.Emuera.GameProc
 				case FunctionCode.THROW:
 					throw new CodeEE(((ExpressionArgument)func.Argument).Term.GetStrValue(exm));
 				case FunctionCode.CLEARTEXTBOX:
-					GlobalStatic.MainWindow.clear_richText();
+					console.ClearText();
 					break;
 				case FunctionCode.STRDATA:
 					{

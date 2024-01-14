@@ -4,6 +4,7 @@ using EnumsNET;
 using MinorShift.Emuera.Sub;
 using MinorShift.Emuera.GameProc;
 using MinorShift.Emuera.GameData.Expression;
+using MinorShift._Library;
 
 namespace MinorShift.Emuera.GameData.Variable
 {
@@ -1700,7 +1701,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			}
 			public override string GetStrValue(ExpressionMediator exm, long[] arguments)
 			{
-				return GlobalStatic.MainWindow.InternalEmueraVer;
+				return AssemblyData.emueraVer.ToString();
 			}
 
 		}

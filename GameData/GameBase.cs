@@ -4,6 +4,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.IO;
 using MinorShift.Emuera.Sub;
+using System.Reflection;
+using MinorShift._Library;
 
 namespace MinorShift.Emuera.GameData
 {
@@ -146,11 +148,11 @@ namespace MinorShift.Emuera.GameData
 								ParserMediator.Warn("バージョン指定を読み取れなかったので処理を省略します", pos, 0);
 								break;
 							}
-							Version curerntVersion = new(GlobalStatic.MainWindow.InternalEmueraVer);
+							Version curerntVersion = AssemblyData.emueraVer;
 							Version targetVersoin = new(Compatible_EmueraVer);
 							if (curerntVersion < targetVersoin)
 							{
-								ParserMediator.Warn("このバリアント動作させるにはVer. " + GlobalStatic.MainWindow.EmueraVerText + "以降のバージョンのEmueraが必要です", pos, 2);
+								ParserMediator.Warn("このバリアント動作させるにはVer. " + targetVersoin + "以降のバージョンのEmueraが必要です", pos, 2);
 								return false;
 							}
 							break;

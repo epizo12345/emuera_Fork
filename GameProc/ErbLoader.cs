@@ -86,7 +86,7 @@ namespace MinorShift.Emuera.GameProc
 			{
 				ParserMediator.FlushWarningList();
 				System.Media.SystemSounds.Hand.Play();
-				output.PrintError("予期しないエラーが発生しました:" + _Library.ExecutebleData.ExeName);
+				output.PrintError("予期しないエラーが発生しました:" + _Library.AssemblyData.ExeName);
 				output.PrintError(e.GetType().ToString() + ":" + e.Message);
 				return false;
 			}
