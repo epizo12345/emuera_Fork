@@ -1256,20 +1256,6 @@ namespace MinorShift.Emuera.GameView
 			pointY -= (bottomLineNo - topLineNo) * Config.LineHeight;
 			if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
 			{
-				GDI.GDIStart(graph, this.bgColor);
-				GDI.FillRect(new Rectangle(0, 0, window.MainPicBox.Width, window.MainPicBox.Height));
-				//for (int i = bottomLineNo; i >= topLineNo; i--)
-				//{
-				//	displayLineList[i].GDIDrawTo(pointY, isBackLog);
-				//	pointY -= Config.LineHeight;
-				//}
-				//1820a12 上から下へ描画する方向へ変更
-				for (int i = topLineNo; i <= bottomLineNo; i++)
-				{
-					displayLineList[i].GDIDrawTo(pointY, isBackLog);
-					pointY += Config.LineHeight;
-				}
-				GDI.GDIEnd(graph);
 			}
 			else
 			{

@@ -224,13 +224,6 @@ namespace MinorShift.Emuera.GameView
 				css.DrawTo(graph, pointY, isSelecting, isBackLog, mode);
 		}
 
-		public void GDIDrawTo(int pointY, bool isBackLog)
-		{
-			bool isSelecting = IsButton && parent.ButtonIsSelected(this);
-			foreach (AConsoleDisplayPart css in strArray)
-				css.GDIDrawTo(pointY, isSelecting, isBackLog);
-		}
-
 		public override string ToString()
 		{
 			if (strArray == null)

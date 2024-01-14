@@ -137,33 +137,6 @@ namespace MinorShift.Emuera.GameView
 				button.DrawTo(graph, pointY, isBackLog, mode);
 		}
 
-		public void GDIDrawTo(int pointY, bool isBackLog)
-		{
-			foreach (ConsoleButtonString button in buttons)
-				button.GDIDrawTo(pointY, isBackLog);
-			//1819 毎回全消去するので穴埋め処理は不要になった
-			//int pointX = 0;
-			//foreach (ConsoleButtonString button in buttons)
-			//{
-			//	if (button.Width == 0)
-			//		continue;
-			//	if (pointX < button.PointX)
-			//	{
-			//		Rectangle rect = new Rectangle(pointX, pointY, button.PointX - pointX, Config.LineHeight);
-			//		GDI.FillRectBGColor(rect);
-			//	}
-			//	button.GDIDrawTo(pointY, isBackLog);
-			//	//フォントの実高さ＜行間の場合隙間ができてしまうので埋める処理
-			//	GDI.FillGap(Config.LineHeight, button.Width + (button.PointX - pointX), new Point(pointX, pointY));
-			//	pointX = button.PointX + button.Width;
-			//}
-			//if (pointX < Config.WindowX)
-			//{
-			//	Rectangle rect = new Rectangle(pointX, pointY, Config.WindowX - pointX, Config.LineHeight);
-			//	GDI.FillRectBGColor(rect);
-			//}
-		}
-
 		public override string ToString()
 		{
 			if (buttons == null)

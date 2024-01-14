@@ -13,9 +13,6 @@ namespace MinorShift.Emuera.Content
 		public Bitmap Bitmap;
 		public IntPtr GDIhDC { get; protected set; }
 		protected Graphics g;
-		protected IntPtr hBitmap;
-		protected IntPtr hDefaultImg;
-		protected bool gdi;
 	}
 
 	internal sealed class ConstImage : AbstractImage
@@ -33,14 +30,6 @@ namespace MinorShift.Emuera.Content
 			try
 			{
 				Bitmap = bmp;
-				if (useGDI)
-				{
-					gdi = true;
-					hBitmap = Bitmap.GetHbitmap();
-					g = Graphics.FromImage(Bitmap);
-					GDIhDC = g.GetHdc();
-					hDefaultImg = GDI.SelectObject(GDIhDC, hBitmap);
-				}
 			}
 			catch
 			{
@@ -76,14 +65,6 @@ namespace MinorShift.Emuera.Content
 		{
 			if (Bitmap == null)
 				return;
-			if (gdi)
-			{
-				GDI.SelectObject(GDIhDC, hDefaultImg);
-				GDI.DeleteObject(hBitmap);
-				//gがすでに死んでると例外になる
-				if(g != null)
-					g.ReleaseHdc(GDIhDC);
-			}
 			if (g != null)
 			{
 				g.Dispose();
@@ -96,10 +77,10 @@ namespace MinorShift.Emuera.Content
 			}
 		}
 
-        ~ConstImage()
-        {
-            Dispose();
-        }
+		~ConstImage()
+		{
+			Dispose();
+		}
 
 
 		public override bool IsCreated

@@ -569,7 +569,6 @@ namespace MinorShift.Emuera.GameView
 		#endregion
 
 
-		[SupportedOSPlatform("windows")]
 		private bool outputLog(string fullpath)
 		{
 			StreamWriter writer = null;
@@ -595,7 +594,6 @@ namespace MinorShift.Emuera.GameView
 		}
 
 
-		[SupportedOSPlatform("windows")]
 		public bool OutputLog(string filename)
 		{
 			if (filename == null)

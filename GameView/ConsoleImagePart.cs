@@ -150,27 +150,5 @@ namespace MinorShift.Emuera.GameView
 					System.Windows.Forms.TextRenderer.DrawText(graph, AltText, Config.Font, new Point(PointX, pointY), Config.ForeColor, System.Windows.Forms.TextFormatFlags.NoPrefix);
 			}
 		}
-
-		public override void GDIDrawTo(int pointY, bool isSelecting, bool isBackLog)
-		{
-			if (this.Error)
-				return;
-			SpriteF img = cImage as SpriteF;//Graphicsから作成したImageはGDI対象外
-			if (isSelecting && cImageB != null)
-				img = cImageB as SpriteF;
-			if (img != null && img.IsCreated)
-			{
-				int x = PointX + destRect.X;
-				int y = pointY + destRect.Y;
-				if (!img.DestBasePosition.IsEmpty)
-				{
-					x = x + img.DestBasePosition.X * destRect.Width / img.SrcRectangle.Width;
-					y = y + img.DestBasePosition.Y * destRect.Height / img.SrcRectangle.Height;
-				}
-				GDI.DrawImage(x, y, Width, destRect.Height, img.BaseImage.GDIhDC, img.SrcRectangle);
-			}
-			else
-				GDI.TabbedTextOutFull(Config.Font, Config.ForeColor, AltText, PointX, pointY);
-		}
 	}
 }

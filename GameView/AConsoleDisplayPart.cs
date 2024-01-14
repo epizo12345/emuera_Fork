@@ -21,9 +21,8 @@ namespace MinorShift.Emuera.GameView
 		public virtual int Top { get { return 0; } }
 		public virtual int Bottom { get { return Config.FontSize; } }
 		public abstract bool CanDivide { get; }
-		
+
 		public abstract void DrawTo(Graphics graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode);
-		public abstract void GDIDrawTo(int pointY, bool isSelecting, bool isBackLog);
 
 		public abstract void SetWidth(StringMeasure sm, float subPixel);
 		public override string ToString()

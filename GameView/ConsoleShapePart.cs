@@ -131,17 +131,6 @@ namespace MinorShift.Emuera.GameView
 			Color dcolor = isSelecting ? ButtonColor : Color;
 			graph.FillRectangle(new SolidBrush(dcolor), targetRect);
 		}
-
-		public override void GDIDrawTo(int pointY, bool isSelecting, bool isBackLog)
-		{
-			if (!visible)
-				return;
-			Rectangle targetRect = rect;
-			targetRect.X = targetRect.X + PointX;
-			targetRect.Y = targetRect.Y + pointY;
-			Color dcolor = isSelecting ? ButtonColor : Color;
-			GDI.FillRect(targetRect, dcolor, dcolor);
-		}
 		public override void SetWidth(StringMeasure sm, float subPixel)
 		{
 			float widF = subPixel + WidthF;
@@ -165,7 +154,6 @@ namespace MinorShift.Emuera.GameView
 
 		public override void DrawTo(System.Drawing.Graphics graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode) { }
 
-		public override void GDIDrawTo(int pointY, bool isSelecting, bool isBackLog) { }
 		public override void SetWidth(StringMeasure sm, float subPixel)
 		{
 			float widF = subPixel + WidthF;
@@ -188,11 +176,6 @@ namespace MinorShift.Emuera.GameView
 				graph.DrawString(Str, Config.Font, new SolidBrush(Config.ForeColor), new Point(PointX, pointY));
 			else
 				System.Windows.Forms.TextRenderer.DrawText(graph, Str, Config.Font, new Point(PointX, pointY), Config.ForeColor, System.Windows.Forms.TextFormatFlags.NoPrefix);
-		}
-
-		public override void GDIDrawTo(int pointY, bool isSelecting, bool isBackLog)
-		{
-			GDI.TabbedTextOutFull(Config.Font, Config.ForeColor, Str, PointX, pointY);
 		}
 		public override void SetWidth(StringMeasure sm, float subPixel)
 		{

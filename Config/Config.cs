@@ -165,6 +165,11 @@ namespace MinorShift.Emuera
 				System.Windows.MessageBox.Show("ログ表示行数が少なすぎます(500が下限)", "設定のエラー");
 				MaxLog = 500;
 			}
+			if (TextDrawingMode == TextDrawingMode.WINAPI)
+			{
+				System.Windows.MessageBox.Show("WINAPIモードはサポートされていません");
+				TextDrawingMode = TextDrawingMode.TEXTRENDERER;
+			}
 
 			DrawingParam_ShapePositionShift = 0;
 			if (TextDrawingMode != TextDrawingMode.WINAPI)

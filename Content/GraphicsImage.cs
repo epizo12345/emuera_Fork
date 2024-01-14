@@ -460,12 +460,6 @@ namespace MinorShift.Emuera.Content
 			size = new Size(0, 0);
 			if (Bitmap == null)
 				return;
-			if (gdi)
-			{
-				GDI.SelectObject(GDIhDC, hDefaultImg);
-				GDI.DeleteObject(hBitmap);
-				g.ReleaseHdc(GDIhDC);
-			}
 			if (g != null)
 				g.Dispose();
 			if (Bitmap != null)
