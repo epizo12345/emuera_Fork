@@ -20,14 +20,18 @@ namespace MinorShift.Emuera.GameData.Variable
 			arguments = args;
 			transporter = new Int64[arguments.Length];
 
-			allArgIsConst = false;
+			allArgIsConst = true;
 			for (int i = 0; i < arguments.Length; i++)
 			{
-				if (!(arguments[i] is SingleTerm))
-					return;
-				transporter[i] = ((SingleTerm)arguments[i]).Int;
+				if (arguments[i] is SingleTerm singleTerm)
+				{
+					transporter[i] = singleTerm.Int;
+				}
+				else
+				{
+					allArgIsConst = false;
+				}
 			}
-			allArgIsConst = true;
 		}
 		public VariableToken Identifier;
 		private readonly IOperandTerm[] arguments;

@@ -200,15 +200,20 @@ namespace MinorShift.Emuera.Content
 			if (!resourceDic.TryGetValue(parentName, out AbstractImage value))
 			{
 				string filepath = parentName;
-				if (!File.Exists(filepath))
+
+				Bitmap bmp;
+				try
+				{
+					using var imageFileStream = File.OpenRead(filepath);
+					var imageFile = Image.FromStream(imageFileStream, false, false);
+					bmp = new Bitmap(imageFile);
+				}
+				catch (FileNotFoundException)
 				{
 					ParserMediator.Warn("指定された画像ファイルが見つかりませんでした:" + arg2, sp, 1);
 					return null;
 				}
 
-				var imageFileStream = File.OpenRead(filepath);
-				var imageFile = Image.FromStream(imageFileStream, false, false);
-				var bmp = new Bitmap(imageFile);
 				if (bmp == null)
 				{
 					ParserMediator.Warn("指定されたファイルの読み込みに失敗しました:" + arg2, sp, 1);

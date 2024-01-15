@@ -11,7 +11,7 @@ namespace MinorShift.Emuera.Sub
 	/// </summary>
 	internal sealed class WordCollection
 	{
-		public List<Word> Collection = [];
+		public List<Word> Collection = new(10);
 		public int Pointer = 0;
 		private static Word nullToken = new NullWord();
 		public void Add(Word token)

@@ -16,16 +16,15 @@ static class Preload
 
     public static void Load(string path)
     {
+        var startTime = DateTime.Now;
+        Console.WriteLine($"Load: {path} : Start");
         if (Directory.Exists(path))
         {
             foreach (var childDirPath in Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories))
             {
-                if (!Directory.Exists(childDirPath))
-                {
-                    var stream = new StreamReader(childDirPath, Config.Encode);
-                    var text = stream.ReadToEnd();
-                    files.Add(childDirPath.ToUpperInvariant(), text);
-                }
+                var stream = new StreamReader(childDirPath, Config.Encode);
+                var text = stream.ReadToEnd();
+                files.Add(childDirPath.ToUpperInvariant(), text);
             }
         }
         else
@@ -34,6 +33,7 @@ static class Preload
             var text = stream.ReadToEnd();
             files.Add(path.ToUpperInvariant(), text);
         }
+        Console.WriteLine($"Load: {path} : End in {(DateTime.Now - startTime).TotalMilliseconds}ms");
     }
 
     public static void Clear()
