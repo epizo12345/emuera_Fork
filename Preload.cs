@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Threading.Tasks;
 using MinorShift.Emuera;
 
 namespace Emuera;
@@ -19,17 +18,21 @@ static class Preload
     {
         if (Directory.Exists(path))
         {
-            Parallel.ForEach(Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories), (childDirPath) =>
+            foreach (var childDirPath in Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories))
             {
                 if (!Directory.Exists(childDirPath))
                 {
-                    files.Add(childDirPath.ToUpperInvariant(), File.ReadAllText(childDirPath, Config.Encode));
+                    var stream = new StreamReader(childDirPath, Config.Encode);
+                    var text = stream.ReadToEnd();
+                    files.Add(childDirPath.ToUpperInvariant(), text);
                 }
-            });
+            }
         }
         else
         {
-            files.Add(path.ToUpperInvariant(), File.ReadAllText(path, Config.Encode));
+            var stream = new StreamReader(path, Config.Encode);
+            var text = stream.ReadToEnd();
+            files.Add(path.ToUpperInvariant(), text);
         }
     }
 
