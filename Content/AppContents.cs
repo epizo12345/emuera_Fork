@@ -197,7 +197,7 @@ namespace MinorShift.Emuera.Content
 
 
 			//親画像のロードConstImage
-			if (!resourceDic.ContainsKey(parentName))
+			if (!resourceDic.TryGetValue(parentName, out AbstractImage value))
 			{
 				string filepath = parentName;
 				if (!File.Exists(filepath))
@@ -205,7 +205,10 @@ namespace MinorShift.Emuera.Content
 					ParserMediator.Warn("指定された画像ファイルが見つかりませんでした:" + arg2, sp, 1);
 					return null;
 				}
-				Bitmap bmp = new(filepath);
+
+				var imageFileStream = File.OpenRead(filepath);
+				var imageFile = Image.FromStream(imageFileStream, false, false);
+				var bmp = new Bitmap(imageFile);
 				if (bmp == null)
 				{
 					ParserMediator.Warn("指定されたファイルの読み込みに失敗しました:" + arg2, sp, 1);
@@ -225,9 +228,11 @@ namespace MinorShift.Emuera.Content
 					ParserMediator.Warn("画像リソースの作成に失敗しました:" + arg2, sp, 1);
 					return null;
 				}
-				resourceDic.Add(parentName, img);
+
+				value = img;
+				resourceDic.Add(parentName, value);
 			}
-			if (!(resourceDic[parentName] is ConstImage parentImage) || !parentImage.IsCreated)
+			if (value is not ConstImage parentImage || !parentImage.IsCreated)
 			{
 				ParserMediator.Warn("作成に失敗したリソースを元にスプライトを作成しようとしました:" + arg2, sp, 1);
 				return null;
