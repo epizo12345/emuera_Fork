@@ -1,31 +1,35 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using MinorShift.Emuera;
 
 namespace Emuera;
 
-//TODO:非同期化し、バックグラウンドで読み込むように変更
 static class Preload
 {
-    public static Dictionary<string, string[]> files = new(1000);
+    static readonly Dictionary<string, string> files = [];
+
+    public static string[] GetFileLines(string path)
+    {
+        return files[path].Split('\r', '\n');
+    }
 
     public static void Load(string path)
     {
-        var fileAttrs = File.GetAttributes(path);
-        if (fileAttrs.HasFlag(FileAttributes.Directory))
+        if (Directory.Exists(path))
         {
-            foreach (var childDirPath in Directory.EnumerateFiles(path))
+            Parallel.ForEach(Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories), (childDirPath) =>
             {
-                Load(childDirPath);
-            }
-            foreach (var childDirPath in Directory.EnumerateDirectories(path))
-            {
-                Load(childDirPath);
-            }
+                if (!Directory.Exists(childDirPath))
+                {
+                    files.Add(childDirPath.ToUpperInvariant(), File.ReadAllText(childDirPath, Config.Encode));
+                }
+            });
         }
         else
         {
-            files.Add(path.ToUpperInvariant(), File.ReadAllLines(path, Config.Encode));
+            files.Add(path.ToUpperInvariant(), File.ReadAllText(path, Config.Encode));
         }
     }
 
