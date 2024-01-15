@@ -139,10 +139,19 @@ namespace MinorShift.Emuera.Sub
 					throw new CodeEE("行連結始端記号'{'が使われましたが終端記号'}'が見つかりません", new ScriptPosition(filename, curNo));
 				}
 
-				if (useRename && (line.IndexOf("[[") >= 0) && (line.IndexOf("]]") >= 0))
+				if (useRename && regexRenameIdentifer().IsMatch(line))
 				{
-					foreach (KeyValuePair<string, string> pair in ParserMediator.RenameDic)
-						line = line.Replace(pair.Key, pair.Value);
+					var match = regexRenameIdentifer().Match(line);
+					while (match.Success)
+					{
+						//この段階でマッチしないパターンもある
+						if (ParserMediator.RenameDic.TryGetValue(match.Value, out var targetStr))
+						{
+							line = line.Replace(match.Value, targetStr);
+						}
+
+						match = match.NextMatch();
+					}
 				}
 				string test = line.TrimStart();
 				if (test.Length > 0)

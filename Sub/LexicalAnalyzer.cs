@@ -56,7 +56,7 @@ enum LexAnalyzeFlag
 /// 1756 TokenReaderより改名
 /// Lexicalといいつつ構文解析を含む
 /// </summary>
-internal static class LexicalAnalyzer
+internal static partial class LexicalAnalyzer
 {
 
 	const int MAX_EXPAND_MACRO = 100;
@@ -389,10 +389,39 @@ internal static class LexicalAnalyzer
 		return ReadSingleIdentifierROS(st).ToString();
 	}
 
+	[GeneratedRegex("""^([^ 　\.\t+\-*/%=!<>|&^~?#)}\],:({[$\\'"@\;]+)""")]
+	private static partial Regex MyRegex();
 	public static ReadOnlySpan<char> ReadSingleIdentifierROS(StringStream st)
 	{
 		var row = st.RowString.AsSpan()[st.CurrentPosition..];
 		var count = 0;
+
+		// if (!Config.SystemAllowFullSpace)
+		// {
+		// 	var whiteSpaces = whiteSpaceRegex();
+		// 	var whiteSpacesMatch = whiteSpaces.Match(row);
+		// 	if (whiteSpacesMatch.Success)
+		// 	{
+		// 		throw new CodeEE("予期しない全角スペースを発見しました(この警告はシステムオプション「" + Config.GetConfigName(ConfigCode.SystemAllowFullSpace) + "」により無視できます)");
+		// 	}
+		// }
+
+
+		// var r = MyRegex();
+		// var match = r.Match(row);
+		// if (match.Success)
+		// {
+		// 	if (match.ValueSpan.Length > 0)
+		// 	{
+		// 		st.Jump(match.ValueSpan.Length);
+		// 		return match.ValueSpan;
+		// 	}
+		// 	else
+		// 	{
+		// 		return null;
+		// 	}
+		// }
+
 		foreach (var item in row)
 		{
 			switch (item)
@@ -440,7 +469,6 @@ internal static class LexicalAnalyzer
 			}
 			count++;
 		}
-
 
 		st.Jump(count);
 		return row[..count];
@@ -1269,6 +1297,9 @@ internal static class LexicalAnalyzer
 		st.ShiftNext();
 		return new YenAtSubWord(w, left, right);
 	}
+
+	[GeneratedRegex("　")]
+	private static partial Regex whiteSpaceRegex();
 
 	#endregion
 
