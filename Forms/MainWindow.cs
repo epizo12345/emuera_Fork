@@ -251,8 +251,6 @@ namespace MinorShift.Emuera.Forms
 			Preload.Clear();
 			Preload.Load(Program.ErbDir, Application.DoEvents);
 			Preload.Load(Program.CsvDir, Application.DoEvents);
-			if (!Created)
-				throw new Exception("初期化の呼び出しが早すぎて、コントロールが生成されていない");
 			console.Initialize();
 			Console.WriteLine("Init:End");
 		}
@@ -664,7 +662,7 @@ namespace MinorShift.Emuera.Forms
 						System.Windows.MessageBox.Show("ファイルがありません", "File Not Found");
 						return;
 					}
-					if (Path.GetExtension(fname).Equals(".ERB",StringComparison.InvariantCultureIgnoreCase))
+					if (Path.GetExtension(fname).Equals(".ERB", StringComparison.InvariantCultureIgnoreCase))
 					{
 						System.Windows.MessageBox.Show("ERBファイル以外は読み込めません", "ファイル形式エラー");
 						return;
