@@ -214,7 +214,7 @@ namespace MinorShift.Emuera.GameData
 				builder.Append(strs[i]);
 				builder.Append(terms[i].GetStrValue(exm));
 			}
-			builder.Append(strs[strs.Length - 1]);
+			builder.Append(strs[^1]);
 			return builder.ToString();
 		}
 

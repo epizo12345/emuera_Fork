@@ -206,7 +206,7 @@ namespace MinorShift.Emuera.GameProc
 							//イベント関数では指定しても無視される
 							if (label.IsEvent)
 							{
-								ParserMediator.Warn("イベント関数では#" + token + "による" + token.Substring(0, token.Length - 4) + "のサイズ指定は無視されます", position, 1);
+								ParserMediator.Warn("イベント関数では#" + token + "による" + token[..^4] + "のサイズ指定は無視されます", position, 1);
 								break;
 							}
 							IOperandTerm arg = ExpressionParser.ReduceIntegerTerm(wc, TermEndWith.EoL);

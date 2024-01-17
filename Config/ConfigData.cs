@@ -454,7 +454,7 @@ namespace MinorShift.Emuera
 					if ((line.Length == 0) || (line[0] == ';'))
 						continue;
 					pos = new ScriptPosition(eReader.Filename, eReader.LineNo);
-					string[] tokens = line.Split(new char[] { ':' });
+					string[] tokens = line.Split([':']);
 					if (tokens.Length < 2)
 						continue;
 					AConfigItem item = GetConfigItem(tokens[0].Trim());
@@ -537,11 +537,11 @@ namespace MinorShift.Emuera
 					if ((line.Length == 0) || (line[0] == ';'))
 						continue;
 					pos = new ScriptPosition(eReader.Filename, eReader.LineNo);
-					string[] tokens = line.Split(new char[] { ',', ':' });
+					string[] tokens = line.Split([',', ':']);
 					if (tokens.Length < 2)
 						continue;
 					string itemName = tokens[0].Trim();
-					tokens[1] = line.Substring(tokens[0].Length + 1);
+					tokens[1] = line[(tokens[0].Length + 1)..];
 					if (string.IsNullOrEmpty(tokens[1].Trim()))
 						continue;
 					AConfigItem item = GetReplaceItem(itemName);
@@ -607,7 +607,7 @@ namespace MinorShift.Emuera
 					if ((line.Length == 0) || (line[0] == ';'))
 						continue;
 					pos = new ScriptPosition(eReader.Filename, eReader.LineNo);
-					string[] tokens = line.Split(new char[] { ':' });
+					string[] tokens = line.Split([':']);
 					if (tokens.Length < 2)
 						continue;
 					AConfigItem item = GetDebugItem(tokens[0].Trim());

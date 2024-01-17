@@ -485,8 +485,8 @@ namespace MinorShift.Emuera.GameProc
 			WordCollection wc = label.PopRowArgs();
 			string errMes;
 			SingleTerm[] subNames;
-			VariableTerm[] args = new VariableTerm[0];
-			SingleTerm[] defs = new SingleTerm[0];
+			VariableTerm[] args = [];
+			SingleTerm[] defs = [];
 			int maxArg = -1;
 			int maxArgs = -1;
 			//1807 非イベント関数のシステム関数については警告レベル低下＆エラー解除＆引数を設定するように。
@@ -1064,7 +1064,7 @@ namespace MinorShift.Emuera.GameProc
 								ParserMediator.Warn("IF～ENDIFの外で" + func.Function.Name + "文が使われました", func, 2, true, false);
 								break;
 							}
-							if (ifLine.IfCaseList[ifLine.IfCaseList.Count - 1].FunctionCode == FunctionCode.ELSE)
+							if (ifLine.IfCaseList[^1].FunctionCode == FunctionCode.ELSE)
 								ParserMediator.Warn("ELSE文より後で" + func.Function.Name + "文が使われました", func, 1, false, false);
 							ifLine.IfCaseList.Add(func);
 						}
@@ -1106,7 +1106,7 @@ namespace MinorShift.Emuera.GameProc
 								break;
 							}
 							if ((selectLine.IfCaseList.Count > 0) &&
-								(selectLine.IfCaseList[selectLine.IfCaseList.Count - 1].FunctionCode == FunctionCode.CASEELSE))
+								(selectLine.IfCaseList[^1].FunctionCode == FunctionCode.CASEELSE))
 								ParserMediator.Warn("CASEELSE文より後で" + func.Function.Name + "文が使われました", func, 1, false, false);
 							selectLine.IfCaseList.Add(func);
 						}

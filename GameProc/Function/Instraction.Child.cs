@@ -344,7 +344,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				else
 					param = ((ExpressionArgument)func.Argument).Term.GetIntValue(exm);
 				int param32 = FunctionIdentifier.toUInt32inArg(param, "PRINT_SPACE", 1);
-				exm.Console.PrintShape("space", new int[] { param32 });
+				exm.Console.PrintShape("space", [param32]);
 			}
 		}
 

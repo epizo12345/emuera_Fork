@@ -147,7 +147,7 @@ namespace MinorShift.Emuera.GameProc
 				//実行関数なしの状態は一部のシステムINPUT以外では存在しないのでGOTO系の処理でしかここに来ない関係上、前提を満たしようがない
 				//if (functionList.Count == 0)
 				//    throw new ExeEE("実行中関数がない");
-				return functionList[functionList.Count - 1];
+				return functionList[^1];
 			}
 		}
 		public SystemStateCode SystemState
@@ -327,7 +327,7 @@ namespace MinorShift.Emuera.GameProc
 			{
 				if (functionList.Count == currentMin)
 					return null;
-				return functionList[functionList.Count - 1].ReturnAddress;
+				return functionList[^1].ReturnAddress;
 			}
 		}
 
@@ -349,7 +349,7 @@ namespace MinorShift.Emuera.GameProc
 				//}
 				if (functionList.Count == 0)
 					return null;//1756 デバッグコマンドから呼び出されるようになったので
-				return functionList[functionList.Count - 1].FunctionName;
+				return functionList[^1].FunctionName;
 			}
 		}
 
@@ -366,7 +366,7 @@ namespace MinorShift.Emuera.GameProc
 			//{
 			//    throw new ExeEE("実行中の関数が存在しません");
 			//}
-			CalledFunction called = functionList[functionList.Count - 1];
+			CalledFunction called = functionList[^1];
 			if (called.IsJump)
 			{//JUMPした場合。即座にRETURN RESULTする。
 				if (called.TopLabel.hasPrivDynamicVar)
@@ -517,7 +517,7 @@ namespace MinorShift.Emuera.GameProc
 			}
 			//OutはGetValue側で行う
 			//functionList[0].TopLabel.Out();
-			currentLine = functionList[functionList.Count - 1].ReturnAddress;
+			currentLine = functionList[^1].ReturnAddress;
 			functionList.RemoveAt(functionList.Count - 1);
 			//nextLine = null;
 			MethodReturnValue = ret;

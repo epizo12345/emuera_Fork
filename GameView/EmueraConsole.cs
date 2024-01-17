@@ -742,7 +742,7 @@ namespace MinorShift.Emuera.GameView
 		#endregion
 
 		#region 入力系
-		readonly string[] spliter = new string[] { "\\n", "\r\n", "\n", "\r" };//本物の改行コードが来ることは無いはずだけど一応
+		readonly string[] spliter = ["\\n", "\r\n", "\n", "\r"];//本物の改行コードが来ることは無いはずだけど一応
 
 		public bool MesSkip = false;
 		private bool inProcess = false;
@@ -846,7 +846,7 @@ namespace MinorShift.Emuera.GameView
 			{
 				string[] text;
 				if (changedByMouse)//1823 マウスによって入力されたならマクロ解析を行わない
-				{ text = new string[] { str }; }
+				{ text = [str]; }
 				else
 				{
 					if (str.StartsWith("@") && !inputReq.OneInput)
@@ -1083,7 +1083,7 @@ namespace MinorShift.Emuera.GameView
 			Print(command);
 			PrintFlush(false);
 			RefreshStrings(true);
-			string com = command.Substring(1);
+			string com = command[1..];
 			if (com.Length == 0)
 				return;
 			if (com.Equals("REBOOT", sc))

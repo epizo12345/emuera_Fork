@@ -59,8 +59,8 @@ namespace MinorShift.Emuera.GameView
 		{
 			if ((index <= 0) || (index > Str.Length) || this.Error)
 				return null;
-			string str = Str.Substring(index, Str.Length - index);
-			this.Str = Str.Substring(0, index);
+			string str = Str[index..];
+			this.Str = Str[..index];
 			ConsoleStyledString ret = new()
 			{
 				Font = this.Font,

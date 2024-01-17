@@ -104,7 +104,7 @@ namespace MinorShift.Emuera.Forms
 					i--;
 				}
 			}
-			if ((listViewWatch.Items.Count == 0) || (!string.IsNullOrEmpty(listViewWatch.Items[listViewWatch.Items.Count - 1].Text)))
+			if ((listViewWatch.Items.Count == 0) || (!string.IsNullOrEmpty(listViewWatch.Items[^1].Text)))
 			{
 				ListViewItem newLVI = new("");
 				newLVI.SubItems.Add(new ListViewItem.ListViewSubItem(newLVI, ""));
@@ -407,7 +407,7 @@ namespace MinorShift.Emuera.Forms
 			{
 				prevInputs[i] = prevInputs[i + 1];
 			}
-			prevInputs[prevInputs.Length - 1] = cur;
+			prevInputs[^1] = cur;
 			//entered = console.IsWaintingOnePhrase;
 			textBoxCommand.Text = "";
 			//1729a eramakerと同じ処理系に変更 1730a 再修正

@@ -321,7 +321,7 @@ namespace MinorShift.Emuera
 				if (!dir.StartsWith(rootdir, strComp))
 					RelativePath = dir;
 				else
-					RelativePath = dir.Substring(rootdir.Length);//前方が検索ルートパスと一致するならその部分を切り取る
+					RelativePath = dir[rootdir.Length..];//前方が検索ルートパスと一致するならその部分を切り取る
 				if (!RelativePath.EndsWith("\\") && !RelativePath.EndsWith("/"))
 					RelativePath += "\\";//末尾が\又は/で終わるように。後でFile名を直接加算できるようにしておく
 			}

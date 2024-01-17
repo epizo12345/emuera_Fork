@@ -45,7 +45,7 @@ namespace MinorShift.Emuera.GameView
 			repDic.Add('\"', "&quot;");
 			repDic.Add('\'', "&apos;");
 		}
-		static readonly char[] rep = new char[] { '&', '>', '<', '\"', '\'' };
+		static readonly char[] rep = ['&', '>', '<', '\"', '\''];
 		static readonly Dictionary<char, string> repDic = [];
 		private sealed class HtmlAnalzeStateFontTag
 		{
@@ -99,7 +99,7 @@ namespace MinorShift.Emuera.GameView
 				bool colorChanged = false;
 				if (FonttagList.Count > 0)
 				{
-					HtmlAnalzeStateFontTag font = FonttagList[FonttagList.Count - 1];
+					HtmlAnalzeStateFontTag font = FonttagList[^1];
 					fontname = font.FontName;
 					if (font.Color >= 0)
 					{
@@ -385,11 +385,11 @@ namespace MinorShift.Emuera.GameView
 				found = str.IndexOfAny(rep, index);
 				if (found < 0)//見つからなければ以降を追加して終了
 				{
-					b.Append(str.Substring(index));
+					b.Append(str[index..]);
 					break;
 				}
 				if (found > index)//間に非エスケープ文字があるなら追加しておく
-					b.Append(str.Substring(index, found - index));
+					b.Append(str[index..found]);
 				string repnew = repDic[str[found]];
 				b.Append(repnew);
 				index = found + 1;
@@ -410,11 +410,11 @@ namespace MinorShift.Emuera.GameView
 				found = str.IndexOf('&', index);
 				if (found < 0)//見つからなければ以降を追加して終了
 				{
-					b.Append(str.Substring(index));
+					b.Append(str[index..]);
 					break;
 				}
 				if (found > index)//間に非エスケープ文字があるなら追加しておく
-					b.Append(str.Substring(index, found - index));
+					b.Append(str[index..found]);
 				index = found;
 				found = str.IndexOf(';', index);
 				if (found <= index + 1)
@@ -443,10 +443,10 @@ namespace MinorShift.Emuera.GameView
 							if (escWord.Length > 1 && escWord[1] == 'x')
 							{
 								iBbase = 16;
-								escWord = escWord.Substring(2);
+								escWord = escWord[2..];
 							}
 							else
-								escWord = escWord.Substring(1);
+								escWord = escWord[1..];
 							try
 							{
 								unicode = Convert.ToInt32(escWord, iBbase);
@@ -968,7 +968,7 @@ namespace MinorShift.Emuera.GameView
 						//他のfontタグの内側であるなら未設定項目については外側のfontタグの設定を受け継ぐ(posは除く)
 						if (state.FonttagList.Count > 0)
 						{
-							HtmlAnalzeStateFontTag oldFont = state.FonttagList[state.FonttagList.Count - 1];
+							HtmlAnalzeStateFontTag oldFont = state.FonttagList[^1];
 							if (font.Color < 0)
 								font.Color = oldFont.Color;
 							if (font.BColor < 0)
@@ -995,7 +995,7 @@ namespace MinorShift.Emuera.GameView
 			int i;
 			if (str[0] == '#')
 			{
-				string colorvalue = str.Substring(1);
+				string colorvalue = str[1..];
 				try
 				{
 					i = Convert.ToInt32(colorvalue, 16);

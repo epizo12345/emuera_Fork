@@ -512,7 +512,7 @@ namespace MinorShift.Emuera.GameProc
 
 		public string getRawTextFormFilewithLine(ScriptPosition position)
 		{
-			string extents = position.Filename.Substring(position.Filename.Length - 4).ToLower();
+			string extents = position.Filename[^4..].ToLower();
 			if (extents == ".erb")
 			{
 				return File.Exists(Program.ErbDir + position.Filename)

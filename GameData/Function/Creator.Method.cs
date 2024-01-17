@@ -75,7 +75,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GetspcharaMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64) };
+                argumentTypeArray = [typeof(Int64)];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -394,7 +394,7 @@ namespace MinorShift.Emuera.GameData.Function
             public CheckfontMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(string) };
+                argumentTypeArray = [typeof(string)];
                 CanRestructure = true;//起動中に変わることもそうそうないはず……
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -422,7 +422,7 @@ namespace MinorShift.Emuera.GameData.Function
             public CheckdataMethod(EraSaveFileType type)
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64) };
+                argumentTypeArray = [typeof(Int64)];
                 CanRestructure = false;
                 this.type = type;
             }
@@ -449,7 +449,7 @@ namespace MinorShift.Emuera.GameData.Function
             public CheckdataStrMethod(EraSaveFileType type)
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(string) };
+                argumentTypeArray = [typeof(string)];
                 CanRestructure = false;
                 this.type = type;
             }
@@ -511,7 +511,7 @@ namespace MinorShift.Emuera.GameData.Function
             public IsSkipMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { };
+                argumentTypeArray = [];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -551,7 +551,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GetColorMethod(bool isDef)
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { };
+                argumentTypeArray = [];
                 CanRestructure = isDef;
                 defaultColor = isDef;
             }
@@ -569,7 +569,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GetFocusColorMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { };
+                argumentTypeArray = [];
                 CanRestructure = true;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -583,7 +583,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GetBGColorMethod(bool isDef)
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { };
+                argumentTypeArray = [];
                 CanRestructure = isDef;
                 defaultColor = isDef;
             }
@@ -601,7 +601,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GetStyleMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { };
+                argumentTypeArray = [];
                 CanRestructure = false;
             }
 
@@ -626,7 +626,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GetFontMethod()
             {
                 ReturnType = typeof(string);
-                argumentTypeArray = new Type[] { };
+                argumentTypeArray = [];
                 CanRestructure = false;
             }
             public override string GetStrValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -640,7 +640,7 @@ namespace MinorShift.Emuera.GameData.Function
             public BarStringMethod()
             {
                 ReturnType = typeof(string);
-                argumentTypeArray = new Type[] { typeof(long), typeof(long), typeof(long) };
+                argumentTypeArray = [typeof(long), typeof(long), typeof(long)];
                 CanRestructure = true;
             }
             public override string GetStrValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -657,7 +657,7 @@ namespace MinorShift.Emuera.GameData.Function
             public CurrentAlignMethod()
             {
                 ReturnType = typeof(string);
-                argumentTypeArray = new Type[] { };
+                argumentTypeArray = [];
                 CanRestructure = false;
             }
             public override string GetStrValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -676,7 +676,7 @@ namespace MinorShift.Emuera.GameData.Function
             public CurrentRedrawMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { };
+                argumentTypeArray = [];
                 CanRestructure = false;
             }
             public override long GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -690,7 +690,7 @@ namespace MinorShift.Emuera.GameData.Function
             public ColorFromNameMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(string) };
+                argumentTypeArray = [typeof(string)];
                 CanRestructure = true;
             }
             public override long GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -716,7 +716,7 @@ namespace MinorShift.Emuera.GameData.Function
             public ColorFromRGBMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(long), typeof(long), typeof(long) };
+                argumentTypeArray = [typeof(long), typeof(long), typeof(long)];
                 CanRestructure = true;
             }
             public override long GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -811,7 +811,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GetPrintCPerLineMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { };
+                argumentTypeArray = [];
                 CanRestructure = true;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -825,7 +825,7 @@ namespace MinorShift.Emuera.GameData.Function
             public PrintCLengthMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { };
+                argumentTypeArray = [];
                 CanRestructure = true;
             }
             public override long GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -839,7 +839,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GetSaveNosMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { };
+                argumentTypeArray = [];
                 CanRestructure = true;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -853,7 +853,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GettimeMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { };
+                argumentTypeArray = [];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -874,7 +874,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GettimesMethod()
             {
                 ReturnType = typeof(string);
-                argumentTypeArray = new Type[] { };
+                argumentTypeArray = [];
                 CanRestructure = false;
             }
             public override string GetStrValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -888,7 +888,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GetmsMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { };
+                argumentTypeArray = [];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -904,7 +904,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GetSecondMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { };
+                argumentTypeArray = [];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -1028,7 +1028,7 @@ namespace MinorShift.Emuera.GameData.Function
             public AbsMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64) };
+                argumentTypeArray = [typeof(Int64)];
                 CanRestructure = true;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -1046,7 +1046,7 @@ namespace MinorShift.Emuera.GameData.Function
             public PowerMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64), typeof(Int64) };
+                argumentTypeArray = [typeof(Int64), typeof(Int64)];
                 CanRestructure = true;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -1069,7 +1069,7 @@ namespace MinorShift.Emuera.GameData.Function
             public SqrtMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64) };
+                argumentTypeArray = [typeof(Int64)];
                 CanRestructure = true;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -1086,7 +1086,7 @@ namespace MinorShift.Emuera.GameData.Function
             public CbrtMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64) };
+                argumentTypeArray = [typeof(Int64)];
                 CanRestructure = true;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -1104,14 +1104,14 @@ namespace MinorShift.Emuera.GameData.Function
             public LogMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64) };
+                argumentTypeArray = [typeof(Int64)];
                 Base = Math.E;
                 CanRestructure = true;
             }
             public LogMethod(double b)
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64) };
+                argumentTypeArray = [typeof(Int64)];
                 Base = b;
                 CanRestructure = true;
             }
@@ -1142,7 +1142,7 @@ namespace MinorShift.Emuera.GameData.Function
             public ExpMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64) };
+                argumentTypeArray = [typeof(Int64)];
                 CanRestructure = true;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -1166,7 +1166,7 @@ namespace MinorShift.Emuera.GameData.Function
             public SignMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64) };
+                argumentTypeArray = [typeof(Int64)];
                 CanRestructure = true;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -1181,7 +1181,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GetLimitMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64), typeof(Int64), typeof(Int64) };
+                argumentTypeArray = [typeof(Int64), typeof(Int64), typeof(Int64)];
                 CanRestructure = true;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -1602,7 +1602,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GetbitMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64), typeof(Int64) };
+                argumentTypeArray = [typeof(Int64), typeof(Int64)];
                 CanRestructure = true;
             }
             public override string CheckArgumentType(string name, IOperandTerm[] arguments)
@@ -1674,7 +1674,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GetnumBMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(string), typeof(string) };
+                argumentTypeArray = [typeof(string), typeof(string)];
                 CanRestructure = true;
             }
             public override string CheckArgumentType(string name, IOperandTerm[] arguments)
@@ -1710,7 +1710,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GetPalamLVMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64), typeof(Int64) };
+                argumentTypeArray = [typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
             public override string CheckArgumentType(string name, IOperandTerm[] arguments)
@@ -1736,7 +1736,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GetExpLVMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64), typeof(Int64) };
+                argumentTypeArray = [typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
             public override string CheckArgumentType(string name, IOperandTerm[] arguments)
@@ -1855,7 +1855,7 @@ namespace MinorShift.Emuera.GameData.Function
             public InRangeMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64), typeof(Int64), typeof(Int64) };
+                argumentTypeArray = [typeof(Int64), typeof(Int64), typeof(Int64)];
                 CanRestructure = true;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -2097,7 +2097,7 @@ namespace MinorShift.Emuera.GameData.Function
             public StrlenMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(string) };
+                argumentTypeArray = [typeof(string)];
                 CanRestructure = true;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -2112,7 +2112,7 @@ namespace MinorShift.Emuera.GameData.Function
             public StrlenuMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(string) };
+                argumentTypeArray = [typeof(string)];
                 CanRestructure = true;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -2272,7 +2272,7 @@ namespace MinorShift.Emuera.GameData.Function
                 int index = target.IndexOf(word, UFTstart);
                 if (index > 0 && !unicode)
                 {
-                    string subStr = target.Substring(0, index);
+                    string subStr = target[..index];
                     index = LangManager.GetStrlenLang(subStr);
                 }
                 return index;
@@ -2284,7 +2284,7 @@ namespace MinorShift.Emuera.GameData.Function
             public StrCountMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(string), typeof(string) };
+                argumentTypeArray = [typeof(string), typeof(string)];
                 CanRestructure = true;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -2350,7 +2350,7 @@ namespace MinorShift.Emuera.GameData.Function
             public ToIntMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(string) };
+                argumentTypeArray = [typeof(string)];
                 CanRestructure = true;
             }
 
@@ -2404,14 +2404,14 @@ namespace MinorShift.Emuera.GameData.Function
             public StrChangeStyleMethod()
             {
                 ReturnType = typeof(string);
-                argumentTypeArray = new Type[] { typeof(string) };
+                argumentTypeArray = [typeof(string)];
                 strType = StrFormType.Upper;
                 CanRestructure = true;
             }
             public StrChangeStyleMethod(StrFormType type)
             {
                 ReturnType = typeof(string);
-                argumentTypeArray = new Type[] { typeof(string) };
+                argumentTypeArray = [typeof(string)];
                 strType = type;
                 CanRestructure = true;
             }
@@ -2440,7 +2440,7 @@ namespace MinorShift.Emuera.GameData.Function
             public LineIsEmptyMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { };
+                argumentTypeArray = [];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -2454,7 +2454,7 @@ namespace MinorShift.Emuera.GameData.Function
             public ReplaceMethod()
             {
                 ReturnType = typeof(string);
-                argumentTypeArray = new Type[] { typeof(string), typeof(string), typeof(string) };
+                argumentTypeArray = [typeof(string), typeof(string), typeof(string)];
                 CanRestructure = true;
             }
             public override string GetStrValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -2478,7 +2478,7 @@ namespace MinorShift.Emuera.GameData.Function
             public UnicodeMethod()
             {
                 ReturnType = typeof(string);
-                argumentTypeArray = new Type[] { typeof(Int64) };
+                argumentTypeArray = [typeof(Int64)];
                 CanRestructure = true;
             }
             public override string GetStrValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -2509,7 +2509,7 @@ namespace MinorShift.Emuera.GameData.Function
             public UnicodeByteMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(string) };
+                argumentTypeArray = [typeof(string)];
                 CanRestructure = true;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -2529,7 +2529,7 @@ namespace MinorShift.Emuera.GameData.Function
             public ConvertIntMethod()
             {
                 ReturnType = typeof(string);
-                argumentTypeArray = new Type[] { typeof(Int64), typeof(Int64) };
+                argumentTypeArray = [typeof(Int64), typeof(Int64)];
                 CanRestructure = true;
             }
             public override string GetStrValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -2546,7 +2546,7 @@ namespace MinorShift.Emuera.GameData.Function
             public IsNumericMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(string) };
+                argumentTypeArray = [typeof(string)];
                 CanRestructure = true;
             }
             public override long GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -2586,7 +2586,7 @@ namespace MinorShift.Emuera.GameData.Function
             public EscapeMethod()
             {
                 ReturnType = typeof(string);
-                argumentTypeArray = new Type[] { typeof(string) };
+                argumentTypeArray = [typeof(string)];
                 CanRestructure = true;
             }
             public override string GetStrValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -2600,7 +2600,7 @@ namespace MinorShift.Emuera.GameData.Function
             public EncodeToUniMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { null };
+                argumentTypeArray = [null];
                 CanRestructure = true;
             }
             public override string CheckArgumentType(string name, IOperandTerm[] arguments)
@@ -2637,7 +2637,7 @@ namespace MinorShift.Emuera.GameData.Function
             public CharAtMethod()
             {
                 ReturnType = typeof(string);
-                argumentTypeArray = new Type[] { typeof(string), typeof(Int64) };
+                argumentTypeArray = [typeof(string), typeof(Int64)];
                 CanRestructure = true;
             }
             public override string GetStrValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -2655,7 +2655,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GetLineStrMethod()
             {
                 ReturnType = typeof(string);
-                argumentTypeArray = new Type[] { typeof(string) };
+                argumentTypeArray = [typeof(string)];
                 CanRestructure = true;
             }
             public override string GetStrValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -2672,7 +2672,7 @@ namespace MinorShift.Emuera.GameData.Function
             public StrFormMethod()
             {
                 ReturnType = typeof(string);
-                argumentTypeArray = new Type[] { typeof(string) };
+                argumentTypeArray = [typeof(string)];
                 HasUniqueRestructure = true;
                 CanRestructure = true;
             }
@@ -2803,7 +2803,7 @@ namespace MinorShift.Emuera.GameData.Function
                     funcname = "GETCONFIGS";
                     ReturnType = typeof(string);
                 }
-                argumentTypeArray = new Type[] { typeof(string) };
+                argumentTypeArray = [typeof(string)];
                 CanRestructure = true;
             }
             private readonly string funcname;
@@ -2880,7 +2880,7 @@ namespace MinorShift.Emuera.GameData.Function
             public HtmlPopPrintingStrMethod()
             {
                 ReturnType = typeof(string);
-                argumentTypeArray = new Type[] { };
+                argumentTypeArray = [];
                 CanRestructure = false;
             }
 
@@ -2898,7 +2898,7 @@ namespace MinorShift.Emuera.GameData.Function
             public HtmlToPlainTextMethod()
             {
                 ReturnType = typeof(string);
-                argumentTypeArray = new Type[] { typeof(string) };
+                argumentTypeArray = [typeof(string)];
                 CanRestructure = false;
             }
             public override string GetStrValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -2911,7 +2911,7 @@ namespace MinorShift.Emuera.GameData.Function
             public HtmlEscapeMethod()
             {
                 ReturnType = typeof(string);
-                argumentTypeArray = new Type[] { typeof(string) };
+                argumentTypeArray = [typeof(string)];
                 CanRestructure = false;
             }
             public override string GetStrValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -3051,7 +3051,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GraphicsStateMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64) };
+                argumentTypeArray = [typeof(Int64)];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -3079,7 +3079,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GraphicsGetColorMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64), typeof(Int64), typeof(Int64) };
+                argumentTypeArray = [typeof(Int64), typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -3104,7 +3104,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GraphicsSetColorMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64), typeof(Int64), typeof(Int64), typeof(Int64) };
+                argumentTypeArray = [typeof(Int64), typeof(Int64), typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -3128,7 +3128,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GraphicsSetBrushMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64), typeof(Int64) };
+                argumentTypeArray = [typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -3148,7 +3148,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GraphicsSetFontMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64), typeof(string), typeof(Int64) };
+                argumentTypeArray = [typeof(Int64), typeof(string), typeof(Int64)];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -3176,7 +3176,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GraphicsSetPenMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64), typeof(Int64) };
+                argumentTypeArray = [typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -3198,7 +3198,7 @@ namespace MinorShift.Emuera.GameData.Function
             public SpriteStateMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(string) };
+                argumentTypeArray = [typeof(string)];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -3229,7 +3229,7 @@ namespace MinorShift.Emuera.GameData.Function
             public SpriteSetPosMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(string), typeof(Int64), typeof(Int64) };
+                argumentTypeArray = [typeof(string), typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -3257,7 +3257,7 @@ namespace MinorShift.Emuera.GameData.Function
             public SpriteGetColorMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(string), typeof(Int64), typeof(Int64) };
+                argumentTypeArray = [typeof(string), typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -3283,7 +3283,7 @@ namespace MinorShift.Emuera.GameData.Function
             public ClientSizeMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { };
+                argumentTypeArray = [];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -3304,7 +3304,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GraphicsCreateMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64), typeof(Int64), typeof(Int64) };
+                argumentTypeArray = [typeof(Int64), typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -3337,7 +3337,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GraphicsCreateFromFileMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64), typeof(string) };
+                argumentTypeArray = [typeof(Int64), typeof(string)];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -3384,7 +3384,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GraphicsDisposeMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64) };
+                argumentTypeArray = [typeof(Int64)];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -3407,7 +3407,7 @@ namespace MinorShift.Emuera.GameData.Function
             public SpriteCreateMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(string) };
+                argumentTypeArray = [typeof(string)];
                 CanRestructure = false;
             }
             public override string CheckArgumentType(string name, IOperandTerm[] arguments)
@@ -3469,7 +3469,7 @@ namespace MinorShift.Emuera.GameData.Function
             public SpriteDisposeMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(string) };
+                argumentTypeArray = [typeof(string)];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -3492,7 +3492,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GraphicsClearMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64), typeof(Int64) };
+                argumentTypeArray = [typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -3516,7 +3516,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GraphicsFillRectangleMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64), typeof(Int64), typeof(Int64), typeof(Int64), typeof(Int64) };
+                argumentTypeArray = [typeof(Int64), typeof(Int64), typeof(Int64), typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -3611,7 +3611,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GraphicsDrawGWithMaskMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64), typeof(Int64), typeof(Int64), typeof(Int64), typeof(Int64) };
+                argumentTypeArray = [typeof(Int64), typeof(Int64), typeof(Int64), typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
 
@@ -3652,7 +3652,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GraphicsDrawSpriteMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64), typeof(string), typeof(Int64), typeof(Int64), typeof(Int64), typeof(Int64) };
+                argumentTypeArray = [typeof(Int64), typeof(string), typeof(Int64), typeof(Int64), typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
                 HasUniqueRestructure = true;
             }
@@ -3744,7 +3744,7 @@ namespace MinorShift.Emuera.GameData.Function
             public SpriteAnimeCreateMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(string), typeof(Int64), typeof(Int64) };
+                argumentTypeArray = [typeof(string), typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -3781,7 +3781,7 @@ namespace MinorShift.Emuera.GameData.Function
             public SpriteAnimeAddFrameMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(string), typeof(Int64), typeof(Int64), typeof(Int64), typeof(Int64), typeof(Int64), typeof(Int64), typeof(Int64), typeof(Int64) };
+                argumentTypeArray = [typeof(string), typeof(Int64), typeof(Int64), typeof(Int64), typeof(Int64), typeof(Int64), typeof(Int64), typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
 
@@ -3822,7 +3822,7 @@ namespace MinorShift.Emuera.GameData.Function
             public CBGClearMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { };
+                argumentTypeArray = [];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -3842,7 +3842,7 @@ namespace MinorShift.Emuera.GameData.Function
             public CBGRemoveRangeMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64), typeof(Int64) };
+                argumentTypeArray = [typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -3865,7 +3865,7 @@ namespace MinorShift.Emuera.GameData.Function
             public CBGClearButtonMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { };
+                argumentTypeArray = [];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -3884,7 +3884,7 @@ namespace MinorShift.Emuera.GameData.Function
             public CBGRemoveBMapMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { };
+                argumentTypeArray = [];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -3903,7 +3903,7 @@ namespace MinorShift.Emuera.GameData.Function
             public CBGSetGraphicsMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64), typeof(Int64), typeof(Int64), typeof(Int64) };
+                argumentTypeArray = [typeof(Int64), typeof(Int64), typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -3932,7 +3932,7 @@ namespace MinorShift.Emuera.GameData.Function
             public CBGSetBMapGMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64) };
+                argumentTypeArray = [typeof(Int64)];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -3957,7 +3957,7 @@ namespace MinorShift.Emuera.GameData.Function
             public CBGSetCIMGMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(string), typeof(Int64), typeof(Int64), typeof(Int64) };
+                argumentTypeArray = [typeof(string), typeof(Int64), typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -3988,7 +3988,7 @@ namespace MinorShift.Emuera.GameData.Function
             public CBGSETButtonSpriteMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64), typeof(string), typeof(string), typeof(Int64), typeof(Int64), typeof(Int64), typeof(string) };
+                argumentTypeArray = [typeof(Int64), typeof(string), typeof(string), typeof(Int64), typeof(Int64), typeof(Int64), typeof(string)];
                 CanRestructure = false;
             }
             public override string CheckArgumentType(string name, IOperandTerm[] arguments)
@@ -4044,7 +4044,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GetKeyStateMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64) };
+                argumentTypeArray = [typeof(Int64)];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -4074,7 +4074,7 @@ namespace MinorShift.Emuera.GameData.Function
             public MousePosMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { };
+                argumentTypeArray = [];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -4094,7 +4094,7 @@ namespace MinorShift.Emuera.GameData.Function
             public IsActiveMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { };
+                argumentTypeArray = [];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -4108,7 +4108,7 @@ namespace MinorShift.Emuera.GameData.Function
             public SetAnimeTimerMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64) };
+                argumentTypeArray = [typeof(Int64)];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -4129,7 +4129,7 @@ namespace MinorShift.Emuera.GameData.Function
             public SaveTextMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(string), typeof(Int64), typeof(Int64), typeof(Int64) };
+                argumentTypeArray = [typeof(string), typeof(Int64), typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
             public override string CheckArgumentType(string name, IOperandTerm[] arguments)
@@ -4184,7 +4184,7 @@ namespace MinorShift.Emuera.GameData.Function
             public LoadTextMethod()
             {
                 ReturnType = typeof(string);
-                argumentTypeArray = new Type[] { typeof(Int64), typeof(Int64), typeof(Int64) };
+                argumentTypeArray = [typeof(Int64), typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
             public override string CheckArgumentType(string name, IOperandTerm[] arguments)
@@ -4243,7 +4243,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GraphicsSaveMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64), typeof(Int64) };
+                argumentTypeArray = [typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
@@ -4279,7 +4279,7 @@ namespace MinorShift.Emuera.GameData.Function
             public GraphicsLoadMethod()
             {
                 ReturnType = typeof(Int64);
-                argumentTypeArray = new Type[] { typeof(Int64), typeof(Int64) };
+                argumentTypeArray = [typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)

@@ -131,17 +131,17 @@ namespace MinorShift.Emuera.GameData.Variable
 
 		public void throwOutOfRangeException(Int64[] arguments, Exception e)
 		{
-			CheckElement(arguments, new bool[] { true, true, true });
+			CheckElement(arguments, [true, true, true]);
 			throw e;
 		}
 		public virtual void CheckElement(Int64[] arguments, bool[] doCheck) { }
 		public void CheckElement(Int64[] arguments)
 		{
-			CheckElement(arguments, new bool[] { true, true, true });
+			CheckElement(arguments, [true, true, true]);
 		}
 		public virtual void IsArrayRangeValid(Int64[] arguments, Int64 index1, Int64 index2, string funcName, Int64 i1, Int64 i2)
 		{
-			CheckElement(arguments, new bool[] { true, true, true });
+			CheckElement(arguments, [true, true, true]);
 			return;
 		}
 
@@ -473,7 +473,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			//arrayList.RemoveAt(arrayList.Count - 1);
 			if (arrayList.Count > 0)
 			{
-				array = arrayList[arrayList.Count - 1];
+				array = arrayList[^1];
 				arrayList.RemoveAt(arrayList.Count - 1);
 			}
 			else
@@ -2203,7 +2203,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				//arrayList.RemoveAt(arrayList.Count - 1);
 				if (arrayList.Count > 0)
 				{
-					array = arrayList[arrayList.Count - 1];
+					array = arrayList[^1];
 					arrayList.RemoveAt(arrayList.Count - 1);
 				}
 				else
@@ -2269,7 +2269,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				//arrayList.RemoveAt(arrayList.Count - 1);
 				if (arrayList.Count > 0)
 				{
-					array = arrayList[arrayList.Count - 1];
+					array = arrayList[^1];
 					arrayList.RemoveAt(arrayList.Count - 1);
 				}
 				else
@@ -2338,7 +2338,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				//arrayList.RemoveAt(arrayList.Count - 1);
 				if (arrayList.Count > 0)
 				{
-					array = arrayList[arrayList.Count - 1];
+					array = arrayList[^1];
 					arrayList.RemoveAt(arrayList.Count - 1);
 				}
 				else
@@ -2403,7 +2403,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				//arrayList.RemoveAt(arrayList.Count - 1);
 				if (arrayList.Count > 0)
 				{
-					array = arrayList[arrayList.Count - 1];
+					array = arrayList[^1];
 					arrayList.RemoveAt(arrayList.Count - 1);
 				}
 				else
@@ -2468,7 +2468,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				//arrayList.RemoveAt(arrayList.Count - 1);
 				if (arrayList.Count > 0)
 				{
-					array = arrayList[arrayList.Count - 1];
+					array = arrayList[^1];
 					arrayList.RemoveAt(arrayList.Count - 1);
 				}
 				else
@@ -2533,7 +2533,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				//arrayList.RemoveAt(arrayList.Count - 1);
 				if (arrayList.Count > 0)
 				{
-					array = arrayList[arrayList.Count - 1];
+					array = arrayList[^1];
 					arrayList.RemoveAt(arrayList.Count - 1);
 				}
 				else

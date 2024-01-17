@@ -193,11 +193,11 @@ namespace MinorShift.Emuera.GameView
 		/// <returns></returns>
 		private static bool isButtonCore(string str, ref long input)
 		{
-			if ((str == null) || (str.Length < 3) || (str[0] != '[') || (str[str.Length - 1] != ']'))
+			if ((str == null) || (str.Length < 3) || (str[0] != '[') || (str[^1] != ']'))
 				return false;
 			if (!isNumericWord(str))
 				return false;
-			string buttonStr = str.Substring(1, str.Length - 2);
+			string buttonStr = str[1..^1];
 			StringStream stInt = new(buttonStr);
 			LexicalAnalyzer.SkipAllSpace(stInt);
 			try

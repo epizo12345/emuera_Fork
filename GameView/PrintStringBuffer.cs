@@ -71,7 +71,7 @@ namespace MinorShift.Emuera.GameView
 				if (builder.Length > 2000)
 					return;
 				if (builder.Length + str.Length > 2000)
-					str = str.Substring(0, 2000 - builder.Length) + "※※※バッファーの文字数が2000字(全角1000字)を超えています。これ以降は表示できません※※※";
+					str = str[..(2000 - builder.Length)] + "※※※バッファーの文字数が2000字(全角1000字)を超えています。これ以降は表示できません※※※";
 				builder.Append(str);
 				lastStringStyle = style;
 			}
@@ -521,7 +521,7 @@ namespace MinorShift.Emuera.GameView
 			string test;
 			while ((highLength - lowLength) > 1)//差が一文字以下になるまで繰り返す。
 			{
-				test = str.Substring(0, i);
+				test = str[..i];
 				if (sm.GetDisplayLength(test, font) <= widthLimit)//サイズ内ならlowLengthを更新。文字数を増やす。
 				{
 					lowLength = i;

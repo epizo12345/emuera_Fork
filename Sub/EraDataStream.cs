@@ -184,7 +184,7 @@ namespace MinorShift.Emuera.Sub
 				int index = str.IndexOf(':');
 				if (index < 0)
 					throw new FileEE("セーブデータの形式が不正です");
-				string key = str.Substring(0, index);
+				string key = str[..index];
 				string value = str.Substring(index + 1, str.Length - index - 1);
 				if (!strList.ContainsKey(key))
 					strList.Add(key, value);
@@ -209,7 +209,7 @@ namespace MinorShift.Emuera.Sub
 				int index = str.IndexOf(':');
 				if (index < 0)
 					throw new FileEE("セーブデータの形式が不正です");
-				string key = str.Substring(0, index);
+				string key = str[..index];
 				string valueStr = str.Substring(index + 1, str.Length - index - 1);
 				if (!Int64.TryParse(valueStr, out long value))
 					throw new FileEE("数値として認識できません");

@@ -204,7 +204,7 @@ namespace MinorShift.Emuera.GameView
 			if (strArray.Length > 0)
 			{
 				PointX = strArray[0].PointX;
-				Width = strArray[strArray.Length - 1].PointX + strArray[strArray.Length - 1].Width - this.PointX;
+				Width = strArray[^1].PointX + strArray[^1].Width - this.PointX;
 				//if (Width < 0)
 				//	Width = -1;
 			}
