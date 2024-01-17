@@ -112,7 +112,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			{
 				if ((e is IndexOutOfRangeException) || (e is ArgumentOutOfRangeException) || (e is OverflowException))
 					Identifier.CheckElement(transporter);
-				throw e;
+				throw;
 			}
 		}
 
