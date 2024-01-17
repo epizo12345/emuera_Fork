@@ -97,7 +97,7 @@ namespace MinorShift.Emuera.Sub
 				if (line.Length == 0)
 					continue;
 
-				if (useRename && regexRenameIdentifer().IsMatch(line))
+				if (useRename)
 				{
 					var match = regexRenameIdentifer().Match(line);
 					while (match.Success)
@@ -139,12 +139,12 @@ namespace MinorShift.Emuera.Sub
 					throw new CodeEE("行連結始端記号'{'が使われましたが終端記号'}'が見つかりません", new ScriptPosition(filename, curNo));
 				}
 
-				if (useRename && regexRenameIdentifer().IsMatch(line))
+				if (useRename)
 				{
+					//この段階でマッチしないパターンもある
 					var match = regexRenameIdentifer().Match(line);
 					while (match.Success)
 					{
-						//この段階でマッチしないパターンもある
 						if (ParserMediator.RenameDic.TryGetValue(match.Value, out var targetStr))
 						{
 							line = line.Replace(match.Value, targetStr);
@@ -169,8 +169,7 @@ namespace MinorShift.Emuera.Sub
 					if (test[0] == '{' && test.Length == 1)
 						throw new CodeEE("予期しない行連結始端記号'{'が見つかりました", new ScriptPosition(filename, curNo));
 				}
-				b.Append(line);
-				b.Append(" ");
+				b.Append($"{line} ");
 			}
 			st = new StringStream(b.ToString());
 			LexicalAnalyzer.SkipWhiteSpace(st);
