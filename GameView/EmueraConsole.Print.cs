@@ -312,7 +312,7 @@ namespace MinorShift.Emuera.GameView
 		{
 			if (string.IsNullOrEmpty(str))
 				return;
-			if (str.Contains("\n"))
+			if (str.Contains('\n'))
 			{
 				int newline = str.IndexOf('\n');
 				string upper = str[..newline];

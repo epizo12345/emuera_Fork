@@ -479,7 +479,7 @@ namespace MinorShift.Emuera
 							//パスの関係上tokens[2]は使わないといけない
 							if (tokens.Length > 2)
 							{
-								if (tokens[2].StartsWith("\\"))
+								if (tokens[2].StartsWith('\\'))
 									tokens[1] += ":" + tokens[2];
 								if (tokens.Length > 3)
 								{
