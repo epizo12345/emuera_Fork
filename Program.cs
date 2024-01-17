@@ -154,14 +154,12 @@ static class Program
 		while (true)
 		{
 			var rebootFlag = false;
-			//必要なソースファイルを事前にメモリに一気に読み込む
-			Preload.Load(ErbDir);
-			Preload.Load(CsvDir);
 
 			using var win = new Forms.MainWindow(winState, rebootLocation, rebootClientHeight, (_) =>
 			{
 				rebootFlag = true;
 			});
+
 
 			Application.Run(win);
 
@@ -183,8 +181,6 @@ static class Program
 			GlobalStatic.Reset();
 			//GC.Collect();
 			ConfigData.Instance.ReLoadConfig();
-
-			Preload.Clear();
 		}
 	}
 

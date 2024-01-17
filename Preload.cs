@@ -7,14 +7,14 @@ namespace Emuera;
 
 static class Preload
 {
-    static readonly Dictionary<string, string> files = [];
+    static readonly Dictionary<string, string[]> files = [];
 
     public static string[] GetFileLines(string path)
     {
-        return files[path].Split('\r', '\n');
+        return files[path];
     }
 
-    public static void Load(string path)
+    public static void Load(string path, Action tickCallback)
     {
         var startTime = DateTime.Now;
         Console.WriteLine($"Load: {path} : Start");
@@ -22,15 +22,19 @@ static class Preload
         {
             foreach (var childDirPath in Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories))
             {
-                var stream = new StreamReader(childDirPath, Config.Encode);
-                var text = stream.ReadToEnd();
+                var text = File.ReadAllLines(childDirPath, Config.Encode);
                 files.Add(childDirPath.ToUpperInvariant(), text);
+
+                var elapsedMs = (DateTime.Now - startTime).TotalMilliseconds;
+                if (elapsedMs > 100)
+                {
+                    tickCallback();
+                }
             }
         }
         else
         {
-            var stream = new StreamReader(path, Config.Encode);
-            var text = stream.ReadToEnd();
+            var text = File.ReadAllLines(path, Config.Encode);
             files.Add(path.ToUpperInvariant(), text);
         }
         Console.WriteLine($"Load: {path} : End in {(DateTime.Now - startTime).TotalMilliseconds}ms");
