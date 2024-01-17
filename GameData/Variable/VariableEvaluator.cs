@@ -2198,37 +2198,31 @@ namespace MinorShift.Emuera.GameData.Variable
 			try
 			{
 				Config.CreateSavDir();
-				using (FileStream fs = new(filepath, FileMode.Create, FileAccess.Write))
-				{
-					if (Config.SystemSaveInBinary)
-					{
+                using var fs = new FileStream(filepath, FileMode.Create, FileAccess.Write);
+                if (Config.SystemSaveInBinary)
+                {
 
-						using (EraBinaryDataWriter bWriter = new(fs))
-						{
-							bWriter.WriteHeader();
-							bWriter.WriteFileType(EraSaveFileType.Global);
-							bWriter.WriteInt64(gamebase.ScriptUniqueCode);
-							bWriter.WriteInt64(gamebase.ScriptVersion);
-							bWriter.WriteString("");//saveMes
-							varData.SaveGlobalToStreamBinary(bWriter);
-							bWriter.WriteEOF();
-							bWriter.Close();
-						}
-					}
-					else
-					{
-						using (EraDataWriter writer = new(fs))
-						{
-							writer.Write(gamebase.ScriptUniqueCode);
-							writer.Write(gamebase.ScriptVersion);
-							varData.SaveGlobalToStream(writer);
-							writer.EmuStart();
-							varData.SaveGlobalToStream1808(writer);
-							writer.Close();
-						}
-					}
-				}
-			}
+                    using var bWriter = new EraBinaryDataWriter(fs);
+                    bWriter.WriteHeader();
+                    bWriter.WriteFileType(EraSaveFileType.Global);
+                    bWriter.WriteInt64(gamebase.ScriptUniqueCode);
+                    bWriter.WriteInt64(gamebase.ScriptVersion);
+                    bWriter.WriteString("");//saveMes
+                    varData.SaveGlobalToStreamBinary(bWriter);
+                    bWriter.WriteEOF();
+                    bWriter.Close();
+                }
+                else
+                {
+                    using var writer = new EraDataWriter(fs);
+                    writer.Write(gamebase.ScriptUniqueCode);
+                    writer.Write(gamebase.ScriptVersion);
+                    varData.SaveGlobalToStream(writer);
+                    writer.EmuStart();
+                    varData.SaveGlobalToStream1808(writer);
+                    writer.Close();
+                }
+            }
 			catch (SystemException)
 			{
 				throw new CodeEE("グローバルデータの保存中にエラーが発生しました");
