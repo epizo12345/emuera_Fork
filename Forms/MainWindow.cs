@@ -664,7 +664,7 @@ namespace MinorShift.Emuera.Forms
 						System.Windows.MessageBox.Show("ファイルがありません", "File Not Found");
 						return;
 					}
-					if (Path.GetExtension(fname).ToUpper() != ".ERB")
+					if (Path.GetExtension(fname).Equals(".ERB",StringComparison.InvariantCultureIgnoreCase))
 					{
 						System.Windows.MessageBox.Show("ERBファイル以外は読み込めません", "ファイル形式エラー");
 						return;
