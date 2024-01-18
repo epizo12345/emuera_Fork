@@ -60,61 +60,64 @@ namespace MinorShift.Emuera.GameData.Expression
 					break;
 			}
 			TermEndWith termEndWith_Assignment = termEndWith | TermEndWith.Assignment;
-			while (true)
+			void local()
 			{
-				Word word = wc.Current;
-				switch (word.Type)
+				while (true)
 				{
-					case '\0':
-						if (endWith == ArgsEndWith.RightBracket)
-							throw new CodeEE("'['に対応する']'が見つかりません");
-						if (endWith == ArgsEndWith.RightParenthesis)
-							throw new CodeEE("'('に対応する')'が見つかりません");
-						goto end;
-					case ')':
-						if (endWith == ArgsEndWith.RightParenthesis)
-						{
-							wc.ShiftNext();
-							goto end;
-						}
-						throw new CodeEE("構文解析中に予期しない')'を発見しました");
-					case ']':
-						if (endWith == ArgsEndWith.RightBracket)
-						{
-							wc.ShiftNext();
-							goto end;
-						}
-						throw new CodeEE("構文解析中に予期しない']'を発見しました");
-				}
-				if (!isDefine)
-					terms.Add(ReduceExpressionTerm(wc, termEndWith));
-				else
-				{
-					terms.Add(ReduceExpressionTerm(wc, termEndWith_Assignment));
-					if (terms[terms.Count - 1] == null)
-						throw new CodeEE("関数定義の引数は省略できません");
-					if (wc.Current is OperatorWord)
-					{//=がある
-						wc.ShiftNext();
-						IOperandTerm term = reduceTerm(wc, false, termEndWith, VariableCode.__NULL__);
-						if (term == null)
-							throw new CodeEE("'='の後に式がありません");
-						if (term.GetOperandType() != terms[terms.Count - 1].GetOperandType())
-							throw new CodeEE("'='の前後で型が一致しません");
-						terms.Add(term);
+					Word word = wc.Current;
+					switch (word.Type)
+					{
+						case '\0':
+							if (endWith == ArgsEndWith.RightBracket)
+								throw new CodeEE("'['に対応する']'が見つかりません");
+							if (endWith == ArgsEndWith.RightParenthesis)
+								throw new CodeEE("'('に対応する')'が見つかりません");
+							return;
+						case ')':
+							if (endWith == ArgsEndWith.RightParenthesis)
+							{
+								wc.ShiftNext();
+								return;
+							}
+							throw new CodeEE("構文解析中に予期しない')'を発見しました");
+						case ']':
+							if (endWith == ArgsEndWith.RightBracket)
+							{
+								wc.ShiftNext();
+								return;
+							}
+							throw new CodeEE("構文解析中に予期しない']'を発見しました");
 					}
+					if (!isDefine)
+						terms.Add(ReduceExpressionTerm(wc, termEndWith));
 					else
 					{
-						if (terms[terms.Count - 1].GetOperandType() == typeof(Int64))
-							terms.Add(new NullTerm(0));
+						terms.Add(ReduceExpressionTerm(wc, termEndWith_Assignment));
+						if (terms[terms.Count - 1] == null)
+							throw new CodeEE("関数定義の引数は省略できません");
+						if (wc.Current is OperatorWord)
+						{//=がある
+							wc.ShiftNext();
+							IOperandTerm term = reduceTerm(wc, false, termEndWith, VariableCode.__NULL__);
+							if (term == null)
+								throw new CodeEE("'='の後に式がありません");
+							if (term.GetOperandType() != terms[terms.Count - 1].GetOperandType())
+								throw new CodeEE("'='の前後で型が一致しません");
+							terms.Add(term);
+						}
 						else
-							terms.Add(new NullTerm(""));
+						{
+							if (terms[terms.Count - 1].GetOperandType() == typeof(Int64))
+								terms.Add(new NullTerm(0));
+							else
+								terms.Add(new NullTerm(""));
+						}
 					}
+					if (wc.Current.Type == ',')
+						wc.ShiftNext();
 				}
-				if (wc.Current.Type == ',')
-					wc.ShiftNext();
 			}
-		end:
+			local();
 			IOperandTerm[] ret = new IOperandTerm[terms.Count];
 			terms.CopyTo(ret);
 			return ret;

@@ -838,186 +838,189 @@ internal static partial class LexicalAnalyzer
 		int nestBracketS = 0;
 		//int nestBracketM = 0;
 		int nestBracketL = 0;
-		while (true)
+		void local()
 		{
-			switch (st.Current)
+			while (true)
 			{
-				case '\n':
-				case '\0':
-					goto end;
-				case ' ':
-				case '\t':
-					st.ShiftNext();
-					continue;
-				case '　':
-					if (!Config.SystemAllowFullSpace)
-						throw new CodeEE("字句解析中に予期しない全角スペースを発見しました(この警告はシステムオプション「" + Config.GetConfigName(ConfigCode.SystemAllowFullSpace) + "」により無視できます)");
-					st.ShiftNext();
-					continue;
-				case '0':
-				case '1':
-				case '2':
-				case '3':
-				case '4':
-				case '5':
-				case '6':
-				case '7':
-				case '8':
-				case '9':
-					ret.Add(new LiteralIntegerWord(ReadInt64(st, false)));
-					break;
-				case '>':
-					if (endWith == LexEndWith.GreaterThan)
-						goto end;
-					goto case '+';
-				case '+':
-				case '-':
-				case '*':
-				case '/':
-				case '%':
-				case '=':
-				case '!':
-				case '<':
-				case '|':
-				case '&':
-				case '^':
-				case '~':
-				case '?':
-				case '#':
-					if ((nestBracketS == 0) && (nestBracketL == 0))
-					{
-						if (endWith == LexEndWith.Operator)
-							goto end;//代入演算子のはずである。呼び出し元がチェックするはず
-						else if ((endWith == LexEndWith.Percent) && (st.Current == '%'))
-							goto end;
-						else if ((endWith == LexEndWith.Question) && (st.Current == '?'))
-							goto end;
-					}
-					ret.Add(new OperatorWord(ReadOperator(st, (flag & LexAnalyzeFlag.AllowAssignment) == LexAnalyzeFlag.AllowAssignment)));
-					break;
-				case ')': ret.Add(new SymbolWord(')')); nestBracketS--; st.ShiftNext(); continue;
-				case ']': ret.Add(new SymbolWord(']')); nestBracketL--; st.ShiftNext(); continue;
-				case '(': ret.Add(new SymbolWord('(')); nestBracketS++; st.ShiftNext(); continue;
-				case '[':
-					if (st.Next == '[')
-					{
-						//throw new CodeEE("字句解析中に予期しない文字'[['を発見しました");
-						////1808alpha006 rename処理変更
-						//1808beta009 ここだけ戻す
-						//現在の処理だとここに来た時点でrename失敗確定だが警告内容を元に戻すため
-						if (ParserMediator.RenameDic == null)
-							throw new CodeEE("字句解析中に予期しない文字\"[[\"を発見しました");
-						int start = st.CurrentPosition;
-						int find = st.Find("]]");
-						if (find <= 2)
-						{
-							if (find == 2)
-								throw new CodeEE("空の[[]]です");
-							else
-								throw new CodeEE("対応する\"]]\"のない\"[[\"です");
-						}
-						string key = st.Substring(start, find + 2);
-						//1810 ここまでで置換できなかったものは強制エラーにする
-						//行連結前に置換不能で行連結より置換することができるようになったものまで置換されていたため
-						throw new CodeEE("字句解析中に置換(rename)できない符号" + key + "を発見しました");
-						//string value = null;
-						//if (!ParserMediator.RenameDic.TryGetValue(key, out value))
-						//    throw new CodeEE("字句解析中に置換(rename)できない符号" + key + "を発見しました");
-						//st.Replace(start, find + 2, value);
-						//continue;//その場から再度解析スタート
-					}
-					ret.Add(new SymbolWord('[')); nestBracketL++; st.ShiftNext(); continue;
-				case ':': ret.Add(new SymbolWord(':')); st.ShiftNext(); continue;
-				case ',':
-					if ((endWith == LexEndWith.Comma) && (nestBracketS == 0))// && (nestBracketL == 0))
-						goto end;
-					ret.Add(new SymbolWord(',')); st.ShiftNext(); continue;
-				//case '}': ret.Add(new SymbolWT('}')); nestBracketM--; continue;
-				//case '{': ret.Add(new SymbolWT('{')); nestBracketM++; continue;
-				case '\'':
-					if ((flag & LexAnalyzeFlag.AllowSingleQuotationStr) == LexAnalyzeFlag.AllowSingleQuotationStr)
-					{
-						st.ShiftNext();
-						ret.Add(new LiteralStringWord(ReadString(st, StrEndWith.SingleQuotation)));
-						if (st.Current != '\'')
-							throw new CodeEE("\'が閉じられていません");
-						st.ShiftNext();
-						break;
-					}
-					if ((flag & LexAnalyzeFlag.AnalyzePrintV) != LexAnalyzeFlag.AnalyzePrintV)
-					{
-						//AssignmentStr用特殊処理 代入文の代入演算子を探索中で'=の場合のみ許可
-						if ((endWith == LexEndWith.Operator) && (nestBracketS == 0) && (nestBracketL == 0) && st.Next == '=')
-							goto end;
-						throw new CodeEE("字句解析中に予期しない文字'" + st.Current + "'を発見しました");
-					}
-					st.ShiftNext();
-					ret.Add(new LiteralStringWord(ReadString(st, StrEndWith.Comma)));
-					if (st.Current == ',')
-						goto case ',';//続きがあるなら,の処理へ。それ以外は行終端のはず
-					goto end;
-				case '}':
-					if (endWith == LexEndWith.RightCurlyBrace)
-						goto end;
-					throw new CodeEE("字句解析中に予期しない文字'" + st.Current + "'を発見しました");
-				case '\"':
-					st.ShiftNext();
-					ret.Add(new LiteralStringWord(ReadString(st, StrEndWith.DoubleQuotation)));
-					if (st.Current != '\"')
-						throw new CodeEE("\"が閉じられていません");
-					st.ShiftNext();
-					break;
-				case '@':
-					if (st.Next != '\"')
-					{
-						ret.Add(new SymbolWord('@'));
+				switch (st.Current)
+				{
+					case '\n':
+					case '\0':
+						return;
+					case ' ':
+					case '\t':
 						st.ShiftNext();
 						continue;
-					}
-					st.ShiftNext();
-					st.ShiftNext();
-					ret.Add(AnalyseFormattedString(st, FormStrEndWith.DoubleQuotation, false));
-					if (st.Current != '\"')
-						throw new CodeEE("\"が閉じられていません");
-					st.ShiftNext();
-					break;
-				case '.':
-					ret.Add(new SymbolWord('.'));
-					st.ShiftNext();
-					continue;
-
-				case '\\':
-					if (st.Next != '@')
+					case '　':
+						if (!Config.SystemAllowFullSpace)
+							throw new CodeEE("字句解析中に予期しない全角スペースを発見しました(この警告はシステムオプション「" + Config.GetConfigName(ConfigCode.SystemAllowFullSpace) + "」により無視できます)");
+						st.ShiftNext();
+						continue;
+					case '0':
+					case '1':
+					case '2':
+					case '3':
+					case '4':
+					case '5':
+					case '6':
+					case '7':
+					case '8':
+					case '9':
+						ret.Add(new LiteralIntegerWord(ReadInt64(st, false)));
+						break;
+					case '>':
+						if (endWith == LexEndWith.GreaterThan)
+							return;
+						goto case '+';
+					case '+':
+					case '-':
+					case '*':
+					case '/':
+					case '%':
+					case '=':
+					case '!':
+					case '<':
+					case '|':
+					case '&':
+					case '^':
+					case '~':
+					case '?':
+					case '#':
+						if ((nestBracketS == 0) && (nestBracketL == 0))
+						{
+							if (endWith == LexEndWith.Operator)
+								return;//代入演算子のはずである。呼び出し元がチェックするはず
+							else if ((endWith == LexEndWith.Percent) && (st.Current == '%'))
+								return;
+							else if ((endWith == LexEndWith.Question) && (st.Current == '?'))
+								return;
+						}
+						ret.Add(new OperatorWord(ReadOperator(st, (flag & LexAnalyzeFlag.AllowAssignment) == LexAnalyzeFlag.AllowAssignment)));
+						break;
+					case ')': ret.Add(new SymbolWord(')')); nestBracketS--; st.ShiftNext(); continue;
+					case ']': ret.Add(new SymbolWord(']')); nestBracketL--; st.ShiftNext(); continue;
+					case '(': ret.Add(new SymbolWord('(')); nestBracketS++; st.ShiftNext(); continue;
+					case '[':
+						if (st.Next == '[')
+						{
+							//throw new CodeEE("字句解析中に予期しない文字'[['を発見しました");
+							////1808alpha006 rename処理変更
+							//1808beta009 ここだけ戻す
+							//現在の処理だとここに来た時点でrename失敗確定だが警告内容を元に戻すため
+							if (ParserMediator.RenameDic == null)
+								throw new CodeEE("字句解析中に予期しない文字\"[[\"を発見しました");
+							int start = st.CurrentPosition;
+							int find = st.Find("]]");
+							if (find <= 2)
+							{
+								if (find == 2)
+									throw new CodeEE("空の[[]]です");
+								else
+									throw new CodeEE("対応する\"]]\"のない\"[[\"です");
+							}
+							string key = st.Substring(start, find + 2);
+							//1810 ここまでで置換できなかったものは強制エラーにする
+							//行連結前に置換不能で行連結より置換することができるようになったものまで置換されていたため
+							throw new CodeEE("字句解析中に置換(rename)できない符号" + key + "を発見しました");
+							//string value = null;
+							//if (!ParserMediator.RenameDic.TryGetValue(key, out value))
+							//    throw new CodeEE("字句解析中に置換(rename)できない符号" + key + "を発見しました");
+							//st.Replace(start, find + 2, value);
+							//continue;//その場から再度解析スタート
+						}
+						ret.Add(new SymbolWord('[')); nestBracketL++; st.ShiftNext(); continue;
+					case ':': ret.Add(new SymbolWord(':')); st.ShiftNext(); continue;
+					case ',':
+						if ((endWith == LexEndWith.Comma) && (nestBracketS == 0))// && (nestBracketL == 0))
+							return;
+						ret.Add(new SymbolWord(',')); st.ShiftNext(); continue;
+					//case '}': ret.Add(new SymbolWT('}')); nestBracketM--; continue;
+					//case '{': ret.Add(new SymbolWT('{')); nestBracketM++; continue;
+					case '\'':
+						if ((flag & LexAnalyzeFlag.AllowSingleQuotationStr) == LexAnalyzeFlag.AllowSingleQuotationStr)
+						{
+							st.ShiftNext();
+							ret.Add(new LiteralStringWord(ReadString(st, StrEndWith.SingleQuotation)));
+							if (st.Current != '\'')
+								throw new CodeEE("\'が閉じられていません");
+							st.ShiftNext();
+							break;
+						}
+						if ((flag & LexAnalyzeFlag.AnalyzePrintV) != LexAnalyzeFlag.AnalyzePrintV)
+						{
+							//AssignmentStr用特殊処理 代入文の代入演算子を探索中で'=の場合のみ許可
+							if ((endWith == LexEndWith.Operator) && (nestBracketS == 0) && (nestBracketL == 0) && st.Next == '=')
+								return;
+							throw new CodeEE("字句解析中に予期しない文字'" + st.Current + "'を発見しました");
+						}
+						st.ShiftNext();
+						ret.Add(new LiteralStringWord(ReadString(st, StrEndWith.Comma)));
+						if (st.Current == ',')
+							goto case ',';//続きがあるなら,の処理へ。それ以外は行終端のはず
+						return;
+					case '}':
+						if (endWith == LexEndWith.RightCurlyBrace)
+							return;
 						throw new CodeEE("字句解析中に予期しない文字'" + st.Current + "'を発見しました");
-					{
-						st.Jump(2);
-						ret.Add(new StrFormWord(["", ""], [AnalyseYenAt(st)]));
-					}
-					break;
-				case '{':
-				case '$':
-					throw new CodeEE("字句解析中に予期しない文字'" + st.Current + "'を発見しました");
-				case ';'://1807 行中コメント
-					if (st.CurrentEqualTo(";#;") && Program.DebugMode)
-					{
-						st.Jump(3);
+					case '\"':
+						st.ShiftNext();
+						ret.Add(new LiteralStringWord(ReadString(st, StrEndWith.DoubleQuotation)));
+						if (st.Current != '\"')
+							throw new CodeEE("\"が閉じられていません");
+						st.ShiftNext();
 						break;
-					}
-					else if (st.CurrentEqualTo(";!;"))
-					{
-						st.Jump(3);
+					case '@':
+						if (st.Next != '\"')
+						{
+							ret.Add(new SymbolWord('@'));
+							st.ShiftNext();
+							continue;
+						}
+						st.ShiftNext();
+						st.ShiftNext();
+						ret.Add(AnalyseFormattedString(st, FormStrEndWith.DoubleQuotation, false));
+						if (st.Current != '\"')
+							throw new CodeEE("\"が閉じられていません");
+						st.ShiftNext();
 						break;
-					}
-					st.Seek(0, System.IO.SeekOrigin.End);
-					goto end;
-				default:
-					{
-						ret.Add(new IdentifierWord(ReadSingleIdentifier(st)));
+					case '.':
+						ret.Add(new SymbolWord('.'));
+						st.ShiftNext();
+						continue;
+
+					case '\\':
+						if (st.Next != '@')
+							throw new CodeEE("字句解析中に予期しない文字'" + st.Current + "'を発見しました");
+						{
+							st.Jump(2);
+							ret.Add(new StrFormWord(["", ""], [AnalyseYenAt(st)]));
+						}
 						break;
-					}
+					case '{':
+					case '$':
+						throw new CodeEE("字句解析中に予期しない文字'" + st.Current + "'を発見しました");
+					case ';'://1807 行中コメント
+						if (st.CurrentEqualTo(";#;") && Program.DebugMode)
+						{
+							st.Jump(3);
+							break;
+						}
+						else if (st.CurrentEqualTo(";!;"))
+						{
+							st.Jump(3);
+							break;
+						}
+						st.Seek(0, System.IO.SeekOrigin.End);
+						return;
+					default:
+						{
+							ret.Add(new IdentifierWord(ReadSingleIdentifier(st)));
+							break;
+						}
+				}
 			}
-		}
-	end:
+		};
+		local();
 		if ((nestBracketS != 0) || (nestBracketL != 0))
 		{
 			if (nestBracketS < 0)
