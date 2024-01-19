@@ -14,6 +14,7 @@ using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.Forms;
 using System.Runtime.Versioning;
 using Emuera;
+using System.Threading.Tasks;
 
 #nullable enable
 
@@ -249,8 +250,8 @@ namespace MinorShift.Emuera.Forms
 			Console.WriteLine("Init:Start");
 			//必要なソースファイルを事前にメモリに一気に読み込む
 			Preload.Clear();
-			Preload.Load(Program.ErbDir, Application.DoEvents);
-			Preload.Load(Program.CsvDir, Application.DoEvents);
+			Preload.Load(Program.ErbDir);
+			Preload.Load(Program.CsvDir);
 			console.Initialize();
 			Console.WriteLine("Init:End");
 		}

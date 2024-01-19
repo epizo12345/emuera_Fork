@@ -1,35 +1,35 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using MinorShift.Emuera;
 
 namespace Emuera;
 
 static class Preload
 {
-    static readonly Dictionary<string, string[]> files = [];
+    static Dictionary<string, string[]> files = [];
 
     public static string[] GetFileLines(string path)
     {
         return files[path];
     }
 
-    public static void Load(string path, Action tickCallback)
+    public static void Load(string path)
     {
         var startTime = DateTime.Now;
         Console.WriteLine($"Load: {path} : Start");
         if (Directory.Exists(path))
         {
-            foreach (var childDirPath in Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories))
+            var filelines = Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories).AsParallel().Select((childDirPath, _) =>
             {
-                var text = File.ReadAllLines(childDirPath, Config.Encode);
-                files.Add(childDirPath.ToUpperInvariant(), text);
+                return (key: childDirPath.ToUpperInvariant(), value: File.ReadAllLines(childDirPath, Config.Encode));
+            });
 
-                var elapsedMs = (DateTime.Now - startTime).TotalMilliseconds;
-                if (elapsedMs > 100)
-                {
-                    tickCallback();
-                }
+            foreach (var (key, value) in filelines)
+            {
+                files.Add(key, value);
             }
         }
         else
