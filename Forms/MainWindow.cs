@@ -247,13 +247,14 @@ namespace MinorShift.Emuera.Forms
 
 		private void Init(object sender, EventArgs e)
 		{
+			var startTime = DateTime.Now;
 			Console.WriteLine("Init:Start");
 			//必要なソースファイルを事前にメモリに一気に読み込む
 			Preload.Clear();
 			Preload.Load(Program.ErbDir);
 			Preload.Load(Program.CsvDir);
 			console.Initialize();
-			Console.WriteLine("Init:End");
+			Console.WriteLine("Init:End " + (DateTime.Now - startTime).TotalMilliseconds + "ms");
 		}
 
 		/// <summary>
