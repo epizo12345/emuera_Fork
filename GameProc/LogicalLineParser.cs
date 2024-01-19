@@ -392,19 +392,20 @@ namespace MinorShift.Emuera.GameProc
 			//コメント行かどうかはここに来る前に判定しておく
 			try
 			{
-				#region 前置インクリメント、デクリメント行
-				if (stream.Current == '+' || stream.Current == '-')
+                #region 前置インクリメント、デクリメント行
+
+                var op = stream.Current;
+                if (op == '+' || op == '-')
 				{
-					char op = stream.Current;
 					WordCollection wc = LexicalAnalyzer.Analyse(stream, LexEndWith.EoL, LexAnalyzeFlag.None);
-					if ((!(wc.Current is OperatorWord opWT)) || ((opWT.Code != OperatorCode.Increment) && (opWT.Code != OperatorCode.Decrement)))
+					if ((wc.Current is not OperatorWord opWT) || ((opWT.Code != OperatorCode.Increment) && (opWT.Code != OperatorCode.Decrement)))
 					{
 						if (op == '+')
 							errMes = "行が\'+\'から始まっていますが、インクリメントではありません";
 						else
 							errMes = "行が\'-\'から始まっていますが、デクリメントではありません";
-						goto err;
-					}
+                        return new InvalidLine(position, errMes);
+                    }
 					wc.ShiftNext();
 					//token = EpressionParser.単語一個分取得(wc)
 					//token非変数
@@ -424,14 +425,15 @@ namespace MinorShift.Emuera.GameProc
 					{
 						if (stream.EOS) //引数の無い関数
 							return new InstructionLine(position, func, stream);
-						if ((stream.Current != ';') && (stream.Current != ' ') && (stream.Current != '\t') && (!Config.SystemAllowFullSpace || (stream.Current != '　')))
+						var current = stream.Current;
+                        if ((current != ';') && (current != ' ') && (current != '\t') && (!Config.SystemAllowFullSpace || (current != '　')))
 						{
-							if (stream.Current == '　')
+							if (current == '　')
 								errMes = "命令で行が始まっていますが、命令の直後に半角スペース・タブ以外の文字が来ています(この警告はシステムオプション「" + Config.GetConfigName(ConfigCode.SystemAllowFullSpace) + "」により無視できます)";
 							else
 								errMes = "命令で行が始まっていますが、命令の直後に半角スペース・タブ以外の文字が来ています";
-							goto err;
-						}
+                            return new InvalidLine(position, errMes);
+                        }
 						stream.ShiftNext();
 						return new InstructionLine(position, func, stream);
 					}
@@ -440,8 +442,8 @@ namespace MinorShift.Emuera.GameProc
 				if (stream.EOS)
 				{
 					errMes = "解釈できない行です";
-					goto err;
-				}
+                    return new InvalidLine(position, errMes);
+                }
 				//命令行ではない→代入行のはず
 				stream.Seek(0, System.IO.SeekOrigin.Begin);
 				OperatorCode assignOP = OperatorCode.NULL;
@@ -455,8 +457,8 @@ namespace MinorShift.Emuera.GameProc
 				catch (CodeEE)
 				{
 					errMes = "解釈できない行です";
-					goto err;
-				}
+                    return new InvalidLine(position, errMes);
+                }
 				//eramaker互換警告
 				//stream.Jump(-1);
 				//if ((stream.Current != ' ') && (stream.Current != '\t'))
@@ -475,8 +477,6 @@ namespace MinorShift.Emuera.GameProc
 					assignOP = OperatorCode.Assignment;
 				}
 				return new InstructionLine(position, FunctionIdentifier.SETFunction, assignOP, wc1, stream);
-			err:
-				return new InvalidLine(position, errMes);
 			}
 			catch (CodeEE e)
 			{

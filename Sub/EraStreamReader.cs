@@ -158,7 +158,7 @@ namespace MinorShift.Emuera.Sub
 				{
 					if (test[0] == '}')
 					{
-						if (test.Trim() != "}")
+						if (test.TrimEnd() != "}")
 							throw new CodeEE("行連結終端記号'}'の行に'}'以外の文字を含めることはできません", new ScriptPosition(filename, curNo));
 						break;
 					}
@@ -166,7 +166,7 @@ namespace MinorShift.Emuera.Sub
 					//{
 					//A}
 					//みたいなどうしようもないコードは知ったこっちゃない
-					if (test[0] == '{' && test.Length == 1)
+					if (test == "{")
 						throw new CodeEE("予期しない行連結始端記号'{'が見つかりました", new ScriptPosition(filename, curNo));
 				}
 				b.Append($"{line} ");

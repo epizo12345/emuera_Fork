@@ -985,7 +985,7 @@ namespace MinorShift.Emuera.GameView
 
 
 		error:
-			throw new CodeEE("html文字列\"" + st.RowString + "\"のタグ解析中にエラーが発生しました");
+			throw new CodeEE($"html文字列\"{st.RowString}\"のタグ解析中にエラーが発生しました");
 		}
 
 		private static int stringToColorInt32(string str)

@@ -229,7 +229,7 @@ namespace MinorShift.Emuera.GameView
 		const string ErrorButtonsText = "__openFileWithDebug__";
 		private readonly MainWindow window;
 
-		MinorShift.Emuera.GameProc.Process emuera;
+		MinorShift.Emuera.GameProc.Process process;
 		ConsoleState state = ConsoleState.Initializing;
 		public bool Enabled { get { return window.Created; } }
 
@@ -343,15 +343,15 @@ namespace MinorShift.Emuera.GameView
 		{
 			GlobalStatic.Console = this;
 			// GlobalStatic.MainWindow = window;
-			emuera = new GameProc.Process(this);
-			GlobalStatic.Process = emuera;
+			process = new GameProc.Process(this);
+			GlobalStatic.Process = process;
 			if (Program.DebugMode && Config.DebugShowWindow)
 			{
 				OpenDebugDialog();
 				window.Focus();
 			}
 			ClearDisplay();
-			if (!emuera.Initialize())
+			if (!process.Initialize())
 			{
 				state = ConsoleState.Error;
 				OutputLog(null);
@@ -402,14 +402,14 @@ namespace MinorShift.Emuera.GameView
 			//値の入力を求められない時は更新は必要ないはず
 			if (state != ConsoleState.WaitInput || !inputReq.NeedValue)
 				return;
-			if (!updatedGeneration && emuera.getCurrentLine != lastInputLine)
+			if (!updatedGeneration && process.getCurrentLine != lastInputLine)
 			{
 				//ボタン無しで次の入力に来たなら強制で世代更新
 				lastButtonGeneration = newButtonGeneration;
 			}
 			else
 				updatedGeneration = false;
-			lastInputLine = emuera.getCurrentLine;
+			lastInputLine = process.getCurrentLine;
 			//古い選択肢を選択できないように。INPUTで使った選択肢をINPUTSには流用できないように。
 			if (inputReq.InputType == InputType.IntValue)
 			{
@@ -465,7 +465,7 @@ namespace MinorShift.Emuera.GameView
 			}
 			RefreshStrings(true);
 			state = ConsoleState.Sleep;
-			emuera.UpdateCheckInfiniteLoopState();
+			process.UpdateCheckInfiniteLoopState();
 			System.Windows.Forms.Application.DoEvents();
 			if (time > 0)
 				System.Threading.Thread.Sleep(time);
@@ -509,7 +509,7 @@ namespace MinorShift.Emuera.GameView
 			req.StopMesskip = stopMesskip;
 			inputReq = req;
 			state = ConsoleState.WaitInput;
-			emuera.NeedWaitToEventComEnd = false;
+			process.NeedWaitToEventComEnd = false;
 		}
 
 
@@ -689,7 +689,7 @@ namespace MinorShift.Emuera.GameView
 					return;
 			}
 			state = ConsoleState.Running;
-			emuera.DoScript();
+			process.DoScript();
 			if (state == ConsoleState.Running)
 			{//RunningならProcessは処理を継続するべき
 				state = ConsoleState.Error;
@@ -720,9 +720,9 @@ namespace MinorShift.Emuera.GameView
 						else if (!Int64.TryParse(str, out inputValue))
 							return false;
 						if (inputReq.IsSystemInput)
-							emuera.InputSystemInteger(inputValue);
+							process.InputSystemInteger(inputValue);
 						else
-							emuera.InputInteger(inputValue);
+							process.InputInteger(inputValue);
 						break;
 					case InputType.StrValue:
 						if (string.IsNullOrEmpty(str) && inputReq.HasDefValue && !IsRunningTimer)
@@ -730,7 +730,7 @@ namespace MinorShift.Emuera.GameView
 						//空入力と時間切れ
 						if (str == null)
 							str = "";
-						emuera.InputString(str);
+						process.InputString(str);
 						break;
 				}
 				stopTimer();
@@ -796,7 +796,7 @@ namespace MinorShift.Emuera.GameView
 		//1823 Key入力を捕まえる
 		internal void InputMouseKey(int type, int result1, int result2, int result3, int result4)
 		{
-			emuera.InputResult5(type, result1, result2, result3, result4);
+			process.InputResult5(type, result1, result2, result3, result4);
 
 			inProcess = true;
 			try
@@ -935,7 +935,7 @@ namespace MinorShift.Emuera.GameView
 				FileName = Config.TextEditor
 			};
 			var ignoreCaseCmp = StringComparison.InvariantCultureIgnoreCase;
-			string fname = pos.Filename.ToUpper();
+			string fname = pos.Filename.ToString().ToUpper();
 			if (fname.EndsWith(".CSV", ignoreCaseCmp))
 			{
 				if (fname.Contains(Program.CsvDir, ignoreCaseCmp))
@@ -1403,7 +1403,7 @@ namespace MinorShift.Emuera.GameView
 			//if (!dTraceLogChanged && !force)
 			//	return null;
 			StringBuilder builder = new("");
-			LogicalLine line = emuera.GetScaningLine();
+			LogicalLine line = process.GetScaningLine();
 			builder.AppendLine("*実行中の行");
 			if ((line == null) || (line.Position == null))
 			{
@@ -1442,7 +1442,7 @@ namespace MinorShift.Emuera.GameView
 				}
 			}
 			dd = new DebugDialog();
-			dd.SetParent(this, emuera);
+			dd.SetParent(this, process);
 			dd.Show();
 		}
 
@@ -1553,7 +1553,7 @@ namespace MinorShift.Emuera.GameView
 				ArgumentParser.SetArgumentTo(func);
 				if (func.IsError)
 					throw new CodeEE(func.ErrMes);
-				emuera.DoDebugNormalFunction(func, munchkin);
+				process.DoDebugNormalFunction(func, munchkin);
 				if (func.FunctionCode == FunctionCode.SET)
 				{
 					if (!outputDebugConsole)
@@ -1570,7 +1570,7 @@ namespace MinorShift.Emuera.GameView
 				}
 				else
 					PrintError(e.Message);
-				emuera.clearMethodStack();
+				process.clearMethodStack();
 			}
 			finally
 			{
@@ -1776,7 +1776,7 @@ namespace MinorShift.Emuera.GameView
 			redraw = ConsoleRedraw.Normal;
 			UseUserStyle = false;
 			userStyle = new StringStyle(Config.ForeColor, FontStyle.Regular, null);
-			emuera.BeginTitle();
+			process.BeginTitle();
 			ReadAnyKey(false, false);
 			callEmueraProgram("");
 			RefreshStrings(true);
@@ -1815,7 +1815,7 @@ namespace MinorShift.Emuera.GameView
 			state = ConsoleState.Initializing;
 			PrintSingleLine("ERB再読み込み中……", true);
 			force_temporary = true;
-			emuera.ReloadErb();
+			process.ReloadErb();
 			force_temporary = false;
 			PrintSingleLine("再読み込み完了", true);
 			RefreshStrings(true);
@@ -1866,7 +1866,7 @@ namespace MinorShift.Emuera.GameView
 			state = ConsoleState.Initializing;
 			PrintSingleLine("ERB再読み込み中……", true);
 			force_temporary = true;
-			emuera.ReloadPartialErb(path);
+			process.ReloadPartialErb(path);
 			force_temporary = false;
 			PrintSingleLine("再読み込み完了", true);
 			RefreshStrings(true);
@@ -1912,7 +1912,7 @@ namespace MinorShift.Emuera.GameView
 			state = ConsoleState.Initializing;
 			PrintSingleLine("ERB再読み込み中……", true);
 			force_temporary = true;
-			emuera.ReloadPartialErb(paths);
+			process.ReloadPartialErb(paths);
 			force_temporary = false;
 			PrintSingleLine("再読み込み完了", true);
 			RefreshStrings(true);
