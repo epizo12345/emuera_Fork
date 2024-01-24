@@ -8,6 +8,7 @@ using MinorShift.Emuera.GameProc.Function;
 using MinorShift._Library;
 using MinorShift.Emuera.GameData;
 using MinorShift.Emuera.GameData.Function;
+using System.IO;
 
 namespace MinorShift.Emuera.GameProc
 {
@@ -25,6 +26,8 @@ namespace MinorShift.Emuera.GameProc
 
 		bool noError = true;
 		Queue<DimLineWC> dimlines;
+
+
 		/// <summary>
 		/// 
 		/// </summary>

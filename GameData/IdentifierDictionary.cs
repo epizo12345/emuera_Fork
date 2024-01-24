@@ -472,9 +472,9 @@ namespace MinorShift.Emuera
 					}
 				}
 			}
-			if (localvarTokenDic.ContainsKey(key))
+			if (localvarTokenDic.TryGetValue(key, out VariableLocal value))
 			{
-				if (localvarTokenDic[key].IsForbid)
+				if (value.IsForbid)
 				{
 					throw new CodeEE("呼び出された変数\"" + key + "\"は設定により使用が禁止されています");
 				}
@@ -492,9 +492,8 @@ namespace MinorShift.Emuera
 					if (Config.ICFunction)
 						subKey = subKey.ToUpper();
 				}
-				LocalVariableToken retLocal = localvarTokenDic[key].GetExistLocalVariableToken(subKey);
-				if (retLocal == null)
-					retLocal = localvarTokenDic[key].GetNewLocalVariableToken(subKey, line.ParentLabelLine);
+				LocalVariableToken retLocal = value.GetExistLocalVariableToken(subKey);
+				retLocal ??= value.GetNewLocalVariableToken(subKey, line.ParentLabelLine);
 				return retLocal;
 			}
 			if (varTokenDic.TryGetValue(key, out ret))

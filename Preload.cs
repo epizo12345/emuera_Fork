@@ -7,13 +7,13 @@ using MinorShift.Emuera;
 
 namespace Emuera;
 
-static class Preload
+static partial class Preload
 {
-    static Dictionary<string, string[]> files = [];
+    static Dictionary<int, string[]> files = [];
 
-    public static string[] GetFileLines(string path)
+    public static string[] GetFileLines(ReadOnlySpan<char> path)
     {
-        return files[path];
+        return files[string.GetHashCode(path, StringComparison.OrdinalIgnoreCase)];
     }
 
     public static void Load(string path)
@@ -24,7 +24,8 @@ static class Preload
         {
             var filelines = Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories).AsParallel().Select((childDirPath, _) =>
             {
-                return (key: childDirPath.ToUpperInvariant(), value: File.ReadAllLines(childDirPath, Config.Encode));
+                var key = string.GetHashCode(childDirPath, StringComparison.OrdinalIgnoreCase);
+                return (key: key, value: File.ReadAllLines(childDirPath, Config.Encode));
             });
 
             foreach (var (key, value) in filelines)
@@ -35,7 +36,7 @@ static class Preload
         else
         {
             var text = File.ReadAllLines(path, Config.Encode);
-            files.Add(path.ToUpperInvariant(), text);
+            files.Add(string.GetHashCode(path, StringComparison.OrdinalIgnoreCase), text);
         }
         Console.WriteLine($"Load: {path} : End in {(DateTime.Now - startTime).TotalMilliseconds}ms");
     }

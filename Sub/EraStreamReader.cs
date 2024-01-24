@@ -50,19 +50,19 @@ namespace MinorShift.Emuera.Sub
 			return true;
 		}
 
-		public bool OpenOnCache(string path)
+		public bool OpenOnCache(ReadOnlySpan<char> path)
 		{
 			return OpenOnCache(path, Path.GetFileName(path));
 		}
 
 
-		public bool OpenOnCache(string path, string name)
+		public bool OpenOnCache(ReadOnlySpan<char> path, ReadOnlySpan<char> name)
 		{
-			filepath = path;
-			filename = name;
+			filepath = path.ToString();
+			filename = name.ToString();
 			curNo = 0;
 			nextNo = 0;
-			_fileLine = Preload.GetFileLines(path.ToUpperInvariant());
+			_fileLine = Preload.GetFileLines(path);
 			return true;
 		}
 
@@ -153,12 +153,12 @@ namespace MinorShift.Emuera.Sub
 						match = match.NextMatch();
 					}
 				}
-				string test = line.TrimStart();
+				var test = line.AsSpan().TrimStart();
 				if (test.Length > 0)
 				{
 					if (test[0] == '}')
 					{
-						if (test.TrimEnd() != "}")
+						if (!test.TrimEnd().SequenceEqual("}"))
 							throw new CodeEE("行連結終端記号'}'の行に'}'以外の文字を含めることはできません", new ScriptPosition(filename, curNo));
 						break;
 					}
@@ -166,7 +166,7 @@ namespace MinorShift.Emuera.Sub
 					//{
 					//A}
 					//みたいなどうしようもないコードは知ったこっちゃない
-					if (test == "{")
+					if (test.SequenceEqual("{"))
 						throw new CodeEE("予期しない行連結始端記号'{'が見つかりました", new ScriptPosition(filename, curNo));
 				}
 				b.Append($"{line} ");

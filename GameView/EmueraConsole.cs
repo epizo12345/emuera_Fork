@@ -341,6 +341,8 @@ namespace MinorShift.Emuera.GameView
 
 		public void Initialize()
 		{
+			Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
+			Trace.AutoFlush = true;
 			GlobalStatic.Console = this;
 			// GlobalStatic.MainWindow = window;
 			process = new GameProc.Process(this);
@@ -934,7 +936,7 @@ namespace MinorShift.Emuera.GameView
 			{
 				FileName = Config.TextEditor
 			};
-			var ignoreCaseCmp = StringComparison.InvariantCultureIgnoreCase;
+			var ignoreCaseCmp = StringComparison.OrdinalIgnoreCase;
 			string fname = pos.Filename.ToString().ToUpper();
 			if (fname.EndsWith(".CSV", ignoreCaseCmp))
 			{
@@ -1897,10 +1899,12 @@ namespace MinorShift.Emuera.GameView
 			SearchOption op = SearchOption.AllDirectories;
 			if (!Config.SearchSubdirectory)
 				op = SearchOption.TopDirectoryOnly;
-			string[] fnames = Directory.GetFiles(erbPath, "*.ERB", op);
-			for (int i = 0; i < fnames.Length; i++)
-				if (Path.GetExtension(fnames[i]).Equals(".ERB", StringComparison.InvariantCultureIgnoreCase))
-					paths.Add(fnames[i]);
+			var fnames = Directory.EnumerateFiles(erbPath, "*.ERB", op);
+			foreach (var fname in fnames)
+			{
+				if (Ascii.EqualsIgnoreCase(Path.GetExtension(fname), ".ERB"))
+					paths.Add(fname);
+			}
 			bool notRedraw = false;
 			if (redraw == ConsoleRedraw.None)
 			{

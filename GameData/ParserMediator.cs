@@ -65,7 +65,7 @@ namespace MinorShift.Emuera
 					string[] last = baseTokens[^1].Split(',');
 					baseTokens[^1] = last[0];
 					string[] tokens = [string.Join(',', baseTokens), last[1]];
-                    pos = new ScriptPosition(filepath, lineNo);
+					pos = new ScriptPosition(filepath, lineNo);
 					//右がERB中の表記、左が変換先になる。
 					string value = tokens[0].Trim();
 					string key = string.Format("[[{0}]]", tokens[1].Trim());

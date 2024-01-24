@@ -9,6 +9,7 @@ using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.GameData;
 using MinorShift.Emuera.GameData.Function;
 using MinorShift.Emuera.GameProc.Function;
+using System.Windows.Documents;
 
 namespace MinorShift.Emuera.GameProc
 {
@@ -17,12 +18,17 @@ namespace MinorShift.Emuera.GameProc
 		public static bool ParseSharpLine(FunctionLabelLine label, StringStream st, ScriptPosition position, List<string> OnlyLabel)
 		{
 			st.ShiftNext();//'#'を飛ばす
-			string token = LexicalAnalyzer.ReadSingleIdentifier(st);//#～自体にはマクロ非適用
+			var token = LexicalAnalyzer.ReadSingleIdentifierROS(st);//#～自体にはマクロ非適用
 			if (Config.ICFunction)
-				token = token.ToUpper();
+			{
+				Span<char> dest = new char[token.Length];
+				Ascii.ToUpper(token, dest, out int _);
+				token = dest;
+			}
 			//#行として不正な行でもAnalyzeに行って引っかかることがあるので、先に存在しない#～は弾いてしまう
-			if (token == null || (token != "SINGLE" && token != "LATER" && token != "PRI" && token != "ONLY" && token != "FUNCTION" && token != "FUNCTIONS"
-				&& token != "LOCALSIZE" && token != "LOCALSSIZE" && token != "DIM" && token != "DIMS"))
+			if (token.IsEmpty || (!token.SequenceEqual("SINGLE") && !token.SequenceEqual("LATER") && !token.SequenceEqual("PRI") && !token.SequenceEqual("ONLY") && !token.SequenceEqual("FUNCTION")
+				 && !token.SequenceEqual("FUNCTIONS")
+				&& !token.SequenceEqual("LOCALSIZE") && !token.SequenceEqual("LOCALSSIZE") && !token.SequenceEqual("DIM") && !token.SequenceEqual("DIMS")))
 			{
 				ParserMediator.Warn("解釈できない#行です", position, 1);
 				return false;
@@ -145,32 +151,32 @@ namespace MinorShift.Emuera.GameProc
 					case "FUNCTIONS":
 						if (!string.IsNullOrEmpty(label.LabelName) && char.IsDigit(label.LabelName[0]))
 						{
-							ParserMediator.Warn("#" + token + "属性は関数名が数字で始まる関数には指定できません", position, 1);
+							ParserMediator.Warn($"#{token}属性は関数名が数字で始まる関数には指定できません", position, 1);
 							label.IsError = true;
 							label.ErrMes = "関数名が数字で始まっています";
 							break;
 						}
 						if (label.IsMethod)
 						{
-							if ((label.MethodType == typeof(Int64) && token == "FUNCTION") || (label.MethodType == typeof(string) && token == "FUNCTIONS"))
+							if ((label.MethodType == typeof(Int64) && token.SequenceEqual("FUNCTION")) || (label.MethodType == typeof(string) && token.SequenceEqual("FUNCTIONS")))
 							{
-								ParserMediator.Warn("関数" + label.LabelName + "にはすでに#" + token + "が宣言されています(この行は無視されます)", position, 1);
+								ParserMediator.Warn($"関数{label.LabelName}にはすでに#{token}が宣言されています(この行は無視されます)", position, 1);
 								return false;
 							}
-							if (label.MethodType == typeof(Int64) && token == "FUNCTIONS")
+							if (label.MethodType == typeof(Int64) && token.SequenceEqual("FUNCTIONS"))
 								ParserMediator.Warn("関数" + label.LabelName + "にはすでに#FUNCTIONが宣言されています", position, 2);
-							else if (label.MethodType == typeof(string) && token == "FUNCTION")
+							else if (label.MethodType == typeof(string) && token.SequenceEqual("FUNCTION"))
 								ParserMediator.Warn("関数" + label.LabelName + "にはすでに#FUNCTIONSが宣言されています", position, 2);
 							return false;
 						}
 						if (label.Depth == 0)
 						{
-							ParserMediator.Warn("システム関数に#" + token + "が指定されています", position, 2);
+							ParserMediator.Warn($"システム関数に#{token}が指定されています", position, 2);
 							return false;
 						}
 						label.IsMethod = true;
 						label.Depth = 0;
-						if (token == "FUNCTIONS")
+						if (token.SequenceEqual("FUNCTIONS"))
 							label.MethodType = typeof(string);
 						else
 							label.MethodType = typeof(Int64);
@@ -200,37 +206,37 @@ namespace MinorShift.Emuera.GameProc
 						{
 							if (wc.EOL)
 							{
-								ParserMediator.Warn("#" + token + "の後に有効な数値が指定されていません", position, 2);
+								ParserMediator.Warn($"#{token}の後に有効な数値が指定されていません", position, 2);
 								break;
 							}
 							//イベント関数では指定しても無視される
 							if (label.IsEvent)
 							{
-								ParserMediator.Warn("イベント関数では#" + token + "による" + token[..^4] + "のサイズ指定は無視されます", position, 1);
+								ParserMediator.Warn($"イベント関数では#{token}による{token[..^4]}のサイズ指定は無視されます", position, 1);
 								break;
 							}
 							IOperandTerm arg = ExpressionParser.ReduceIntegerTerm(wc, TermEndWith.EoL);
 							if ((!(arg.Restructure(null) is SingleTerm sizeTerm)) || (sizeTerm.GetOperandType() != typeof(Int64)))
 							{
-								ParserMediator.Warn("#" + token + "の後に有効な定数式が指定されていません", position, 2);
+								ParserMediator.Warn($"#{token}の後に有効な定数式が指定されていません", position, 2);
 								break;
 							}
 							if (sizeTerm.Int <= 0)
 							{
-								ParserMediator.Warn("#" + token + "に0以下の値(" + sizeTerm.Int.ToString() + ")が与えられました。設定は無視されます", position, 1);
+								ParserMediator.Warn($"#{token}に0以下の値({sizeTerm.Int})が与えられました。設定は無視されます", position, 1);
 								break;
 							}
 							if (sizeTerm.Int >= Int32.MaxValue)
 							{
-								ParserMediator.Warn("#" + token + "に大きすぎる値(" + sizeTerm.Int.ToString() + ")が与えられました。設定は無視されます", position, 1);
+								ParserMediator.Warn($"#{token}に大きすぎる値({sizeTerm.Int})が与えられました。設定は無視されます", position, 1);
 								break;
 							}
 							int size = (int)sizeTerm.Int;
-							if (token == "LOCALSIZE")
+							if (token.SequenceEqual("LOCALSIZE"))
 							{
 								if (GlobalStatic.IdentifierDictionary.getLocalIsForbid("LOCAL"))
 								{
-									ParserMediator.Warn("#" + token + "が指定されていますが変数LOCALは使用禁止されています", position, 2);
+									ParserMediator.Warn($"#{token}が指定されていますが変数LOCALは使用禁止されています", position, 2);
 									break;
 								}
 								if (label.LocalLength > 0)
@@ -241,7 +247,7 @@ namespace MinorShift.Emuera.GameProc
 							{
 								if (GlobalStatic.IdentifierDictionary.getLocalIsForbid("LOCALS"))
 								{
-									ParserMediator.Warn("#" + token + "が指定されていますが変数LOCALSは使用禁止されています", position, 2);
+									ParserMediator.Warn($"#{token}が指定されていますが変数LOCALSは使用禁止されています", position, 2);
 									break;
 								}
 								if (label.LocalsLength > 0)
@@ -253,10 +259,10 @@ namespace MinorShift.Emuera.GameProc
 					case "DIM":
 					case "DIMS":
 						{
-							UserDefinedVariableData data = UserDefinedVariableData.Create(wc, token == "DIMS", true, position);
+							UserDefinedVariableData data = UserDefinedVariableData.Create(wc, token.SequenceEqual("DIMS"), true, position);
 							if (!label.AddPrivateVariable(data))
 							{
-								ParserMediator.Warn("変数名" + data.Name + "は既に使用されています", position, 2);
+								ParserMediator.Warn($"変数名{data.Name}は既に使用されています", position, 2);
 								return false;
 							}
 							break;
@@ -392,10 +398,10 @@ namespace MinorShift.Emuera.GameProc
 			//コメント行かどうかはここに来る前に判定しておく
 			try
 			{
-                #region 前置インクリメント、デクリメント行
+				#region 前置インクリメント、デクリメント行
 
-                var op = stream.Current;
-                if (op == '+' || op == '-')
+				var op = stream.Current;
+				if (op == '+' || op == '-')
 				{
 					WordCollection wc = LexicalAnalyzer.Analyse(stream, LexEndWith.EoL, LexAnalyzeFlag.None);
 					if ((wc.Current is not OperatorWord opWT) || ((opWT.Code != OperatorCode.Increment) && (opWT.Code != OperatorCode.Decrement)))
@@ -404,8 +410,8 @@ namespace MinorShift.Emuera.GameProc
 							errMes = "行が\'+\'から始まっていますが、インクリメントではありません";
 						else
 							errMes = "行が\'-\'から始まっていますが、デクリメントではありません";
-                        return new InvalidLine(position, errMes);
-                    }
+						return new InvalidLine(position, errMes);
+					}
 					wc.ShiftNext();
 					//token = EpressionParser.単語一個分取得(wc)
 					//token非変数
@@ -426,14 +432,14 @@ namespace MinorShift.Emuera.GameProc
 						if (stream.EOS) //引数の無い関数
 							return new InstructionLine(position, func, stream);
 						var current = stream.Current;
-                        if ((current != ';') && (current != ' ') && (current != '\t') && (!Config.SystemAllowFullSpace || (current != '　')))
+						if ((current != ';') && (current != ' ') && (current != '\t') && (!Config.SystemAllowFullSpace || (current != '　')))
 						{
 							if (current == '　')
 								errMes = "命令で行が始まっていますが、命令の直後に半角スペース・タブ以外の文字が来ています(この警告はシステムオプション「" + Config.GetConfigName(ConfigCode.SystemAllowFullSpace) + "」により無視できます)";
 							else
 								errMes = "命令で行が始まっていますが、命令の直後に半角スペース・タブ以外の文字が来ています";
-                            return new InvalidLine(position, errMes);
-                        }
+							return new InvalidLine(position, errMes);
+						}
 						stream.ShiftNext();
 						return new InstructionLine(position, func, stream);
 					}
@@ -442,8 +448,8 @@ namespace MinorShift.Emuera.GameProc
 				if (stream.EOS)
 				{
 					errMes = "解釈できない行です";
-                    return new InvalidLine(position, errMes);
-                }
+					return new InvalidLine(position, errMes);
+				}
 				//命令行ではない→代入行のはず
 				stream.Seek(0, System.IO.SeekOrigin.Begin);
 				OperatorCode assignOP = OperatorCode.NULL;
@@ -457,8 +463,8 @@ namespace MinorShift.Emuera.GameProc
 				catch (CodeEE)
 				{
 					errMes = "解釈できない行です";
-                    return new InvalidLine(position, errMes);
-                }
+					return new InvalidLine(position, errMes);
+				}
 				//eramaker互換警告
 				//stream.Jump(-1);
 				//if ((stream.Current != ' ') && (stream.Current != '\t'))
