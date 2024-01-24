@@ -202,7 +202,7 @@ static class Program
 	static Program()
 	{
 		ExeDir = Path.Join(
-			Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location).AsSpan(),
+			AppContext.BaseDirectory.AsSpan(),
 			[Path.DirectorySeparatorChar]
 		);
 

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Reflection;
 
 namespace MinorShift._Library
 {
@@ -8,10 +7,11 @@ namespace MinorShift._Library
 	{
 		static AssemblyData()
 		{
-			ExePath = Assembly.GetEntryAssembly().Location;
+			ExePath = Environment.ProcessPath;
 			//エラー出力用
 			//1815 .exeが東方板のNGワードに引っかかるそうなので除去
 			ExeName = Path.GetFileNameWithoutExtension(ExePath);
+			emueraVer = typeof(AssemblyData).Assembly.GetName().Version;
 		}
 
 		/// <summary>
@@ -25,7 +25,7 @@ namespace MinorShift._Library
 		public static readonly string ExeName;
 
 
-		public static Version emueraVer = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 0);
+		public static Version emueraVer;
 
 		/// <summary>
 		/// 2重起動防止。既に同名exeが実行されているならばtrueを返す

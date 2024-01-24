@@ -4,7 +4,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.IO;
 using MinorShift.Emuera.Sub;
-using System.Reflection;
 using MinorShift._Library;
 
 namespace MinorShift.Emuera.GameData
