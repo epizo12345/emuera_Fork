@@ -15,6 +15,7 @@ using MinorShift.Emuera.Forms;
 using System.Runtime.Versioning;
 using Emuera;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 #nullable enable
 
@@ -247,14 +248,20 @@ namespace MinorShift.Emuera.Forms
 
 		private void Init(object sender, EventArgs e)
 		{
-			var startTime = DateTime.Now;
+			var stopWatch = new Stopwatch();
+			stopWatch.Start();
 			Console.WriteLine("Init:Start");
+			Console.WriteLine("File:Preload:Start");
 			//必要なソースファイルを事前にメモリに一気に読み込む
 			Preload.Clear();
 			Preload.Load(Program.ErbDir);
 			Preload.Load(Program.CsvDir);
+
+			Console.WriteLine("File:Preload:End " + stopWatch.ElapsedMilliseconds + "ms");
+
 			console.Initialize();
-			Console.WriteLine("Init:End " + (DateTime.Now - startTime).TotalMilliseconds + "ms");
+
+			Console.WriteLine("Init:End " + stopWatch.ElapsedMilliseconds + "ms");
 		}
 
 		/// <summary>
@@ -664,7 +671,7 @@ namespace MinorShift.Emuera.Forms
 						System.Windows.MessageBox.Show("ファイルがありません", "File Not Found");
 						return;
 					}
-					if (Path.GetExtension(fname).Equals(".ERB", StringComparison.InvariantCultureIgnoreCase))
+					if (Path.GetExtension(fname).Equals(".ERB", StringComparison.OrdinalIgnoreCase))
 					{
 						System.Windows.MessageBox.Show("ERBファイル以外は読み込めません", "ファイル形式エラー");
 						return;
