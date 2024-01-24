@@ -391,7 +391,7 @@ internal static partial class LexicalAnalyzer
 		return ReadSingleIdentifierROS(st).ToString();
 	}
 
-	static SearchValues<char> _searchValues = SearchValues.Create(""" 　.+-*/%=!<>|&^~?#)}],:({[$\'"@;""" + "\t");
+	static readonly SearchValues<char> _searchValues = SearchValues.Create(""" 　.+-*/%=!<>|&^~?#)}],:({[$\'"@;""" + "\t");
 
 	public static ReadOnlySpan<char> ReadSingleIdentifierROS(StringStream st)
 	{
@@ -401,64 +401,11 @@ internal static partial class LexicalAnalyzer
 		if (index != -1)
 		{
 			st.Jump(index);
-			return row[..(index)];
+			return row[..index];
 		}
 
 		st.Jump(row.Length);
 		return row;
-
-
-		var count = 0;
-		foreach (var item in row)
-		{
-			switch (item)
-			{
-				case ' ':
-				case '\t':
-				case '+':
-				case '-':
-				case '*':
-				case '/':
-				case '%':
-				case '=':
-				case '!':
-				case '<':
-				case '>':
-				case '|':
-				case '&':
-				case '^':
-				case '~':
-				case '?':
-				case '#':
-				case ')':
-				case '}':
-				case ']':
-				case ',':
-				case ':':
-				case '(':
-				case '{':
-				case '[':
-				case '$':
-				case '\\':
-				case '\'':
-				case '\"':
-				case '@':
-				case '.':
-				case ';'://コメントに関しては直後に行われるであろうSkipWhiteSpaceなどが対応する。
-					st.Jump(count);
-					return row[..count];
-				case '　':
-					if (!Config.SystemAllowFullSpace)
-						throw new CodeEE("予期しない全角スペースを発見しました(この警告はシステムオプション「" + Config.GetConfigName(ConfigCode.SystemAllowFullSpace) + "」により無視できます)");
-
-					st.Jump(count);
-					return row[..count];
-			}
-			count++;
-		}
-
-		st.Jump(count);
-		return row[..count];
 	}
 
 
