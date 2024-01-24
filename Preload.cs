@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -19,7 +20,7 @@ static partial class Preload
     public static void Load(string path)
     {
         var startTime = DateTime.Now;
-        Console.WriteLine($"Load: {path} : Start");
+        Debug.WriteLine($"Load: {path} : Start");
         if (Directory.Exists(path))
         {
             var filelines = Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories).AsParallel().Select((childDirPath, _) =>
@@ -38,7 +39,7 @@ static partial class Preload
             var text = File.ReadAllLines(path, Config.Encode);
             files.Add(string.GetHashCode(path, StringComparison.OrdinalIgnoreCase), text);
         }
-        Console.WriteLine($"Load: {path} : End in {(DateTime.Now - startTime).TotalMilliseconds}ms");
+        Debug.WriteLine($"Load: {path} : End in {(DateTime.Now - startTime).TotalMilliseconds}ms");
     }
 
     public static void Clear()

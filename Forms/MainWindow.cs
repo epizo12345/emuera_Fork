@@ -250,18 +250,18 @@ namespace MinorShift.Emuera.Forms
 		{
 			var stopWatch = new Stopwatch();
 			stopWatch.Start();
-			Console.WriteLine("Init:Start");
-			Console.WriteLine("File:Preload:Start");
+			Debug.WriteLine("Init:Start");
+			Debug.WriteLine("File:Preload:Start");
 			//必要なソースファイルを事前にメモリに一気に読み込む
 			Preload.Clear();
 			Preload.Load(Program.ErbDir);
 			Preload.Load(Program.CsvDir);
 
-			Console.WriteLine("File:Preload:End " + stopWatch.ElapsedMilliseconds + "ms");
+			Debug.WriteLine("File:Preload:End " + stopWatch.ElapsedMilliseconds + "ms");
 
 			console.Initialize();
 
-			Console.WriteLine("Init:End " + stopWatch.ElapsedMilliseconds + "ms");
+			Debug.WriteLine("Init:End " + stopWatch.ElapsedMilliseconds + "ms");
 		}
 
 		/// <summary>
