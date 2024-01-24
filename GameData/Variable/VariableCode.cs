@@ -4,12 +4,10 @@ using System.Text;
 
 namespace MinorShift.Emuera.GameData.Variable
 {
-	//難読化用属性。enum.ToString()やenum.Parse()を行うなら(Exclude=true)にすること。
-	[global::System.Reflection.Obfuscation(Exclude=true)]
 	internal enum VariableCode
 	{
 		__NULL__ = 0x00000000,
-        __CAN_FORBID__ = 0x00010000,
+		__CAN_FORBID__ = 0x00010000,
 		__INTEGER__ = 0x00020000,
 		__STRING__ = 0x00040000,
 		__ARRAY_1D__ = 0x00080000,
@@ -21,9 +19,9 @@ namespace MinorShift.Emuera.GameData.Variable
 		__GLOBAL__ = 0x04000000,//グローバル変数。
 		__ARRAY_2D__ = 0x08000000,//二次元配列。キャラクタ変数フラグと排他
 		__SAVE_EXTENDED__ = 0x10000000,//拡張セーブ機能によってセーブするべき変数。
-							//このフラグを立てておけば勝手にセーブされる(はず)。名前を変えると正常にロードできなくなるので注意。
-        __ARRAY_3D__ = 0x20000000,//三次元配列
-        __CONSTANT__ = 0x40000000,//完全定数CSVから読み込まれる～NAME系がこれに該当
+									   //このフラグを立てておけば勝手にセーブされる(はず)。名前を変えると正常にロードできなくなるので注意。
+		__ARRAY_3D__ = 0x20000000,//三次元配列
+		__CONSTANT__ = 0x40000000,//完全定数CSVから読み込まれる～NAME系がこれに該当
 
 		__UPPERCASE__ = 0x7FFF0000,
 		__LOWERCASE__ = 0x0000FFFF,
@@ -62,31 +60,31 @@ namespace MinorShift.Emuera.GameData.Variable
 		NOTUSE_1C = 0x1C | __INTEGER__ | __ARRAY_1D__,//未使用領域
 		NOTUSE_1D = 0x1D | __INTEGER__ | __ARRAY_1D__,//未使用領域
 		A = 0x1E | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,//汎用変数
-        B = 0x1F | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
-        C = 0x20 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
-        D = 0x21 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
-        E = 0x22 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
-        F = 0x23 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
-        G = 0x24 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
-        H = 0x25 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
-        I = 0x26 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
-        J = 0x27 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
-        K = 0x28 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
-        L = 0x29 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
-        M = 0x2A | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
-        N = 0x2B | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
-        O = 0x2C | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
-        P = 0x2D | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
-        Q = 0x2E | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
-        R = 0x2F | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
-        S = 0x30 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
-        T = 0x31 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
-        U = 0x32 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
-        V = 0x33 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
-        W = 0x34 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
-        X = 0x35 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
-        Y = 0x36 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
-        Z = 0x37 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
+		B = 0x1F | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
+		C = 0x20 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
+		D = 0x21 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
+		E = 0x22 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
+		F = 0x23 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
+		G = 0x24 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
+		H = 0x25 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
+		I = 0x26 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
+		J = 0x27 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
+		K = 0x28 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
+		L = 0x29 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
+		M = 0x2A | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
+		N = 0x2B | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
+		O = 0x2C | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
+		P = 0x2D | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
+		Q = 0x2E | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
+		R = 0x2F | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
+		S = 0x30 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
+		T = 0x31 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
+		U = 0x32 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
+		V = 0x33 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
+		W = 0x34 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
+		X = 0x35 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
+		Y = 0x36 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
+		Z = 0x37 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,
 		NOTUSE_38 = 0x38 | __INTEGER__ | __ARRAY_1D__,//未使用領域
 		NOTUSE_39 = 0x39 | __INTEGER__ | __ARRAY_1D__,//未使用領域
 		NOTUSE_3A = 0x3A | __INTEGER__ | __ARRAY_1D__,//未使用領域
@@ -149,10 +147,10 @@ namespace MinorShift.Emuera.GameData.Variable
 		STAIN = 0x0E | __INTEGER__ | __CHARACTER_DATA__ | __ARRAY_1D__,//調教中パラメータ。汚れ
 		GOTJUEL = 0x0F | __INTEGER__ | __CHARACTER_DATA__ | __ARRAY_1D__ | __CAN_FORBID__,//調教中パラメータ。今回獲得した珠。PALAM.CSV
 		NOWEX = 0x10 | __INTEGER__ | __CHARACTER_DATA__ | __ARRAY_1D__ | __CAN_FORBID__,//調教中パラメータ。直前のコマンドでどこで何回絶頂したか。
-        DOWNBASE = 0x11 | __INTEGER__ | __CHARACTER_DATA__ | __ARRAY_1D__ | __SAVE_EXTENDED__ | __EXTENDED__ | __CAN_FORBID__, //調教中パラメータ。LOSEBASEのキャラクタ変数版
-        CUP = 0x12 | __INTEGER__ | __CHARACTER_DATA__ | __ARRAY_1D__ | __SAVE_EXTENDED__ | __EXTENDED__ | __CAN_FORBID__,//調教中パラメータ。UPのキャラクタ変数版
-        CDOWN = 0x13 | __INTEGER__ | __CHARACTER_DATA__ | __ARRAY_1D__ | __SAVE_EXTENDED__ | __EXTENDED__ | __CAN_FORBID__,//調教中パラメータ。DOWNのキャラクタ変数版
-        TCVAR = 0x14 | __INTEGER__ | __CHARACTER_DATA__ | __ARRAY_1D__ | __SAVE_EXTENDED__ | __EXTENDED__ | __CAN_FORBID__,//キャラクタ変数での一時変数
+		DOWNBASE = 0x11 | __INTEGER__ | __CHARACTER_DATA__ | __ARRAY_1D__ | __SAVE_EXTENDED__ | __EXTENDED__ | __CAN_FORBID__, //調教中パラメータ。LOSEBASEのキャラクタ変数版
+		CUP = 0x12 | __INTEGER__ | __CHARACTER_DATA__ | __ARRAY_1D__ | __SAVE_EXTENDED__ | __EXTENDED__ | __CAN_FORBID__,//調教中パラメータ。UPのキャラクタ変数版
+		CDOWN = 0x13 | __INTEGER__ | __CHARACTER_DATA__ | __ARRAY_1D__ | __SAVE_EXTENDED__ | __EXTENDED__ | __CAN_FORBID__,//調教中パラメータ。DOWNのキャラクタ変数版
+		TCVAR = 0x14 | __INTEGER__ | __CHARACTER_DATA__ | __ARRAY_1D__ | __SAVE_EXTENDED__ | __EXTENDED__ | __CAN_FORBID__,//キャラクタ変数での一時変数
 
 
 		__COUNT_SAVE_CHARACTER_INTEGER_ARRAY__ = 0x11,
@@ -184,19 +182,19 @@ namespace MinorShift.Emuera.GameData.Variable
 		DC = 0x03 | __INTEGER__ | __ARRAY_2D__ | __SAVE_EXTENDED__ | __EXTENDED__ | __CAN_FORBID__,
 		DD = 0x04 | __INTEGER__ | __ARRAY_2D__ | __SAVE_EXTENDED__ | __EXTENDED__ | __CAN_FORBID__,
 		DE = 0x05 | __INTEGER__ | __ARRAY_2D__ | __SAVE_EXTENDED__ | __EXTENDED__ | __CAN_FORBID__,
-        __COUNT_INTEGER_ARRAY_2D__ = 0x06,
+		__COUNT_INTEGER_ARRAY_2D__ = 0x06,
 
 		__COUNT_STRING_ARRAY_2D__ = 0x00,
 
 		TA = 0x00 | __INTEGER__ | __ARRAY_3D__ | __SAVE_EXTENDED__ | __EXTENDED__ | __CAN_FORBID__,
-        TB = 0x01 | __INTEGER__ | __ARRAY_3D__ | __SAVE_EXTENDED__ | __EXTENDED__ | __CAN_FORBID__,
-        __COUNT_INTEGER_ARRAY_3D__ = 0x02,
+		TB = 0x01 | __INTEGER__ | __ARRAY_3D__ | __SAVE_EXTENDED__ | __EXTENDED__ | __CAN_FORBID__,
+		__COUNT_INTEGER_ARRAY_3D__ = 0x02,
 
-        __COUNT_STRING_ARRAY_3D__ = 0x00,
+		__COUNT_STRING_ARRAY_3D__ = 0x00,
 
 		//CALCな変数については番号順はどうでもいい。
 		//1803beta004 ～～NAME系については番号順をConstantDataが使用するので重要
-		
+
 		RAND = 0x00 | __INTEGER__ | __ARRAY_1D__ | __CALC__ | __UNCHANGEABLE__,//乱数。０～引数-1までの値を返す。
 		CHARANUM = 0x01 | __INTEGER__ | __CALC__ | __UNCHANGEABLE__,//キャラクタ数。キャラクタ登録数を返す。
 
@@ -228,7 +226,7 @@ namespace MinorShift.Emuera.GameData.Variable
 		GLOBALNAME = 0x18 | __STRING__ | __ARRAY_1D__ | __UNCHANGEABLE__ | __EXTENDED__ | __CONSTANT__ | __CAN_FORBID__,
 		GLOBALSNAME = 0x19 | __STRING__ | __ARRAY_1D__ | __UNCHANGEABLE__ | __EXTENDED__ | __CONSTANT__ | __CAN_FORBID__,
 
-        __COUNT_CSV_STRING_ARRAY_1D__ = 0x1A,
+		__COUNT_CSV_STRING_ARRAY_1D__ = 0x1A,
 
 
 		GAMEBASE_AUTHER = 0x04 | __STRING__ | __CALC__ | __UNCHANGEABLE__ | __EXTENDED__,//文字列型。作者。綴りを間違えていたが互換性のため残す。
@@ -237,12 +235,12 @@ namespace MinorShift.Emuera.GameData.Variable
 		GAMEBASE_YEAR = 0x02 | __STRING__ | __CALC__ | __UNCHANGEABLE__ | __EXTENDED__,//文字列型。製作年
 		GAMEBASE_TITLE = 0x03 | __STRING__ | __CALC__ | __UNCHANGEABLE__ | __EXTENDED__,//文字列型。タイトル
 		WINDOW_TITLE = 0x05 | __STRING__ | __CALC__ | __EXTENDED__,//文字列型。ウインドウのタイトル。変更可能。
-		//アンダースコア2つで囲まれた変数を追加したらVariableTokenに特別な処理が必要。
+																   //アンダースコア2つで囲まれた変数を追加したらVariableTokenに特別な処理が必要。
 		__FILE__ = 0x06 | __STRING__ | __CALC__ | __UNCHANGEABLE__ | __EXTENDED__,//現在実行中のファイル名
 		__FUNCTION__ = 0x07 | __STRING__ | __CALC__ | __UNCHANGEABLE__ | __EXTENDED__,//現在実行中の関数名
-        MONEYLABEL = 0x08 | __STRING__ | __CALC__ | __UNCHANGEABLE__ | __EXTENDED__,//お金のラベル
-        DRAWLINESTR = 0x09 | __STRING__ | __CALC__ | __UNCHANGEABLE__ | __EXTENDED__,//DRAWLINEの描画文字列
-        EMUERA_VERSION = 0x0A | __STRING__ | __CALC__ | __UNCHANGEABLE__ | __EXTENDED__, //Emeuraのバージョン
+		MONEYLABEL = 0x08 | __STRING__ | __CALC__ | __UNCHANGEABLE__ | __EXTENDED__,//お金のラベル
+		DRAWLINESTR = 0x09 | __STRING__ | __CALC__ | __UNCHANGEABLE__ | __EXTENDED__,//DRAWLINEの描画文字列
+		EMUERA_VERSION = 0x0A | __STRING__ | __CALC__ | __UNCHANGEABLE__ | __EXTENDED__, //Emeuraのバージョン
 
 		LASTLOAD_TEXT = 0x05 | __STRING__ | __CALC__ | __UNCHANGEABLE__ | __EXTENDED__,//数値型。
 
@@ -256,17 +254,17 @@ namespace MinorShift.Emuera.GameData.Variable
 		LASTLOAD_NO = 0x06 | __INTEGER__ | __CALC__ | __UNCHANGEABLE__ | __EXTENDED__,//数値型。
 		__LINE__ = 0x07 | __INTEGER__ | __CALC__ | __UNCHANGEABLE__ | __EXTENDED__,//現在実行中の行番号
 		LINECOUNT = 0x08 | __INTEGER__ | __CALC__ | __UNCHANGEABLE__ | __EXTENDED__,//描画した行の総数。CLEARで減少
-        ISTIMEOUT = 0x0B | __INTEGER__ | __CALC__ | __UNCHANGEABLE__ | __EXTENDED__,//TINPUT系等がTIMEOUTしたか？
+		ISTIMEOUT = 0x0B | __INTEGER__ | __CALC__ | __UNCHANGEABLE__ | __EXTENDED__,//TINPUT系等がTIMEOUTしたか？
 
-        __INT_MAX__ = 0x09 | __INTEGER__ | __CALC__ | __UNCHANGEABLE__ | __EXTENDED__,//Int64最大値
-        __INT_MIN__ = 0x0A | __INTEGER__ | __CALC__ | __UNCHANGEABLE__ | __EXTENDED__,//Int64最小値
+		__INT_MAX__ = 0x09 | __INTEGER__ | __CALC__ | __UNCHANGEABLE__ | __EXTENDED__,//Int64最大値
+		__INT_MIN__ = 0x0A | __INTEGER__ | __CALC__ | __UNCHANGEABLE__ | __EXTENDED__,//Int64最小値
 
 		CVAR = 0xFC | __INTEGER__ | __CHARACTER_DATA__ | __ARRAY_1D__ | __EXTENDED__,//ユーザー定義変数
 		CVARS = 0xFC | __STRING__ | __CHARACTER_DATA__ | __ARRAY_1D__ | __EXTENDED__,//ユーザー定義変数
 		CVAR2D = 0xFC | __INTEGER__ | __CHARACTER_DATA__ | __ARRAY_2D__ | __EXTENDED__,//ユーザー定義変数
 		CVARS2D = 0xFC | __STRING__ | __CHARACTER_DATA__ | __ARRAY_2D__ | __EXTENDED__,//ユーザー定義変数
-		//CVAR3D = 0xFC | __INTEGER__ | __ARRAY_3D__ | __EXTENDED__,//ユーザー定義変数
-		//CVARS3D = 0xFC | __STRING__ | __ARRAY_3D__ | __EXTENDED__,//ユーザー定義変数
+																					   //CVAR3D = 0xFC | __INTEGER__ | __ARRAY_3D__ | __EXTENDED__,//ユーザー定義変数
+																					   //CVARS3D = 0xFC | __STRING__ | __ARRAY_3D__ | __EXTENDED__,//ユーザー定義変数
 		REF = 0xFD | __INTEGER__ | __ARRAY_1D__ | __EXTENDED__,//参照型
 		REFS = 0xFD | __STRING__ | __ARRAY_1D__ | __EXTENDED__,
 		REF2D = 0xFD | __INTEGER__ | __ARRAY_2D__ | __EXTENDED__,
@@ -279,12 +277,12 @@ namespace MinorShift.Emuera.GameData.Variable
 		VARS2D = 0xFE | __STRING__ | __ARRAY_2D__ | __EXTENDED__,//ユーザー定義変数
 		VAR3D = 0xFE | __INTEGER__ | __ARRAY_3D__ | __EXTENDED__,//ユーザー定義変数
 		VARS3D = 0xFE | __STRING__ | __ARRAY_3D__ | __EXTENDED__,//ユーザー定義変数
-		//PRIVATE = 0xFF | __INTEGER__ | __ARRAY_1D__ | __EXTENDED__,//プライベート変数
-		//PRIVATES = 0xFF | __STRING__ | __ARRAY_1D__ | __EXTENDED__,//プライベート変数
-		//PRIVATE2D = 0xFF | __INTEGER__ | __ARRAY_2D__ | __EXTENDED__,//プライベート変数
-		//PRIVATES2D = 0xFF | __STRING__ | __ARRAY_2D__ | __EXTENDED__,//プライベート変数
-		//PRIVATE3D = 0xFF | __INTEGER__ | __ARRAY_3D__ | __EXTENDED__,//プライベート変数
-		//PRIVATES3D = 0xFF | __STRING__ | __ARRAY_3D__ | __EXTENDED__,//プライベート変数
+																 //PRIVATE = 0xFF | __INTEGER__ | __ARRAY_1D__ | __EXTENDED__,//プライベート変数
+																 //PRIVATES = 0xFF | __STRING__ | __ARRAY_1D__ | __EXTENDED__,//プライベート変数
+																 //PRIVATE2D = 0xFF | __INTEGER__ | __ARRAY_2D__ | __EXTENDED__,//プライベート変数
+																 //PRIVATES2D = 0xFF | __STRING__ | __ARRAY_2D__ | __EXTENDED__,//プライベート変数
+																 //PRIVATE3D = 0xFF | __INTEGER__ | __ARRAY_3D__ | __EXTENDED__,//プライベート変数
+																 //PRIVATES3D = 0xFF | __STRING__ | __ARRAY_3D__ | __EXTENDED__,//プライベート変数
 	}
 }
 

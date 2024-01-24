@@ -6,8 +6,6 @@ using System.IO;
 namespace MinorShift.Emuera.Sub
 {
 
-	//難読化用属性。enum.ToString()やenum.Parse()を行うなら(Exclude=true)にすること。
-	[global::System.Reflection.Obfuscation(Exclude = false)]
 	internal enum EraDataState
 	{
 		OK = 0,//ロード可能

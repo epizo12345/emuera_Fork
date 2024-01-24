@@ -4,19 +4,17 @@ namespace MinorShift.Emuera.GameProc.Function
 	/// <summary>
 	/// 命令コード
 	/// </summary>
-	//難読化用属性。enum.ToString()やenum.Parse()を行うなら(Exclude=true)にすること。
-	[global::System.Reflection.Obfuscation(Exclude = true)]
 	enum FunctionCode
 	{//数値不要
-		//FunctionCodeを定義したらstatic FunctionIdentifier()内でaddFunctionすること。
-		//その際に適切なFunctionArgとフラグを選ぶ。
+	 //FunctionCodeを定義したらstatic FunctionIdentifier()内でaddFunctionすること。
+	 //その際に適切なFunctionArgとフラグを選ぶ。
 
 		//FunctionMethod(式中関数)を定義した場合には自動で拾うので何もしなくてよい。
 		//ただし、式中関数バージョンと命令バージョンで動作が違うなら追加する必要がある。
 
 		__NULL__ = 0x0000,
 		SET,//数値代入文 or 文字列代入文
-		//SETS,//文字列代入文
+			//SETS,//文字列代入文
 		PRINT,//文字を表示する
 		PRINTL,//改行
 		PRINTW,//入力待ち(実質改行)
@@ -348,7 +346,7 @@ namespace MinorShift.Emuera.GameProc.Function
 
 		TOOLTIP_SETCOLOR,
 		TOOLTIP_SETDELAY,
-        TOOLTIP_SETDURATION,
+		TOOLTIP_SETDURATION,
 
 		PRINT_IMG,
 		PRINT_RECT,

@@ -8,8 +8,6 @@ using MinorShift.Emuera.GameData.Variable;
 
 namespace MinorShift.Emuera.GameData
 {
-	//難読化用属性。enum.ToString()やenum.Parse()を行うなら(Exclude=true)にすること。
-	[global::System.Reflection.Obfuscation(Exclude = false)]
 	internal enum CharacterStrData
 	{
 		NAME = 0,
@@ -19,8 +17,6 @@ namespace MinorShift.Emuera.GameData
 		CSTR = 4,
 	}
 
-	//難読化用属性。enum.ToString()やenum.Parse()を行うなら(Exclude=true)にすること。
-	[global::System.Reflection.Obfuscation(Exclude = false)]
 	internal enum CharacterIntData
 	{
 		BASE = 0,

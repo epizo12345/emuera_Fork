@@ -4,8 +4,6 @@ using System.Text;
 
 namespace MinorShift.Emuera.GameData.Expression
 {
-	//難読化用属性。enum.ToString()やenum.Parse()を行うなら(Exclude=true)にすること。
-	[global::System.Reflection.Obfuscation(Exclude=false)]
 	internal enum CaseExpressionType
 	{
 		Normal = 1,
@@ -21,18 +19,18 @@ namespace MinorShift.Emuera.GameData.Expression
 		public OperatorCode Operator;
 		public Type GetOperandType()
 		{
-			if(LeftTerm != null)
+			if (LeftTerm != null)
 				return LeftTerm.GetOperandType();
 			return typeof(void);
 		}
-		
+
 		public void Reduce(ExpressionMediator exm)
 		{
 			LeftTerm = LeftTerm.Restructure(exm);
 			if (CaseType == CaseExpressionType.To)
 				RightTerm = RightTerm.Restructure(exm);
 		}
-		
+
 		public override string ToString()
 		{
 			switch (CaseType)
@@ -59,7 +57,7 @@ namespace MinorShift.Emuera.GameData.Expression
 			}
 			return LeftTerm.GetIntValue(exm) == Is;
 		}
-		
+
 		public bool GetBool(string Is, ExpressionMediator exm)
 		{
 			if (CaseType == CaseExpressionType.To)

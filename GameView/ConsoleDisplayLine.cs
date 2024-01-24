@@ -7,8 +7,6 @@ using System.Windows.Forms;
 
 namespace MinorShift.Emuera.GameView
 {
-	//難読化用属性。enum.ToString()やenum.Parse()を行うなら(Exclude=true)にすること。
-	[global::System.Reflection.Obfuscation(Exclude = false)]
 	internal enum DisplayLineLastState
 	{
 		None = 0,
@@ -17,8 +15,6 @@ namespace MinorShift.Emuera.GameView
 		BackLog = 3,
 	}
 
-	//難読化用属性。enum.ToString()やenum.Parse()を行うなら(Exclude=true)にすること。
-	[global::System.Reflection.Obfuscation(Exclude = false)]
 	internal enum DisplayLineAlignment
 	{
 		LEFT = 0,
