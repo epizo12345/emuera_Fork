@@ -19,6 +19,15 @@ namespace MinorShift.Emuera
 	//また、使用されている名前を記憶し衝突を検出する。
 	internal sealed partial class IdentifierDictionary
 	{
+		private static readonly System.Buffers.SearchValues<char> badSymbolAsIdentifier = System.Buffers.SearchValues.Create(new char[]
+		{
+			'+', '-', '*', '/', '%', '=', '!', '<', '>', '|', '&', '^', '~',
+			' ', '　', '\t' ,
+			'\"','(', ')', '{', '}', '[', ']', ',', '.', ':',
+			'\\', '@', '$', '#', '?', ';', '\'',
+			//'_'はOK
+		});
+
 		private enum DefinedNameType
 		{
 			None = 0,
@@ -32,14 +41,6 @@ namespace MinorShift.Emuera
 			UserRefMethod,
 			NameSpace,
 		}
-		readonly static char[] badSymbolAsIdentifier = new char[]
-		{
-			'+', '-', '*', '/', '%', '=', '!', '<', '>', '|', '&', '^', '~',
-			' ', '　', '\t' ,
-			'\"','(', ')', '{', '}', '[', ']', ',', '.', ':',
-			'\\', '@', '$', '#', '?', ';', '\'',
-			//'_'はOK
-		};
 		readonly static Regex regexCom = preCompiledComRegex();
 		readonly static Regex regexComAble = preCompiledComAbleRegex();
 		readonly static Regex regexAblup = preCompiledAblupRegex();
@@ -187,7 +188,7 @@ namespace MinorShift.Emuera
 				return;
 			}
 			//1.721 記号をサポートしない方向に変更
-			if (labelName.IndexOfAny(badSymbolAsIdentifier) >= 0)
+			if (labelName.AsSpan().IndexOfAny(badSymbolAsIdentifier) != -1)
 			{
 				errMes = "ラベル名" + labelName + "に\"_\"以外の記号が含まれています";
 				warnLevel = 1;
@@ -201,56 +202,57 @@ namespace MinorShift.Emuera
 			}
 			if (!isFunction || !Config.WarnFunctionOverloading)
 				return;
-			if (!nameDic.ContainsKey(labelName))
-				return;
-
-			if (nameDic.ContainsKey(labelName))
+			if (!nameDic.TryGetValue(labelName, out DefinedNameType value))
 			{
-				switch (nameDic[labelName])
+				if (nameDic.ContainsKey(labelName))
 				{
-					case DefinedNameType.Reserved:
-						if (Config.AllowFunctionOverloading)
-						{
-							errMes = "関数名" + labelName + "はEmueraの予約語と衝突しています。Emuera専用構文の構文解析に支障をきたす恐れがあります";
+					switch (value)
+					{
+						case DefinedNameType.Reserved:
+							if (Config.AllowFunctionOverloading)
+							{
+								errMes = "関数名" + labelName + "はEmueraの予約語と衝突しています。Emuera専用構文の構文解析に支障をきたす恐れがあります";
+								warnLevel = 1;
+							}
+							else
+							{
+								errMes = "関数名" + labelName + "はEmueraの予約語です";
+								warnLevel = 2;
+							}
+							break;
+						case DefinedNameType.SystemMethod:
+							if (Config.AllowFunctionOverloading)
+							{
+								errMes = "関数名" + labelName + "はEmueraの式中関数を上書きします";
+								warnLevel = 1;
+							}
+							else
+							{
+								errMes = "関数名" + labelName + "はEmueraの式中関数名として使われています";
+								warnLevel = 2;
+							}
+							break;
+						case DefinedNameType.SystemVariable:
+							errMes = "関数名" + labelName + "はEmueraの変数で使われています";
 							warnLevel = 1;
-						}
-						else
-						{
-							errMes = "関数名" + labelName + "はEmueraの予約語です";
-							warnLevel = 2;
-						}
-						break;
-					case DefinedNameType.SystemMethod:
-						if (Config.AllowFunctionOverloading)
-						{
-							errMes = "関数名" + labelName + "はEmueraの式中関数を上書きします";
+							break;
+						case DefinedNameType.SystemInstrument:
+							errMes = "関数名" + labelName + "はEmueraの変数もしくは命令で使われています";
 							warnLevel = 1;
-						}
-						else
-						{
-							errMes = "関数名" + labelName + "はEmueraの式中関数名として使われています";
+							break;
+						case DefinedNameType.UserMacro:
+							//字句解析がうまくいっていれば本来あり得ないはず
+							errMes = "関数名" + labelName + "はマクロに使用されています";
 							warnLevel = 2;
-						}
-						break;
-					case DefinedNameType.SystemVariable:
-						errMes = "関数名" + labelName + "はEmueraの変数で使われています";
-						warnLevel = 1;
-						break;
-					case DefinedNameType.SystemInstrument:
-						errMes = "関数名" + labelName + "はEmueraの変数もしくは命令で使われています";
-						warnLevel = 1;
-						break;
-					case DefinedNameType.UserMacro:
-						//字句解析がうまくいっていれば本来あり得ないはず
-						errMes = "関数名" + labelName + "はマクロに使用されています";
-						warnLevel = 2;
-						break;
-					case DefinedNameType.UserRefMethod:
-						errMes = "関数名" + labelName + "は参照型関数の名称に使用されています";
-						warnLevel = 2;
-						break;
+							break;
+						case DefinedNameType.UserRefMethod:
+							errMes = "関数名" + labelName + "は参照型関数の名称に使用されています";
+							warnLevel = 2;
+							break;
+					}
 				}
 			}
+			return;
 		}
 
 		public void CheckUserVarName(ref string errMes, ref int warnLevel, string varName)
@@ -262,7 +264,7 @@ namespace MinorShift.Emuera
 			//    return;
 			//}
 			//1.721 記号をサポートしない方向に変更
-			if (varName.IndexOfAny(badSymbolAsIdentifier) >= 0)
+			if (varName.AsSpan().IndexOfAny(badSymbolAsIdentifier) != -1)
 			{
 				errMes = "変数名" + varName + "に\"_\"以外の記号が含まれています";
 				warnLevel = 2;
@@ -311,15 +313,15 @@ namespace MinorShift.Emuera
 
 		public void CheckUserMacroName(ref string errMes, ref int warnLevel, string macroName)
 		{
-			if (macroName.IndexOfAny(badSymbolAsIdentifier) >= 0)
+			if (macroName.AsSpan().IndexOfAny(badSymbolAsIdentifier) != -1)
 			{
 				errMes = "マクロ名" + macroName + "に\"_\"以外の記号が含まれています";
 				warnLevel = 2;
 				return;
 			}
-			if (nameDic.ContainsKey(macroName))
+			if (nameDic.TryGetValue(macroName, out DefinedNameType value))
 			{
-				switch (nameDic[macroName])
+				switch (value)
 				{
 					case DefinedNameType.Reserved:
 						errMes = "マクロ名" + macroName + "はEmueraの予約語です";
@@ -361,7 +363,7 @@ namespace MinorShift.Emuera
 				return;
 			}
 			//1.721 記号をサポートしない方向に変更
-			if (varName.IndexOfAny(badSymbolAsIdentifier) >= 0)
+			if (varName.AsSpan().IndexOfAny(badSymbolAsIdentifier) != -1)
 			{
 				errMes = "変数名" + varName + "に\"_\"以外の記号が含まれています";
 				warnLevel = 2;
@@ -414,7 +416,7 @@ namespace MinorShift.Emuera
 
 		#region header.erb
 		//1807 ErbLoaderに移動
-		Dictionary<string, DefineMacro> macroDic = [];
+		Dictionary<int, DefineMacro> macroDic = [];
 
 		internal void AddUseDefinedVariable(VariableToken var)
 		{
@@ -428,7 +430,16 @@ namespace MinorShift.Emuera
 		internal void AddMacro(DefineMacro mac)
 		{
 			nameDic.Add(mac.Keyword, DefinedNameType.UserMacro);
-			macroDic.Add(mac.Keyword, mac);
+			int key;
+			if (Config.ICVariable)
+			{
+				key = mac.Keyword.GetHashCode(StringComparison.OrdinalIgnoreCase);
+			}
+			else
+			{
+				key = mac.Keyword.GetHashCode(StringComparison.Ordinal);
+			}
+			macroDic.Add(key, mac);
 		}
 		internal void AddRefMethod(UserDefinedRefMethod refm)
 		{
@@ -446,9 +457,16 @@ namespace MinorShift.Emuera
 
 		public DefineMacro GetMacro(string key)
 		{
+			int hash;
 			if (Config.ICVariable)
-				key = key.ToUpper();
-			if (macroDic.TryGetValue(key, out var value))
+			{
+				hash = key.GetHashCode(StringComparison.OrdinalIgnoreCase);
+			}
+			else
+			{
+				hash = key.GetHashCode(StringComparison.Ordinal);
+			}
+			if (macroDic.TryGetValue(hash, out var value))
 				return value;
 			return null;
 		}
