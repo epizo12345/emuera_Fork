@@ -1,0 +1,632 @@
+<!-- Saved from https://ja.osdn.net/projects/emuera/wiki/exvar at 2024-02-02T15:49:23Z using monolith v2.8.1 -->
+<!DOCTYPE html><html lang="ja"><head><meta http-equiv="Content-Security-Policy" content="default-src 'unsafe-eval' 'unsafe-inline' data:; style-src 'none'; script-src 'none'; img-src data:;"></meta>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Cache-Control" content="no-cache">
+<meta http-equiv="Expires" content="Fri, 02 Feb 2024 15:49:15 GMT">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>exvar - Emuera - emulator of eramaker Wiki - Emuera - emulator of eramaker - OSDN</title>
+<link rel="stylesheet" type="text/css">
+<link rev="MADE" href="mailto:admin@osdn.net">
+<link rel="INDEX" href="https://osdn.net/">
+<link rel="CONTENTS" href="https://osdn.net/">
+<link rel="SHORTCUT ICON" type="image/x-icon">
+<link rel="alternate" hreflang="ja" href="https://ja.osdn.net/projects/emuera/wiki/exvar">
+<link rel="alternate" hreflang="zh" href="https://zh.osdn.net/projects/emuera/wiki/exvar">
+<link rel="alternate" hreflang="zh-TW" href="https://zh-tw.osdn.net/projects/emuera/wiki/exvar">
+<link rel="alternate" hreflang="de" href="https://de.osdn.net/projects/emuera/wiki/exvar">
+<link rel="alternate" hreflang="fr" href="https://fr.osdn.net/projects/emuera/wiki/exvar">
+<link rel="alternate" hreflang="ko" href="https://ko.osdn.net/projects/emuera/wiki/exvar">
+<link rel="alternate" hreflang="es" href="https://es.osdn.net/projects/emuera/wiki/exvar">
+<link rel="alternate" hreflang="pt" href="https://pt.osdn.net/projects/emuera/wiki/exvar">
+<link rel="alternate" hreflang="en" href="https://osdn.net/projects/emuera/wiki/exvar">
+<link rel="alternate" hreflang="x-default" href="https://osdn.net/projects/emuera/wiki/exvar">
+<link rel="alternate" title="Recent release" type="application/rss+xml" href="https://osdn.net/projects/emuera/releases/rss">
+<link rel="alternate" title="Project wiki updates" type="application/rss+xml" href="https://osdn.net/projects/emuera/wiki/!feeds/diff">
+<link rel="alternate" title="Recent wiki page list" type="application/rss+xml" href="https://osdn.net/projects/emuera/wiki/!feeds/list">
+<link rel="alternate" title="Project History" type="application/rss+xml" href="https://osdn.net/projects/emuera/history/rss">
+<meta property="og:type" content="website">
+<meta property="og:title" content="exvar - Emuera - emulator of eramaker Wiki - Emuera - emulator of eramaker - OSDN">
+<meta property="fb:app_id" content="224902477537179">
+<meta property="og:image" content="https://static-cdn.osdn.net/thumb/g/0/668/200x200_0.png">
+<meta property="twitter:card" content="summary">
+<meta property="twitter:site" content="@osdnjp">
+<meta property="twitter:domain" content="osdn.net">
+<meta property="og:description" content="exvar - Emuera - emulator of eramaker Wiki - Emuera - emulator of eramaker #osdn">
+<script type="text/javascript"></script>
+<script type="text/javascript"></script>
+<script type="text/javascript"></script>
+<script type="text/javascript"></script>
+<meta name="robots" content="index, follow">
+<!-- START: additional_headers -->
+<!-- END: additional_headers -->
+<script type="text/javascript"></script><script type="text/javascript"></script>
+<!--
+<PageMap>
+  <DataObject type="page-info">
+    <Attribute name="action" value="index"/>
+    <Attribute name="reltype" value="group"/>
+  </DataObject>
+  <DataObject type="group-info">
+    <Attribute name="unix-name" value="emuera"/>
+    <Attribute name="name" value="Emuera - emulator of eramaker"/>
+    <Attribute name="type" value="internal"/>
+    <Attribute name="registered-at" value="2009-06-18T23:19:17+0900"/>
+    <Attribute name="lastupdate" value="2024-01-22T17:29:04+0900"/>
+    <Attribute name="image" value="https://static-cdn.osdn.net/thumb/g/0/668/100x100_0.png"/>
+  </DataObject>
+</PageMap>
+-->
+<script type="text/javascript"></script>
+<link rel="stylesheet" type="text/css" media="all">
+<link rel="stylesheet" type="text/css" media="all">
+<link rel="stylesheet" type="text/css" media="all">
+<link rel="stylesheet" type="text/css" media="print">
+</head>
+<body class="no_ads">
+<div id="message-area">
+</div>
+<header id="main_header">
+  <div class="navbar navbar-inverse">
+    <div class="navbar-inner">
+      <div class="container-fluid">
+	<a class="brand" href="https://ja.osdn.net/"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAANCAQAAADY4iz3AAAAEUlEQVR42mNkwAkYR6UolgIACvgADsuK6xYAAAAASUVORK5CYII=" height="24" alt="OSDN -- オープンソース・ソフトウェアの開発とダウンロード"></a>
+
+	<div class="visible-desktop">
+	  <ul class="nav">
+	    <li>
+	      <a class="sfjp-nav-icon sfjp-nav-icon-download" href="https://ja.osdn.net/softwaremap/trove_list.php">ダウンロード</a>
+	    </li>
+	    	    <li>
+	      <a class="sfjp-nav-icon sfjp-nav-icon-magazine" href="https://mag.osdn.jp">Magazine</a>
+	    </li>
+	    	    <li class="active">
+	      <a class="sfjp-nav-icon sfjp-nav-icon-devel" id="main_menu_develop_link" href="https://ja.osdn.net/develop/">開発</a>
+	    </li>
+	  </ul>
+      </div><!-- .visible-desktop -->
+      <ul class="nav pull-right">
+    <li class="dropdown">
+    <a class="account-dropdown dropdown-toggle visible-desktop" data-toggle="dropdown" href="#">アカウント<b class="caret"></b></a>
+    <a class="account-dropdown dropdown-toggle hidden-desktop btn btn-navbar lang-dropdown-toggle" data-toggle="dropdown" data-ismobile="1" href="#">
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+    </a>
+    <ul class="dropdown-menu account-dropdown-menu-wrap" role="menu">
+      <li class="hidden-desktop">
+  <a role="menuitem" class="sfjp-nav-icon sfjp-nav-icon-download" href="https://ja.osdn.net/softwaremap/trove_list.php">ダウンロード</a>
+</li>
+<li class="hidden-desktop">
+  <a role="menuitem" class="sfjp-nav-icon sfjp-nav-icon-magazine" href="https://mag.osdn.jp">Magazine</a>
+</li>
+<li class="hidden-desktop">
+  <a role="menuitem" class="sfjp-nav-icon sfjp-nav-icon-devel" href="https://ja.osdn.net/develop/">開発</a>
+</li>
+      <li role="presentation" class="divider hidden-desktop"></li>
+      <li role="presentation" id="sfjp-login-item" data-return_to="/projects/emuera/wiki/exvar">
+  <div role="menuitem" class="social-login-menu-wrap">
+    <a class="btn social-login sfjp-login" data-toggle="modal" href="#loginbox"><i class="icon-circle"></i> <span>ログイン</span></a>
+  </div>
+</li>
+<li role="presentation">
+  <a role="menuitem" data-toggle="modal" data-remote="/ajax/account/forgetpw_inner.php" data-target="#forgetpwbox" href="#forgetpwbox">アカウント/パスワードを忘れた</a>
+</li>
+<li role="presentation">
+  <a role="menuitem" href="https://ja.osdn.net/account/register.php">アカウント作成</a>
+</li>
+<li role="presentation" class="divider hidden-desktop"></li>
+<li class="nav-header hidden-desktop" id="pre-lang-select-in">言語</li>
+<!-- language switch place holder -->
+      <li role="presentation" class="divider hidden-desktop"></li>
+      <li role="presentation" class="hidden-desktop">
+	<a role="menuitem" href="https://ja.osdn.net/docs/FrontPage">ヘルプ</a>
+      </li>
+    </ul>
+  </li>
+      <li class="dropdown">
+    <a class="lang-dropdown lang-dropdown-toggle dropdown-toggle visible-desktop sfjp-nav-icon-langmenu sfjp-nav-icon" data-toggle="dropdown" data-ismobile="0" href="#">言語<b class="caret"></b></a>
+    <ul class="dropdown-menu" role="menu" id="lang-select-in-wrap">
+    </ul>
+  </li>
+    <li class="visible-desktop">
+    <a href="https://ja.osdn.net/docs/FrontPage">ヘルプ</a>
+  </li>
+</ul><!-- .nav.pull-right -->
+<div id="loginbox" class="modal hide fade focus-on-shown">
+  <div class="modal-header">
+    <a class="close" data-dismiss="modal">×</a>
+    <h3>ログイン</h3>
+  </div><!-- .modal-header -->
+    <form id="modal-loginform" method="post" action="https://osdn.net/account/login.php" class="form-horizontal need-validate">
+      <div class="modal-body">
+	<input type="hidden" name="return_to" value="/projects/emuera/wiki/exvar">
+	<input type="hidden" name="action" value="loginsubmit">
+	<div class="control-group">
+	  <label class="control-label" for="loginform-login">ログイン名</label>
+	  <div class="controls">
+	    <input id="modal-loginform-login" type="text" name="form_loginname" class="required first-focus-on-shown">
+	  </div>
+	</div>
+	<div class="control-group">
+	    <label class="control-label" for="loginform-password">パスワード</label>
+	  <div class="controls">
+	    <input id="modal-loginform-password" type="password" name="form_pw" class="required">
+	  </div>
+	</div>
+      </div><!-- .modal-body -->
+      <div class="modal-footer">
+	<button type="submit" class="btn btn-primary">ログイン</button>
+	<button type="button" class="btn" data-dismiss="modal">キャンセル</button>
+      </div><!-- .modal-footer -->
+    </form>
+</div>
+
+<div id="forgetpwbox" class="modal hide fade focus-on-shown">
+  <div class="modal-header">
+    <a class="close" data-dismiss="modal">×</a>
+    <h3>アカウント/パスワードを忘れた</h3>
+  </div><!-- .modal-header -->
+  <form id="forgetpwform" method="post" action="https://ja.osdn.net/ajax/account/forgotpw.php" class="form-horizontal need-validate" data-ajax="1">
+    <div class="modal-body" data-remote="/ajax/account/forgetpw_inner.php"></div><!-- .modal-body -->
+    <div class="modal-footer">
+      <button type="submit" class="btn btn-primary">申請</button>
+      <button type="button" class="btn" data-dismiss="modal">キャンセル</button>
+    </div><!-- .modal-footer -->
+  </form>
+</div>
+      </div><!-- .container-fluid -->
+    </div><!-- .navbar-inner -->
+  </div><!-- .navbar.navbar-fixed-top -->
+
+<!-- START: site_announce -->
+<!-- *このコメントは消さない* -->
+<!-- 内容がない場合は、div ごと全部コメントアウトすること -->
+<!--
+<div class="site-announce"
+  style="padding: 3px; border: thin ridge #9cf;
+  background-color: #def;
+  margin-bottom: 0.3em; margin-top:0.3em; line-height: 1;">
+2021-01-18 9:00 JST 〜 <a href="/projects/sourceforge/news/26353">メンテナンスによるサービス全停止予定</a>
+</div>
+-->
+<!-- END: site_annouce -->
+</header><!-- #main_header -->
+<section id="frame" class="flex-outer theme2 no-sidebar-page">
+<section id="left-column">
+    <div class="pull-right no-sidebar-common">
+    <div class="translation-status-widget-wrap">
+  <a class="visible-desktop translation-status-widget" href="https://translate.osdn.jp/projects/osdn/osdn/ja/">日本語の翻訳状況 <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAANCAQAAADY4iz3AAAAEUlEQVR42mNkwAkYR6UolgIACvgADsuK6xYAAAAASUVORK5CYII=" alt="translation status for ja"></a></div>
+      <form class="form-search form-horizontal" name="searchform" action="https://ja.osdn.net/wiki/!search" method="get" id="searchform">
+    <input type="hidden" name="ie" value="UTF-8">
+    <label for="search-type-select">カテゴリ:</label>
+    <select id="search-type-select" class="span2" name="t">
+      <option value="soft">ソフトウェア</option>
+      <option value="people">人物</option>
+      <option value="personalforge">PersonalForge</option>
+      <option value="magazine">Magazine</option>
+      <option value="wiki" selected="selected">Wiki</option>
+    </select>
+    <input type="hidden" name="scope" value="all">
+    <div class="input-append">
+      <input type="search" value="" id="searchbox" name="q" class="search-query">
+      <button type="submit" class="btn"><i class="icon-search"></i> 検索</button>
+    </div>
+  </form>
+  </div>
+  <div id="top-nav-wrap">
+<div id="top-nav" class="topnav">
+    <div id="breadcrumbs">
+                 <a href="https://ja.osdn.net/"><span>OSDN</span></a>
+         &gt;                  <a href="https://ja.osdn.net/softwaremap/"><span>ソフトウェアを探す</span></a>
+         &gt;                  <a href="https://ja.osdn.net/projects/emuera/"><span>Emuera - emulator of eramaker</span></a>
+         &gt;                  <a href="https://ja.osdn.net/projects/emuera/wiki/"><span>Wiki</span></a>
+         &gt;         <b>        exvar        </b>      </div>
+      <h1><span id="menu-title-span"><a href="https://ja.osdn.net/projects/emuera/">Emuera - emulator of eramaker</a></span></h1>
+    
+    <ul class="nav nav-tabs content-menu-for-project">
+    <li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown">概要<b class="caret"></b></a>
+  <ul class="dropdown-menu" role="menu">
+    <li role="presentation"><a role="menuitem" href="https://ja.osdn.net/projects/emuera/simple/">プロジェクト概要</a></li>
+<li role="presentation"><a role="menuitem" href="https://ja.osdn.net/projects/emuera/devel/">開発ダッシュボード</a></li>
+<li role="presentation"><a role="menuitem" href="https://ja.osdn.net/projects/emuera/memberlist/">開発メンバー</a></li>
+<li role="presentation"><a role="menuitem" href="https://ja.osdn.net/projects/emuera/images/">画像ギャラリー</a></li>
+<li role="presentation"><a role="menuitem" href="https://ja.osdn.net/projects/emuera/feeds/">公開フィード一覧</a></li>
+<li class="divider"></li>
+<li role="menuitem" class="nav-header">活動</li>
+<li role="presentation"><a role="menuitem" href="https://ja.osdn.net/projects/emuera/stats/">統計情報</a></li>
+<li role="presentation"><a role="menuitem" href="https://ja.osdn.net/projects/emuera/history/">活動履歴</a></li>
+  </ul>
+</li>
+
+<li role="presentation" class="dropdown">
+  <a role="menuitem" href="#" class="dropdown-toggle" data-toggle="dropdown">ダウンロード<b class="caret"></b></a>
+  <ul class="dropdown-menu" role="menu">
+        <li role="presentation"><a role="menuitem" href="https://ja.osdn.net/projects/emuera/releases/">リリース一覧</a></li>
+    <li role="presentation"><a role="menuitem" href="https://ja.osdn.net/projects/emuera/stats/frs">統計</a></li>
+    </ul></li>
+
+
+<li role="presentation" class="active dropdown">
+  <a role="menuitem" href="#" class="dropdown-toggle" data-toggle="dropdown">文書<b class="caret"></b></a>
+  <ul class="dropdown-menu" role="menu">
+    <li role="presentation"><a role="menuitem" href="https://ja.osdn.net/projects/emuera/wiki/FrontPage">FrontPageの表示</a></li>
+<li role="presentation"><a role="menuitem" href="https://ja.osdn.net/projects/emuera/wiki/TitleIndex">ページ一覧</a></li>
+<li role="presentation"><a role="menuitem" href="https://ja.osdn.net/projects/emuera/wiki/RecentChanges">最近の更新</a></li>
+  </ul>
+</li>
+
+<li role="presentation" class="dropdown">
+  <a role="menuitem" href="#" class="dropdown-toggle" data-toggle="dropdown">コミュニケーション<b class="caret"></b></a>
+  <ul class="dropdown-menu" role="menu">
+            <li role="presentation"><a role="menuitem" href="https://ja.osdn.net/projects/emuera/forums/">フォーラム一覧</a></li>
+<li role="presentation"><a role="menuitem" href="https://ja.osdn.net/projects/emuera/forums/19049/">開発者 (2)</a></li>
+<li role="presentation"><a role="menuitem" href="https://ja.osdn.net/projects/emuera/forums/19048/">ヘルプ (1)</a></li>
+<li role="presentation"><a role="menuitem" href="https://ja.osdn.net/projects/emuera/forums/19047/">公開討議 (2)</a></li>
+              </ul>
+</li>
+
+  </ul>
+  
+</div><!-- #top-nav .topnav -->
+</div><!-- #top-nav-wrap -->
+
+<div id="head-ad-text-wrap">
+</div>
+<div class="navi-top">
+    <a rel="nofollow" href="https://ja.osdn.net/projects/emuera/wiki/!edit/exvar"><img border="0" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAANCAQAAADY4iz3AAAAEUlEQVR42mNkwAkYR6UolgIACvgADsuK6xYAAAAASUVORK5CYII=">編集</a> | <a href="https://ja.osdn.net/projects/emuera/wiki/TitleIndex">ページ一覧</a>&nbsp;|&nbsp;
+<a href="https://ja.osdn.net/projects/emuera/wiki/RecentChanges">最近の更新</a>&nbsp;
+ |&nbsp;
+  <form method="get" class="searchbox" action="https://ja.osdn.net/projects/emuera/wiki/!search">  <input type="text" name="q" id="q" value="" class="query-input input-small">  <input type="submit" class="btn btn-mini" value="検索">
+  </form>
+</div>
+
+
+<div id="wiki-body">
+
+<!-- google_ad_section_start --><div id="wiki-sidebar"><h2>最近の更新 (Recent Changes)</h2><h5>2022-09-28</h5><ul><li><a href="https://ja.osdn.net/projects/emuera/wiki/excom">excom</a>
+</li></ul><h5>2020-01-04</h5><ul><li><a href="https://ja.osdn.net/projects/emuera/wiki/exmeth">exmeth</a>
+</li></ul><h5>2019-01-27</h5><ul><li><a href="https://ja.osdn.net/projects/emuera/wiki/history">history</a>
+</li><li><a href="https://ja.osdn.net/projects/emuera/wiki/resources">resources</a>
+</li></ul><h5>2018-10-11</h5><ul><li><a href="https://ja.osdn.net/projects/emuera/wiki/exetc">exetc</a>
+</li></ul><h5>2017-06-06</h5><ul><li><a href="https://ja.osdn.net/projects/emuera/wiki/TitleIndex">TitleIndex</a>
+</li></ul>
+<div class="recent-releases-widget"><h3 class="titlebar">最新リリース情報</h3><table class="recent-releases-table"><tbody><tr><td><a href="https://ja.osdn.net/projects/emuera/releases/70571">emuera (1-8-2-4)</a></td><td class="date">2019-01-27 00:29</td></tr><tr><td><a href="https://ja.osdn.net/projects/emuera/releases/63982">emuera - etc 関連ファイル (1-8-2-1)</a></td><td class="date">2015-11-04 01:04</td></tr><tr><td><a href="https://ja.osdn.net/projects/emuera/releases/70572">emuera - source ソースコード (1-8-2-4)</a></td><td class="date">2019-01-27 00:32</td></tr></tbody></table></div>
+<h2><a href="https://ja.osdn.net/projects/docs/wiki/WikiGuide" class="external-wiki">Wikiガイド(Guide)</a></h2><ul><li><a href="https://ja.osdn.net/projects/docs/wiki/WikiSyntax" class="external-wiki">Wikiの文法</a>
+</li><li><a href="https://ja.osdn.net/projects/docs/wiki/WikiLinks" class="external-wiki">リンクの種類と文法</a>
+</li><li><a href="https://ja.osdn.net/projects/docs/wiki/WikiBlockProcessor" class="external-wiki">ブロックプロセッサ</a>
+</li><li><a href="https://ja.osdn.net/projects/docs/wiki/WikiPlugins" class="external-wiki">拡張文法</a>
+</li><li><a href="https://ja.osdn.net/projects/docs/wiki/WikiSideBar" class="external-wiki">サイドバー</a>
+</li><li><a href="https://ja.osdn.net/projects/docs/wiki/WikiAffiliateSetting" class="external-wiki">プロジェクトWikiでの広告設定</a>
+</li></ul><h2>サイドバー (Side Bar)</h2><ul><li><a href="https://ja.osdn.net/projects/docs/wiki/WikiSideBar" class="external-wiki">このサイドバーについて</a>
+</li><li><a rel="nofollow" href="https://ja.osdn.net/projects/emuera/wiki/!edit/SideBar">このサイドバーの編集</a></li></ul></div><div class="wiki-content"><div class="pageoutline"><div class="pageoutline-title"><div class="action"><button type="button"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAANCAQAAADY4iz3AAAAEUlEQVR42mNkwAkYR6UolgIACvgADsuK6xYAAAAASUVORK5CYII=" border="0"></button></div>Outline</div><ul><li><a href="#h3-.E5.AE.9A.E6.95.B0.28.E3.83.AA.E3.83.86.E3.83.A9.E3.83.AB.29">定数(リテラル)</a>
+<ul><li><a href="#h4-.E5.AE.9A.E6.95.B0.E3.81.AE.E8.A1.A8.E8.A8.98">定数の表記</a>
+</li></ul></li><li><a href="#h3-.E5.A4.89.E6.95.B0">変数</a>
+<ul><li><a href="#h4-.E5.A4.89.E6.95.B0.E3.82.B5.E3.82.A4.E3.82.BA.E3.81.AE.E6.8C.87.E5.AE.9A">変数サイズの指定</a>
+</li><li><a href="#h4-.E3.83.AD.E3.83.BC.E3.82.AB.E3.83.AB.E5.A4.89.E6.95.B0">ローカル変数</a>
+<ul><li><a href="#h5-LOCAL">LOCAL</a>
+</li><li><a href="#h5-LOCALS">LOCALS</a>
+</li><li><a href="#h5-ARG">ARG</a>
+</li><li><a href="#h5-ARGS">ARGS</a>
+</li><li><a href="#h5-.EF.BC.88.E3.83.A6.E3.83.BC.E3.82.B6.E3.83.BC.E5.AE.9A.E7.BE.A9.E3.81.AE.E3.83.97.E3.83.A9.E3.82.A4.E3.83.99.E3.83.BC.E3.83.88.E5.A4.89.E6.95.B0.EF.BC.89">（ユーザー定義のプライベート変数）</a>
+</li></ul></li><li><a href="#h4-.E3.82.BB.E3.83.BC.E3.83.96.E3.83.87.E3.83.BC.E3.82.BF.E9.96.93.E3.81.A7.E5.85.B1.E6.9C.89.E3.81.95.E3.82.8C.E3.82.8B.E5.A4.89.E6.95.B0">セーブデータ間で共有される変数</a>
+<ul><li><a href="#h5-GLOBAL">GLOBAL</a>
+</li><li><a href="#h5-GLOBALS">GLOBALS</a>
+</li><li><a href="#h5-.EF.BC.88.E3.83.A6.E3.83.BC.E3.82.B6.E3.83.BC.E5.AE.9A.E7.BE.A9.E3.81.AE.E3.82.B0.E3.83.AD.E3.83.BC.E3.83.90.E3.83.AB.E5.A4.89.E6.95.B0.EF.BC.89">（ユーザー定義のグローバル変数）</a>
+</li></ul></li><li><a href="#h4-.E3.82.AD.E3.83.A3.E3.83.A9.E3.82.AF.E3.82.BF.E5.A4.89.E6.95.B0">キャラクタ変数</a>
+<ul><li><a href="#h5-NICKNAME">NICKNAME</a>
+</li><li><a href="#h5-MASTERNAME">MASTERNAME</a>
+</li><li><a href="#h5-CSTR">CSTR</a>
+</li><li><a href="#h5-CUP">CUP</a>
+</li><li><a href="#h5-CDOWN">CDOWN</a>
+</li><li><a href="#h5-DOWNBASE">DOWNBASE</a>
+</li><li><a href="#h5-TCVAR">TCVAR</a>
+</li><li><a href="#h5-CDFLAG">CDFLAG</a>
+</li><li><a href="#h5-.EF.BC.88.E3.83.A6.E3.83.BC.E3.82.B6.E3.83.BC.E5.AE.9A.E7.BE.A9.E3.81.AE.E3.82.AD.E3.83.A3.E3.83.A9.E3.82.AF.E3.82.BF.E5.A4.89.E6.95.B0.EF.BC.89">（ユーザー定義のキャラクタ変数）</a>
+</li></ul></li><li><a href="#h4-csv.E9.96.A2.E9.80.A3">csv関連</a>
+<ul><li><a href="#h5-csv.E5.A4.89.E6.95.B0">csv変数</a>
+</li><li><a href="#h5-gamebase.csv.E5.A4.89.E6.95.B0">gamebase.csv変数</a>
+</li><li><a href="#h5-WINDOW_TITLE">WINDOW_TITLE</a>
+</li><li><a href="#h5-.E3.81.9D.E3.81.AE.E4.BB.96.E3.81.AEcsv.E3.81.AB.E9.96.A2.E3.82.8F.E3.82.8B.E5.A4.89.E6.95.B0">その他のcsvに関わる変数</a>
+<ul><li><a href="#h6-MONEYLABEL">MONEYLABEL</a>
+</li><li><a href="#h6-DRAWLINESTR">DRAWLINESTR</a>
+</li></ul></li></ul></li><li><a href="#h4-.E3.82.BB.E3.83.BC.E3.83.96.E3.83.AD.E3.83.BC.E3.83.89.E9.96.A2.E9.80.A3">セーブロード関連</a>
+<ul><li><a href="#h5-LASTLOAD_.2A">LASTLOAD_*</a>
+</li><li><a href="#h5-SAVEDATA_TEXT">SAVEDATA_TEXT</a>
+</li><li><a href="#h5-.EF.BC.88.E3.83.A6.E3.83.BC.E3.82.B6.E3.83.BC.E5.AE.9A.E7.BE.A9.E3.81.AE.E3.82.BB.E3.83.BC.E3.83.96.E5.8F.AF.E8.83.BD.E3.81.AA.E5.BA.83.E5.9F.9F.E5.A4.89.E6.95.B0.EF.BC.89">（ユーザー定義のセーブ可能な広域変数）</a>
+</li></ul></li><li><a href="#h4-.E5.A4.9A.E6.AC.A1.E5.85.83.E9.85.8D.E5.88.97.E5.A4.89.E6.95.B0">多次元配列変数</a>
+<ul><li><a href="#h5-DITEMTYPE">DITEMTYPE</a>
+</li><li><a href="#h5-DA.20.EF.BD.9E.20DE">DA ～ DE</a>
+</li><li><a href="#h5-TA.2C.20TB">TA, TB</a>
+</li><li><a href="#h5-.EF.BC.88.E3.83.A6.E3.83.BC.E3.82.B6.E3.83.BC.E5.AE.9A.E7.BE.A9.E3.81.AE.E5.A4.9A.E6.AC.A1.E5.85.83.E9.85.8D.E5.88.97.E5.A4.89.E6.95.B0.EF.BC.89">（ユーザー定義の多次元配列変数）</a>
+</li></ul></li><li><a href="#h4-.E3.83.87.E3.83.90.E3.83.83.E3.82.B0.E5.A4.89.E6.95.B0">デバッグ変数</a>
+<ul><li><a href="#h5-__FILE__">__FILE__</a>
+</li><li><a href="#h5-__LINE__">__LINE__</a>
+</li><li><a href="#h5-__FUNCTION__">__FUNCTION__</a>
+</li></ul></li><li><a href="#h4-.E3.81.9D.E3.81.AE.E4.BB.96">その他</a>
+<ul><li><a href="#h5-TSTR">TSTR</a>
+</li><li><a href="#h5-RANDDATA">RANDDATA</a>
+</li><li><a href="#h5-LINECOUNT">LINECOUNT</a>
+</li><li><a href="#h5-ISTIMEOUT">ISTIMEOUT</a>
+</li><li><a href="#h5-__INT_MAX__">__INT_MAX__</a>
+</li><li><a href="#h5-__INT_MIN__">__INT_MIN__</a>
+</li><li><a href="#h5-.EF.BC.88.E3.83.A6.E3.83.BC.E3.82.B6.E3.83.BC.E5.AE.9A.E7.BE.A9.E3.81.AE.E5.BA.83.E5.9F.9F.E5.A4.89.E6.95.B0.EF.BC.89">（ユーザー定義の広域変数）</a>
+</li><li><a href="#h5-.EF.BC.88.E3.83.A6.E3.83.BC.E3.82.B6.E3.83.BC.E5.AE.9A.E7.BE.A9.E3.81.AE.E5.AE.9A.E6.95.B0.EF.BC.89">（ユーザー定義の定数）</a>
+</li><li><a href="#h5-.EF.BC.88.E3.83.A6.E3.83.BC.E3.82.B6.E3.83.BC.E5.AE.9A.E7.BE.A9.E3.81.AE.E5.8F.82.E7.85.A7.E5.9E.8B.E5.A4.89.E6.95.B0.EF.BC.89">（ユーザー定義の参照型変数）</a>
+</li></ul></li><li><a href="#h4-maker.E3.81.A8.E3.81.AE.E4.BB.95.E6.A7.98.E3.81.AE.E9.81.95.E3.81.84">makerとの仕様の違い</a>
+<ul><li><a href="#h5-NAME">NAME</a>
+</li><li><a href="#h5-CALLNAME">CALLNAME</a>
+</li><li><a href="#h5-RAND">RAND</a>
+</li><li><a href="#h5-CHARANUM">CHARANUM</a>
+</li></ul></li><li><a href="#h4-.E6.9A.AB.E5.AE.9A.E7.9A.84.E3.81.AA.E4.BB.95.E6.A7.98.E8.A1.A8">暫定的な仕様表</a>
+<ul><li><a href="#h5-eramaker.E3.81.AB.E3.82.82.E5.AD.98.E5.9C.A8.E3.81.97.E3.81.A6.E3.81.84.E3.81.9F.E5.A4.89.E6.95.B0">eramakerにも存在していた変数</a>
+</li><li><a href="#h5-Emuera.E5.B0.82.E7.94.A8.E5.A4.89.E6.95.B0">Emuera専用変数</a>
+</li></ul></li></ul></li></ul></div>
+<h3 id="h3-.E5.AE.9A.E6.95.B0.28.E3.83.AA.E3.83.86.E3.83.A9.E3.83.AB.29">定数(リテラル)</h3><h4 id="h4-.E5.AE.9A.E6.95.B0.E3.81.AE.E8.A1.A8.E8.A8.98">定数の表記</h4><p>Emueraでは8進数表記を除き、吉里吉里で使える定数の表記がそのまま使えます。<br>
+例えば以下の行は全て同じ意味になります。
+</p><pre>	X = 32
+	X = 0b100000
+	X = 0x20
+	X = 1p5
+</pre>上から順に、普通の10進表記、2進数、16進数、1×2の5乗、になります。<br>
+1p5のような表記はビット演算子と組み合わせ、各ビットを取得・設定したい時に便利です。<br>
+例えば下の条件文はAの下0ビット目または3ビット目が立っているときに真になります。
+<pre>	IF (A &amp; 1p0)||(A &amp; 1p3)
+</pre>また、pの代わりにeを使うことでn×10のm乗を表せます。<br>
+例えば13e3は13000に等しくなります。<br>
+以上はあくまでも定数の表記ですので式を使うことはできません。<br>
+以下のような表記はエラーになります。
+<pre>	X = 13e(A + 1)
+</pre>8進数表記についてはeramakerとの互換性の問題から採用していません。<br>
+"012"は10ではなく12と解釈されます。
+<p></p><h3 id="h3-.E5.A4.89.E6.95.B0">変数</h3><h4 id="h4-.E5.A4.89.E6.95.B0.E3.82.B5.E3.82.A4.E3.82.BA.E3.81.AE.E6.8C.87.E5.AE.9A">変数サイズの指定</h4><p>EmueraではcsvフォルダにVariableSize.csvという名前のファイルを置くことで既存の変数の要素数を指定できます。<br>
+また、要素数に-1を指定することにより、ERB中でのその変数の使用を禁止することができます。<br>
+<br>
+禁止設定された変数をERB中で代入や参照するとエラーになります。
+禁止設定された変数をシステムが必要とする場合、代入処理は無視され、値は常に-1と扱われます。<br>
+（MONEYやNEXTCOMを禁止した場合に発生する状況です）
+</p><h4 id="h4-.E3.83.AD.E3.83.BC.E3.82.AB.E3.83.AB.E5.A4.89.E6.95.B0">ローカル変数</h4><h5 id="h5-LOCAL">LOCAL</h5><h5 id="h5-LOCALS">LOCALS</h5><p>※この変数はobsoleteです。代わりに#DIM、#DIMSの使用を検討してください。<br>
+詳しくは<a href="https://ja.osdn.net/projects/emuera/wiki/UserVars">ユーザー定義の変数</a>を参照してください。<br>
+<br>
+ローカル変数（局所変数）です。<br>
+LOCALは整数、LOCALSは文字列となります<br>
+サイズは基本はLOCALが1000、LOCALSが100です。<br>
+また、「#LOCALSIZE &lt;設定する要素数&gt;」および「#LOCALSSIZE &lt;設定する要素数&gt;」<br>
+によって関数ごとに個別に要素数を変更できます。（ただし設定できる値は0より大きい整数）<br>
+セーブはされません。
+</p><pre>	@EVENTFIRST
+		LOCAL:10 = 123
+		CALL FUNC001
+		PRINTV LOCAL:10
+		WAIT
+	@FUNC001
+		LOCAL:10 = 567
+		RETURN
+</pre>上のコードのPRINTVの結果は"123"になります。<br>
+FUNC001の中でLOCAL:10を変更していますが、EVENTFIRST内のLOCALには変更が及びません。<br>
+多くの言語のローカル変数とは異なり、関数の呼び出しの際に初期化はされません。<br>
+<br>
+内部的には"LOCAL@関数名"という変数を作成しています。<br>
+なのでイベント関数など同じ名前の関数が複数ある場合は共用です。また、再帰的に呼び出された場合は同じ変数をつかうことになります。<br>
+LOCAL@EVENTFIRST:10 = 567のように他の関数用の変数も呼び出せますが推奨しません（デバッグ用の機能です）。<br>
+なお、他の関数のものを呼び出す時に、呼び出し先関数名に演算子等が含まれているとエラーとなります
+<p></p><h5 id="h5-ARG">ARG</h5><h5 id="h5-ARGS">ARGS</h5><p><br>
+ローカル変数です。<br>
+ARGは整数、ARGSは文字列となります<br>
+サイズは基本はARGが1000、ARGSが100でVariableSize.csvで変更できます。<br>
+また、関数の引数で定義された分だけを問題なく使えるだけの要素数を自動で確保します。（<a href="https://ja.osdn.net/projects/emuera/wiki/VariableSize">VariableSize</a>.csvで指定した数未満にはなりません）
+</p><pre>	@FUNC002, ARG:0, ARG:1, ARG,1100
+		LOCAL = ARG:0 * ARG:1 / 100
+		RETURN LOCAL
+</pre>この場合、ARGの要素数は本来1000ですが、@FUNC002においてARGの要素数は0～1100の1101となります。<br>
+関数における引数指定のために使うことを想定しているので、それ以外の用途に用いると可読性が下がるかもしれません。
+<p></p><h5 id="h5-.EF.BC.88.E3.83.A6.E3.83.BC.E3.82.B6.E3.83.BC.E5.AE.9A.E7.BE.A9.E3.81.AE.E3.83.97.E3.83.A9.E3.82.A4.E3.83.99.E3.83.BC.E3.83.88.E5.A4.89.E6.95.B0.EF.BC.89">（ユーザー定義のプライベート変数）</h5><p>特定の関数中で定義#DIMまたは#DIMSを用いて定義した変数はプライベート変数であるため、ローカル変数と同様に扱えます。<br>
+詳しくは<a href="https://ja.osdn.net/projects/emuera/wiki/UserVars">ユーザー定義の変数</a>を参照してください。
+</p><h4 id="h4-.E3.82.BB.E3.83.BC.E3.83.96.E3.83.87.E3.83.BC.E3.82.BF.E9.96.93.E3.81.A7.E5.85.B1.E6.9C.89.E3.81.95.E3.82.8C.E3.82.8B.E5.A4.89.E6.95.B0">セーブデータ間で共有される変数</h4><h5 id="h5-GLOBAL">GLOBAL</h5><h5 id="h5-GLOBALS">GLOBALS</h5><p>異なるセーブデータ間で共有することができる変数です。<br>
+GLOBALは整数、GLOBALSは文字列となります<br>
+サイズは基本はGLOBALが1000、GLOBALSが100でVariableSize.csvで変更できます。<br>
+他のデータと一緒にはセーブ・ロードされません。<br>
+グローバル変数をセーブするにはSAVEGLOBAL命令を使います。<br>
+SAVEGLOBALを行うと、"global.sav"にGLOBALとGLOBALSが保存されます。<br>
+書き込むときに既に"global.sav"がある場合、上書きします<br>
+LOADGLOBAL命令により、"global.sav"からGLOBALとGLOBALSを読み込めます。<br>
+LOADGLOBALは@EVENTFIRSTおよび@EVENTLOADのタイミングで行うことを勧めます。<br>
+GLOBAL、GLOBALSを経由すれば異なるセーブデータ間でデータを共有することができます。<br>
+</p><h5 id="h5-.EF.BC.88.E3.83.A6.E3.83.BC.E3.82.B6.E3.83.BC.E5.AE.9A.E7.BE.A9.E3.81.AE.E3.82.B0.E3.83.AD.E3.83.BC.E3.83.90.E3.83.AB.E5.A4.89.E6.95.B0.EF.BC.89">（ユーザー定義のグローバル変数）</h5><p>ERH中で定義"#DIM GLOBAL"または"#DIMS GLOBAL"を用いて定義した変数はグローバル変数となります。<br>
+また、"#DIM SAVEDATA GLOBAL"とすることでセーブされるグローバル変数となります。<br>
+詳しくは<a href="https://ja.osdn.net/projects/emuera/wiki/ERH">ヘッダーファイル（ERH）</a>を参照してください。
+</p><h4 id="h4-.E3.82.AD.E3.83.A3.E3.83.A9.E3.82.AF.E3.82.BF.E5.A4.89.E6.95.B0">キャラクタ変数</h4><h5 id="h5-NICKNAME">NICKNAME</h5><h5 id="h5-MASTERNAME">MASTERNAME</h5><p>NAMEやCALLNAMEと同様のセーブされる文字列型変数です。<br>
+chara*.csvでは"NICKNAME"、"MASTERNAME"または"あだ名"、"主人の呼び方"として指定します。<br>
+</p><h5 id="h5-CSTR">CSTR</h5><p>セーブされる文字列配列変数です。<br>
+CFLAGの文字列版です。<br>
+chara*.csvでは"CSTR"として指定します。
+</p><h5 id="h5-CUP">CUP</h5><h5 id="h5-CDOWN">CDOWN</h5><h5 id="h5-DOWNBASE">DOWNBASE</h5><h5 id="h5-TCVAR">TCVAR</h5><p>数値型配列変数です。<br>
+それぞれ、UP、DOWN、LOSEBASE、TFLAGのキャラクタ変数版として使用することが想定されています。<br>
+そのため初期化タイミングやセーブの可不可もこれらの変数と同じです。<br>
+ただし、CUPとCDOWNはUPCHECK命令の代わりにCUPCHECK命令を使います。
+</p><h5 id="h5-CDFLAG">CDFLAG</h5><p>数値型キャラクター三次元配列変数です。<br>
+</p><pre>CDFLAG:MASTER:0:2 
+</pre>などのように第一引数がキャラ登録番号なのは従来のキャラクター変数と同じですが、<br>
+第二引数と第三引数が必要になります。
+<p></p><h5 id="h5-.EF.BC.88.E3.83.A6.E3.83.BC.E3.82.B6.E3.83.BC.E5.AE.9A.E7.BE.A9.E3.81.AE.E3.82.AD.E3.83.A3.E3.83.A9.E3.82.AF.E3.82.BF.E5.A4.89.E6.95.B0.EF.BC.89">（ユーザー定義のキャラクタ変数）</h5><p>ERH中で定義"#DIM CHARADATA"または"#DIMS CHARADATA"を用いて定義した変数はキャラクタ変数となり、CFLAGなどと同様自由に扱えます。<br>
+詳しくは<a href="https://ja.osdn.net/projects/emuera/wiki/ERH">ヘッダーファイル（ERH）</a>を参照してください。
+</p><h4 id="h4-csv.E9.96.A2.E9.80.A3">csv関連</h4><h5 id="h5-csv.E5.A4.89.E6.95.B0">csv変数</h5><p>各csvで定義された値を参照するための変数です。<br>
+使い方は例えばTALENTNAMEとtalent.csvの関係と同じです。<br>
+全て代入不可でセーブされない1次元配列変数です。<br>
+csvで定義されていない場合、0または空文字列を返します。
+</p><table class="wikitable"><tbody><tr><td>変数名</td><td>ファイル</td><td>型</td><td>要素数</td></tr><tr><td>ITEMPRICE</td><td>item.csv</td><td>整数型</td><td>1000</td></tr><tr><td>TRAINNAME</td><td>train.csv</td><td>文字列型</td><td>1000</td></tr><tr><td>BASENAME</td><td>base.csv</td><td>文字列型</td><td>100</td></tr><tr><td>EQUIPNAME</td><td>equip.csv</td><td>文字列型</td><td>100</td></tr><tr><td>TEQUIPNAME</td><td>tequip.csv</td><td>文字列型</td><td>100</td></tr><tr><td>STAINNAME</td><td>stain.csv</td><td>文字列型</td><td>1000</td></tr><tr><td>EXNAME</td><td>ex.csv</td><td>文字列型</td><td>100</td></tr><tr><td>SOURCENAME</td><td>source.csv</td><td>文字列型</td><td>100</td></tr><tr><td>FLAGNAME</td><td>flag.csv</td><td>文字列型</td><td>10000</td></tr><tr><td>TFLAGNAME</td><td>tflag.csv</td><td>文字列型</td><td>1000</td></tr><tr><td>CFLAGNAME</td><td>cflag.csv</td><td>文字列型</td><td>1000</td></tr><tr><td>TCVARNAME</td><td>tcvar.csv</td><td>文字列型</td><td>100</td></tr><tr><td>STRNAME</td><td>strname.csv</td><td>文字列型</td><td>20000</td></tr><tr><td>TSTRNAME</td><td>tstr.csv</td><td>文字列型</td><td>100</td></tr><tr><td>CSTRNAME</td><td>cstr.csv</td><td>文字列型</td><td>100</td></tr><tr><td>SAVESTRNAME</td><td>savestr.csv</td><td>文字列型</td><td>100</td></tr><tr><td>CDFLAGNAME1</td><td>cdflag1.csv</td><td>文字列型</td><td>1</td></tr><tr><td>CDFLAGNAME2</td><td>cdflag2.csv</td><td>文字列型</td><td>1</td></tr><tr><td>GLOBALNAME</td><td>global.csv</td><td>文字列型</td><td>100</td></tr><tr><td>GLOBALSNAME</td><td>globals.csv</td><td>文字列型</td><td>100</td></tr></tbody></table><p></p><p>cstr.csv等とstr.csvの役割を混同しないでください。<br>
+str.csvは変数STRに代入される値を決めるファイルですが、cstr.csvはCSTRNAMEを定めるファイルです。<br>
+STRNAMEを定めるファイルはstrname.csvとなっています。str.csv及びstrname.csvの使い方に注意してください。
+</p><h5 id="h5-gamebase.csv.E5.A4.89.E6.95.B0">gamebase.csv変数</h5><p>gamebase.csvで定義された値を参照するための変数です。<br>
+すべて非配列、代入不可、セーブされない変数です。
+</p><table class="wikitable"><tbody><tr><td>変数名</td><td>キーワード</td><td>型</td></tr><tr><td>GAMEBASE_AUTHOR</td><td>作者</td><td>文字列型</td></tr><tr><td>GAMEBASE_INFO</td><td>追加情報</td><td>文字列型</td></tr><tr><td>GAMEBASE_YEAR</td><td>製作年</td><td>文字列型</td></tr><tr><td>GAMEBASE_TITLE</td><td>タイトル</td><td>文字列型</td></tr><tr><td>GAMEBASE_GAMECODE</td><td>コード</td><td>整数型</td></tr><tr><td>GAMEBASE_VERSION</td><td>バージョン</td><td>整数型</td></tr><tr><td>GAMEBASE_ALLOWVERSION</td><td>バージョン違い認める</td><td>整数型</td></tr><tr><td>GAMEBASE_DEFAULTCHARA</td><td>最初からいるキャラ</td><td>整数型</td></tr><tr><td>GAMEBASE_NOITEM</td><td>アイテムなし</td><td>整数型</td></tr></tbody></table><p></p><h5 id="h5-WINDOW_TITLE">WINDOW_TITLE</h5><p>Emueraのウィンドウのタイトルバーに表示されている文字列です。<br>
+非配列の文字列型変数です。初期値はgamebase.csvの"ウィンドウタイトル"に設定された値です。<br>
+"ウィンドウタイトル"が設定されていなければ"タイトル"と"バージョン"から生成します。<br>
+"タイトル"も設定されていない場合、"Emuera"になります。 
+</p><h5 id="h5-.E3.81.9D.E3.81.AE.E4.BB.96.E3.81.AEcsv.E3.81.AB.E9.96.A2.E3.82.8F.E3.82.8B.E5.A4.89.E6.95.B0">その他のcsvに関わる変数</h5><h6 id="h6-MONEYLABEL">MONEYLABEL</h6><p>お金の単位が記録された変数です。<br>
+非配列の文字列型変数で、代入不可、セーブされない変数です。<br>
+初期値は_Replace.csvにて設定される"お金の単位"に設定された値です。<br>
+"お金の単位"が設定されていない場合、eramakerと同じ"$"になります。
+</p><h6 id="h6-DRAWLINESTR">DRAWLINESTR</h6><p>DRAWLINE命令を行ったときに表示される文字列が記録された変数です。<br>
+非配列の文字列型変数で、代入不可、セーブされない変数です。<br>
+初期値は_Replace.csvにて設定される"DRAWLINE文字"に設定された値を繰り返したものです。<br>
+そのため"DRAWLINE文字"に設定された値そのままの文字列が入っているわけではありません。<br>
+"DRAWLINE文字"が設定されていない場合、eramakerと同じ、例えば<br>
+"------------------------------------------------------------------------------------------------------------"になります。
+</p><h4 id="h4-.E3.82.BB.E3.83.BC.E3.83.96.E3.83.AD.E3.83.BC.E3.83.89.E9.96.A2.E9.80.A3">セーブロード関連</h4><h5 id="h5-LASTLOAD_.2A">LASTLOAD_*</h5><p>最後にロードしてデータの情報を参照するための変数です。<br>
+参照はできますが代入はできません。<br>
+全て初期値は-1または空文字列です。<br>
+ロードした時に更新され、RESETDATAやメニューの"タイトルに戻る"を実行すると初期値に戻ります。
+</p><ul><li>LASTLOAD_VERSION<br>
+最後にロードしたデータのバージョン（gamebase.csvで定義する値）
+</li><li>LASTLOAD_NO<br>
+最後にロードしたデータの番号（save*.savの*に相当する番号）
+</li><li>LASTLOAD_TEXT<br>
+テキスト（PUTFORMで追加するテキスト。SAVEDATA_TEXT）
+</li></ul><h5 id="h5-SAVEDATA_TEXT">SAVEDATA_TEXT</h5><p>セーブデータに保存され、セーブ/ロード画面で表示されるテキストです。<br>
+ロード後にLASTLOAD_TEXTで参照できるテキストでもあります。<br>
+参照も代入も可能です。<br>
+@SAVEINFOが呼ばれる時に現在時刻を表す文字列が代入され、PUTFORMで追記することができる文字列です。<br>
+@SAVEINFO中でこの文字列に直接代入することで時刻表示もカスタマイズできます。<br>
+SAVEGAMEとPUTFORMを使わない（SAVELOAD.ERBを使う場合）には出番がありません。
+</p><h5 id="h5-.EF.BC.88.E3.83.A6.E3.83.BC.E3.82.B6.E3.83.BC.E5.AE.9A.E7.BE.A9.E3.81.AE.E3.82.BB.E3.83.BC.E3.83.96.E5.8F.AF.E8.83.BD.E3.81.AA.E5.BA.83.E5.9F.9F.E5.A4.89.E6.95.B0.EF.BC.89">（ユーザー定義のセーブ可能な広域変数）</h5><p>ERH中で定義"#DIM SAVEDATA"または"#DIMS SAVEDATA"を用いて定義した変数はセーブ可能な広域変数となります。<br>
+ただし、"#DIMS SAVEDATA"を用いてセーブ可能な多次元広域変数を定義する場合、オプション「セーブデータをバイナリ形式で保存する」が有効になっている必要があります。<br>
+詳しくは<a href="https://ja.osdn.net/projects/emuera/wiki/ERH">ヘッダーファイル（ERH）</a>を参照してください。
+</p><h4 id="h4-.E5.A4.9A.E6.AC.A1.E5.85.83.E9.85.8D.E5.88.97.E5.A4.89.E6.95.B0">多次元配列変数</h4><h5 id="h5-DITEMTYPE">DITEMTYPE</h5><h5 id="h5-DA.20.EF.BD.9E.20DE">DA ～ DE</h5><p>※この変数はobsoleteです。代わりに#DIM、#DIMSを使用して用途に応じた名前を付けることを検討してください。<br>
+詳しくは<a href="https://ja.osdn.net/projects/emuera/wiki/UserVars">ユーザー定義の変数</a>を参照してください。<br>
+</p><p>固定長の整数型二次元配列です。<br>
+DITEMTYPE:1:2 のように呼び出します。引数は省略できません。<br>
+eramakerの二重配列は第一引数にはキャラクタ登録番号を指定するのでCHARANUMによって配列の大きさが異なります。<br>
+DITEMTYPEなどの二次元配列はVariableSize.csvで指定した大きさのまま変化することはありません。<br>
+VARSIZE命令の対象にした場合、RESULT:0とRESULT:1にそれぞれ要素数が代入されます。<br>
+VariableSize.csvで DITEMTYPE,100,200としているとDITEMTYPE:99:199まで使用でき、VARSIZE命令ではRESULT:0とRESULT:1に100と200が代入されます。
+</p><h5 id="h5-TA.2C.20TB">TA, TB</h5><p>※この変数はobsoleteです。代わりに#DIM、#DIMSを使用して用途に応じた名前を付けることを検討してください。<br>
+詳しくは<a href="https://ja.osdn.net/projects/emuera/wiki/UserVars">ユーザー定義の変数</a>を参照してください。<br>
+</p><p>固定長の整数型三次元配列です。<br>
+TA:1:2:3 のように呼び出します。引数は省略できません。<br>
+サイズは標準では100×100×100です。つまりTA:99:99:99まで使えます。<br>
+VariableSize.csvでサイズを変更することが可能ですが、100万を超えるサイズは指定できません。<br>
+VARSIZE命令の対象にした場合、RESULT:0とRESULT:1とRESULT:2にそれぞれの要素数が代入されます。
+</p><h5 id="h5-.EF.BC.88.E3.83.A6.E3.83.BC.E3.82.B6.E3.83.BC.E5.AE.9A.E7.BE.A9.E3.81.AE.E5.A4.9A.E6.AC.A1.E5.85.83.E9.85.8D.E5.88.97.E5.A4.89.E6.95.B0.EF.BC.89">（ユーザー定義の多次元配列変数）</h5><p>ver1.808以降、定義#DIMまたは#DIMSを用いて定義した変数を多次元とすることができるようになりました。<br>
+詳しくは<a href="https://ja.osdn.net/projects/emuera/wiki/UserVars">ユーザー定義の変数</a>を参照してください。
+</p><h4 id="h4-.E3.83.87.E3.83.90.E3.83.83.E3.82.B0.E5.A4.89.E6.95.B0">デバッグ変数</h4><p>デバッグ変数はデバッグ用の情報を提供するための変数です。<br>
+デバッグ変数は<a href="https://ja.osdn.net/projects/emuera/wiki/debug">デバッグモード</a>で起動したときのみ意味のある値を返します。<br>
+通常モードで起動したときには空文字列又は0を返します。<br>
+<br>
+全て名前の前と後ろにアンダースコア"_"が2つ付いています。
+</p><h5 id="h5-__FILE__">__FILE__</h5><p>一次元読み取り専用変数です。<br>
+現在実行中のスクリプトのファイル名を返します。<br>
+ファイル名はエラー情報などと同じようにフォルダ構造及び拡張子までを含む形式です。<br>
+<br>
+システム入力待ち中にデバッグコマンドや変数ウォッチから参照した場合など、<br>
+現在実行中のスクリプトがない場合は空文字列を返します。
+</p><h5 id="h5-__LINE__">__LINE__</h5><p>一次元読み取り専用変数です。<br>
+現在実行中のスクリプトの行番号を返します。<br>
+行番号はエラー情報などと同じように1から始まる数字です。<br>
+<br>
+現在実行中のスクリプトがない場合は-1を返します。
+</p><h5 id="h5-__FUNCTION__">__FUNCTION__</h5><p>一次元読み取り専用変数です。<br>
+現在実行中の関数名を返します。<br>
+関数名は"@"及び引数のリストを含みません。<br>
+<br>
+現在実行中のスクリプトがない場合は空文字列を返します。
+</p><h4 id="h4-.E3.81.9D.E3.81.AE.E4.BB.96">その他</h4><h5 id="h5-TSTR">TSTR</h5><p>文字列型1次元配列です。一次元配列で、セーブはされません。<br>
+TFLAGと同じタイミングで初期化されます。
+</p><h5 id="h5-RANDDATA">RANDDATA</h5><p>乱数の状態を記憶するための配列です。数値型の一次元配列で代入可、セーブされます。<br>
+DUMPRANDによって記録され、INITRANDによって読み出されます。
+</p><h5 id="h5-LINECOUNT">LINECOUNT</h5><p>これまでにPRINTした行数を返す変数です。<br>
+LINECOUNTは起動直後から改行(ウインドウ幅による改行を含まない)のたび+1、CLEARLINEした数だけ-されます。<br>
+ログバッファー(標準5000)をあふれたことによる削除によっては変動しません。<br>
+非配列の数値型変数で、代入・セーブ共に不可能です。<br>
+また、行の数え方はCLEARLINEと同様です。<br>
+</p><h5 id="h5-ISTIMEOUT">ISTIMEOUT</h5><p>以下、私家改造版1809+v2に添付のreadmeより
+</p><pre>　○TINPUT系がタイムアウトしたかをチェックする変数ISTIMEOUT追加
+　　　TINPUT系が呼び出された時に0に初期化され、タイムアウトすると1となります。
+</pre>ver1815現在、この変数は利用不能な可能性があります。
+<p></p><h5 id="h5-__INT_MAX__">__INT_MAX__</h5><h5 id="h5-__INT_MIN__">__INT_MIN__</h5><p>数値型変数の定義域最大値、最小値という定数が記録されている非配列の数値型変数で、代入・セーブ共に不可能です。<br>
+デバッグ変数ではないので普通に起動した場合でも使用できます。
+</p><h5 id="h5-.EF.BC.88.E3.83.A6.E3.83.BC.E3.82.B6.E3.83.BC.E5.AE.9A.E7.BE.A9.E3.81.AE.E5.BA.83.E5.9F.9F.E5.A4.89.E6.95.B0.EF.BC.89">（ユーザー定義の広域変数）</h5><p>ERH中で定義#DIMまたは#DIMSを用いて定義した変数は広域変数となり、一文字変数（Aなど）同様自由に扱えます。<br>
+詳しくは<a href="https://ja.osdn.net/projects/emuera/wiki/ERH">ヘッダーファイル（ERH）</a>を参照してください。
+</p><h5 id="h5-.EF.BC.88.E3.83.A6.E3.83.BC.E3.82.B6.E3.83.BC.E5.AE.9A.E7.BE.A9.E3.81.AE.E5.AE.9A.E6.95.B0.EF.BC.89">（ユーザー定義の定数）</h5><p>ERH中および特定の関数中で、定義#DIMまたは#DIMSを用いて定義した変数は1次元配列の定数となり、代入できない変数として扱えます。<br>
+詳しくは<a href="https://ja.osdn.net/projects/emuera/wiki/UserVars">ユーザー定義の変数</a>を参照してください。
+</p><h5 id="h5-.EF.BC.88.E3.83.A6.E3.83.BC.E3.82.B6.E3.83.BC.E5.AE.9A.E7.BE.A9.E3.81.AE.E5.8F.82.E7.85.A7.E5.9E.8B.E5.A4.89.E6.95.B0.EF.BC.89">（ユーザー定義の参照型変数）</h5><p>特定の関数中で定義"#DIM REF"または"#DIMS REF"を用いて定義した変数は参照型変数となります。<br>
+詳しくは<a href="https://ja.osdn.net/projects/emuera/wiki/UserVars">ユーザー定義の変数</a>を参照してください。
+</p><h4 id="h4-maker.E3.81.A8.E3.81.AE.E4.BB.95.E6.A7.98.E3.81.AE.E9.81.95.E3.81.84">makerとの仕様の違い</h4><h5 id="h5-NAME">NAME</h5><h5 id="h5-CALLNAME">CALLNAME</h5><p>eramakerでは代入ができません。<br>
+Emueraでは代入できるようになっています。
+</p><h5 id="h5-RAND">RAND</h5><h5 id="h5-CHARANUM">CHARANUM</h5><p>eramakerでは代入でき、セーブ・ロードされますが代入した値を使用する方法がありません。<br>
+Emueraでは代入を禁止しています。
+</p><h4 id="h4-.E6.9A.AB.E5.AE.9A.E7.9A.84.E3.81.AA.E4.BB.95.E6.A7.98.E8.A1.A8">暫定的な仕様表</h4><h5 id="h5-eramaker.E3.81.AB.E3.82.82.E5.AD.98.E5.9C.A8.E3.81.97.E3.81.A6.E3.81.84.E3.81.9F.E5.A4.89.E6.95.B0">eramakerにも存在していた変数</h5><table class="wikitable"><tbody><tr><td>変数名</td><td>型</td><td>配列</td><td>代入</td><td>セーブ</td><td>禁止</td><td>初期値</td><td>初期化されるタイミング</td><td>備考</td></tr><tr><td>RESULT</td><td>整数</td><td>一次元</td><td>○</td><td>○</td><td>×</td><td>-</td><td>-</td><td>-</td></tr><tr><td>RESULTS</td><td>文字列</td><td>一次元</td><td>○</td><td>×</td><td>×</td><td>-</td><td>-</td><td>-</td></tr><tr><td>A～Z</td><td>整数</td><td>一次元</td><td>○</td><td>○</td><td>○</td><td>-</td><td>-</td><td>-</td></tr><tr><td>COUNT</td><td>整数</td><td>一次元</td><td>○</td><td>○</td><td>×</td><td>-</td><td>-</td><td>COUNT:0はREPEATにおいてカウンターとして使用される</td></tr><tr><td>DAY</td><td>整数</td><td>一次元</td><td>○</td><td>○</td><td>○</td><td>-</td><td>-</td><td>-</td></tr><tr><td>TIME</td><td>整数</td><td>一次元</td><td>○</td><td>○</td><td>○</td><td>-</td><td>-</td><td>-</td></tr><tr><td>MONEY</td><td>整数</td><td>一次元</td><td>○</td><td>○</td><td>○</td><td>-</td><td>-</td><td>-</td></tr><tr><td>MASTER</td><td>整数</td><td>一次元</td><td>○</td><td>○</td><td>○</td><td>-</td><td>-</td><td>-</td></tr><tr><td>TARGET</td><td>整数</td><td>一次元</td><td>○</td><td>○</td><td>×</td><td>:0 = 1</td><td>-</td><td>-</td></tr><tr><td>ASSI</td><td>整数</td><td>一次元</td><td>○</td><td>○</td><td>○</td><td>:0 = -1</td><td>-</td><td>-</td></tr><tr><td>PLAYER</td><td>整数</td><td>一次元</td><td>○</td><td>○</td><td>○</td><td>-</td><td>-</td><td>-</td></tr><tr><td>ASSIPLAY</td><td>整数</td><td>一次元</td><td>○</td><td>○</td><td>○</td><td>:0 = 0</td><td>BEGIN TRAIN</td><td>-</td></tr><tr><td>SELECTCOM</td><td>整数</td><td>一次元</td><td>○</td><td>○</td><td>×</td><td>-</td><td>-</td><td>-</td></tr><tr><td>PREVCOM</td><td>整数</td><td>一次元</td><td>○</td><td>○</td><td>○</td><td>:0 = -1</td><td>BEGIN TRAIN</td><td>-</td></tr><tr><td>NEXTCOM</td><td>整数</td><td>一次元</td><td>○</td><td>○</td><td>○</td><td>:0 = -1</td><td>BEGIN TRAIN</td><td>-</td></tr><tr><td>LOSEBASE</td><td>整数</td><td>一次元</td><td>○</td><td>○</td><td>○</td><td>全て0</td><td>@SHOW_USERCOM終了時</td><td><span>BASENAMEによって要素の指定ができる</span></td></tr><tr><td>UP</td><td>整数</td><td>一次元</td><td>○</td><td>○</td><td>○</td><td>全て0</td><td>@SHOW_USERCOM終了時<br>UPCHECK時</td><td><span>PALAMNAMEによって要素の指定ができる</span></td></tr><tr><td>DOWN</td><td>整数</td><td>一次元</td><td>○</td><td>○</td><td>○</td><td>全て0</td><td>@SHOW_USERCOM終了時<br>UPCHECK時</td><td><span>PALAMNAMEによって要素の指定ができる</span></td></tr><tr><td>PALAMLV</td><td>整数</td><td>一次元</td><td>○</td><td>○</td><td>×</td><td><span>_replace.csv<br>"PALAMLVの初期値"</span></td><td>-</td><td>-</td></tr><tr><td>EXPLV</td><td>整数</td><td>一次元</td><td>○</td><td>○</td><td>×</td><td><span>_replace.csv<br>"EXPLVの初期値"</span></td><td>-</td><td>-</td></tr><tr><td>EJAC</td><td>整数</td><td>一次元</td><td>○</td><td>○</td><td>○</td><td>:0 = 10000</td><td>-</td><td>-</td></tr><tr><td>FLAG</td><td>整数</td><td>一次元</td><td>○</td><td>○</td><td>○</td><td>-</td><td>-</td><td><span>FLAGNAMEによって要素の指定ができる</span></td></tr><tr><td>TFLAG</td><td>整数</td><td>一次元</td><td>○</td><td>○</td><td>○</td><td>全て0</td><td>BEGIN TRAIN</td><td><span>TFLAGNAMEによって要素の指定ができる</span></td></tr><tr><td>ITEM</td><td>整数</td><td>一次元</td><td>○</td><td>○</td><td>○</td><td>-</td><td>-</td><td><span>ITEMNAMEによって要素の指定ができる</span></td></tr><tr><td>ITEMSALES</td><td>整数</td><td>一次元</td><td>○</td><td>○</td><td>○</td><td>-</td><td>-</td><td><span>ITEMNAMEによって要素の指定ができる</span></td></tr><tr><td>BOUGHT</td><td>整数</td><td>一次元</td><td>○</td><td>○</td><td>○</td><td>-</td><td>-</td><td>-</td></tr><tr><td>PBAND</td><td>整数</td><td>一次元</td><td>○</td><td>○</td><td>○</td><td><span>:0 = _replace.csv<br>"PBANDの初期値"</span></td><td>-</td><td>-</td></tr><tr><td>CHARANUM</td><td>整数</td><td><span>無次元</span></td><td><span>×</span></td><td><span>×</span></td><td>×</td><td>-</td><td>-</td><td>どんな要素を指定してもキャラの登録数が返ってくる。</td></tr><tr><td>RAND</td><td>整数</td><td><span>無次元</span></td><td><span>×</span></td><td><span>×</span></td><td>×</td><td>-</td><td>-</td><td><span>RAND:XのXが0や負の値の場合エラーとなるように</span><br>それ以外の場合0～(要素数-1)までのランダムな値が返ってくる。</td></tr><tr><td>STR</td><td>文字列</td><td>一次元</td><td>○</td><td>×</td><td>○</td><td>STR.CSV</td><td>-</td><td><span>STRNAMEによって要素の指定ができる</span></td></tr><tr><td>SAVESTR</td><td>文字列</td><td>一次元</td><td>○</td><td>○</td><td>○</td><td>-</td><td>-</td><td><span>SAVESTRNAMEによって要素の指定ができる</span></td></tr><tr><td>NO</td><td>数値</td><td>キャラ＋無次元</td><td>○</td><td>○</td><td>×</td><td>-</td><td>-</td><td>CHARA**.CSVで「番号,**」により指定する</td></tr><tr><td>ISASSI</td><td>数値</td><td>キャラ＋無次元</td><td>○</td><td>○</td><td>×</td><td>-</td><td>-</td><td>CHARA**.CSVで「助手,1」と指定することで初期状態から助手として扱われる</td></tr><tr><td>NAME</td><td>文字列</td><td>キャラ＋無次元</td><td><span>○</span></td><td>○</td><td>×</td><td>-</td><td>-</td><td>CHARA**.CSVで「名前,**」により指定する</td></tr><tr><td>CALLNAME</td><td>文字列</td><td>キャラ＋無次元</td><td><span>○</span></td><td>○</td><td>×</td><td>-</td><td>-</td><td>CHARA**.CSVで「呼び名,**」により指定する</td></tr><tr><td>BASE</td><td>数値</td><td>キャラ＋ー次元</td><td>○</td><td>○</td><td>○</td><td>-</td><td>-</td><td>ADDCHARA時に全要素がMAXBASEと同じ値になる<br><span>BASENAMEによって要素の指定ができる</span></td></tr><tr><td>MAXBASE</td><td>数値</td><td>キャラ＋ー次元</td><td>○</td><td>○</td><td>○</td><td></td><td>-</td><td>CHARA**.CSVで「基礎,*,**」により指定する<br><span>BASENAMEによって要素の指定ができる</span></td></tr><tr><td>ABL</td><td>数値</td><td>キャラ＋ー次元</td><td>○</td><td>○</td><td>○</td><td>-</td><td>-</td><td>CHARA**.CSVで「能力,*,**」により指定する<br><span>ABLNAMEによって要素の指定ができる</span></td></tr><tr><td>TALENT</td><td>数値</td><td>キャラ＋ー次元</td><td>○</td><td>○</td><td>○</td><td>-</td><td>-</td><td>CHARA**.CSVで「素質,*」により指定する<br><span>「素質,*,**」のように3番目の値も指定できるように<br>TALENTNAMEによって要素の指定ができる</span></td></tr><tr><td>EXP</td><td>数値</td><td>キャラ＋ー次元</td><td>○</td><td>○</td><td>○</td><td>-</td><td>-</td><td>CHARA**.CSVで「経験,*,**」により指定する<br><span>EXPNAMEによって要素の指定ができる</span></td></tr><tr><td>MARK</td><td>数値</td><td>キャラ＋ー次元</td><td>○</td><td>○</td><td>○</td><td>-</td><td>-</td><td>CHARA**.CSVで「刻印,*,**」により指定する<br><span>MARKNAMEによって要素の指定ができる</span></td></tr><tr><td>RELATION</td><td>数値</td><td>キャラ＋ー次元</td><td>○</td><td>○</td><td>○</td><td><span>replace.csv<br>"RELATIONの初期値"</span></td><td>-</td><td>CHARA**.CSVで「相性,*,**」により指定する<br><span>NAMEまたはCALLNAMEによって要素の指定ができる</span></td></tr><tr><td>JUEL</td><td>数値</td><td>キャラ＋ー次元</td><td>○</td><td>○</td><td>○</td><td>-</td><td>-</td><td><span>CHARA**.CSVで「珠,*,**」により指定できるように<br>PALAMNAMEによって要素の指定ができる</span></td></tr><tr><td>CFLAG</td><td>数値</td><td>キャラ＋ー次元</td><td>○</td><td>○</td><td>○</td><td>-</td><td>-</td><td>CHARA**.CSVで「フラグ,*,**」により指定する<br><span>CFLAGNAMEによって要素の指定ができる</span></td></tr><tr><td>EQUIP</td><td>数値</td><td>キャラ＋ー次元</td><td>○</td><td>○</td><td>○</td><td>-</td><td>-</td><td><span>CHARA**.CSVで「装着物,*,**」により指定できるように<br>EQUIPNAMEによって要素の指定ができる</span></td></tr><tr><td>TEQUIP</td><td>数値</td><td>キャラ＋ー次元</td><td>○</td><td>○</td><td>○</td><td>全て0</td><td>BEGIN TRAIN</td><td><span>TEQUIPNAMEによって要素の指定ができる</span></td></tr><tr><td>PALAM</td><td>数値</td><td>キャラ＋ー次元</td><td>○</td><td>○</td><td>○</td><td>全て0</td><td>BEGIN TRAIN</td><td><span>PALAMNAMEによって要素の指定ができる</span></td></tr><tr><td>STAIN</td><td>数値</td><td>キャラ＋ー次元</td><td>○</td><td>○</td><td>×</td><td><span>_replace.csv<br>"汚れの初期値"</span></td><td>BEGIN TRAIN</td><td><span>STAINNAMEによって要素の指定ができる</span></td></tr><tr><td>EX</td><td>数値</td><td>キャラ＋ー次元</td><td>○</td><td>○</td><td>○</td><td>全て0</td><td>BEGIN TRAIN</td><td><span>EXNAMEによって要素の指定ができる</span></td></tr><tr><td>SOURCE</td><td>数値</td><td>キャラ＋ー次元</td><td>○</td><td>○</td><td>○</td><td>全て0</td><td>BEGIN TRAIN<br>@SOURCE_CHECK終了時</td><td><span>SOURCENAMEによって要素の指定ができる</span></td></tr><tr><td>NOWEX</td><td>数値</td><td>キャラ＋ー次元</td><td>○</td><td>○</td><td>○</td><td>全て0</td><td>@EVENTCOM直前</td><td>@USERCOM前には更新されない<br><span>EXNAMEによって要素の指定ができる</span></td></tr><tr><td>GOTJUEL</td><td>数値</td><td>キャラ＋ー次元</td><td>○</td><td>○</td><td>○</td><td>全て0</td><td>BEGIN TRAIN</td><td><span>PALAMNAMEによって要素の指定ができる</span></td></tr><tr><td>ABLNAME</td><td>文字列</td><td>一次元</td><td>×</td><td>×</td><td>○</td><td>ABL.CSV</td><td>-</td><td>-</td></tr><tr><td>TALENTNAME</td><td>文字列</td><td>一次元</td><td>×</td><td>×</td><td>○</td><td>TALENT.CSV</td><td>-</td><td>-</td></tr><tr><td>EXPNAME</td><td>文字列</td><td>一次元</td><td>×</td><td>×</td><td>○</td><td>EXP.CSV</td><td>-</td><td>-</td></tr><tr><td>MARKNAME</td><td>文字列</td><td>一次元</td><td>×</td><td>×</td><td>○</td><td>MARK.CSV</td><td>-</td><td>-</td></tr><tr><td>PALAMNAME</td><td>文字列</td><td>一次元</td><td>×</td><td>×</td><td>○</td><td>PALAM.CSV</td><td>-</td><td>-</td></tr><tr><td>ITEMNAME</td><td>文字列</td><td>一次元</td><td>×</td><td>×</td><td>○</td><td>ITEM.CSV</td><td>-</td><td>-</td></tr><tr><td>NOITEM</td><td>整数</td><td>一次元</td><td>○</td><td>○</td><td>○</td><td>:0 = gamebase.csv<br>"アイテムなし"</td><td>-</td><td>0と1以外も指定できる</td></tr></tbody></table><p>アンダーライン付の部分はeramakerとEmueraで仕様が異なる部分である
+</p><h5 id="h5-Emuera.E5.B0.82.E7.94.A8.E5.A4.89.E6.95.B0">Emuera専用変数</h5><table class="wikitable"><tbody><tr><td>変数名</td><td>型</td><td>配列</td><td>代入</td><td>セーブ</td><td>禁止</td><td>初期値</td><td>初期化されるタイミング</td><td>備考</td></tr><tr><td>LOCAL</td><td>整数</td><td>一次元</td><td>○</td><td>×</td><td>○</td><td>-</td><td>-</td><td>#LOCALSIZEによって関数ごとに要素数が変化</td></tr><tr><td>LOCALS</td><td>文字列</td><td>一次元</td><td>○</td><td>×</td><td>○</td><td>-</td><td>-</td><td>#LOCALSSIZEによって関数ごとに要素数が変化</td></tr><tr><td>ARG</td><td>整数</td><td>一次元</td><td>○</td><td>×</td><td>○</td><td>任意</td><td>関数が呼び出された時※</td><td>※引数に設定されている場合のみ<br>関数ごとに引数で定義された分だけの要素数を確保</td></tr><tr><td>ARGS</td><td>文字列</td><td>一次元</td><td>○</td><td>×</td><td>○</td><td>任意</td><td>関数が呼び出された時※</td><td>※引数に設定されている場合のみ<br>関数ごとに引数で定義された分だけの要素数を確保</td></tr><tr><td>(Private)</td><td>任意</td><td>任意</td><td>任意</td><td>×</td><td>×</td><td>任意</td><td>ゲーム開始<br>関数が呼び出された時※</td><td>※引数に設定されている場合のみ<br>関数中の#DIMまたは#DIMSで定義</td></tr><tr><td>(Refer)</td><td>任意</td><td>任意</td><td>※</td><td>※</td><td>×</td><td>-</td><td>-</td><td>※参照先に依存<br>関数中の"#DIM REF"または"#DIMS REF"で定義</td></tr><tr><td>(Wide_area)</td><td>任意</td><td>任意</td><td>任意</td><td>任意</td><td>×</td><td>任意</td><td>ゲーム開始</td><td>ERH中の#DIMまたは#DIMSで定義</td></tr><tr><td>GLOBAL</td><td>整数</td><td>一次元</td><td>○</td><td>※</td><td>×</td><td>-</td><td>-</td><td>※SAVEGLOBALでセーブ、LOADGLOBALでロードする<br>GLOBALNAMEによって要素の指定ができる</td></tr><tr><td>GLOBALS</td><td>文字列</td><td>一次元</td><td>○</td><td>※</td><td>×</td><td>-</td><td>-</td><td>※SAVEGLOBALでセーブ、LOADGLOBALでロードする<br>GLOBALSNAMEによって要素の指定ができる</td></tr><tr><td>LINECOUNT</td><td>整数</td><td>無次元</td><td>×</td><td>×</td><td>×</td><td>-</td><td>-</td><td>-</td></tr><tr><td>ISTIMEOUT</td><td>整数</td><td>無次元</td><td>×</td><td>×</td><td>×</td><td>0</td><td>TINPUT系命令実行時</td><td>TINPUT系命令がタイムアウトした場合1が代入される</td></tr><tr><td>__INT_MAX__</td><td>整数</td><td>無次元</td><td>×</td><td>×</td><td>×</td><td>9223372036854775807</td><td>-</td><td>-</td></tr><tr><td>__INT_MIN__</td><td>整数</td><td>無次元</td><td>×</td><td>×</td><td>×</td><td>-9223372036854775808</td><td>-</td><td>-</td></tr><tr><td>RANDDATA</td><td>整数</td><td>一次元</td><td>○</td><td>○</td><td>×</td><td>-</td><td>-</td><td>-</td></tr><tr><td>TSTR</td><td>文字列</td><td>一次元</td><td>○</td><td>×</td><td>○</td><td>全て空文字列</td><td>BEGIN TRAIN</td><td>TSTRNAMEによって要素の指定ができる</td></tr><tr><td>DA</td><td>整数</td><td>二次元</td><td>○</td><td>○</td><td>○</td><td>-</td><td>-</td><td>-</td></tr><tr><td>DB</td><td>整数</td><td>二次元</td><td>○</td><td>○</td><td>○</td><td>-</td><td>-</td><td>-</td></tr><tr><td>DC</td><td>整数</td><td>二次元</td><td>○</td><td>○</td><td>○</td><td>-</td><td>-</td><td>-</td></tr><tr><td>DD</td><td>整数</td><td>二次元</td><td>○</td><td>○</td><td>○</td><td>-</td><td>-</td><td>-</td></tr><tr><td>DE</td><td>整数</td><td>二次元</td><td>○</td><td>○</td><td>○</td><td>-</td><td>-</td><td>-</td></tr><tr><td>DITEMTYPE</td><td>整数</td><td>二次元</td><td>○</td><td>○</td><td>○</td><td>-</td><td>-</td><td>-</td></tr><tr><td>TA</td><td>整数</td><td>三次元</td><td>○</td><td>○</td><td>○</td><td>-</td><td>-</td><td>-</td></tr><tr><td>TB</td><td>整数</td><td>三次元</td><td>○</td><td>○</td><td>○</td><td>-</td><td>-</td><td>-</td></tr><tr><td>NICKNAME</td><td>文字列</td><td>キャラ＋無次元</td><td>○</td><td>○</td><td>×</td><td>-</td><td>-</td><td>CHARA**.CSVで「あだ名,**」により指定する</td></tr><tr><td>MASTERNAME</td><td>文字列</td><td>キャラ＋無次元</td><td>○</td><td>○</td><td>×</td><td>-</td><td>-</td><td>CHARA**.CSVで「主人の呼び方,**」により指定する</td></tr><tr><td>DOWNBASE</td><td>整数</td><td>キャラ＋ー次元</td><td>○</td><td>○</td><td>○</td><td>全て0</td><td>@SHOW_USERCOM終了時</td><td>BASENAMEによって要素の指定ができる</td></tr><tr><td>CUP</td><td>整数</td><td>キャラ＋ー次元</td><td>○</td><td>○</td><td>○</td><td>全て0</td><td>@SHOW_USERCOM終了時<br>UPCHECK時</td><td>PALAMNAMEによって要素の指定ができる</td></tr><tr><td>CDOWN</td><td>整数</td><td>キャラ＋ー次元</td><td>○</td><td>○</td><td>○</td><td>全て0</td><td>@SHOW_USERCOM終了時<br>UPCHECK時</td><td>PALAMNAMEによって要素の指定ができる</td></tr><tr><td>TCVAR</td><td>整数</td><td>キャラ＋ー次元</td><td>○</td><td>○</td><td>○</td><td>全て0</td><td>BEGIN TRAIN</td><td>TCVARNAMEによって要素の指定ができる</td></tr><tr><td>CSTR</td><td>文字列</td><td>キャラ＋ー次元</td><td>○</td><td>○</td><td>○</td><td>-</td><td>-</td><td>CHARA**.CSVで「CSTR,*,**」により指定する<br>CSTRNAMEによって要素の指定ができる</td></tr><tr><td>CDFLAG</td><td>整数</td><td>キャラ＋二次元</td><td>○</td><td>○</td><td>○</td><td>-</td><td>-</td><td>CFDLAGNAME1およびCDFLAGNAME2によって要素の指定ができる<br>要素数の初期設定値が1･1であることに注意</td></tr><tr><td>ITEMPRICE</td><td>整数</td><td>一次元</td><td>×</td><td>×</td><td>○</td><td>item.csv</td><td>-</td><td>ITEMNAMEによって要素の指定ができる</td></tr><tr><td>TRAINNAME</td><td>文字列</td><td>一次元</td><td>×</td><td>×</td><td>○</td><td>train.csv</td><td>-</td><td>-</td></tr><tr><td>BASENAME</td><td>文字列</td><td>一次元</td><td>×</td><td>×</td><td>○</td><td>base.csv</td><td>-</td><td>-</td></tr><tr><td>EQUIPNAME</td><td>文字列</td><td>一次元</td><td>×</td><td>×</td><td>○</td><td>equip.csv</td><td>-</td><td>-</td></tr><tr><td>TEQUIPNAME</td><td>文字列</td><td>一次元</td><td>×</td><td>×</td><td>○</td><td>tequip.csv</td><td>-</td><td>-</td></tr><tr><td>STAINNAME</td><td>文字列</td><td>一次元</td><td>×</td><td>×</td><td>○</td><td>stain.csv</td><td>-</td><td>-</td></tr><tr><td>EXNAME</td><td>文字列</td><td>一次元</td><td>×</td><td>×</td><td>○</td><td>ex.csv</td><td>-</td><td>-</td></tr><tr><td>SOURCENAME</td><td>文字列</td><td>一次元</td><td>×</td><td>×</td><td>○</td><td>source.csv</td><td>-</td><td>-</td></tr><tr><td>FLAGNAME</td><td>文字列</td><td>一次元</td><td>×</td><td>×</td><td>○</td><td>flag.csv</td><td>-</td><td>-</td></tr><tr><td>TFLAGNAME</td><td>文字列</td><td>一次元</td><td>×</td><td>×</td><td>○</td><td>tflag.csv</td><td>-</td><td>-</td></tr><tr><td>CFLAGNAME</td><td>文字列</td><td>一次元</td><td>×</td><td>×</td><td>○</td><td>cflag.csv</td><td>-</td><td>-</td></tr><tr><td>TCVARNAME</td><td>文字列</td><td>一次元</td><td>×</td><td>×</td><td>○</td><td>tcvar.csv</td><td>-</td><td>-</td></tr><tr><td>STRNAME</td><td>文字列</td><td>一次元</td><td>×</td><td>×</td><td>○</td><td>strname.csv</td><td>-</td><td>str.csvで指定するのはSTRの中身であって要素名ではない</td></tr><tr><td>TSTRNAME</td><td>文字列</td><td>一次元</td><td>×</td><td>×</td><td>○</td><td>tstr.csv</td><td>-</td><td>-</td></tr><tr><td>CSTRNAME</td><td>文字列</td><td>一次元</td><td>×</td><td>×</td><td>○</td><td>cstr.csv</td><td>-</td><td>-</td></tr><tr><td>SAVESTRNAME</td><td>文字列</td><td>一次元</td><td>×</td><td>×</td><td>○</td><td>savestr.csv</td><td>-</td><td>-</td></tr><tr><td>CDFLAGNAME1</td><td>文字列</td><td>一次元</td><td>×</td><td>×</td><td>○</td><td>cdflag1.csv</td><td>-</td><td>-</td></tr><tr><td>CDFLAGNAME2</td><td>文字列</td><td>一次元</td><td>×</td><td>×</td><td>○</td><td>cdflag2.csv</td><td>-</td><td>-</td></tr><tr><td>GLOBALNAME</td><td>文字列</td><td>一次元</td><td>×</td><td>×</td><td>○</td><td>global.csv</td><td>-</td><td>-</td></tr><tr><td>GLOBALSNAME</td><td>文字列</td><td>一次元</td><td>×</td><td>×</td><td>○</td><td>globals.csv</td><td>-</td><td>-</td></tr><tr><td>GAMEBASE_AUTHOR</td><td>文字列</td><td>無次元</td><td>×</td><td>×</td><td>×</td><td>gamebase.csv<br>"作者"</td><td>-</td><td>-</td></tr><tr><td>GAMEBASE_INFO</td><td>文字列</td><td>無次元</td><td>×</td><td>×</td><td>×</td><td>gamebase.csv<br>"追加情報"</td><td>-</td><td>-</td></tr><tr><td>GAMEBASE_YEAR</td><td>文字列</td><td>無次元</td><td>×</td><td>×</td><td>×</td><td>gamebase.csv<br>"製作年"</td><td>-</td><td>-</td></tr><tr><td>GAMEBASE_TITLE</td><td>文字列</td><td>無次元</td><td>×</td><td>×</td><td>×</td><td>gamebase.csv<br>"タイトル"</td><td>-</td><td>-</td></tr><tr><td>GAMEBASE_GAMECODE</td><td>整数</td><td>無次元</td><td>×</td><td>×</td><td>×</td><td>gamebase.csv<br>"コード"</td><td>-</td><td>-</td></tr><tr><td>GAMEBASE_VERSION</td><td>整数</td><td>無次元</td><td>×</td><td>×</td><td>×</td><td>gamebase.csv<br>"バージョン"</td><td>-</td><td>-</td></tr><tr><td>GAMEBASE_ALLOWVERSION</td><td>整数</td><td>無次元</td><td>×</td><td>×</td><td>×</td><td>gamebase.csv<br>"バージョン違い認める"</td><td>-</td><td>-</td></tr><tr><td>GAMEBASE_DEFAULTCHARA</td><td>整数</td><td>無次元</td><td>×</td><td>×</td><td>×</td><td>gamebase.csv<br>"最初からいるキャラ"</td><td>-</td><td>-</td></tr><tr><td>GAMEBASE_NOITEM</td><td>整数</td><td>無次元</td><td>×</td><td>×</td><td>×</td><td>gamebase.csv<br>"アイテムなし"</td><td>-</td><td>-</td></tr><tr><td>WINDOW_TITLE</td><td>文字列</td><td>無次元</td><td>○</td><td>×</td><td>×</td><td>gamebase.csv<br>"ウィンドウタイトル"※</td><td>-</td><td>※ない場合は"タイトル"と"バージョン"から生成<br>"タイトル"もない場合は「Emuera」</td></tr><tr><td>MONEYLABEL</td><td>文字列</td><td>無次元</td><td>×</td><td>×</td><td>×</td><td>_replace.csv<br>"お金の単位"※</td><td>-</td><td>※ない場合は「$」</td></tr><tr><td>DRAWLINESTR</td><td>文字列</td><td>無次元</td><td>×</td><td>×</td><td>×</td><td>_replace.csv<br>"DRAWLINE文字"※</td><td>-</td><td>※ない場合は「-」の繰り返し</td></tr><tr><td>LASTLOAD_VERSION</td><td>整数</td><td>無次元</td><td>×</td><td>×</td><td>×</td><td>-1</td><td>ゲーム開始<br>RESETDATA時</td><td>ロード時に値が更新される</td></tr><tr><td>LASTLOAD_NO</td><td>整数</td><td>無次元</td><td>×</td><td>×</td><td>×</td><td>-1</td><td>ゲーム開始<br>RESETDATA時</td><td>ロード時に値が更新される</td></tr><tr><td>LASTLOAD_TEXT</td><td>文字列</td><td>無次元</td><td>×</td><td>×</td><td>×</td><td>空文字列</td><td>ゲーム開始<br>RESETDATA時</td><td>ロード時に値が更新される</td></tr><tr><td>SAVEDATA_TEXT</td><td>文字列</td><td>無次元</td><td>○</td><td>※</td><td>×</td><td>※※</td><td>@SAVEINFO開始時</td><td>※セーブデータのタイトルとして保存される<br>※※現在時刻を表す文字列</td></tr></tbody></table></div><!-- google_ad_section_end -->
+<div class="content-footer">
+<div class="content-footer-actions">
+  <a class="btn act" rel="nofollow" href="https://ja.osdn.net/projects/emuera/wiki/!edit/exvar">編集</a>      <a class="btn act" rel="nofollow" href="https://ja.osdn.net/projects/emuera/wiki/!listhist/exvar">履歴</a>    <a class="btn act" rel="nofollow" href="https://ja.osdn.net/projects/emuera/wiki/!delete/exvar">削除</a>    <div class="btn-group">
+      <a class="btn act" rel="nofollow" href="https://ja.osdn.net/projects/emuera/wiki/!conf/exvar">設定</a>      <button class="btn dropdown-toggle" data-toggle="dropdown">
+        <span class="caret">&nbsp;</span>
+      </button>
+      <ul class="dropdown-menu" role="menu">
+        <li><a rel="nofollow" href="https://ja.osdn.net/projects/emuera/wiki/!conf/exvar">このページ</a></li>
+        <li><a rel="nofollow" href="https://ja.osdn.net/projects/emuera/wiki/!admin">全体</a></li>
+      </ul>
+    </div>
+  </div>
+<p class="page-metainfo">
+<strong>[ページ情報]</strong>&nbsp;
+更新日時: 2015-07-06 20:31:41, 更新者: <a href="https://ja.osdn.net/users/minorshift"><img alt="" class="user-image-type-icon" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAANCAQAAADY4iz3AAAAEUlEQVR42mNkwAkYR6UolgIACvgADsuK6xYAAAAASUVORK5CYII=">minorshift</a><br><strong>[権限]</strong>&nbsp;
+表示:無制限, 編集:ログインユーザ, 削除/設定:メンバー<br><nobr><strong>[IRI]</strong>&nbsp;
+<a href="https://ja.osdn.net/projects/emuera/wiki/exvar">https://ja.osdn.net/projects/emuera/wiki/exvar</a></nobr>
+</p>
+</div>
+
+<script type="text/javascript"></script>
+
+</div>
+
+<hr>
+
+
+</section><!-- END: #left-column -->
+</section><!-- #frame -->
+<div class="both-clear"></div>
+
+
+<!-- START: page_foot -->
+<footer id="osdnsitefooter">
+<div class="cols">
+<div class="col first">
+<span>サイト情報</span>
+<ul><li><a href="https://ja.osdn.net/projects/sourceforge/news/">サイトアナウンス</a></li><li><a href="https://ja.osdn.net/docs/About_OSDN">OSDNについて</a></li><li><a href="https://recruit.appirits.com/">人材採用</a></li><li><a href="https://ja.osdn.net/docs/Privacy_Policy">プライバシー</a></li><li><a href="https://ja.osdn.net/docs/advertise-vender">広告事業者のポリシー</a></li><li><a href="https://osdn.net/sponsors/">サイトスポンサー</a></li></ul>
+</div>
+<div class="col">
+<span>ソフトウェアを探す</span>
+<ul><li><a href="https://ja.osdn.net/search/">検索</a></li><li><a href="https://ja.osdn.net/softwaremap/trove_list.php">カテゴリで探す</a></li><li><a href="https://ja.osdn.net/top/topdl.php?type=downloads_day">ダウンロードランキング</a></li><li><a href="https://ja.osdn.net/top/overview.php">プロジェクトランキング</a></li>
+<li><a href="https://license.osdn.jp/">ライセンス購入</a></li></ul>
+</div>
+<div class="col">
+<span>ソフトウェアを作る</span>
+<ul><li><a href="https://ja.osdn.net/develop/?nr=1">プロジェクト作成</a></li><li><a href="https://ja.osdn.net/develop/whatsnew.php">最新動向</a></li><li><a href="https://ja.osdn.net/news/recent-approved.php">新規登録プロジェクト</a></li><li><a href="https://ja.osdn.net/softwaremap/personalforge.php">作業部屋マップ</a></li><li><a href="https://ja.osdn.net/projects/osdn-codes/wiki/APIGuide">API</a></li></ul>
+</div>
+<div class="col">
+<span>コミュニティ</span>
+<ul>
+<li><a href="https://twitter.com/osdn_magazine">OSDN Magazine on Twitter</a></li>
+<li><a href="https://www.facebook.com/OSDN.Magazine">OSDN Magazine on Facebook</a></li>
+<li><a href="https://twitter.com/osdnjp">OSDN on Twitter</a></li>
+</ul>
+</div>
+<div class="col">
+<span>ヘルプ</span>
+<ul><li><a href="https://ja.osdn.net/tos.php">利用規約</a></li><li><a href="https://ja.osdn.net/docs/FrontPage">ヘルプドキュメント</a></li><li><a href="https://ja.osdn.net/docs/Contact_us">運営への連絡先</a></li><li><a href="https://ja.osdn.net/docs/advertise">広告掲載</a></li><li><a href="https://ja.osdn.net/reportspam.php">スパムを通報する</a></li></ul>
+</div>
+<div class="spacer"></div>
+</div>
+<div id="copyright">
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAANCAQAAADY4iz3AAAAEUlEQVR42mNkwAkYR6UolgIACvgADsuK6xYAAAAASUVORK5CYII=" height="12" width="94" alt="OSDN logo"><br>
+Copyright ©<a href="https://appirits.com/">Appirits Inc.</a>
+</div>
+
+</footer><!-- #osdnsitefooter -->
+<div id="fb-root"></div>
+<script type="application/ld+json"></script>
+
+</body></html>
