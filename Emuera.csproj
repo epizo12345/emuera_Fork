@@ -11,8 +11,6 @@
 
     <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>
-    <ApplicationVisualStyles>true</ApplicationVisualStyles>
-    <ApplicationUseCompatibleTextRendering>false</ApplicationUseCompatibleTextRendering>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>none</DebugType>
