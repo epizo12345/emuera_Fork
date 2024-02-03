@@ -5,3 +5,4 @@ bin/*
 .vs/*
 Properties/launchSettings.json
 artifacts/*
+Emuera.csproj.user
