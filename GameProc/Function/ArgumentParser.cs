@@ -29,22 +29,22 @@ namespace MinorShift.Emuera.GameProc.Function
 			string errmes;
 			try
 			{
-                if (line.Function.ArgBuilder != null)
-                    arg = line.Function.ArgBuilder.CreateArgument(line, GlobalStatic.EMediator);
-                else
-                    arg = line.Function.Instruction.CreateArgument(line, GlobalStatic.EMediator);
-            }
-            catch (EmueraException e)
+				if (line.Function.ArgBuilder != null)
+					arg = line.Function.ArgBuilder.CreateArgument(line, GlobalStatic.EMediator);
+				else
+					arg = line.Function.Instruction.CreateArgument(line, GlobalStatic.EMediator);
+			}
+			catch (EmueraException e)
 			{
 				errmes = e.Message;
-				goto error;
+				return error(line, errmes);
 			}
 			if (arg == null)
 			{
 				if (!line.IsError)
 				{
 					errmes = "命令の引数解析中に特定できないエラーが発生";
-					goto error;
+					return error(line, errmes);
 				}
 				return false;
 			}
@@ -52,13 +52,16 @@ namespace MinorShift.Emuera.GameProc.Function
 			if (arg == null)
 				line.IsError = true;
 			return true;
-		error:
-			System.Media.SystemSounds.Hand.Play();
 
-			line.IsError = true;
-			line.ErrMes = errmes;
-			ParserMediator.Warn(errmes, line, 2, true, false);
-			return false;
+			static bool error(InstructionLine line, string errmes)
+			{
+				System.Media.SystemSounds.Hand.Play();
+
+				line.IsError = true;
+				line.ErrMes = errmes;
+				ParserMediator.Warn(errmes, line, 2, true, false);
+				return false;
+			}
 		}
 	}
 }
