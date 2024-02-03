@@ -175,7 +175,7 @@ namespace MinorShift.Emuera.GameView
 			if (mode == TextDrawingMode.GRAPHICS)
 				graph.DrawString(Str, Config.Font, new SolidBrush(Config.ForeColor), new Point(PointX, pointY));
 			else
-				System.Windows.Forms.TextRenderer.DrawText(graph, Str, Config.Font, new Point(PointX, pointY), Config.ForeColor, System.Windows.Forms.TextFormatFlags.NoPrefix);
+				System.Windows.Forms.TextRenderer.DrawText(graph, Str.AsSpan(), Config.Font, new Point(PointX, pointY), Config.ForeColor, System.Windows.Forms.TextFormatFlags.NoPrefix);
 		}
 		public override void SetWidth(StringMeasure sm, float subPixel)
 		{

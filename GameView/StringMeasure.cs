@@ -54,7 +54,7 @@ namespace MinorShift.Emuera.GameView
 			}
 			else if (textDrawingMode == TextDrawingMode.TEXTRENDERER)
 			{
-				Size size = TextRenderer.MeasureText(graph, s, font, layoutSize, TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix);
+				Size size = TextRenderer.MeasureText(graph, s.AsSpan(), font, layoutSize, TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix);
 				//Size size = TextRenderer.MeasureText(g, s, StaticConfig.Font);
 				return size.Width;
 			}

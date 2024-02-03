@@ -147,7 +147,7 @@ namespace MinorShift.Emuera.GameView
 				if (mode == TextDrawingMode.GRAPHICS)
 					graph.DrawString(AltText, Config.Font, new SolidBrush(Config.ForeColor), new Point(PointX, pointY));
 				else
-					System.Windows.Forms.TextRenderer.DrawText(graph, AltText, Config.Font, new Point(PointX, pointY), Config.ForeColor, System.Windows.Forms.TextFormatFlags.NoPrefix);
+					System.Windows.Forms.TextRenderer.DrawText(graph, AltText.AsSpan(), Config.Font, new Point(PointX, pointY), Config.ForeColor, System.Windows.Forms.TextFormatFlags.NoPrefix);
 			}
 		}
 	}

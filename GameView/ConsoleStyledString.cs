@@ -98,7 +98,7 @@ namespace MinorShift.Emuera.GameView
 			if (mode == TextDrawingMode.GRAPHICS)
 				graph.DrawString(Str, Font, new SolidBrush(color), new Point(PointX, pointY));
 			else
-				TextRenderer.DrawText(graph, Str, Font, new Point(PointX, pointY), color, TextFormatFlags.NoPrefix);
+				TextRenderer.DrawText(graph, Str.AsSpan(), Font, new Point(PointX, pointY), color, TextFormatFlags.NoPrefix);
 
 		}
 
