@@ -118,9 +118,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				}
 			}
 			local();
-			IOperandTerm[] ret = new IOperandTerm[terms.Count];
-			terms.CopyTo(ret);
-			return ret;
+			return [.. terms];
 		}
 
 
