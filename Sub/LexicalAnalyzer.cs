@@ -6,6 +6,7 @@ using MinorShift.Emuera.GameData;
 using System.Text.RegularExpressions;
 using System.Runtime.CompilerServices;
 using System.Buffers;
+using System.Globalization;
 
 namespace MinorShift.Emuera.Sub;
 
@@ -388,7 +389,8 @@ internal static partial class LexicalAnalyzer
 	/// <returns></returns>
 	public static string ReadSingleIdentifier(StringStream st)
 	{
-		return ReadSingleIdentifierROS(st).ToString();
+		var span = ReadSingleIdentifierROS(st);
+		return span.ToString(); ;
 	}
 
 	static readonly SearchValues<char> _searchValues = SearchValues.Create(""" 　.+-*/%=!<>|&^~?#)}],:({[$\'"@;""" + "\t");
@@ -766,6 +768,7 @@ internal static partial class LexicalAnalyzer
 	/// return時にはendWithの文字がCurrentになっているはず。終端の適切さの検証は呼び出し元が行う。
 	/// </summary>
 	/// <returns></returns>
+	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	public static WordCollection Analyse(StringStream st, LexEndWith endWith, LexAnalyzeFlag flag)
 	{
 		WordCollection ret = new();
@@ -773,7 +776,6 @@ internal static partial class LexicalAnalyzer
 		//int nestBracketM = 0;
 		int nestBracketL = 0;
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		void local()
 		{
 			while (true)
