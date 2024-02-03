@@ -202,54 +202,51 @@ namespace MinorShift.Emuera
 			}
 			if (!isFunction || !Config.WarnFunctionOverloading)
 				return;
-			if (!nameDic.TryGetValue(labelName, out DefinedNameType value))
+			if (nameDic.TryGetValue(labelName, out DefinedNameType value))
 			{
-				if (nameDic.ContainsKey(labelName))
+				switch (value)
 				{
-					switch (value)
-					{
-						case DefinedNameType.Reserved:
-							if (Config.AllowFunctionOverloading)
-							{
-								errMes = "関数名" + labelName + "はEmueraの予約語と衝突しています。Emuera専用構文の構文解析に支障をきたす恐れがあります";
-								warnLevel = 1;
-							}
-							else
-							{
-								errMes = "関数名" + labelName + "はEmueraの予約語です";
-								warnLevel = 2;
-							}
-							break;
-						case DefinedNameType.SystemMethod:
-							if (Config.AllowFunctionOverloading)
-							{
-								errMes = "関数名" + labelName + "はEmueraの式中関数を上書きします";
-								warnLevel = 1;
-							}
-							else
-							{
-								errMes = "関数名" + labelName + "はEmueraの式中関数名として使われています";
-								warnLevel = 2;
-							}
-							break;
-						case DefinedNameType.SystemVariable:
-							errMes = "関数名" + labelName + "はEmueraの変数で使われています";
+					case DefinedNameType.Reserved:
+						if (Config.AllowFunctionOverloading)
+						{
+							errMes = "関数名" + labelName + "はEmueraの予約語と衝突しています。Emuera専用構文の構文解析に支障をきたす恐れがあります";
 							warnLevel = 1;
-							break;
-						case DefinedNameType.SystemInstrument:
-							errMes = "関数名" + labelName + "はEmueraの変数もしくは命令で使われています";
+						}
+						else
+						{
+							errMes = "関数名" + labelName + "はEmueraの予約語です";
+							warnLevel = 2;
+						}
+						break;
+					case DefinedNameType.SystemMethod:
+						if (Config.AllowFunctionOverloading)
+						{
+							errMes = "関数名" + labelName + "はEmueraの式中関数を上書きします";
 							warnLevel = 1;
-							break;
-						case DefinedNameType.UserMacro:
-							//字句解析がうまくいっていれば本来あり得ないはず
-							errMes = "関数名" + labelName + "はマクロに使用されています";
+						}
+						else
+						{
+							errMes = "関数名" + labelName + "はEmueraの式中関数名として使われています";
 							warnLevel = 2;
-							break;
-						case DefinedNameType.UserRefMethod:
-							errMes = "関数名" + labelName + "は参照型関数の名称に使用されています";
-							warnLevel = 2;
-							break;
-					}
+						}
+						break;
+					case DefinedNameType.SystemVariable:
+						errMes = "関数名" + labelName + "はEmueraの変数で使われています";
+						warnLevel = 1;
+						break;
+					case DefinedNameType.SystemInstrument:
+						errMes = "関数名" + labelName + "はEmueraの変数もしくは命令で使われています";
+						warnLevel = 1;
+						break;
+					case DefinedNameType.UserMacro:
+						//字句解析がうまくいっていれば本来あり得ないはず
+						errMes = "関数名" + labelName + "はマクロに使用されています";
+						warnLevel = 2;
+						break;
+					case DefinedNameType.UserRefMethod:
+						errMes = "関数名" + labelName + "は参照型関数の名称に使用されています";
+						warnLevel = 2;
+						break;
 				}
 			}
 			return;
