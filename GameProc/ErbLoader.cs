@@ -823,7 +823,6 @@ namespace MinorShift.Emuera.GameProc
 		{//ここでエラーを捕まえることは本来はないはず。ExeEE相当。
 			try
 			{
-				System.Windows.Forms.Application.DoEvents();
 				string filename = label.Position.Filename.ToUpper();
 				setArgument(label);
 				nestCheck(label);
@@ -836,6 +835,7 @@ namespace MinorShift.Emuera.GameProc
 				string errmes = (exc is EmueraException) ? exc.Message : exc.GetType().ToString() + ":" + exc.Message;
 				ParserMediator.Warn("@" + label.LabelName + " の解析中にエラー:" + errmes, label, 2, true, false, exc is not EmueraException ? exc.StackTrace : null);
 				label.ErrMes = "ロード時に解析に失敗した関数が呼び出されました";
+				System.Windows.Forms.Application.DoEvents();
 			}
 			finally
 			{
