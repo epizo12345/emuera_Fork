@@ -1,13 +1,14 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using MinorShift.Emuera;
 
 namespace Emuera;
-
 static partial class Preload
 {
     static Dictionary<int, string[]> files = [];
@@ -21,24 +22,17 @@ static partial class Preload
     {
         var startTime = DateTime.Now;
         Debug.WriteLine($"Load: {path} : Start");
-        if (Directory.Exists(path))
-        {
-            var filelines = Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories).AsParallel().Select((childDirPath, _) =>
-            {
-                var key = string.GetHashCode(childDirPath, StringComparison.OrdinalIgnoreCase);
-                return (key: key, value: File.ReadAllLines(childDirPath, Config.Encode));
-            });
 
-            foreach (var (key, value) in filelines)
-            {
-                files.Add(key, value);
-            }
-        }
-        else
+        Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories).AsParallel().ForAll((childPath) =>
         {
-            var text = File.ReadAllLines(path, Config.Encode);
-            files.Add(string.GetHashCode(path, StringComparison.OrdinalIgnoreCase), text);
-        }
+            var key = string.GetHashCode(childPath, StringComparison.OrdinalIgnoreCase);
+            var value = File.ReadAllLines(childPath, Config.Encode);
+            lock (files)
+            {
+                files.TryAdd(key, value);
+            }
+        });
+
         Debug.WriteLine($"Load: {path} : End in {(DateTime.Now - startTime).TotalMilliseconds}ms");
     }
 
