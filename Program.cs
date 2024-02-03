@@ -41,18 +41,24 @@ static class Program
 	[STAThread]
 	static void Main(string[] args)
 	{
+		// var summary = BenchmarkRunner.Run<PreloadInstance>();
+
+		// return;
+
 		// memo: Shift-JISを扱うためのおまじない
 		System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
 		var rootCommand = new RootCommand("Emuera");
 
 		var exeDirOption = new Option<string>(
-			name: "--exeDir"
+			name: "--ExeDir",
+			description: "与えられたフォルダのEraを起動します"
 		);
 		rootCommand.AddOption(exeDirOption);
 
 		var debugModeOption = new Option<bool>(
-			name: "-DEBUG"
+			name: "-Debug",
+			description: "デバッグモード"
 		);
 		rootCommand.AddOption(debugModeOption);
 
@@ -72,6 +78,7 @@ static class Program
 
 		//解析モードの判定だけ先に行う
 		DebugMode = result.HasOption(debugModeOption);
+
 
 		var matchFiles = result.CommandResult.GetValueForOption(debugModeOption);
 
