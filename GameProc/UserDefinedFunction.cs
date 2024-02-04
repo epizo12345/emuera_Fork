@@ -74,7 +74,7 @@ namespace MinorShift.Emuera.GameProc
 				throw new CodeEE("識別子の後に引数定義がありません", sc);
 			string errMes = "";
 			int errLevel = -1;
-			GlobalStatic.IdentifierDictionary.CheckUserLabelName(ref errMes, ref errLevel, true, ret.Name);
+			GlobalStatic.IdentifierDictionary.CheckUserLabelName(out errMes, ref errLevel, true, ret.Name);
 			if (errLevel == 0)//関数と変数の両方からチェック エラーメッセージが微妙だがひとまず気にしない
 				GlobalStatic.IdentifierDictionary.CheckUserVarName(ref errMes, ref errLevel, ret.Name);
 			if (errLevel >= 0)

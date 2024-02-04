@@ -776,6 +776,7 @@ internal static partial class LexicalAnalyzer
 		//int nestBracketM = 0;
 		int nestBracketL = 0;
 
+		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		void local()
 		{
 			while (true)
