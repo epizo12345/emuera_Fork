@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using MinorShift.Emuera.GameData.Function;
 
 namespace MinorShift.Emuera.GameProc.Function
@@ -35,7 +36,7 @@ namespace MinorShift.Emuera.GameProc.Function
 
 		#region static
 		//元BuiltInFunctionManager部分
-		readonly static Dictionary<string, FunctionIdentifier> funcDic = [];
+		readonly static Dictionary<string, FunctionIdentifier> funcDic = Config.ICFunction ? new(StringComparer.OrdinalIgnoreCase) : new();
 		readonly static Dictionary<FunctionCode, string> funcMatch = [];
 		readonly static Dictionary<FunctionCode, FunctionCode> funcParent = [];
 		readonly static ArgumentBuilder methodArgumentBuilder = null;

@@ -145,7 +145,7 @@ static class Program
 				}
 				else
 				{
-					if (!Path.GetExtension(path).Equals(".ERB", StringComparison.CurrentCultureIgnoreCase))
+					if (!Path.GetExtension(path).Equals(".ERB", StringComparison.OrdinalIgnoreCase))
 					{
 						System.Windows.MessageBox.Show("ドロップ可能なファイルはERBファイルのみです");
 						return;

@@ -21,9 +21,9 @@ namespace MinorShift.Emuera.GameProc
 		/// <summary>
 		/// 本体。全てのFunctionLabelLineを記録
 		/// </summary>
-		Dictionary<string, List<FunctionLabelLine>> labelAtDic = [];
+		Dictionary<string, List<FunctionLabelLine>> labelAtDic = new(StringComparer.OrdinalIgnoreCase);
 		List<FunctionLabelLine> invalidList = [];
-		Dictionary<string, Dictionary<FunctionLabelLine, GotoLabelLine>> labelDollarList = [];
+		Dictionary<string, Dictionary<FunctionLabelLine, GotoLabelLine>> labelDollarList = new(StringComparer.OrdinalIgnoreCase);
 		int count;
 
 		Dictionary<string, int> loadedFileDic = [];
@@ -52,8 +52,8 @@ namespace MinorShift.Emuera.GameProc
 		}
 
 
-		Dictionary<string, List<FunctionLabelLine>[]> eventLabelDic = [];
-		Dictionary<string, FunctionLabelLine> noneventLabelDic = [];
+		Dictionary<string, List<FunctionLabelLine>[]> eventLabelDic = new(StringComparer.OrdinalIgnoreCase);
+		Dictionary<string, FunctionLabelLine> noneventLabelDic = new(StringComparer.OrdinalIgnoreCase);
 
 		public void SortLabels()
 		{

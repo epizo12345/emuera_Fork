@@ -105,18 +105,18 @@ namespace MinorShift.Emuera
 		#endregion
 
 
-		Dictionary<string, DefinedNameType> nameDic = [];
+		Dictionary<string, DefinedNameType> nameDic = new(StringComparer.OrdinalIgnoreCase);
 
 		List<string> privateDimList = [];
 		List<string> disableList = [];
 		//Dictionary<string, VariableToken> userDefinedVarDic = new Dictionary<string, VariableToken>();
 
 		VariableData varData;
-		Dictionary<string, VariableToken> varTokenDic;
-		Dictionary<string, VariableLocal> localvarTokenDic;
-		Dictionary<string, FunctionIdentifier> instructionDic;
-		Dictionary<string, FunctionMethod> methodDic;
-		Dictionary<string, UserDefinedRefMethod> refmethodDic;
+		Dictionary<string, VariableToken> varTokenDic = new(StringComparer.OrdinalIgnoreCase);
+		Dictionary<string, VariableLocal> localvarTokenDic = new(StringComparer.OrdinalIgnoreCase);
+		Dictionary<string, FunctionIdentifier> instructionDic = new(StringComparer.OrdinalIgnoreCase);
+		Dictionary<string, FunctionMethod> methodDic = new(StringComparer.OrdinalIgnoreCase);
+		Dictionary<string, UserDefinedRefMethod> refmethodDic = new(StringComparer.OrdinalIgnoreCase);
 		public List<UserDefinedCharaVariableToken> CharaDimList = [];
 		#region initialize
 		public IdentifierDictionary(VariableData varData)
@@ -188,7 +188,7 @@ namespace MinorShift.Emuera
 				return;
 			}
 			//1.721 記号をサポートしない方向に変更
-			if (labelName.AsSpan().IndexOfAny(badSymbolAsIdentifier) != -1)
+			if (labelName.AsSpan().ContainsAny(badSymbolAsIdentifier))
 			{
 				errMes = "ラベル名" + labelName + "に\"_\"以外の記号が含まれています";
 				warnLevel = 1;
@@ -536,8 +536,6 @@ namespace MinorShift.Emuera
 			string key = str;
 			if (string.IsNullOrEmpty(key))
 				return null;
-			if (Config.ICFunction)
-				key = key.ToUpper();
 			if (instructionDic.TryGetValue(key, out FunctionIdentifier ret))
 				return ret;
 			else

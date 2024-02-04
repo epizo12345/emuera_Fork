@@ -53,11 +53,14 @@ namespace MinorShift.Emuera.GameProc
 				wc.ShiftNext();
 				keyword = idw.Code;
 				if (Config.ICVariable)
+				{
 					keyword = keyword.ToUpper();
+				}
+				var cmp = Config.ICVariable ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
 				//TODO ifの数があたまわるい なんとかしたい
 				switch (keyword)
 				{
-					case "CONST":
+					case var s when s.Equals("CONST", cmp):
 						if (ret.CharaData)
 							throw new CodeEE(keyword + "とCHARADATAキーワードは同時に指定できません", sc);
 						if (ret.Global)
@@ -72,7 +75,7 @@ namespace MinorShift.Emuera.GameProc
 							throw new CodeEE(keyword + "キーワードが二重に指定されています", sc);
 						ret.Const = true;
 						break;
-					case "REF":
+					case var s when s.Equals("REF", cmp):
 						//throw new CodeEE("未実装の機能です", sc);
 						//if (!isPrivate)
 						//	throw new CodeEE("広域変数の宣言に" + keyword + "キーワードは指定できません", sc);
@@ -91,7 +94,7 @@ namespace MinorShift.Emuera.GameProc
 						ret.Reference = true;
 						ret.Static = false;
 						break;
-					case "DYNAMIC":
+					case var s when s.Equals("DYNAMIC", cmp):
 						if (!isPrivate)
 							throw new CodeEE("広域変数の宣言に" + keyword + "キーワードは指定できません", sc);
 						if (ret.CharaData)
@@ -106,7 +109,7 @@ namespace MinorShift.Emuera.GameProc
 						staticDefined = true;
 						ret.Static = false;
 						break;
-					case "STATIC":
+					case var s when s.Equals("STATIC", cmp):
 						if (!isPrivate)
 							throw new CodeEE("広域変数の宣言に" + keyword + "キーワードは指定できません", sc);
 						if (ret.CharaData)
@@ -121,7 +124,7 @@ namespace MinorShift.Emuera.GameProc
 						staticDefined = true;
 						ret.Static = true;
 						break;
-					case "GLOBAL":
+					case var s when s.Equals("GLOBAL", cmp):
 						if (isPrivate)
 							throw new CodeEE("ローカル変数の宣言に" + keyword + "キーワードは指定できません", sc);
 						if (ret.CharaData)
@@ -137,7 +140,7 @@ namespace MinorShift.Emuera.GameProc
 								throw new CodeEE("DYNAMICとGLOBALキーワードは同時に指定できません", sc);
 						ret.Global = true;
 						break;
-					case "SAVEDATA":
+					case var s when s.Equals("SAVEDATA", cmp):
 						if (isPrivate)
 							throw new CodeEE("ローカル変数の宣言に" + keyword + "キーワードは指定できません", sc);
 						if (staticDefined)
@@ -153,7 +156,7 @@ namespace MinorShift.Emuera.GameProc
 							throw new CodeEE(keyword + "キーワードが二重に指定されています", sc);
 						ret.Save = true;
 						break;
-					case "CHARADATA":
+					case var s when s.Equals("CHARADATA", cmp):
 						if (isPrivate)
 							throw new CodeEE("ローカル変数の宣言に" + keyword + "キーワードは指定できません", sc);
 						if (ret.Reference)

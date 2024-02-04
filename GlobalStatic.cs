@@ -38,7 +38,7 @@ namespace MinorShift.Emuera
 
 		//ERBloaderに引数解析の結果を渡すための橋渡し変数
 		//1756 Processから移動。Program.AnalysisMode用
-		public static Dictionary<string, Int64> tempDic = [];
+		public static Dictionary<string, Int64> tempDic = new(StringComparer.OrdinalIgnoreCase);
 #if DEBUG
 		public static List<FunctionLabelLine> StackList = [];
 #endif

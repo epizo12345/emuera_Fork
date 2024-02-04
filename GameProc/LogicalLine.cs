@@ -282,7 +282,7 @@ namespace MinorShift.Emuera.GameProc
 		}
 		#endregion
 		#region private変数
-		readonly Dictionary<string, UserDefinedVariableToken> privateVar = [];
+		readonly Dictionary<string, UserDefinedVariableToken> privateVar = new(StringComparer.OrdinalIgnoreCase);
 		internal bool AddPrivateVariable(UserDefinedVariableData data)
 		{
 			if (privateVar.ContainsKey(data.Name))

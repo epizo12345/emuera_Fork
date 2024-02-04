@@ -19,13 +19,7 @@ namespace MinorShift.Emuera.GameProc
 		{
 			st.ShiftNext();//'#'を飛ばす
 			var token = LexicalAnalyzer.ReadSingleIdentifierROS(st);//#～自体にはマクロ非適用
-			if (Config.ICFunction)
-			{
-				Span<char> dest = new char[token.Length];
-				Ascii.ToUpper(token, dest, out int _);
-				token = dest;
-			}
-			//#行として不正な行でもAnalyzeに行って引っかかることがあるので、先に存在しない#～は弾いてしまう
+																	//#行として不正な行でもAnalyzeに行って引っかかることがあるので、先に存在しない#～は弾いてしまう
 			if (token.IsEmpty || (!token.SequenceEqual("SINGLE") && !token.SequenceEqual("LATER") && !token.SequenceEqual("PRI") && !token.SequenceEqual("ONLY") && !token.SequenceEqual("FUNCTION")
 				 && !token.SequenceEqual("FUNCTIONS")
 				&& !token.SequenceEqual("LOCALSIZE") && !token.SequenceEqual("LOCALSSIZE") && !token.SequenceEqual("DIM") && !token.SequenceEqual("DIMS")))
@@ -309,8 +303,6 @@ namespace MinorShift.Emuera.GameProc
 				}
 				labelName = ((IdentifierWord)wc.Current).Code;
 				wc.ShiftNext();
-				if (Config.ICVariable)
-					labelName = labelName.ToUpper();
 				GlobalStatic.IdentifierDictionary.CheckUserLabelName(ref errMes, ref warnLevel, isFunction, labelName);
 				if (warnLevel >= 0)
 				{

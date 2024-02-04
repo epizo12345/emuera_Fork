@@ -13,8 +13,8 @@ namespace MinorShift.Emuera.Content
 		{
 			gList = [];
 		}
-		static readonly Dictionary<string, AbstractImage> resourceDic = [];
-		static readonly Dictionary<string, ASprite> imageDictionary = [];
+		static readonly Dictionary<string, AbstractImage> resourceDic = new(StringComparer.OrdinalIgnoreCase);
+		static readonly Dictionary<string, ASprite> imageDictionary = new(StringComparer.OrdinalIgnoreCase);
 		static readonly Dictionary<int, GraphicsImage> gList;
 
 		//static public T GetContent<T>(string name)where T :AContentItem

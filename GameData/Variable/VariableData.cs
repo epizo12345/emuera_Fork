@@ -49,8 +49,8 @@ namespace MinorShift.Emuera.GameData.Variable
 		public Int64 LastLoadNo = -1;
 		public string LastLoadText = "";
 
-		Dictionary<string, VariableToken> varTokenDic = [];
-		Dictionary<string, VariableLocal> localvarTokenDic = [];
+		Dictionary<string, VariableToken> varTokenDic = new(StringComparer.OrdinalIgnoreCase);
+		Dictionary<string, VariableLocal> localvarTokenDic = new(StringComparer.OrdinalIgnoreCase);
 
 		/// <summary>
 		/// ユーザー変数のうちStaticかつ非Globalなもの。ERHでのDIM(非GLOBAL) と関数でのDIM (STATIC)の両方。ロードやリセットで初期化が必要。キャラクタ変数は除く。
