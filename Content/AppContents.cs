@@ -1,4 +1,5 @@
 ﻿using MinorShift.Emuera.Sub;
+using SkiaSharp.Views.Desktop;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -203,9 +204,7 @@ namespace MinorShift.Emuera.Content
 				Bitmap bmp;
 				try
 				{
-					using var imageFileStream = File.OpenRead(filepath);
-					var imageFile = Image.FromStream(imageFileStream, false, false);
-					bmp = new Bitmap(imageFile);
+					bmp = SkiaSharp.SKBitmap.Decode(filepath).ToBitmap();
 				}
 				catch (FileNotFoundException)
 				{
