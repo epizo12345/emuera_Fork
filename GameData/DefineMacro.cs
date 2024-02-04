@@ -1,8 +1,4 @@
-﻿
-using System.Collections.Generic;
-using MinorShift.Emuera.Sub;
-using System.IO;
-using System;
+﻿using MinorShift.Emuera.Sub;
 
 namespace MinorShift.Emuera.GameData
 {

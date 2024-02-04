@@ -1,13 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using MinorShift.Emuera.Sub;
-using System.Text.RegularExpressions;
-using MinorShift.Emuera.GameData.Variable;
 using MinorShift.Emuera.GameData.Expression;
 using MinorShift.Emuera.GameView;
-using MinorShift.Emuera.GameData;
-using MinorShift.Emuera.GameData.Function;
 using MinorShift.Emuera.GameProc.Function;
 
 namespace MinorShift.Emuera.GameProc

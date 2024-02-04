@@ -1,17 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using MinorShift.Emuera.GameData.Expression;
+﻿using System.Collections.Generic;
 using MinorShift.Emuera.Sub;
-using MinorShift.Emuera.GameProc;
 
 
 namespace MinorShift.Emuera.GameData.Function
 {
-	internal static partial class FunctionMethodCreator
-	{
-		static FunctionMethodCreator()
-		{
+    internal static partial class FunctionMethodCreator
+    {
+        static FunctionMethodCreator()
+        {
             methodList = new Dictionary<string, FunctionMethod>
             {
                 //キャラクタデータ系
@@ -213,13 +209,13 @@ namespace MinorShift.Emuera.GameData.Function
 
             //1823 自分の関数名を知っていた方が何かと便利なので覚えさせることにした
             foreach (var pair in methodList)
-				pair.Value.SetMethodName(pair.Key);
+                pair.Value.SetMethodName(pair.Key);
         }
 
-		private static readonly Dictionary<string, FunctionMethod> methodList;
-		public static Dictionary<string, FunctionMethod> GetMethodList()
-		{
-			return methodList;
-		}
-	}
+        private static readonly Dictionary<string, FunctionMethod> methodList;
+        public static Dictionary<string, FunctionMethod> GetMethodList()
+        {
+            return methodList;
+        }
+    }
 }

@@ -5,8 +5,6 @@ using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.GameData.Expression;
 using MinorShift.Emuera.GameData.Variable;
 using MinorShift.Emuera.GameProc.Function;
-using MinorShift.Emuera.GameData;
-using System.IO;
 
 namespace MinorShift.Emuera.GameProc
 {

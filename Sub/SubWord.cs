@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MinorShift.Emuera.Sub
+﻿namespace MinorShift.Emuera.Sub
 {
 	/// <summary>
 	/// FormattedStringWTの中身用のトークン
@@ -16,9 +12,9 @@ namespace MinorShift.Emuera.Sub
 		public virtual void SetIsMacro()
 		{
 			IsMacro = true;
-			if(Words != null)
+			if (Words != null)
 				Words.SetIsMacro();
-			
+
 		}
 	}
 

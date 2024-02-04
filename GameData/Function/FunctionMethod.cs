@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using MinorShift.Emuera.GameData.Expression;
 using MinorShift.Emuera.Sub;
 
@@ -22,13 +20,13 @@ namespace MinorShift.Emuera.GameData.Function
 			for (int i = 0; i < argumentTypeArray.Length; i++)
 			{
 				if (arguments[i] == null)
-					return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentNotNullable0, name, i+1);
+					return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentNotNullable0, name, i + 1);
 				if (argumentTypeArray[i] != arguments[i].GetOperandType())
 					return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentType0, name, i + 1);
 			}
 			return null;
 		}
-		
+
 		//Argumentが全て定数の時にMethodを解体してよいかどうか。RANDやCharaを参照するものなどは不可
 		public bool CanRestructure { get; protected set; }
 

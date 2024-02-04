@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using MinorShift.Emuera.GameProc;
-using MinorShift.Emuera.Sub;
+﻿using MinorShift.Emuera.Sub;
 using MinorShift.Emuera.GameData.Expression;
 
 namespace MinorShift.Emuera.GameData.Variable
@@ -96,7 +92,7 @@ namespace MinorShift.Emuera.GameData.Variable
 						return new VariableNoArgTerm(id);
 					if ((op1 == null) || (op2 == null) || (op3 == null))
 						throw new CodeEE("キャラクタ二次元配列変数" + id.Name + "の引数は省略できません");
-					terms = [op1,op2,op3];
+					terms = [op1, op2, op3];
 				}
 				else if (id.IsArray1D)
 				{
@@ -114,7 +110,7 @@ namespace MinorShift.Emuera.GameData.Variable
 							op2 = op1;
 						op1 = TARGET;
 					}
-					terms = [op1,op2];
+					terms = [op1, op2];
 				}
 				else
 				{
@@ -137,7 +133,7 @@ namespace MinorShift.Emuera.GameData.Variable
 					return new VariableNoArgTerm(id);
 				if ((op1 == null) || (op2 == null) || (op3 == null))
 					throw new CodeEE("三次元配列変数" + id.Name + "の引数は省略できません");
-				terms = [op1,op2,op3];
+				terms = [op1, op2, op3];
 			}
 			else if (id.IsArray2D)
 			{
@@ -147,25 +143,25 @@ namespace MinorShift.Emuera.GameData.Variable
 					throw new CodeEE("二次元配列変数" + id.Name + "の引数は省略できません");
 				if (op3 != null)
 					throw new CodeEE("二次元配列" + id.Name + "の引数が多すぎます");
-				terms = [op1,op2];
+				terms = [op1, op2];
 			}
 			else if (id.IsArray1D)
 			{
 				if (op2 != null)
 					throw new CodeEE("一次元配列変数" + id.Name + "の引数が多すぎます");
-                if (op1 == null)
-                {
-                    op1 = ZeroTerm;
-                    if (!Config.CompatiRAND && id.Code == VariableCode.RAND)
-                    {
-                        throw new CodeEE("RANDの引数が省略されています");
-                    }
-                }
-                if (!Config.CompatiRAND && op1 is SingleTerm op1SingleTerm && id.Code == VariableCode.RAND)
-                {
-                    if (op1SingleTerm.Int == 0)
-                        throw new CodeEE("RANDの引数に0が与えられています");
-                }
+				if (op1 == null)
+				{
+					op1 = ZeroTerm;
+					if (!Config.CompatiRAND && id.Code == VariableCode.RAND)
+					{
+						throw new CodeEE("RANDの引数が省略されています");
+					}
+				}
+				if (!Config.CompatiRAND && op1 is SingleTerm op1SingleTerm && id.Code == VariableCode.RAND)
+				{
+					if (op1SingleTerm.Int == 0)
+						throw new CodeEE("RANDの引数に0が与えられています");
+				}
 				terms = [op1];
 			}
 			else if (op1 != null)

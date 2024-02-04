@@ -5,7 +5,6 @@ using System.Text.RegularExpressions;
 using MinorShift.Emuera.Sub;
 using System.Drawing;
 using MinorShift.Emuera.GameData.Expression;
-using System.Runtime.Versioning;
 
 namespace MinorShift.Emuera.GameView
 {

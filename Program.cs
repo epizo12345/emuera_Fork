@@ -5,7 +5,6 @@ using MinorShift._Library;
 using System.IO;
 using System.CommandLine;
 using System.CommandLine.Parsing;
-using Emuera;
 using System.Windows.Forms;
 
 namespace MinorShift.Emuera;

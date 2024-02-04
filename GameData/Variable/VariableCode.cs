@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MinorShift.Emuera.GameData.Variable
+﻿namespace MinorShift.Emuera.GameData.Variable
 {
 	internal enum VariableCode
 	{

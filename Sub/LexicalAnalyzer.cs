@@ -6,7 +6,6 @@ using MinorShift.Emuera.GameData;
 using System.Text.RegularExpressions;
 using System.Runtime.CompilerServices;
 using System.Buffers;
-using System.Globalization;
 
 namespace MinorShift.Emuera.Sub;
 

@@ -1,17 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using MinorShift.Emuera.Sub;
 
 namespace MinorShift.Emuera.GameData.Expression
 {
-	internal abstract class IOperandTerm
-	{
+    internal abstract class IOperandTerm
+    {
         public IOperandTerm(Type t)
         {
             type = t;
         }
-		public Type GetOperandType()
+        public Type GetOperandType()
         {
             return type;
         }
@@ -40,14 +37,14 @@ namespace MinorShift.Emuera.GameData.Expression
             get { return type == typeof(string); }
         }
         readonly Type type;
-        
-		/// <summary>
-		/// 定数を解体して可能ならSingleTerm化する
-		/// defineの都合上、2回以上呼ばれる可能性がある
-		/// </summary>
+
+        /// <summary>
+        /// 定数を解体して可能ならSingleTerm化する
+        /// defineの都合上、2回以上呼ばれる可能性がある
+        /// </summary>
         public virtual IOperandTerm Restructure(ExpressionMediator exm)
         {
-			return this;
+            return this;
         }
-	}
+    }
 }

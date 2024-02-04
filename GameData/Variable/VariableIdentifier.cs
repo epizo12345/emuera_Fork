@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using MinorShift.Emuera.Sub;
 
 namespace MinorShift.Emuera.GameData.Variable

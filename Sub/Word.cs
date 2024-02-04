@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using MinorShift.Emuera.GameData.Expression;
 
 namespace MinorShift.Emuera.Sub
@@ -94,11 +92,11 @@ namespace MinorShift.Emuera.Sub
 		public string[] Strs { get { return strs; } }
 		public SubWord[] SubWords { get { return subwords; } }
 		public override char Type { get { return 'F'; } }//@はSymbolがつかっちゃった
-		
+
 		public override void SetIsMacro()
 		{
 			IsMacro = true;
-			foreach(SubWord subword in SubWords)
+			foreach (SubWord subword in SubWords)
 			{
 				subword.SetIsMacro();
 			}
@@ -113,7 +111,7 @@ namespace MinorShift.Emuera.Sub
 		public IOperandTerm Term { get { return term; } }
 		public override char Type { get { return 'T'; } }
 	}
-	
+
 	internal sealed class MacroWord : Word
 	{
 		public MacroWord(int num) { this.num = num; }
@@ -125,9 +123,9 @@ namespace MinorShift.Emuera.Sub
 			return "Arg" + num.ToString();
 		}
 	}
-	
-	
-	
-	
-	
+
+
+
+
+
 }

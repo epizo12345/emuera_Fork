@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using MinorShift.Emuera.Sub;
-using MinorShift.Emuera.GameData;
-using System.Runtime.Versioning;
 
 namespace MinorShift.Emuera.GameProc
 {

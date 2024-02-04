@@ -1,11 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using MinorShift.Emuera.Sub;
-using MinorShift.Emuera.GameProc;
 using MinorShift.Emuera.GameData.Expression;
-
-using System.Windows.Forms;
 
 namespace MinorShift.Emuera.GameData.Variable
 {

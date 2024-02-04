@@ -3,7 +3,6 @@ using System.Drawing;
 using System.Collections.Generic;
 using System.IO;
 using System;
-using System.Windows.Forms;
 using MinorShift._Library;
 using Emuera;
 

@@ -1,20 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Drawing;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Windows.Forms;
 using System.IO;
 using MinorShift._Library;
-using MinorShift.Emuera.Sub;
-using MinorShift.Emuera.GameData;
-using MinorShift.Emuera.GameProc;
 using MinorShift.Emuera.GameView;
-using MinorShift.Emuera.Forms;
-using System.Runtime.Versioning;
 using Emuera;
-using System.Threading.Tasks;
 using System.Diagnostics;
 
 #nullable enable

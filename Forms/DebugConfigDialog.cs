@@ -1,11 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Text;
 using System.Windows.Forms;
-using System.Drawing.Text;
 
 namespace MinorShift.Emuera.Forms
 {
@@ -105,7 +100,7 @@ namespace MinorShift.Emuera.Forms
 		DebugDialog dd;
 		private void button6_Click(object sender, EventArgs e)
 		{
-			if ((dd == null)||(!dd.Created))
+			if ((dd == null) || (!dd.Created))
 				return;
 			if (numericUpDownDWW.Enabled)
 				numericUpDownDWW.Value = dd.Width;

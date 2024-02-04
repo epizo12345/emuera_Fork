@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MinorShift.Emuera.Content
+﻿namespace MinorShift.Emuera.Content
 {
     abstract class AContentItem
     {

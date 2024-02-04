@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Drawing;
-using MinorShift.Emuera.Sub;
-using MinorShift._Library;
 using System.Windows.Forms;
 
 namespace MinorShift.Emuera.GameView

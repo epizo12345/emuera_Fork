@@ -1,14 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
 using MinorShift.Emuera.Sub;
 using MinorShift.Emuera.GameData.Variable;
-using MinorShift.Emuera.GameData.Function;
 using MinorShift.Emuera.GameProc;
 using Microsoft.VisualBasic;
 using MinorShift.Emuera.GameProc.Function;
 using MinorShift.Emuera.GameView;
-using System.Windows.Forms;
 
 namespace MinorShift.Emuera.GameData.Expression
 {

@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Windows.Forms;
-using System.Drawing;
+﻿using System.Windows.Forms;
 
 namespace MinorShift.Emuera.Forms
 {
-	internal sealed class EraPictureBox:PictureBox
+	internal sealed class EraPictureBox : PictureBox
 	{
 		public EraPictureBox()
 		{

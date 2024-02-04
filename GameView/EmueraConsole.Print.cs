@@ -1,10 +1,8 @@
-﻿using MinorShift._Library;
-using MinorShift.Emuera.Sub;
+﻿using MinorShift.Emuera.Sub;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
-using System.Runtime.Versioning;
 using System.Text;
 using System.Windows.Forms;
 

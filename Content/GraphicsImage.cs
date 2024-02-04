@@ -1,12 +1,7 @@
-﻿using MinorShift._Library;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MinorShift.Emuera.Content
 {
@@ -115,9 +110,9 @@ namespace MinorShift.Emuera.Content
 			}
 			else
 			{
-                using var b = new SolidBrush(Config.ForeColor);
-                g.DrawString(text, usingFont, b, x, y);
-            }
+				using var b = new SolidBrush(Config.ForeColor);
+				g.DrawString(text, usingFont, b, x, y);
+			}
 		}
 		/// <summary>
 		/// GDRAWTEXTGDRAWTEXT int ID, str text, int x, int y, int width, int height
@@ -136,9 +131,9 @@ namespace MinorShift.Emuera.Content
 			}
 			else
 			{
-                using var b = new SolidBrush(Config.ForeColor);
-                g.DrawString(text, usingFont, b, new RectangleF(x, y, width, height));
-            }
+				using var b = new SolidBrush(Config.ForeColor);
+				g.DrawString(text, usingFont, b, new RectangleF(x, y, width, height));
+			}
 		}
 
 		/// <summary>
@@ -155,9 +150,9 @@ namespace MinorShift.Emuera.Content
 			}
 			else
 			{
-                using var p = new Pen(Config.ForeColor);
-                g.DrawRectangle(p, rect);
-            }
+				using var p = new Pen(Config.ForeColor);
+				g.DrawRectangle(p, rect);
+			}
 		}
 
 		/// <summary>
@@ -174,9 +169,9 @@ namespace MinorShift.Emuera.Content
 			}
 			else
 			{
-                using var b = new SolidBrush(Config.BackColor);
-                g.FillRectangle(b, rect);
-            }
+				using var b = new SolidBrush(Config.BackColor);
+				g.FillRectangle(b, rect);
+			}
 		}
 
 		/// <summary>
@@ -480,9 +475,9 @@ namespace MinorShift.Emuera.Content
 		public override void Dispose()
 		{
 			this.GDispose();
-            GC.SuppressFinalize(this);
+			GC.SuppressFinalize(this);
 
-        }
+		}
 
 		~GraphicsImage()
 		{
