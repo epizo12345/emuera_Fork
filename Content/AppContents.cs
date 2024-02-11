@@ -1,9 +1,11 @@
 ﻿using MinorShift.Emuera.Sub;
 using SkiaSharp.Views.Desktop;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 
 namespace MinorShift.Emuera.Content
 {
@@ -13,9 +15,9 @@ namespace MinorShift.Emuera.Content
 		{
 			gList = [];
 		}
-		static readonly Dictionary<string, AbstractImage> resourceDic = new(Config.StrComper);
-		static readonly Dictionary<string, ASprite> imageDictionary = new(Config.StrComper);
-		static readonly Dictionary<int, GraphicsImage> gList;
+		static readonly ConcurrentDictionary<string, AbstractImage> resourceDic = new(Config.StrComper);
+		static readonly ConcurrentDictionary<string, ASprite> imageDictionary = new(Config.StrComper);
+		static readonly ConcurrentDictionary<int, GraphicsImage> gList;
 
 		//static public T GetContent<T>(string name)where T :AContentItem
 		//{
@@ -50,10 +52,10 @@ namespace MinorShift.Emuera.Content
 			if (name == null)
 				return;
 			name = name.ToUpper();
-			if (!imageDictionary.ContainsKey(name))
+			if (!imageDictionary.TryGetValue(name, out ASprite value))
 				return;
-			imageDictionary[name].Dispose();
-			imageDictionary.Remove(name);
+			value.Dispose();
+			imageDictionary.TryRemove(name, out _);
 		}
 
 		static public void CreateSpriteG(string imgName, GraphicsImage parent, Rectangle rect)
@@ -82,44 +84,39 @@ namespace MinorShift.Emuera.Content
 			{
 				//resourcesフォルダ内の全てのcsvファイルを探索する
 				var csvFiles = Directory.EnumerateFiles(Program.ContentDir, "*.csv", SearchOption.AllDirectories);
-				foreach (var filepath in csvFiles)
-				{
-					//".csv"のみを拾うように
-					if (!Path.GetExtension(filepath).Equals(".csv", StringComparison.OrdinalIgnoreCase))
-						continue;
-					//アニメスプライト宣言。nullでないとき、フレーム追加モード
-					SpriteAnime currentAnime = null;
-					string directory = Path.GetDirectoryName(filepath).ToUpper() + "\\";
-					string filename = Path.GetFileName(filepath);
-					string[] lines = File.ReadAllLines(filepath, Config.Encode);
-					int lineNo = 0;
-					foreach (var line in lines)
+				csvFiles.AsParallel()
+					.Where(path => Path.GetExtension(path).Equals(".csv", StringComparison.OrdinalIgnoreCase))
+					.ForAll(path =>
 					{
-						lineNo++;
-						if (line.Length == 0)
-							continue;
-						string str = line.Trim();
-						if (str.Length == 0 || str.StartsWith(";"))
-							continue;
-						string[] tokens = str.Split(',');
-						//AContentItem item = CreateFromCsv(tokens);
-						ScriptPosition sp = new(filename, lineNo);
-						if (CreateFromCsv(tokens, directory, currentAnime, sp) is ASprite item)
+						//アニメスプライト宣言。nullでないとき、フレーム追加モード
+						SpriteAnime currentAnime = null;
+						string directory = Path.GetDirectoryName(path).ToUpper() + "\\";
+						string filename = Path.GetFileName(path);
+						string[] lines = File.ReadAllLines(path, Config.Encode);
+						int lineNo = 0;
+						foreach (var line in lines)
 						{
-							//アニメスプライト宣言ならcurrentAnime上書きしてフレーム追加モードにする。そうでないならnull
-							currentAnime = item as SpriteAnime;
-							if (!imageDictionary.ContainsKey(item.Name))
+							lineNo++;
+							if (line.Length == 0)
+								continue;
+							string str = line.Trim();
+							if (str.Length == 0 || str.StartsWith(";"))
+								continue;
+							string[] tokens = str.Split(',');
+							//AContentItem item = CreateFromCsv(tokens);
+							ScriptPosition sp = new(filename, lineNo);
+							if (CreateFromCsv(tokens, directory, currentAnime, sp) is ASprite item)
 							{
-								imageDictionary.Add(item.Name, item);
-							}
-							else
-							{
-								ParserMediator.Warn("同名のリソースがすでに作成されています:" + item.Name, sp, 0);
-								item.Dispose();
+								//アニメスプライト宣言ならcurrentAnime上書きしてフレーム追加モードにする。そうでないならnull
+								currentAnime = item as SpriteAnime;
+								if (!imageDictionary.TryAdd(item.Name, item))
+								{
+									ParserMediator.Warn("同名のリソースがすでに作成されています:" + item.Name, sp, 0);
+									item.Dispose();
+								}
 							}
 						}
-					}
-				}
+					});
 			}
 			catch
 			{
@@ -233,7 +230,7 @@ namespace MinorShift.Emuera.Content
 				}
 
 				value = img;
-				resourceDic.Add(parentName, value);
+				resourceDic.TryAdd(parentName, value);
 			}
 			if (value is not ConstImage parentImage || !parentImage.IsCreated)
 			{
