@@ -68,22 +68,11 @@ static partial class Program
 		{ Arity = ArgumentArity.ZeroOrMore };
 		rootCommand.AddArgument(filesArg);
 
-		rootCommand.SetHandler(Handler,
-		exeDirOption,
-		debugModeOption,
-		filesArg);
+		var result = rootCommand.Parse(args);
 
-		var parser = new CommandLineBuilder(rootCommand)
-			.UseDefaults()
-			.Build();
-
-		parser.Invoke(args);
-	}
-
-	private static void Handler(string? exeDir, bool debugMode, string[] fileArgs)
-	{
 		//実行ディレクトリが引数で与えられた場合
-		if (exeDir is not null)
+		var exeDir = result.GetValueForOption(exeDirOption);
+		if (exeDir != null)
 		{
 			ExeDir = Path.Join(exeDir.AsSpan(), [Path.DirectorySeparatorChar]);
 
@@ -94,8 +83,10 @@ static partial class Program
 			ContentDir = Path.Join(ExeDir.AsSpan(), "resources", [Path.DirectorySeparatorChar]);
 		}
 
+		var debugMode = result.GetValueForOption(debugModeOption);
 		DebugMode = debugMode;
 
+		var fileArgs = result.GetValueForArgument(filesArg);
 		var analysisRequestPaths = fileArgs;
 		if (analysisRequestPaths.Length > 0)
 		{
@@ -202,6 +193,7 @@ static partial class Program
 			//GC.Collect();
 			ConfigData.Instance.ReLoadConfig();
 		}
+
 	}
 
 	/// <summary>
