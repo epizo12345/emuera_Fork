@@ -22,13 +22,12 @@ namespace MinorShift.Emuera.GameProc
 				if (Config.InfiniteLoopAlertTime > 0 && (state.lineCount % 10000 == 0))
 					checkInfiniteLoop();
 				LogicalLine line = state.CurrentLine;
-				InstructionLine func = line as InstructionLine;
 				//これがNULLになる様な処理は現状ないはず
 				//if (line == null)
 				//	throw new ExeEE("Emuera.exeは次に実行する行を見失いました");
 				if (line.IsError)
 					throw new CodeEE(line.ErrMes);
-				else if (func != null)
+				else if (line is InstructionLine func)
 				{//1753 InstructionLineを先に持ってきてみる。わずかに速くなった気がしないでもない
 					if (!Program.DebugMode && func.Function.IsDebug())
 					{//非DebugモードでのDebug系命令。何もしない。（SIF文のためにコメント行扱いにはできない）

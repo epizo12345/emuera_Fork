@@ -411,6 +411,7 @@ namespace MinorShift.Emuera.GameProc
 					return new InstructionLine(position, FunctionIdentifier.SETFunction, opWT.Code, wc, null);
 				}
 				#endregion
+
 				IdentifierWord idWT = LexicalAnalyzer.ReadFirstIdentifierWord(stream);
 				if (idWT != null)
 				{

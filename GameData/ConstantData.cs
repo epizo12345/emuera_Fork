@@ -5,6 +5,7 @@ using System.IO;
 using MinorShift.Emuera.Sub;
 using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.GameData.Variable;
+using System.Globalization;
 
 namespace MinorShift.Emuera.GameData
 {
@@ -1107,8 +1108,9 @@ namespace MinorShift.Emuera.GameData
 			Dictionary<string, int> namearray;
 
 			string errPos = null;
-			string varname = tokens[0].ToUpper();
-			switch (varname)
+			Span<char> chars = stackalloc char[tokens[0].Length];
+			var varname = tokens[0].AsSpan().ToUpper(chars, CultureInfo.InvariantCulture);
+			switch (chars)
 			{
 				case "NAME":
 				case "名前":

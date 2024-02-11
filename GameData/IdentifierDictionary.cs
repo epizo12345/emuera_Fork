@@ -102,18 +102,17 @@ namespace MinorShift.Emuera
 		#endregion
 
 
-		Dictionary<string, DefinedNameType> nameDic = new(StringComparer.OrdinalIgnoreCase);
+		readonly Dictionary<string, DefinedNameType> nameDic = new(Config.StrComper);
 
 		List<string> privateDimList = [];
-		List<string> disableList = [];
 		//Dictionary<string, VariableToken> userDefinedVarDic = new Dictionary<string, VariableToken>();
 
 		VariableData varData;
-		Dictionary<string, VariableToken> varTokenDic = new(StringComparer.OrdinalIgnoreCase);
-		Dictionary<string, VariableLocal> localvarTokenDic = new(StringComparer.OrdinalIgnoreCase);
-		Dictionary<string, FunctionIdentifier> instructionDic = new(StringComparer.OrdinalIgnoreCase);
-		Dictionary<string, FunctionMethod> methodDic = new(StringComparer.OrdinalIgnoreCase);
-		Dictionary<string, UserDefinedRefMethod> refmethodDic = new(StringComparer.OrdinalIgnoreCase);
+		readonly Dictionary<string, VariableToken> varTokenDic;
+		readonly Dictionary<string, VariableLocal> localvarTokenDic;
+		readonly Dictionary<string, FunctionIdentifier> instructionDic;
+		readonly Dictionary<string, FunctionMethod> methodDic;
+		readonly Dictionary<string, UserDefinedRefMethod> refmethodDic;
 		public List<UserDefinedCharaVariableToken> CharaDimList = [];
 		#region initialize
 		public IdentifierDictionary(VariableData varData)
@@ -142,7 +141,7 @@ namespace MinorShift.Emuera
 			varTokenDic = varData.GetVarTokenDicClone();
 			localvarTokenDic = varData.GetLocalvarTokenDic();
 			methodDic = FunctionMethodCreator.GetMethodList();
-			refmethodDic = [];
+			refmethodDic = new(Config.StrComper);
 
 			foreach (KeyValuePair<string, FunctionMethod> pair in methodDic)
 			{
@@ -469,8 +468,8 @@ namespace MinorShift.Emuera
 		public VariableToken GetVariableToken(string key, string subKey, bool allowPrivate)
 		{
 			VariableToken ret;
-			if (Config.ICVariable)
-				key = key.ToUpper();
+			// if (Config.ICVariable)
+			// 	key = key.ToUpper();
 			if (allowPrivate)
 			{
 				LogicalLine line = GlobalStatic.Process.GetScaningLine();
@@ -502,8 +501,8 @@ namespace MinorShift.Emuera
 				else
 				{
 					ParserMediator.Warn("コード中でローカル変数を@付きで呼ぶことは推奨されません(代わりに*.ERHファイルの利用を検討してください)", line, 1, false, false);
-					if (Config.ICFunction)
-						subKey = subKey.ToUpper();
+					// if (Config.ICFunction)
+					// 	subKey = subKey.ToUpper();
 				}
 				LocalVariableToken retLocal = value.GetExistLocalVariableToken(subKey);
 				retLocal ??= value.GetNewLocalVariableToken(subKey, line.ParentLabelLine);
@@ -566,8 +565,8 @@ namespace MinorShift.Emuera
 
 		public IOperandTerm GetFunctionMethod(LabelDictionary labelDic, string codeStr, IOperandTerm[] arguments, bool userDefinedOnly)
 		{
-			if (Config.ICFunction)
-				codeStr = codeStr.ToUpper();
+			// if (Config.ICFunction)
+			// 	codeStr = codeStr.ToUpper();
 			if (arguments == null)//引数なし、名前のみの探索
 			{
 				if (refmethodDic.ContainsKey(codeStr))
@@ -613,10 +612,8 @@ namespace MinorShift.Emuera
 		public void ThrowException(string str, bool isFunc)
 		{
 			string idStr = str;
-			if (Config.ICFunction || Config.ICVariable) //片方だけなのは互換性用オプションなのでレアケースのはず。対応しない。
-				idStr = idStr.ToUpper();
-			if (disableList.Contains(idStr))
-				throw new CodeEE("\"" + str + "\"は#DISABLEが宣言されています");
+			// if (Config.ICFunction || Config.ICVariable) //片方だけなのは互換性用オプションなのでレアケースのはず。対応しない。
+			// 	idStr = idStr.ToUpper();
 			if (!isFunc && privateDimList.Contains(idStr))
 				throw new IdentifierNotFoundCodeEE("変数\"" + str + "\"はこの関数中では定義されていません");
 			if (nameDic.ContainsKey(idStr))

@@ -8,7 +8,7 @@ namespace MinorShift.Emuera.GameData.Function
     {
         static FunctionMethodCreator()
         {
-            methodList = new Dictionary<string, FunctionMethod>
+            methodList = new Dictionary<string, FunctionMethod>(Config.StrComper)
             {
                 //キャラクタデータ系
                 ["GETCHARA"] = new GetcharaMethod(),

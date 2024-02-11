@@ -36,7 +36,7 @@ namespace MinorShift.Emuera.GameProc
 			//checkScript();の時点でExpressionPerserがProcess.instance.LabelDicを必要とするから。
 			labelDic = labelDictionary;
 			labelDic.Initialized = false;
-			List<KeyValuePair<string, string>> erbFiles = Config.GetFiles(erbDir, "*.ERB");
+			var erbFiles = Config.GetFiles(erbDir, "*.ERB");
 			List<string> isOnlyEvent = [];
 			noError = true;
 			var starttime = DateTime.Now;
@@ -71,7 +71,7 @@ namespace MinorShift.Emuera.GameProc
 #endif
 				if (displayReport)
 					output.PrintSystemLine("スクリプトの構文チェック中・・・");
-				checkScript();
+				ParseScript();
 				ParserMediator.FlushWarningList();
 
 #if DEBUG
@@ -126,7 +126,7 @@ namespace MinorShift.Emuera.GameProc
 			setLabelsArg();
 			ParserMediator.FlushWarningList();
 			labelDic.Initialized = true;
-			checkScript();
+			ParseScript();
 			ParserMediator.FlushWarningList();
 			parentProcess.scaningLine = null;
 			isOnlyEvent.Clear();
@@ -610,10 +610,11 @@ namespace MinorShift.Emuera.GameProc
 
 
 		public bool useCallForm = false;
+
 		/// <summary>
-		/// 読込終わったファイルをチェックする
+		/// 事前処理したファイルをさらに解析し実行可能な状態にする
 		/// </summary>
-		private void checkScript()
+		private void ParseScript()
 		{
 			int usedLabelCount = 0;
 			int labelDepth = -1;
@@ -632,7 +633,7 @@ namespace MinorShift.Emuera.GameProc
 					//    useCallForm = true;
 					usedLabelCount++;
 					countInDepth++;
-					checkFunctionWithCatch(label);
+					ParseFunctionWithCatch(label);
 				}
 				if (countInDepth == 0)
 					break;
@@ -658,7 +659,7 @@ namespace MinorShift.Emuera.GameProc
 				{
 					if (label.Depth != labelDepth)
 						continue;
-					checkFunctionWithCatch(label);
+					ParseFunctionWithCatch(label);
 				}
 			}
 			else
@@ -670,7 +671,7 @@ namespace MinorShift.Emuera.GameProc
 						continue;
 					//解析モード時は呼ばれなかったものをここで解析
 					if (Program.AnalysisMode)
-						checkFunctionWithCatch(label);
+						ParseFunctionWithCatch(label);
 					bool ignore = false;
 					if (notCalledWarning == DisplayWarningFlag.ONCE)
 					{
@@ -695,7 +696,7 @@ namespace MinorShift.Emuera.GameProc
 					else
 						ParserMediator.Warn("関数@" + label.LabelName + "は定義されていますが一度も呼び出されません", label, 1, false, false);
 					if (!ignoreUncalledFunction)
-						checkFunctionWithCatch(label);
+						ParseFunctionWithCatch(label);
 					else
 					{
 						if (!(label.NextLine is NullLine) && !(label.NextLine is FunctionLabelLine))
@@ -810,11 +811,10 @@ namespace MinorShift.Emuera.GameProc
 			ParserMediator.Warn(str, line, level, isError, false);
 		}
 
-		private void checkFunctionWithCatch(FunctionLabelLine label)
+		private void ParseFunctionWithCatch(FunctionLabelLine label)
 		{//ここでエラーを捕まえることは本来はないはず。ExeEE相当。
 			try
 			{
-				string filename = label.Position.Filename.ToUpper();
 				setArgument(label);
 				nestCheck(label);
 				setJumpTo(label);
