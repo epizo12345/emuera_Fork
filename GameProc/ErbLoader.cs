@@ -5,6 +5,7 @@ using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.GameData.Expression;
 using MinorShift.Emuera.GameData.Variable;
 using MinorShift.Emuera.GameProc.Function;
+using System.Threading.Tasks;
 
 namespace MinorShift.Emuera.GameProc
 {
@@ -43,10 +44,10 @@ namespace MinorShift.Emuera.GameProc
 			try
 			{
 				labelDic.RemoveAll();
-				for (int i = 0; i < erbFiles.Count; i++)
+				foreach (var erb in erbFiles)
 				{
-					string filename = erbFiles[i].Key;
-					string file = erbFiles[i].Value;
+					string filename = erb.Key;
+					string file = erb.Value;
 #if DEBUG
 					if (displayReport)
 						output.PrintSystemLine("経過時間:" + (DateTime.Now - starttime).TotalMilliseconds + "ms:" + filename + "読み込み中・・・");
@@ -54,9 +55,9 @@ namespace MinorShift.Emuera.GameProc
 					if (displayReport)
 						output.PrintSystemLine(filename + "読み込み中・・・");
 #endif
-					System.Windows.Forms.Application.DoEvents();
 					loadErb(file, filename, isOnlyEvent);
-				}
+				};
+				System.Windows.Forms.Application.DoEvents();
 				ParserMediator.FlushWarningList();
 #if DEBUG
 				output.PrintSystemLine("経過時間:" + (DateTime.Now - starttime).TotalMilliseconds + "ms:");

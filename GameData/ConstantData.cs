@@ -6,6 +6,7 @@ using MinorShift.Emuera.Sub;
 using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.GameData.Variable;
 using System.Globalization;
+using System.Diagnostics;
 
 namespace MinorShift.Emuera.GameData
 {
@@ -574,6 +575,7 @@ namespace MinorShift.Emuera.GameData
 
 		public void LoadData(string csvDir, EmueraConsole console, bool disp)
 		{
+
 			output = console;
 			loadVariableSizeData(csvDir + "VariableSize.CSV", disp);
 			for (int i = 0; i < countNameCsv; i++)
@@ -582,6 +584,7 @@ namespace MinorShift.Emuera.GameData
 				nameToIntDics[i] = [];
 			}
 			ItemPrice = new Int64[MaxDataList[itemIndex]];
+
 			loadDataTo(csvDir + "ABL.CSV", ablIndex, null, disp);
 			loadDataTo(csvDir + "EXP.CSV", expIndex, null, disp);
 			loadDataTo(csvDir + "TALENT.CSV", talentIndex, null, disp);
@@ -609,6 +612,7 @@ namespace MinorShift.Emuera.GameData
 			loadDataTo(csvDir + "SAVESTR.CSV", savestrnameIndex, null, disp);
 			loadDataTo(csvDir + "GLOBAL.CSV", globalIndex, null, disp);
 			loadDataTo(csvDir + "GLOBALS.CSV", globalsIndex, null, disp);
+
 			//逆引き辞書を作成
 			for (int i = 0; i < names.Length; i++)
 			{
@@ -1284,16 +1288,18 @@ namespace MinorShift.Emuera.GameData
 			try
 			{
 				StringStream st = null;
+				Span<Range> dest = stackalloc Range[5];
 				while ((st = eReader.ReadEnabledLine()) != null)
 				{
 					position = new ScriptPosition(eReader.Filename, eReader.LineNo);
-					string[] tokens = st.Substring().Split(',');
-					if (tokens.Length < 2)
+					var ros = st.SubstringROS();
+					var length = ros.Split(dest, [',']);
+					if (length < 2)
 					{
 						ParserMediator.Warn("\",\"が必要です", position, 1);
 						continue;
 					}
-					if (!Int32.TryParse(tokens[0], out int index))
+					if (!int.TryParse(ros[dest[0]], out int index))
 					{
 						ParserMediator.Warn("一つ目の値を整数値に変換できません", position, 1);
 						continue;
@@ -1310,11 +1316,11 @@ namespace MinorShift.Emuera.GameData
 					}
 					if (!defined.Add(index))
 						ParserMediator.Warn(index.ToString() + "番目の要素はすでに定義されています（新しい値で上書きします）", position, 1);
-					target[index] = tokens[1];
-					if ((targetI != null) && (tokens.Length >= 3))
+					target[index] = ros[dest[1]].ToString();
+					if ((targetI != null) && (length >= 3))
 					{
 
-						if (!Int64.TryParse(tokens[2].TrimEnd(), out long price))
+						if (!Int64.TryParse(ros[dest[2]].TrimEnd(), out long price))
 						{
 							ParserMediator.Warn("金額が読み取れません", position, 1);
 							continue;

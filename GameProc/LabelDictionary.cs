@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace MinorShift.Emuera.GameProc
@@ -16,12 +17,12 @@ namespace MinorShift.Emuera.GameProc
 		/// <summary>
 		/// 本体。全てのFunctionLabelLineを記録
 		/// </summary>
-		Dictionary<string, List<FunctionLabelLine>> labelAtDic = new(Config.StrComper);
+		ConcurrentDictionary<string, List<FunctionLabelLine>> labelAtDic = new(Config.StrComper);
 		List<FunctionLabelLine> invalidList = [];
-		Dictionary<string, Dictionary<FunctionLabelLine, GotoLabelLine>> labelDollarList = new(Config.StrComper);
+		ConcurrentDictionary<string, Dictionary<FunctionLabelLine, GotoLabelLine>> labelDollarList = new(Config.StrComper);
 		int count;
 
-		Dictionary<string, int> loadedFileDic = [];
+		ConcurrentDictionary<string, int> loadedFileDic = [];
 		int currentFileCount = 0;
 		int totalFileCount = 0;
 
