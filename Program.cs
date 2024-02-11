@@ -6,11 +6,14 @@ using System.IO;
 using System.CommandLine;
 using System.CommandLine.Parsing;
 using System.Windows.Forms;
+using System.Threading.Tasks;
+using Windows.Win32;
+using System.CommandLine.Builder;
 
 namespace MinorShift.Emuera;
 #nullable enable
 
-static class Program
+static partial class Program
 {
 	/*
 	コードの開始地点。
@@ -40,10 +43,6 @@ static class Program
 	[STAThread]
 	static void Main(string[] args)
 	{
-		// var summary = BenchmarkRunner.Run<PreloadInstance>();
-
-		// return;
-
 		// memo: Shift-JISを扱うためのおまじない
 		System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
@@ -59,14 +58,34 @@ static class Program
 			name: "-Debug",
 			description: "デバッグモード"
 		);
+		debugModeOption.AddAlias("-debug");
+		debugModeOption.AddAlias("-DEBUG");
 		rootCommand.AddOption(debugModeOption);
 
-		var result = rootCommand.Parse(args);
+		var filesArg = new Argument<string[]>(
+			"解析するファイル"
+		)
+		{ Arity = ArgumentArity.ZeroOrMore };
+		rootCommand.AddArgument(filesArg);
 
+		rootCommand.SetHandler(Handler,
+		exeDirOption,
+		debugModeOption,
+		filesArg);
+
+		var parser = new CommandLineBuilder(rootCommand)
+			.UseDefaults()
+			.Build();
+
+		parser.Invoke(args);
+	}
+
+	private static void Handler(string? exeDir, bool debugMode, string[] fileArgs)
+	{
 		//実行ディレクトリが引数で与えられた場合
-		if (result.HasOption(exeDirOption))
+		if (exeDir is not null)
 		{
-			ExeDir = Path.Join(result.CommandResult.GetValueForOption(exeDirOption).AsSpan(), [Path.DirectorySeparatorChar]);
+			ExeDir = Path.Join(exeDir.AsSpan(), [Path.DirectorySeparatorChar]);
 
 			CsvDir = Path.Join(ExeDir.AsSpan(), "csv", [Path.DirectorySeparatorChar]);
 			ErbDir = Path.Join(ExeDir.AsSpan(), "erb", [Path.DirectorySeparatorChar]);
@@ -75,15 +94,10 @@ static class Program
 			ContentDir = Path.Join(ExeDir.AsSpan(), "resources", [Path.DirectorySeparatorChar]);
 		}
 
-		//解析モードの判定だけ先に行う
-		DebugMode = result.HasOption(debugModeOption);
+		DebugMode = debugMode;
 
-
-		var matchFiles = result.CommandResult.GetValueForOption(debugModeOption);
-
-		//引数の後ろにある他のフラグにマッチしなかった文字列を解析指定されたファイルとみなす
-		var analysisRequestPaths = result.UnmatchedTokens;
-		if (analysisRequestPaths.Count > 0)
+		var analysisRequestPaths = fileArgs;
+		if (analysisRequestPaths.Length > 0)
 		{
 			//必要なファイルのチェックにはConfig読み込みが必須なので、ここではフラグだけ立てておく
 			AnalysisMode = true;
