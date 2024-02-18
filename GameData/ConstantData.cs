@@ -7,6 +7,7 @@ using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.GameData.Variable;
 using System.Globalization;
 using System.Diagnostics;
+using System.Linq;
 
 namespace MinorShift.Emuera.GameData
 {
@@ -902,15 +903,12 @@ namespace MinorShift.Emuera.GameData
 
 		public CharacterTemplate GetCharacterTemplate_UseSp(Int64 index, bool sp)
 		{
-			foreach (CharacterTemplate chara in CharacterTmplList)
+			var i = CharacterTmplList.BinarySearch(null, Comparer<CharacterTemplate>.Create((left, right) => (int)(left.No - index)));
+			if (i < 0)
 			{
-				if (chara.No != index)
-					continue;
-				if (Config.CompatiSPChara && sp != chara.IsSpchara)
-					continue;
-				return chara;
+				return null;
 			}
-			return null;
+			return CharacterTmplList[i];
 		}
 
 		public CharacterTemplate GetCharacterTemplateFromCsvNo(Int64 index)
@@ -938,19 +936,29 @@ namespace MinorShift.Emuera.GameData
 
 		private void loadCharacterData(string csvDir, bool disp)
 		{
+			var stopWatch = new Stopwatch();
+			stopWatch.Start();
 			if (!Directory.Exists(csvDir))
 				return;
 			List<KeyValuePair<string, string>> csvPaths = Config.GetFiles(csvDir, "CHARA*.CSV");
+
+			Console.WriteLine($"R1 {stopWatch.ElapsedMilliseconds} ms");
+
 			for (int i = 0; i < csvPaths.Count; i++)
 				loadCharacterDataFile(csvPaths[i].Value, csvPaths[i].Key, disp);
+
+			Console.WriteLine($"R1 {stopWatch.ElapsedMilliseconds} ms");
+
 			if (useCompatiName)
 			{
 				foreach (CharacterTemplate tmpl in CharacterTmplList)
 					if (string.IsNullOrEmpty(tmpl.Callname))
 						tmpl.Callname = tmpl.Name;
 			}
+
 			foreach (CharacterTemplate tmpl in CharacterTmplList)
 				tmpl.SetSpFlag();
+
 			Dictionary<Int64, CharacterTemplate> nList = [];
 			Dictionary<Int64, CharacterTemplate> spList = [];
 			foreach (CharacterTemplate tmpl in CharacterTmplList)
@@ -1034,6 +1042,7 @@ namespace MinorShift.Emuera.GameData
 						CharacterTmplList.Add(tmpl);
 						continue;
 					}
+
 					if (tmpl == null)
 					{
 						ParserMediator.Warn("番号が定義される前に他のデータが始まりました", position, 1);
@@ -1041,6 +1050,8 @@ namespace MinorShift.Emuera.GameData
 					}
 					toCharacterTemplate(position, tmpl, tokens);
 				}
+
+				CharacterTmplList.Sort((left, right) => (int)(left.No - right.No));
 			}
 			catch
 			{
