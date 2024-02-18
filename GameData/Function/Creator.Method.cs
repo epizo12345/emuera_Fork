@@ -4043,23 +4043,21 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(Int64)];
                 CanRestructure = false;
             }
+
             public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments)
             {
                 if (!exm.Console.IsActive)//アクティブでないならスルー
                     return 0;
-                Int64 keycode = arguments[0].GetIntValue(exm);
+                var keycode = arguments[0].GetIntValue(exm);
                 if (keycode < 0 || keycode > 255)
                     return 0;
-                var s = System.Windows.Input.Keyboard.GetKeyStates((System.Windows.Input.Key)keycode);
+                var s = Windows.Win32.PInvoke.GetKeyState((int)keycode);
+                var toggle = keytoggle[keycode];
+                keytoggle[keycode] = (short)((s & 1) + 1);//初期値0、トグル状態に応じて1か2を代入。
                 switch (Name)
                 {
-                    case "GETKEY":
-                        if (s == System.Windows.Input.KeyStates.Down) return 0;
-                        else return 1;
-                    case "GETKEYTRIGGERED":
-                        if (s == System.Windows.Input.KeyStates.Toggled) return 0;
-                        else return 1;
-                        ;//初回はtrue、2回目以降はトグル状態が前回と違う場合のみ1
+                    case "GETKEY": return (s < 0) ? 1 : 0;
+                    case "GETKEYTRIGGERED": return (s < 0) && (toggle != keytoggle[keycode]) ? 1 : 0;//初回はtrue、2回目以降はトグル状態が前回と違う場合のみ1
                 }
                 throw new ExeEE("異常な分岐");
             }
