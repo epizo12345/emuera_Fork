@@ -1,17 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
+  <!--
     Microsoft ResX Schema 
-    
+
     Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
     associated with the data types.
-    
+
     Example:
-    
+
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-                
-    There are any number of "resheader" rows that contain simple 
+
+    There are any number of "resheader" rows that contain simple
     name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
     mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
     extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
     read any of the formats listed below.
-    
+
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
     
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
+    value   : The object must be serialized into a byte array
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -119,10 +119,14 @@
   </resheader>
   <assembly alias="System.Drawing" name="System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
   <data name="buttonSave.Location" type="System.Drawing.Point, System.Drawing">
-    <value>89, 400</value>
+    <value>104, 500</value>
+  </data>
+  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="buttonSave.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="buttonSave.Size" type="System.Drawing.Size, System.Drawing">
-    <value>49, 24</value>
+    <value>57, 30</value>
   </data>
   <assembly alias="mscorlib" name="mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
   <data name="buttonSave.TabIndex" type="System.Int32, mscorlib">
@@ -135,7 +139,7 @@
     <value>buttonSave</value>
   </data>
   <data name="&gt;&gt;buttonSave.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;buttonSave.Parent" xml:space="preserve">
     <value>$this</value>
@@ -144,10 +148,13 @@
     <value>4</value>
   </data>
   <data name="buttonCancel.Location" type="System.Drawing.Point, System.Drawing">
-    <value>250, 400</value>
+    <value>292, 500</value>
+  </data>
+  <data name="buttonCancel.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="buttonCancel.Size" type="System.Drawing.Size, System.Drawing">
-    <value>78, 24</value>
+    <value>91, 30</value>
   </data>
   <data name="buttonCancel.TabIndex" type="System.Int32, mscorlib">
     <value>2</value>
@@ -159,7 +166,7 @@
     <value>buttonCancel</value>
   </data>
   <data name="&gt;&gt;buttonCancel.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;buttonCancel.Parent" xml:space="preserve">
     <value>$this</value>
@@ -168,10 +175,13 @@
     <value>3</value>
   </data>
   <data name="buttonReboot.Location" type="System.Drawing.Point, System.Drawing">
-    <value>144, 400</value>
+    <value>168, 500</value>
+  </data>
+  <data name="buttonReboot.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="buttonReboot.Size" type="System.Drawing.Size, System.Drawing">
-    <value>100, 24</value>
+    <value>117, 30</value>
   </data>
   <data name="buttonReboot.TabIndex" type="System.Int32, mscorlib">
     <value>1</value>
@@ -183,7 +193,7 @@
     <value>buttonReboot</value>
   </data>
   <data name="&gt;&gt;buttonReboot.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;buttonReboot.Parent" xml:space="preserve">
     <value>$this</value>
@@ -204,10 +214,13 @@
     <value>ユーザー設定</value>
   </data>
   <data name="comboBox6.Location" type="System.Drawing.Point, System.Drawing">
-    <value>108, 250</value>
+    <value>126, 312</value>
+  </data>
+  <data name="comboBox6.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="comboBox6.Size" type="System.Drawing.Size, System.Drawing">
-    <value>178, 20</value>
+    <value>207, 23</value>
   </data>
   <data name="comboBox6.TabIndex" type="System.Int32, mscorlib">
     <value>78</value>
@@ -216,7 +229,7 @@
     <value>comboBox6</value>
   </data>
   <data name="&gt;&gt;comboBox6.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;comboBox6.Parent" xml:space="preserve">
     <value>tabEnvironment</value>
@@ -228,10 +241,13 @@
     <value>True</value>
   </data>
   <data name="checkBox24.Location" type="System.Drawing.Point, System.Drawing">
-    <value>13, 86</value>
+    <value>15, 108</value>
+  </data>
+  <data name="checkBox24.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBox24.Size" type="System.Drawing.Size, System.Drawing">
-    <value>207, 16</value>
+    <value>204, 19</value>
   </data>
   <data name="checkBox24.TabIndex" type="System.Int32, mscorlib">
     <value>77</value>
@@ -243,7 +259,7 @@
     <value>checkBox24</value>
   </data>
   <data name="&gt;&gt;checkBox24.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBox24.Parent" xml:space="preserve">
     <value>tabEnvironment</value>
@@ -252,10 +268,13 @@
     <value>1</value>
   </data>
   <data name="textBox2.Location" type="System.Drawing.Point, System.Drawing">
-    <value>108, 276</value>
+    <value>126, 345</value>
+  </data>
+  <data name="textBox2.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="textBox2.Size" type="System.Drawing.Size, System.Drawing">
-    <value>179, 19</value>
+    <value>208, 23</value>
   </data>
   <data name="textBox2.TabIndex" type="System.Int32, mscorlib">
     <value>76</value>
@@ -264,7 +283,7 @@
     <value>textBox2</value>
   </data>
   <data name="&gt;&gt;textBox2.Type" xml:space="preserve">
-    <value>System.Windows.Forms.TextBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.TextBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;textBox2.Parent" xml:space="preserve">
     <value>tabEnvironment</value>
@@ -276,10 +295,13 @@
     <value>True</value>
   </data>
   <data name="label23.Location" type="System.Drawing.Point, System.Drawing">
-    <value>11, 250</value>
+    <value>13, 312</value>
+  </data>
+  <data name="label23.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 0, 4, 0</value>
   </data>
   <data name="label23.Size" type="System.Drawing.Size, System.Drawing">
-    <value>90, 12</value>
+    <value>91, 15</value>
   </data>
   <data name="label23.TabIndex" type="System.Int32, mscorlib">
     <value>75</value>
@@ -291,7 +313,7 @@
     <value>label23</value>
   </data>
   <data name="&gt;&gt;label23.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;label23.Parent" xml:space="preserve">
     <value>tabEnvironment</value>
@@ -300,10 +322,13 @@
     <value>3</value>
   </data>
   <data name="button4.Location" type="System.Drawing.Point, System.Drawing">
-    <value>246, 218</value>
+    <value>287, 272</value>
+  </data>
+  <data name="button4.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="button4.Size" type="System.Drawing.Size, System.Drawing">
-    <value>40, 23</value>
+    <value>47, 29</value>
   </data>
   <data name="button4.TabIndex" type="System.Int32, mscorlib">
     <value>74</value>
@@ -315,7 +340,7 @@
     <value>button4</value>
   </data>
   <data name="&gt;&gt;button4.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;button4.Parent" xml:space="preserve">
     <value>tabEnvironment</value>
@@ -324,10 +349,13 @@
     <value>4</value>
   </data>
   <data name="textBox1.Location" type="System.Drawing.Point, System.Drawing">
-    <value>9, 220</value>
+    <value>10, 275</value>
+  </data>
+  <data name="textBox1.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="textBox1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>230, 19</value>
+    <value>268, 23</value>
   </data>
   <data name="textBox1.TabIndex" type="System.Int32, mscorlib">
     <value>73</value>
@@ -336,7 +364,7 @@
     <value>textBox1</value>
   </data>
   <data name="&gt;&gt;textBox1.Type" xml:space="preserve">
-    <value>System.Windows.Forms.TextBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.TextBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;textBox1.Parent" xml:space="preserve">
     <value>tabEnvironment</value>
@@ -348,10 +376,13 @@
     <value>True</value>
   </data>
   <data name="label22.Location" type="System.Drawing.Point, System.Drawing">
-    <value>9, 204</value>
+    <value>10, 255</value>
+  </data>
+  <data name="label22.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 0, 4, 0</value>
   </data>
   <data name="label22.Size" type="System.Drawing.Size, System.Drawing">
-    <value>128, 12</value>
+    <value>128, 15</value>
   </data>
   <data name="label22.TabIndex" type="System.Int32, mscorlib">
     <value>72</value>
@@ -363,7 +394,7 @@
     <value>label22</value>
   </data>
   <data name="&gt;&gt;label22.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;label22.Parent" xml:space="preserve">
     <value>tabEnvironment</value>
@@ -375,10 +406,13 @@
     <value>True</value>
   </data>
   <data name="label20.Location" type="System.Drawing.Point, System.Drawing">
-    <value>144, 163</value>
+    <value>168, 204</value>
+  </data>
+  <data name="label20.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 0, 4, 0</value>
   </data>
   <data name="label20.Size" type="System.Drawing.Size, System.Drawing">
-    <value>117, 12</value>
+    <value>115, 15</value>
   </data>
   <data name="label20.TabIndex" type="System.Int32, mscorlib">
     <value>71</value>
@@ -390,7 +424,7 @@
     <value>label20</value>
   </data>
   <data name="&gt;&gt;label20.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;label20.Parent" xml:space="preserve">
     <value>tabEnvironment</value>
@@ -402,10 +436,13 @@
     <value>True</value>
   </data>
   <data name="label17.Location" type="System.Drawing.Point, System.Drawing">
-    <value>142, 139</value>
+    <value>166, 174</value>
+  </data>
+  <data name="label17.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 0, 4, 0</value>
   </data>
   <data name="label17.Size" type="System.Drawing.Size, System.Drawing">
-    <value>137, 12</value>
+    <value>138, 15</value>
   </data>
   <data name="label17.TabIndex" type="System.Int32, mscorlib">
     <value>70</value>
@@ -417,7 +454,7 @@
     <value>label17</value>
   </data>
   <data name="&gt;&gt;label17.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;label17.Parent" xml:space="preserve">
     <value>tabEnvironment</value>
@@ -429,10 +466,13 @@
     <value>True</value>
   </data>
   <data name="label6.Location" type="System.Drawing.Point, System.Drawing">
-    <value>142, 114</value>
+    <value>166, 142</value>
+  </data>
+  <data name="label6.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 0, 4, 0</value>
   </data>
   <data name="label6.Size" type="System.Drawing.Size, System.Drawing">
-    <value>81, 12</value>
+    <value>83, 15</value>
   </data>
   <data name="label6.TabIndex" type="System.Int32, mscorlib">
     <value>69</value>
@@ -444,7 +484,7 @@
     <value>label6</value>
   </data>
   <data name="&gt;&gt;label6.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;label6.Parent" xml:space="preserve">
     <value>tabEnvironment</value>
@@ -453,10 +493,13 @@
     <value>9</value>
   </data>
   <data name="numericUpDown11.Location" type="System.Drawing.Point, System.Drawing">
-    <value>13, 163</value>
+    <value>15, 204</value>
+  </data>
+  <data name="numericUpDown11.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="numericUpDown11.Size" type="System.Drawing.Size, System.Drawing">
-    <value>120, 19</value>
+    <value>140, 23</value>
   </data>
   <data name="numericUpDown11.TabIndex" type="System.Int32, mscorlib">
     <value>66</value>
@@ -465,7 +508,7 @@
     <value>numericUpDown11</value>
   </data>
   <data name="&gt;&gt;numericUpDown11.Type" xml:space="preserve">
-    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;numericUpDown11.Parent" xml:space="preserve">
     <value>tabEnvironment</value>
@@ -477,10 +520,13 @@
     <value>True</value>
   </data>
   <data name="checkBox18.Location" type="System.Drawing.Point, System.Drawing">
-    <value>13, 60</value>
+    <value>15, 75</value>
+  </data>
+  <data name="checkBox18.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBox18.Size" type="System.Drawing.Size, System.Drawing">
-    <value>151, 16</value>
+    <value>148, 19</value>
   </data>
   <data name="checkBox18.TabIndex" type="System.Int32, mscorlib">
     <value>65</value>
@@ -492,7 +538,7 @@
     <value>checkBox18</value>
   </data>
   <data name="&gt;&gt;checkBox18.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBox18.Parent" xml:space="preserve">
     <value>tabEnvironment</value>
@@ -501,10 +547,13 @@
     <value>11</value>
   </data>
   <data name="numericUpDown10.Location" type="System.Drawing.Point, System.Drawing">
-    <value>13, 137</value>
+    <value>15, 171</value>
+  </data>
+  <data name="numericUpDown10.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="numericUpDown10.Size" type="System.Drawing.Size, System.Drawing">
-    <value>120, 19</value>
+    <value>140, 23</value>
   </data>
   <data name="numericUpDown10.TabIndex" type="System.Int32, mscorlib">
     <value>64</value>
@@ -513,7 +562,7 @@
     <value>numericUpDown10</value>
   </data>
   <data name="&gt;&gt;numericUpDown10.Type" xml:space="preserve">
-    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;numericUpDown10.Parent" xml:space="preserve">
     <value>tabEnvironment</value>
@@ -522,10 +571,13 @@
     <value>12</value>
   </data>
   <data name="numericUpDown4.Location" type="System.Drawing.Point, System.Drawing">
-    <value>13, 112</value>
+    <value>15, 140</value>
+  </data>
+  <data name="numericUpDown4.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="numericUpDown4.Size" type="System.Drawing.Size, System.Drawing">
-    <value>120, 19</value>
+    <value>140, 23</value>
   </data>
   <data name="numericUpDown4.TabIndex" type="System.Int32, mscorlib">
     <value>63</value>
@@ -534,7 +586,7 @@
     <value>numericUpDown4</value>
   </data>
   <data name="&gt;&gt;numericUpDown4.Type" xml:space="preserve">
-    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;numericUpDown4.Parent" xml:space="preserve">
     <value>tabEnvironment</value>
@@ -546,10 +598,13 @@
     <value>True</value>
   </data>
   <data name="checkBox7.Location" type="System.Drawing.Point, System.Drawing">
-    <value>168, 60</value>
+    <value>196, 75</value>
+  </data>
+  <data name="checkBox7.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBox7.Size" type="System.Drawing.Size, System.Drawing">
-    <value>118, 16</value>
+    <value>117, 19</value>
   </data>
   <data name="checkBox7.TabIndex" type="System.Int32, mscorlib">
     <value>62</value>
@@ -561,7 +616,7 @@
     <value>checkBox7</value>
   </data>
   <data name="&gt;&gt;checkBox7.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBox7.Parent" xml:space="preserve">
     <value>tabEnvironment</value>
@@ -573,10 +628,13 @@
     <value>True</value>
   </data>
   <data name="checkBox6.Location" type="System.Drawing.Point, System.Drawing">
-    <value>168, 38</value>
+    <value>196, 48</value>
+  </data>
+  <data name="checkBox6.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBox6.Size" type="System.Drawing.Size, System.Drawing">
-    <value>124, 16</value>
+    <value>126, 19</value>
   </data>
   <data name="checkBox6.TabIndex" type="System.Int32, mscorlib">
     <value>61</value>
@@ -588,7 +646,7 @@
     <value>checkBox6</value>
   </data>
   <data name="&gt;&gt;checkBox6.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBox6.Parent" xml:space="preserve">
     <value>tabEnvironment</value>
@@ -600,10 +658,13 @@
     <value>True</value>
   </data>
   <data name="checkBox5.Location" type="System.Drawing.Point, System.Drawing">
-    <value>13, 38</value>
+    <value>15, 48</value>
+  </data>
+  <data name="checkBox5.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBox5.Size" type="System.Drawing.Size, System.Drawing">
-    <value>147, 16</value>
+    <value>148, 19</value>
   </data>
   <data name="checkBox5.TabIndex" type="System.Int32, mscorlib">
     <value>60</value>
@@ -615,7 +676,7 @@
     <value>checkBox5</value>
   </data>
   <data name="&gt;&gt;checkBox5.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBox5.Parent" xml:space="preserve">
     <value>tabEnvironment</value>
@@ -627,10 +688,13 @@
     <value>True</value>
   </data>
   <data name="checkBox4.Location" type="System.Drawing.Point, System.Drawing">
-    <value>168, 16</value>
+    <value>196, 20</value>
+  </data>
+  <data name="checkBox4.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBox4.Size" type="System.Drawing.Size, System.Drawing">
-    <value>111, 16</value>
+    <value>111, 19</value>
   </data>
   <data name="checkBox4.TabIndex" type="System.Int32, mscorlib">
     <value>59</value>
@@ -642,7 +706,7 @@
     <value>checkBox4</value>
   </data>
   <data name="&gt;&gt;checkBox4.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBox4.Parent" xml:space="preserve">
     <value>tabEnvironment</value>
@@ -654,10 +718,13 @@
     <value>True</value>
   </data>
   <data name="checkBox3.Location" type="System.Drawing.Point, System.Drawing">
-    <value>13, 16</value>
+    <value>15, 20</value>
+  </data>
+  <data name="checkBox3.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBox3.Size" type="System.Drawing.Size, System.Drawing">
-    <value>103, 16</value>
+    <value>105, 19</value>
   </data>
   <data name="checkBox3.TabIndex" type="System.Int32, mscorlib">
     <value>58</value>
@@ -669,7 +736,7 @@
     <value>checkBox3</value>
   </data>
   <data name="&gt;&gt;checkBox3.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBox3.Parent" xml:space="preserve">
     <value>tabEnvironment</value>
@@ -678,10 +745,13 @@
     <value>18</value>
   </data>
   <data name="tabEnvironment.Location" type="System.Drawing.Point, System.Drawing">
-    <value>4, 40</value>
+    <value>4, 44</value>
+  </data>
+  <data name="tabEnvironment.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="tabEnvironment.Size" type="System.Drawing.Size, System.Drawing">
-    <value>308, 326</value>
+    <value>361, 414</value>
   </data>
   <data name="tabEnvironment.TabIndex" type="System.Int32, mscorlib">
     <value>6</value>
@@ -693,7 +763,7 @@
     <value>tabEnvironment</value>
   </data>
   <data name="&gt;&gt;tabEnvironment.Type" xml:space="preserve">
-    <value>System.Windows.Forms.TabPage, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.TabPage, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;tabEnvironment.Parent" xml:space="preserve">
     <value>tabControl</value>
@@ -705,10 +775,13 @@
     <value>True</value>
   </data>
   <data name="checkBox14.Location" type="System.Drawing.Point, System.Drawing">
-    <value>17, 185</value>
+    <value>20, 231</value>
+  </data>
+  <data name="checkBox14.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBox14.Size" type="System.Drawing.Size, System.Drawing">
-    <value>183, 16</value>
+    <value>186, 19</value>
   </data>
   <data name="checkBox14.TabIndex" type="System.Int32, mscorlib">
     <value>67</value>
@@ -720,7 +793,7 @@
     <value>checkBox14</value>
   </data>
   <data name="&gt;&gt;checkBox14.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBox14.Parent" xml:space="preserve">
     <value>tabPageView</value>
@@ -732,10 +805,13 @@
     <value>True</value>
   </data>
   <data name="label18.Location" type="System.Drawing.Point, System.Drawing">
-    <value>7, 35</value>
+    <value>8, 44</value>
+  </data>
+  <data name="label18.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 0, 4, 0</value>
   </data>
   <data name="label18.Size" type="System.Drawing.Size, System.Drawing">
-    <value>99, 12</value>
+    <value>98, 15</value>
   </data>
   <data name="label18.TabIndex" type="System.Int32, mscorlib">
     <value>65</value>
@@ -747,7 +823,7 @@
     <value>label18</value>
   </data>
   <data name="&gt;&gt;label18.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;label18.Parent" xml:space="preserve">
     <value>tabPageView</value>
@@ -756,19 +832,19 @@
     <value>1</value>
   </data>
   <data name="comboBoxTextDrawingMode.Items" xml:space="preserve">
-    <value>WIN API (GDI)</value>
-  </data>
-  <data name="comboBoxTextDrawingMode.Items1" xml:space="preserve">
     <value>TextRenderer (GDI&amp;GDI+)</value>
   </data>
-  <data name="comboBoxTextDrawingMode.Items2" xml:space="preserve">
+  <data name="comboBoxTextDrawingMode.Items1" xml:space="preserve">
     <value>Graphics (GDI+)</value>
   </data>
   <data name="comboBoxTextDrawingMode.Location" type="System.Drawing.Point, System.Drawing">
-    <value>19, 50</value>
+    <value>22, 62</value>
+  </data>
+  <data name="comboBoxTextDrawingMode.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="comboBoxTextDrawingMode.Size" type="System.Drawing.Size, System.Drawing">
-    <value>190, 20</value>
+    <value>221, 23</value>
   </data>
   <data name="comboBoxTextDrawingMode.TabIndex" type="System.Int32, mscorlib">
     <value>64</value>
@@ -777,7 +853,7 @@
     <value>comboBoxTextDrawingMode</value>
   </data>
   <data name="&gt;&gt;comboBoxTextDrawingMode.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;comboBoxTextDrawingMode.Parent" xml:space="preserve">
     <value>tabPageView</value>
@@ -789,10 +865,13 @@
     <value>True</value>
   </data>
   <data name="label1.Location" type="System.Drawing.Point, System.Drawing">
-    <value>143, 162</value>
+    <value>167, 202</value>
+  </data>
+  <data name="label1.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 0, 4, 0</value>
   </data>
   <data name="label1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>92, 12</value>
+    <value>92, 15</value>
   </data>
   <data name="label1.TabIndex" type="System.Int32, mscorlib">
     <value>63</value>
@@ -804,7 +883,7 @@
     <value>label1</value>
   </data>
   <data name="&gt;&gt;label1.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;label1.Parent" xml:space="preserve">
     <value>tabPageView</value>
@@ -813,10 +892,13 @@
     <value>3</value>
   </data>
   <data name="numericUpDown9.Location" type="System.Drawing.Point, System.Drawing">
-    <value>17, 160</value>
+    <value>20, 200</value>
+  </data>
+  <data name="numericUpDown9.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="numericUpDown9.Size" type="System.Drawing.Size, System.Drawing">
-    <value>120, 19</value>
+    <value>140, 23</value>
   </data>
   <data name="numericUpDown9.TabIndex" type="System.Int32, mscorlib">
     <value>62</value>
@@ -825,7 +907,7 @@
     <value>numericUpDown9</value>
   </data>
   <data name="&gt;&gt;numericUpDown9.Type" xml:space="preserve">
-    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;numericUpDown9.Parent" xml:space="preserve">
     <value>tabPageView</value>
@@ -837,10 +919,13 @@
     <value>True</value>
   </data>
   <data name="label5.Location" type="System.Drawing.Point, System.Drawing">
-    <value>143, 137</value>
+    <value>167, 171</value>
+  </data>
+  <data name="label5.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 0, 4, 0</value>
   </data>
   <data name="label5.Size" type="System.Drawing.Size, System.Drawing">
-    <value>98, 12</value>
+    <value>98, 15</value>
   </data>
   <data name="label5.TabIndex" type="System.Int32, mscorlib">
     <value>61</value>
@@ -852,7 +937,7 @@
     <value>label5</value>
   </data>
   <data name="&gt;&gt;label5.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;label5.Parent" xml:space="preserve">
     <value>tabPageView</value>
@@ -861,10 +946,13 @@
     <value>5</value>
   </data>
   <data name="numericUpDown1.Location" type="System.Drawing.Point, System.Drawing">
-    <value>17, 135</value>
+    <value>20, 169</value>
+  </data>
+  <data name="numericUpDown1.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="numericUpDown1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>120, 19</value>
+    <value>140, 23</value>
   </data>
   <data name="numericUpDown1.TabIndex" type="System.Int32, mscorlib">
     <value>60</value>
@@ -873,7 +961,7 @@
     <value>numericUpDown1</value>
   </data>
   <data name="&gt;&gt;numericUpDown1.Type" xml:space="preserve">
-    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;numericUpDown1.Parent" xml:space="preserve">
     <value>tabPageView</value>
@@ -885,10 +973,13 @@
     <value>True</value>
   </data>
   <data name="label9.Location" type="System.Drawing.Point, System.Drawing">
-    <value>143, 111</value>
+    <value>167, 139</value>
+  </data>
+  <data name="label9.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 0, 4, 0</value>
   </data>
   <data name="label9.Size" type="System.Drawing.Size, System.Drawing">
-    <value>66, 12</value>
+    <value>65, 15</value>
   </data>
   <data name="label9.TabIndex" type="System.Int32, mscorlib">
     <value>56</value>
@@ -900,7 +991,7 @@
     <value>label9</value>
   </data>
   <data name="&gt;&gt;label9.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;label9.Parent" xml:space="preserve">
     <value>tabPageView</value>
@@ -909,10 +1000,13 @@
     <value>7</value>
   </data>
   <data name="numericUpDown7.Location" type="System.Drawing.Point, System.Drawing">
-    <value>17, 109</value>
+    <value>20, 136</value>
+  </data>
+  <data name="numericUpDown7.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="numericUpDown7.Size" type="System.Drawing.Size, System.Drawing">
-    <value>120, 19</value>
+    <value>140, 23</value>
   </data>
   <data name="numericUpDown7.TabIndex" type="System.Int32, mscorlib">
     <value>55</value>
@@ -921,7 +1015,7 @@
     <value>numericUpDown7</value>
   </data>
   <data name="&gt;&gt;numericUpDown7.Type" xml:space="preserve">
-    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;numericUpDown7.Parent" xml:space="preserve">
     <value>tabPageView</value>
@@ -930,14 +1024,16 @@
     <value>8</value>
   </data>
   <data name="tabPageView.Location" type="System.Drawing.Point, System.Drawing">
-    <value>4, 40</value>
+    <value>4, 44</value>
   </data>
-  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="tabPageView.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
+  </data>
   <data name="tabPageView.Padding" type="System.Windows.Forms.Padding, System.Windows.Forms">
-    <value>3, 3, 3, 3</value>
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="tabPageView.Size" type="System.Drawing.Size, System.Drawing">
-    <value>308, 326</value>
+    <value>361, 414</value>
   </data>
   <data name="tabPageView.TabIndex" type="System.Int32, mscorlib">
     <value>4</value>
@@ -949,7 +1045,7 @@
     <value>tabPageView</value>
   </data>
   <data name="&gt;&gt;tabPageView.Type" xml:space="preserve">
-    <value>System.Windows.Forms.TabPage, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.TabPage, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;tabPageView.Parent" xml:space="preserve">
     <value>tabControl</value>
@@ -961,10 +1057,13 @@
     <value>True</value>
   </data>
   <data name="checkBox21.Location" type="System.Drawing.Point, System.Drawing">
-    <value>13, 115</value>
+    <value>15, 144</value>
+  </data>
+  <data name="checkBox21.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBox21.Size" type="System.Drawing.Size, System.Drawing">
-    <value>176, 16</value>
+    <value>177, 19</value>
   </data>
   <data name="checkBox21.TabIndex" type="System.Int32, mscorlib">
     <value>83</value>
@@ -976,7 +1075,7 @@
     <value>checkBox21</value>
   </data>
   <data name="&gt;&gt;checkBox21.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBox21.Parent" xml:space="preserve">
     <value>tabPageWindow</value>
@@ -988,10 +1087,13 @@
     <value>True</value>
   </data>
   <data name="ScrollRange.Location" type="System.Drawing.Point, System.Drawing">
-    <value>139, 249</value>
+    <value>162, 311</value>
+  </data>
+  <data name="ScrollRange.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 0, 4, 0</value>
   </data>
   <data name="ScrollRange.Size" type="System.Drawing.Size, System.Drawing">
-    <value>85, 12</value>
+    <value>86, 15</value>
   </data>
   <data name="ScrollRange.TabIndex" type="System.Int32, mscorlib">
     <value>82</value>
@@ -1003,7 +1105,7 @@
     <value>ScrollRange</value>
   </data>
   <data name="&gt;&gt;ScrollRange.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;ScrollRange.Parent" xml:space="preserve">
     <value>tabPageWindow</value>
@@ -1012,10 +1114,13 @@
     <value>1</value>
   </data>
   <data name="numericUpDown8.Location" type="System.Drawing.Point, System.Drawing">
-    <value>13, 247</value>
+    <value>15, 309</value>
+  </data>
+  <data name="numericUpDown8.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="numericUpDown8.Size" type="System.Drawing.Size, System.Drawing">
-    <value>120, 19</value>
+    <value>140, 23</value>
   </data>
   <data name="numericUpDown8.TabIndex" type="System.Int32, mscorlib">
     <value>81</value>
@@ -1024,7 +1129,7 @@
     <value>numericUpDown8</value>
   </data>
   <data name="&gt;&gt;numericUpDown8.Type" xml:space="preserve">
-    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;numericUpDown8.Parent" xml:space="preserve">
     <value>tabPageWindow</value>
@@ -1036,10 +1141,13 @@
     <value>True</value>
   </data>
   <data name="checkBox17.Location" type="System.Drawing.Point, System.Drawing">
-    <value>13, 136</value>
+    <value>15, 170</value>
+  </data>
+  <data name="checkBox17.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBox17.Size" type="System.Drawing.Size, System.Drawing">
-    <value>199, 16</value>
+    <value>200, 19</value>
   </data>
   <data name="checkBox17.TabIndex" type="System.Int32, mscorlib">
     <value>80</value>
@@ -1051,7 +1159,7 @@
     <value>checkBox17</value>
   </data>
   <data name="&gt;&gt;checkBox17.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBox17.Parent" xml:space="preserve">
     <value>tabPageWindow</value>
@@ -1060,10 +1168,13 @@
     <value>3</value>
   </data>
   <data name="button3.Location" type="System.Drawing.Point, System.Drawing">
-    <value>59, 208</value>
+    <value>69, 260</value>
+  </data>
+  <data name="button3.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="button3.Size" type="System.Drawing.Size, System.Drawing">
-    <value>178, 24</value>
+    <value>208, 30</value>
   </data>
   <data name="button3.TabIndex" type="System.Int32, mscorlib">
     <value>79</value>
@@ -1075,7 +1186,7 @@
     <value>button3</value>
   </data>
   <data name="&gt;&gt;button3.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;button3.Parent" xml:space="preserve">
     <value>tabPageWindow</value>
@@ -1087,10 +1198,13 @@
     <value>True</value>
   </data>
   <data name="label10.Location" type="System.Drawing.Point, System.Drawing">
-    <value>139, 185</value>
+    <value>162, 231</value>
+  </data>
+  <data name="label10.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 0, 4, 0</value>
   </data>
   <data name="label10.Size" type="System.Drawing.Size, System.Drawing">
-    <value>79, 12</value>
+    <value>80, 15</value>
   </data>
   <data name="label10.TabIndex" type="System.Int32, mscorlib">
     <value>78</value>
@@ -1102,7 +1216,7 @@
     <value>label10</value>
   </data>
   <data name="&gt;&gt;label10.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;label10.Parent" xml:space="preserve">
     <value>tabPageWindow</value>
@@ -1114,10 +1228,13 @@
     <value>True</value>
   </data>
   <data name="label19.Location" type="System.Drawing.Point, System.Drawing">
-    <value>139, 160</value>
+    <value>162, 200</value>
+  </data>
+  <data name="label19.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 0, 4, 0</value>
   </data>
   <data name="label19.Size" type="System.Drawing.Size, System.Drawing">
-    <value>79, 12</value>
+    <value>80, 15</value>
   </data>
   <data name="label19.TabIndex" type="System.Int32, mscorlib">
     <value>77</value>
@@ -1129,7 +1246,7 @@
     <value>label19</value>
   </data>
   <data name="&gt;&gt;label19.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;label19.Parent" xml:space="preserve">
     <value>tabPageWindow</value>
@@ -1138,10 +1255,13 @@
     <value>6</value>
   </data>
   <data name="numericUpDownPosY.Location" type="System.Drawing.Point, System.Drawing">
-    <value>13, 183</value>
+    <value>15, 229</value>
+  </data>
+  <data name="numericUpDownPosY.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="numericUpDownPosY.Size" type="System.Drawing.Size, System.Drawing">
-    <value>120, 19</value>
+    <value>140, 23</value>
   </data>
   <data name="numericUpDownPosY.TabIndex" type="System.Int32, mscorlib">
     <value>76</value>
@@ -1150,7 +1270,7 @@
     <value>numericUpDownPosY</value>
   </data>
   <data name="&gt;&gt;numericUpDownPosY.Type" xml:space="preserve">
-    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;numericUpDownPosY.Parent" xml:space="preserve">
     <value>tabPageWindow</value>
@@ -1159,10 +1279,13 @@
     <value>7</value>
   </data>
   <data name="numericUpDownPosX.Location" type="System.Drawing.Point, System.Drawing">
-    <value>13, 158</value>
+    <value>15, 198</value>
+  </data>
+  <data name="numericUpDownPosX.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="numericUpDownPosX.Size" type="System.Drawing.Size, System.Drawing">
-    <value>120, 19</value>
+    <value>140, 23</value>
   </data>
   <data name="numericUpDownPosX.TabIndex" type="System.Int32, mscorlib">
     <value>75</value>
@@ -1171,7 +1294,7 @@
     <value>numericUpDownPosX</value>
   </data>
   <data name="&gt;&gt;numericUpDownPosX.Type" xml:space="preserve">
-    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;numericUpDownPosX.Parent" xml:space="preserve">
     <value>tabPageWindow</value>
@@ -1180,10 +1303,13 @@
     <value>8</value>
   </data>
   <data name="button1.Location" type="System.Drawing.Point, System.Drawing">
-    <value>59, 61</value>
+    <value>69, 76</value>
+  </data>
+  <data name="button1.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="button1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>178, 24</value>
+    <value>208, 30</value>
   </data>
   <data name="button1.TabIndex" type="System.Int32, mscorlib">
     <value>74</value>
@@ -1195,7 +1321,7 @@
     <value>button1</value>
   </data>
   <data name="&gt;&gt;button1.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;button1.Parent" xml:space="preserve">
     <value>tabPageWindow</value>
@@ -1207,10 +1333,13 @@
     <value>True</value>
   </data>
   <data name="label3.Location" type="System.Drawing.Point, System.Drawing">
-    <value>139, 38</value>
+    <value>162, 48</value>
+  </data>
+  <data name="label3.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 0, 4, 0</value>
   </data>
   <data name="label3.Size" type="System.Drawing.Size, System.Drawing">
-    <value>68, 12</value>
+    <value>69, 15</value>
   </data>
   <data name="label3.TabIndex" type="System.Int32, mscorlib">
     <value>73</value>
@@ -1222,7 +1351,7 @@
     <value>label3</value>
   </data>
   <data name="&gt;&gt;label3.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;label3.Parent" xml:space="preserve">
     <value>tabPageWindow</value>
@@ -1234,10 +1363,13 @@
     <value>True</value>
   </data>
   <data name="label2.Location" type="System.Drawing.Point, System.Drawing">
-    <value>139, 13</value>
+    <value>162, 16</value>
+  </data>
+  <data name="label2.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 0, 4, 0</value>
   </data>
   <data name="label2.Size" type="System.Drawing.Size, System.Drawing">
-    <value>60, 12</value>
+    <value>61, 15</value>
   </data>
   <data name="label2.TabIndex" type="System.Int32, mscorlib">
     <value>72</value>
@@ -1249,7 +1381,7 @@
     <value>label2</value>
   </data>
   <data name="&gt;&gt;label2.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;label2.Parent" xml:space="preserve">
     <value>tabPageWindow</value>
@@ -1258,10 +1390,13 @@
     <value>11</value>
   </data>
   <data name="numericUpDown3.Location" type="System.Drawing.Point, System.Drawing">
-    <value>13, 36</value>
+    <value>15, 45</value>
+  </data>
+  <data name="numericUpDown3.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="numericUpDown3.Size" type="System.Drawing.Size, System.Drawing">
-    <value>120, 19</value>
+    <value>140, 23</value>
   </data>
   <data name="numericUpDown3.TabIndex" type="System.Int32, mscorlib">
     <value>71</value>
@@ -1270,7 +1405,7 @@
     <value>numericUpDown3</value>
   </data>
   <data name="&gt;&gt;numericUpDown3.Type" xml:space="preserve">
-    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;numericUpDown3.Parent" xml:space="preserve">
     <value>tabPageWindow</value>
@@ -1279,10 +1414,13 @@
     <value>12</value>
   </data>
   <data name="numericUpDown2.Location" type="System.Drawing.Point, System.Drawing">
-    <value>13, 11</value>
+    <value>15, 14</value>
+  </data>
+  <data name="numericUpDown2.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="numericUpDown2.Size" type="System.Drawing.Size, System.Drawing">
-    <value>120, 19</value>
+    <value>140, 23</value>
   </data>
   <data name="numericUpDown2.TabIndex" type="System.Int32, mscorlib">
     <value>70</value>
@@ -1291,7 +1429,7 @@
     <value>numericUpDown2</value>
   </data>
   <data name="&gt;&gt;numericUpDown2.Type" xml:space="preserve">
-    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;numericUpDown2.Parent" xml:space="preserve">
     <value>tabPageWindow</value>
@@ -1303,10 +1441,13 @@
     <value>True</value>
   </data>
   <data name="checkBox8.Location" type="System.Drawing.Point, System.Drawing">
-    <value>13, 94</value>
+    <value>15, 118</value>
+  </data>
+  <data name="checkBox8.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBox8.Size" type="System.Drawing.Size, System.Drawing">
-    <value>158, 16</value>
+    <value>159, 19</value>
   </data>
   <data name="checkBox8.TabIndex" type="System.Int32, mscorlib">
     <value>69</value>
@@ -1318,7 +1459,7 @@
     <value>checkBox8</value>
   </data>
   <data name="&gt;&gt;checkBox8.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBox8.Parent" xml:space="preserve">
     <value>tabPageWindow</value>
@@ -1327,10 +1468,13 @@
     <value>14</value>
   </data>
   <data name="tabPageWindow.Location" type="System.Drawing.Point, System.Drawing">
-    <value>4, 40</value>
+    <value>4, 44</value>
+  </data>
+  <data name="tabPageWindow.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="tabPageWindow.Size" type="System.Drawing.Size, System.Drawing">
-    <value>308, 326</value>
+    <value>361, 414</value>
   </data>
   <data name="tabPageWindow.TabIndex" type="System.Int32, mscorlib">
     <value>5</value>
@@ -1342,7 +1486,7 @@
     <value>tabPageWindow</value>
   </data>
   <data name="&gt;&gt;tabPageWindow.Type" xml:space="preserve">
-    <value>System.Windows.Forms.TabPage, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.TabPage, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;tabPageWindow.Parent" xml:space="preserve">
     <value>tabControl</value>
@@ -1351,10 +1495,13 @@
     <value>2</value>
   </data>
   <data name="button2.Location" type="System.Drawing.Point, System.Drawing">
-    <value>57, 187</value>
+    <value>66, 234</value>
+  </data>
+  <data name="button2.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="button2.Size" type="System.Drawing.Size, System.Drawing">
-    <value>178, 24</value>
+    <value>208, 30</value>
   </data>
   <data name="button2.TabIndex" type="System.Int32, mscorlib">
     <value>69</value>
@@ -1366,7 +1513,7 @@
     <value>button2</value>
   </data>
   <data name="&gt;&gt;button2.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;button2.Parent" xml:space="preserve">
     <value>tabPageFont</value>
@@ -1378,10 +1525,13 @@
     <value>True</value>
   </data>
   <data name="label7.Location" type="System.Drawing.Point, System.Drawing">
-    <value>132, 244</value>
+    <value>154, 305</value>
+  </data>
+  <data name="label7.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 0, 4, 0</value>
   </data>
   <data name="label7.Size" type="System.Drawing.Size, System.Drawing">
-    <value>59, 12</value>
+    <value>61, 15</value>
   </data>
   <data name="label7.TabIndex" type="System.Int32, mscorlib">
     <value>53</value>
@@ -1393,7 +1543,7 @@
     <value>label7</value>
   </data>
   <data name="&gt;&gt;label7.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;label7.Parent" xml:space="preserve">
     <value>tabPageFont</value>
@@ -1405,10 +1555,13 @@
     <value>True</value>
   </data>
   <data name="label8.Location" type="System.Drawing.Point, System.Drawing">
-    <value>132, 219</value>
+    <value>154, 274</value>
+  </data>
+  <data name="label8.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 0, 4, 0</value>
   </data>
   <data name="label8.Size" type="System.Drawing.Size, System.Drawing">
-    <value>67, 12</value>
+    <value>68, 15</value>
   </data>
   <data name="label8.TabIndex" type="System.Int32, mscorlib">
     <value>52</value>
@@ -1420,7 +1573,7 @@
     <value>label8</value>
   </data>
   <data name="&gt;&gt;label8.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;label8.Parent" xml:space="preserve">
     <value>tabPageFont</value>
@@ -1429,10 +1582,13 @@
     <value>2</value>
   </data>
   <data name="numericUpDown6.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 242</value>
+    <value>7, 302</value>
+  </data>
+  <data name="numericUpDown6.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="numericUpDown6.Size" type="System.Drawing.Size, System.Drawing">
-    <value>120, 19</value>
+    <value>140, 23</value>
   </data>
   <data name="numericUpDown6.TabIndex" type="System.Int32, mscorlib">
     <value>51</value>
@@ -1441,7 +1597,7 @@
     <value>numericUpDown6</value>
   </data>
   <data name="&gt;&gt;numericUpDown6.Type" xml:space="preserve">
-    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;numericUpDown6.Parent" xml:space="preserve">
     <value>tabPageFont</value>
@@ -1450,10 +1606,13 @@
     <value>3</value>
   </data>
   <data name="numericUpDown5.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 217</value>
+    <value>7, 271</value>
+  </data>
+  <data name="numericUpDown5.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="numericUpDown5.Size" type="System.Drawing.Size, System.Drawing">
-    <value>120, 19</value>
+    <value>140, 23</value>
   </data>
   <data name="numericUpDown5.TabIndex" type="System.Int32, mscorlib">
     <value>50</value>
@@ -1462,7 +1621,7 @@
     <value>numericUpDown5</value>
   </data>
   <data name="&gt;&gt;numericUpDown5.Type" xml:space="preserve">
-    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.NumericUpDown, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;numericUpDown5.Parent" xml:space="preserve">
     <value>tabPageFont</value>
@@ -1474,10 +1633,13 @@
     <value>True</value>
   </data>
   <data name="label4.Location" type="System.Drawing.Point, System.Drawing">
-    <value>132, 164</value>
+    <value>154, 205</value>
+  </data>
+  <data name="label4.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 0, 4, 0</value>
   </data>
   <data name="label4.Size" type="System.Drawing.Size, System.Drawing">
-    <value>50, 12</value>
+    <value>52, 15</value>
   </data>
   <data name="label4.TabIndex" type="System.Int32, mscorlib">
     <value>49</value>
@@ -1489,7 +1651,7 @@
     <value>label4</value>
   </data>
   <data name="&gt;&gt;label4.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;label4.Parent" xml:space="preserve">
     <value>tabPageFont</value>
@@ -1498,10 +1660,13 @@
     <value>5</value>
   </data>
   <data name="comboBox2.Location" type="System.Drawing.Point, System.Drawing">
-    <value>5, 161</value>
+    <value>6, 201</value>
+  </data>
+  <data name="comboBox2.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="comboBox2.Size" type="System.Drawing.Size, System.Drawing">
-    <value>121, 20</value>
+    <value>140, 23</value>
   </data>
   <data name="comboBox2.TabIndex" type="System.Int32, mscorlib">
     <value>48</value>
@@ -1510,7 +1675,7 @@
     <value>comboBox2</value>
   </data>
   <data name="&gt;&gt;comboBox2.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;comboBox2.Parent" xml:space="preserve">
     <value>tabPageFont</value>
@@ -1519,10 +1684,13 @@
     <value>6</value>
   </data>
   <data name="colorBoxBacklog.Location" type="System.Drawing.Point, System.Drawing">
-    <value>5, 112</value>
+    <value>6, 140</value>
+  </data>
+  <data name="colorBoxBacklog.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>5, 5, 5, 5</value>
   </data>
   <data name="colorBoxBacklog.Size" type="System.Drawing.Size, System.Drawing">
-    <value>215, 30</value>
+    <value>251, 38</value>
   </data>
   <data name="colorBoxBacklog.TabIndex" type="System.Int32, mscorlib">
     <value>3</value>
@@ -1531,7 +1699,7 @@
     <value>colorBoxBacklog</value>
   </data>
   <data name="&gt;&gt;colorBoxBacklog.Type" xml:space="preserve">
-    <value>MinorShift.Emuera.Forms.ColorBox, Emuera, Version=1.824.6904.3472, Culture=neutral, PublicKeyToken=null</value>
+    <value>MinorShift.Emuera.Forms.ColorBox, Emuera, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;colorBoxBacklog.Parent" xml:space="preserve">
     <value>tabPageFont</value>
@@ -1540,10 +1708,13 @@
     <value>7</value>
   </data>
   <data name="colorBoxSelecting.Location" type="System.Drawing.Point, System.Drawing">
-    <value>5, 81</value>
+    <value>6, 101</value>
+  </data>
+  <data name="colorBoxSelecting.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>5, 5, 5, 5</value>
   </data>
   <data name="colorBoxSelecting.Size" type="System.Drawing.Size, System.Drawing">
-    <value>215, 30</value>
+    <value>251, 38</value>
   </data>
   <data name="colorBoxSelecting.TabIndex" type="System.Int32, mscorlib">
     <value>2</value>
@@ -1552,7 +1723,7 @@
     <value>colorBoxSelecting</value>
   </data>
   <data name="&gt;&gt;colorBoxSelecting.Type" xml:space="preserve">
-    <value>MinorShift.Emuera.Forms.ColorBox, Emuera, Version=1.824.6904.3472, Culture=neutral, PublicKeyToken=null</value>
+    <value>MinorShift.Emuera.Forms.ColorBox, Emuera, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;colorBoxSelecting.Parent" xml:space="preserve">
     <value>tabPageFont</value>
@@ -1561,10 +1732,13 @@
     <value>8</value>
   </data>
   <data name="colorBoxFG.Location" type="System.Drawing.Point, System.Drawing">
-    <value>5, 50</value>
+    <value>6, 62</value>
+  </data>
+  <data name="colorBoxFG.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>5, 5, 5, 5</value>
   </data>
   <data name="colorBoxFG.Size" type="System.Drawing.Size, System.Drawing">
-    <value>215, 30</value>
+    <value>251, 38</value>
   </data>
   <data name="colorBoxFG.TabIndex" type="System.Int32, mscorlib">
     <value>1</value>
@@ -1573,7 +1747,7 @@
     <value>colorBoxFG</value>
   </data>
   <data name="&gt;&gt;colorBoxFG.Type" xml:space="preserve">
-    <value>MinorShift.Emuera.Forms.ColorBox, Emuera, Version=1.824.6904.3472, Culture=neutral, PublicKeyToken=null</value>
+    <value>MinorShift.Emuera.Forms.ColorBox, Emuera, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;colorBoxFG.Parent" xml:space="preserve">
     <value>tabPageFont</value>
@@ -1582,10 +1756,13 @@
     <value>9</value>
   </data>
   <data name="colorBoxBG.Location" type="System.Drawing.Point, System.Drawing">
-    <value>5, 20</value>
+    <value>6, 25</value>
+  </data>
+  <data name="colorBoxBG.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>5, 5, 5, 5</value>
   </data>
   <data name="colorBoxBG.Size" type="System.Drawing.Size, System.Drawing">
-    <value>215, 30</value>
+    <value>251, 38</value>
   </data>
   <data name="colorBoxBG.TabIndex" type="System.Int32, mscorlib">
     <value>0</value>
@@ -1594,7 +1771,7 @@
     <value>colorBoxBG</value>
   </data>
   <data name="&gt;&gt;colorBoxBG.Type" xml:space="preserve">
-    <value>MinorShift.Emuera.Forms.ColorBox, Emuera, Version=1.824.6904.3472, Culture=neutral, PublicKeyToken=null</value>
+    <value>MinorShift.Emuera.Forms.ColorBox, Emuera, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;colorBoxBG.Parent" xml:space="preserve">
     <value>tabPageFont</value>
@@ -1603,13 +1780,16 @@
     <value>10</value>
   </data>
   <data name="tabPageFont.Location" type="System.Drawing.Point, System.Drawing">
-    <value>4, 40</value>
+    <value>4, 44</value>
+  </data>
+  <data name="tabPageFont.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="tabPageFont.Padding" type="System.Windows.Forms.Padding, System.Windows.Forms">
-    <value>3, 3, 3, 3</value>
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="tabPageFont.Size" type="System.Drawing.Size, System.Drawing">
-    <value>308, 326</value>
+    <value>361, 414</value>
   </data>
   <data name="tabPageFont.TabIndex" type="System.Int32, mscorlib">
     <value>1</value>
@@ -1621,7 +1801,7 @@
     <value>tabPageFont</value>
   </data>
   <data name="&gt;&gt;tabPageFont.Type" xml:space="preserve">
-    <value>System.Windows.Forms.TabPage, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.TabPage, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;tabPageFont.Parent" xml:space="preserve">
     <value>tabControl</value>
@@ -1642,10 +1822,13 @@
     <value>(zh-TW)</value>
   </data>
   <data name="comboBox1.Location" type="System.Drawing.Point, System.Drawing">
-    <value>161, 269</value>
+    <value>188, 336</value>
+  </data>
+  <data name="comboBox1.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="comboBox1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>121, 20</value>
+    <value>140, 23</value>
   </data>
   <data name="comboBox1.TabIndex" type="System.Int32, mscorlib">
     <value>78</value>
@@ -1654,7 +1837,7 @@
     <value>comboBox1</value>
   </data>
   <data name="&gt;&gt;comboBox1.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;comboBox1.Parent" xml:space="preserve">
     <value>tabPageSystem</value>
@@ -1666,10 +1849,13 @@
     <value>True</value>
   </data>
   <data name="label11.Location" type="System.Drawing.Point, System.Drawing">
-    <value>10, 274</value>
+    <value>12, 342</value>
+  </data>
+  <data name="label11.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 0, 4, 0</value>
   </data>
   <data name="label11.Size" type="System.Drawing.Size, System.Drawing">
-    <value>146, 12</value>
+    <value>148, 15</value>
   </data>
   <data name="label11.TabIndex" type="System.Int32, mscorlib">
     <value>77</value>
@@ -1681,7 +1867,7 @@
     <value>label11</value>
   </data>
   <data name="&gt;&gt;label11.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;label11.Parent" xml:space="preserve">
     <value>tabPageSystem</value>
@@ -1693,10 +1879,13 @@
     <value>True</value>
   </data>
   <data name="checkBoxSystemFullSpace.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 217</value>
+    <value>7, 271</value>
+  </data>
+  <data name="checkBoxSystemFullSpace.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBoxSystemFullSpace.Size" type="System.Drawing.Size, System.Drawing">
-    <value>209, 16</value>
+    <value>207, 19</value>
   </data>
   <data name="checkBoxSystemFullSpace.TabIndex" type="System.Int32, mscorlib">
     <value>74</value>
@@ -1708,7 +1897,7 @@
     <value>checkBoxSystemFullSpace</value>
   </data>
   <data name="&gt;&gt;checkBoxSystemFullSpace.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBoxSystemFullSpace.Parent" xml:space="preserve">
     <value>tabPageSystem</value>
@@ -1720,10 +1909,13 @@
     <value>True</value>
   </data>
   <data name="checkBox22.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 195</value>
+    <value>7, 244</value>
+  </data>
+  <data name="checkBox22.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBox22.Size" type="System.Drawing.Size, System.Drawing">
-    <value>276, 16</value>
+    <value>279, 19</value>
   </data>
   <data name="checkBox22.TabIndex" type="System.Int32, mscorlib">
     <value>73</value>
@@ -1735,7 +1927,7 @@
     <value>checkBox22</value>
   </data>
   <data name="&gt;&gt;checkBox22.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBox22.Parent" xml:space="preserve">
     <value>tabPageSystem</value>
@@ -1747,10 +1939,13 @@
     <value>True</value>
   </data>
   <data name="label21.Location" type="System.Drawing.Point, System.Drawing">
-    <value>4, 8</value>
+    <value>5, 10</value>
+  </data>
+  <data name="label21.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 0, 4, 0</value>
   </data>
   <data name="label21.Size" type="System.Drawing.Size, System.Drawing">
-    <value>228, 24</value>
+    <value>229, 30</value>
   </data>
   <data name="label21.TabIndex" type="System.Int32, mscorlib">
     <value>71</value>
@@ -1763,7 +1958,7 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>label21</value>
   </data>
   <data name="&gt;&gt;label21.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;label21.Parent" xml:space="preserve">
     <value>tabPageSystem</value>
@@ -1775,10 +1970,13 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>True</value>
   </data>
   <data name="checkBox20.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 151</value>
+    <value>7, 189</value>
+  </data>
+  <data name="checkBox20.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBox20.Size" type="System.Drawing.Size, System.Drawing">
-    <value>181, 16</value>
+    <value>182, 19</value>
   </data>
   <data name="checkBox20.TabIndex" type="System.Int32, mscorlib">
     <value>70</value>
@@ -1790,7 +1988,7 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>checkBox20</value>
   </data>
   <data name="&gt;&gt;checkBox20.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBox20.Parent" xml:space="preserve">
     <value>tabPageSystem</value>
@@ -1802,10 +2000,13 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>True</value>
   </data>
   <data name="checkBox19.Location" type="System.Drawing.Point, System.Drawing">
-    <value>18, 173</value>
+    <value>21, 216</value>
+  </data>
+  <data name="checkBox19.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBox19.Size" type="System.Drawing.Size, System.Drawing">
-    <value>250, 16</value>
+    <value>252, 19</value>
   </data>
   <data name="checkBox19.TabIndex" type="System.Int32, mscorlib">
     <value>69</value>
@@ -1817,7 +2018,7 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>checkBox19</value>
   </data>
   <data name="&gt;&gt;checkBox19.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBox19.Parent" xml:space="preserve">
     <value>tabPageSystem</value>
@@ -1829,10 +2030,13 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>True</value>
   </data>
   <data name="checkBox16.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 129</value>
+    <value>7, 161</value>
+  </data>
+  <data name="checkBox16.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBox16.Size" type="System.Drawing.Size, System.Drawing">
-    <value>204, 16</value>
+    <value>204, 19</value>
   </data>
   <data name="checkBox16.TabIndex" type="System.Int32, mscorlib">
     <value>55</value>
@@ -1844,7 +2048,7 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>checkBox16</value>
   </data>
   <data name="&gt;&gt;checkBox16.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBox16.Parent" xml:space="preserve">
     <value>tabPageSystem</value>
@@ -1856,10 +2060,13 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>True</value>
   </data>
   <data name="checkBox15.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 107</value>
+    <value>7, 134</value>
+  </data>
+  <data name="checkBox15.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBox15.Size" type="System.Drawing.Size, System.Drawing">
-    <value>144, 16</value>
+    <value>147, 19</value>
   </data>
   <data name="checkBox15.TabIndex" type="System.Int32, mscorlib">
     <value>54</value>
@@ -1871,7 +2078,7 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>checkBox15</value>
   </data>
   <data name="&gt;&gt;checkBox15.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBox15.Parent" xml:space="preserve">
     <value>tabPageSystem</value>
@@ -1883,10 +2090,13 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>True</value>
   </data>
   <data name="checkBox1.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 41</value>
+    <value>7, 51</value>
+  </data>
+  <data name="checkBox1.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBox1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>180, 16</value>
+    <value>182, 19</value>
   </data>
   <data name="checkBox1.TabIndex" type="System.Int32, mscorlib">
     <value>38</value>
@@ -1898,7 +2108,7 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>checkBox1</value>
   </data>
   <data name="&gt;&gt;checkBox1.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBox1.Parent" xml:space="preserve">
     <value>tabPageSystem</value>
@@ -1910,10 +2120,13 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>True</value>
   </data>
   <data name="checkBox10.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 85</value>
+    <value>7, 106</value>
+  </data>
+  <data name="checkBox10.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBox10.Size" type="System.Drawing.Size, System.Drawing">
-    <value>141, 16</value>
+    <value>144, 19</value>
   </data>
   <data name="checkBox10.TabIndex" type="System.Int32, mscorlib">
     <value>53</value>
@@ -1925,7 +2138,7 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>checkBox10</value>
   </data>
   <data name="&gt;&gt;checkBox10.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBox10.Parent" xml:space="preserve">
     <value>tabPageSystem</value>
@@ -1937,10 +2150,13 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>True</value>
   </data>
   <data name="checkBox2.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 63</value>
+    <value>7, 79</value>
+  </data>
+  <data name="checkBox2.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBox2.Size" type="System.Drawing.Size, System.Drawing">
-    <value>141, 16</value>
+    <value>145, 19</value>
   </data>
   <data name="checkBox2.TabIndex" type="System.Int32, mscorlib">
     <value>12</value>
@@ -1952,7 +2168,7 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>checkBox2</value>
   </data>
   <data name="&gt;&gt;checkBox2.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBox2.Parent" xml:space="preserve">
     <value>tabPageSystem</value>
@@ -1961,13 +2177,16 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>11</value>
   </data>
   <data name="tabPageSystem.Location" type="System.Drawing.Point, System.Drawing">
-    <value>4, 40</value>
+    <value>4, 44</value>
+  </data>
+  <data name="tabPageSystem.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="tabPageSystem.Padding" type="System.Windows.Forms.Padding, System.Windows.Forms">
-    <value>3, 3, 3, 3</value>
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="tabPageSystem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>308, 326</value>
+    <value>361, 414</value>
   </data>
   <data name="tabPageSystem.TabIndex" type="System.Int32, mscorlib">
     <value>0</value>
@@ -1979,7 +2198,7 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>tabPageSystem</value>
   </data>
   <data name="&gt;&gt;tabPageSystem.Type" xml:space="preserve">
-    <value>System.Windows.Forms.TabPage, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.TabPage, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;tabPageSystem.Parent" xml:space="preserve">
     <value>tabControl</value>
@@ -1991,10 +2210,13 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>True</value>
   </data>
   <data name="checkBox29.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 107</value>
+    <value>7, 134</value>
+  </data>
+  <data name="checkBox29.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBox29.Size" type="System.Drawing.Size, System.Drawing">
-    <value>186, 16</value>
+    <value>188, 19</value>
   </data>
   <data name="checkBox29.TabIndex" type="System.Int32, mscorlib">
     <value>83</value>
@@ -2006,7 +2228,7 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>checkBox29</value>
   </data>
   <data name="&gt;&gt;checkBox29.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBox29.Parent" xml:space="preserve">
     <value>tabPageSystem2</value>
@@ -2018,10 +2240,13 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>True</value>
   </data>
   <data name="checkBox26.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 63</value>
+    <value>7, 79</value>
+  </data>
+  <data name="checkBox26.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBox26.Size" type="System.Drawing.Size, System.Drawing">
-    <value>203, 16</value>
+    <value>201, 19</value>
   </data>
   <data name="checkBox26.TabIndex" type="System.Int32, mscorlib">
     <value>82</value>
@@ -2033,7 +2258,7 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>checkBox26</value>
   </data>
   <data name="&gt;&gt;checkBox26.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBox26.Parent" xml:space="preserve">
     <value>tabPageSystem2</value>
@@ -2045,10 +2270,13 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>True</value>
   </data>
   <data name="checkBox27.Location" type="System.Drawing.Point, System.Drawing">
-    <value>16, 85</value>
+    <value>19, 106</value>
+  </data>
+  <data name="checkBox27.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBox27.Size" type="System.Drawing.Size, System.Drawing">
-    <value>266, 16</value>
+    <value>260, 19</value>
   </data>
   <data name="checkBox27.TabIndex" type="System.Int32, mscorlib">
     <value>81</value>
@@ -2060,7 +2288,7 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>checkBox27</value>
   </data>
   <data name="&gt;&gt;checkBox27.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBox27.Parent" xml:space="preserve">
     <value>tabPageSystem2</value>
@@ -2072,10 +2300,13 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>True</value>
   </data>
   <data name="checkBoxSystemTripleSymbol.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 41</value>
+    <value>7, 51</value>
+  </data>
+  <data name="checkBoxSystemTripleSymbol.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBoxSystemTripleSymbol.Size" type="System.Drawing.Size, System.Drawing">
-    <value>188, 16</value>
+    <value>190, 19</value>
   </data>
   <data name="checkBoxSystemTripleSymbol.TabIndex" type="System.Int32, mscorlib">
     <value>73</value>
@@ -2087,7 +2318,7 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>checkBoxSystemTripleSymbol</value>
   </data>
   <data name="&gt;&gt;checkBoxSystemTripleSymbol.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBoxSystemTripleSymbol.Parent" xml:space="preserve">
     <value>tabPageSystem2</value>
@@ -2099,10 +2330,13 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>True</value>
   </data>
   <data name="label24.Location" type="System.Drawing.Point, System.Drawing">
-    <value>4, 8</value>
+    <value>5, 10</value>
+  </data>
+  <data name="label24.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 0, 4, 0</value>
   </data>
   <data name="label24.Size" type="System.Drawing.Size, System.Drawing">
-    <value>228, 24</value>
+    <value>229, 30</value>
   </data>
   <data name="label24.TabIndex" type="System.Int32, mscorlib">
     <value>72</value>
@@ -2115,7 +2349,7 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>label24</value>
   </data>
   <data name="&gt;&gt;label24.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;label24.Parent" xml:space="preserve">
     <value>tabPageSystem2</value>
@@ -2124,10 +2358,13 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>4</value>
   </data>
   <data name="tabPageSystem2.Location" type="System.Drawing.Point, System.Drawing">
-    <value>4, 40</value>
+    <value>4, 44</value>
+  </data>
+  <data name="tabPageSystem2.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="tabPageSystem2.Size" type="System.Drawing.Size, System.Drawing">
-    <value>308, 326</value>
+    <value>361, 414</value>
   </data>
   <data name="tabPageSystem2.TabIndex" type="System.Int32, mscorlib">
     <value>9</value>
@@ -2139,7 +2376,7 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>tabPageSystem2</value>
   </data>
   <data name="&gt;&gt;tabPageSystem2.Type" xml:space="preserve">
-    <value>System.Windows.Forms.TabPage, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.TabPage, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;tabPageSystem2.Parent" xml:space="preserve">
     <value>tabControl</value>
@@ -2151,10 +2388,13 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>True</value>
   </data>
   <data name="checkBox9.Location" type="System.Drawing.Point, System.Drawing">
-    <value>8, 129</value>
+    <value>9, 161</value>
+  </data>
+  <data name="checkBox9.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBox9.Size" type="System.Drawing.Size, System.Drawing">
-    <value>195, 16</value>
+    <value>197, 19</value>
   </data>
   <data name="checkBox9.TabIndex" type="System.Int32, mscorlib">
     <value>82</value>
@@ -2166,7 +2406,7 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>checkBox9</value>
   </data>
   <data name="&gt;&gt;checkBox9.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBox9.Parent" xml:space="preserve">
     <value>tabPageCompati</value>
@@ -2178,10 +2418,13 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>True</value>
   </data>
   <data name="checkBoxCompatiSP.Location" type="System.Drawing.Point, System.Drawing">
-    <value>8, 195</value>
+    <value>9, 244</value>
+  </data>
+  <data name="checkBoxCompatiSP.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBoxCompatiSP.Size" type="System.Drawing.Size, System.Drawing">
-    <value>116, 16</value>
+    <value>116, 19</value>
   </data>
   <data name="checkBoxCompatiSP.TabIndex" type="System.Int32, mscorlib">
     <value>81</value>
@@ -2199,7 +2442,7 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>checkBoxCompatiSP</value>
   </data>
   <data name="&gt;&gt;checkBoxCompatiSP.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBoxCompatiSP.Parent" xml:space="preserve">
     <value>tabPageCompati</value>
@@ -2211,10 +2454,13 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>True</value>
   </data>
   <data name="checkBox28.Location" type="System.Drawing.Point, System.Drawing">
-    <value>8, 173</value>
+    <value>9, 216</value>
+  </data>
+  <data name="checkBox28.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBox28.Size" type="System.Drawing.Size, System.Drawing">
-    <value>174, 16</value>
+    <value>175, 19</value>
   </data>
   <data name="checkBox28.TabIndex" type="System.Int32, mscorlib">
     <value>80</value>
@@ -2229,7 +2475,7 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>checkBox28</value>
   </data>
   <data name="&gt;&gt;checkBox28.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBox28.Parent" xml:space="preserve">
     <value>tabPageCompati</value>
@@ -2241,10 +2487,13 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>True</value>
   </data>
   <data name="checkBox25.Location" type="System.Drawing.Point, System.Drawing">
-    <value>8, 275</value>
+    <value>9, 344</value>
+  </data>
+  <data name="checkBox25.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBox25.Size" type="System.Drawing.Size, System.Drawing">
-    <value>265, 16</value>
+    <value>260, 19</value>
   </data>
   <data name="checkBox25.TabIndex" type="System.Int32, mscorlib">
     <value>79</value>
@@ -2259,7 +2508,7 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>checkBox25</value>
   </data>
   <data name="&gt;&gt;checkBox25.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBox25.Parent" xml:space="preserve">
     <value>tabPageCompati</value>
@@ -2271,10 +2520,13 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>True</value>
   </data>
   <data name="checkBox12.Location" type="System.Drawing.Point, System.Drawing">
-    <value>8, 253</value>
+    <value>9, 316</value>
+  </data>
+  <data name="checkBox12.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBox12.Size" type="System.Drawing.Size, System.Drawing">
-    <value>239, 16</value>
+    <value>237, 19</value>
   </data>
   <data name="checkBox12.TabIndex" type="System.Int32, mscorlib">
     <value>78</value>
@@ -2289,7 +2541,7 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>checkBox12</value>
   </data>
   <data name="&gt;&gt;checkBox12.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBox12.Parent" xml:space="preserve">
     <value>tabPageCompati</value>
@@ -2301,10 +2553,13 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>True</value>
   </data>
   <data name="checkBoxFuncNoIgnoreCase.Location" type="System.Drawing.Point, System.Drawing">
-    <value>8, 151</value>
+    <value>9, 189</value>
+  </data>
+  <data name="checkBoxFuncNoIgnoreCase.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBoxFuncNoIgnoreCase.Size" type="System.Drawing.Size, System.Drawing">
-    <value>259, 16</value>
+    <value>260, 19</value>
   </data>
   <data name="checkBoxFuncNoIgnoreCase.TabIndex" type="System.Int32, mscorlib">
     <value>77</value>
@@ -2319,7 +2574,7 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>checkBoxFuncNoIgnoreCase</value>
   </data>
   <data name="&gt;&gt;checkBoxFuncNoIgnoreCase.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBoxFuncNoIgnoreCase.Parent" xml:space="preserve">
     <value>tabPageCompati</value>
@@ -2328,10 +2583,13 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>5</value>
   </data>
   <data name="button8.Location" type="System.Drawing.Point, System.Drawing">
-    <value>150, 297</value>
+    <value>175, 371</value>
+  </data>
+  <data name="button8.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="button8.Size" type="System.Drawing.Size, System.Drawing">
-    <value>138, 23</value>
+    <value>161, 29</value>
   </data>
   <data name="button8.TabIndex" type="System.Int32, mscorlib">
     <value>76</value>
@@ -2343,7 +2601,7 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>button8</value>
   </data>
   <data name="&gt;&gt;button8.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;button8.Parent" xml:space="preserve">
     <value>tabPageCompati</value>
@@ -2352,10 +2610,13 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>6</value>
   </data>
   <data name="button7.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 297</value>
+    <value>7, 371</value>
+  </data>
+  <data name="button7.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="button7.Size" type="System.Drawing.Size, System.Drawing">
-    <value>138, 23</value>
+    <value>161, 29</value>
   </data>
   <data name="button7.TabIndex" type="System.Int32, mscorlib">
     <value>75</value>
@@ -2367,7 +2628,7 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>button7</value>
   </data>
   <data name="&gt;&gt;button7.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;button7.Parent" xml:space="preserve">
     <value>tabPageCompati</value>
@@ -2379,10 +2640,13 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>True</value>
   </data>
   <data name="checkBoxCompatiLinefeedAs1739.Location" type="System.Drawing.Point, System.Drawing">
-    <value>8, 231</value>
+    <value>9, 289</value>
+  </data>
+  <data name="checkBoxCompatiLinefeedAs1739.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBoxCompatiLinefeedAs1739.Size" type="System.Drawing.Size, System.Drawing">
-    <value>230, 16</value>
+    <value>232, 19</value>
   </data>
   <data name="checkBoxCompatiLinefeedAs1739.TabIndex" type="System.Int32, mscorlib">
     <value>74</value>
@@ -2397,7 +2661,7 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>checkBoxCompatiLinefeedAs1739</value>
   </data>
   <data name="&gt;&gt;checkBoxCompatiLinefeedAs1739.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBoxCompatiLinefeedAs1739.Parent" xml:space="preserve">
     <value>tabPageCompati</value>
@@ -2409,10 +2673,13 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>True</value>
   </data>
   <data name="checkBoxCompatiRAND.Location" type="System.Drawing.Point, System.Drawing">
-    <value>8, 107</value>
+    <value>9, 134</value>
+  </data>
+  <data name="checkBoxCompatiRAND.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBoxCompatiRAND.Size" type="System.Drawing.Size, System.Drawing">
-    <value>244, 16</value>
+    <value>247, 19</value>
   </data>
   <data name="checkBoxCompatiRAND.TabIndex" type="System.Int32, mscorlib">
     <value>73</value>
@@ -2427,7 +2694,7 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>checkBoxCompatiRAND</value>
   </data>
   <data name="&gt;&gt;checkBoxCompatiRAND.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBoxCompatiRAND.Parent" xml:space="preserve">
     <value>tabPageCompati</value>
@@ -2439,10 +2706,13 @@ ERBスクリプトが正常に動作しないことがあります</value>
     <value>True</value>
   </data>
   <data name="label30.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 3</value>
+    <value>7, 4</value>
+  </data>
+  <data name="label30.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 0, 4, 0</value>
   </data>
   <data name="label30.Size" type="System.Drawing.Size, System.Drawing">
-    <value>274, 48</value>
+    <value>274, 60</value>
   </data>
   <data name="label30.TabIndex" type="System.Int32, mscorlib">
     <value>72</value>
@@ -2457,7 +2727,7 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>label30</value>
   </data>
   <data name="&gt;&gt;label30.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;label30.Parent" xml:space="preserve">
     <value>tabPageCompati</value>
@@ -2469,10 +2739,13 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>True</value>
   </data>
   <data name="checkBoxCompatiCALLNAME.Location" type="System.Drawing.Point, System.Drawing">
-    <value>8, 85</value>
+    <value>9, 106</value>
+  </data>
+  <data name="checkBoxCompatiCALLNAME.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBoxCompatiCALLNAME.Size" type="System.Drawing.Size, System.Drawing">
-    <value>257, 16</value>
+    <value>262, 19</value>
   </data>
   <data name="checkBoxCompatiCALLNAME.TabIndex" type="System.Int32, mscorlib">
     <value>56</value>
@@ -2487,7 +2760,7 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>checkBoxCompatiCALLNAME</value>
   </data>
   <data name="&gt;&gt;checkBoxCompatiCALLNAME.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBoxCompatiCALLNAME.Parent" xml:space="preserve">
     <value>tabPageCompati</value>
@@ -2499,10 +2772,13 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>True</value>
   </data>
   <data name="checkBoxCompatiErrorLine.Location" type="System.Drawing.Point, System.Drawing">
-    <value>8, 63</value>
+    <value>9, 79</value>
+  </data>
+  <data name="checkBoxCompatiErrorLine.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBoxCompatiErrorLine.Size" type="System.Drawing.Size, System.Drawing">
-    <value>195, 16</value>
+    <value>197, 19</value>
   </data>
   <data name="checkBoxCompatiErrorLine.TabIndex" type="System.Int32, mscorlib">
     <value>54</value>
@@ -2517,7 +2793,7 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>checkBoxCompatiErrorLine</value>
   </data>
   <data name="&gt;&gt;checkBoxCompatiErrorLine.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBoxCompatiErrorLine.Parent" xml:space="preserve">
     <value>tabPageCompati</value>
@@ -2526,13 +2802,16 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>12</value>
   </data>
   <data name="tabPageCompati.Location" type="System.Drawing.Point, System.Drawing">
-    <value>4, 40</value>
+    <value>4, 44</value>
+  </data>
+  <data name="tabPageCompati.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="tabPageCompati.Padding" type="System.Windows.Forms.Padding, System.Windows.Forms">
-    <value>3, 3, 3, 3</value>
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="tabPageCompati.Size" type="System.Drawing.Size, System.Drawing">
-    <value>308, 326</value>
+    <value>361, 414</value>
   </data>
   <data name="tabPageCompati.TabIndex" type="System.Int32, mscorlib">
     <value>8</value>
@@ -2544,7 +2823,7 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>tabPageCompati</value>
   </data>
   <data name="&gt;&gt;tabPageCompati.Type" xml:space="preserve">
-    <value>System.Windows.Forms.TabPage, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.TabPage, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;tabPageCompati.Parent" xml:space="preserve">
     <value>tabControl</value>
@@ -2553,10 +2832,13 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>6</value>
   </data>
   <data name="button6.Location" type="System.Drawing.Point, System.Drawing">
-    <value>158, 297</value>
+    <value>184, 371</value>
+  </data>
+  <data name="button6.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="button6.Size" type="System.Drawing.Size, System.Drawing">
-    <value>144, 23</value>
+    <value>168, 29</value>
   </data>
   <data name="button6.TabIndex" type="System.Int32, mscorlib">
     <value>75</value>
@@ -2568,7 +2850,7 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>button6</value>
   </data>
   <data name="&gt;&gt;button6.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;button6.Parent" xml:space="preserve">
     <value>tabPageDebug</value>
@@ -2577,10 +2859,13 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>0</value>
   </data>
   <data name="button5.Location" type="System.Drawing.Point, System.Drawing">
-    <value>8, 297</value>
+    <value>9, 371</value>
+  </data>
+  <data name="button5.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="button5.Size" type="System.Drawing.Size, System.Drawing">
-    <value>144, 23</value>
+    <value>168, 29</value>
   </data>
   <data name="button5.TabIndex" type="System.Int32, mscorlib">
     <value>74</value>
@@ -2592,7 +2877,7 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>button5</value>
   </data>
   <data name="&gt;&gt;button5.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Button, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Button, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;button5.Parent" xml:space="preserve">
     <value>tabPageDebug</value>
@@ -2604,10 +2889,13 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>True</value>
   </data>
   <data name="checkBox23.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 12</value>
+    <value>7, 15</value>
+  </data>
+  <data name="checkBox23.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBox23.Size" type="System.Drawing.Size, System.Drawing">
-    <value>223, 16</value>
+    <value>226, 19</value>
   </data>
   <data name="checkBox23.TabIndex" type="System.Int32, mscorlib">
     <value>73</value>
@@ -2619,7 +2907,7 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>checkBox23</value>
   </data>
   <data name="&gt;&gt;checkBox23.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBox23.Parent" xml:space="preserve">
     <value>tabPageDebug</value>
@@ -2631,10 +2919,13 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>True</value>
   </data>
   <data name="label15.Location" type="System.Drawing.Point, System.Drawing">
-    <value>27, 102</value>
+    <value>31, 128</value>
+  </data>
+  <data name="label15.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 0, 4, 0</value>
   </data>
   <data name="label15.Size" type="System.Drawing.Size, System.Drawing">
-    <value>125, 12</value>
+    <value>127, 15</value>
   </data>
   <data name="label15.TabIndex" type="System.Int32, mscorlib">
     <value>56</value>
@@ -2646,7 +2937,7 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>label15</value>
   </data>
   <data name="&gt;&gt;label15.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;label15.Parent" xml:space="preserve">
     <value>tabPageDebug</value>
@@ -2667,10 +2958,13 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>3:致命的エラー</value>
   </data>
   <data name="comboBox5.Location" type="System.Drawing.Point, System.Drawing">
-    <value>42, 117</value>
+    <value>49, 146</value>
+  </data>
+  <data name="comboBox5.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="comboBox5.Size" type="System.Drawing.Size, System.Drawing">
-    <value>190, 20</value>
+    <value>221, 23</value>
   </data>
   <data name="comboBox5.TabIndex" type="System.Int32, mscorlib">
     <value>55</value>
@@ -2679,7 +2973,7 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>comboBox5</value>
   </data>
   <data name="&gt;&gt;comboBox5.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;comboBox5.Parent" xml:space="preserve">
     <value>tabPageDebug</value>
@@ -2691,10 +2985,13 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>True</value>
   </data>
   <data name="label14.Location" type="System.Drawing.Point, System.Drawing">
-    <value>27, 221</value>
+    <value>31, 276</value>
+  </data>
+  <data name="label14.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 0, 4, 0</value>
   </data>
   <data name="label14.Size" type="System.Drawing.Size, System.Drawing">
-    <value>185, 12</value>
+    <value>187, 15</value>
   </data>
   <data name="label14.TabIndex" type="System.Int32, mscorlib">
     <value>54</value>
@@ -2706,7 +3003,7 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>label14</value>
   </data>
   <data name="&gt;&gt;label14.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;label14.Parent" xml:space="preserve">
     <value>tabPageDebug</value>
@@ -2727,10 +3024,13 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>表示する</value>
   </data>
   <data name="comboBox4.Location" type="System.Drawing.Point, System.Drawing">
-    <value>42, 236</value>
+    <value>49, 295</value>
+  </data>
+  <data name="comboBox4.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="comboBox4.Size" type="System.Drawing.Size, System.Drawing">
-    <value>190, 20</value>
+    <value>221, 23</value>
   </data>
   <data name="comboBox4.TabIndex" type="System.Int32, mscorlib">
     <value>53</value>
@@ -2739,7 +3039,7 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>comboBox4</value>
   </data>
   <data name="&gt;&gt;comboBox4.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;comboBox4.Parent" xml:space="preserve">
     <value>tabPageDebug</value>
@@ -2751,10 +3051,13 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>True</value>
   </data>
   <data name="label13.Location" type="System.Drawing.Point, System.Drawing">
-    <value>27, 171</value>
+    <value>31, 214</value>
+  </data>
+  <data name="label13.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 0, 4, 0</value>
   </data>
   <data name="label13.Size" type="System.Drawing.Size, System.Drawing">
-    <value>154, 12</value>
+    <value>157, 15</value>
   </data>
   <data name="label13.TabIndex" type="System.Int32, mscorlib">
     <value>52</value>
@@ -2766,7 +3069,7 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>label13</value>
   </data>
   <data name="&gt;&gt;label13.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;label13.Parent" xml:space="preserve">
     <value>tabPageDebug</value>
@@ -2787,10 +3090,13 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>表示する</value>
   </data>
   <data name="comboBox3.Location" type="System.Drawing.Point, System.Drawing">
-    <value>42, 186</value>
+    <value>49, 232</value>
+  </data>
+  <data name="comboBox3.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="comboBox3.Size" type="System.Drawing.Size, System.Drawing">
-    <value>190, 20</value>
+    <value>221, 23</value>
   </data>
   <data name="comboBox3.TabIndex" type="System.Int32, mscorlib">
     <value>51</value>
@@ -2799,7 +3105,7 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>comboBox3</value>
   </data>
   <data name="&gt;&gt;comboBox3.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;comboBox3.Parent" xml:space="preserve">
     <value>tabPageDebug</value>
@@ -2811,10 +3117,13 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>True</value>
   </data>
   <data name="label12.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 64</value>
+    <value>7, 80</value>
+  </data>
+  <data name="label12.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 0, 4, 0</value>
   </data>
   <data name="label12.Size" type="System.Drawing.Size, System.Drawing">
-    <value>130, 12</value>
+    <value>129, 15</value>
   </data>
   <data name="label12.TabIndex" type="System.Int32, mscorlib">
     <value>50</value>
@@ -2826,7 +3135,7 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>label12</value>
   </data>
   <data name="&gt;&gt;label12.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;label12.Parent" xml:space="preserve">
     <value>tabPageDebug</value>
@@ -2844,10 +3153,13 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>常に行う</value>
   </data>
   <data name="comboBoxReduceArgumentOnLoad.Location" type="System.Drawing.Point, System.Drawing">
-    <value>18, 79</value>
+    <value>21, 99</value>
+  </data>
+  <data name="comboBoxReduceArgumentOnLoad.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="comboBoxReduceArgumentOnLoad.Size" type="System.Drawing.Size, System.Drawing">
-    <value>190, 20</value>
+    <value>221, 23</value>
   </data>
   <data name="comboBoxReduceArgumentOnLoad.TabIndex" type="System.Int32, mscorlib">
     <value>49</value>
@@ -2856,7 +3168,7 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>comboBoxReduceArgumentOnLoad</value>
   </data>
   <data name="&gt;&gt;comboBoxReduceArgumentOnLoad.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;comboBoxReduceArgumentOnLoad.Parent" xml:space="preserve">
     <value>tabPageDebug</value>
@@ -2868,10 +3180,13 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>True</value>
   </data>
   <data name="checkBox11.Location" type="System.Drawing.Point, System.Drawing">
-    <value>29, 152</value>
+    <value>34, 190</value>
+  </data>
+  <data name="checkBox11.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBox11.Size" type="System.Drawing.Size, System.Drawing">
-    <value>190, 16</value>
+    <value>192, 19</value>
   </data>
   <data name="checkBox11.TabIndex" type="System.Int32, mscorlib">
     <value>18</value>
@@ -2883,7 +3198,7 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>checkBox11</value>
   </data>
   <data name="&gt;&gt;checkBox11.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBox11.Parent" xml:space="preserve">
     <value>tabPageDebug</value>
@@ -2895,10 +3210,13 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>True</value>
   </data>
   <data name="checkBox13.Location" type="System.Drawing.Point, System.Drawing">
-    <value>6, 34</value>
+    <value>7, 42</value>
+  </data>
+  <data name="checkBox13.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="checkBox13.Size" type="System.Drawing.Size, System.Drawing">
-    <value>162, 16</value>
+    <value>159, 19</value>
   </data>
   <data name="checkBox13.TabIndex" type="System.Int32, mscorlib">
     <value>16</value>
@@ -2910,7 +3228,7 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>checkBox13</value>
   </data>
   <data name="&gt;&gt;checkBox13.Type" xml:space="preserve">
-    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;checkBox13.Parent" xml:space="preserve">
     <value>tabPageDebug</value>
@@ -2919,13 +3237,16 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>12</value>
   </data>
   <data name="tabPageDebug.Location" type="System.Drawing.Point, System.Drawing">
-    <value>4, 40</value>
+    <value>4, 44</value>
+  </data>
+  <data name="tabPageDebug.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="tabPageDebug.Padding" type="System.Windows.Forms.Padding, System.Windows.Forms">
-    <value>3, 3, 3, 3</value>
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="tabPageDebug.Size" type="System.Drawing.Size, System.Drawing">
-    <value>308, 326</value>
+    <value>361, 414</value>
   </data>
   <data name="tabPageDebug.TabIndex" type="System.Int32, mscorlib">
     <value>2</value>
@@ -2937,7 +3258,7 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>tabPageDebug</value>
   </data>
   <data name="&gt;&gt;tabPageDebug.Type" xml:space="preserve">
-    <value>System.Windows.Forms.TabPage, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.TabPage, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;tabPageDebug.Parent" xml:space="preserve">
     <value>tabControl</value>
@@ -2946,10 +3267,13 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>7</value>
   </data>
   <data name="tabControl.Location" type="System.Drawing.Point, System.Drawing">
-    <value>12, 12</value>
+    <value>14, 15</value>
+  </data>
+  <data name="tabControl.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="tabControl.Size" type="System.Drawing.Size, System.Drawing">
-    <value>316, 370</value>
+    <value>369, 462</value>
   </data>
   <data name="tabControl.TabIndex" type="System.Int32, mscorlib">
     <value>35</value>
@@ -2958,7 +3282,7 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>tabControl</value>
   </data>
   <data name="&gt;&gt;tabControl.Type" xml:space="preserve">
-    <value>System.Windows.Forms.TabControl, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.TabControl, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;tabControl.Parent" xml:space="preserve">
     <value>$this</value>
@@ -2970,10 +3294,13 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>True</value>
   </data>
   <data name="label16.Location" type="System.Drawing.Point, System.Drawing">
-    <value>87, 385</value>
+    <value>102, 481</value>
+  </data>
+  <data name="label16.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 0, 4, 0</value>
   </data>
   <data name="label16.Size" type="System.Drawing.Size, System.Drawing">
-    <value>197, 12</value>
+    <value>199, 15</value>
   </data>
   <data name="label16.TabIndex" type="System.Int32, mscorlib">
     <value>36</value>
@@ -2985,7 +3312,7 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>label16</value>
   </data>
   <data name="&gt;&gt;label16.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;label16.Parent" xml:space="preserve">
     <value>$this</value>
@@ -3000,10 +3327,13 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>True</value>
   </metadata>
   <data name="$this.AutoScaleDimensions" type="System.Drawing.SizeF, System.Drawing">
-    <value>6, 12</value>
+    <value>7, 15</value>
   </data>
   <data name="$this.ClientSize" type="System.Drawing.Size, System.Drawing">
-    <value>334, 429</value>
+    <value>390, 536</value>
+  </data>
+  <data name="$this.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
   </data>
   <data name="$this.Text" xml:space="preserve">
     <value>ConfigDialog</value>
@@ -3012,18 +3342,18 @@ Emueraの過去のバージョンで動作したものが動作しない、
     <value>openFileDialog1</value>
   </data>
   <data name="&gt;&gt;openFileDialog1.Type" xml:space="preserve">
-    <value>System.Windows.Forms.OpenFileDialog, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.OpenFileDialog, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;toolTip1.Name" xml:space="preserve">
     <value>toolTip1</value>
   </data>
   <data name="&gt;&gt;toolTip1.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ToolTip, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.ToolTip, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;$this.Name" xml:space="preserve">
     <value>ConfigDialog</value>
   </data>
   <data name="&gt;&gt;$this.Type" xml:space="preserve">
-    <value>System.Windows.Forms.Form, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.Form, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
 </root>

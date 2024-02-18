@@ -20,1000 +20,973 @@
 			base.Dispose(disposing);
 		}
 
-		#region Windows フォーム デザイナで生成されたコード
+        #region Windows フォーム デザイナで生成されたコード
 
-		/// <summary>
-		/// デザイナ サポートに必要なメソッドです。このメソッドの内容を
-		/// コード エディタで変更しないでください。
-		/// </summary>
-		private void InitializeComponent()
-		{
-			this.components = new System.ComponentModel.Container();
-			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ConfigDialog));
-			this.buttonSave = new System.Windows.Forms.Button();
-			this.buttonCancel = new System.Windows.Forms.Button();
-			this.buttonReboot = new System.Windows.Forms.Button();
-			this.tabControl = new System.Windows.Forms.TabControl();
-			this.tabEnvironment = new System.Windows.Forms.TabPage();
-			this.comboBox6 = new System.Windows.Forms.ComboBox();
-			this.checkBox24 = new System.Windows.Forms.CheckBox();
-			this.textBox2 = new System.Windows.Forms.TextBox();
-			this.label23 = new System.Windows.Forms.Label();
-			this.button4 = new System.Windows.Forms.Button();
-			this.textBox1 = new System.Windows.Forms.TextBox();
-			this.label22 = new System.Windows.Forms.Label();
-			this.label20 = new System.Windows.Forms.Label();
-			this.label17 = new System.Windows.Forms.Label();
-			this.label6 = new System.Windows.Forms.Label();
-			this.numericUpDown11 = new System.Windows.Forms.NumericUpDown();
-			this.checkBox18 = new System.Windows.Forms.CheckBox();
-			this.numericUpDown10 = new System.Windows.Forms.NumericUpDown();
-			this.numericUpDown4 = new System.Windows.Forms.NumericUpDown();
-			this.checkBox7 = new System.Windows.Forms.CheckBox();
-			this.checkBox6 = new System.Windows.Forms.CheckBox();
-			this.checkBox5 = new System.Windows.Forms.CheckBox();
-			this.checkBox4 = new System.Windows.Forms.CheckBox();
-			this.checkBox3 = new System.Windows.Forms.CheckBox();
-			this.tabPageView = new System.Windows.Forms.TabPage();
-			this.checkBox14 = new System.Windows.Forms.CheckBox();
-			this.label18 = new System.Windows.Forms.Label();
-			this.comboBoxTextDrawingMode = new System.Windows.Forms.ComboBox();
-			this.label1 = new System.Windows.Forms.Label();
-			this.numericUpDown9 = new System.Windows.Forms.NumericUpDown();
-			this.label5 = new System.Windows.Forms.Label();
-			this.numericUpDown1 = new System.Windows.Forms.NumericUpDown();
-			this.label9 = new System.Windows.Forms.Label();
-			this.numericUpDown7 = new System.Windows.Forms.NumericUpDown();
-			this.tabPageWindow = new System.Windows.Forms.TabPage();
-			this.checkBox21 = new System.Windows.Forms.CheckBox();
-			this.ScrollRange = new System.Windows.Forms.Label();
-			this.numericUpDown8 = new System.Windows.Forms.NumericUpDown();
-			this.checkBox17 = new System.Windows.Forms.CheckBox();
-			this.button3 = new System.Windows.Forms.Button();
-			this.label10 = new System.Windows.Forms.Label();
-			this.label19 = new System.Windows.Forms.Label();
-			this.numericUpDownPosY = new System.Windows.Forms.NumericUpDown();
-			this.numericUpDownPosX = new System.Windows.Forms.NumericUpDown();
-			this.button1 = new System.Windows.Forms.Button();
-			this.label3 = new System.Windows.Forms.Label();
-			this.label2 = new System.Windows.Forms.Label();
-			this.numericUpDown3 = new System.Windows.Forms.NumericUpDown();
-			this.numericUpDown2 = new System.Windows.Forms.NumericUpDown();
-			this.checkBox8 = new System.Windows.Forms.CheckBox();
-			this.tabPageFont = new System.Windows.Forms.TabPage();
-			this.button2 = new System.Windows.Forms.Button();
-			this.label7 = new System.Windows.Forms.Label();
-			this.label8 = new System.Windows.Forms.Label();
-			this.numericUpDown6 = new System.Windows.Forms.NumericUpDown();
-			this.numericUpDown5 = new System.Windows.Forms.NumericUpDown();
-			this.label4 = new System.Windows.Forms.Label();
-			this.comboBox2 = new System.Windows.Forms.ComboBox();
-			this.colorBoxBacklog = new MinorShift.Emuera.Forms.ColorBox();
-			this.colorBoxSelecting = new MinorShift.Emuera.Forms.ColorBox();
-			this.colorBoxFG = new MinorShift.Emuera.Forms.ColorBox();
-			this.colorBoxBG = new MinorShift.Emuera.Forms.ColorBox();
-			this.tabPageSystem = new System.Windows.Forms.TabPage();
-			this.comboBox1 = new System.Windows.Forms.ComboBox();
-			this.label11 = new System.Windows.Forms.Label();
-			this.checkBoxSystemFullSpace = new System.Windows.Forms.CheckBox();
-			this.checkBox22 = new System.Windows.Forms.CheckBox();
-			this.label21 = new System.Windows.Forms.Label();
-			this.checkBox20 = new System.Windows.Forms.CheckBox();
-			this.checkBox19 = new System.Windows.Forms.CheckBox();
-			this.checkBox16 = new System.Windows.Forms.CheckBox();
-			this.checkBox15 = new System.Windows.Forms.CheckBox();
-			this.checkBox1 = new System.Windows.Forms.CheckBox();
-			this.checkBox10 = new System.Windows.Forms.CheckBox();
-			this.checkBox2 = new System.Windows.Forms.CheckBox();
-			this.tabPageSystem2 = new System.Windows.Forms.TabPage();
-			this.checkBox29 = new System.Windows.Forms.CheckBox();
-			this.checkBox26 = new System.Windows.Forms.CheckBox();
-			this.checkBox27 = new System.Windows.Forms.CheckBox();
-			this.checkBoxSystemTripleSymbol = new System.Windows.Forms.CheckBox();
-			this.label24 = new System.Windows.Forms.Label();
-			this.tabPageCompati = new System.Windows.Forms.TabPage();
-			this.checkBox9 = new System.Windows.Forms.CheckBox();
-			this.checkBoxCompatiSP = new System.Windows.Forms.CheckBox();
-			this.checkBox28 = new System.Windows.Forms.CheckBox();
-			this.checkBox25 = new System.Windows.Forms.CheckBox();
-			this.checkBox12 = new System.Windows.Forms.CheckBox();
-			this.checkBoxFuncNoIgnoreCase = new System.Windows.Forms.CheckBox();
-			this.button8 = new System.Windows.Forms.Button();
-			this.button7 = new System.Windows.Forms.Button();
-			this.checkBoxCompatiLinefeedAs1739 = new System.Windows.Forms.CheckBox();
-			this.checkBoxCompatiRAND = new System.Windows.Forms.CheckBox();
-			this.label30 = new System.Windows.Forms.Label();
-			this.checkBoxCompatiCALLNAME = new System.Windows.Forms.CheckBox();
-			this.checkBoxCompatiErrorLine = new System.Windows.Forms.CheckBox();
-			this.tabPageDebug = new System.Windows.Forms.TabPage();
-			this.button6 = new System.Windows.Forms.Button();
-			this.button5 = new System.Windows.Forms.Button();
-			this.checkBox23 = new System.Windows.Forms.CheckBox();
-			this.label15 = new System.Windows.Forms.Label();
-			this.comboBox5 = new System.Windows.Forms.ComboBox();
-			this.label14 = new System.Windows.Forms.Label();
-			this.comboBox4 = new System.Windows.Forms.ComboBox();
-			this.label13 = new System.Windows.Forms.Label();
-			this.comboBox3 = new System.Windows.Forms.ComboBox();
-			this.label12 = new System.Windows.Forms.Label();
-			this.comboBoxReduceArgumentOnLoad = new System.Windows.Forms.ComboBox();
-			this.checkBox11 = new System.Windows.Forms.CheckBox();
-			this.checkBox13 = new System.Windows.Forms.CheckBox();
-			this.label16 = new System.Windows.Forms.Label();
-			this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
-			this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-			this.tabControl.SuspendLayout();
-			this.tabEnvironment.SuspendLayout();
-			((System.ComponentModel.ISupportInitialize)(this.numericUpDown11)).BeginInit();
-			((System.ComponentModel.ISupportInitialize)(this.numericUpDown10)).BeginInit();
-			((System.ComponentModel.ISupportInitialize)(this.numericUpDown4)).BeginInit();
-			this.tabPageView.SuspendLayout();
-			((System.ComponentModel.ISupportInitialize)(this.numericUpDown9)).BeginInit();
-			((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
-			((System.ComponentModel.ISupportInitialize)(this.numericUpDown7)).BeginInit();
-			this.tabPageWindow.SuspendLayout();
-			((System.ComponentModel.ISupportInitialize)(this.numericUpDown8)).BeginInit();
-			((System.ComponentModel.ISupportInitialize)(this.numericUpDownPosY)).BeginInit();
-			((System.ComponentModel.ISupportInitialize)(this.numericUpDownPosX)).BeginInit();
-			((System.ComponentModel.ISupportInitialize)(this.numericUpDown3)).BeginInit();
-			((System.ComponentModel.ISupportInitialize)(this.numericUpDown2)).BeginInit();
-			this.tabPageFont.SuspendLayout();
-			((System.ComponentModel.ISupportInitialize)(this.numericUpDown6)).BeginInit();
-			((System.ComponentModel.ISupportInitialize)(this.numericUpDown5)).BeginInit();
-			this.tabPageSystem.SuspendLayout();
-			this.tabPageSystem2.SuspendLayout();
-			this.tabPageCompati.SuspendLayout();
-			this.tabPageDebug.SuspendLayout();
-			this.SuspendLayout();
-			// 
-			// buttonSave
-			// 
-			resources.ApplyResources(this.buttonSave, "buttonSave");
-			this.buttonSave.Name = "buttonSave";
-			this.buttonSave.UseVisualStyleBackColor = true;
-			this.buttonSave.Click += new System.EventHandler(this.buttonSave_Click);
-			// 
-			// buttonCancel
-			// 
-			resources.ApplyResources(this.buttonCancel, "buttonCancel");
-			this.buttonCancel.Name = "buttonCancel";
-			this.buttonCancel.UseVisualStyleBackColor = true;
-			this.buttonCancel.Click += new System.EventHandler(this.buttonCancel_Click);
-			// 
-			// buttonReboot
-			// 
-			resources.ApplyResources(this.buttonReboot, "buttonReboot");
-			this.buttonReboot.Name = "buttonReboot";
-			this.buttonReboot.UseVisualStyleBackColor = true;
-			this.buttonReboot.Click += new System.EventHandler(this.buttonReboot_Click);
-			// 
-			// tabControl
-			// 
-			this.tabControl.Controls.Add(this.tabEnvironment);
-			this.tabControl.Controls.Add(this.tabPageView);
-			this.tabControl.Controls.Add(this.tabPageWindow);
-			this.tabControl.Controls.Add(this.tabPageFont);
-			this.tabControl.Controls.Add(this.tabPageSystem);
-			this.tabControl.Controls.Add(this.tabPageSystem2);
-			this.tabControl.Controls.Add(this.tabPageCompati);
-			this.tabControl.Controls.Add(this.tabPageDebug);
-			resources.ApplyResources(this.tabControl, "tabControl");
-			this.tabControl.Multiline = true;
-			this.tabControl.Name = "tabControl";
-			this.tabControl.SelectedIndex = 0;
-			// 
-			// tabEnvironment
-			// 
-			this.tabEnvironment.Controls.Add(this.comboBox6);
-			this.tabEnvironment.Controls.Add(this.checkBox24);
-			this.tabEnvironment.Controls.Add(this.textBox2);
-			this.tabEnvironment.Controls.Add(this.label23);
-			this.tabEnvironment.Controls.Add(this.button4);
-			this.tabEnvironment.Controls.Add(this.textBox1);
-			this.tabEnvironment.Controls.Add(this.label22);
-			this.tabEnvironment.Controls.Add(this.label20);
-			this.tabEnvironment.Controls.Add(this.label17);
-			this.tabEnvironment.Controls.Add(this.label6);
-			this.tabEnvironment.Controls.Add(this.numericUpDown11);
-			this.tabEnvironment.Controls.Add(this.checkBox18);
-			this.tabEnvironment.Controls.Add(this.numericUpDown10);
-			this.tabEnvironment.Controls.Add(this.numericUpDown4);
-			this.tabEnvironment.Controls.Add(this.checkBox7);
-			this.tabEnvironment.Controls.Add(this.checkBox6);
-			this.tabEnvironment.Controls.Add(this.checkBox5);
-			this.tabEnvironment.Controls.Add(this.checkBox4);
-			this.tabEnvironment.Controls.Add(this.checkBox3);
-			resources.ApplyResources(this.tabEnvironment, "tabEnvironment");
-			this.tabEnvironment.Name = "tabEnvironment";
-			this.tabEnvironment.UseVisualStyleBackColor = true;
-			// 
-			// comboBox6
-			// 
-			this.comboBox6.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-			this.comboBox6.FormattingEnabled = true;
-			this.comboBox6.Items.AddRange(new object[] {
-			resources.GetString("comboBox6.Items"),
-			resources.GetString("comboBox6.Items1"),
-			resources.GetString("comboBox6.Items2"),
-			resources.GetString("comboBox6.Items3")});
-			resources.ApplyResources(this.comboBox6, "comboBox6");
-			this.comboBox6.Name = "comboBox6";
-			this.comboBox6.SelectedIndexChanged += new System.EventHandler(this.comboBox6_SelectedIndexChanged);
-			// 
-			// checkBox24
-			// 
-			resources.ApplyResources(this.checkBox24, "checkBox24");
-			this.checkBox24.Name = "checkBox24";
-			this.checkBox24.UseVisualStyleBackColor = true;
-			// 
-			// textBox2
-			// 
-			resources.ApplyResources(this.textBox2, "textBox2");
-			this.textBox2.Name = "textBox2";
-			// 
-			// label23
-			// 
-			resources.ApplyResources(this.label23, "label23");
-			this.label23.Name = "label23";
-			// 
-			// button4
-			// 
-			resources.ApplyResources(this.button4, "button4");
-			this.button4.Name = "button4";
-			this.button4.UseVisualStyleBackColor = true;
-			this.button4.Click += new System.EventHandler(this.button4_Click);
-			// 
-			// textBox1
-			// 
-			resources.ApplyResources(this.textBox1, "textBox1");
-			this.textBox1.Name = "textBox1";
-			// 
-			// label22
-			// 
-			resources.ApplyResources(this.label22, "label22");
-			this.label22.Name = "label22";
-			// 
-			// label20
-			// 
-			resources.ApplyResources(this.label20, "label20");
-			this.label20.Name = "label20";
-			// 
-			// label17
-			// 
-			resources.ApplyResources(this.label17, "label17");
-			this.label17.Name = "label17";
-			// 
-			// label6
-			// 
-			resources.ApplyResources(this.label6, "label6");
-			this.label6.Name = "label6";
-			// 
-			// numericUpDown11
-			// 
-			resources.ApplyResources(this.numericUpDown11, "numericUpDown11");
-			this.numericUpDown11.Name = "numericUpDown11";
-			// 
-			// checkBox18
-			// 
-			resources.ApplyResources(this.checkBox18, "checkBox18");
-			this.checkBox18.Name = "checkBox18";
-			this.checkBox18.UseVisualStyleBackColor = true;
-			// 
-			// numericUpDown10
-			// 
-			resources.ApplyResources(this.numericUpDown10, "numericUpDown10");
-			this.numericUpDown10.Name = "numericUpDown10";
-			// 
-			// numericUpDown4
-			// 
-			resources.ApplyResources(this.numericUpDown4, "numericUpDown4");
-			this.numericUpDown4.Name = "numericUpDown4";
-			// 
-			// checkBox7
-			// 
-			resources.ApplyResources(this.checkBox7, "checkBox7");
-			this.checkBox7.Name = "checkBox7";
-			this.checkBox7.UseVisualStyleBackColor = true;
-			// 
-			// checkBox6
-			// 
-			resources.ApplyResources(this.checkBox6, "checkBox6");
-			this.checkBox6.Name = "checkBox6";
-			this.checkBox6.UseVisualStyleBackColor = true;
-			// 
-			// checkBox5
-			// 
-			resources.ApplyResources(this.checkBox5, "checkBox5");
-			this.checkBox5.Name = "checkBox5";
-			this.checkBox5.UseVisualStyleBackColor = true;
-			// 
-			// checkBox4
-			// 
-			resources.ApplyResources(this.checkBox4, "checkBox4");
-			this.checkBox4.Name = "checkBox4";
-			this.checkBox4.UseVisualStyleBackColor = true;
-			// 
-			// checkBox3
-			// 
-			resources.ApplyResources(this.checkBox3, "checkBox3");
-			this.checkBox3.Name = "checkBox3";
-			this.checkBox3.UseVisualStyleBackColor = true;
-			// 
-			// tabPageView
-			// 
-			this.tabPageView.Controls.Add(this.checkBox14);
-			this.tabPageView.Controls.Add(this.label18);
-			this.tabPageView.Controls.Add(this.comboBoxTextDrawingMode);
-			this.tabPageView.Controls.Add(this.label1);
-			this.tabPageView.Controls.Add(this.numericUpDown9);
-			this.tabPageView.Controls.Add(this.label5);
-			this.tabPageView.Controls.Add(this.numericUpDown1);
-			this.tabPageView.Controls.Add(this.label9);
-			this.tabPageView.Controls.Add(this.numericUpDown7);
-			resources.ApplyResources(this.tabPageView, "tabPageView");
-			this.tabPageView.Name = "tabPageView";
-			this.tabPageView.UseVisualStyleBackColor = true;
-			// 
-			// checkBox14
-			// 
-			resources.ApplyResources(this.checkBox14, "checkBox14");
-			this.checkBox14.Name = "checkBox14";
-			this.checkBox14.UseVisualStyleBackColor = true;
-			// 
-			// label18
-			// 
-			resources.ApplyResources(this.label18, "label18");
-			this.label18.Name = "label18";
-			// 
-			// comboBoxTextDrawingMode
-			// 
-			this.comboBoxTextDrawingMode.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-			this.comboBoxTextDrawingMode.FormattingEnabled = true;
-			this.comboBoxTextDrawingMode.Items.AddRange(new object[] {
-			resources.GetString("comboBoxTextDrawingMode.Items"),
-			resources.GetString("comboBoxTextDrawingMode.Items1"),
-			resources.GetString("comboBoxTextDrawingMode.Items2")});
-			resources.ApplyResources(this.comboBoxTextDrawingMode, "comboBoxTextDrawingMode");
-			this.comboBoxTextDrawingMode.Name = "comboBoxTextDrawingMode";
-			// 
-			// label1
-			// 
-			resources.ApplyResources(this.label1, "label1");
-			this.label1.Name = "label1";
-			// 
-			// numericUpDown9
-			// 
-			resources.ApplyResources(this.numericUpDown9, "numericUpDown9");
-			this.numericUpDown9.Name = "numericUpDown9";
-			// 
-			// label5
-			// 
-			resources.ApplyResources(this.label5, "label5");
-			this.label5.Name = "label5";
-			// 
-			// numericUpDown1
-			// 
-			resources.ApplyResources(this.numericUpDown1, "numericUpDown1");
-			this.numericUpDown1.Name = "numericUpDown1";
-			// 
-			// label9
-			// 
-			resources.ApplyResources(this.label9, "label9");
-			this.label9.Name = "label9";
-			// 
-			// numericUpDown7
-			// 
-			resources.ApplyResources(this.numericUpDown7, "numericUpDown7");
-			this.numericUpDown7.Name = "numericUpDown7";
-			// 
-			// tabPageWindow
-			// 
-			this.tabPageWindow.Controls.Add(this.checkBox21);
-			this.tabPageWindow.Controls.Add(this.ScrollRange);
-			this.tabPageWindow.Controls.Add(this.numericUpDown8);
-			this.tabPageWindow.Controls.Add(this.checkBox17);
-			this.tabPageWindow.Controls.Add(this.button3);
-			this.tabPageWindow.Controls.Add(this.label10);
-			this.tabPageWindow.Controls.Add(this.label19);
-			this.tabPageWindow.Controls.Add(this.numericUpDownPosY);
-			this.tabPageWindow.Controls.Add(this.numericUpDownPosX);
-			this.tabPageWindow.Controls.Add(this.button1);
-			this.tabPageWindow.Controls.Add(this.label3);
-			this.tabPageWindow.Controls.Add(this.label2);
-			this.tabPageWindow.Controls.Add(this.numericUpDown3);
-			this.tabPageWindow.Controls.Add(this.numericUpDown2);
-			this.tabPageWindow.Controls.Add(this.checkBox8);
-			resources.ApplyResources(this.tabPageWindow, "tabPageWindow");
-			this.tabPageWindow.Name = "tabPageWindow";
-			this.tabPageWindow.UseVisualStyleBackColor = true;
-			// 
-			// checkBox21
-			// 
-			resources.ApplyResources(this.checkBox21, "checkBox21");
-			this.checkBox21.Name = "checkBox21";
-			this.checkBox21.UseVisualStyleBackColor = true;
-			// 
-			// ScrollRange
-			// 
-			resources.ApplyResources(this.ScrollRange, "ScrollRange");
-			this.ScrollRange.Name = "ScrollRange";
-			// 
-			// numericUpDown8
-			// 
-			resources.ApplyResources(this.numericUpDown8, "numericUpDown8");
-			this.numericUpDown8.Name = "numericUpDown8";
-			// 
-			// checkBox17
-			// 
-			resources.ApplyResources(this.checkBox17, "checkBox17");
-			this.checkBox17.Name = "checkBox17";
-			this.checkBox17.UseVisualStyleBackColor = true;
-			// 
-			// button3
-			// 
-			resources.ApplyResources(this.button3, "button3");
-			this.button3.Name = "button3";
-			this.button3.UseVisualStyleBackColor = true;
-			this.button3.Click += new System.EventHandler(this.button3_Click);
-			// 
-			// label10
-			// 
-			resources.ApplyResources(this.label10, "label10");
-			this.label10.Name = "label10";
-			// 
-			// label19
-			// 
-			resources.ApplyResources(this.label19, "label19");
-			this.label19.Name = "label19";
-			// 
-			// numericUpDownPosY
-			// 
-			resources.ApplyResources(this.numericUpDownPosY, "numericUpDownPosY");
-			this.numericUpDownPosY.Name = "numericUpDownPosY";
-			// 
-			// numericUpDownPosX
-			// 
-			resources.ApplyResources(this.numericUpDownPosX, "numericUpDownPosX");
-			this.numericUpDownPosX.Name = "numericUpDownPosX";
-			// 
-			// button1
-			// 
-			resources.ApplyResources(this.button1, "button1");
-			this.button1.Name = "button1";
-			this.button1.UseVisualStyleBackColor = true;
-			this.button1.Click += new System.EventHandler(this.button1_Click);
-			// 
-			// label3
-			// 
-			resources.ApplyResources(this.label3, "label3");
-			this.label3.Name = "label3";
-			// 
-			// label2
-			// 
-			resources.ApplyResources(this.label2, "label2");
-			this.label2.Name = "label2";
-			// 
-			// numericUpDown3
-			// 
-			resources.ApplyResources(this.numericUpDown3, "numericUpDown3");
-			this.numericUpDown3.Name = "numericUpDown3";
-			// 
-			// numericUpDown2
-			// 
-			resources.ApplyResources(this.numericUpDown2, "numericUpDown2");
-			this.numericUpDown2.Name = "numericUpDown2";
-			// 
-			// checkBox8
-			// 
-			resources.ApplyResources(this.checkBox8, "checkBox8");
-			this.checkBox8.Name = "checkBox8";
-			this.checkBox8.UseVisualStyleBackColor = true;
-			// 
-			// tabPageFont
-			// 
-			this.tabPageFont.Controls.Add(this.button2);
-			this.tabPageFont.Controls.Add(this.label7);
-			this.tabPageFont.Controls.Add(this.label8);
-			this.tabPageFont.Controls.Add(this.numericUpDown6);
-			this.tabPageFont.Controls.Add(this.numericUpDown5);
-			this.tabPageFont.Controls.Add(this.label4);
-			this.tabPageFont.Controls.Add(this.comboBox2);
-			this.tabPageFont.Controls.Add(this.colorBoxBacklog);
-			this.tabPageFont.Controls.Add(this.colorBoxSelecting);
-			this.tabPageFont.Controls.Add(this.colorBoxFG);
-			this.tabPageFont.Controls.Add(this.colorBoxBG);
-			resources.ApplyResources(this.tabPageFont, "tabPageFont");
-			this.tabPageFont.Name = "tabPageFont";
-			this.tabPageFont.UseVisualStyleBackColor = true;
-			// 
-			// button2
-			// 
-			resources.ApplyResources(this.button2, "button2");
-			this.button2.Name = "button2";
-			this.button2.UseVisualStyleBackColor = true;
-			this.button2.Click += new System.EventHandler(this.button2_Click);
-			// 
-			// label7
-			// 
-			resources.ApplyResources(this.label7, "label7");
-			this.label7.Name = "label7";
-			// 
-			// label8
-			// 
-			resources.ApplyResources(this.label8, "label8");
-			this.label8.Name = "label8";
-			// 
-			// numericUpDown6
-			// 
-			resources.ApplyResources(this.numericUpDown6, "numericUpDown6");
-			this.numericUpDown6.Name = "numericUpDown6";
-			// 
-			// numericUpDown5
-			// 
-			resources.ApplyResources(this.numericUpDown5, "numericUpDown5");
-			this.numericUpDown5.Name = "numericUpDown5";
-			// 
-			// label4
-			// 
-			resources.ApplyResources(this.label4, "label4");
-			this.label4.Name = "label4";
-			// 
-			// comboBox2
-			// 
-			resources.ApplyResources(this.comboBox2, "comboBox2");
-			this.comboBox2.Name = "comboBox2";
-			// 
-			// colorBoxBacklog
-			// 
-			this.colorBoxBacklog.ButtonText = "履歴文字色";
-			resources.ApplyResources(this.colorBoxBacklog, "colorBoxBacklog");
-			this.colorBoxBacklog.Name = "colorBoxBacklog";
-			this.colorBoxBacklog.SelectingColor = System.Drawing.Color.Transparent;
-			// 
-			// colorBoxSelecting
-			// 
-			this.colorBoxSelecting.ButtonText = "選択中文字色";
-			resources.ApplyResources(this.colorBoxSelecting, "colorBoxSelecting");
-			this.colorBoxSelecting.Name = "colorBoxSelecting";
-			this.colorBoxSelecting.SelectingColor = System.Drawing.Color.Transparent;
-			// 
-			// colorBoxFG
-			// 
-			this.colorBoxFG.ButtonText = "文字色";
-			resources.ApplyResources(this.colorBoxFG, "colorBoxFG");
-			this.colorBoxFG.Name = "colorBoxFG";
-			this.colorBoxFG.SelectingColor = System.Drawing.Color.Transparent;
-			// 
-			// colorBoxBG
-			// 
-			this.colorBoxBG.ButtonText = "背景色";
-			resources.ApplyResources(this.colorBoxBG, "colorBoxBG");
-			this.colorBoxBG.Name = "colorBoxBG";
-			this.colorBoxBG.SelectingColor = System.Drawing.Color.Transparent;
-			// 
-			// tabPageSystem
-			// 
-			this.tabPageSystem.Controls.Add(this.comboBox1);
-			this.tabPageSystem.Controls.Add(this.label11);
-			this.tabPageSystem.Controls.Add(this.checkBoxSystemFullSpace);
-			this.tabPageSystem.Controls.Add(this.checkBox22);
-			this.tabPageSystem.Controls.Add(this.label21);
-			this.tabPageSystem.Controls.Add(this.checkBox20);
-			this.tabPageSystem.Controls.Add(this.checkBox19);
-			this.tabPageSystem.Controls.Add(this.checkBox16);
-			this.tabPageSystem.Controls.Add(this.checkBox15);
-			this.tabPageSystem.Controls.Add(this.checkBox1);
-			this.tabPageSystem.Controls.Add(this.checkBox10);
-			this.tabPageSystem.Controls.Add(this.checkBox2);
-			resources.ApplyResources(this.tabPageSystem, "tabPageSystem");
-			this.tabPageSystem.Name = "tabPageSystem";
-			this.tabPageSystem.UseVisualStyleBackColor = true;
-			// 
-			// comboBox1
-			// 
-			this.comboBox1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-			this.comboBox1.FormattingEnabled = true;
-			this.comboBox1.Items.AddRange(new object[] {
-			resources.GetString("comboBox1.Items"),
-			resources.GetString("comboBox1.Items1"),
-			resources.GetString("comboBox1.Items2"),
-			resources.GetString("comboBox1.Items3")});
-			resources.ApplyResources(this.comboBox1, "comboBox1");
-			this.comboBox1.Name = "comboBox1";
-			// 
-			// label11
-			// 
-			resources.ApplyResources(this.label11, "label11");
-			this.label11.Name = "label11";
-			// 
-			// checkBoxSystemFullSpace
-			// 
-			resources.ApplyResources(this.checkBoxSystemFullSpace, "checkBoxSystemFullSpace");
-			this.checkBoxSystemFullSpace.Name = "checkBoxSystemFullSpace";
-			this.checkBoxSystemFullSpace.UseVisualStyleBackColor = true;
-			// 
-			// checkBox22
-			// 
-			resources.ApplyResources(this.checkBox22, "checkBox22");
-			this.checkBox22.Name = "checkBox22";
-			this.checkBox22.UseVisualStyleBackColor = true;
-			// 
-			// label21
-			// 
-			resources.ApplyResources(this.label21, "label21");
-			this.label21.Name = "label21";
-			// 
-			// checkBox20
-			// 
-			resources.ApplyResources(this.checkBox20, "checkBox20");
-			this.checkBox20.Name = "checkBox20";
-			this.checkBox20.UseVisualStyleBackColor = true;
-			// 
-			// checkBox19
-			// 
-			resources.ApplyResources(this.checkBox19, "checkBox19");
-			this.checkBox19.Name = "checkBox19";
-			this.checkBox19.UseVisualStyleBackColor = true;
-			// 
-			// checkBox16
-			// 
-			resources.ApplyResources(this.checkBox16, "checkBox16");
-			this.checkBox16.Name = "checkBox16";
-			this.checkBox16.UseVisualStyleBackColor = true;
-			// 
-			// checkBox15
-			// 
-			resources.ApplyResources(this.checkBox15, "checkBox15");
-			this.checkBox15.Name = "checkBox15";
-			this.checkBox15.UseVisualStyleBackColor = true;
-			// 
-			// checkBox1
-			// 
-			resources.ApplyResources(this.checkBox1, "checkBox1");
-			this.checkBox1.Name = "checkBox1";
-			this.checkBox1.UseVisualStyleBackColor = true;
-			// 
-			// checkBox10
-			// 
-			resources.ApplyResources(this.checkBox10, "checkBox10");
-			this.checkBox10.Name = "checkBox10";
-			this.checkBox10.UseVisualStyleBackColor = true;
-			// 
-			// checkBox2
-			// 
-			resources.ApplyResources(this.checkBox2, "checkBox2");
-			this.checkBox2.Name = "checkBox2";
-			this.checkBox2.UseVisualStyleBackColor = true;
-			// 
-			// tabPageSystem2
-			// 
-			this.tabPageSystem2.Controls.Add(this.checkBox29);
-			this.tabPageSystem2.Controls.Add(this.checkBox26);
-			this.tabPageSystem2.Controls.Add(this.checkBox27);
-			this.tabPageSystem2.Controls.Add(this.checkBoxSystemTripleSymbol);
-			this.tabPageSystem2.Controls.Add(this.label24);
-			resources.ApplyResources(this.tabPageSystem2, "tabPageSystem2");
-			this.tabPageSystem2.Name = "tabPageSystem2";
-			this.tabPageSystem2.UseVisualStyleBackColor = true;
-			// 
-			// checkBox29
-			// 
-			resources.ApplyResources(this.checkBox29, "checkBox29");
-			this.checkBox29.Name = "checkBox29";
-			this.checkBox29.UseVisualStyleBackColor = true;
-			// 
-			// checkBox26
-			// 
-			resources.ApplyResources(this.checkBox26, "checkBox26");
-			this.checkBox26.Name = "checkBox26";
-			this.checkBox26.UseVisualStyleBackColor = true;
-			// 
-			// checkBox27
-			// 
-			resources.ApplyResources(this.checkBox27, "checkBox27");
-			this.checkBox27.Name = "checkBox27";
-			this.checkBox27.UseVisualStyleBackColor = true;
-			// 
-			// checkBoxSystemTripleSymbol
-			// 
-			resources.ApplyResources(this.checkBoxSystemTripleSymbol, "checkBoxSystemTripleSymbol");
-			this.checkBoxSystemTripleSymbol.Name = "checkBoxSystemTripleSymbol";
-			this.checkBoxSystemTripleSymbol.UseVisualStyleBackColor = true;
-			// 
-			// label24
-			// 
-			resources.ApplyResources(this.label24, "label24");
-			this.label24.Name = "label24";
-			// 
-			// tabPageCompati
-			// 
-			this.tabPageCompati.Controls.Add(this.checkBox9);
-			this.tabPageCompati.Controls.Add(this.checkBoxCompatiSP);
-			this.tabPageCompati.Controls.Add(this.checkBox28);
-			this.tabPageCompati.Controls.Add(this.checkBox25);
-			this.tabPageCompati.Controls.Add(this.checkBox12);
-			this.tabPageCompati.Controls.Add(this.checkBoxFuncNoIgnoreCase);
-			this.tabPageCompati.Controls.Add(this.button8);
-			this.tabPageCompati.Controls.Add(this.button7);
-			this.tabPageCompati.Controls.Add(this.checkBoxCompatiLinefeedAs1739);
-			this.tabPageCompati.Controls.Add(this.checkBoxCompatiRAND);
-			this.tabPageCompati.Controls.Add(this.label30);
-			this.tabPageCompati.Controls.Add(this.checkBoxCompatiCALLNAME);
-			this.tabPageCompati.Controls.Add(this.checkBoxCompatiErrorLine);
-			resources.ApplyResources(this.tabPageCompati, "tabPageCompati");
-			this.tabPageCompati.Name = "tabPageCompati";
-			this.tabPageCompati.UseVisualStyleBackColor = true;
-			// 
-			// checkBox9
-			// 
-			resources.ApplyResources(this.checkBox9, "checkBox9");
-			this.checkBox9.Name = "checkBox9";
-			this.checkBox9.UseVisualStyleBackColor = true;
-			// 
-			// checkBoxCompatiSP
-			// 
-			resources.ApplyResources(this.checkBoxCompatiSP, "checkBoxCompatiSP");
-			this.checkBoxCompatiSP.Name = "checkBoxCompatiSP";
-			this.toolTip1.SetToolTip(this.checkBoxCompatiSP, resources.GetString("checkBoxCompatiSP.ToolTip"));
-			this.checkBoxCompatiSP.UseVisualStyleBackColor = true;
-			// 
-			// checkBox28
-			// 
-			resources.ApplyResources(this.checkBox28, "checkBox28");
-			this.checkBox28.Name = "checkBox28";
-			this.toolTip1.SetToolTip(this.checkBox28, resources.GetString("checkBox28.ToolTip"));
-			this.checkBox28.UseVisualStyleBackColor = true;
-			// 
-			// checkBox25
-			// 
-			resources.ApplyResources(this.checkBox25, "checkBox25");
-			this.checkBox25.Name = "checkBox25";
-			this.toolTip1.SetToolTip(this.checkBox25, resources.GetString("checkBox25.ToolTip"));
-			this.checkBox25.UseVisualStyleBackColor = true;
-			// 
-			// checkBox12
-			// 
-			resources.ApplyResources(this.checkBox12, "checkBox12");
-			this.checkBox12.Name = "checkBox12";
-			this.toolTip1.SetToolTip(this.checkBox12, resources.GetString("checkBox12.ToolTip"));
-			this.checkBox12.UseVisualStyleBackColor = true;
-			// 
-			// checkBoxFuncNoIgnoreCase
-			// 
-			resources.ApplyResources(this.checkBoxFuncNoIgnoreCase, "checkBoxFuncNoIgnoreCase");
-			this.checkBoxFuncNoIgnoreCase.Name = "checkBoxFuncNoIgnoreCase";
-			this.toolTip1.SetToolTip(this.checkBoxFuncNoIgnoreCase, resources.GetString("checkBoxFuncNoIgnoreCase.ToolTip"));
-			this.checkBoxFuncNoIgnoreCase.UseVisualStyleBackColor = true;
-			// 
-			// button8
-			// 
-			resources.ApplyResources(this.button8, "button8");
-			this.button8.Name = "button8";
-			this.button8.UseVisualStyleBackColor = true;
-			this.button8.Click += new System.EventHandler(this.button8_Click);
-			// 
-			// button7
-			// 
-			resources.ApplyResources(this.button7, "button7");
-			this.button7.Name = "button7";
-			this.button7.UseVisualStyleBackColor = true;
-			this.button7.Click += new System.EventHandler(this.button7_Click);
-			// 
-			// checkBoxCompatiLinefeedAs1739
-			// 
-			resources.ApplyResources(this.checkBoxCompatiLinefeedAs1739, "checkBoxCompatiLinefeedAs1739");
-			this.checkBoxCompatiLinefeedAs1739.Name = "checkBoxCompatiLinefeedAs1739";
-			this.toolTip1.SetToolTip(this.checkBoxCompatiLinefeedAs1739, resources.GetString("checkBoxCompatiLinefeedAs1739.ToolTip"));
-			this.checkBoxCompatiLinefeedAs1739.UseVisualStyleBackColor = true;
-			// 
-			// checkBoxCompatiRAND
-			// 
-			resources.ApplyResources(this.checkBoxCompatiRAND, "checkBoxCompatiRAND");
-			this.checkBoxCompatiRAND.Name = "checkBoxCompatiRAND";
-			this.toolTip1.SetToolTip(this.checkBoxCompatiRAND, resources.GetString("checkBoxCompatiRAND.ToolTip"));
-			this.checkBoxCompatiRAND.UseVisualStyleBackColor = true;
-			// 
-			// label30
-			// 
-			resources.ApplyResources(this.label30, "label30");
-			this.label30.Name = "label30";
-			// 
-			// checkBoxCompatiCALLNAME
-			// 
-			resources.ApplyResources(this.checkBoxCompatiCALLNAME, "checkBoxCompatiCALLNAME");
-			this.checkBoxCompatiCALLNAME.Name = "checkBoxCompatiCALLNAME";
-			this.toolTip1.SetToolTip(this.checkBoxCompatiCALLNAME, resources.GetString("checkBoxCompatiCALLNAME.ToolTip"));
-			this.checkBoxCompatiCALLNAME.UseVisualStyleBackColor = true;
-			// 
-			// checkBoxCompatiErrorLine
-			// 
-			resources.ApplyResources(this.checkBoxCompatiErrorLine, "checkBoxCompatiErrorLine");
-			this.checkBoxCompatiErrorLine.Name = "checkBoxCompatiErrorLine";
-			this.toolTip1.SetToolTip(this.checkBoxCompatiErrorLine, resources.GetString("checkBoxCompatiErrorLine.ToolTip"));
-			this.checkBoxCompatiErrorLine.UseVisualStyleBackColor = true;
-			// 
-			// tabPageDebug
-			// 
-			this.tabPageDebug.Controls.Add(this.button6);
-			this.tabPageDebug.Controls.Add(this.button5);
-			this.tabPageDebug.Controls.Add(this.checkBox23);
-			this.tabPageDebug.Controls.Add(this.label15);
-			this.tabPageDebug.Controls.Add(this.comboBox5);
-			this.tabPageDebug.Controls.Add(this.label14);
-			this.tabPageDebug.Controls.Add(this.comboBox4);
-			this.tabPageDebug.Controls.Add(this.label13);
-			this.tabPageDebug.Controls.Add(this.comboBox3);
-			this.tabPageDebug.Controls.Add(this.label12);
-			this.tabPageDebug.Controls.Add(this.comboBoxReduceArgumentOnLoad);
-			this.tabPageDebug.Controls.Add(this.checkBox11);
-			this.tabPageDebug.Controls.Add(this.checkBox13);
-			resources.ApplyResources(this.tabPageDebug, "tabPageDebug");
-			this.tabPageDebug.Name = "tabPageDebug";
-			this.tabPageDebug.UseVisualStyleBackColor = true;
-			// 
-			// button6
-			// 
-			resources.ApplyResources(this.button6, "button6");
-			this.button6.Name = "button6";
-			this.button6.UseVisualStyleBackColor = true;
-			this.button6.Click += new System.EventHandler(this.button6_Click);
-			// 
-			// button5
-			// 
-			resources.ApplyResources(this.button5, "button5");
-			this.button5.Name = "button5";
-			this.button5.UseVisualStyleBackColor = true;
-			this.button5.Click += new System.EventHandler(this.button5_Click);
-			// 
-			// checkBox23
-			// 
-			resources.ApplyResources(this.checkBox23, "checkBox23");
-			this.checkBox23.Name = "checkBox23";
-			this.checkBox23.UseVisualStyleBackColor = true;
-			// 
-			// label15
-			// 
-			resources.ApplyResources(this.label15, "label15");
-			this.label15.Name = "label15";
-			// 
-			// comboBox5
-			// 
-			this.comboBox5.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-			this.comboBox5.FormattingEnabled = true;
-			this.comboBox5.Items.AddRange(new object[] {
-			resources.GetString("comboBox5.Items"),
-			resources.GetString("comboBox5.Items1"),
-			resources.GetString("comboBox5.Items2"),
-			resources.GetString("comboBox5.Items3")});
-			resources.ApplyResources(this.comboBox5, "comboBox5");
-			this.comboBox5.Name = "comboBox5";
-			// 
-			// label14
-			// 
-			resources.ApplyResources(this.label14, "label14");
-			this.label14.Name = "label14";
-			// 
-			// comboBox4
-			// 
-			this.comboBox4.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-			this.comboBox4.FormattingEnabled = true;
-			this.comboBox4.Items.AddRange(new object[] {
-			resources.GetString("comboBox4.Items"),
-			resources.GetString("comboBox4.Items1"),
-			resources.GetString("comboBox4.Items2"),
-			resources.GetString("comboBox4.Items3")});
-			resources.ApplyResources(this.comboBox4, "comboBox4");
-			this.comboBox4.Name = "comboBox4";
-			// 
-			// label13
-			// 
-			resources.ApplyResources(this.label13, "label13");
-			this.label13.Name = "label13";
-			// 
-			// comboBox3
-			// 
-			this.comboBox3.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-			this.comboBox3.FormattingEnabled = true;
-			this.comboBox3.Items.AddRange(new object[] {
-			resources.GetString("comboBox3.Items"),
-			resources.GetString("comboBox3.Items1"),
-			resources.GetString("comboBox3.Items2"),
-			resources.GetString("comboBox3.Items3")});
-			resources.ApplyResources(this.comboBox3, "comboBox3");
-			this.comboBox3.Name = "comboBox3";
-			// 
-			// label12
-			// 
-			resources.ApplyResources(this.label12, "label12");
-			this.label12.Name = "label12";
-			// 
-			// comboBoxReduceArgumentOnLoad
-			// 
-			this.comboBoxReduceArgumentOnLoad.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-			this.comboBoxReduceArgumentOnLoad.FormattingEnabled = true;
-			this.comboBoxReduceArgumentOnLoad.Items.AddRange(new object[] {
-			resources.GetString("comboBoxReduceArgumentOnLoad.Items"),
-			resources.GetString("comboBoxReduceArgumentOnLoad.Items1"),
-			resources.GetString("comboBoxReduceArgumentOnLoad.Items2")});
-			resources.ApplyResources(this.comboBoxReduceArgumentOnLoad, "comboBoxReduceArgumentOnLoad");
-			this.comboBoxReduceArgumentOnLoad.Name = "comboBoxReduceArgumentOnLoad";
-			this.comboBoxReduceArgumentOnLoad.SelectedIndexChanged += new System.EventHandler(this.comboBoxReduceArgumentOnLoad_SelectedIndexChanged);
-			// 
-			// checkBox11
-			// 
-			resources.ApplyResources(this.checkBox11, "checkBox11");
-			this.checkBox11.Name = "checkBox11";
-			this.checkBox11.UseVisualStyleBackColor = true;
-			// 
-			// checkBox13
-			// 
-			resources.ApplyResources(this.checkBox13, "checkBox13");
-			this.checkBox13.Name = "checkBox13";
-			this.checkBox13.UseVisualStyleBackColor = true;
-			// 
-			// label16
-			// 
-			resources.ApplyResources(this.label16, "label16");
-			this.label16.Name = "label16";
-			// 
-			// openFileDialog1
-			// 
-			this.openFileDialog1.FileName = "openFileDialog1";
-			// 
-			// ConfigDialog
-			// 
-			resources.ApplyResources(this, "$this");
-			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.Controls.Add(this.label16);
-			this.Controls.Add(this.tabControl);
-			this.Controls.Add(this.buttonReboot);
-			this.Controls.Add(this.buttonCancel);
-			this.Controls.Add(this.buttonSave);
-			this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
-			this.MaximizeBox = false;
-			this.MinimizeBox = false;
-			this.Name = "ConfigDialog";
-			this.ShowIcon = false;
-			this.ShowInTaskbar = false;
-			this.tabControl.ResumeLayout(false);
-			this.tabEnvironment.ResumeLayout(false);
-			this.tabEnvironment.PerformLayout();
-			((System.ComponentModel.ISupportInitialize)(this.numericUpDown11)).EndInit();
-			((System.ComponentModel.ISupportInitialize)(this.numericUpDown10)).EndInit();
-			((System.ComponentModel.ISupportInitialize)(this.numericUpDown4)).EndInit();
-			this.tabPageView.ResumeLayout(false);
-			this.tabPageView.PerformLayout();
-			((System.ComponentModel.ISupportInitialize)(this.numericUpDown9)).EndInit();
-			((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).EndInit();
-			((System.ComponentModel.ISupportInitialize)(this.numericUpDown7)).EndInit();
-			this.tabPageWindow.ResumeLayout(false);
-			this.tabPageWindow.PerformLayout();
-			((System.ComponentModel.ISupportInitialize)(this.numericUpDown8)).EndInit();
-			((System.ComponentModel.ISupportInitialize)(this.numericUpDownPosY)).EndInit();
-			((System.ComponentModel.ISupportInitialize)(this.numericUpDownPosX)).EndInit();
-			((System.ComponentModel.ISupportInitialize)(this.numericUpDown3)).EndInit();
-			((System.ComponentModel.ISupportInitialize)(this.numericUpDown2)).EndInit();
-			this.tabPageFont.ResumeLayout(false);
-			this.tabPageFont.PerformLayout();
-			((System.ComponentModel.ISupportInitialize)(this.numericUpDown6)).EndInit();
-			((System.ComponentModel.ISupportInitialize)(this.numericUpDown5)).EndInit();
-			this.tabPageSystem.ResumeLayout(false);
-			this.tabPageSystem.PerformLayout();
-			this.tabPageSystem2.ResumeLayout(false);
-			this.tabPageSystem2.PerformLayout();
-			this.tabPageCompati.ResumeLayout(false);
-			this.tabPageCompati.PerformLayout();
-			this.tabPageDebug.ResumeLayout(false);
-			this.tabPageDebug.PerformLayout();
-			this.ResumeLayout(false);
-			this.PerformLayout();
+        /// <summary>
+        /// デザイナ サポートに必要なメソッドです。このメソッドの内容を
+        /// コード エディタで変更しないでください。
+        /// </summary>
+        private void InitializeComponent()
+        {
+            components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ConfigDialog));
+            buttonSave = new System.Windows.Forms.Button();
+            buttonCancel = new System.Windows.Forms.Button();
+            buttonReboot = new System.Windows.Forms.Button();
+            tabControl = new System.Windows.Forms.TabControl();
+            tabEnvironment = new System.Windows.Forms.TabPage();
+            comboBox6 = new System.Windows.Forms.ComboBox();
+            checkBox24 = new System.Windows.Forms.CheckBox();
+            textBox2 = new System.Windows.Forms.TextBox();
+            label23 = new System.Windows.Forms.Label();
+            button4 = new System.Windows.Forms.Button();
+            textBox1 = new System.Windows.Forms.TextBox();
+            label22 = new System.Windows.Forms.Label();
+            label20 = new System.Windows.Forms.Label();
+            label17 = new System.Windows.Forms.Label();
+            label6 = new System.Windows.Forms.Label();
+            numericUpDown11 = new System.Windows.Forms.NumericUpDown();
+            checkBox18 = new System.Windows.Forms.CheckBox();
+            numericUpDown10 = new System.Windows.Forms.NumericUpDown();
+            numericUpDown4 = new System.Windows.Forms.NumericUpDown();
+            checkBox7 = new System.Windows.Forms.CheckBox();
+            checkBox6 = new System.Windows.Forms.CheckBox();
+            checkBox5 = new System.Windows.Forms.CheckBox();
+            checkBox4 = new System.Windows.Forms.CheckBox();
+            checkBox3 = new System.Windows.Forms.CheckBox();
+            tabPageView = new System.Windows.Forms.TabPage();
+            checkBox14 = new System.Windows.Forms.CheckBox();
+            label18 = new System.Windows.Forms.Label();
+            comboBoxTextDrawingMode = new System.Windows.Forms.ComboBox();
+            label1 = new System.Windows.Forms.Label();
+            numericUpDown9 = new System.Windows.Forms.NumericUpDown();
+            label5 = new System.Windows.Forms.Label();
+            numericUpDown1 = new System.Windows.Forms.NumericUpDown();
+            label9 = new System.Windows.Forms.Label();
+            numericUpDown7 = new System.Windows.Forms.NumericUpDown();
+            tabPageWindow = new System.Windows.Forms.TabPage();
+            checkBox21 = new System.Windows.Forms.CheckBox();
+            ScrollRange = new System.Windows.Forms.Label();
+            numericUpDown8 = new System.Windows.Forms.NumericUpDown();
+            checkBox17 = new System.Windows.Forms.CheckBox();
+            button3 = new System.Windows.Forms.Button();
+            label10 = new System.Windows.Forms.Label();
+            label19 = new System.Windows.Forms.Label();
+            numericUpDownPosY = new System.Windows.Forms.NumericUpDown();
+            numericUpDownPosX = new System.Windows.Forms.NumericUpDown();
+            button1 = new System.Windows.Forms.Button();
+            label3 = new System.Windows.Forms.Label();
+            label2 = new System.Windows.Forms.Label();
+            numericUpDown3 = new System.Windows.Forms.NumericUpDown();
+            numericUpDown2 = new System.Windows.Forms.NumericUpDown();
+            checkBox8 = new System.Windows.Forms.CheckBox();
+            tabPageFont = new System.Windows.Forms.TabPage();
+            button2 = new System.Windows.Forms.Button();
+            label7 = new System.Windows.Forms.Label();
+            label8 = new System.Windows.Forms.Label();
+            numericUpDown6 = new System.Windows.Forms.NumericUpDown();
+            numericUpDown5 = new System.Windows.Forms.NumericUpDown();
+            label4 = new System.Windows.Forms.Label();
+            comboBox2 = new System.Windows.Forms.ComboBox();
+            colorBoxBacklog = new ColorBox();
+            colorBoxSelecting = new ColorBox();
+            colorBoxFG = new ColorBox();
+            colorBoxBG = new ColorBox();
+            tabPageSystem = new System.Windows.Forms.TabPage();
+            comboBox1 = new System.Windows.Forms.ComboBox();
+            label11 = new System.Windows.Forms.Label();
+            checkBoxSystemFullSpace = new System.Windows.Forms.CheckBox();
+            checkBox22 = new System.Windows.Forms.CheckBox();
+            label21 = new System.Windows.Forms.Label();
+            checkBox20 = new System.Windows.Forms.CheckBox();
+            checkBox19 = new System.Windows.Forms.CheckBox();
+            checkBox16 = new System.Windows.Forms.CheckBox();
+            checkBox15 = new System.Windows.Forms.CheckBox();
+            checkBox1 = new System.Windows.Forms.CheckBox();
+            checkBox10 = new System.Windows.Forms.CheckBox();
+            checkBox2 = new System.Windows.Forms.CheckBox();
+            tabPageSystem2 = new System.Windows.Forms.TabPage();
+            checkBox29 = new System.Windows.Forms.CheckBox();
+            checkBox26 = new System.Windows.Forms.CheckBox();
+            checkBox27 = new System.Windows.Forms.CheckBox();
+            checkBoxSystemTripleSymbol = new System.Windows.Forms.CheckBox();
+            label24 = new System.Windows.Forms.Label();
+            tabPageCompati = new System.Windows.Forms.TabPage();
+            checkBox9 = new System.Windows.Forms.CheckBox();
+            checkBoxCompatiSP = new System.Windows.Forms.CheckBox();
+            checkBox28 = new System.Windows.Forms.CheckBox();
+            checkBox25 = new System.Windows.Forms.CheckBox();
+            checkBox12 = new System.Windows.Forms.CheckBox();
+            checkBoxFuncNoIgnoreCase = new System.Windows.Forms.CheckBox();
+            button8 = new System.Windows.Forms.Button();
+            button7 = new System.Windows.Forms.Button();
+            checkBoxCompatiLinefeedAs1739 = new System.Windows.Forms.CheckBox();
+            checkBoxCompatiRAND = new System.Windows.Forms.CheckBox();
+            label30 = new System.Windows.Forms.Label();
+            checkBoxCompatiCALLNAME = new System.Windows.Forms.CheckBox();
+            checkBoxCompatiErrorLine = new System.Windows.Forms.CheckBox();
+            tabPageDebug = new System.Windows.Forms.TabPage();
+            button6 = new System.Windows.Forms.Button();
+            button5 = new System.Windows.Forms.Button();
+            checkBox23 = new System.Windows.Forms.CheckBox();
+            label15 = new System.Windows.Forms.Label();
+            comboBox5 = new System.Windows.Forms.ComboBox();
+            label14 = new System.Windows.Forms.Label();
+            comboBox4 = new System.Windows.Forms.ComboBox();
+            label13 = new System.Windows.Forms.Label();
+            comboBox3 = new System.Windows.Forms.ComboBox();
+            label12 = new System.Windows.Forms.Label();
+            comboBoxReduceArgumentOnLoad = new System.Windows.Forms.ComboBox();
+            checkBox11 = new System.Windows.Forms.CheckBox();
+            checkBox13 = new System.Windows.Forms.CheckBox();
+            label16 = new System.Windows.Forms.Label();
+            openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
+            toolTip1 = new System.Windows.Forms.ToolTip(components);
+            tabControl.SuspendLayout();
+            tabEnvironment.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown11).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown10).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown4).BeginInit();
+            tabPageView.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown9).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown7).BeginInit();
+            tabPageWindow.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown8).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDownPosY).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDownPosX).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown3).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown2).BeginInit();
+            tabPageFont.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown6).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown5).BeginInit();
+            tabPageSystem.SuspendLayout();
+            tabPageSystem2.SuspendLayout();
+            tabPageCompati.SuspendLayout();
+            tabPageDebug.SuspendLayout();
+            SuspendLayout();
+            // 
+            // buttonSave
+            // 
+            resources.ApplyResources(buttonSave, "buttonSave");
+            buttonSave.Name = "buttonSave";
+            buttonSave.UseVisualStyleBackColor = true;
+            buttonSave.Click += buttonSave_Click;
+            // 
+            // buttonCancel
+            // 
+            resources.ApplyResources(buttonCancel, "buttonCancel");
+            buttonCancel.Name = "buttonCancel";
+            buttonCancel.UseVisualStyleBackColor = true;
+            buttonCancel.Click += buttonCancel_Click;
+            // 
+            // buttonReboot
+            // 
+            resources.ApplyResources(buttonReboot, "buttonReboot");
+            buttonReboot.Name = "buttonReboot";
+            buttonReboot.UseVisualStyleBackColor = true;
+            buttonReboot.Click += buttonReboot_Click;
+            // 
+            // tabControl
+            // 
+            tabControl.Controls.Add(tabEnvironment);
+            tabControl.Controls.Add(tabPageView);
+            tabControl.Controls.Add(tabPageWindow);
+            tabControl.Controls.Add(tabPageFont);
+            tabControl.Controls.Add(tabPageSystem);
+            tabControl.Controls.Add(tabPageSystem2);
+            tabControl.Controls.Add(tabPageCompati);
+            tabControl.Controls.Add(tabPageDebug);
+            resources.ApplyResources(tabControl, "tabControl");
+            tabControl.Multiline = true;
+            tabControl.Name = "tabControl";
+            tabControl.SelectedIndex = 0;
+            // 
+            // tabEnvironment
+            // 
+            tabEnvironment.Controls.Add(comboBox6);
+            tabEnvironment.Controls.Add(checkBox24);
+            tabEnvironment.Controls.Add(textBox2);
+            tabEnvironment.Controls.Add(label23);
+            tabEnvironment.Controls.Add(button4);
+            tabEnvironment.Controls.Add(textBox1);
+            tabEnvironment.Controls.Add(label22);
+            tabEnvironment.Controls.Add(label20);
+            tabEnvironment.Controls.Add(label17);
+            tabEnvironment.Controls.Add(label6);
+            tabEnvironment.Controls.Add(numericUpDown11);
+            tabEnvironment.Controls.Add(checkBox18);
+            tabEnvironment.Controls.Add(numericUpDown10);
+            tabEnvironment.Controls.Add(numericUpDown4);
+            tabEnvironment.Controls.Add(checkBox7);
+            tabEnvironment.Controls.Add(checkBox6);
+            tabEnvironment.Controls.Add(checkBox5);
+            tabEnvironment.Controls.Add(checkBox4);
+            tabEnvironment.Controls.Add(checkBox3);
+            resources.ApplyResources(tabEnvironment, "tabEnvironment");
+            tabEnvironment.Name = "tabEnvironment";
+            tabEnvironment.UseVisualStyleBackColor = true;
+            // 
+            // comboBox6
+            // 
+            comboBox6.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            comboBox6.FormattingEnabled = true;
+            comboBox6.Items.AddRange(new object[] { resources.GetString("comboBox6.Items"), resources.GetString("comboBox6.Items1"), resources.GetString("comboBox6.Items2"), resources.GetString("comboBox6.Items3") });
+            resources.ApplyResources(comboBox6, "comboBox6");
+            comboBox6.Name = "comboBox6";
+            comboBox6.SelectedIndexChanged += comboBox6_SelectedIndexChanged;
+            // 
+            // checkBox24
+            // 
+            resources.ApplyResources(checkBox24, "checkBox24");
+            checkBox24.Name = "checkBox24";
+            checkBox24.UseVisualStyleBackColor = true;
+            // 
+            // textBox2
+            // 
+            resources.ApplyResources(textBox2, "textBox2");
+            textBox2.Name = "textBox2";
+            // 
+            // label23
+            // 
+            resources.ApplyResources(label23, "label23");
+            label23.Name = "label23";
+            // 
+            // button4
+            // 
+            resources.ApplyResources(button4, "button4");
+            button4.Name = "button4";
+            button4.UseVisualStyleBackColor = true;
+            button4.Click += button4_Click;
+            // 
+            // textBox1
+            // 
+            resources.ApplyResources(textBox1, "textBox1");
+            textBox1.Name = "textBox1";
+            // 
+            // label22
+            // 
+            resources.ApplyResources(label22, "label22");
+            label22.Name = "label22";
+            // 
+            // label20
+            // 
+            resources.ApplyResources(label20, "label20");
+            label20.Name = "label20";
+            // 
+            // label17
+            // 
+            resources.ApplyResources(label17, "label17");
+            label17.Name = "label17";
+            // 
+            // label6
+            // 
+            resources.ApplyResources(label6, "label6");
+            label6.Name = "label6";
+            // 
+            // numericUpDown11
+            // 
+            resources.ApplyResources(numericUpDown11, "numericUpDown11");
+            numericUpDown11.Name = "numericUpDown11";
+            // 
+            // checkBox18
+            // 
+            resources.ApplyResources(checkBox18, "checkBox18");
+            checkBox18.Name = "checkBox18";
+            checkBox18.UseVisualStyleBackColor = true;
+            // 
+            // numericUpDown10
+            // 
+            resources.ApplyResources(numericUpDown10, "numericUpDown10");
+            numericUpDown10.Name = "numericUpDown10";
+            // 
+            // numericUpDown4
+            // 
+            resources.ApplyResources(numericUpDown4, "numericUpDown4");
+            numericUpDown4.Name = "numericUpDown4";
+            // 
+            // checkBox7
+            // 
+            resources.ApplyResources(checkBox7, "checkBox7");
+            checkBox7.Name = "checkBox7";
+            checkBox7.UseVisualStyleBackColor = true;
+            // 
+            // checkBox6
+            // 
+            resources.ApplyResources(checkBox6, "checkBox6");
+            checkBox6.Name = "checkBox6";
+            checkBox6.UseVisualStyleBackColor = true;
+            // 
+            // checkBox5
+            // 
+            resources.ApplyResources(checkBox5, "checkBox5");
+            checkBox5.Name = "checkBox5";
+            checkBox5.UseVisualStyleBackColor = true;
+            // 
+            // checkBox4
+            // 
+            resources.ApplyResources(checkBox4, "checkBox4");
+            checkBox4.Name = "checkBox4";
+            checkBox4.UseVisualStyleBackColor = true;
+            // 
+            // checkBox3
+            // 
+            resources.ApplyResources(checkBox3, "checkBox3");
+            checkBox3.Name = "checkBox3";
+            checkBox3.UseVisualStyleBackColor = true;
+            // 
+            // tabPageView
+            // 
+            tabPageView.Controls.Add(checkBox14);
+            tabPageView.Controls.Add(label18);
+            tabPageView.Controls.Add(comboBoxTextDrawingMode);
+            tabPageView.Controls.Add(label1);
+            tabPageView.Controls.Add(numericUpDown9);
+            tabPageView.Controls.Add(label5);
+            tabPageView.Controls.Add(numericUpDown1);
+            tabPageView.Controls.Add(label9);
+            tabPageView.Controls.Add(numericUpDown7);
+            resources.ApplyResources(tabPageView, "tabPageView");
+            tabPageView.Name = "tabPageView";
+            tabPageView.UseVisualStyleBackColor = true;
+            // 
+            // checkBox14
+            // 
+            resources.ApplyResources(checkBox14, "checkBox14");
+            checkBox14.Name = "checkBox14";
+            checkBox14.UseVisualStyleBackColor = true;
+            // 
+            // label18
+            // 
+            resources.ApplyResources(label18, "label18");
+            label18.Name = "label18";
+            // 
+            // comboBoxTextDrawingMode
+            // 
+            comboBoxTextDrawingMode.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            comboBoxTextDrawingMode.FormattingEnabled = true;
+            comboBoxTextDrawingMode.Items.AddRange(new object[] { resources.GetString("comboBoxTextDrawingMode.Items"), resources.GetString("comboBoxTextDrawingMode.Items1") });
+            resources.ApplyResources(comboBoxTextDrawingMode, "comboBoxTextDrawingMode");
+            comboBoxTextDrawingMode.Name = "comboBoxTextDrawingMode";
+            // 
+            // label1
+            // 
+            resources.ApplyResources(label1, "label1");
+            label1.Name = "label1";
+            // 
+            // numericUpDown9
+            // 
+            resources.ApplyResources(numericUpDown9, "numericUpDown9");
+            numericUpDown9.Name = "numericUpDown9";
+            // 
+            // label5
+            // 
+            resources.ApplyResources(label5, "label5");
+            label5.Name = "label5";
+            // 
+            // numericUpDown1
+            // 
+            resources.ApplyResources(numericUpDown1, "numericUpDown1");
+            numericUpDown1.Name = "numericUpDown1";
+            // 
+            // label9
+            // 
+            resources.ApplyResources(label9, "label9");
+            label9.Name = "label9";
+            // 
+            // numericUpDown7
+            // 
+            resources.ApplyResources(numericUpDown7, "numericUpDown7");
+            numericUpDown7.Name = "numericUpDown7";
+            // 
+            // tabPageWindow
+            // 
+            tabPageWindow.Controls.Add(checkBox21);
+            tabPageWindow.Controls.Add(ScrollRange);
+            tabPageWindow.Controls.Add(numericUpDown8);
+            tabPageWindow.Controls.Add(checkBox17);
+            tabPageWindow.Controls.Add(button3);
+            tabPageWindow.Controls.Add(label10);
+            tabPageWindow.Controls.Add(label19);
+            tabPageWindow.Controls.Add(numericUpDownPosY);
+            tabPageWindow.Controls.Add(numericUpDownPosX);
+            tabPageWindow.Controls.Add(button1);
+            tabPageWindow.Controls.Add(label3);
+            tabPageWindow.Controls.Add(label2);
+            tabPageWindow.Controls.Add(numericUpDown3);
+            tabPageWindow.Controls.Add(numericUpDown2);
+            tabPageWindow.Controls.Add(checkBox8);
+            resources.ApplyResources(tabPageWindow, "tabPageWindow");
+            tabPageWindow.Name = "tabPageWindow";
+            tabPageWindow.UseVisualStyleBackColor = true;
+            // 
+            // checkBox21
+            // 
+            resources.ApplyResources(checkBox21, "checkBox21");
+            checkBox21.Name = "checkBox21";
+            checkBox21.UseVisualStyleBackColor = true;
+            // 
+            // ScrollRange
+            // 
+            resources.ApplyResources(ScrollRange, "ScrollRange");
+            ScrollRange.Name = "ScrollRange";
+            // 
+            // numericUpDown8
+            // 
+            resources.ApplyResources(numericUpDown8, "numericUpDown8");
+            numericUpDown8.Name = "numericUpDown8";
+            // 
+            // checkBox17
+            // 
+            resources.ApplyResources(checkBox17, "checkBox17");
+            checkBox17.Name = "checkBox17";
+            checkBox17.UseVisualStyleBackColor = true;
+            // 
+            // button3
+            // 
+            resources.ApplyResources(button3, "button3");
+            button3.Name = "button3";
+            button3.UseVisualStyleBackColor = true;
+            button3.Click += button3_Click;
+            // 
+            // label10
+            // 
+            resources.ApplyResources(label10, "label10");
+            label10.Name = "label10";
+            // 
+            // label19
+            // 
+            resources.ApplyResources(label19, "label19");
+            label19.Name = "label19";
+            // 
+            // numericUpDownPosY
+            // 
+            resources.ApplyResources(numericUpDownPosY, "numericUpDownPosY");
+            numericUpDownPosY.Name = "numericUpDownPosY";
+            // 
+            // numericUpDownPosX
+            // 
+            resources.ApplyResources(numericUpDownPosX, "numericUpDownPosX");
+            numericUpDownPosX.Name = "numericUpDownPosX";
+            // 
+            // button1
+            // 
+            resources.ApplyResources(button1, "button1");
+            button1.Name = "button1";
+            button1.UseVisualStyleBackColor = true;
+            button1.Click += button1_Click;
+            // 
+            // label3
+            // 
+            resources.ApplyResources(label3, "label3");
+            label3.Name = "label3";
+            // 
+            // label2
+            // 
+            resources.ApplyResources(label2, "label2");
+            label2.Name = "label2";
+            // 
+            // numericUpDown3
+            // 
+            resources.ApplyResources(numericUpDown3, "numericUpDown3");
+            numericUpDown3.Name = "numericUpDown3";
+            // 
+            // numericUpDown2
+            // 
+            resources.ApplyResources(numericUpDown2, "numericUpDown2");
+            numericUpDown2.Name = "numericUpDown2";
+            // 
+            // checkBox8
+            // 
+            resources.ApplyResources(checkBox8, "checkBox8");
+            checkBox8.Name = "checkBox8";
+            checkBox8.UseVisualStyleBackColor = true;
+            // 
+            // tabPageFont
+            // 
+            tabPageFont.Controls.Add(button2);
+            tabPageFont.Controls.Add(label7);
+            tabPageFont.Controls.Add(label8);
+            tabPageFont.Controls.Add(numericUpDown6);
+            tabPageFont.Controls.Add(numericUpDown5);
+            tabPageFont.Controls.Add(label4);
+            tabPageFont.Controls.Add(comboBox2);
+            tabPageFont.Controls.Add(colorBoxBacklog);
+            tabPageFont.Controls.Add(colorBoxSelecting);
+            tabPageFont.Controls.Add(colorBoxFG);
+            tabPageFont.Controls.Add(colorBoxBG);
+            resources.ApplyResources(tabPageFont, "tabPageFont");
+            tabPageFont.Name = "tabPageFont";
+            tabPageFont.UseVisualStyleBackColor = true;
+            // 
+            // button2
+            // 
+            resources.ApplyResources(button2, "button2");
+            button2.Name = "button2";
+            button2.UseVisualStyleBackColor = true;
+            button2.Click += button2_Click;
+            // 
+            // label7
+            // 
+            resources.ApplyResources(label7, "label7");
+            label7.Name = "label7";
+            // 
+            // label8
+            // 
+            resources.ApplyResources(label8, "label8");
+            label8.Name = "label8";
+            // 
+            // numericUpDown6
+            // 
+            resources.ApplyResources(numericUpDown6, "numericUpDown6");
+            numericUpDown6.Name = "numericUpDown6";
+            // 
+            // numericUpDown5
+            // 
+            resources.ApplyResources(numericUpDown5, "numericUpDown5");
+            numericUpDown5.Name = "numericUpDown5";
+            // 
+            // label4
+            // 
+            resources.ApplyResources(label4, "label4");
+            label4.Name = "label4";
+            // 
+            // comboBox2
+            // 
+            resources.ApplyResources(comboBox2, "comboBox2");
+            comboBox2.Name = "comboBox2";
+            // 
+            // colorBoxBacklog
+            // 
+            colorBoxBacklog.ButtonText = "履歴文字色";
+            resources.ApplyResources(colorBoxBacklog, "colorBoxBacklog");
+            colorBoxBacklog.Name = "colorBoxBacklog";
+            colorBoxBacklog.SelectingColor = System.Drawing.Color.Transparent;
+            // 
+            // colorBoxSelecting
+            // 
+            colorBoxSelecting.ButtonText = "選択中文字色";
+            resources.ApplyResources(colorBoxSelecting, "colorBoxSelecting");
+            colorBoxSelecting.Name = "colorBoxSelecting";
+            colorBoxSelecting.SelectingColor = System.Drawing.Color.Transparent;
+            // 
+            // colorBoxFG
+            // 
+            colorBoxFG.ButtonText = "文字色";
+            resources.ApplyResources(colorBoxFG, "colorBoxFG");
+            colorBoxFG.Name = "colorBoxFG";
+            colorBoxFG.SelectingColor = System.Drawing.Color.Transparent;
+            // 
+            // colorBoxBG
+            // 
+            colorBoxBG.ButtonText = "背景色";
+            resources.ApplyResources(colorBoxBG, "colorBoxBG");
+            colorBoxBG.Name = "colorBoxBG";
+            colorBoxBG.SelectingColor = System.Drawing.Color.Transparent;
+            // 
+            // tabPageSystem
+            // 
+            tabPageSystem.Controls.Add(comboBox1);
+            tabPageSystem.Controls.Add(label11);
+            tabPageSystem.Controls.Add(checkBoxSystemFullSpace);
+            tabPageSystem.Controls.Add(checkBox22);
+            tabPageSystem.Controls.Add(label21);
+            tabPageSystem.Controls.Add(checkBox20);
+            tabPageSystem.Controls.Add(checkBox19);
+            tabPageSystem.Controls.Add(checkBox16);
+            tabPageSystem.Controls.Add(checkBox15);
+            tabPageSystem.Controls.Add(checkBox1);
+            tabPageSystem.Controls.Add(checkBox10);
+            tabPageSystem.Controls.Add(checkBox2);
+            resources.ApplyResources(tabPageSystem, "tabPageSystem");
+            tabPageSystem.Name = "tabPageSystem";
+            tabPageSystem.UseVisualStyleBackColor = true;
+            // 
+            // comboBox1
+            // 
+            comboBox1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            comboBox1.FormattingEnabled = true;
+            comboBox1.Items.AddRange(new object[] { resources.GetString("comboBox1.Items"), resources.GetString("comboBox1.Items1"), resources.GetString("comboBox1.Items2"), resources.GetString("comboBox1.Items3") });
+            resources.ApplyResources(comboBox1, "comboBox1");
+            comboBox1.Name = "comboBox1";
+            // 
+            // label11
+            // 
+            resources.ApplyResources(label11, "label11");
+            label11.Name = "label11";
+            // 
+            // checkBoxSystemFullSpace
+            // 
+            resources.ApplyResources(checkBoxSystemFullSpace, "checkBoxSystemFullSpace");
+            checkBoxSystemFullSpace.Name = "checkBoxSystemFullSpace";
+            checkBoxSystemFullSpace.UseVisualStyleBackColor = true;
+            // 
+            // checkBox22
+            // 
+            resources.ApplyResources(checkBox22, "checkBox22");
+            checkBox22.Name = "checkBox22";
+            checkBox22.UseVisualStyleBackColor = true;
+            // 
+            // label21
+            // 
+            resources.ApplyResources(label21, "label21");
+            label21.Name = "label21";
+            // 
+            // checkBox20
+            // 
+            resources.ApplyResources(checkBox20, "checkBox20");
+            checkBox20.Name = "checkBox20";
+            checkBox20.UseVisualStyleBackColor = true;
+            // 
+            // checkBox19
+            // 
+            resources.ApplyResources(checkBox19, "checkBox19");
+            checkBox19.Name = "checkBox19";
+            checkBox19.UseVisualStyleBackColor = true;
+            // 
+            // checkBox16
+            // 
+            resources.ApplyResources(checkBox16, "checkBox16");
+            checkBox16.Name = "checkBox16";
+            checkBox16.UseVisualStyleBackColor = true;
+            // 
+            // checkBox15
+            // 
+            resources.ApplyResources(checkBox15, "checkBox15");
+            checkBox15.Name = "checkBox15";
+            checkBox15.UseVisualStyleBackColor = true;
+            // 
+            // checkBox1
+            // 
+            resources.ApplyResources(checkBox1, "checkBox1");
+            checkBox1.Name = "checkBox1";
+            checkBox1.UseVisualStyleBackColor = true;
+            // 
+            // checkBox10
+            // 
+            resources.ApplyResources(checkBox10, "checkBox10");
+            checkBox10.Name = "checkBox10";
+            checkBox10.UseVisualStyleBackColor = true;
+            // 
+            // checkBox2
+            // 
+            resources.ApplyResources(checkBox2, "checkBox2");
+            checkBox2.Name = "checkBox2";
+            checkBox2.UseVisualStyleBackColor = true;
+            // 
+            // tabPageSystem2
+            // 
+            tabPageSystem2.Controls.Add(checkBox29);
+            tabPageSystem2.Controls.Add(checkBox26);
+            tabPageSystem2.Controls.Add(checkBox27);
+            tabPageSystem2.Controls.Add(checkBoxSystemTripleSymbol);
+            tabPageSystem2.Controls.Add(label24);
+            resources.ApplyResources(tabPageSystem2, "tabPageSystem2");
+            tabPageSystem2.Name = "tabPageSystem2";
+            tabPageSystem2.UseVisualStyleBackColor = true;
+            // 
+            // checkBox29
+            // 
+            resources.ApplyResources(checkBox29, "checkBox29");
+            checkBox29.Name = "checkBox29";
+            checkBox29.UseVisualStyleBackColor = true;
+            // 
+            // checkBox26
+            // 
+            resources.ApplyResources(checkBox26, "checkBox26");
+            checkBox26.Name = "checkBox26";
+            checkBox26.UseVisualStyleBackColor = true;
+            // 
+            // checkBox27
+            // 
+            resources.ApplyResources(checkBox27, "checkBox27");
+            checkBox27.Name = "checkBox27";
+            checkBox27.UseVisualStyleBackColor = true;
+            // 
+            // checkBoxSystemTripleSymbol
+            // 
+            resources.ApplyResources(checkBoxSystemTripleSymbol, "checkBoxSystemTripleSymbol");
+            checkBoxSystemTripleSymbol.Name = "checkBoxSystemTripleSymbol";
+            checkBoxSystemTripleSymbol.UseVisualStyleBackColor = true;
+            // 
+            // label24
+            // 
+            resources.ApplyResources(label24, "label24");
+            label24.Name = "label24";
+            // 
+            // tabPageCompati
+            // 
+            tabPageCompati.Controls.Add(checkBox9);
+            tabPageCompati.Controls.Add(checkBoxCompatiSP);
+            tabPageCompati.Controls.Add(checkBox28);
+            tabPageCompati.Controls.Add(checkBox25);
+            tabPageCompati.Controls.Add(checkBox12);
+            tabPageCompati.Controls.Add(checkBoxFuncNoIgnoreCase);
+            tabPageCompati.Controls.Add(button8);
+            tabPageCompati.Controls.Add(button7);
+            tabPageCompati.Controls.Add(checkBoxCompatiLinefeedAs1739);
+            tabPageCompati.Controls.Add(checkBoxCompatiRAND);
+            tabPageCompati.Controls.Add(label30);
+            tabPageCompati.Controls.Add(checkBoxCompatiCALLNAME);
+            tabPageCompati.Controls.Add(checkBoxCompatiErrorLine);
+            resources.ApplyResources(tabPageCompati, "tabPageCompati");
+            tabPageCompati.Name = "tabPageCompati";
+            tabPageCompati.UseVisualStyleBackColor = true;
+            // 
+            // checkBox9
+            // 
+            resources.ApplyResources(checkBox9, "checkBox9");
+            checkBox9.Name = "checkBox9";
+            checkBox9.UseVisualStyleBackColor = true;
+            // 
+            // checkBoxCompatiSP
+            // 
+            resources.ApplyResources(checkBoxCompatiSP, "checkBoxCompatiSP");
+            checkBoxCompatiSP.Name = "checkBoxCompatiSP";
+            toolTip1.SetToolTip(checkBoxCompatiSP, resources.GetString("checkBoxCompatiSP.ToolTip"));
+            checkBoxCompatiSP.UseVisualStyleBackColor = true;
+            // 
+            // checkBox28
+            // 
+            resources.ApplyResources(checkBox28, "checkBox28");
+            checkBox28.Name = "checkBox28";
+            toolTip1.SetToolTip(checkBox28, resources.GetString("checkBox28.ToolTip"));
+            checkBox28.UseVisualStyleBackColor = true;
+            // 
+            // checkBox25
+            // 
+            resources.ApplyResources(checkBox25, "checkBox25");
+            checkBox25.Name = "checkBox25";
+            toolTip1.SetToolTip(checkBox25, resources.GetString("checkBox25.ToolTip"));
+            checkBox25.UseVisualStyleBackColor = true;
+            // 
+            // checkBox12
+            // 
+            resources.ApplyResources(checkBox12, "checkBox12");
+            checkBox12.Name = "checkBox12";
+            toolTip1.SetToolTip(checkBox12, resources.GetString("checkBox12.ToolTip"));
+            checkBox12.UseVisualStyleBackColor = true;
+            // 
+            // checkBoxFuncNoIgnoreCase
+            // 
+            resources.ApplyResources(checkBoxFuncNoIgnoreCase, "checkBoxFuncNoIgnoreCase");
+            checkBoxFuncNoIgnoreCase.Name = "checkBoxFuncNoIgnoreCase";
+            toolTip1.SetToolTip(checkBoxFuncNoIgnoreCase, resources.GetString("checkBoxFuncNoIgnoreCase.ToolTip"));
+            checkBoxFuncNoIgnoreCase.UseVisualStyleBackColor = true;
+            // 
+            // button8
+            // 
+            resources.ApplyResources(button8, "button8");
+            button8.Name = "button8";
+            button8.UseVisualStyleBackColor = true;
+            button8.Click += button8_Click;
+            // 
+            // button7
+            // 
+            resources.ApplyResources(button7, "button7");
+            button7.Name = "button7";
+            button7.UseVisualStyleBackColor = true;
+            button7.Click += button7_Click;
+            // 
+            // checkBoxCompatiLinefeedAs1739
+            // 
+            resources.ApplyResources(checkBoxCompatiLinefeedAs1739, "checkBoxCompatiLinefeedAs1739");
+            checkBoxCompatiLinefeedAs1739.Name = "checkBoxCompatiLinefeedAs1739";
+            toolTip1.SetToolTip(checkBoxCompatiLinefeedAs1739, resources.GetString("checkBoxCompatiLinefeedAs1739.ToolTip"));
+            checkBoxCompatiLinefeedAs1739.UseVisualStyleBackColor = true;
+            // 
+            // checkBoxCompatiRAND
+            // 
+            resources.ApplyResources(checkBoxCompatiRAND, "checkBoxCompatiRAND");
+            checkBoxCompatiRAND.Name = "checkBoxCompatiRAND";
+            toolTip1.SetToolTip(checkBoxCompatiRAND, resources.GetString("checkBoxCompatiRAND.ToolTip"));
+            checkBoxCompatiRAND.UseVisualStyleBackColor = true;
+            // 
+            // label30
+            // 
+            resources.ApplyResources(label30, "label30");
+            label30.Name = "label30";
+            // 
+            // checkBoxCompatiCALLNAME
+            // 
+            resources.ApplyResources(checkBoxCompatiCALLNAME, "checkBoxCompatiCALLNAME");
+            checkBoxCompatiCALLNAME.Name = "checkBoxCompatiCALLNAME";
+            toolTip1.SetToolTip(checkBoxCompatiCALLNAME, resources.GetString("checkBoxCompatiCALLNAME.ToolTip"));
+            checkBoxCompatiCALLNAME.UseVisualStyleBackColor = true;
+            // 
+            // checkBoxCompatiErrorLine
+            // 
+            resources.ApplyResources(checkBoxCompatiErrorLine, "checkBoxCompatiErrorLine");
+            checkBoxCompatiErrorLine.Name = "checkBoxCompatiErrorLine";
+            toolTip1.SetToolTip(checkBoxCompatiErrorLine, resources.GetString("checkBoxCompatiErrorLine.ToolTip"));
+            checkBoxCompatiErrorLine.UseVisualStyleBackColor = true;
+            // 
+            // tabPageDebug
+            // 
+            tabPageDebug.Controls.Add(button6);
+            tabPageDebug.Controls.Add(button5);
+            tabPageDebug.Controls.Add(checkBox23);
+            tabPageDebug.Controls.Add(label15);
+            tabPageDebug.Controls.Add(comboBox5);
+            tabPageDebug.Controls.Add(label14);
+            tabPageDebug.Controls.Add(comboBox4);
+            tabPageDebug.Controls.Add(label13);
+            tabPageDebug.Controls.Add(comboBox3);
+            tabPageDebug.Controls.Add(label12);
+            tabPageDebug.Controls.Add(comboBoxReduceArgumentOnLoad);
+            tabPageDebug.Controls.Add(checkBox11);
+            tabPageDebug.Controls.Add(checkBox13);
+            resources.ApplyResources(tabPageDebug, "tabPageDebug");
+            tabPageDebug.Name = "tabPageDebug";
+            tabPageDebug.UseVisualStyleBackColor = true;
+            // 
+            // button6
+            // 
+            resources.ApplyResources(button6, "button6");
+            button6.Name = "button6";
+            button6.UseVisualStyleBackColor = true;
+            button6.Click += button6_Click;
+            // 
+            // button5
+            // 
+            resources.ApplyResources(button5, "button5");
+            button5.Name = "button5";
+            button5.UseVisualStyleBackColor = true;
+            button5.Click += button5_Click;
+            // 
+            // checkBox23
+            // 
+            resources.ApplyResources(checkBox23, "checkBox23");
+            checkBox23.Name = "checkBox23";
+            checkBox23.UseVisualStyleBackColor = true;
+            // 
+            // label15
+            // 
+            resources.ApplyResources(label15, "label15");
+            label15.Name = "label15";
+            // 
+            // comboBox5
+            // 
+            comboBox5.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            comboBox5.FormattingEnabled = true;
+            comboBox5.Items.AddRange(new object[] { resources.GetString("comboBox5.Items"), resources.GetString("comboBox5.Items1"), resources.GetString("comboBox5.Items2"), resources.GetString("comboBox5.Items3") });
+            resources.ApplyResources(comboBox5, "comboBox5");
+            comboBox5.Name = "comboBox5";
+            // 
+            // label14
+            // 
+            resources.ApplyResources(label14, "label14");
+            label14.Name = "label14";
+            // 
+            // comboBox4
+            // 
+            comboBox4.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            comboBox4.FormattingEnabled = true;
+            comboBox4.Items.AddRange(new object[] { resources.GetString("comboBox4.Items"), resources.GetString("comboBox4.Items1"), resources.GetString("comboBox4.Items2"), resources.GetString("comboBox4.Items3") });
+            resources.ApplyResources(comboBox4, "comboBox4");
+            comboBox4.Name = "comboBox4";
+            // 
+            // label13
+            // 
+            resources.ApplyResources(label13, "label13");
+            label13.Name = "label13";
+            // 
+            // comboBox3
+            // 
+            comboBox3.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            comboBox3.FormattingEnabled = true;
+            comboBox3.Items.AddRange(new object[] { resources.GetString("comboBox3.Items"), resources.GetString("comboBox3.Items1"), resources.GetString("comboBox3.Items2"), resources.GetString("comboBox3.Items3") });
+            resources.ApplyResources(comboBox3, "comboBox3");
+            comboBox3.Name = "comboBox3";
+            // 
+            // label12
+            // 
+            resources.ApplyResources(label12, "label12");
+            label12.Name = "label12";
+            // 
+            // comboBoxReduceArgumentOnLoad
+            // 
+            comboBoxReduceArgumentOnLoad.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            comboBoxReduceArgumentOnLoad.FormattingEnabled = true;
+            comboBoxReduceArgumentOnLoad.Items.AddRange(new object[] { resources.GetString("comboBoxReduceArgumentOnLoad.Items"), resources.GetString("comboBoxReduceArgumentOnLoad.Items1"), resources.GetString("comboBoxReduceArgumentOnLoad.Items2") });
+            resources.ApplyResources(comboBoxReduceArgumentOnLoad, "comboBoxReduceArgumentOnLoad");
+            comboBoxReduceArgumentOnLoad.Name = "comboBoxReduceArgumentOnLoad";
+            comboBoxReduceArgumentOnLoad.SelectedIndexChanged += comboBoxReduceArgumentOnLoad_SelectedIndexChanged;
+            // 
+            // checkBox11
+            // 
+            resources.ApplyResources(checkBox11, "checkBox11");
+            checkBox11.Name = "checkBox11";
+            checkBox11.UseVisualStyleBackColor = true;
+            // 
+            // checkBox13
+            // 
+            resources.ApplyResources(checkBox13, "checkBox13");
+            checkBox13.Name = "checkBox13";
+            checkBox13.UseVisualStyleBackColor = true;
+            // 
+            // label16
+            // 
+            resources.ApplyResources(label16, "label16");
+            label16.Name = "label16";
+            // 
+            // openFileDialog1
+            // 
+            openFileDialog1.FileName = "openFileDialog1";
+            // 
+            // ConfigDialog
+            // 
+            resources.ApplyResources(this, "$this");
+            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            Controls.Add(label16);
+            Controls.Add(tabControl);
+            Controls.Add(buttonReboot);
+            Controls.Add(buttonCancel);
+            Controls.Add(buttonSave);
+            FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            MaximizeBox = false;
+            MinimizeBox = false;
+            Name = "ConfigDialog";
+            ShowIcon = false;
+            ShowInTaskbar = false;
+            Shown += shown;
+            tabControl.ResumeLayout(false);
+            tabEnvironment.ResumeLayout(false);
+            tabEnvironment.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown11).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown10).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown4).EndInit();
+            tabPageView.ResumeLayout(false);
+            tabPageView.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown9).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown7).EndInit();
+            tabPageWindow.ResumeLayout(false);
+            tabPageWindow.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown8).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDownPosY).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDownPosX).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown3).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown2).EndInit();
+            tabPageFont.ResumeLayout(false);
+            tabPageFont.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown6).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown5).EndInit();
+            tabPageSystem.ResumeLayout(false);
+            tabPageSystem.PerformLayout();
+            tabPageSystem2.ResumeLayout(false);
+            tabPageSystem2.PerformLayout();
+            tabPageCompati.ResumeLayout(false);
+            tabPageCompati.PerformLayout();
+            tabPageDebug.ResumeLayout(false);
+            tabPageDebug.PerformLayout();
+            ResumeLayout(false);
+            PerformLayout();
+        }
 
-			this.Shown += shown;
-		}
+        #endregion
 
-		#endregion
-
-		private System.Windows.Forms.Button buttonSave;
+        private System.Windows.Forms.Button buttonSave;
 		private System.Windows.Forms.Button buttonCancel;
 		private System.Windows.Forms.Button buttonReboot;
 		private System.Windows.Forms.TabControl tabControl;

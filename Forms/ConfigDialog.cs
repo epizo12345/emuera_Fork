@@ -175,15 +175,13 @@ namespace MinorShift.Emuera.Forms
 			setColorBox(colorBoxSelecting, ConfigCode.FocusColor);
 			setColorBox(colorBoxBacklog, ConfigCode.LogColor);
 
-			ConfigItem<TextDrawingMode> itemTDM = (ConfigItem<TextDrawingMode>)ConfigData.Instance.GetConfigItem(ConfigCode.TextDrawingMode);
+			var itemTDM = (ConfigItem<TextDrawingMode>)ConfigData.Instance.GetConfigItem(ConfigCode.TextDrawingMode);
 			switch (itemTDM.Value)
 			{
-				case TextDrawingMode.WINAPI:
-					comboBoxTextDrawingMode.SelectedIndex = 0; break;
 				case TextDrawingMode.TEXTRENDERER:
-					comboBoxTextDrawingMode.SelectedIndex = 1; break;
+					comboBoxTextDrawingMode.SelectedIndex = 0; break;
 				case TextDrawingMode.GRAPHICS:
-					comboBoxTextDrawingMode.SelectedIndex = 2; break;
+					comboBoxTextDrawingMode.SelectedIndex = 1; break;
 			}
 			comboBoxTextDrawingMode.Enabled = !itemTDM.Fixed;
 
@@ -362,10 +360,8 @@ namespace MinorShift.Emuera.Forms
 			switch (comboBoxTextDrawingMode.SelectedIndex)
 			{
 				case 0:
-					config.GetConfigItem(ConfigCode.TextDrawingMode).SetValue<TextDrawingMode>(TextDrawingMode.WINAPI); break;
-				case 1:
 					config.GetConfigItem(ConfigCode.TextDrawingMode).SetValue<TextDrawingMode>(TextDrawingMode.TEXTRENDERER); break;
-				case 2:
+				case 1:
 					config.GetConfigItem(ConfigCode.TextDrawingMode).SetValue<TextDrawingMode>(TextDrawingMode.GRAPHICS); break;
 			}
 
