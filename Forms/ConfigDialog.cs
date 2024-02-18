@@ -557,7 +557,7 @@ namespace MinorShift.Emuera.Forms
 			disenabled |= setCheckBoxChecked(checkBox25, false) < 0;
 			disenabled |= setCheckBoxChecked(checkBox9, true) < 0;
 			if (disenabled)
-				System.Windows.MessageBox.Show("いくつかの設定は_fixed.configにより変更を許可されていないために変更できませんでした", "設定変更不可");
+				MessageBox.Show("いくつかの設定は_fixed.configにより変更を許可されていないために変更できませんでした", "設定変更不可");
 		}
 
 		private void button8_Click(object sender, EventArgs e)
@@ -574,7 +574,7 @@ namespace MinorShift.Emuera.Forms
 			disenabled |= setCheckBoxChecked(checkBoxCompatiSP, false) < 0;
 			disenabled |= setCheckBoxChecked(checkBox9, false) < 0;
 			if (disenabled)
-				System.Windows.MessageBox.Show("いくつかの設定は_fixed.configにより変更を許可されていないために変更できませんでした", "設定変更不可");
+				MessageBox.Show("いくつかの設定は_fixed.configにより変更を許可されていないために変更できませんでした", "設定変更不可");
 		}
 
 		//互換性チェックはいじらないように変更
@@ -589,7 +589,7 @@ namespace MinorShift.Emuera.Forms
 			disenabled |= setComboBoxChanged(comboBox3, 0) < 0;
 			disenabled |= setComboBoxChanged(comboBox4, 0) < 0;
 			if (disenabled)
-				System.Windows.MessageBox.Show("いくつかの設定は_fixed.configにより変更を許可されていないために変更できませんでした", "設定変更不可");
+				MessageBox.Show("いくつかの設定は_fixed.configにより変更を許可されていないために変更できませんでした", "設定変更不可");
 		}
 
 		private void button6_Click(object sender, EventArgs e)
@@ -603,7 +603,7 @@ namespace MinorShift.Emuera.Forms
 			disenabled |= setComboBoxChanged(comboBox3, 0) < 0;
 			disenabled |= setComboBoxChanged(comboBox4, 0) < 0;
 			if (disenabled)
-				System.Windows.MessageBox.Show("いくつかの設定は_fixed.configにより変更を許可されていないために変更できませんでした", "設定変更不可");
+				MessageBox.Show("いくつかの設定は_fixed.configにより変更を許可されていないために変更できませんでした", "設定変更不可");
 		}
 
 		private void comboBox6_SelectedIndexChanged(object sender, EventArgs e)

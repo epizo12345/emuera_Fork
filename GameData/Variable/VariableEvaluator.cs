@@ -7,6 +7,7 @@ using MinorShift.Emuera.Sub;
 using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.GameData.Expression;
 using MinorShift.Emuera.GameProc.Function;
+using System.Windows.Forms;
 
 namespace MinorShift.Emuera.GameData.Variable
 {
@@ -1759,7 +1760,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			}
 			catch
 			{
-				System.Windows.MessageBox.Show("datフォルダーの作成に失敗しました");
+				MessageBox.Show("datフォルダーの作成に失敗しました");
 				throw new CodeEE("datフォルダーの作成に失敗しました");
 			}
 		}

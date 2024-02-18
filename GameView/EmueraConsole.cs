@@ -1793,12 +1793,12 @@ namespace MinorShift.Emuera.GameView
 		{
 			if (state == ConsoleState.Error)
 			{
-				System.Windows.MessageBox.Show("エラー発生時はこの機能は使えません");
+				MessageBox.Show("エラー発生時はこの機能は使えません");
 				return;
 			}
 			if (state == ConsoleState.Initializing)
 			{
-				System.Windows.MessageBox.Show("初期化中はこの機能は使えません");
+				MessageBox.Show("初期化中はこの機能は使えません");
 				return;
 			}
 			bool notRedraw = false;
@@ -1844,12 +1844,12 @@ namespace MinorShift.Emuera.GameView
 		{
 			if (state == ConsoleState.Error)
 			{
-				System.Windows.MessageBox.Show("エラー発生時はこの機能は使えません");
+				MessageBox.Show("エラー発生時はこの機能は使えません");
 				return;
 			}
 			if (state == ConsoleState.Initializing)
 			{
-				System.Windows.MessageBox.Show("初期化中はこの機能は使えません");
+				MessageBox.Show("初期化中はこの機能は使えません");
 				return;
 			}
 			bool notRedraw = false;
@@ -1882,12 +1882,12 @@ namespace MinorShift.Emuera.GameView
 		{
 			if (state == ConsoleState.Error)
 			{
-				System.Windows.MessageBox.Show("エラー発生時はこの機能は使えません");
+				MessageBox.Show("エラー発生時はこの機能は使えません");
 				return;
 			}
 			if (state == ConsoleState.Initializing)
 			{
-				System.Windows.MessageBox.Show("初期化中はこの機能は使えません");
+				MessageBox.Show("初期化中はこの機能は使えません");
 				return;
 			}
 			if (genericTimer.Enabled)

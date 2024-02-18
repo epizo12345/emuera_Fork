@@ -6,13 +6,11 @@
     <RootNamespace>MinorShift.Emuera</RootNamespace>
     <Version>0.2.0</Version>
 
-    <PublishSingleFile>true</PublishSingleFile>
-    <PublishSelfContained>false</PublishSelfContained>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>false</SelfContained>
 
     <UseWindowsForms>true</UseWindowsForms>
-    <UseWPF>true</UseWPF>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>none</DebugType>
@@ -27,6 +25,9 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Enums.NET" Version="4.0.1" />
+    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.49-beta">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="SkiaSharp" Version="2.88.7" />
     <PackageReference Include="SkiaSharp.Views.WindowsForms" Version="2.88.7" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
