@@ -72,7 +72,7 @@ namespace MinorShift.Emuera.GameView
 		/// </summary>
 		string stBar = null;
 
-		int lastBgColorChange = 0;
+		long lastBgColorChange = 0;
 		bool forceTextBoxColor = false;
 		public void SetBgColor(Color color)
 		{
@@ -82,15 +82,15 @@ namespace MinorShift.Emuera.GameView
 			//最初の再描画時に現在の背景色に合わせる
 			if (redraw == ConsoleRedraw.None && window.ScrollBar.Value == window.ScrollBar.Maximum)
 				return;
-			var sec = (DateTime.Now - _startTime).Milliseconds - lastBgColorChange;
+			var sec = stopwatch.ElapsedMilliseconds - lastBgColorChange;
 			//色変化が速くなりすぎないように一定時間以内の再呼び出しは強制待ちにする
 			while (sec < 200)
 			{
 				Application.DoEvents();
-				sec = (DateTime.Now - _startTime).Milliseconds - lastBgColorChange;
+				sec = stopwatch.ElapsedMilliseconds - lastBgColorChange;
 			}
 			RefreshStrings(true);
-			lastBgColorChange = (DateTime.Now - _startTime).Milliseconds;
+			lastBgColorChange = stopwatch.ElapsedMilliseconds;
 		}
 
 		/// <summary>

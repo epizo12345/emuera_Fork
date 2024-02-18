@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using MinorShift.Emuera;
 
 namespace Emuera;
@@ -15,20 +16,24 @@ static partial class Preload
         return files[string.GetHashCode(path, StringComparison.OrdinalIgnoreCase)];
     }
 
-    public static void Load(string path)
+    public static async Task Load(string path)
     {
         var startTime = DateTime.Now;
         Debug.WriteLine($"Load: {path} : Start");
 
-        Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories).AsParallel().ForAll((childPath) =>
+        await Task.Run(() =>
         {
-            var key = string.GetHashCode(childPath, StringComparison.OrdinalIgnoreCase);
-            var value = File.ReadAllLines(childPath, Config.Encode);
-            lock (files)
+            Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories).AsParallel().ForAll((childPath) =>
             {
-                files.TryAdd(key, value);
-            }
+                var key = string.GetHashCode(childPath, StringComparison.OrdinalIgnoreCase);
+                var value = File.ReadAllLines(childPath, Config.Encode);
+                lock (files)
+                {
+                    files.TryAdd(key, value);
+                }
+            });
         });
+
 
         Debug.WriteLine($"Load: {path} : End in {(DateTime.Now - startTime).TotalMilliseconds}ms");
     }

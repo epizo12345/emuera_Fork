@@ -31,7 +31,7 @@ namespace MinorShift.Emuera.GameProc
 		/// 複数のファイルを読む
 		/// </summary>
 		/// <param name="filepath"></param>
-		public bool LoadErbFiles(string erbDir, bool displayReport, LabelDictionary labelDictionary)
+		public async Task<bool> LoadErbFiles(string erbDir, bool displayReport, LabelDictionary labelDictionary)
 		{
 			//1.713 labelDicをnewする位置を変更。
 			//checkScript();の時点でExpressionPerserがProcess.instance.LabelDicを必要とするから。
@@ -55,9 +55,8 @@ namespace MinorShift.Emuera.GameProc
 					if (displayReport)
 						output.PrintSystemLine(filename + "読み込み中・・・");
 #endif
-					loadErb(file, filename, isOnlyEvent);
+					await Task.Run(() => loadErb(file, filename, isOnlyEvent));
 				};
-				System.Windows.Forms.Application.DoEvents();
 				ParserMediator.FlushWarningList();
 #if DEBUG
 				output.PrintSystemLine("経過時間:" + (DateTime.Now - starttime).TotalMilliseconds + "ms:");
@@ -72,7 +71,7 @@ namespace MinorShift.Emuera.GameProc
 #endif
 				if (displayReport)
 					output.PrintSystemLine("スクリプトの構文チェック中・・・");
-				ParseScript();
+				await Task.Run(ParseScript);
 				ParserMediator.FlushWarningList();
 
 #if DEBUG
@@ -101,7 +100,7 @@ namespace MinorShift.Emuera.GameProc
 		/// 指定されたファイルを読み込む
 		/// </summary>
 		/// <param name="filename"></param>
-		public bool loadErbs(List<string> paths, LabelDictionary labelDictionary)
+		public async Task<bool> loadErbs(List<string> paths, LabelDictionary labelDictionary)
 		{
 			string fname;
 			List<string> isOnlyEvent = [];
@@ -109,25 +108,28 @@ namespace MinorShift.Emuera.GameProc
 			labelDic = labelDictionary;
 			labelDic.Initialized = false;
 
-			foreach (var fpath in paths)
+			await Task.Run(() =>
 			{
-				if (fpath.StartsWith(Program.ErbDir, Config.SCIgnoreCase) && !Program.AnalysisMode)
-					fname = fpath[Program.ErbDir.Length..];
-				else
-					fname = fpath;
-				if (Program.AnalysisMode)
+				foreach (var fpath in paths)
 				{
-					output.PrintSystemLine(fname + "読み込み中・・・");
-				}
-				loadErb(fpath, fname, isOnlyEvent);
-			};
+					if (fpath.StartsWith(Program.ErbDir, Config.SCIgnoreCase) && !Program.AnalysisMode)
+						fname = fpath[Program.ErbDir.Length..];
+					else
+						fname = fpath;
+					if (Program.AnalysisMode)
+					{
+						output.PrintSystemLine(fname + "読み込み中・・・");
+					}
+					loadErb(fpath, fname, isOnlyEvent);
+				};
+			});
 			if (Program.AnalysisMode)
 				output.NewLine();
 			ParserMediator.FlushWarningList();
 			setLabelsArg();
 			ParserMediator.FlushWarningList();
 			labelDic.Initialized = true;
-			ParseScript();
+			await Task.Run(ParseScript);
 			ParserMediator.FlushWarningList();
 			parentProcess.scaningLine = null;
 			isOnlyEvent.Clear();

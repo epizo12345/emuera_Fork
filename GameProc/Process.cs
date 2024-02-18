@@ -11,6 +11,7 @@ using MinorShift.Emuera.GameData.Function;
 using System.Linq;
 using MinorShift._Library;
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace MinorShift.Emuera.GameProc
 {
@@ -43,7 +44,7 @@ namespace MinorShift.Emuera.GameProc
 		bool initialiing;
 		public bool inInitializeing { get { return initialiing; } }
 
-		public bool Initialize()
+		public async Task<bool> Initialize()
 		{
 			var stopWatch = new Stopwatch();
 			stopWatch.Start();
@@ -71,7 +72,7 @@ namespace MinorShift.Emuera.GameProc
 
 				Debug.WriteLine("Proc:Init:Image:Start " + stopWatch.ElapsedMilliseconds + "ms");
 				//リソースフォルダ読み込み
-				if (!Content.AppContents.LoadContents())
+				if (!await Task.Run(Content.AppContents.LoadContents))
 				{
 					ParserMediator.FlushWarningList();
 					console.PrintSystemLine("リソースフォルダ読み込み中に異常が発見されたため処理を終了します");
@@ -121,6 +122,7 @@ namespace MinorShift.Emuera.GameProc
 				//ここでBARを設定すれば、いいことに気づいた予感
 				console.setStBar(Config.DrawLineString);
 
+				Debug.WriteLine("Proc:Init:Rename:Load:Start " + stopWatch.ElapsedMilliseconds + "ms");
 				//_rename.csv読み込み
 				if (Config.UseRenameFile)
 				{
@@ -133,6 +135,8 @@ namespace MinorShift.Emuera.GameProc
 					else
 						console.PrintError("csv\\_Rename.csvが見つかりません");
 				}
+				Debug.WriteLine("Proc:Init:Rename:Load:End " + stopWatch.ElapsedMilliseconds + "ms");
+
 				if (!Config.DisplayReport)
 				{
 					console.PrintSingleLine(Config.LoadLabel);
@@ -140,7 +144,7 @@ namespace MinorShift.Emuera.GameProc
 				}
 				//gamebase.csv読み込み
 				gamebase = new GameBase();
-				if (!gamebase.LoadGameBaseCsv(Program.CsvDir + "GAMEBASE.CSV"))
+				if (!await Task.Run(() => gamebase.LoadGameBaseCsv(Program.CsvDir + "GAMEBASE.CSV")))
 				{
 					ParserMediator.FlushWarningList();
 					console.PrintSystemLine("GAMEBASE.CSVの読み込み中に問題が発生したため処理を終了しました");
@@ -180,7 +184,7 @@ namespace MinorShift.Emuera.GameProc
 				LexicalAnalyzer.UseMacro = false;
 
 				//ERH読込
-				if (!hLoader.LoadHeaderFiles(Program.ErbDir, Config.DisplayReport))
+				if (!await Task.Run(() => hLoader.LoadHeaderFiles(Program.ErbDir, Config.DisplayReport)))
 				{
 					ParserMediator.FlushWarningList();
 					console.PrintSystemLine("ERHの読み込み中にエラーが発生したため処理を終了しました");
@@ -192,18 +196,17 @@ namespace MinorShift.Emuera.GameProc
 
 				//TODO:ユーザー定義変数用のcsvの適用
 
-				Debug.WriteLine("Proc:Init:ERB:Start " + stopWatch.ElapsedMilliseconds + "ms");
 				//ERB読込
-				Debug.WriteLine("Proc:Init:ERB:Load:Start " + stopWatch.ElapsedMilliseconds + "ms");
+				Debug.WriteLine("Proc:Init:ERB:Start " + stopWatch.ElapsedMilliseconds + "ms");
 				var loader = new ErbLoader(console, exm, this);
 				if (Program.AnalysisMode)
-					noError = loader.loadErbs(Program.AnalysisFiles, labelDic);
+					noError = await loader.loadErbs(Program.AnalysisFiles, labelDic);
 				else
-					noError = loader.LoadErbFiles(Program.ErbDir, Config.DisplayReport, labelDic);
-				Debug.WriteLine("Proc:Init:ERB:Load:End " + stopWatch.ElapsedMilliseconds + "ms");
+					noError = await loader.LoadErbFiles(Program.ErbDir, Config.DisplayReport, labelDic);
+				Debug.WriteLine("Proc:Init:ERB:End " + stopWatch.ElapsedMilliseconds + "ms");
+
 				initSystemProcess();
 				initialiing = false;
-				Debug.WriteLine("Proc:Init:ERB:End " + stopWatch.ElapsedMilliseconds + "ms");
 
 				Debug.WriteLine("Proc:Init:End " + stopWatch.ElapsedMilliseconds + "ms");
 			}
@@ -221,21 +224,21 @@ namespace MinorShift.Emuera.GameProc
 			return true;
 		}
 
-		public void ReloadErb()
+		public async Task ReloadErb()
 		{
 			saveCurrentState(false);
 			state.SystemState = SystemStateCode.System_Reloaderb;
 			ErbLoader loader = new(console, exm, this);
-			loader.LoadErbFiles(Program.ErbDir, false, labelDic);
+			await loader.LoadErbFiles(Program.ErbDir, false, labelDic);
 			console.ReadAnyKey();
 		}
 
-		public void ReloadPartialErb(List<string> path)
+		public async Task ReloadPartialErb(List<string> path)
 		{
 			saveCurrentState(false);
 			state.SystemState = SystemStateCode.System_Reloaderb;
 			ErbLoader loader = new(console, exm, this);
-			loader.loadErbs(path, labelDic);
+			await loader.loadErbs(path, labelDic);
 			console.ReadAnyKey();
 		}
 

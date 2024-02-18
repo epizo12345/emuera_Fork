@@ -2,12 +2,13 @@
 
 namespace MinorShift.Emuera.GameView
 {
+#nullable enable
 	/// <summary>
 	/// 装飾付文字列(ConsoleStyledString)用のスタイル構造体
 	/// </summary>
 	internal struct StringStyle
 	{
-		public StringStyle(Color color, FontStyle fontStyle, string fontname)
+		public StringStyle(Color color, FontStyle fontStyle, string? fontname)
 		{
 			this.Color = color;
 			this.ButtonColor = Config.FocusColor;
@@ -39,11 +40,10 @@ namespace MinorShift.Emuera.GameView
 		public bool ColorChanged;
 		public FontStyle FontStyle;
 		public string Fontname;
-		public override bool Equals(object obj)
+		public override bool Equals(object? obj)
 		{
-			if ((obj == null) || (!(obj is StringStyle)))
+			if ((obj == null) || (obj is not StringStyle ss))
 				return false;
-			StringStyle ss = (StringStyle)obj;
 			return (this.Color == ss.Color) && (this.ButtonColor == ss.ButtonColor) && (this.ColorChanged == ss.ColorChanged) && (this.FontStyle == ss.FontStyle) && this.Fontname.Equals(ss.Fontname, Config.SCIgnoreCase);
 		}
 		public override int GetHashCode()

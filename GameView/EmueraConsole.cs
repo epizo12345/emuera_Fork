@@ -13,6 +13,8 @@ using MinorShift.Emuera.Forms;
 using MinorShift.Emuera.GameData.Expression;
 using MinorShift.Emuera.GameProc.Function;
 using MinorShift.Emuera.Content;
+using System.Threading.Tasks;
+using Emuera;
 
 namespace MinorShift.Emuera.GameView
 {
@@ -65,12 +67,10 @@ namespace MinorShift.Emuera.GameView
 			displayLineList = [];
 			printBuffer = new PrintStringBuffer(this);
 
-			timer = new Timer
-			{
-				Enabled = false
-			};
-			timer.Tick += new EventHandler(tickTimer);
-			timer.Interval = 10;
+			genericTimer = new();
+			genericTimer.Elapsed += tickTimer;
+			genericTimer.Interval = 10;
+			genericTimer.Enabled = false;
 			CBG_Clear();//文字列描画用ダミー追加
 
 			redrawTimer = new Timer
@@ -338,8 +338,19 @@ namespace MinorShift.Emuera.GameView
 			}
 		}
 
-		public void Initialize()
+		public async Task Initialize()
 		{
+			var stopWatch = new Stopwatch();
+			stopWatch.Start();
+			Debug.WriteLine("Init:Start");
+			Debug.WriteLine("File:Preload:Start");
+			//必要なソースファイルを事前にメモリに一気に読み込む
+			Preload.Clear();
+			await Preload.Load(Program.ErbDir);
+			await Preload.Load(Program.CsvDir);
+
+			Debug.WriteLine("File:Preload:End " + stopWatch.ElapsedMilliseconds + "ms");
+
 			GlobalStatic.Console = this;
 			// GlobalStatic.MainWindow = window;
 			process = new GameProc.Process(this);
@@ -350,7 +361,7 @@ namespace MinorShift.Emuera.GameView
 				window.Focus();
 			}
 			ClearDisplay();
-			if (!process.Initialize())
+			if (!await process.Initialize())
 			{
 				state = ConsoleState.Error;
 				OutputLog(null);
@@ -358,8 +369,10 @@ namespace MinorShift.Emuera.GameView
 				RefreshStrings(true);
 				return;
 			}
-			callEmueraProgram("");
+			RunEmueraProgram("");
 			RefreshStrings(true);
+
+			Debug.WriteLine("Init:End " + stopWatch.ElapsedMilliseconds + "ms");
 		}
 
 
@@ -522,7 +535,7 @@ namespace MinorShift.Emuera.GameView
 			if (!redrawTimer.Enabled)
 				return;
 			//INPUT待ちでないとき、又はタイマー付きINPUT状態の場合はこれ以外の処理に任せる
-			if (state != ConsoleState.WaitInput || timer.Enabled)
+			if (state != ConsoleState.WaitInput || genericTimer.Enabled)
 			{
 				return;
 			}
@@ -547,10 +560,9 @@ namespace MinorShift.Emuera.GameView
 
 
 
-		Timer timer = null;
+		System.Timers.Timer genericTimer = new();
 		Int64 timerID = -1;
-		DateTime timer_startTime;//現在のタイマーを開始した時のミリ秒数（WinmmTimer.TickCount基準）
-		Int64 timer_nextDisplayTime;//TINPUT系で次に残り時間を表示する時のTickCountミリ秒数
+		Stopwatch stopwatch = new Stopwatch();//現在のタイマーを開始した時のミリ秒数（WinmmTimer.TickCount基準）
 		Int64 timer_endTime;//現在のタイマーを終了する時のTickCountミリ秒数
 		bool wait_timeout = false;
 		bool isTimeout = false;
@@ -578,19 +590,15 @@ namespace MinorShift.Emuera.GameView
 		{
 			isTimeout = false;
 			timerID = inputReq.ID;
-			timer.Enabled = true;
-			timer_startTime = DateTime.Now;
+			genericTimer.Enabled = true;
+			stopwatch.Restart();
 			timer_endTime = inputReq.Timelimit;
-			//if (inputReq.DisplayTime)
-			//次に残り時間を表示するタイミングの設定。inputReq.DisplayTime==tureでないなら設定するだけで参照はされない（はず
-			timer_nextDisplayTime = timer_startTime.Millisecond + 100;
-
 		}
 
 		//汎用
 		private void tickTimer(object sender, EventArgs e)
 		{
-			if (!timer.Enabled)
+			if (!genericTimer.Enabled)
 				return;
 			if (state != ConsoleState.WaitInput || inputReq.Timelimit <= 0 || timerID != inputReq.ID)
 			{
@@ -601,20 +609,11 @@ namespace MinorShift.Emuera.GameView
 				return;
 #endif
 			}
-			var elapsedMs = (DateTime.Now - timer_startTime).TotalMilliseconds;
+			var elapsedMs = stopwatch.ElapsedMilliseconds;
 			if (elapsedMs >= timer_endTime)
 			{
 				endTimer();
 				return;
-			}
-			if (inputReq.DisplayTime && elapsedMs >= timer_nextDisplayTime)
-			{
-				//表示に時間がかかってタイマーが止まるので次の描画は100ms後。場合によっては表示が0.2一気に飛ぶ。
-				timer_nextDisplayTime = Convert.ToInt64(elapsedMs) + 100;
-				var time = (timer_endTime - elapsedMs) / 100;
-				string timeString1 = "残り ";
-				string timeString2 = ((double)time / 10.0).ToString();
-				changeLastLine(timeString1 + timeString2);
 			}
 		}
 
@@ -629,7 +628,7 @@ namespace MinorShift.Emuera.GameView
 			//	}
 			//	wait_timeout = false;
 			//}
-			timer.Enabled = false;
+			genericTimer.Enabled = false;
 			//timer.Dispose();
 		}
 
@@ -652,21 +651,25 @@ namespace MinorShift.Emuera.GameView
 				changeLastLine(inputReq.TimeUpMes);
 			else if (inputReq.TimeUpMes != null)
 				PrintSingleLine(inputReq.TimeUpMes);
-			callEmueraProgram("");//ディフォルト入力の処理はcallEmueraProgram側で
-			if (state == ConsoleState.WaitInput && inputReq.NeedValue)
+			window.Invoke(() =>
 			{
-				Point point = window.MainPicBox.PointToClient(Control.MousePosition);
-				if (window.MainPicBox.ClientRectangle.Contains(point))
-					MoveMouse(point);
-			}
-			RefreshStrings(true);
+				RunEmueraProgram("");//ディフォルト入力の処理はcallEmueraProgram側で
+				if (state == ConsoleState.WaitInput && inputReq.NeedValue)
+				{
+					Point point = window.MainPicBox.PointToClient(Control.MousePosition);
+					if (window.MainPicBox.ClientRectangle.Contains(point))
+						MoveMouse(point);
+				}
+				RefreshStrings(true);
+			});
+
 		}
 
 		public void forceStopTimer()
 		{
-			if (timer.Enabled)
+			if (genericTimer.Enabled)
 			{
-				timer.Enabled = false;
+				genericTimer.Enabled = false;
 			}
 		}
 		#endregion
@@ -675,14 +678,14 @@ namespace MinorShift.Emuera.GameView
 		/// <summary>
 		/// スクリプト実行。RefreshStringsはしないので呼び出し側がすること
 		/// </summary>
-		/// <param name="str"></param>
-		private void callEmueraProgram(string str)
+		/// <param name="input"></param>
+		private void RunEmueraProgram(string input)
 		{
 			//入力文字列の表示処理を行わない場合はstr == null
-			if (str != null)
+			if (input != null)
 			{
 				//INPUT文字列をPRINTする処理など
-				if (!doInputToEmueraProgram(str))
+				if (!doInputToEmueraProgram(input))
 					return;
 				if (state == ConsoleState.Error)
 					return;
@@ -801,7 +804,7 @@ namespace MinorShift.Emuera.GameView
 			try
 			{
 				//1823 Escキーもマクロも右クリックも不可。単純に押されたキーを送るのみ。
-				callEmueraProgram(null);
+				RunEmueraProgram(null);
 				if (state == ConsoleState.WaitInput && inputReq.NeedValue)
 				{
 					Point point = window.MainPicBox.PointToClient(Control.MousePosition);
@@ -855,7 +858,7 @@ namespace MinorShift.Emuera.GameView
 					}
 					if (inputReq.InputType == InputType.Void)
 						return;
-					if (timer.Enabled &&
+					if (genericTimer.Enabled &&
 						(inputReq.InputType == InputType.AnyKey || inputReq.InputType == InputType.EnterKey))
 						stopTimer();
 					//if((inputReq.InputType == InputType.IntValue || inputReq.InputType == InputType.StrValue)
@@ -883,7 +886,7 @@ namespace MinorShift.Emuera.GameView
 						i--;
 						inputs = "";
 					}
-					callEmueraProgram(inputs);
+					RunEmueraProgram(inputs);
 					RefreshStrings(false);
 					while (MesSkip && state == ConsoleState.WaitInput)
 					{
@@ -892,7 +895,7 @@ namespace MinorShift.Emuera.GameView
 							break;
 						if (inputReq.StopMesskip)
 							break;
-						callEmueraProgram("");
+						RunEmueraProgram("");
 						RefreshStrings(false);
 						//DoEventを呼ばないと描画処理すらまったく行われない
 						Application.DoEvents();
@@ -1066,7 +1069,7 @@ namespace MinorShift.Emuera.GameView
 		public bool RunERBFromMemory { get { return runningERBfromMemory; } set { runningERBfromMemory = value; } }
 		void doSystemCommand(string command)
 		{
-			if (timer.Enabled)
+			if (genericTimer.Enabled)
 			{
 				PrintError("タイマー系命令の待ち時間中はコマンドを入力できません");
 				PrintError("");//タイマー表示処理に消されちゃうかもしれないので
@@ -1133,8 +1136,7 @@ namespace MinorShift.Emuera.GameView
 		#endregion
 
 		#region 描画系
-		DateTime _startTime = DateTime.Now;
-		int lastUpdate = 0;
+		long lastUpdate = 0;
 		uint msPerFrame = 1000 / 60;//60FPS
 		ConsoleRedraw redraw = ConsoleRedraw.Normal;
 		public ConsoleRedraw Redraw { get { return redraw; } }
@@ -1202,7 +1204,7 @@ namespace MinorShift.Emuera.GameView
 			 //履歴表示中でなく、最終行を表示済みであり、選択中ボタンが変更されていないなら更新不要
 				if ((!isBackLog) && (lastDrawnLineNo == lineNo) && (lastSelectingButton == selectingButton))
 					return;
-				int sec = (DateTime.Now - _startTime).Milliseconds - lastUpdate;
+				var sec = stopwatch.ElapsedMilliseconds - lastUpdate;
 				//まだ書き換えるタイミングでないなら次の更新を待ってみる
 				//ただし、入力待ちなど、しばらく更新のタイミングがない場合には強制的に書き換えてみる
 				if (sec < msPerFrame && (state == ConsoleState.Running || state == ConsoleState.Initializing))
@@ -1210,15 +1212,15 @@ namespace MinorShift.Emuera.GameView
 			}
 			if (forceTextBoxColor)
 			{
-				int sec = (DateTime.Now - _startTime).Milliseconds - lastBgColorChange;
+				var sec = stopwatch.ElapsedMilliseconds;
 				//色変化が速くなりすぎないように一定時間以内の再呼び出しは強制待ちにする
 				while (sec < 200)
 				{
 					Application.DoEvents();
-					sec = (DateTime.Now - _startTime).Milliseconds - lastBgColorChange;
+					sec = stopwatch.ElapsedMilliseconds - lastBgColorChange;
 				}
 				window.TextBox.BackColor = this.bgColor;
-				lastBgColorChange = (DateTime.Now - _startTime).Milliseconds;
+				lastBgColorChange = stopwatch.ElapsedMilliseconds;
 			}
 			verticalScrollBarUpdate();
 			window.Refresh();//OnPaint発行
@@ -1241,7 +1243,7 @@ namespace MinorShift.Emuera.GameView
 			if (!this.Enabled)
 				return;
 			//1824 アニメスプライト用・現在フレームの時間を決定
-			lastUpdate = (DateTime.Now - _startTime).Milliseconds;
+			lastUpdate = stopwatch.ElapsedMilliseconds;
 
 			bool isBackLog = window.ScrollBar.Value != window.ScrollBar.Maximum;
 			int pointY = window.MainPicBox.Height - Config.LineHeight;
@@ -1260,6 +1262,7 @@ namespace MinorShift.Emuera.GameView
 			else
 			{
 				graph.Clear(this.bgColor);
+				graph.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
 				//1823 cbg追加
 				for (int j = 0; j < cbgList.Count; j++)
 				{
@@ -1777,7 +1780,7 @@ namespace MinorShift.Emuera.GameView
 			userStyle = new StringStyle(Config.ForeColor, FontStyle.Regular, null);
 			process.BeginTitle();
 			ReadAnyKey(false, false);
-			callEmueraProgram("");
+			RunEmueraProgram("");
 			RefreshStrings(true);
 		}
 
@@ -1786,7 +1789,7 @@ namespace MinorShift.Emuera.GameView
 		ConsoleState prevState;
 		InputRequest prevReq;
 
-		public void ReloadErb()
+		public async Task ReloadErb()
 		{
 			if (state == ConsoleState.Error)
 			{
@@ -1804,9 +1807,9 @@ namespace MinorShift.Emuera.GameView
 				notRedraw = true;
 				redraw = ConsoleRedraw.Normal;
 			}
-			if (timer.Enabled)
+			if (genericTimer.Enabled)
 			{
-				timer.Enabled = false;
+				genericTimer.Enabled = false;
 				timer_suspended = true;
 			}
 			prevState = state;
@@ -1814,7 +1817,7 @@ namespace MinorShift.Emuera.GameView
 			state = ConsoleState.Initializing;
 			PrintSingleLine("ERB再読み込み中……", true);
 			force_temporary = true;
-			process.ReloadErb();
+			await process.ReloadErb();
 			force_temporary = false;
 			PrintSingleLine("再読み込み完了", true);
 			RefreshStrings(true);
@@ -1832,12 +1835,12 @@ namespace MinorShift.Emuera.GameView
 			if (timer_suspended)
 			{
 				timer_suspended = false;
-				timer.Enabled = true;
+				genericTimer.Enabled = true;
 				//タイマー待機中の時間ずれは修正しない。タイマー中にリロードしたらほぼ強制タイムアウトする程度は仕様のうちであろう。
 			}
 		}
 
-		public void ReloadPartialErb(List<string> path)
+		public async Task ReloadPartialErb(List<string> path)
 		{
 			if (state == ConsoleState.Error)
 			{
@@ -1855,9 +1858,9 @@ namespace MinorShift.Emuera.GameView
 				notRedraw = true;
 				redraw = ConsoleRedraw.Normal;
 			}
-			if (timer.Enabled)
+			if (genericTimer.Enabled)
 			{
-				timer.Enabled = false;
+				genericTimer.Enabled = false;
 				timer_suspended = true;
 			}
 			prevState = state;
@@ -1865,7 +1868,7 @@ namespace MinorShift.Emuera.GameView
 			state = ConsoleState.Initializing;
 			PrintSingleLine("ERB再読み込み中……", true);
 			force_temporary = true;
-			process.ReloadPartialErb(path);
+			await process.ReloadPartialErb(path);
 			force_temporary = false;
 			PrintSingleLine("再読み込み完了", true);
 			RefreshStrings(true);
@@ -1875,7 +1878,7 @@ namespace MinorShift.Emuera.GameView
 				redraw = ConsoleRedraw.None;
 		}
 
-		public void ReloadFolder(string erbPath)
+		public async Task ReloadFolder(string erbPath)
 		{
 			if (state == ConsoleState.Error)
 			{
@@ -1887,9 +1890,9 @@ namespace MinorShift.Emuera.GameView
 				System.Windows.MessageBox.Show("初期化中はこの機能は使えません");
 				return;
 			}
-			if (timer.Enabled)
+			if (genericTimer.Enabled)
 			{
-				timer.Enabled = false;
+				genericTimer.Enabled = false;
 				timer_suspended = true;
 			}
 			List<string> paths = [];
@@ -1913,7 +1916,7 @@ namespace MinorShift.Emuera.GameView
 			state = ConsoleState.Initializing;
 			PrintSingleLine("ERB再読み込み中……", true);
 			force_temporary = true;
-			process.ReloadPartialErb(paths);
+			await process.ReloadPartialErb(paths);
 			force_temporary = false;
 			PrintSingleLine("再読み込み完了", true);
 			RefreshStrings(true);
@@ -1925,8 +1928,8 @@ namespace MinorShift.Emuera.GameView
 
 		public void Dispose()
 		{
-			if (timer != null)
-				timer.Dispose();
+			if (genericTimer != null)
+				genericTimer.Dispose();
 			//timer = null;
 			//stringMeasure.Dispose();
 		}

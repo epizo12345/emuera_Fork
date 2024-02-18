@@ -45,7 +45,6 @@ namespace MinorShift.Emuera.GameProc
 					noError = loadHeaderFile(file, filename);
 					if (!noError)
 						break;
-					System.Windows.Forms.Application.DoEvents();
 				}
 				//エラーが起きてる場合でも読み込めてる分だけはチェックする
 				if (dimlines.Count > 0)
