@@ -5,7 +5,6 @@ using MinorShift.Emuera.GameProc;
 using MinorShift.Emuera.GameView;
 using System.IO;
 using System.Text.RegularExpressions;
-#nullable enable
 
 namespace MinorShift.Emuera
 {
@@ -51,38 +50,29 @@ namespace MinorShift.Emuera
 
 			var fileLine = File.ReadAllLines(filepath, Config.Encode);
 			ScriptPosition pos = null;
-			Regex reg = preCompiledRegex();
+			Regex regex = unEscapedCommaRegex();
 			try
 			{
 				var lineNo = 0;
 				foreach (var line in fileLine)
 				{
-					if (line.Length == 0)
-						continue;
+					pos = new ScriptPosition(filepath, lineNo);
 					if (line.StartsWith(';'))
 						continue;
-					string[] baseTokens = reg.Split(line);
-					if (!baseTokens[^1].Contains(','))
-						continue;
-					string[] last = baseTokens[^1].Split(',');
-					baseTokens[^1] = last[0];
-					string[] tokens = [string.Join(',', baseTokens), last[1]];
-					pos = new ScriptPosition(filepath, lineNo);
-					//右がERB中の表記、左が変換先になる。
-					string value = tokens[0].Trim();
-					string key = string.Format("[[{0}]]", tokens[1].Trim());
-					RenameDic[key] = value;
+					var tokens = regex.Split(line);
+					if (tokens.Length == 2)
+					{
+						//右がERB中の表記、左が変換先になる。
+						string key = $"[[{tokens[1].Trim()}]]";
+						string value = tokens[0].Trim();
+						RenameDic[key] = value;
+					}
 					lineNo++;
-					pos = null;
 				}
 			}
 			catch (Exception e)
 			{
-				if (pos != null)
-					throw new CodeEE(e.Message, pos);
-				else
-					throw new CodeEE(e.Message);
-
+				throw new CodeEE(e.Message, pos);
 			}
 		}
 		#endregion
@@ -169,7 +159,7 @@ namespace MinorShift.Emuera
 			public string StackTrace;
 		}
 
-		[GeneratedRegex(@"\\,")]
-		private static partial Regex preCompiledRegex();
+		[GeneratedRegex(@"(?<!\\),")]
+		private static partial Regex unEscapedCommaRegex();
 	}
 }
