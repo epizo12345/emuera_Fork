@@ -281,7 +281,11 @@ namespace MinorShift.Emuera.GameView
 				this.DebugNewLine();
 			}
 			UseUserStyle = false;
-			ConsoleDisplayLine dispLine = printBuffer.AppendAndFlushErrButton(str, Style, ErrorButtonsText, pos, stringMeasure);
+			var errerStyle = new StringStyle()
+			{
+				Color = Color.Yellow
+			};
+			ConsoleDisplayLine dispLine = printBuffer.AppendAndFlushErrButton(str, errerStyle, ErrorButtonsText, pos, stringMeasure);
 			if (dispLine == null)
 				return;
 			addDisplayLine(dispLine, true);
