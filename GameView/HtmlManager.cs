@@ -731,6 +731,8 @@ namespace MinorShift.Emuera.GameView
 						int height = 0;
 						int width = 0;
 						int ypos = 0;
+						bool usePxHeight = false;
+						bool usePxWidth = false;
 						while (wc != null && !wc.EOL)
 						{
 							word = wc.Current as IdentifierWord;
@@ -758,15 +760,34 @@ namespace MinorShift.Emuera.GameView
 							{
 								if (height != 0)
 									throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
-								if (!int.TryParse(attrValue, out height))
-									throw new CodeEE("<" + tag + ">タグのheight属性の属性値が数値として解釈できません");
+								if (attrValue.Trim().EndsWith("px"))
+								{
+									usePxHeight = true;
+									if (!int.TryParse(attrValue[..^2], out height))
+										throw new CodeEE("<" + tag + ">タグのheight属性の属性値が数値として解釈できません");
+								}
+								else
+								{
+									if (!int.TryParse(attrValue, out height))
+										throw new CodeEE("<" + tag + ">タグのheight属性の属性値が数値として解釈できません");
+								}
 							}
 							else if (word.Code.Equals("width", StringComparison.OrdinalIgnoreCase))
 							{
 								if (width != 0)
 									throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
-								if (!int.TryParse(attrValue, out width))
-									throw new CodeEE("<" + tag + ">タグのwidth属性の属性値が数値として解釈できません");
+
+								if (attrValue.Trim().EndsWith("px"))
+								{
+									usePxWidth = true;
+									if (!int.TryParse(attrValue[..^2], out width))
+										throw new CodeEE("<" + tag + ">タグのwidth属性の属性値が数値として解釈できません");
+								}
+								else
+								{
+									if (!int.TryParse(attrValue, out width))
+										throw new CodeEE("<" + tag + ">タグのwidth属性の属性値が数値として解釈できません");
+								}
 							}
 							else if (word.Code.Equals("ypos", StringComparison.OrdinalIgnoreCase))
 							{
@@ -780,7 +801,7 @@ namespace MinorShift.Emuera.GameView
 						}
 						if (src == null)
 							throw new CodeEE("<" + tag + ">タグにsrc属性が設定されていません");
-						return new ConsoleImagePart(src, srcb, height, width, ypos);
+						return new ConsoleImagePart(src, srcb, height, width, ypos, usePxWidth, usePxHeight);
 					}
 
 				case "shape":

@@ -7,7 +7,7 @@ namespace MinorShift.Emuera.GameView
 	class ConsoleImagePart : AConsoleDisplayPart
 	{
 
-		public ConsoleImagePart(string resName, string resNameb, int raw_height, int raw_width, int raw_ypos)
+		public ConsoleImagePart(string resName, string resNameb, int raw_height, int raw_width, int raw_ypos, bool usePxWidth = false, bool usePxHeight = false)
 		{
 			top = 0;
 			bottom = Config.FontSize;
@@ -48,10 +48,24 @@ namespace MinorShift.Emuera.GameView
 				return;
 			}
 			int height;
-			if (raw_height == 0)//HTMLで高さが指定されていない又は0が指定された場合、フォントサイズをそのまま高さ(px単位)として使用する。
+
+			if (raw_height == 0)
+			{
+				//HTMLで高さが指定されていない又は0が指定された場合、フォントサイズをそのまま高さ(px単位)として使用する。
 				height = Config.FontSize;
-			else//HTMLで高さが指定された場合、フォントサイズの100分率と解釈する。
-				height = Config.FontSize * raw_height / 100;
+			}
+			else
+			{
+				if (usePxHeight)
+				{
+					height = raw_height;
+				}
+				else
+				{
+					//HTMLで高さが指定された場合、フォントサイズの100分率と解釈する。
+					height = Config.FontSize * raw_height / 100;
+				}
+			}
 			//幅が指定されていない又は0が指定された場合、元画像の縦横比を維持するように幅(px単位)を設定する。1未満は端数としてXsubpixelに記録。
 			//負の値が指定される可能性があるが、最終的なWidthは正の値になるようにあとで調整する。
 			if (raw_width == 0)
@@ -61,7 +75,14 @@ namespace MinorShift.Emuera.GameView
 			}
 			else
 			{
-				Width = Config.FontSize * raw_width / 100;
+				if (usePxWidth)
+				{
+					Width = raw_width;
+				}
+				else
+				{
+					Width = Config.FontSize * raw_width / 100;
+				}
 				XsubPixel = ((float)Config.FontSize * raw_width / 100f) - Width;
 			}
 			top = raw_ypos * Config.FontSize / 100;
