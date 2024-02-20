@@ -79,6 +79,8 @@ namespace MinorShift.Emuera.GameView
 			};
 			redrawTimer.Tick += new EventHandler(tickRedrawTimer);
 			redrawTimer.Interval = 10;
+
+			stopwatch.Start();
 		}
 		#region 1823 cbg関連
 		private readonly List<ClientBackGroundImage> cbgList = [];
@@ -562,7 +564,7 @@ namespace MinorShift.Emuera.GameView
 
 		System.Timers.Timer genericTimer = new();
 		Int64 timerID = -1;
-		Stopwatch stopwatch = new Stopwatch();//現在のタイマーを開始した時のミリ秒数（WinmmTimer.TickCount基準）
+		readonly Stopwatch stopwatch = new();//現在のタイマーを開始した時のミリ秒数（WinmmTimer.TickCount基準）
 		Int64 timer_endTime;//現在のタイマーを終了する時のTickCountミリ秒数
 		bool wait_timeout = false;
 		bool isTimeout = false;
@@ -1222,9 +1224,11 @@ namespace MinorShift.Emuera.GameView
 				window.TextBox.BackColor = this.bgColor;
 				lastBgColorChange = stopwatch.ElapsedMilliseconds;
 			}
-			verticalScrollBarUpdate();
-			window.Refresh();//OnPaint発行
-
+			window.Invoke(() =>
+			{
+				verticalScrollBarUpdate();
+				window.Refresh();//OnPaint発行
+			});
 		}
 
 		/// <summary>
