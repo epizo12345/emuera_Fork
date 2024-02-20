@@ -395,8 +395,7 @@ namespace MinorShift.Emuera.GameView
 		{
 			int pointX = 0;
 			//int count = buttonList.Count;
-			//1.824 修正。サブピクセルの初期値を0から0.5fにすることで端数処理吸収
-			float subPixel = 0.5f;
+			float subPixel = 0.0f;
 			for (int i = 0; i < buttonList.Count; i++)
 			{
 				ConsoleButtonString button = buttonList[i];
