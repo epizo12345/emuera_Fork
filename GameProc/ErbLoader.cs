@@ -7,6 +7,7 @@ using MinorShift.Emuera.GameData.Variable;
 using MinorShift.Emuera.GameProc.Function;
 using System.Threading.Tasks;
 using System.IO;
+using System.Threading;
 
 namespace MinorShift.Emuera.GameProc
 {
@@ -32,7 +33,7 @@ namespace MinorShift.Emuera.GameProc
 		/// 複数のファイルを読む
 		/// </summary>
 		/// <param name="filepath"></param>
-		public async Task<bool> LoadErbDir(string erbDir, bool displayReport, LabelDictionary labelDictionary)
+		public async Task<bool> LoadErbDir(string erbDir, bool displayReport, LabelDictionary labelDictionary, CancellationToken cancellationToken)
 		{
 			//1.713 labelDicをnewする位置を変更。
 			//checkScript();の時点でExpressionPerserがProcess.instance.LabelDicを必要とするから。
@@ -56,12 +57,14 @@ namespace MinorShift.Emuera.GameProc
 					if (displayReport)
 						output.PrintSystemLine(filename + "読み込み中・・・");
 #endif
+					cancellationToken.ThrowIfCancellationRequested();
 					await Task.Run(() => loadErb(file, filename, isOnlyEvent));
 				};
 				ParserMediator.FlushWarningList();
 #if DEBUG
 				output.PrintSystemLine("経過時間:" + (DateTime.Now - starttime).TotalMilliseconds + "ms:");
 #endif
+				cancellationToken.ThrowIfCancellationRequested();
 				if (displayReport)
 					output.PrintSystemLine("ユーザー定義関数のリストを構築中・・・");
 				setLabelsArg();
@@ -70,9 +73,16 @@ namespace MinorShift.Emuera.GameProc
 #if DEBUG
 				output.PrintSystemLine("経過時間:" + (DateTime.Now - starttime).TotalMilliseconds + "ms:");
 #endif
+				cancellationToken.ThrowIfCancellationRequested();
 				if (displayReport)
 					output.PrintSystemLine("スクリプトの構文チェック中・・・");
-				await Task.Run(ParseScript);
+				try
+				{
+					await Task.Run(() => ParseScript(cancellationToken), cancellationToken);
+				}
+				catch (OperationCanceledException)
+				{
+				}
 				ParserMediator.FlushWarningList();
 
 #if DEBUG
@@ -101,7 +111,7 @@ namespace MinorShift.Emuera.GameProc
 		/// 指定されたファイルを読み込む
 		/// </summary>
 		/// <param name="filename"></param>
-		public async Task<bool> LoadErbList(List<string> paths, LabelDictionary labelDictionary)
+		public async Task<bool> LoadErbList(List<string> paths, LabelDictionary labelDictionary, CancellationToken cancellationToken)
 		{
 			string fname;
 			List<string> isOnlyEvent = [];
@@ -121,16 +131,23 @@ namespace MinorShift.Emuera.GameProc
 					{
 						output.PrintSystemLine(fname + "読み込み中・・・");
 					}
+					cancellationToken.ThrowIfCancellationRequested();
 					loadErb(fpath, fname, isOnlyEvent);
 				};
-			});
+			}, cancellationToken);
 			if (Program.AnalysisMode)
 				output.NewLine();
 			ParserMediator.FlushWarningList();
 			setLabelsArg();
 			ParserMediator.FlushWarningList();
 			labelDic.Initialized = true;
-			await Task.Run(ParseScript);
+			try
+			{
+				await Task.Run(() => ParseScript(cancellationToken), cancellationToken);
+			}
+			catch (OperationCanceledException)
+			{
+			}
 			ParserMediator.FlushWarningList();
 			parentProcess.scaningLine = null;
 			isOnlyEvent.Clear();
@@ -618,151 +635,161 @@ namespace MinorShift.Emuera.GameProc
 		/// <summary>
 		/// 事前処理したファイルをさらに解析し実行可能な状態にする
 		/// </summary>
-		private void ParseScript()
+		private void ParseScript(CancellationToken cancellationToken)
 		{
 			int usedLabelCount = 0;
 			int labelDepth = -1;
 			List<FunctionLabelLine> labelList = labelDic.GetAllLabels(true);
 
-			while (true)
+			try
 			{
-				labelDepth++;
-				int countInDepth = 0;
-				foreach (FunctionLabelLine label in labelList)
+				while (true)
 				{
-					if (label.Depth != labelDepth)
-						continue;
-					//1756beta003 なんで追加したんだろう デバグ中になんかやったのか とりあえずコメントアウトしておく
-					//if (label.LabelName == "EVENTTURNEND")
-					//    useCallForm = true;
-					usedLabelCount++;
-					countInDepth++;
-					ParseFunctionWithCatch(label);
+					cancellationToken.ThrowIfCancellationRequested();
+					labelDepth++;
+					int countInDepth = 0;
+					foreach (FunctionLabelLine label in labelList)
+					{
+						cancellationToken.ThrowIfCancellationRequested();
+						if (label.Depth != labelDepth)
+							continue;
+						//1756beta003 なんで追加したんだろう デバグ中になんかやったのか とりあえずコメントアウトしておく
+						//if (label.LabelName == "EVENTTURNEND")
+						//    useCallForm = true;
+						usedLabelCount++;
+						countInDepth++;
+						ParseFunctionWithCatch(label, cancellationToken);
+					}
+					if (countInDepth == 0)
+						break;
 				}
-				if (countInDepth == 0)
-					break;
-			}
-			labelDepth = -1;
-			List<string> ignoredFNCWarningFileList = [];
-			int ignoredFNCWarningCount = 0;
+				labelDepth = -1;
+				List<string> ignoredFNCWarningFileList = [];
+				int ignoredFNCWarningCount = 0;
 
-			bool ignoreAll = false;
-			DisplayWarningFlag notCalledWarning = Config.FunctionNotCalledWarning;
-			switch (notCalledWarning)
-			{
-				case DisplayWarningFlag.IGNORE:
-				case DisplayWarningFlag.LATER:
-					ignoreAll = true;
-					break;
-			}
-			if (useCallForm)
-			{//callform系が使われたら全ての関数が呼び出されたとみなす。
-				if (Program.AnalysisMode)
-					output.PrintSystemLine("CALLFORM系命令が使われたため、呼び出されない関数のチェックは行われません。");
-				foreach (FunctionLabelLine label in labelList)
+				bool ignoreAll = false;
+				DisplayWarningFlag notCalledWarning = Config.FunctionNotCalledWarning;
+				switch (notCalledWarning)
 				{
-					if (label.Depth != labelDepth)
-						continue;
-					ParseFunctionWithCatch(label);
+					case DisplayWarningFlag.IGNORE:
+					case DisplayWarningFlag.LATER:
+						ignoreAll = true;
+						break;
 				}
-			}
-			else
-			{
-				bool ignoreUncalledFunction = Config.IgnoreUncalledFunction;
-				foreach (FunctionLabelLine label in labelList)
-				{
-					if (label.Depth != labelDepth)
-						continue;
-					//解析モード時は呼ばれなかったものをここで解析
+				if (useCallForm)
+				{//callform系が使われたら全ての関数が呼び出されたとみなす。
 					if (Program.AnalysisMode)
-						ParseFunctionWithCatch(label);
-					bool ignore = false;
-					if (notCalledWarning == DisplayWarningFlag.ONCE)
+						output.PrintSystemLine("CALLFORM系命令が使われたため、呼び出されない関数のチェックは行われません。");
+					foreach (FunctionLabelLine label in labelList)
 					{
-						string filename = label.Position.Filename.ToUpper();
+						if (label.Depth != labelDepth)
+							continue;
+						ParseFunctionWithCatch(label, cancellationToken);
+					}
+				}
+				else
+				{
+					bool ignoreUncalledFunction = Config.IgnoreUncalledFunction;
+					foreach (FunctionLabelLine label in labelList)
+					{
+						cancellationToken.ThrowIfCancellationRequested();
+						if (label.Depth != labelDepth)
+							continue;
+						//解析モード時は呼ばれなかったものをここで解析
+						if (Program.AnalysisMode)
+							ParseFunctionWithCatch(label, cancellationToken);
+						bool ignore = false;
+						if (notCalledWarning == DisplayWarningFlag.ONCE)
+						{
+							string filename = label.Position.Filename.ToUpper();
 
-						if (!string.IsNullOrEmpty(filename))
-						{
-							if (ignoredFNCWarningFileList.Contains(filename))
+							if (!string.IsNullOrEmpty(filename))
 							{
-								ignore = true;
+								if (ignoredFNCWarningFileList.Contains(filename))
+								{
+									ignore = true;
+								}
+								else
+								{
+									ignore = false;
+									ignoredFNCWarningFileList.Add(filename);
+								}
 							}
-							else
+							//break;
+						}
+						if (ignoreAll || ignore)
+							ignoredFNCWarningCount++;
+						else
+							ParserMediator.Warn("関数@" + label.LabelName + "は定義されていますが一度も呼び出されません", label, 1, false, false);
+						if (!ignoreUncalledFunction)
+							ParseFunctionWithCatch(label, cancellationToken);
+						else
+						{
+							if (!(label.NextLine is NullLine) && !(label.NextLine is FunctionLabelLine))
 							{
-								ignore = false;
-								ignoredFNCWarningFileList.Add(filename);
+								if (!label.NextLine.IsError)
+								{
+									label.NextLine.IsError = true;
+									label.NextLine.ErrMes = "呼び出されないはずの関数が呼ばれた";
+								}
 							}
 						}
-						//break;
 					}
-					if (ignoreAll || ignore)
-						ignoredFNCWarningCount++;
-					else
-						ParserMediator.Warn("関数@" + label.LabelName + "は定義されていますが一度も呼び出されません", label, 1, false, false);
-					if (!ignoreUncalledFunction)
-						ParseFunctionWithCatch(label);
-					else
+				}
+				if (Program.AnalysisMode && (warningDic.Keys.Count > 0 || GlobalStatic.tempDic.Keys.Count > 0))
+				{
+					output.PrintError("・定義が見つからなかった関数: 他のファイルで定義されている場合はこの警告は無視できます");
+					if (warningDic.Keys.Count > 0)
 					{
-						if (!(label.NextLine is NullLine) && !(label.NextLine is FunctionLabelLine))
+						output.PrintError("　○一般関数:");
+						foreach (string labelName in warningDic.Keys)
 						{
-							if (!label.NextLine.IsError)
-							{
-								label.NextLine.IsError = true;
-								label.NextLine.ErrMes = "呼び出されないはずの関数が呼ばれた";
-							}
+							output.PrintError("　　" + labelName + ": " + warningDic[labelName].ToString() + "回");
+						}
+					}
+					if (GlobalStatic.tempDic.Keys.Count > 0)
+					{
+						output.PrintError("　○文中関数:");
+						foreach (string labelName in GlobalStatic.tempDic.Keys)
+						{
+							output.PrintError("　　" + labelName + ": " + GlobalStatic.tempDic[labelName].ToString() + "回");
 						}
 					}
 				}
-			}
-			if (Program.AnalysisMode && (warningDic.Keys.Count > 0 || GlobalStatic.tempDic.Keys.Count > 0))
-			{
-				output.PrintError("・定義が見つからなかった関数: 他のファイルで定義されている場合はこの警告は無視できます");
-				if (warningDic.Keys.Count > 0)
+				else
 				{
-					output.PrintError("　○一般関数:");
-					foreach (string labelName in warningDic.Keys)
+					if ((ignoredFNCWarningCount > 0) && (Config.DisplayWarningLevel <= 1) && (notCalledWarning != DisplayWarningFlag.IGNORE))
+						output.PrintError(string.Format("警告Lv1:定義された関数が一度も呼び出されていない事に関する警告を{0}件無視しました", ignoredFNCWarningCount));
+					if ((ignoredFNFWarningCount > 0) && (Config.DisplayWarningLevel <= 2) && (notCalledWarning != DisplayWarningFlag.IGNORE))
+						output.PrintError(string.Format("警告Lv2:定義されていない関数を呼び出した事に関する警告を{0}件無視しました", ignoredFNFWarningCount));
+				}
+				ParserMediator.FlushWarningList();
+				if (Config.DisplayReport)
+					output.PrintError(string.Format("非コメント行数:{0}, 全関数合計:{1}, 被呼出関数合計:{2}", enabledLineCount, labelDic.Count, usedLabelCount));
+				if (Config.AllowFunctionOverloading && Config.WarnFunctionOverloading)
+				{
+					List<string> overloadedList = GlobalStatic.IdentifierDictionary.GetOverloadedList(labelDic);
+					if (overloadedList.Count > 0)
 					{
-						output.PrintError("　　" + labelName + ": " + warningDic[labelName].ToString() + "回");
+						output.NewLine();
+						output.PrintError("＊＊＊＊＊警告＊＊＊＊＊");
+						foreach (string funcname in overloadedList)
+						{
+							output.PrintSystemLine("  システム関数\"" + funcname + "\"がユーザー定義関数によって上書きされています");
+						}
+						output.PrintSystemLine("  上記の関数を利用するスクリプトは意図通りに動かない可能性があります");
+						output.NewLine();
+						output.PrintSystemLine("  ※この警告は該当する式中関数を利用しているEmuera専用スクリプト向けの警告です。");
+						output.PrintSystemLine("  eramaker用のスクリプトの動作には影響しません。");
+						output.PrintSystemLine("  今後この警告が不要ならばコンフィグの「システム関数が上書きされたとき警告を表示する」をOFFにして下さい。");
+						output.PrintSystemLine("＊＊＊＊＊＊＊＊＊＊＊＊");
 					}
 				}
-				if (GlobalStatic.tempDic.Keys.Count > 0)
-				{
-					output.PrintError("　○文中関数:");
-					foreach (string labelName in GlobalStatic.tempDic.Keys)
-					{
-						output.PrintError("　　" + labelName + ": " + GlobalStatic.tempDic[labelName].ToString() + "回");
-					}
-				}
 			}
-			else
+			catch (OperationCanceledException)
 			{
-				if ((ignoredFNCWarningCount > 0) && (Config.DisplayWarningLevel <= 1) && (notCalledWarning != DisplayWarningFlag.IGNORE))
-					output.PrintError(string.Format("警告Lv1:定義された関数が一度も呼び出されていない事に関する警告を{0}件無視しました", ignoredFNCWarningCount));
-				if ((ignoredFNFWarningCount > 0) && (Config.DisplayWarningLevel <= 2) && (notCalledWarning != DisplayWarningFlag.IGNORE))
-					output.PrintError(string.Format("警告Lv2:定義されていない関数を呼び出した事に関する警告を{0}件無視しました", ignoredFNFWarningCount));
 			}
-			ParserMediator.FlushWarningList();
-			if (Config.DisplayReport)
-				output.PrintError(string.Format("非コメント行数:{0}, 全関数合計:{1}, 被呼出関数合計:{2}", enabledLineCount, labelDic.Count, usedLabelCount));
-			if (Config.AllowFunctionOverloading && Config.WarnFunctionOverloading)
-			{
-				List<string> overloadedList = GlobalStatic.IdentifierDictionary.GetOverloadedList(labelDic);
-				if (overloadedList.Count > 0)
-				{
-					output.NewLine();
-					output.PrintError("＊＊＊＊＊警告＊＊＊＊＊");
-					foreach (string funcname in overloadedList)
-					{
-						output.PrintSystemLine("  システム関数\"" + funcname + "\"がユーザー定義関数によって上書きされています");
-					}
-					output.PrintSystemLine("  上記の関数を利用するスクリプトは意図通りに動かない可能性があります");
-					output.NewLine();
-					output.PrintSystemLine("  ※この警告は該当する式中関数を利用しているEmuera専用スクリプト向けの警告です。");
-					output.PrintSystemLine("  eramaker用のスクリプトの動作には影響しません。");
-					output.PrintSystemLine("  今後この警告が不要ならばコンフィグの「システム関数が上書きされたとき警告を表示する」をOFFにして下さい。");
-					output.PrintSystemLine("＊＊＊＊＊＊＊＊＊＊＊＊");
-				}
-			}
+
 		}
 
 
@@ -815,13 +842,20 @@ namespace MinorShift.Emuera.GameProc
 			ParserMediator.Warn(str, line, level, isError, false);
 		}
 
-		private void ParseFunctionWithCatch(FunctionLabelLine label)
+		private void ParseFunctionWithCatch(FunctionLabelLine label, CancellationToken cancellationToken)
 		{//ここでエラーを捕まえることは本来はないはず。ExeEE相当。
 			try
 			{
-				setArgument(label);
-				nestCheck(label);
-				setJumpTo(label);
+				cancellationToken.ThrowIfCancellationRequested();
+				setArgument(label, cancellationToken);
+				cancellationToken.ThrowIfCancellationRequested();
+				nestCheck(label, cancellationToken);
+				cancellationToken.ThrowIfCancellationRequested();
+				setJumpTo(label, cancellationToken);
+			}
+			catch (OperationCanceledException)
+			{
+
 			}
 			catch (Exception exc)
 			{
@@ -839,7 +873,7 @@ namespace MinorShift.Emuera.GameProc
 
 		}
 
-		private void setArgument(FunctionLabelLine label)
+		private void setArgument(FunctionLabelLine label, CancellationToken cancellationToken)
 		{
 			//1周目/3周
 			//引数の解析とか
@@ -868,7 +902,7 @@ namespace MinorShift.Emuera.GameProc
 			}
 		}
 
-		private void nestCheck(FunctionLabelLine label)
+		private void nestCheck(FunctionLabelLine label, CancellationToken cancellationToken)
 		{
 			//2周目/3周
 			//IF-ELSEIF-ENDIF、REPEAT-RENDの対応チェックなど
@@ -1418,7 +1452,7 @@ namespace MinorShift.Emuera.GameProc
 			SelectcaseStack.Clear();
 		}
 
-		private void setJumpTo(FunctionLabelLine label)
+		private void setJumpTo(FunctionLabelLine label, CancellationToken cancellationToken)
 		{
 			//3周目/3周
 			//フロー制御命令のジャンプ先を設定

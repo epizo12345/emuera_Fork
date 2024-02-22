@@ -14,6 +14,7 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Emuera;
+using System.Threading;
 
 namespace MinorShift.Emuera.GameProc
 {
@@ -46,7 +47,7 @@ namespace MinorShift.Emuera.GameProc
 		bool initialiing;
 		public bool inInitializeing { get { return initialiing; } }
 
-		public async Task<bool> Initialize()
+		public async Task<bool> Initialize(CancellationToken cancellationToken)
 		{
 			var stopWatch = new Stopwatch();
 			stopWatch.Start();
@@ -202,15 +203,19 @@ namespace MinorShift.Emuera.GameProc
 				Debug.WriteLine("Proc:Init:ERB:Start " + stopWatch.ElapsedMilliseconds + "ms");
 				var loader = new ErbLoader(console, exm, this);
 				if (Program.AnalysisMode)
-					noError = await loader.LoadErbList(Program.AnalysisFiles, labelDic);
+					noError = await loader.LoadErbList(Program.AnalysisFiles, labelDic, cancellationToken);
 				else
-					noError = await loader.LoadErbDir(Program.ErbDir, Config.DisplayReport, labelDic);
+					noError = await loader.LoadErbDir(Program.ErbDir, Config.DisplayReport, labelDic, cancellationToken);
 				Debug.WriteLine("Proc:Init:ERB:End " + stopWatch.ElapsedMilliseconds + "ms");
 
 				initSystemProcess();
 				initialiing = false;
 
 				Debug.WriteLine("Proc:Init:End " + stopWatch.ElapsedMilliseconds + "ms");
+			}
+			catch (OperationCanceledException)
+			{
+
 			}
 			catch (Exception e)
 			{
@@ -226,24 +231,24 @@ namespace MinorShift.Emuera.GameProc
 			return true;
 		}
 
-		public async Task ReloadErb()
+		public async Task ReloadErb(CancellationToken cancellationToken)
 		{
 			await Preload.Load(Program.ErbDir);
 			await Preload.Load(Program.CsvDir);
 			saveCurrentState(false);
 			state.SystemState = SystemStateCode.System_Reloaderb;
 			ErbLoader loader = new(console, exm, this);
-			await loader.LoadErbDir(Program.ErbDir, false, labelDic);
+			await loader.LoadErbDir(Program.ErbDir, false, labelDic, cancellationToken);
 			console.ReadAnyKey();
 		}
 
-		public async Task ReloadPartialErb(List<string> paths)
+		public async Task ReloadPartialErb(List<string> paths, CancellationToken cancellationToken)
 		{
 			saveCurrentState(false);
 			state.SystemState = SystemStateCode.System_Reloaderb;
 			await Preload.Load(paths);
 			var loader = new ErbLoader(console, exm, this);
-			await loader.LoadErbList(paths, labelDic);
+			await loader.LoadErbList(paths, labelDic, cancellationToken);
 			console.ReadAnyKey();
 		}
 

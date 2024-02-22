@@ -89,6 +89,9 @@ namespace MinorShift.Emuera.GameView
 		private int lastSelectingCBGButtonInt = -1;
 		//ConsoleButtonString selectingButton = null;
 		//ConsoleButtonString lastSelectingButton = null;
+
+		System.Threading.CancellationTokenSource _cancellationTokenSource = new();
+
 		class ClientBackGroundImage : IComparable<ClientBackGroundImage>
 		{
 			/// <summary>
@@ -363,7 +366,7 @@ namespace MinorShift.Emuera.GameView
 				window.Focus();
 			}
 			ClearDisplay();
-			if (!await process.Initialize())
+			if (!await process.Initialize(_cancellationTokenSource.Token))
 			{
 				state = ConsoleState.Error;
 				OutputLog(null);
@@ -371,6 +374,7 @@ namespace MinorShift.Emuera.GameView
 				RefreshStrings(true);
 				return;
 			}
+			if (_cancellationTokenSource.Token.IsCancellationRequested) return;
 			RunEmueraProgram("");
 			RefreshStrings(true);
 
@@ -1821,7 +1825,7 @@ namespace MinorShift.Emuera.GameView
 			state = ConsoleState.Initializing;
 			PrintSingleLine("ERB再読み込み中……", true);
 			force_temporary = true;
-			await process.ReloadErb();
+			await process.ReloadErb(_cancellationTokenSource.Token);
 			force_temporary = false;
 			PrintSingleLine("再読み込み完了", true);
 			RefreshStrings(true);
@@ -1872,7 +1876,7 @@ namespace MinorShift.Emuera.GameView
 			state = ConsoleState.Initializing;
 			PrintSingleLine("ERB再読み込み中……", true);
 			force_temporary = true;
-			await process.ReloadPartialErb(path);
+			await process.ReloadPartialErb(path, _cancellationTokenSource.Token);
 			force_temporary = false;
 			PrintSingleLine("再読み込み完了", true);
 			RefreshStrings(true);
@@ -1920,7 +1924,7 @@ namespace MinorShift.Emuera.GameView
 			state = ConsoleState.Initializing;
 			PrintSingleLine("ERB再読み込み中……", true);
 			force_temporary = true;
-			await process.ReloadPartialErb(paths);
+			await process.ReloadPartialErb(paths, _cancellationTokenSource.Token);
 			force_temporary = false;
 			PrintSingleLine("再読み込み完了", true);
 			RefreshStrings(true);
@@ -1928,6 +1932,11 @@ namespace MinorShift.Emuera.GameView
 			updatedGeneration = true;
 			if (notRedraw)
 				redraw = ConsoleRedraw.None;
+		}
+
+		public void InitializeCancel()
+		{
+			_cancellationTokenSource.Cancel();
 		}
 
 		public void Dispose()
