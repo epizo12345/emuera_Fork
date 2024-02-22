@@ -179,9 +179,9 @@ namespace MinorShift.Emuera
 			if (TextDrawingMode != TextDrawingMode.WINAPI)
 				DrawingParam_ShapePositionShift = Math.Max(2, FontSize / 6);
 			DrawableWidth = WindowX - DrawingParam_ShapePositionShift;
-			ForceSavDir = Program.ExeDir + "sav\\";
+			ForceSavDir = Program.ExeDir + "sav" + Path.DirectorySeparatorChar;
 			if (UseSaveFolder)
-				SavDir = Program.ExeDir + "sav\\";
+				SavDir = Program.ExeDir + "sav" + Path.DirectorySeparatorChar;
 			else
 				SavDir = Program.ExeDir;
 			if (UseSaveFolder && !Directory.Exists(SavDir))
@@ -325,7 +325,7 @@ namespace MinorShift.Emuera
 				Array.Sort(filepaths);
 			for (int i = 0; i < filepaths.Length; i++)
 				if (Path.GetExtension(filepaths[i]).Length <= 4)//".erb"や".csv"であること。放置すると".erb*"等を拾う。
-					retList.Add(new KeyValuePair<string, string>(RelativePath + Path.GetFileName(filepaths[i]), filepaths[i]));
+					retList.Add(new KeyValuePair<string, string>(Path.Combine(RelativePath, Path.GetFileName(filepaths[i])), filepaths[i]));
 
 			if (!toponly)
 			{//サブフォルダ内の検索

@@ -9,11 +9,11 @@ using MinorShift.Emuera;
 namespace Emuera;
 static partial class Preload
 {
-    static Dictionary<int, string[]> files = [];
+    static Dictionary<string, string[]> files = new(StringComparer.OrdinalIgnoreCase);
 
-    public static string[] GetFileLines(ReadOnlySpan<char> path)
+    public static string[] GetFileLines(string path)
     {
-        return files[string.GetHashCode(path, StringComparison.OrdinalIgnoreCase)];
+        return files[path];
     }
 
     public static async Task Load(string path)
@@ -21,21 +21,40 @@ static partial class Preload
         var startTime = DateTime.Now;
         Debug.WriteLine($"Load: {path} : Start");
 
-        await Task.Run(() =>
+        if (Directory.Exists(path))
         {
-            Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories).AsParallel().ForAll((childPath) =>
+            await Task.Run(() =>
             {
-                var key = string.GetHashCode(childPath, StringComparison.OrdinalIgnoreCase);
-                var value = File.ReadAllLines(childPath, Config.Encode);
-                lock (files)
+                Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories).AsParallel().ForAll((childPath) =>
                 {
-                    files.TryAdd(key, value);
-                }
+                    var key = childPath;
+                    var value = File.ReadAllLines(childPath, Config.Encode);
+                    lock (files)
+                    {
+                        files[key] = value;
+                    }
+                });
             });
-        });
+        }
+        else
+        {
+            var key = path;
+            var value = File.ReadAllLines(path, Config.Encode);
+            files[key] = value;
+        };
+
+
 
 
         Debug.WriteLine($"Load: {path} : End in {(DateTime.Now - startTime).TotalMilliseconds}ms");
+    }
+
+    public static async Task Load(List<string> paths)
+    {
+        foreach (var path in paths)
+        {
+            await Load(path);
+        }
     }
 
     public static void Clear()

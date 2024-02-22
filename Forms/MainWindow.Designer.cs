@@ -1,25 +1,25 @@
 ﻿using MinorShift.Emuera.Forms;
 namespace MinorShift.Emuera.Forms
 {
-	partial class MainWindow
-	{
-		/// <summary>
-		/// 必要なデザイナ変数です。
-		/// </summary>
-		private System.ComponentModel.IContainer components = null;
+    partial class MainWindow
+    {
+        /// <summary>
+        /// 必要なデザイナ変数です。
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
 
-		/// <summary>
-		/// 使用中のリソースをすべてクリーンアップします。
-		/// </summary>
-		/// <param name="disposing">マネージ リソースが破棄される場合 true、破棄されない場合は false です。</param>
-		protected override void Dispose(bool disposing)
-		{
-			if (disposing && (components != null))
-			{
-				components.Dispose();
-			}
-			base.Dispose(disposing);
-		}
+        /// <summary>
+        /// 使用中のリソースをすべてクリーンアップします。
+        /// </summary>
+        /// <param name="disposing">マネージ リソースが破棄される場合 true、破棄されない場合は false です。</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
 
         #region Windows フォーム デザイナで生成されたコード
 
@@ -560,62 +560,62 @@ namespace MinorShift.Emuera.Forms
         #endregion
 
         private System.Windows.Forms.VScrollBar vScrollBar;
-		private System.Windows.Forms.MenuStrip menuStrip;
-		private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem rebootToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
-		private System.Windows.Forms.OpenFileDialog openFileDialog;
-		private System.Windows.Forms.ToolStripMenuItem ヘルプHToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem コンフィグCToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem タイトルへ戻るTToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem コードを読み直すcToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem ログを保存するSToolStripMenuItem;
-		private System.Windows.Forms.SaveFileDialog saveFileDialog;
-		private EraPictureBox mainPicBox;
-		private System.Windows.Forms.ToolStripMenuItem ログをクリップボードにコピーToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem ファイルを読み直すFToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem フォルダを読み直すFToolStripMenuItem;
-		private System.Windows.Forms.FolderBrowserDialog folderSelectDialog;
-		private System.Windows.Forms.RichTextBox richTextBox1;
-		private System.Windows.Forms.ToolStripMenuItem デバッグToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem デバッグウインドウを開くToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem デバッグ情報の更新ToolStripMenuItem;
-		private System.Windows.Forms.ContextMenuStrip AutoVerbMenu;
-		private System.Windows.Forms.ToolStripMenuItem 切り取り;
-		private System.Windows.Forms.ToolStripMenuItem コピー;
-		private System.Windows.Forms.ToolStripMenuItem 貼り付け;
-		private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
-		private System.Windows.Forms.ToolStripMenuItem 実行;
-		private System.Windows.Forms.ToolStripMenuItem マクロToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem マクロ01ToolStripMenuItem;
-		private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
-		private System.Windows.Forms.ToolStripMenuItem マクロ02ToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem マクロ03ToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem マクロ04ToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem マクロ05ToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem マクロ06ToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem マクロ07ToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem マクロ08ToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem マクロ09ToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem マクロ10ToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem マクロ11ToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem マクロ12ToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem 削除;
-		private System.Windows.Forms.ToolTip toolTipButton;
-		private System.Windows.Forms.Timer timerKeyMacroChanged;
-		private System.Windows.Forms.Label labelMacroGroupChanged;
-		private System.Windows.Forms.ToolStripMenuItem マクログループToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem グループ0ToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem グループ1ToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem グループ2ToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem グループ3ToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem グループ4ToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem グループ5ToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem グループ6ToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem グループ7ToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem グループ8ToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem グループ9ToolStripMenuItem;
-		private System.Windows.Forms.ToolStripTextBox EmuVerToolStripTextBox;
-	}
+        private System.Windows.Forms.MenuStrip menuStrip;
+        private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem rebootToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
+        private System.Windows.Forms.OpenFileDialog openFileDialog;
+        private System.Windows.Forms.ToolStripMenuItem ヘルプHToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem コンフィグCToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem タイトルへ戻るTToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem コードを読み直すcToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem ログを保存するSToolStripMenuItem;
+        private System.Windows.Forms.SaveFileDialog saveFileDialog;
+        private EraPictureBox mainPicBox;
+        private System.Windows.Forms.ToolStripMenuItem ログをクリップボードにコピーToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem ファイルを読み直すFToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem フォルダを読み直すFToolStripMenuItem;
+        private System.Windows.Forms.FolderBrowserDialog folderSelectDialog;
+        private System.Windows.Forms.RichTextBox richTextBox1;
+        private System.Windows.Forms.ToolStripMenuItem デバッグToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem デバッグウインドウを開くToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem デバッグ情報の更新ToolStripMenuItem;
+        private System.Windows.Forms.ContextMenuStrip AutoVerbMenu;
+        private System.Windows.Forms.ToolStripMenuItem 切り取り;
+        private System.Windows.Forms.ToolStripMenuItem コピー;
+        private System.Windows.Forms.ToolStripMenuItem 貼り付け;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
+        private System.Windows.Forms.ToolStripMenuItem 実行;
+        private System.Windows.Forms.ToolStripMenuItem マクロToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem マクロ01ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
+        private System.Windows.Forms.ToolStripMenuItem マクロ02ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem マクロ03ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem マクロ04ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem マクロ05ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem マクロ06ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem マクロ07ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem マクロ08ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem マクロ09ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem マクロ10ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem マクロ11ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem マクロ12ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem 削除;
+        private System.Windows.Forms.ToolTip toolTipButton;
+        private System.Windows.Forms.Timer timerKeyMacroChanged;
+        private System.Windows.Forms.Label labelMacroGroupChanged;
+        private System.Windows.Forms.ToolStripMenuItem マクログループToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem グループ0ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem グループ1ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem グループ2ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem グループ3ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem グループ4ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem グループ5ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem グループ6ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem グループ7ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem グループ8ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem グループ9ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripTextBox EmuVerToolStripTextBox;
+    }
 }
 

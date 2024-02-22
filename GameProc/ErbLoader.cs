@@ -6,6 +6,7 @@ using MinorShift.Emuera.GameData.Expression;
 using MinorShift.Emuera.GameData.Variable;
 using MinorShift.Emuera.GameProc.Function;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace MinorShift.Emuera.GameProc
 {
@@ -31,7 +32,7 @@ namespace MinorShift.Emuera.GameProc
 		/// 複数のファイルを読む
 		/// </summary>
 		/// <param name="filepath"></param>
-		public async Task<bool> LoadErbFiles(string erbDir, bool displayReport, LabelDictionary labelDictionary)
+		public async Task<bool> LoadErbDir(string erbDir, bool displayReport, LabelDictionary labelDictionary)
 		{
 			//1.713 labelDicをnewする位置を変更。
 			//checkScript();の時点でExpressionPerserがProcess.instance.LabelDicを必要とするから。
@@ -100,7 +101,7 @@ namespace MinorShift.Emuera.GameProc
 		/// 指定されたファイルを読み込む
 		/// </summary>
 		/// <param name="filename"></param>
-		public async Task<bool> loadErbs(List<string> paths, LabelDictionary labelDictionary)
+		public async Task<bool> LoadErbList(List<string> paths, LabelDictionary labelDictionary)
 		{
 			string fname;
 			List<string> isOnlyEvent = [];
@@ -113,7 +114,7 @@ namespace MinorShift.Emuera.GameProc
 				foreach (var fpath in paths)
 				{
 					if (fpath.StartsWith(Program.ErbDir, Config.SCIgnoreCase) && !Program.AnalysisMode)
-						fname = fpath[Program.ErbDir.Length..];
+						fname = Path.GetRelativePath(Program.ErbDir, fpath);
 					else
 						fname = fpath;
 					if (Program.AnalysisMode)

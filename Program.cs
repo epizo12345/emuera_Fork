@@ -74,13 +74,7 @@ static partial class Program
 		var exeDir = result.GetValueForOption(exeDirOption);
 		if (exeDir != null)
 		{
-			ExeDir = Path.Join(exeDir.AsSpan(), [Path.DirectorySeparatorChar]);
-
-			CsvDir = Path.Join(ExeDir.AsSpan(), "csv", [Path.DirectorySeparatorChar]);
-			ErbDir = Path.Join(ExeDir.AsSpan(), "erb", [Path.DirectorySeparatorChar]);
-			DebugDir = Path.Join(ExeDir.AsSpan(), "debug", [Path.DirectorySeparatorChar]);
-			DatDir = Path.Join(ExeDir.AsSpan(), "dat", [Path.DirectorySeparatorChar]);
-			ContentDir = Path.Join(ExeDir.AsSpan(), "resources", [Path.DirectorySeparatorChar]);
+			SetDirPaths(exeDir);
 		}
 
 		var debugMode = result.GetValueForOption(debugModeOption);
@@ -196,6 +190,17 @@ static partial class Program
 
 	}
 
+	private static void SetDirPaths(string exeDir)
+	{
+		ExeDir = Path.GetFullPath(new DirectoryInfo(exeDir).FullName + Path.DirectorySeparatorChar);
+
+		CsvDir = Path.Combine(ExeDir, "csv") + Path.DirectorySeparatorChar;
+		ErbDir = Path.Combine(ExeDir, "erb") + Path.DirectorySeparatorChar;
+		DebugDir = Path.Combine(ExeDir, "debug") + Path.DirectorySeparatorChar;
+		DatDir = Path.Combine(ExeDir, "dat") + Path.DirectorySeparatorChar;
+		ContentDir = Path.Combine(ExeDir, "resources") + Path.DirectorySeparatorChar;
+	}
+
 	/// <summary>
 	/// 実行ファイルのディレクトリ。最後に\を付けたstring
 	/// </summary>
@@ -213,16 +218,7 @@ static partial class Program
 
 	static Program()
 	{
-		ExeDir = Path.Join(
-			AppContext.BaseDirectory.AsSpan(),
-			[Path.DirectorySeparatorChar]
-		);
-
-		CsvDir = Path.Join(ExeDir.AsSpan(), "csv", [Path.DirectorySeparatorChar]);
-		ErbDir = Path.Join(ExeDir.AsSpan(), "erb", [Path.DirectorySeparatorChar]);
-		DebugDir = Path.Join(ExeDir.AsSpan(), "debug", [Path.DirectorySeparatorChar]);
-		DatDir = Path.Join(ExeDir.AsSpan(), "dat", [Path.DirectorySeparatorChar]);
-		ContentDir = Path.Join(ExeDir.AsSpan(), "resources", [Path.DirectorySeparatorChar]);
+		SetDirPaths(AppContext.BaseDirectory);
 	}
 
 }

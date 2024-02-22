@@ -13,6 +13,7 @@ using MinorShift._Library;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Emuera;
 
 namespace MinorShift.Emuera.GameProc
 {
@@ -201,9 +202,9 @@ namespace MinorShift.Emuera.GameProc
 				Debug.WriteLine("Proc:Init:ERB:Start " + stopWatch.ElapsedMilliseconds + "ms");
 				var loader = new ErbLoader(console, exm, this);
 				if (Program.AnalysisMode)
-					noError = await loader.loadErbs(Program.AnalysisFiles, labelDic);
+					noError = await loader.LoadErbList(Program.AnalysisFiles, labelDic);
 				else
-					noError = await loader.LoadErbFiles(Program.ErbDir, Config.DisplayReport, labelDic);
+					noError = await loader.LoadErbDir(Program.ErbDir, Config.DisplayReport, labelDic);
 				Debug.WriteLine("Proc:Init:ERB:End " + stopWatch.ElapsedMilliseconds + "ms");
 
 				initSystemProcess();
@@ -227,19 +228,22 @@ namespace MinorShift.Emuera.GameProc
 
 		public async Task ReloadErb()
 		{
+			await Preload.Load(Program.ErbDir);
+			await Preload.Load(Program.CsvDir);
 			saveCurrentState(false);
 			state.SystemState = SystemStateCode.System_Reloaderb;
 			ErbLoader loader = new(console, exm, this);
-			await loader.LoadErbFiles(Program.ErbDir, false, labelDic);
+			await loader.LoadErbDir(Program.ErbDir, false, labelDic);
 			console.ReadAnyKey();
 		}
 
-		public async Task ReloadPartialErb(List<string> path)
+		public async Task ReloadPartialErb(List<string> paths)
 		{
 			saveCurrentState(false);
 			state.SystemState = SystemStateCode.System_Reloaderb;
-			ErbLoader loader = new(console, exm, this);
-			await loader.loadErbs(path, labelDic);
+			await Preload.Load(paths);
+			var loader = new ErbLoader(console, exm, this);
+			await loader.LoadErbList(paths, labelDic);
 			console.ReadAnyKey();
 		}
 

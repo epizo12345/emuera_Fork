@@ -578,7 +578,7 @@ namespace MinorShift.Emuera.GameData
 		{
 
 			output = console;
-			loadVariableSizeData(csvDir + "VariableSize.CSV", disp);
+			loadVariableSizeData(Path.Combine(csvDir, "VariableSize.CSV"), disp);
 			for (int i = 0; i < countNameCsv; i++)
 			{
 				names[i] = new string[MaxDataList[i]];
@@ -586,33 +586,33 @@ namespace MinorShift.Emuera.GameData
 			}
 			ItemPrice = new Int64[MaxDataList[itemIndex]];
 
-			loadDataTo(csvDir + "ABL.CSV", ablIndex, null, disp);
-			loadDataTo(csvDir + "EXP.CSV", expIndex, null, disp);
-			loadDataTo(csvDir + "TALENT.CSV", talentIndex, null, disp);
-			loadDataTo(csvDir + "PALAM.CSV", paramIndex, null, disp);
-			loadDataTo(csvDir + "TRAIN.CSV", trainIndex, null, disp);
-			loadDataTo(csvDir + "MARK.CSV", markIndex, null, disp);
-			loadDataTo(csvDir + "ITEM.CSV", itemIndex, ItemPrice, disp);
-			loadDataTo(csvDir + "BASE.CSV", baseIndex, null, disp);
-			loadDataTo(csvDir + "SOURCE.CSV", sourceIndex, null, disp);
-			loadDataTo(csvDir + "EX.CSV", exIndex, null, disp);
-			loadDataTo(csvDir + "STR.CSV", strIndex, null, disp);
-			loadDataTo(csvDir + "EQUIP.CSV", equipIndex, null, disp);
-			loadDataTo(csvDir + "TEQUIP.CSV", tequipIndex, null, disp);
-			loadDataTo(csvDir + "FLAG.CSV", flagIndex, null, disp);
-			loadDataTo(csvDir + "TFLAG.CSV", tflagIndex, null, disp);
-			loadDataTo(csvDir + "CFLAG.CSV", cflagIndex, null, disp);
-			loadDataTo(csvDir + "TCVAR.CSV", tcvarIndex, null, disp);
-			loadDataTo(csvDir + "CSTR.CSV", cstrIndex, null, disp);
-			loadDataTo(csvDir + "STAIN.CSV", stainIndex, null, disp);
-			loadDataTo(csvDir + "CDFLAG1.CSV", cdflag1Index, null, disp);
-			loadDataTo(csvDir + "CDFLAG2.CSV", cdflag2Index, null, disp);
+			loadDataTo(Path.Combine(csvDir, "ABL.CSV"), ablIndex, null, disp);
+			loadDataTo(Path.Combine(csvDir, "EXP.CSV"), expIndex, null, disp);
+			loadDataTo(Path.Combine(csvDir, "TALENT.CSV"), talentIndex, null, disp);
+			loadDataTo(Path.Combine(csvDir, "PALAM.CSV"), paramIndex, null, disp);
+			loadDataTo(Path.Combine(csvDir, "TRAIN.CSV"), trainIndex, null, disp);
+			loadDataTo(Path.Combine(csvDir, "MARK.CSV"), markIndex, null, disp);
+			loadDataTo(Path.Combine(csvDir, "ITEM.CSV"), itemIndex, ItemPrice, disp);
+			loadDataTo(Path.Combine(csvDir, "BASE.CSV"), baseIndex, null, disp);
+			loadDataTo(Path.Combine(csvDir, "SOURCE.CSV"), sourceIndex, null, disp);
+			loadDataTo(Path.Combine(csvDir, "EX.CSV"), exIndex, null, disp);
+			loadDataTo(Path.Combine(csvDir, "STR.CSV"), strIndex, null, disp);
+			loadDataTo(Path.Combine(csvDir, "EQUIP.CSV"), equipIndex, null, disp);
+			loadDataTo(Path.Combine(csvDir, "TEQUIP.CSV"), tequipIndex, null, disp);
+			loadDataTo(Path.Combine(csvDir, "FLAG.CSV"), flagIndex, null, disp);
+			loadDataTo(Path.Combine(csvDir, "TFLAG.CSV"), tflagIndex, null, disp);
+			loadDataTo(Path.Combine(csvDir, "CFLAG.CSV"), cflagIndex, null, disp);
+			loadDataTo(Path.Combine(csvDir, "TCVAR.CSV"), tcvarIndex, null, disp);
+			loadDataTo(Path.Combine(csvDir, "CSTR.CSV"), cstrIndex, null, disp);
+			loadDataTo(Path.Combine(csvDir, "STAIN.CSV"), stainIndex, null, disp);
+			loadDataTo(Path.Combine(csvDir, "CDFLAG1.CSV"), cdflag1Index, null, disp);
+			loadDataTo(Path.Combine(csvDir, "CDFLAG2.CSV"), cdflag2Index, null, disp);
 
-			loadDataTo(csvDir + "STRNAME.CSV", strnameIndex, null, disp);
-			loadDataTo(csvDir + "TSTR.CSV", tstrnameIndex, null, disp);
-			loadDataTo(csvDir + "SAVESTR.CSV", savestrnameIndex, null, disp);
-			loadDataTo(csvDir + "GLOBAL.CSV", globalIndex, null, disp);
-			loadDataTo(csvDir + "GLOBALS.CSV", globalsIndex, null, disp);
+			loadDataTo(Path.Combine(csvDir, "STRNAME.CSV"), strnameIndex, null, disp);
+			loadDataTo(Path.Combine(csvDir, "TSTR.CSV"), tstrnameIndex, null, disp);
+			loadDataTo(Path.Combine(csvDir, "SAVESTR.CSV"), savestrnameIndex, null, disp);
+			loadDataTo(Path.Combine(csvDir, "GLOBAL.CSV"), globalIndex, null, disp);
+			loadDataTo(Path.Combine(csvDir, "GLOBALS.CSV"), globalsIndex, null, disp);
 
 			//逆引き辞書を作成
 			for (int i = 0; i < names.Length; i++)
