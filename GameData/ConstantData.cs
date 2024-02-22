@@ -936,8 +936,6 @@ namespace MinorShift.Emuera.GameData
 
 		private void loadCharacterData(string csvDir, bool disp)
 		{
-			var stopWatch = new Stopwatch();
-			stopWatch.Start();
 			if (!Directory.Exists(csvDir))
 				return;
 			List<KeyValuePair<string, string>> csvPaths = Config.GetFiles(csvDir, "CHARA*.CSV");

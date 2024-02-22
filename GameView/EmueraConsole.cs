@@ -79,8 +79,6 @@ namespace MinorShift.Emuera.GameView
 			};
 			redrawTimer.Tick += new EventHandler(tickRedrawTimer);
 			redrawTimer.Interval = 10;
-
-			_stopwatch.Start();
 		}
 		#region 1823 cbg関連
 		private readonly List<ClientBackGroundImage> cbgList = [];
@@ -345,15 +343,17 @@ namespace MinorShift.Emuera.GameView
 
 		public async Task Initialize()
 		{
-			_stopwatch.Start();
+			var boottimeDebugStopwatch = Stopwatch.StartNew();
 			Debug.WriteLine("Init:Start");
 			Debug.WriteLine("File:Preload:Start");
 			//必要なソースファイルを事前にメモリに一気に読み込む
+			_genericTimerStopwatch.Restart();
+
 			Preload.Clear();
 			await Preload.Load(Program.ErbDir);
 			await Preload.Load(Program.CsvDir);
 
-			Debug.WriteLine("File:Preload:End " + _stopwatch.ElapsedMilliseconds + "ms");
+			Debug.WriteLine("File:Preload:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
 
 			GlobalStatic.Console = this;
 			// GlobalStatic.MainWindow = window;
@@ -377,7 +377,7 @@ namespace MinorShift.Emuera.GameView
 			RunEmueraProgram("");
 			RefreshStrings(true);
 
-			Debug.WriteLine("Init:End " + _stopwatch.ElapsedMilliseconds + "ms");
+			Debug.WriteLine("Init:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
 		}
 
 
@@ -567,7 +567,7 @@ namespace MinorShift.Emuera.GameView
 
 		System.Timers.Timer genericTimer = new();
 		Int64 timerID = -1;
-		readonly Stopwatch _stopwatch = new();//現在のタイマーを開始した時のミリ秒数（WinmmTimer.TickCount基準）
+		readonly Stopwatch _genericTimerStopwatch = new();//現在のタイマーを開始した時のミリ秒数（WinmmTimer.TickCount基準）
 		Int64 timer_endTime;//現在のタイマーを終了する時のTickCountミリ秒数
 		bool wait_timeout = false;
 		bool isTimeout = false;
@@ -596,7 +596,7 @@ namespace MinorShift.Emuera.GameView
 			isTimeout = false;
 			timerID = inputReq.ID;
 			genericTimer.Enabled = true;
-			_stopwatch.Restart();
+			_genericTimerStopwatch.Restart();
 			timer_endTime = inputReq.Timelimit;
 		}
 
@@ -610,7 +610,7 @@ namespace MinorShift.Emuera.GameView
 				stopTimer();
 				return;
 			}
-			var elapsedMs = _stopwatch.ElapsedMilliseconds;
+			var elapsedMs = _genericTimerStopwatch.ElapsedMilliseconds;
 			if (elapsedMs >= timer_endTime)
 			{
 				endTimer();
@@ -1140,7 +1140,7 @@ namespace MinorShift.Emuera.GameView
 		#endregion
 
 		#region 描画系
-		long lastUpdate = 0;
+		Stopwatch _frameDeltaTimer = new();
 		uint msPerFrame = 1000 / 60;//60FPS
 		ConsoleRedraw redraw = ConsoleRedraw.Normal;
 		public ConsoleRedraw Redraw { get { return redraw; } }
@@ -1208,23 +1208,29 @@ namespace MinorShift.Emuera.GameView
 			 //履歴表示中でなく、最終行を表示済みであり、選択中ボタンが変更されていないなら更新不要
 				if ((!isBackLog) && (lastDrawnLineNo == lineNo) && (lastSelectingButton == selectingButton))
 					return;
-				var sec = _stopwatch.ElapsedMilliseconds - lastUpdate;
 				//まだ書き換えるタイミングでないなら次の更新を待ってみる
 				//ただし、入力待ちなど、しばらく更新のタイミングがない場合には強制的に書き換えてみる
-				if (sec < msPerFrame && (state == ConsoleState.Running || state == ConsoleState.Initializing))
+				if (_frameDeltaTimer.ElapsedMilliseconds < msPerFrame && (state == ConsoleState.Running || state == ConsoleState.Initializing))
 					return;
 			}
 			if (forceTextBoxColor)
 			{
-				var sec = _stopwatch.ElapsedMilliseconds;
+				var sec = _genericTimerStopwatch.ElapsedMilliseconds;
 				//色変化が速くなりすぎないように一定時間以内の再呼び出しは強制待ちにする
-				while (lastBgColorChange != 0 && sec < 200)
+				if (_drawStopwatch == null)
 				{
-					Application.DoEvents();
-					sec = _stopwatch.ElapsedMilliseconds - lastBgColorChange;
+					_drawStopwatch = Stopwatch.StartNew();
+				}
+				else
+				{
+					while (_drawStopwatch.ElapsedMilliseconds < msPerFrame)
+					{
+						Application.DoEvents();
+					}
 				}
 				window.TextBox.BackColor = this.bgColor;
-				lastBgColorChange = _stopwatch.ElapsedMilliseconds;
+
+				_drawStopwatch.Restart();
 			}
 			window.Invoke(() =>
 			{
@@ -1249,7 +1255,7 @@ namespace MinorShift.Emuera.GameView
 			if (!this.Enabled)
 				return;
 			//1824 アニメスプライト用・現在フレームの時間を決定
-			lastUpdate = _stopwatch.ElapsedMilliseconds;
+			_frameDeltaTimer.Restart();
 
 			bool isBackLog = window.ScrollBar.Value != window.ScrollBar.Maximum;
 			int pointY = window.MainPicBox.Height - Config.LineHeight;
