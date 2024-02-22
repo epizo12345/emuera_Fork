@@ -2320,8 +2320,8 @@ namespace MinorShift.Emuera.GameProc.Function
 				}
 				SpCallArgment callArg = (SpCallArgment)func.Argument;
 				string labelName = callArg.ConstStr;
-				if (Config.ICFunction)
-					labelName = labelName.ToUpper();
+				// if (Config.ICFunction)
+				// 	labelName = labelName.ToUpper();
 				CalledFunction call = CalledFunction.CallFunction(GlobalStatic.Process, labelName, func);
 				if ((call == null) && (!func.Function.IsTry()))
 				{
