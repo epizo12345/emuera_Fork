@@ -151,13 +151,13 @@ namespace MinorShift.Emuera.GameProc
 			}
 			if ((!noError) && (!Config.CompatiErrorLine))
 			{
-				console.PrintSystemLine("ERBコードに解釈不可能な行があるためEmueraを終了します");
+				console.PrintErrorButton("ERBコードに解釈不可能な行があるためEmueraを終了します", null, 3);
 				console.PrintSystemLine("※互換性オプション「" + Config.GetConfigName(ConfigCode.CompatiErrorLine) + "」により強制的に動作させることができます");
 				console.PrintSystemLine("emuera.logにログを出力します");
 				console.OutputLog(Program.ExeDir + "emuera.log");
 				console.noOutputLog = true;
 				console.PrintSystemLine("エンターキーもしくはクリックで終了します");
-				//System.Media.SystemSounds.Asterisk.Play();
+				System.Media.SystemSounds.Asterisk.Play();
 				console.ThrowTitleError(true);
 				return;
 			}

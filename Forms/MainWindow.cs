@@ -46,7 +46,7 @@ namespace MinorShift.Emuera.Forms
 			openFileDialog.Multiselect = true;
 			openFileDialog.RestoreDirectory = true;
 
-			string Emuera_verInfo = "Emuera Ver. " + AssemblyData.emueraVer;
+			string Emuera_verInfo = ".NET Emuera " + AssemblyData.emueraVer;
 			EmuVerToolStripTextBox.Text = Emuera_verInfo;
 
 			console = new EmueraConsole(this);
@@ -358,18 +358,25 @@ namespace MinorShift.Emuera.Forms
 					vScrollBar.Value = vScrollBar.Maximum;
 					console.RefreshStrings(true);
 				}
-			if (console.IsWaitingEnterKey && !console.IsError && str == null)
+			if (console.IsWaitingEnterKey && str == null)
 			{
 				if (isBacklog)
 					return;
-				if ((e.Button == MouseButtons.Left) || (e.Button == MouseButtons.Right))
+
+				if (console.IsError)
 				{
-					if (e.Button == MouseButtons.Right)
-						PressEnterKey(true, true);
-					else
+					if (e.Button == MouseButtons.Left)
+					{
 						PressEnterKey(false, true);
-					return;
+						return;
+					}
 				}
+
+				if (e.Button == MouseButtons.Right)
+					PressEnterKey(true, true);
+				else if (e.Button == MouseButtons.Left)
+					PressEnterKey(false, true);
+				return;
 			}
 			//左が押されたなら選択。
 			if (str != null && ((e.Button & MouseButtons.Left) == MouseButtons.Left))

@@ -226,11 +226,11 @@ namespace MinorShift.Emuera.GameView
 			{
 				if (position.LineNo >= 0)
 				{
-					PrintErrorButton(string.Format("警告Lv{0}:{1}:{2}行目:{3}", level, position.Filename, position.LineNo, str), position);
+					PrintErrorButton(string.Format("警告Lv{0}:{1}:{2}行目:{3}", level, position.Filename, position.LineNo, str), position, level);
 					GlobalStatic.Process.printRawLine(position);
 				}
 				else
-					PrintErrorButton(string.Format("警告Lv{0}:{1}:{2}", level, position.Filename, str), position);
+					PrintErrorButton(string.Format("警告Lv{0}:{1}:{2}", level, position.Filename, str), position, level);
 
 			}
 			else
@@ -271,7 +271,8 @@ namespace MinorShift.Emuera.GameView
 			RefreshStrings(false);
 		}
 
-		internal void PrintErrorButton(string str, ScriptPosition pos)
+
+		internal void PrintErrorButton(string str, ScriptPosition pos, int level = 0)
 		{
 			if (string.IsNullOrEmpty(str))
 				return;
@@ -282,7 +283,14 @@ namespace MinorShift.Emuera.GameView
 			}
 			UseUserStyle = false;
 			var errerStyle = Style;
-			errerStyle.Color = Color.Yellow;
+			errerStyle.Color = level switch
+			{
+				0 => Color.Yellow,
+				1 => Color.Yellow,
+				2 => Color.Yellow,
+				3 => Color.Red,
+				_ => Color.Red
+			};
 			ConsoleDisplayLine dispLine = printBuffer.AppendAndFlushErrButton(str, errerStyle, ErrorButtonsText, pos, stringMeasure);
 			if (dispLine == null)
 				return;
