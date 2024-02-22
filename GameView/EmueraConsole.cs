@@ -608,12 +608,8 @@ namespace MinorShift.Emuera.GameView
 				return;
 			if (state != ConsoleState.WaitInput || inputReq.Timelimit <= 0 || timerID != inputReq.ID)
 			{
-#if DEBUG
-				throw new ExeEE("");
-#else
 				stopTimer();
 				return;
-#endif
 			}
 			var elapsedMs = stopwatch.ElapsedMilliseconds;
 			if (elapsedMs >= timer_endTime)
@@ -813,9 +809,12 @@ namespace MinorShift.Emuera.GameView
 				RunEmueraProgram(null);
 				if (state == ConsoleState.WaitInput && inputReq.NeedValue)
 				{
-					Point point = window.MainPicBox.PointToClient(Control.MousePosition);
-					if (window.MainPicBox.ClientRectangle.Contains(point))
-						MoveMouse(point);
+					window.Invoke(() =>
+					{
+						Point point = window.MainPicBox.PointToClient(Control.MousePosition);
+						if (window.MainPicBox.ClientRectangle.Contains(point))
+							MoveMouse(point);
+					});
 				}
 			}
 			finally
@@ -1258,8 +1257,6 @@ namespace MinorShift.Emuera.GameView
 
 
 			int bottomLineNo = window.ScrollBar.Value - 1;
-			if (displayLineList.Count - 1 < bottomLineNo)
-				bottomLineNo = displayLineList.Count - 1;//1820 この処理不要な気がするけどエラー報告があったので入れとく
 			int topLineNo = bottomLineNo - (pointY / Config.LineHeight + 1);
 			if (topLineNo < 0)
 				topLineNo = 0;
@@ -1270,14 +1267,16 @@ namespace MinorShift.Emuera.GameView
 			else
 			{
 				graph.Clear(this.bgColor);
-				graph.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
 				//1823 cbg追加
 				for (int j = 0; j < cbgList.Count; j++)
 				{
 					if (cbgList[j].zdepth == 0)
 					{
 						//1823以前の文字列描画
-						for (int i = topLineNo; i <= bottomLineNo; i++)
+						for (int i = topLineNo;
+						i <= bottomLineNo &&
+						i < displayLineList.Count;//何処かで非同期にDisplayLineListを触ってるやつがいる気がする...
+						i++)
 						{
 							displayLineList[i].DrawTo(graph, pointY, isBackLog, true, Config.TextDrawingMode);
 							pointY += Config.LineHeight;
