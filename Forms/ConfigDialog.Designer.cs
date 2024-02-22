@@ -87,13 +87,14 @@
             colorBoxSelecting = new ColorBox();
             colorBoxBacklog = new ColorBox();
             flowLayoutPanel2 = new System.Windows.Forms.FlowLayoutPanel();
-            label4 = new System.Windows.Forms.Label();
-            comboBox2 = new System.Windows.Forms.ComboBox();
             flowLayoutPanel3 = new System.Windows.Forms.FlowLayoutPanel();
-            label8 = new System.Windows.Forms.Label();
-            numericUpDown5 = new System.Windows.Forms.NumericUpDown();
             flowLayoutPanel4 = new System.Windows.Forms.FlowLayoutPanel();
+            tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             label7 = new System.Windows.Forms.Label();
+            label8 = new System.Windows.Forms.Label();
+            comboBox2 = new System.Windows.Forms.ComboBox();
+            label4 = new System.Windows.Forms.Label();
+            numericUpDown5 = new System.Windows.Forms.NumericUpDown();
             numericUpDown6 = new System.Windows.Forms.NumericUpDown();
             tabPageSystem = new System.Windows.Forms.TabPage();
             comboBox1 = new System.Windows.Forms.ComboBox();
@@ -163,10 +164,8 @@
             ((System.ComponentModel.ISupportInitialize)numericUpDown2).BeginInit();
             tabPageFont.SuspendLayout();
             flowLayoutPanel1.SuspendLayout();
-            flowLayoutPanel2.SuspendLayout();
-            flowLayoutPanel3.SuspendLayout();
+            tableLayoutPanel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numericUpDown5).BeginInit();
-            flowLayoutPanel4.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numericUpDown6).BeginInit();
             tabPageSystem.SuspendLayout();
             tabPageSystem2.SuspendLayout();
@@ -526,33 +525,34 @@
             flowLayoutPanel1.Controls.Add(flowLayoutPanel2);
             flowLayoutPanel1.Controls.Add(flowLayoutPanel3);
             flowLayoutPanel1.Controls.Add(flowLayoutPanel4);
+            flowLayoutPanel1.Controls.Add(tableLayoutPanel1);
             resources.ApplyResources(flowLayoutPanel1, "flowLayoutPanel1");
             flowLayoutPanel1.Name = "flowLayoutPanel1";
             // 
             // colorBoxBG
             // 
-            colorBoxBG.ButtonText = "背景色";
+            colorBoxBG.LabelText = "背景色";
             resources.ApplyResources(colorBoxBG, "colorBoxBG");
             colorBoxBG.Name = "colorBoxBG";
             colorBoxBG.SelectingColor = System.Drawing.Color.Transparent;
             // 
             // colorBoxFG
             // 
-            colorBoxFG.ButtonText = "文字色";
+            colorBoxFG.LabelText = "文字色";
             resources.ApplyResources(colorBoxFG, "colorBoxFG");
             colorBoxFG.Name = "colorBoxFG";
             colorBoxFG.SelectingColor = System.Drawing.Color.Transparent;
             // 
             // colorBoxSelecting
             // 
-            colorBoxSelecting.ButtonText = "選択中文字色";
+            colorBoxSelecting.LabelText = "選択中文字色";
             resources.ApplyResources(colorBoxSelecting, "colorBoxSelecting");
             colorBoxSelecting.Name = "colorBoxSelecting";
             colorBoxSelecting.SelectingColor = System.Drawing.Color.Transparent;
             // 
             // colorBoxBacklog
             // 
-            colorBoxBacklog.ButtonText = "履歴文字色";
+            colorBoxBacklog.LabelText = "履歴文字色";
             resources.ApplyResources(colorBoxBacklog, "colorBoxBacklog");
             colorBoxBacklog.Name = "colorBoxBacklog";
             colorBoxBacklog.SelectingColor = System.Drawing.Color.Transparent;
@@ -560,49 +560,54 @@
             // flowLayoutPanel2
             // 
             resources.ApplyResources(flowLayoutPanel2, "flowLayoutPanel2");
-            flowLayoutPanel2.Controls.Add(label4);
-            flowLayoutPanel2.Controls.Add(comboBox2);
             flowLayoutPanel2.Name = "flowLayoutPanel2";
-            // 
-            // label4
-            // 
-            resources.ApplyResources(label4, "label4");
-            label4.Name = "label4";
-            // 
-            // comboBox2
-            // 
-            resources.ApplyResources(comboBox2, "comboBox2");
-            comboBox2.Name = "comboBox2";
             // 
             // flowLayoutPanel3
             // 
             resources.ApplyResources(flowLayoutPanel3, "flowLayoutPanel3");
-            flowLayoutPanel3.Controls.Add(label8);
-            flowLayoutPanel3.Controls.Add(numericUpDown5);
             flowLayoutPanel3.Name = "flowLayoutPanel3";
+            // 
+            // flowLayoutPanel4
+            // 
+            resources.ApplyResources(flowLayoutPanel4, "flowLayoutPanel4");
+            flowLayoutPanel4.Name = "flowLayoutPanel4";
+            // 
+            // tableLayoutPanel1
+            // 
+            resources.ApplyResources(tableLayoutPanel1, "tableLayoutPanel1");
+            tableLayoutPanel1.Controls.Add(label7, 0, 2);
+            tableLayoutPanel1.Controls.Add(label8, 0, 1);
+            tableLayoutPanel1.Controls.Add(comboBox2, 1, 0);
+            tableLayoutPanel1.Controls.Add(label4, 0, 0);
+            tableLayoutPanel1.Controls.Add(numericUpDown5, 1, 1);
+            tableLayoutPanel1.Controls.Add(numericUpDown6, 1, 2);
+            tableLayoutPanel1.Name = "tableLayoutPanel1";
+            // 
+            // label7
+            // 
+            resources.ApplyResources(label7, "label7");
+            label7.Name = "label7";
             // 
             // label8
             // 
             resources.ApplyResources(label8, "label8");
             label8.Name = "label8";
             // 
+            // comboBox2
+            // 
+            resources.ApplyResources(comboBox2, "comboBox2");
+            comboBox2.Name = "comboBox2";
+            // 
+            // label4
+            // 
+            resources.ApplyResources(label4, "label4");
+            label4.Name = "label4";
+            // 
             // numericUpDown5
             // 
             resources.ApplyResources(numericUpDown5, "numericUpDown5");
             numericUpDown5.Name = "numericUpDown5";
             numericUpDown5.ValueChanged += numericUpDown5_ValueChanged;
-            // 
-            // flowLayoutPanel4
-            // 
-            resources.ApplyResources(flowLayoutPanel4, "flowLayoutPanel4");
-            flowLayoutPanel4.Controls.Add(label7);
-            flowLayoutPanel4.Controls.Add(numericUpDown6);
-            flowLayoutPanel4.Name = "flowLayoutPanel4";
-            // 
-            // label7
-            // 
-            resources.ApplyResources(label7, "label7");
-            label7.Name = "label7";
             // 
             // numericUpDown6
             // 
@@ -962,7 +967,7 @@
             // ConfigDialog
             // 
             resources.ApplyResources(this, "$this");
-            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             Controls.Add(label16);
             Controls.Add(tabControl);
             Controls.Add(buttonReboot);
@@ -996,13 +1001,8 @@
             tabPageFont.ResumeLayout(false);
             flowLayoutPanel1.ResumeLayout(false);
             flowLayoutPanel1.PerformLayout();
-            flowLayoutPanel2.ResumeLayout(false);
-            flowLayoutPanel2.PerformLayout();
-            flowLayoutPanel3.ResumeLayout(false);
-            flowLayoutPanel3.PerformLayout();
+            tableLayoutPanel1.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)numericUpDown5).EndInit();
-            flowLayoutPanel4.ResumeLayout(false);
-            flowLayoutPanel4.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)numericUpDown6).EndInit();
             tabPageSystem.ResumeLayout(false);
             tabPageSystem.PerformLayout();
@@ -1134,5 +1134,6 @@
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel2;
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel3;
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel4;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
     }
 }

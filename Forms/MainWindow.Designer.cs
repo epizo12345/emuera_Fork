@@ -211,7 +211,7 @@ namespace MinorShift.Emuera.Forms
             // コンフィグCToolStripMenuItem
             // 
             コンフィグCToolStripMenuItem.Name = "コンフィグCToolStripMenuItem";
-            コンフィグCToolStripMenuItem.Size = new System.Drawing.Size(141, 26);
+            コンフィグCToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
             コンフィグCToolStripMenuItem.Text = "設定(&C)";
             コンフィグCToolStripMenuItem.Click += コンフィグCToolStripMenuItem_Click;
             // 
@@ -221,6 +221,7 @@ namespace MinorShift.Emuera.Forms
             EmuVerToolStripTextBox.BackColor = System.Drawing.Color.WhiteSmoke;
             EmuVerToolStripTextBox.BorderStyle = System.Windows.Forms.BorderStyle.None;
             EmuVerToolStripTextBox.Enabled = false;
+            EmuVerToolStripTextBox.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             EmuVerToolStripTextBox.Name = "EmuVerToolStripTextBox";
             EmuVerToolStripTextBox.ShortcutsEnabled = false;
             EmuVerToolStripTextBox.Size = new System.Drawing.Size(160, 24);

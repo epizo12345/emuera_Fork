@@ -15,10 +15,10 @@ namespace MinorShift.Emuera.Forms
 			get { return pictureBox1.BackColor; }
 			set { pictureBox1.BackColor = value; }
 		}
-		public string ButtonText
+		public string LabelText
 		{
-			get { return button.Text; }
-			set { button.Text = value; }
+			get { return label1.Text; }
+			set { label1.Text = value; }
 		}
 
 		private void button_Click(object sender, EventArgs e)
