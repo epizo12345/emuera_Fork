@@ -202,7 +202,7 @@ static partial class Program
 	}
 
 	/// <summary>
-	/// 実行ファイルのディレクトリ。最後に\を付けたstring
+	/// 実行ファイルのディレクトリ。最後にPath.DirectorySeparatorCharを付けたstring
 	/// </summary>
 	public static string ExeDir { get; private set; }
 	public static string CsvDir { get; private set; }
