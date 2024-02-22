@@ -182,7 +182,10 @@ namespace MinorShift.Emuera.GameProc
 		}
 
 
-		public void AddFilename(string filename)
+		/// <summary>
+		/// ファイルの重複をチェックし、重複していたらすでにあるそのファイルに関連するラベルを消去する
+		/// </summary>
+		public void IfFileLoadClearLabelWithPath(string filename)
 		{
 			if (loadedFileDic.TryGetValue(filename, out int curCount))
 			{
