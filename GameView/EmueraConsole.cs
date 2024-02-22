@@ -1218,7 +1218,7 @@ namespace MinorShift.Emuera.GameView
 			{
 				var sec = _stopwatch.ElapsedMilliseconds;
 				//色変化が速くなりすぎないように一定時間以内の再呼び出しは強制待ちにする
-				while (sec < 200)
+				while (lastBgColorChange != 0 && sec < 200)
 				{
 					Application.DoEvents();
 					sec = _stopwatch.ElapsedMilliseconds - lastBgColorChange;
