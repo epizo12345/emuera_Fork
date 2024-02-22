@@ -81,17 +81,20 @@
             numericUpDown2 = new System.Windows.Forms.NumericUpDown();
             checkBox8 = new System.Windows.Forms.CheckBox();
             tabPageFont = new System.Windows.Forms.TabPage();
-            button2 = new System.Windows.Forms.Button();
-            label7 = new System.Windows.Forms.Label();
-            label8 = new System.Windows.Forms.Label();
-            numericUpDown6 = new System.Windows.Forms.NumericUpDown();
-            numericUpDown5 = new System.Windows.Forms.NumericUpDown();
+            flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
+            colorBoxBG = new ColorBox();
+            colorBoxFG = new ColorBox();
+            colorBoxSelecting = new ColorBox();
+            colorBoxBacklog = new ColorBox();
+            flowLayoutPanel2 = new System.Windows.Forms.FlowLayoutPanel();
             label4 = new System.Windows.Forms.Label();
             comboBox2 = new System.Windows.Forms.ComboBox();
-            colorBoxBacklog = new ColorBox();
-            colorBoxSelecting = new ColorBox();
-            colorBoxFG = new ColorBox();
-            colorBoxBG = new ColorBox();
+            flowLayoutPanel3 = new System.Windows.Forms.FlowLayoutPanel();
+            label8 = new System.Windows.Forms.Label();
+            numericUpDown5 = new System.Windows.Forms.NumericUpDown();
+            flowLayoutPanel4 = new System.Windows.Forms.FlowLayoutPanel();
+            label7 = new System.Windows.Forms.Label();
+            numericUpDown6 = new System.Windows.Forms.NumericUpDown();
             tabPageSystem = new System.Windows.Forms.TabPage();
             comboBox1 = new System.Windows.Forms.ComboBox();
             label11 = new System.Windows.Forms.Label();
@@ -142,6 +145,7 @@
             label16 = new System.Windows.Forms.Label();
             openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
             toolTip1 = new System.Windows.Forms.ToolTip(components);
+            fontDialog1 = new System.Windows.Forms.FontDialog();
             tabControl.SuspendLayout();
             tabEnvironment.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numericUpDown11).BeginInit();
@@ -158,8 +162,12 @@
             ((System.ComponentModel.ISupportInitialize)numericUpDown3).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown2).BeginInit();
             tabPageFont.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown6).BeginInit();
+            flowLayoutPanel1.SuspendLayout();
+            flowLayoutPanel2.SuspendLayout();
+            flowLayoutPanel3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numericUpDown5).BeginInit();
+            flowLayoutPanel4.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown6).BeginInit();
             tabPageSystem.SuspendLayout();
             tabPageSystem2.SuspendLayout();
             tabPageCompati.SuspendLayout();
@@ -504,47 +512,57 @@
             // 
             // tabPageFont
             // 
-            tabPageFont.Controls.Add(button2);
-            tabPageFont.Controls.Add(label7);
-            tabPageFont.Controls.Add(label8);
-            tabPageFont.Controls.Add(numericUpDown6);
-            tabPageFont.Controls.Add(numericUpDown5);
-            tabPageFont.Controls.Add(label4);
-            tabPageFont.Controls.Add(comboBox2);
-            tabPageFont.Controls.Add(colorBoxBacklog);
-            tabPageFont.Controls.Add(colorBoxSelecting);
-            tabPageFont.Controls.Add(colorBoxFG);
-            tabPageFont.Controls.Add(colorBoxBG);
+            tabPageFont.Controls.Add(flowLayoutPanel1);
             resources.ApplyResources(tabPageFont, "tabPageFont");
             tabPageFont.Name = "tabPageFont";
             tabPageFont.UseVisualStyleBackColor = true;
             // 
-            // button2
+            // flowLayoutPanel1
             // 
-            resources.ApplyResources(button2, "button2");
-            button2.Name = "button2";
-            button2.UseVisualStyleBackColor = true;
-            button2.Click += button2_Click;
+            flowLayoutPanel1.Controls.Add(colorBoxBG);
+            flowLayoutPanel1.Controls.Add(colorBoxFG);
+            flowLayoutPanel1.Controls.Add(colorBoxSelecting);
+            flowLayoutPanel1.Controls.Add(colorBoxBacklog);
+            flowLayoutPanel1.Controls.Add(flowLayoutPanel2);
+            flowLayoutPanel1.Controls.Add(flowLayoutPanel3);
+            flowLayoutPanel1.Controls.Add(flowLayoutPanel4);
+            resources.ApplyResources(flowLayoutPanel1, "flowLayoutPanel1");
+            flowLayoutPanel1.Name = "flowLayoutPanel1";
             // 
-            // label7
+            // colorBoxBG
             // 
-            resources.ApplyResources(label7, "label7");
-            label7.Name = "label7";
+            colorBoxBG.ButtonText = "背景色";
+            resources.ApplyResources(colorBoxBG, "colorBoxBG");
+            colorBoxBG.Name = "colorBoxBG";
+            colorBoxBG.SelectingColor = System.Drawing.Color.Transparent;
             // 
-            // label8
+            // colorBoxFG
             // 
-            resources.ApplyResources(label8, "label8");
-            label8.Name = "label8";
+            colorBoxFG.ButtonText = "文字色";
+            resources.ApplyResources(colorBoxFG, "colorBoxFG");
+            colorBoxFG.Name = "colorBoxFG";
+            colorBoxFG.SelectingColor = System.Drawing.Color.Transparent;
             // 
-            // numericUpDown6
+            // colorBoxSelecting
             // 
-            resources.ApplyResources(numericUpDown6, "numericUpDown6");
-            numericUpDown6.Name = "numericUpDown6";
+            colorBoxSelecting.ButtonText = "選択中文字色";
+            resources.ApplyResources(colorBoxSelecting, "colorBoxSelecting");
+            colorBoxSelecting.Name = "colorBoxSelecting";
+            colorBoxSelecting.SelectingColor = System.Drawing.Color.Transparent;
             // 
-            // numericUpDown5
+            // colorBoxBacklog
             // 
-            resources.ApplyResources(numericUpDown5, "numericUpDown5");
-            numericUpDown5.Name = "numericUpDown5";
+            colorBoxBacklog.ButtonText = "履歴文字色";
+            resources.ApplyResources(colorBoxBacklog, "colorBoxBacklog");
+            colorBoxBacklog.Name = "colorBoxBacklog";
+            colorBoxBacklog.SelectingColor = System.Drawing.Color.Transparent;
+            // 
+            // flowLayoutPanel2
+            // 
+            resources.ApplyResources(flowLayoutPanel2, "flowLayoutPanel2");
+            flowLayoutPanel2.Controls.Add(label4);
+            flowLayoutPanel2.Controls.Add(comboBox2);
+            flowLayoutPanel2.Name = "flowLayoutPanel2";
             // 
             // label4
             // 
@@ -556,33 +574,40 @@
             resources.ApplyResources(comboBox2, "comboBox2");
             comboBox2.Name = "comboBox2";
             // 
-            // colorBoxBacklog
+            // flowLayoutPanel3
             // 
-            colorBoxBacklog.ButtonText = "履歴文字色";
-            resources.ApplyResources(colorBoxBacklog, "colorBoxBacklog");
-            colorBoxBacklog.Name = "colorBoxBacklog";
-            colorBoxBacklog.SelectingColor = System.Drawing.Color.Transparent;
+            resources.ApplyResources(flowLayoutPanel3, "flowLayoutPanel3");
+            flowLayoutPanel3.Controls.Add(label8);
+            flowLayoutPanel3.Controls.Add(numericUpDown5);
+            flowLayoutPanel3.Name = "flowLayoutPanel3";
             // 
-            // colorBoxSelecting
+            // label8
             // 
-            colorBoxSelecting.ButtonText = "選択中文字色";
-            resources.ApplyResources(colorBoxSelecting, "colorBoxSelecting");
-            colorBoxSelecting.Name = "colorBoxSelecting";
-            colorBoxSelecting.SelectingColor = System.Drawing.Color.Transparent;
+            resources.ApplyResources(label8, "label8");
+            label8.Name = "label8";
             // 
-            // colorBoxFG
+            // numericUpDown5
             // 
-            colorBoxFG.ButtonText = "文字色";
-            resources.ApplyResources(colorBoxFG, "colorBoxFG");
-            colorBoxFG.Name = "colorBoxFG";
-            colorBoxFG.SelectingColor = System.Drawing.Color.Transparent;
+            resources.ApplyResources(numericUpDown5, "numericUpDown5");
+            numericUpDown5.Name = "numericUpDown5";
+            numericUpDown5.ValueChanged += numericUpDown5_ValueChanged;
             // 
-            // colorBoxBG
+            // flowLayoutPanel4
             // 
-            colorBoxBG.ButtonText = "背景色";
-            resources.ApplyResources(colorBoxBG, "colorBoxBG");
-            colorBoxBG.Name = "colorBoxBG";
-            colorBoxBG.SelectingColor = System.Drawing.Color.Transparent;
+            resources.ApplyResources(flowLayoutPanel4, "flowLayoutPanel4");
+            flowLayoutPanel4.Controls.Add(label7);
+            flowLayoutPanel4.Controls.Add(numericUpDown6);
+            flowLayoutPanel4.Name = "flowLayoutPanel4";
+            // 
+            // label7
+            // 
+            resources.ApplyResources(label7, "label7");
+            label7.Name = "label7";
+            // 
+            // numericUpDown6
+            // 
+            resources.ApplyResources(numericUpDown6, "numericUpDown6");
+            numericUpDown6.Name = "numericUpDown6";
             // 
             // tabPageSystem
             // 
@@ -969,9 +994,16 @@
             ((System.ComponentModel.ISupportInitialize)numericUpDown3).EndInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown2).EndInit();
             tabPageFont.ResumeLayout(false);
-            tabPageFont.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)numericUpDown6).EndInit();
+            flowLayoutPanel1.ResumeLayout(false);
+            flowLayoutPanel1.PerformLayout();
+            flowLayoutPanel2.ResumeLayout(false);
+            flowLayoutPanel2.PerformLayout();
+            flowLayoutPanel3.ResumeLayout(false);
+            flowLayoutPanel3.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)numericUpDown5).EndInit();
+            flowLayoutPanel4.ResumeLayout(false);
+            flowLayoutPanel4.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown6).EndInit();
             tabPageSystem.ResumeLayout(false);
             tabPageSystem.PerformLayout();
             tabPageSystem2.ResumeLayout(false);
@@ -1023,7 +1055,6 @@
 		private System.Windows.Forms.Label label18;
 		private System.Windows.Forms.ComboBox comboBoxTextDrawingMode;
 		private System.Windows.Forms.CheckBox checkBox14;
-		private System.Windows.Forms.Button button2;
 		private System.Windows.Forms.TabPage tabPageWindow;
 		private System.Windows.Forms.CheckBox checkBox17;
 		private System.Windows.Forms.Button button3;
@@ -1098,5 +1129,10 @@
 		private System.Windows.Forms.ComboBox comboBox6;
 		private System.Windows.Forms.CheckBox checkBox9;
 		private System.Windows.Forms.CheckBox checkBox29;
-	}
+        private System.Windows.Forms.FontDialog fontDialog1;
+        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel1;
+        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel2;
+        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel3;
+        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel4;
+    }
 }
