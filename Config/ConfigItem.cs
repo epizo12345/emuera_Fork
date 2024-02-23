@@ -10,7 +10,7 @@ internal abstract class AConfigItem
 	public AConfigItem(ConfigCode code, string text)
 	{
 		this.Code = code;
-		this.Name = code.ToString();
+		this.Name = EnumsNET.Enums.AsString(code);
 		this.Text = text;
 	}
 

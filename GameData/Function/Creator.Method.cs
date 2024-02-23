@@ -2267,7 +2267,7 @@ namespace MinorShift.Emuera.GameData.Function
                 }
                 if (UFTstart < 0 || UFTstart >= target.Length)
                     return -1;
-                int index = target.IndexOf(word, UFTstart);
+                int index = target.IndexOf(word, UFTstart, StringComparison.Ordinal);
                 if (index > 0 && !unicode)
                 {
                     string subStr = target[..index];
