@@ -288,12 +288,14 @@ namespace MinorShift.Emuera.GameView
 				this.DebugNewLine();
 			}
 			UseUserStyle = false;
+
+			var errColor = Color.FromArgb(255, 255, 255, 160);
 			var errerStyle = Style;
 			errerStyle.Color = level switch
 			{
-				0 => Color.Yellow,
-				1 => Color.Yellow,
-				2 => Color.Yellow,
+				0 => errColor,
+				1 => errColor,
+				2 => errColor,
 				3 => Color.Red,
 				_ => Color.Red
 			};
