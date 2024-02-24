@@ -86,15 +86,39 @@ namespace MinorShift.Emuera.GameView
 			if (this.Error)
 				return;
 			Color color = this.Color;
+			Color? backcolor = null;
 			if (isSelecting)
+			{
+
+				//
+				if (!(Color.Yellow.R == color.R &&
+						Color.Yellow.G == color.G &&
+						Color.Yellow.B == color.B)
+				 && !string.IsNullOrWhiteSpace(Str))
+				{
+					backcolor = Color.Gray;
+				}
+
 				color = this.ButtonColor;
+			}
 			else if (isBackLog && !colorChanged)
 				color = Config.LogColor;
 
 			if (mode == TextDrawingMode.GRAPHICS)
+			{
 				graph.DrawString(Str, Font, new SolidBrush(color), new Point(PointX, pointY));
+			}
 			else
-				TextRenderer.DrawText(graph, Str.AsSpan(), Font, new Point(PointX, pointY), color, TextFormatFlags.NoPrefix);
+			{
+				if (backcolor.HasValue)
+				{
+					TextRenderer.DrawText(graph, Str.AsSpan(), Font, new Point(PointX, pointY), color, backColor: backcolor.Value, TextFormatFlags.NoPrefix);
+				}
+				else
+				{
+					TextRenderer.DrawText(graph, Str.AsSpan(), Font, new Point(PointX, pointY), color, TextFormatFlags.NoPrefix);
+				}
+			}
 
 		}
 
