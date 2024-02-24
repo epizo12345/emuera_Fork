@@ -49,7 +49,7 @@ static partial class Preload
         Debug.WriteLine($"Load: {path} : End in {(DateTime.Now - startTime).TotalMilliseconds}ms");
     }
 
-    public static async Task Load(List<string> paths)
+    public static async Task Load(IEnumerable<string> paths)
     {
         foreach (var path in paths)
         {
