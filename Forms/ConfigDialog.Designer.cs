@@ -55,6 +55,7 @@
             checkBox4 = new System.Windows.Forms.CheckBox();
             checkBox3 = new System.Windows.Forms.CheckBox();
             tabPageView = new System.Windows.Forms.TabPage();
+            _useButtonFocusColor = new System.Windows.Forms.CheckBox();
             checkBox14 = new System.Windows.Forms.CheckBox();
             label18 = new System.Windows.Forms.Label();
             comboBoxTextDrawingMode = new System.Windows.Forms.ComboBox();
@@ -344,6 +345,7 @@
             // 
             // tabPageView
             // 
+            tabPageView.Controls.Add(_useButtonFocusColor);
             tabPageView.Controls.Add(checkBox14);
             tabPageView.Controls.Add(label18);
             tabPageView.Controls.Add(comboBoxTextDrawingMode);
@@ -356,6 +358,13 @@
             resources.ApplyResources(tabPageView, "tabPageView");
             tabPageView.Name = "tabPageView";
             tabPageView.UseVisualStyleBackColor = true;
+            // 
+            // _useButtonFocusColor
+            // 
+            resources.ApplyResources(_useButtonFocusColor, "_useButtonFocusColor");
+            _useButtonFocusColor.Name = "_useButtonFocusColor";
+            _useButtonFocusColor.UseVisualStyleBackColor = true;
+            _useButtonFocusColor.CheckedChanged += UseButtonFocusColor_CheckedChanged;
             // 
             // checkBox14
             // 
@@ -1135,5 +1144,6 @@
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel3;
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel4;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
+        private System.Windows.Forms.CheckBox _useButtonFocusColor;
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
+using DotnetEmuera;
 using Emuera;
 
 namespace MinorShift.Emuera.GameView
@@ -89,15 +90,17 @@ namespace MinorShift.Emuera.GameView
 			Color? backcolor = null;
 			if (isSelecting)
 			{
-
-				//
-				if (!(Color.Yellow.R == color.R &&
-						Color.Yellow.G == color.G &&
-						Color.Yellow.B == color.B)
-				 && !string.IsNullOrWhiteSpace(Str))
+				if (JSONConfig.Data.UseButtonFocusBackgroundColor)
 				{
-					backcolor = Color.Gray;
+					if (!(Color.Yellow.R == color.R &&
+							Color.Yellow.G == color.G &&
+							Color.Yellow.B == color.B)
+					 && !string.IsNullOrWhiteSpace(Str))
+					{
+						backcolor = Color.Gray;
+					}
 				}
+
 
 				color = this.ButtonColor;
 			}
@@ -110,7 +113,7 @@ namespace MinorShift.Emuera.GameView
 			}
 			else
 			{
-				if (backcolor.HasValue)
+				if (JSONConfig.Data.UseButtonFocusBackgroundColor && backcolor.HasValue)
 				{
 					TextRenderer.DrawText(graph, Str.AsSpan(), Font, new Point(PointX, pointY), color, backColor: backcolor.Value, TextFormatFlags.NoPrefix);
 				}

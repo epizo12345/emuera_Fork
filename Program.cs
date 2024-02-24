@@ -9,6 +9,8 @@ using System.Windows.Forms;
 using System.Threading.Tasks;
 using Windows.Win32;
 using System.CommandLine.Builder;
+using System.Reflection;
+using DotnetEmuera;
 
 namespace MinorShift.Emuera;
 #nullable enable
@@ -88,9 +90,10 @@ static partial class Program
 			AnalysisMode = true;
 		}
 
-		ApplicationConfiguration.Initialize();
-
 		ConfigData.Instance.LoadConfig();
+		JSONConfig.Load();
+
+
 		//二重起動の禁止かつ二重起動
 		if ((!Config.AllowMultipleInstances) && AssemblyData.PrevInstance())
 		{
@@ -153,6 +156,8 @@ static partial class Program
 				}
 			}
 		}
+
+		ApplicationConfiguration.Initialize();
 
 		var winState = FormWindowState.Normal;
 		var rebootClientHeight = 0;

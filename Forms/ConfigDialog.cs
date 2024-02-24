@@ -2,15 +2,16 @@
 using System.Drawing;
 using System.Windows.Forms;
 using System.Drawing.Text;
+using DotnetEmuera;
 
 namespace MinorShift.Emuera.Forms
 {
-	internal enum ConfigDialogResult
-	{
-		Cancel = 0,
-		Save = 1,
-		SaveReboot = 2,
-	}
+    internal enum ConfigDialogResult
+    {
+        Cancel = 0,
+        Save = 1,
+        SaveReboot = 2,
+    }
 
     internal partial class ConfigDialog : Form
     {
@@ -282,6 +283,8 @@ namespace MinorShift.Emuera.Forms
             textBox1.Text = Config.TextEditor;
             textBox2.Text = Config.EditorArg;
             textBox2.Enabled = itemET.Value == TextEditorType.USER_SETTING;
+
+            _useButtonFocusColor.Checked = JSONConfig.Data.UseButtonFocusBackgroundColor;
         }
 
         private void SaveConfig()
@@ -426,6 +429,8 @@ namespace MinorShift.Emuera.Forms
             config.GetConfigItem(ConfigCode.EditorArgument).SetValue<string>(textBox2.Text);
 
             config.SaveConfig();
+
+            JSONConfig.Save();
         }
 
 
@@ -619,6 +624,11 @@ namespace MinorShift.Emuera.Forms
         private void tableLayoutPanel1_Paint(object sender, PaintEventArgs e)
         {
 
+        }
+
+        private void UseButtonFocusColor_CheckedChanged(object sender, EventArgs e)
+        {
+            JSONConfig.Data.UseButtonFocusBackgroundColor = _useButtonFocusColor.Checked;
         }
     }
 }
