@@ -1141,7 +1141,7 @@ namespace MinorShift.Emuera.GameView
 		#endregion
 
 		#region 描画系
-		Stopwatch _frameDeltaTimer = new();
+		Stopwatch _frameDeltaTimer = Stopwatch.StartNew();
 		uint msPerFrame = 1000 / 60;//60FPS
 		ConsoleRedraw redraw = ConsoleRedraw.Normal;
 		public ConsoleRedraw Redraw { get { return redraw; } }
