@@ -1760,7 +1760,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			}
 			catch
 			{
-				MessageBox.Show("datフォルダーの作成に失敗しました");
+				Dialog.Show("フォルダ作成失敗", "datフォルダーの作成に失敗しました");
 				throw new CodeEE("datフォルダーの作成に失敗しました");
 			}
 		}

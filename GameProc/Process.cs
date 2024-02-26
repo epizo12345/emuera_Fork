@@ -64,8 +64,7 @@ namespace MinorShift.Emuera.GameProc
 				if (ParserMediator.HasWarning)
 				{
 					ParserMediator.FlushWarningList();
-					if (MessageBox.Show("コンフィグファイルに異常があります\nEmueraを終了しますか", "コンフィグエラー", MessageBoxButtons.YesNo)
-						== DialogResult.Yes)
+					if (Dialog.ShowPrompt("コンフィグエラー", "コンフィグファイルに異常があります\nEmueraを終了しますか"))
 					{
 						console.PrintSystemLine("コンフィグファイルに異常があり、終了が選択されたため処理を終了しました");
 						return false;
@@ -110,8 +109,7 @@ namespace MinorShift.Emuera.GameProc
 						if (ParserMediator.HasWarning)
 						{
 							ParserMediator.FlushWarningList();
-							if (MessageBox.Show("_Replace.csvに異常があります\nEmueraを終了しますか", "_Replace.csvエラー", MessageBoxButtons.YesNo)
-								== DialogResult.Yes)
+							if (Dialog.ShowPrompt("_Replace.csvエラー", "_Replace.csvに異常があります\nEmueraを終了しますか"))
 							{
 								console.PrintSystemLine("_Replace.csvに異常があり、終了が選択されたため処理を終了しました");
 								return false;
@@ -365,12 +363,8 @@ namespace MinorShift.Emuera.GameProc
 				return;//現在の行が特殊な状態ならスルー
 			if (!console.Enabled)
 				return;//クローズしてるとMessageBox.Showができないので。
-			string caption = string.Format("無限ループの可能性があります");
-			string text = string.Format(
-				"現在、{0}の{1}行目を実行中です。\n最後の入力から{3}ミリ秒経過し{2}行が実行されました。\n処理を中断し強制終了しますか？",
-				currentLine.Position.Filename, currentLine.Position.LineNo, state.lineCount, elapsedTime);
-			var result = MessageBox.Show(text, caption, MessageBoxButtons.YesNo);
-			if (result == DialogResult.Yes)
+			var text = $"現在、{currentLine.Position.Filename}の{currentLine.Position.LineNo}行目を実行中です。\n最後の入力から{elapsedTime}ミリ秒経過し{state.lineCount}行が実行されました。\n処理を中断し強制終了しますか？";
+			if (Dialog.ShowPrompt("無限ループの可能性があります", text))
 			{
 				throw new CodeEE("無限ループの疑いにより強制終了が選択されました");
 			}

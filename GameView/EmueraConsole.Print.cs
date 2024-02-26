@@ -131,7 +131,7 @@ namespace MinorShift.Emuera.GameView
 			}
 			if (errorStr != null)
 			{
-				MessageBox.Show("Emueraの表示処理中に不適正なフォントを検出しました\n描画処理を続行できないため強制終了します", "フォント不適正");
+				Dialog.Show("フォント不適正", "Emueraの表示処理中に不適正なフォントを検出しました\n描画処理を続行できないため強制終了します");
 				this.Quit();
 				return;
 			}
@@ -599,7 +599,7 @@ namespace MinorShift.Emuera.GameView
 			}
 			catch (Exception)
 			{
-				MessageBox.Show("ログの出力に失敗しました", "ログ出力失敗");
+				Dialog.Show("ログ出力失敗", "ログの出力に失敗しました");
 				return false;
 			}
 			finally
@@ -618,7 +618,7 @@ namespace MinorShift.Emuera.GameView
 
 			if (!filename.StartsWith(Program.ExeDir, StringComparison.CurrentCultureIgnoreCase))
 			{
-				MessageBox.Show("ログファイルは実行ファイル以下のディレクトリにのみ保存できます", "ログ出力失敗");
+				Dialog.Show("ログ出力失敗", "ログファイルは実行ファイル以下のディレクトリにのみ保存できます");
 				return false;
 			}
 

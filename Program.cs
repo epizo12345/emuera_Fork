@@ -11,6 +11,7 @@ using Windows.Win32;
 using System.CommandLine.Builder;
 using System.Reflection;
 using DotnetEmuera;
+using System.Diagnostics.CodeAnalysis;
 
 namespace MinorShift.Emuera;
 #nullable enable
@@ -97,17 +98,17 @@ static partial class Program
 		//二重起動の禁止かつ二重起動
 		if ((!Config.AllowMultipleInstances) && AssemblyData.PrevInstance())
 		{
-			MessageBox.Show("多重起動を許可する場合、emuera.configを書き換えて下さい", "既に起動しています");
+			Dialog.Show("既に起動しています", "多重起動を許可する場合、emuera.configを書き換えて下さい");
 			return;
 		}
 		if (!Directory.Exists(CsvDir))
 		{
-			MessageBox.Show(CsvDir, "csvフォルダが見つかりません");
+			Dialog.Show("csvフォルダが見つかりません", CsvDir);
 			return;
 		}
 		if (!Directory.Exists(ErbDir))
 		{
-			MessageBox.Show("erbフォルダが見つかりません", "フォルダなし");
+			Dialog.Show("erbフォルダが見つかりません", ErbDir);
 			return;
 		}
 
@@ -124,7 +125,7 @@ static partial class Program
 				}
 				catch
 				{
-					MessageBox.Show("debugフォルダの作成に失敗しました", "フォルダなし");
+					Dialog.Show("debugフォルダの作成に失敗しました", DebugDir);
 					return;
 				}
 			}
@@ -135,7 +136,7 @@ static partial class Program
 			{
 				if (!Path.Exists(path))
 				{
-					MessageBox.Show("与えられたファイル・フォルダは存在しません");
+					Dialog.Show("与えられたファイル・フォルダは存在しません");
 					return;
 				}
 				if (File.GetAttributes(path).HasFlag(FileAttributes.Directory))
@@ -149,7 +150,7 @@ static partial class Program
 				{
 					if (!Path.GetExtension(path).Equals(".ERB", StringComparison.OrdinalIgnoreCase))
 					{
-						MessageBox.Show("ドロップ可能なファイルはERBファイルのみです");
+						Dialog.Show("ドロップ可能なファイルはERBファイルのみです");
 						return;
 					}
 					AnalysisFiles.Add(path);
@@ -195,6 +196,12 @@ static partial class Program
 
 	}
 
+	[MemberNotNull(nameof(ExeDir))]
+	[MemberNotNull(nameof(CsvDir))]
+	[MemberNotNull(nameof(ErbDir))]
+	[MemberNotNull(nameof(DebugDir))]
+	[MemberNotNull(nameof(DatDir))]
+	[MemberNotNull(nameof(ContentDir))]
 	private static void SetDirPaths(string exeDir)
 	{
 		ExeDir = Path.GetFullPath(new DirectoryInfo(exeDir).FullName + Path.DirectorySeparatorChar);
