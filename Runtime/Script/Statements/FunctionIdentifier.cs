@@ -40,7 +40,6 @@ namespace MinorShift.Emuera.GameProc.Function
 		readonly static Dictionary<string, FunctionIdentifier> funcDic = Config.ICFunction ? new(StringComparer.OrdinalIgnoreCase) : new();
 		readonly static Dictionary<FunctionCode, string> funcMatch = [];
 		readonly static Dictionary<FunctionCode, FunctionCode> funcParent = [];
-		readonly static ArgumentBuilder methodArgumentBuilder = null;
 		readonly static AInstruction methodInstruction = null;
 
 		private static void addFunction(FunctionCode code, AInstruction inst)
@@ -80,7 +79,6 @@ namespace MinorShift.Emuera.GameProc.Function
 		static FunctionIdentifier()
 		{
 			Dictionary<FunctionArgType, ArgumentBuilder> argb = ArgumentParser.GetArgumentBuilderDictionary();
-			methodArgumentBuilder = argb[FunctionArgType.METHOD];
 			methodInstruction = new METHOD_Instruction();
 			setFunc = new FunctionIdentifier("SET", FunctionCode.SET, new SET_Instruction());//代入文
 			#region PRINT or INPUT
