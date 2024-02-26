@@ -71,7 +71,7 @@ namespace MinorShift.Emuera.GameProc
 			//EraStreamReader eReader = new EraStreamReader(false);
 			//1815修正 _rename.csvの適用
 			//eramakerEXの仕様的には.ERHに適用するのはおかしいけど、もうEmueraの仕様になっちゃってるのでしかたないか
-			using EraStreamReader eReader = new(true);
+			using var eReader = new EraStreamReader(true);
 
 			if (!eReader.OpenOnCache(filepath, filename))
 			{

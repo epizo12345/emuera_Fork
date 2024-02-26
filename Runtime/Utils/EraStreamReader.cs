@@ -207,6 +207,7 @@ namespace MinorShift.Emuera.Sub
 			filepath = null;
 			filename = null;
 			disposed = true;
+			_fileLines = null;
 		}
 
 		#endregion

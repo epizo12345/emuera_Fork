@@ -523,7 +523,7 @@ internal sealed class ConfigData
 	// 1.52a改変部分　（単位の差し替えおよび前置、後置のためのコンフィグ処理）
 	public void LoadReplaceFile(string filename)
 	{
-		EraStreamReader eReader = new(false);
+		using var eReader = new EraStreamReader(false);
 		if (!eReader.Open(filename))
 			return;
 		ScriptPosition? pos = null;
@@ -591,9 +591,9 @@ internal sealed class ConfigData
 
 	public bool LoadDebugConfig()
 	{
+		using var eReader = new EraStreamReader(false);
 		if (!File.Exists(configdebugPath))
 			goto err;
-		EraStreamReader eReader = new(false);
 		if (!eReader.Open(configdebugPath))
 			goto err;
 		ScriptPosition? pos = null;

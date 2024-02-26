@@ -72,7 +72,7 @@ namespace MinorShift.Emuera
 
 		public static void LoadMacroFile(string filename)
 		{
-			EraStreamReader eReader = new(false);
+			using var eReader = new EraStreamReader(false);
 			if (!eReader.Open(filename))
 				return;
 			try
