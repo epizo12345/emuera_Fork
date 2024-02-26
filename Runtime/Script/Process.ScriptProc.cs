@@ -102,7 +102,7 @@ namespace MinorShift.Emuera.GameProc
 		{
 			Int64 iValue = 0;
 			string str = null;
-			IOperandTerm term = null;
+			AExpression term = null;
 			switch (func.FunctionCode)
 			{
 
@@ -265,7 +265,7 @@ namespace MinorShift.Emuera.GameProc
 						Int64 charaNum = vEvaluator.CHARANUM;
 						for (int i = 0; i < intExpArg.TermList.Length; i++)
 						{
-							IOperandTerm term_i = intExpArg.TermList[i];
+							AExpression term_i = intExpArg.TermList[i];
 							NoList[i] = term_i.GetIntValue(exm);
 							if (!(term_i is VariableTerm) || ((((VariableTerm)term_i).Identifier.Code != VariableCode.MASTER) && (((VariableTerm)term_i).Identifier.Code != VariableCode.ASSI) && (((VariableTerm)term_i).Identifier.Code != VariableCode.TARGET)))
 								if (NoList[i] < 0 || NoList[i] >= charaNum)
@@ -661,8 +661,8 @@ namespace MinorShift.Emuera.GameProc
 				case FunctionCode.ARRAYCOPY:
 					{
 						SpCopyArrayArgument arrayArg = (SpCopyArrayArgument)func.Argument;
-						IOperandTerm varName1 = arrayArg.VarName1;
-						IOperandTerm varName2 = arrayArg.VarName2;
+						AExpression varName1 = arrayArg.VarName1;
+						AExpression varName2 = arrayArg.VarName2;
 						VariableToken[] vars = new VariableToken[2] { null, null };
 						if (!(varName1 is SingleTerm) || !(varName2 is SingleTerm))
 						{

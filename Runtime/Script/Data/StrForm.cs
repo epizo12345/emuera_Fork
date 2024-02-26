@@ -14,7 +14,7 @@ namespace MinorShift.Emuera.GameData
 	{
 		private StrForm() { }
 		string[] strs = null;//terms.Length + 1
-		IOperandTerm[] terms = null;
+		AExpression[] terms = null;
 
 		#region static
 		static FormattedStringMethod formatCurlyBrace = null;
@@ -32,22 +32,22 @@ namespace MinorShift.Emuera.GameData
 			formatYenAt = new FormatYenAt();
 			VariableToken nameID = GlobalStatic.VariableData.GetSystemVariableToken("NAME");
 			VariableToken callnameID = GlobalStatic.VariableData.GetSystemVariableToken("CALLNAME");
-			IOperandTerm[] zeroArg = new IOperandTerm[] { new SingleTerm(0) };
+			AExpression[] zeroArg = new AExpression[] { new SingleTerm(0) };
 			VariableTerm target = new(GlobalStatic.VariableData.GetSystemVariableToken("TARGET"), zeroArg);
 			VariableTerm master = new(GlobalStatic.VariableData.GetSystemVariableToken("MASTER"), zeroArg);
 			VariableTerm player = new(GlobalStatic.VariableData.GetSystemVariableToken("PLAYER"), zeroArg);
 			VariableTerm assi = new(GlobalStatic.VariableData.GetSystemVariableToken("ASSI"), zeroArg);
 
-			VariableTerm nametarget = new(nameID, new IOperandTerm[] { target });
-			VariableTerm callnamemaster = new(callnameID, new IOperandTerm[] { master });
-			VariableTerm callnameplayer = new(callnameID, new IOperandTerm[] { player });
-			VariableTerm nameassi = new(nameID, new IOperandTerm[] { assi });
-			VariableTerm callnametarget = new(callnameID, new IOperandTerm[] { target });
-			NameTarget = new FunctionMethodTerm(formatPercent, new IOperandTerm[] { nametarget, null, null });
-			CallnameMaster = new FunctionMethodTerm(formatPercent, new IOperandTerm[] { callnamemaster, null, null });
-			CallnamePlayer = new FunctionMethodTerm(formatPercent, new IOperandTerm[] { callnameplayer, null, null });
-			NameAssi = new FunctionMethodTerm(formatPercent, new IOperandTerm[] { nameassi, null, null });
-			CallnameTarget = new FunctionMethodTerm(formatPercent, new IOperandTerm[] { callnametarget, null, null });
+			VariableTerm nametarget = new(nameID, new AExpression[] { target });
+			VariableTerm callnamemaster = new(callnameID, new AExpression[] { master });
+			VariableTerm callnameplayer = new(callnameID, new AExpression[] { player });
+			VariableTerm nameassi = new(nameID, new AExpression[] { assi });
+			VariableTerm callnametarget = new(callnameID, new AExpression[] { target });
+			NameTarget = new FunctionMethodTerm(formatPercent, new AExpression[] { nametarget, null, null });
+			CallnameMaster = new FunctionMethodTerm(formatPercent, new AExpression[] { callnamemaster, null, null });
+			CallnamePlayer = new FunctionMethodTerm(formatPercent, new AExpression[] { callnameplayer, null, null });
+			NameAssi = new FunctionMethodTerm(formatPercent, new AExpression[] { nameassi, null, null });
+			CallnameTarget = new FunctionMethodTerm(formatPercent, new AExpression[] { callnametarget, null, null });
 		}
 
 		public static StrForm FromWordToken(StrFormWord wt)
@@ -56,7 +56,7 @@ namespace MinorShift.Emuera.GameData
 			{
 				strs = wt.Strs
 			};
-			IOperandTerm[] termArray = new IOperandTerm[wt.SubWords.Length];
+			AExpression[] termArray = new AExpression[wt.SubWords.Length];
 			for (int i = 0; i < wt.SubWords.Length; i++)
 			{
 				SubWord SWT = wt.SubWords[i];
@@ -84,7 +84,7 @@ namespace MinorShift.Emuera.GameData
 					throw new ExeEE("何かおかしい");
 				}
 				WordCollection wc;
-				IOperandTerm operand;
+				AExpression operand;
 				YenAtSubWord yenat = SWT as YenAtSubWord;
 				if (yenat != null)
 				{
@@ -97,13 +97,13 @@ namespace MinorShift.Emuera.GameData
 					}
 					else
 						operand = new SingleTerm(0);
-					IOperandTerm left = new StrFormTerm(StrForm.FromWordToken(yenat.Left));
-					IOperandTerm right;
+					AExpression left = new StrFormTerm(StrForm.FromWordToken(yenat.Left));
+					AExpression right;
 					if (yenat.Right == null)
 						right = new SingleTerm("");
 					else
 						right = new StrFormTerm(StrForm.FromWordToken(yenat.Right));
-					termArray[i] = new FunctionMethodTerm(formatYenAt, new IOperandTerm[] { operand, left, right });
+					termArray[i] = new FunctionMethodTerm(formatYenAt, new AExpression[] { operand, left, right });
 					continue;
 				}
 				wc = SWT.Words;
@@ -115,7 +115,7 @@ namespace MinorShift.Emuera.GameData
 					else
 						throw new CodeEE("%%の中に式が存在しません");
 				}
-				IOperandTerm second = null;
+				AExpression second = null;
 				SingleTerm third = null;
 				wc.ShiftNext();
 				if (!wc.EOL)
@@ -141,12 +141,12 @@ namespace MinorShift.Emuera.GameData
 				{
 					if (operand.GetOperandType() != typeof(Int64))
 						throw new CodeEE("{}の中の式が数式ではありません");
-					termArray[i] = new FunctionMethodTerm(formatCurlyBrace, new IOperandTerm[] { operand, second, third });
+					termArray[i] = new FunctionMethodTerm(formatCurlyBrace, new AExpression[] { operand, second, third });
 					continue;
 				}
 				if (operand.GetOperandType() != typeof(string))
 					throw new CodeEE("%%の中の式が文字列式ではありません");
-				termArray[i] = new FunctionMethodTerm(formatPercent, new IOperandTerm[] { operand, second, third });
+				termArray[i] = new FunctionMethodTerm(formatPercent, new AExpression[] { operand, second, third });
 			}
 			ret.terms = termArray;
 			return ret;
@@ -161,7 +161,7 @@ namespace MinorShift.Emuera.GameData
 			}
 		}
 
-		public IOperandTerm GetIOperandTerm()
+		public AExpression GetAExpression()
 		{
 			if ((strs.Length == 2) && (strs[0].Length == 0) && (strs[1].Length == 0))
 				return terms[0];
@@ -184,7 +184,7 @@ namespace MinorShift.Emuera.GameData
 			if (!canRestructure)
 				return;
 			List<string> strList = [];
-			List<IOperandTerm> termList = [];
+			List<AExpression> termList = [];
 			strList.AddRange(strs);
 			termList.AddRange(terms);
 			for (int i = 0; i < termList.Count; i++)
@@ -199,7 +199,7 @@ namespace MinorShift.Emuera.GameData
 				}
 			}
 			strs = new string[strList.Count];
-			terms = new IOperandTerm[termList.Count];
+			terms = new AExpression[termList.Count];
 			strList.CopyTo(strs);
 			termList.CopyTo(terms);
 			return;
@@ -228,14 +228,14 @@ namespace MinorShift.Emuera.GameData
 				ReturnType = typeof(string);
 				argumentTypeArray = null;
 			}
-			public override string CheckArgumentType(string name, IOperandTerm[] arguments) { throw new ExeEE("型チェックは呼び出し元が行うこと"); }
-			public override Int64 GetIntValue(ExpressionMediator exm, IOperandTerm[] arguments) { throw new ExeEE("戻り値の型が違う"); }
-			public override SingleTerm GetReturnValue(ExpressionMediator exm, IOperandTerm[] arguments) { return new SingleTerm(GetStrValue(exm, arguments)); }
+			public override string CheckArgumentType(string name, AExpression[] arguments) { throw new ExeEE("型チェックは呼び出し元が行うこと"); }
+			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments) { throw new ExeEE("戻り値の型が違う"); }
+			public override SingleTerm GetReturnValue(ExpressionMediator exm, AExpression[] arguments) { return new SingleTerm(GetStrValue(exm, arguments)); }
 		}
 
 		private sealed class FormatCurlyBrace : FormattedStringMethod
 		{
-			public override string GetStrValue(ExpressionMediator exm, IOperandTerm[] arguments)
+			public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
 			{
 				string ret = arguments[0].GetIntValue(exm).ToString();
 				if (arguments[1] == null)
@@ -250,7 +250,7 @@ namespace MinorShift.Emuera.GameData
 
 		private sealed class FormatPercent : FormattedStringMethod
 		{
-			public override string GetStrValue(ExpressionMediator exm, IOperandTerm[] arguments)
+			public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
 			{
 				string ret = arguments[0].GetStrValue(exm);
 				if (arguments[1] == null)
@@ -270,7 +270,7 @@ namespace MinorShift.Emuera.GameData
 
 		private sealed class FormatYenAt : FormattedStringMethod
 		{//Operator のTernaryIntStrStrとやってることは同じ
-			public override string GetStrValue(ExpressionMediator exm, IOperandTerm[] arguments)
+			public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
 			{
 				return (arguments[0].GetIntValue(exm) != 0) ? arguments[1].GetStrValue(exm) : arguments[2].GetStrValue(exm);
 			}

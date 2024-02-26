@@ -204,7 +204,7 @@ namespace MinorShift.Emuera.GameProc
 								ParserMediator.Warn($"イベント関数では#{token}による{token[..^4]}のサイズ指定は無視されます", position, 1);
 								break;
 							}
-							IOperandTerm arg = ExpressionParser.ReduceIntegerTerm(wc, TermEndWith.EoL);
+							AExpression arg = ExpressionParser.ReduceIntegerTerm(wc, TermEndWith.EoL);
 							if ((!(arg.Restructure(null) is SingleTerm sizeTerm)) || (sizeTerm.GetOperandType() != typeof(Int64)))
 							{
 								ParserMediator.Warn($"#{token}の後に有効な定数式が指定されていません", position, 2);

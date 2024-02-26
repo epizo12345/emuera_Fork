@@ -116,8 +116,8 @@ namespace MinorShift.Emuera.GameProc.Function
 				else if (isPrintV)
 				{
 					StringBuilder builder = new();
-					IOperandTerm[] terms = ((SpPrintVArgument)func.Argument).Terms;
-					foreach (IOperandTerm termV in terms)
+					AExpression[] terms = ((SpPrintVArgument)func.Argument).Terms;
+					foreach (AExpression termV in terms)
 					{
 						if (termV.GetOperandType() == typeof(Int64))
 							builder.Append(termV.GetIntValue(exm).ToString());
@@ -208,7 +208,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				}
 				List<InstructionLine> iList = func.dataList[choice];
 				int i = 0;
-				IOperandTerm term;
+				AExpression term;
 				string str;
 				foreach (InstructionLine selectedLine in iList)
 				{
@@ -430,7 +430,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 			public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
 			{
-				IOperandTerm term = ((MethodArgument)func.Argument).MethodTerm;
+				AExpression term = ((MethodArgument)func.Argument).MethodTerm;
 				//Type type = term.GetOperandType();
 				if (term.GetOperandType() == typeof(Int64))
 					exm.VEvaluator.RESULT = term.GetIntValue(exm);
@@ -513,7 +513,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 			public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
 			{
-				IOperandTerm term = ((ExpressionArgument)func.Argument).Term;
+				AExpression term = ((ExpressionArgument)func.Argument).Term;
 				string str = term.GetStrValue(exm);
 				exm.Console.PrintTemporaryLine(str);
 			}
@@ -576,7 +576,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			{
 				BitArgument spsetarg = (BitArgument)func.Argument;
 				VariableTerm varTerm = spsetarg.VariableDest;
-				IOperandTerm[] terms = spsetarg.Term;
+				AExpression[] terms = spsetarg.Term;
 				for (int i = 0; i < terms.Length; i++)
 				{
 					Int64 x = terms[i].GetIntValue(exm);
@@ -894,7 +894,7 @@ namespace MinorShift.Emuera.GameProc.Function
 
 			public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
 			{
-				IOperandTerm mToken;
+				AExpression mToken;
 				string labelName;
 				if ((!func.Argument.IsConst) || exm.Console.RunERBFromMemory)
 				{
@@ -994,7 +994,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				Int64 integer;
 				Int64[] charaNoList = new Int64[intExpArg.TermList.Length];
 				int i = 0;
-				foreach (IOperandTerm int64Term in intExpArg.TermList)
+				foreach (AExpression int64Term in intExpArg.TermList)
 				{
 					integer = int64Term.GetIntValue(exm);
 					if (isDel)
@@ -1078,7 +1078,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
 			{
 				ExpressionArrayArgument intExpArg = (ExpressionArrayArgument)func.Argument;
-				foreach (IOperandTerm int64Term in intExpArg.TermList)
+				foreach (AExpression int64Term in intExpArg.TermList)
 					exm.VEvaluator.AddCopyChara(int64Term.GetIntValue(exm));
 			}
 		}
@@ -1404,7 +1404,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
 			{
 				ExpressionArrayArgument arg = (ExpressionArrayArgument)func.Argument;
-				IOperandTerm[] terms = arg.TermList;
+				AExpression[] terms = arg.TermList;
 				string datFilename = terms[0].GetStrValue(exm);
 				string savMes = terms[1].GetStrValue(exm);
 				int[] savCharaList = new int[terms.Length - 2];
@@ -1947,7 +1947,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
 			{
 				LogicalLine caseJumpto = func.JumpTo;//ENDSELECT
-				IOperandTerm selectValue = ((ExpressionArgument)func.Argument).Term;
+				AExpression selectValue = ((ExpressionArgument)func.Argument).Term;
 				string sValue = null;
 				Int64 iValue = 0;
 				if (selectValue.IsInteger)
@@ -2019,7 +2019,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
 			{
 				//int termnum = 0;
-				//foreach (IOperandTerm term in ((ExpressionArrayArgument)func.Argument).TermList)
+				//foreach (AExpression term in ((ExpressionArrayArgument)func.Argument).TermList)
 				//{
 				//    string arg = term.GetStrValue(exm);
 				//    StringStream aSt = new StringStream(arg);
@@ -2069,7 +2069,7 @@ namespace MinorShift.Emuera.GameProc.Function
 					return;
 				}
 				List<long> termList = [];
-				foreach (IOperandTerm term in expArrayArg.TermList)
+				foreach (AExpression term in expArrayArg.TermList)
 				{
 					termList.Add(term.GetIntValue(exm));
 					//exm.VEvaluator.SetResultX(term.GetIntValue(exm), termnum++);
@@ -2265,7 +2265,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				}
 				if (func.Argument != null)
 				{
-					IOperandTerm term = ((ExpressionArgument)func.Argument).Term;
+					AExpression term = ((ExpressionArgument)func.Argument).Term;
 					if (term != null)
 					{
 						if (label.MethodType != term.GetOperandType())
@@ -2281,7 +2281,7 @@ namespace MinorShift.Emuera.GameProc.Function
 
 			public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
 			{
-				IOperandTerm term = ((ExpressionArgument)func.Argument).Term;
+				AExpression term = ((ExpressionArgument)func.Argument).Term;
 				SingleTerm ret = null;
 				if (term != null)
 				{

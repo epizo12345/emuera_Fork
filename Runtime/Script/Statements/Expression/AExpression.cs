@@ -2,9 +2,9 @@
 
 namespace MinorShift.Emuera.GameData.Expression
 {
-    internal abstract class IOperandTerm
+    internal abstract class AExpression
     {
-        public IOperandTerm(Type t)
+        public AExpression(Type t)
         {
             type = t;
         }
@@ -42,7 +42,7 @@ namespace MinorShift.Emuera.GameData.Expression
         /// 定数を解体して可能ならSingleTerm化する
         /// defineの都合上、2回以上呼ばれる可能性がある
         /// </summary>
-        public virtual IOperandTerm Restructure(ExpressionMediator exm)
+        public virtual AExpression Restructure(ExpressionMediator exm)
         {
             return this;
         }

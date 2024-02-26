@@ -11,7 +11,7 @@ using MinorShift.Emuera.Runtime.Config;
 namespace MinorShift.Emuera.GameData.Expression
 {
 	//1756 元ExpressionEvaluator。GetValueの仕事はなくなったので改名。
-	//IOperandTerm間での通信や共通の処理に使う。
+	//AExpression間での通信や共通の処理に使う。
 	//変数が絡む仕事はVariableEvaluatorへ。
 	internal sealed class ExpressionMediator
 	{

@@ -2,9 +2,9 @@
 
 namespace MinorShift.Emuera.GameData.Function
 {
-	internal sealed class FunctionMethodTerm : IOperandTerm
+	internal sealed class FunctionMethodTerm : AExpression
 	{
-		public FunctionMethodTerm(FunctionMethod meth, IOperandTerm[] args)
+		public FunctionMethodTerm(FunctionMethod meth, AExpression[] args)
 			: base(meth.ReturnType)
 		{
 			method = meth;
@@ -12,7 +12,7 @@ namespace MinorShift.Emuera.GameData.Function
 		}
 
 		private FunctionMethod method;
-		private IOperandTerm[] arguments;
+		private AExpression[] arguments;
 
 		public override long GetIntValue(ExpressionMediator exm)
 		{
@@ -27,7 +27,7 @@ namespace MinorShift.Emuera.GameData.Function
 			return method.GetReturnValue(exm, arguments);
 		}
 
-		public override IOperandTerm Restructure(ExpressionMediator exm)
+		public override AExpression Restructure(ExpressionMediator exm)
 		{
 			if (method.HasUniqueRestructure)
 			{

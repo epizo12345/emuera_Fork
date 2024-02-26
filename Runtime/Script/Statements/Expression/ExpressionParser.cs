@@ -40,11 +40,11 @@ namespace MinorShift.Emuera.GameData.Expression
 		/// 呼び出し元はCodeEEを適切に処理すること
 		/// </summary>
 		/// <returns></returns>
-		public static IOperandTerm[] ReduceArguments(WordCollection wc, ArgsEndWith endWith, bool isDefine)
+		public static AExpression[] ReduceArguments(WordCollection wc, ArgsEndWith endWith, bool isDefine)
 		{
 			if (wc == null)
 				throw new ExeEE("空のストリームを渡された");
-			List<IOperandTerm> terms = [];
+			List<AExpression> terms = [];
 			TermEndWith termEndWith = TermEndWith.EoL;
 			switch (endWith)
 			{
@@ -97,7 +97,7 @@ namespace MinorShift.Emuera.GameData.Expression
 						if (wc.Current is OperatorWord)
 						{//=がある
 							wc.ShiftNext();
-							IOperandTerm term = reduceTerm(wc, false, termEndWith, VariableCode.__NULL__);
+							AExpression term = reduceTerm(wc, false, termEndWith, VariableCode.__NULL__);
 							if (term == null)
 								throw new CodeEE("'='の後に式がありません");
 							if (term.GetOperandType() != terms[terms.Count - 1].GetOperandType())
@@ -127,9 +127,9 @@ namespace MinorShift.Emuera.GameData.Expression
 		/// </summary>
 		/// <param name="st"></param>
 		/// <returns></returns>
-		public static IOperandTerm ReduceExpressionTerm(WordCollection wc, TermEndWith endWith)
+		public static AExpression ReduceExpressionTerm(WordCollection wc, TermEndWith endWith)
 		{
-			IOperandTerm term = reduceTerm(wc, false, endWith, VariableCode.__NULL__);
+			AExpression term = reduceTerm(wc, false, endWith, VariableCode.__NULL__);
 			return term;
 		}
 
@@ -140,17 +140,17 @@ namespace MinorShift.Emuera.GameData.Expression
 		///// </summary>
 		///// <param name="st"></param>
 		///// <returns></returns>
-		//public static IOperandTerm ReduceStringTerm(WordCollection wc, TermEndWith endWith)
+		//public static AExpression ReduceStringTerm(WordCollection wc, TermEndWith endWith)
 		//{
-		//    IOperandTerm term = reduceTerm(wc, false, endWith, VariableCode.__NULL__);
+		//    AExpression term = reduceTerm(wc, false, endWith, VariableCode.__NULL__);
 		//    if (term.GetOperandType() != typeof(string))
 		//        throw new CodeEE("式の結果が文字列ではありません");
 		//    return term;
 		//}
 
-		public static IOperandTerm ReduceIntegerTerm(WordCollection wc, TermEndWith endwith)
+		public static AExpression ReduceIntegerTerm(WordCollection wc, TermEndWith endwith)
 		{
-			IOperandTerm term = reduceTerm(wc, false, endwith, VariableCode.__NULL__);
+			AExpression term = reduceTerm(wc, false, endwith, VariableCode.__NULL__);
 			if (term == null)
 				throw new CodeEE("構文を式として解釈できません");
 			if (term.GetOperandType() != typeof(Int64))
@@ -163,7 +163,7 @@ namespace MinorShift.Emuera.GameData.Expression
 		/// 結果次第ではSingleTermを返すことがある。
 		/// </summary>
 		/// <returns></returns>
-		public static IOperandTerm ToStrFormTerm(StrFormWord sfw)
+		public static AExpression ToStrFormTerm(StrFormWord sfw)
 		{
 			StrForm strf = StrForm.FromWordToken(sfw);
 			if (strf.IsConst)
@@ -189,9 +189,9 @@ namespace MinorShift.Emuera.GameData.Expression
 			return ret;
 		}
 
-		public static IOperandTerm ReduceVariableArgument(WordCollection wc, VariableCode varCode)
+		public static AExpression ReduceVariableArgument(WordCollection wc, VariableCode varCode)
 		{
-			IOperandTerm ret = reduceTerm(wc, false, TermEndWith.EoL, varCode);
+			AExpression ret = reduceTerm(wc, false, TermEndWith.EoL, varCode);
 			if (ret == null)
 				throw new CodeEE("変数の:の後に引数がありません");
 			return ret;
@@ -220,7 +220,7 @@ namespace MinorShift.Emuera.GameData.Expression
 		/// <param name="idStr">識別子文字列</param>
 		/// <param name="varCode">変数の引数の場合はその変数のCode。連想配列的につかう</param>
 		/// <returns></returns>
-		private static IOperandTerm reduceIdentifier(WordCollection wc, string idStr, VariableCode varCode)
+		private static AExpression reduceIdentifier(WordCollection wc, string idStr, VariableCode varCode)
 		{
 			wc.ShiftNext();
 			SymbolWord symbol = wc.Current as SymbolWord;
@@ -234,8 +234,8 @@ namespace MinorShift.Emuera.GameData.Expression
 				if (symbol.Type == '[')//1810 多分永久に実装されない
 					throw new CodeEE("[]を使った機能はまだ実装されていません");
 				//引数を処理
-				IOperandTerm[] args = ReduceArguments(wc, ArgsEndWith.RightParenthesis, false);
-				IOperandTerm mToken = GlobalStatic.IdentifierDictionary.GetFunctionMethod(GlobalStatic.LabelDictionary, idStr, args, false);
+				AExpression[] args = ReduceArguments(wc, ArgsEndWith.RightParenthesis, false);
+				AExpression mToken = GlobalStatic.IdentifierDictionary.GetFunctionMethod(GlobalStatic.LabelDictionary, idStr, args, false);
 				if (mToken == null)
 				{
 					if (!Program.AnalysisMode)
@@ -262,7 +262,7 @@ namespace MinorShift.Emuera.GameData.Expression
 						return VariableParser.ReduceVariable(id, wc);
 				}
 				//idStrが変数名でない場合、
-				IOperandTerm refToken = GlobalStatic.IdentifierDictionary.GetFunctionMethod(GlobalStatic.LabelDictionary, idStr, null, false);
+				AExpression refToken = GlobalStatic.IdentifierDictionary.GetFunctionMethod(GlobalStatic.LabelDictionary, idStr, null, false);
 				if (refToken != null)//関数参照と名前が一致したらそれを返す。実際に使うとエラー
 					return refToken;
 				if (varCode != VariableCode.__NULL__ && GlobalStatic.ConstantData.isDefined(varCode, idStr))//連想配列的な可能性アリ
@@ -328,7 +328,7 @@ namespace MinorShift.Emuera.GameData.Expression
 		/// <param name="allowKeywordTo">TOキーワードが見つかっても良いか</param>
 		/// <param name="endWith">終端記号</param>
 		/// <returns></returns>
-		private static IOperandTerm reduceTerm(WordCollection wc, bool allowKeywordTo, TermEndWith endWith, VariableCode varCode)
+		private static AExpression reduceTerm(WordCollection wc, bool allowKeywordTo, TermEndWith endWith, VariableCode varCode)
 		{
 			TermStack stack = new();
 			//int termCount = 0;
@@ -403,7 +403,7 @@ namespace MinorShift.Emuera.GameData.Expression
 						}
 					case '(':
 						wc.ShiftNext();
-						IOperandTerm inTerm = reduceTerm(wc, false, TermEndWith.RightParenthesis, VariableCode.__NULL__);
+						AExpression inTerm = reduceTerm(wc, false, TermEndWith.RightParenthesis, VariableCode.__NULL__);
 						if (inTerm == null)
 							throw new CodeEE("かっこ\"(\"～\")\"の中に式が含まれていません");
 						stack.Add(inTerm);
@@ -434,7 +434,7 @@ namespace MinorShift.Emuera.GameData.Expression
 			} while (!varArg);
 			return end(stack, ternaryCount);
 
-			static IOperandTerm end(TermStack stack, int ternaryCount)
+			static AExpression end(TermStack stack, int ternaryCount)
 			{
 				if (ternaryCount > 0)
 					throw new CodeEE("'?'と'#'の数が正しく対応していません");
@@ -520,7 +520,7 @@ namespace MinorShift.Emuera.GameData.Expression
 			}
 			public void Add(Int64 i) { Add(new SingleTerm(i)); }
 			public void Add(string s) { Add(new SingleTerm(s)); }
-			public void Add(IOperandTerm term)
+			public void Add(AExpression term)
 			{
 				stack.Push(term);
 				if (state == 1)
@@ -548,7 +548,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				return priority;
 			}
 
-			public IOperandTerm ReduceAll()
+			public AExpression ReduceAll()
 			{
 				if (stack.Count == 0)
 					return null;
@@ -564,7 +564,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				{
 					reduceLastThree();
 				}
-				IOperandTerm retTerm = (IOperandTerm)stack.Pop();
+				AExpression retTerm = (AExpression)stack.Pop();
 				return retTerm;
 			}
 
@@ -572,9 +572,9 @@ namespace MinorShift.Emuera.GameData.Expression
 			{
 				//if (stack.Count < 2)
 				//    throw new ExeEE("不正な時期の呼び出し");
-				IOperandTerm operand = (IOperandTerm)stack.Pop();
+				AExpression operand = (AExpression)stack.Pop();
 				OperatorCode op = (OperatorCode)stack.Pop();
-				IOperandTerm newTerm = OperatorMethodManager.ReduceUnaryTerm(op, operand);
+				AExpression newTerm = OperatorMethodManager.ReduceUnaryTerm(op, operand);
 				stack.Push(newTerm);
 			}
 
@@ -583,9 +583,9 @@ namespace MinorShift.Emuera.GameData.Expression
 				//if (stack.Count < 2)
 				//    throw new ExeEE("不正な時期の呼び出し");
 				OperatorCode op = (OperatorCode)stack.Pop();
-				IOperandTerm operand = (IOperandTerm)stack.Pop();
+				AExpression operand = (AExpression)stack.Pop();
 
-				IOperandTerm newTerm = OperatorMethodManager.ReduceUnaryAfterTerm(op, operand);
+				AExpression newTerm = OperatorMethodManager.ReduceUnaryAfterTerm(op, operand);
 				stack.Push(newTerm);
 
 			}
@@ -593,9 +593,9 @@ namespace MinorShift.Emuera.GameData.Expression
 			{
 				//if (stack.Count < 2)
 				//    throw new ExeEE("不正な時期の呼び出し");
-				IOperandTerm right = (IOperandTerm)stack.Pop();//後から入れたほうが右側
+				AExpression right = (AExpression)stack.Pop();//後から入れたほうが右側
 				OperatorCode op = (OperatorCode)stack.Pop();
-				IOperandTerm left = (IOperandTerm)stack.Pop();
+				AExpression left = (AExpression)stack.Pop();
 				if (OperatorManager.IsTernary(op))
 				{
 					if (stack.Count > 1)
@@ -606,20 +606,20 @@ namespace MinorShift.Emuera.GameData.Expression
 					throw new CodeEE("式の数が不足しています");
 				}
 
-				IOperandTerm newTerm = OperatorMethodManager.ReduceBinaryTerm(op, left, right);
+				AExpression newTerm = OperatorMethodManager.ReduceBinaryTerm(op, left, right);
 				stack.Push(newTerm);
 			}
 
-			private void reduceTernary(IOperandTerm left, IOperandTerm right)
+			private void reduceTernary(AExpression left, AExpression right)
 			{
 				_ = (OperatorCode)stack.Pop();
-				IOperandTerm newLeft = (IOperandTerm)stack.Pop();
+				AExpression newLeft = (AExpression)stack.Pop();
 
-				IOperandTerm newTerm = OperatorMethodManager.ReduceTernaryTerm(newLeft, left, right);
+				AExpression newTerm = OperatorMethodManager.ReduceTernaryTerm(newLeft, left, right);
 				stack.Push(newTerm);
 			}
 
-			/*			SingleTerm GetSingle(IOperandTerm oprand)
+			/*			SingleTerm GetSingle(AExpression oprand)
 						{
 							return (SingleTerm)oprand;
 						}

@@ -1519,7 +1519,7 @@ namespace MinorShift.Emuera.GameView
 				if (line == null || (line is InvalidLine))
 				{
 					WordCollection wc = LexicalAnalyzer.Analyse(new CharStream(com), LexEndWith.EoL, LexAnalyzeFlag.None);
-					IOperandTerm term = ExpressionParser.ReduceExpressionTerm(wc, TermEndWith.EoL);
+					AExpression term = ExpressionParser.ReduceExpressionTerm(wc, TermEndWith.EoL);
 					if (term == null)
 						throw new CodeEE("解釈不能なコードです");
 					if (term.GetOperandType() == typeof(Int64))

@@ -18,7 +18,7 @@ namespace MinorShift.Emuera.GameProc.Function
 	/// </summary>
 	internal sealed class ExpressionsArgument : Argument
 	{
-		public ExpressionsArgument(Type[] types, IOperandTerm[] terms)
+		public ExpressionsArgument(Type[] types, AExpression[] terms)
 		{
 			ArgumentTypeArray = types;
 			ArgumentArray = terms;
@@ -27,7 +27,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		/// 引数の型(ArgumentArrayよりもLengthが大きい可能性があるので見るのはArgumentArrayにすること)
 		/// </summary>
 		readonly public Type[] ArgumentTypeArray;
-		readonly public IOperandTerm[] ArgumentArray;
+		readonly public AExpression[] ArgumentArray;
 	}
 
 	internal sealed class VoidArgument : Argument
@@ -46,30 +46,30 @@ namespace MinorShift.Emuera.GameProc.Function
 
 	internal sealed class ExpressionArgument : Argument
 	{
-		public ExpressionArgument(IOperandTerm termSrc)
+		public ExpressionArgument(AExpression termSrc)
 		{
 			Term = termSrc;
 		}
-		readonly public IOperandTerm Term;
+		readonly public AExpression Term;
 	}
 
 	internal sealed class ExpressionArrayArgument : Argument
 	{
-		public ExpressionArrayArgument(List<IOperandTerm> termList)
+		public ExpressionArrayArgument(List<AExpression> termList)
 		{
-			TermList = new IOperandTerm[termList.Count];
+			TermList = new AExpression[termList.Count];
 			termList.CopyTo(TermList);
 		}
-		readonly public IOperandTerm[] TermList;
+		readonly public AExpression[] TermList;
 	}
 
 	internal sealed class SpPrintVArgument : Argument
 	{
-		public SpPrintVArgument(IOperandTerm[] list)
+		public SpPrintVArgument(AExpression[] list)
 		{
 			Terms = list;
 		}
-		readonly public IOperandTerm[] Terms;
+		readonly public AExpression[] Terms;
 	}
 
 	internal sealed class SpTimesArgument : Argument
@@ -85,25 +85,25 @@ namespace MinorShift.Emuera.GameProc.Function
 
 	internal sealed class SpBarArgument : Argument
 	{
-		public SpBarArgument(IOperandTerm value, IOperandTerm max, IOperandTerm length)
+		public SpBarArgument(AExpression value, AExpression max, AExpression length)
 		{
 			Terms[0] = value;
 			Terms[1] = max;
 			Terms[2] = length;
 		}
-		readonly public IOperandTerm[] Terms = new IOperandTerm[3];
+		readonly public AExpression[] Terms = new AExpression[3];
 	}
 
 
 	internal sealed class SpSwapCharaArgument : Argument
 	{
-		public SpSwapCharaArgument(IOperandTerm x, IOperandTerm y)
+		public SpSwapCharaArgument(AExpression x, AExpression y)
 		{
 			X = x;
 			Y = y;
 		}
-		readonly public IOperandTerm X;
-		readonly public IOperandTerm Y;
+		readonly public AExpression X;
+		readonly public AExpression Y;
 	}
 
 	internal sealed class SpSwapVarArgument : Argument
@@ -128,28 +128,28 @@ namespace MinorShift.Emuera.GameProc.Function
 
 	internal sealed class SpSaveDataArgument : Argument
 	{
-		public SpSaveDataArgument(IOperandTerm target, IOperandTerm var)
+		public SpSaveDataArgument(AExpression target, AExpression var)
 		{
 			Target = target;
 			StrExpression = var;
 		}
-		readonly public IOperandTerm Target;
-		readonly public IOperandTerm StrExpression;
+		readonly public AExpression Target;
+		readonly public AExpression StrExpression;
 	}
 
 	internal sealed class SpTInputsArgument : Argument
 	{
-		public SpTInputsArgument(IOperandTerm time, IOperandTerm def, IOperandTerm disp, IOperandTerm timeout)
+		public SpTInputsArgument(AExpression time, AExpression def, AExpression disp, AExpression timeout)
 		{
 			Time = time;
 			Def = def;
 			Disp = disp;
 			Timeout = timeout;
 		}
-		readonly public IOperandTerm Time;
-		readonly public IOperandTerm Def;
-		readonly public IOperandTerm Disp;
-		readonly public IOperandTerm Timeout;
+		readonly public AExpression Time;
+		readonly public AExpression Def;
+		readonly public AExpression Disp;
+		readonly public AExpression Timeout;
 	}
 
 	internal enum SortOrder
@@ -172,36 +172,36 @@ namespace MinorShift.Emuera.GameProc.Function
 
 	internal sealed class SpCallFArgment : Argument
 	{
-		public SpCallFArgment(IOperandTerm funcname, IOperandTerm[] subNames, IOperandTerm[] args)
+		public SpCallFArgment(AExpression funcname, AExpression[] subNames, AExpression[] args)
 		{
 			FuncnameTerm = funcname;
 			SubNames = subNames;
 			RowArgs = args;
 		}
-		readonly public IOperandTerm FuncnameTerm;
-		readonly public IOperandTerm[] SubNames;
-		readonly public IOperandTerm[] RowArgs;
-		public IOperandTerm FuncTerm;
+		readonly public AExpression FuncnameTerm;
+		readonly public AExpression[] SubNames;
+		readonly public AExpression[] RowArgs;
+		public AExpression FuncTerm;
 	}
 
 	internal sealed class SpCallArgment : Argument
 	{
-		public SpCallArgment(IOperandTerm funcname, IOperandTerm[] subNames, IOperandTerm[] args)
+		public SpCallArgment(AExpression funcname, AExpression[] subNames, AExpression[] args)
 		{
 			FuncnameTerm = funcname;
 			SubNames = subNames;
 			RowArgs = args;
 		}
-		readonly public IOperandTerm FuncnameTerm;
-		readonly public IOperandTerm[] SubNames;
-		readonly public IOperandTerm[] RowArgs;
+		readonly public AExpression FuncnameTerm;
+		readonly public AExpression[] SubNames;
+		readonly public AExpression[] RowArgs;
 		public UserDefinedFunctionArgument UDFArgument;
 		public CalledFunction CallFunc;
 	}
 
 	internal sealed class SpForNextArgment : Argument
 	{
-		public SpForNextArgment(VariableTerm var, IOperandTerm start, IOperandTerm end, IOperandTerm step)
+		public SpForNextArgment(VariableTerm var, AExpression start, AExpression end, AExpression step)
 		{
 			this.Cnt = var;
 			this.Start = start;
@@ -209,22 +209,22 @@ namespace MinorShift.Emuera.GameProc.Function
 			this.Step = step;
 		}
 		readonly public VariableTerm Cnt;
-		readonly public IOperandTerm Start;
-		readonly public IOperandTerm End;
-		readonly public IOperandTerm Step;
+		readonly public AExpression Start;
+		readonly public AExpression End;
+		readonly public AExpression Step;
 	}
 
 	internal sealed class SpPowerArgument : Argument
 	{
-		public SpPowerArgument(VariableTerm var, IOperandTerm x, IOperandTerm y)
+		public SpPowerArgument(VariableTerm var, AExpression x, AExpression y)
 		{
 			VariableDest = var;
 			X = x;
 			Y = y;
 		}
 		readonly public VariableTerm VariableDest;
-		readonly public IOperandTerm X;
-		readonly public IOperandTerm Y;
+		readonly public AExpression X;
+		readonly public AExpression Y;
 	}
 
 	internal sealed class CaseArgument : Argument
@@ -256,27 +256,27 @@ namespace MinorShift.Emuera.GameProc.Function
 
 	internal sealed class MethodArgument : Argument
 	{
-		public MethodArgument(IOperandTerm method)
+		public MethodArgument(AExpression method)
 		{
 			MethodTerm = method;
 		}
-		readonly public IOperandTerm MethodTerm;
+		readonly public AExpression MethodTerm;
 	}
 
 	internal sealed class BitArgument : Argument
 	{
-		public BitArgument(VariableTerm var, IOperandTerm[] termSrc)
+		public BitArgument(VariableTerm var, AExpression[] termSrc)
 		{
 			VariableDest = var;
 			Term = termSrc;
 		}
 		readonly public VariableTerm VariableDest;
-		readonly public IOperandTerm[] Term;
+		readonly public AExpression[] Term;
 	}
 
 	internal sealed class SpVarSetArgument : Argument
 	{
-		public SpVarSetArgument(VariableTerm var, IOperandTerm termSrc, IOperandTerm start, IOperandTerm end)
+		public SpVarSetArgument(VariableTerm var, AExpression termSrc, AExpression start, AExpression end)
 		{
 			VariableDest = var;
 			Term = termSrc;
@@ -284,14 +284,14 @@ namespace MinorShift.Emuera.GameProc.Function
 			End = end;
 		}
 		readonly public VariableTerm VariableDest;
-		readonly public IOperandTerm Term;
-		readonly public IOperandTerm Start;
-		readonly public IOperandTerm End;
+		readonly public AExpression Term;
+		readonly public AExpression Start;
+		readonly public AExpression End;
 	}
 
 	internal sealed class SpCVarSetArgument : Argument
 	{
-		public SpCVarSetArgument(VariableTerm var, IOperandTerm indexTerm, IOperandTerm termSrc, IOperandTerm start, IOperandTerm end)
+		public SpCVarSetArgument(VariableTerm var, AExpression indexTerm, AExpression termSrc, AExpression start, AExpression end)
 		{
 			VariableDest = var;
 			Index = indexTerm;
@@ -300,66 +300,66 @@ namespace MinorShift.Emuera.GameProc.Function
 			End = end;
 		}
 		readonly public VariableTerm VariableDest;
-		readonly public IOperandTerm Index;
-		readonly public IOperandTerm Term;
-		readonly public IOperandTerm Start;
-		readonly public IOperandTerm End;
+		readonly public AExpression Index;
+		readonly public AExpression Term;
+		readonly public AExpression Start;
+		readonly public AExpression End;
 	}
 
 	internal sealed class SpButtonArgument : Argument
 	{
-		public SpButtonArgument(IOperandTerm p1, IOperandTerm p2)
+		public SpButtonArgument(AExpression p1, AExpression p2)
 		{
 			PrintStrTerm = p1;
 			ButtonWord = p2;
 		}
-		readonly public IOperandTerm PrintStrTerm;
-		readonly public IOperandTerm ButtonWord;
+		readonly public AExpression PrintStrTerm;
+		readonly public AExpression ButtonWord;
 	}
 
 
 	internal sealed class SpColorArgument : Argument
 	{
-		public SpColorArgument(IOperandTerm r, IOperandTerm g, IOperandTerm b)
+		public SpColorArgument(AExpression r, AExpression g, AExpression b)
 		{
 			R = r;
 			G = g;
 			B = b;
 		}
-		public SpColorArgument(IOperandTerm rgb)
+		public SpColorArgument(AExpression rgb)
 		{
 			RGB = rgb;
 		}
-		readonly public IOperandTerm R;
-		readonly public IOperandTerm G;
-		readonly public IOperandTerm B;
-		readonly public IOperandTerm RGB;
+		readonly public AExpression R;
+		readonly public AExpression G;
+		readonly public AExpression B;
+		readonly public AExpression RGB;
 	}
 
 	internal sealed class SpSplitArgument : Argument
 	{
-		public SpSplitArgument(IOperandTerm s1, IOperandTerm s2, VariableToken varId, VariableTerm num)
+		public SpSplitArgument(AExpression s1, AExpression s2, VariableToken varId, VariableTerm num)
 		{
 			TargetStr = s1;
 			Split = s2;
 			Var = varId;
 			Num = num;
 		}
-		readonly public IOperandTerm TargetStr;
-		readonly public IOperandTerm Split;
+		readonly public AExpression TargetStr;
+		readonly public AExpression Split;
 		readonly public VariableToken Var;
 		readonly public VariableTerm Num;
 	}
 
 	internal sealed class SpHtmlSplitArgument : Argument
 	{
-		public SpHtmlSplitArgument(IOperandTerm s1, VariableToken varId, VariableTerm num)
+		public SpHtmlSplitArgument(AExpression s1, VariableToken varId, VariableTerm num)
 		{
 			TargetStr = s1;
 			Var = varId;
 			Num = num;
 		}
-		readonly public IOperandTerm TargetStr;
+		readonly public AExpression TargetStr;
 		readonly public VariableToken Var;
 		readonly public VariableTerm Num;
 	}
@@ -375,20 +375,20 @@ namespace MinorShift.Emuera.GameProc.Function
 
 	internal sealed class SpArrayControlArgument : Argument
 	{
-		public SpArrayControlArgument(VariableTerm var, IOperandTerm num1, IOperandTerm num2)
+		public SpArrayControlArgument(VariableTerm var, AExpression num1, AExpression num2)
 		{
 			VarToken = var;
 			Num1 = num1;
 			Num2 = num2;
 		}
 		readonly public VariableTerm VarToken;
-		readonly public IOperandTerm Num1;
-		readonly public IOperandTerm Num2;
+		readonly public AExpression Num1;
+		readonly public AExpression Num2;
 	}
 
 	internal sealed class SpArrayShiftArgument : Argument
 	{
-		public SpArrayShiftArgument(VariableTerm var, IOperandTerm num1, IOperandTerm num2, IOperandTerm num3, IOperandTerm num4)
+		public SpArrayShiftArgument(VariableTerm var, AExpression num1, AExpression num2, AExpression num3, AExpression num4)
 		{
 			VarToken = var;
 			Num1 = num1;
@@ -397,15 +397,15 @@ namespace MinorShift.Emuera.GameProc.Function
 			Num4 = num4;
 		}
 		readonly public VariableTerm VarToken;
-		readonly public IOperandTerm Num1;
-		readonly public IOperandTerm Num2;
-		readonly public IOperandTerm Num3;
-		readonly public IOperandTerm Num4;
+		readonly public AExpression Num1;
+		readonly public AExpression Num2;
+		readonly public AExpression Num3;
+		readonly public AExpression Num4;
 	}
 
 	internal sealed class SpArraySortArgument : Argument
 	{
-		public SpArraySortArgument(VariableTerm var, SortOrder order, IOperandTerm num1, IOperandTerm num2)
+		public SpArraySortArgument(VariableTerm var, SortOrder order, AExpression num1, AExpression num2)
 		{
 			VarToken = var;
 			Order = order;
@@ -414,31 +414,31 @@ namespace MinorShift.Emuera.GameProc.Function
 		}
 		readonly public VariableTerm VarToken;
 		readonly public SortOrder Order;
-		readonly public IOperandTerm Num1;
-		readonly public IOperandTerm Num2;
+		readonly public AExpression Num1;
+		readonly public AExpression Num2;
 	}
 
 	internal sealed class SpCopyArrayArgument : Argument
 	{
-		public SpCopyArrayArgument(IOperandTerm str1, IOperandTerm str2)
+		public SpCopyArrayArgument(AExpression str1, AExpression str2)
 		{
 			VarName1 = str1;
 			VarName2 = str2;
 		}
-		readonly public IOperandTerm VarName1;
-		readonly public IOperandTerm VarName2;
+		readonly public AExpression VarName1;
+		readonly public AExpression VarName2;
 	}
 
 	internal sealed class SpSaveVarArgument : Argument
 	{
-		public SpSaveVarArgument(IOperandTerm term, IOperandTerm mes, VariableToken[] varTokens)
+		public SpSaveVarArgument(AExpression term, AExpression mes, VariableToken[] varTokens)
 		{
 			Term = term;
 			SavMes = mes;
 			VarTokens = varTokens;
 		}
-		readonly public IOperandTerm Term;
-		readonly public IOperandTerm SavMes;
+		readonly public AExpression Term;
+		readonly public AExpression SavMes;
 		readonly public VariableToken[] VarTokens;
 	}
 
@@ -454,7 +454,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			RefMethodToken = udrm;
 			SrcCalledFunction = src;
 		}
-		public RefArgument(UserDefinedRefMethod udrm, IOperandTerm src)
+		public RefArgument(UserDefinedRefMethod udrm, AExpression src)
 		{
 			RefMethodToken = udrm;
 			SrcTerm = src;
@@ -465,7 +465,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			RefVarToken = vt;
 			SrcVarToken = src;
 		}
-		public RefArgument(ReferenceToken vt, IOperandTerm src)
+		public RefArgument(ReferenceToken vt, AExpression src)
 		{
 			RefVarToken = vt;
 			SrcTerm = src;
@@ -476,60 +476,60 @@ namespace MinorShift.Emuera.GameProc.Function
 
 		readonly public ReferenceToken RefVarToken = null;
 		readonly public VariableToken SrcVarToken = null;
-		readonly public IOperandTerm SrcTerm = null;
+		readonly public AExpression SrcTerm = null;
 	}
 
 	internal sealed class OneInputArgument : Argument
 	{
-		public OneInputArgument(IOperandTerm term, IOperandTerm flag)
+		public OneInputArgument(AExpression term, AExpression flag)
 		{
 			Term = term;
 			Flag = flag;
 		}
-		readonly public IOperandTerm Term;
-		readonly public IOperandTerm Flag;
+		readonly public AExpression Term;
+		readonly public AExpression Flag;
 	}
 
 	internal sealed class OneInputsArgument : Argument
 	{
-		public OneInputsArgument(IOperandTerm term, IOperandTerm flag)
+		public OneInputsArgument(AExpression term, AExpression flag)
 		{
 			Term = term;
 			Flag = flag;
 		}
-		readonly public IOperandTerm Term;
-		readonly public IOperandTerm Flag;
+		readonly public AExpression Term;
+		readonly public AExpression Flag;
 	}
 
 	#region set系
 	internal sealed class SpSetArgument : Argument
 	{
-		public SpSetArgument(VariableTerm var, IOperandTerm termSrc)
+		public SpSetArgument(VariableTerm var, AExpression termSrc)
 		{
 			VariableDest = var;
 			Term = termSrc;
 		}
 		readonly public VariableTerm VariableDest;
-		readonly public IOperandTerm Term;
+		readonly public AExpression Term;
 		public bool AddConst = false;
 	}
 
 	internal sealed class SpSetArrayArgument : Argument
 	{
-		public SpSetArrayArgument(VariableTerm var, IOperandTerm[] termList, Int64[] constList)
+		public SpSetArrayArgument(VariableTerm var, AExpression[] termList, Int64[] constList)
 		{
 			VariableDest = var;
 			TermList = termList;
 			ConstIntList = constList;
 		}
-		public SpSetArrayArgument(VariableTerm var, IOperandTerm[] termList, string[] constList)
+		public SpSetArrayArgument(VariableTerm var, AExpression[] termList, string[] constList)
 		{
 			VariableDest = var;
 			TermList = termList;
 			ConstStrList = constList;
 		}
 		readonly public VariableTerm VariableDest;
-		readonly public IOperandTerm[] TermList;
+		readonly public AExpression[] TermList;
 		readonly public Int64[] ConstIntList;
 		readonly public string[] ConstStrList;
 	}

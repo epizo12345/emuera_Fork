@@ -7,16 +7,16 @@ namespace MinorShift.Emuera.GameData.Variable
 {
 
 	//変数の引数のうち文字列型のもの。
-	internal sealed class VariableStrArgTerm : IOperandTerm
+	internal sealed class VariableStrArgTerm : AExpression
 	{
-		public VariableStrArgTerm(VariableCode code, IOperandTerm strTerm, int index)
+		public VariableStrArgTerm(VariableCode code, AExpression strTerm, int index)
 			: base(typeof(Int64))
 		{
 			this.strTerm = strTerm;
 			parentCode = code;
 			this.index = index;
 		}
-		IOperandTerm strTerm;
+		AExpression strTerm;
 		readonly VariableCode parentCode;
 		readonly int index;
 		Dictionary<string, int> dic = null;
@@ -39,7 +39,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			return i;
 		}
 
-		public override IOperandTerm Restructure(ExpressionMediator exm)
+		public override AExpression Restructure(ExpressionMediator exm)
 		{
 			if (dic == null)
 				dic = exm.VEvaluator.Constant.GetKeywordDictionary(out errPos, parentCode, index);

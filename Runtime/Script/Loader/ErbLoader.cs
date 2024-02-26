@@ -525,7 +525,7 @@ namespace MinorShift.Emuera.GameProc
 				{ errMes = "引数の書式が間違っています"; goto err; }
 				if (symbol.Type == '[')//TODO:subNames 結局実装しないかも
 				{
-					IOperandTerm[] subNamesRow = ExpressionParser.ReduceArguments(wc, ArgsEndWith.RightBracket, false);
+					AExpression[] subNamesRow = ExpressionParser.ReduceArguments(wc, ArgsEndWith.RightBracket, false);
 					if (subNamesRow.Length == 0)
 					{ errMes = "関数定義の[]内の引数は空にできません"; goto err; }
 					subNames = new SingleTerm[subNamesRow.Length];
@@ -533,7 +533,7 @@ namespace MinorShift.Emuera.GameProc
 					{
 						if (subNamesRow[i] == null)
 						{ errMes = "関数定義の引数は省略できません"; goto err; }
-						IOperandTerm term = subNamesRow[i].Restructure(exm);
+						AExpression term = subNamesRow[i].Restructure(exm);
 						subNames[i] = term as SingleTerm;
 						if (subNames[i] == null)
 						{ errMes = "関数定義の[]内の引数は定数のみ指定できます"; goto err; }
@@ -545,7 +545,7 @@ namespace MinorShift.Emuera.GameProc
 				}
 				if (!wc.EOL)
 				{
-					IOperandTerm[] argsRow;
+					AExpression[] argsRow;
 					if (symbol.Type == ',')
 						argsRow = ExpressionParser.ReduceArguments(wc, ArgsEndWith.EoL, true);
 					else if (symbol.Type == '(')
@@ -558,7 +558,7 @@ namespace MinorShift.Emuera.GameProc
 					for (int i = 0; i < length; i++)
 					{
 						SingleTerm def = null;
-						IOperandTerm term = argsRow[i * 2];
+						AExpression term = argsRow[i * 2];
 						//引数読み取り時点で判別されないといけない
 						//if (term == null)
 						//{ errMes = "関数定義の引数は省略できません"; goto err; }

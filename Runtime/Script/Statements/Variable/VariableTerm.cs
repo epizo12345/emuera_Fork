@@ -5,10 +5,10 @@ using MinorShift.Emuera.GameData.Expression;
 namespace MinorShift.Emuera.GameData.Variable
 {
 
-	internal class VariableTerm : IOperandTerm
+	internal class VariableTerm : AExpression
 	{
 		protected VariableTerm(VariableToken token) : base(token.VariableType) { }
-		public VariableTerm(VariableToken token, IOperandTerm[] args)
+		public VariableTerm(VariableToken token, AExpression[] args)
 			: base(token.VariableType)
 		{
 			this.Identifier = token;
@@ -29,7 +29,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			}
 		}
 		public VariableToken Identifier;
-		private readonly IOperandTerm[] arguments;
+		private readonly AExpression[] arguments;
 		protected Int64[] transporter;
 		protected bool allArgIsConst = false;
 
@@ -180,7 +180,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			else
 				SetValue(value.Str, exm);
 		}
-		public virtual void SetValue(IOperandTerm value, ExpressionMediator exm)
+		public virtual void SetValue(AExpression value, ExpressionMediator exm)
 		{
 			if (Identifier.VariableType == typeof(Int64))
 				SetValue(value.GetIntValue(exm), exm);
@@ -221,7 +221,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			return fp;
 		}
 
-		public override IOperandTerm Restructure(ExpressionMediator exm)
+		public override AExpression Restructure(ExpressionMediator exm)
 		{
 			bool[] canCheck = new bool[arguments.Length];
 			allArgIsConst = true;
@@ -276,7 +276,7 @@ namespace MinorShift.Emuera.GameData.Variable
 
 		public string GetFullString()
 		{
-			//添え字が全部定数があることがこの関数の前提(IOperandTermから変数名を取れないため)
+			//添え字が全部定数があることがこの関数の前提(AExpressionから変数名を取れないため)
 			if (!allArgIsConst)
 				return "";
 			if (Identifier.IsArray1D)
@@ -385,7 +385,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			}
 		}
 
-		public override IOperandTerm Restructure(ExpressionMediator exm)
+		public override AExpression Restructure(ExpressionMediator exm)
 		{
 			if (Identifier.CanRestructure)
 				return GetValue(exm);
@@ -428,12 +428,12 @@ namespace MinorShift.Emuera.GameData.Variable
 		{ throw new CodeEE("変数" + Identifier.Name + "に必要な引数が不足しています"); }
 		public override void SetValue(SingleTerm value, ExpressionMediator exm)
 		{ throw new CodeEE("変数" + Identifier.Name + "に必要な引数が不足しています"); }
-		public override void SetValue(IOperandTerm value, ExpressionMediator exm)
+		public override void SetValue(AExpression value, ExpressionMediator exm)
 		{ throw new CodeEE("変数" + Identifier.Name + "に必要な引数が不足しています"); }
 		public override FixedVariableTerm GetFixedVariableTerm(ExpressionMediator exm)
 		{ throw new CodeEE("変数" + Identifier.Name + "に必要な引数が不足しています"); }
 
-		public override IOperandTerm Restructure(ExpressionMediator exm)
+		public override AExpression Restructure(ExpressionMediator exm)
 		{
 			return this;
 		}

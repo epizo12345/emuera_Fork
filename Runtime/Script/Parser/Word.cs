@@ -106,9 +106,9 @@ namespace MinorShift.Emuera.Sub
 
 	internal sealed class TermWord : Word
 	{
-		public TermWord(IOperandTerm term) { this.term = term; }
-		readonly IOperandTerm term;
-		public IOperandTerm Term { get { return term; } }
+		public TermWord(AExpression term) { this.term = term; }
+		readonly AExpression term;
+		public AExpression Term { get { return term; } }
 		public override char Type { get { return 'T'; } }
 	}
 

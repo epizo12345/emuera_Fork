@@ -11,7 +11,7 @@ namespace MinorShift.Emuera.GameProc
 
 	internal sealed class UserDefinedFunctionArgument
 	{
-		public UserDefinedFunctionArgument(IOperandTerm[] srcArgs, VariableTerm[] destArgs)
+		public UserDefinedFunctionArgument(AExpression[] srcArgs, VariableTerm[] destArgs)
 		{
 			Arguments = srcArgs;
 			TransporterInt = new Int64[Arguments.Length];
@@ -23,7 +23,7 @@ namespace MinorShift.Emuera.GameProc
 				isRef[i] = destArgs[i].Identifier.IsReference;
 			}
 		}
-		public readonly IOperandTerm[] Arguments;
+		public readonly AExpression[] Arguments;
 		public readonly Int64[] TransporterInt;
 		public readonly string[] TransporterStr;
 		public readonly Array[] TransporterRef;
@@ -147,7 +147,7 @@ namespace MinorShift.Emuera.GameProc
 		/// 1806+v6.99 式中関数の引数に無効な#DIM変数を与えている場合に例外になるのを修正
 		/// 1808beta009 REF型に対応
 		/// </summary>
-		public UserDefinedFunctionArgument ConvertArg(IOperandTerm[] srcArgs, out string errMes)
+		public UserDefinedFunctionArgument ConvertArg(AExpression[] srcArgs, out string errMes)
 		{
 			errMes = null;
 			if (TopLabel.IsError)
@@ -156,13 +156,13 @@ namespace MinorShift.Emuera.GameProc
 				return null;
 			}
 			FunctionLabelLine func = TopLabel;
-			IOperandTerm[] convertedArg = new IOperandTerm[func.Arg.Length];
+			AExpression[] convertedArg = new AExpression[func.Arg.Length];
 			if (convertedArg.Length < srcArgs.Length)
 			{
 				errMes = "引数の数が関数\"@" + func.LabelName + "\"に設定された数を超えています";
 				return null;
 			}
-			IOperandTerm term;
+			AExpression term;
 			VariableTerm destArg;
 			//bool isString = false;
 			for (int i = 0; i < func.Arg.Length; i++)

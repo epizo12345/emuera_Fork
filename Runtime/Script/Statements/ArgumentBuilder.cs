@@ -44,7 +44,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		/// 引数の数に制限なし。
 		/// </summary>
 		protected bool argAny = false;
-		protected bool checkArgumentType(InstructionLine line, ExpressionMediator exm, IOperandTerm[] arguments)
+		protected bool checkArgumentType(InstructionLine line, ExpressionMediator exm, AExpression[] arguments)
 		{
 			if (arguments == null)
 			{
@@ -95,7 +95,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			return true;
 		}
 
-		protected VariableTerm getChangeableVariable(IOperandTerm[] terms, int i, InstructionLine line)
+		protected VariableTerm getChangeableVariable(AExpression[] terms, int i, InstructionLine line)
 		{
 			if (!(terms[i - 1] is VariableTerm varTerm))
 			{
@@ -116,7 +116,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			return LexicalAnalyzer.Analyse(st, LexEndWith.EoL, LexAnalyzeFlag.None);
 		}
 
-		protected IOperandTerm[] popTerms(InstructionLine line)
+		protected AExpression[] popTerms(InstructionLine line)
 		{
 			CharStream st = line.PopArgumentPrimitive();
 			WordCollection wc = LexicalAnalyzer.Analyse(st, LexEndWith.EoL, LexAnalyzeFlag.None);
@@ -232,7 +232,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			{
 				CharStream st = line.PopArgumentPrimitive();
 				WordCollection wc = LexicalAnalyzer.Analyse(st, LexEndWith.EoL, LexAnalyzeFlag.AnalyzePrintV);
-				IOperandTerm[] args = ExpressionParser.ReduceArguments(wc, ArgsEndWith.EoL, false);
+				AExpression[] args = ExpressionParser.ReduceArguments(wc, ArgsEndWith.EoL, false);
 				for (int i = 0; i < args.Length; i++)
 				{
 					if (args[i] == null)
@@ -267,7 +267,7 @@ namespace MinorShift.Emuera.GameProc.Function
 					warn("第２引数が実数値ではありません（常に0と解釈されます）", line, 1, false);
 					d = 0.0;
 				}
-				IOperandTerm term = ExpressionParser.ReduceExpressionTerm(wc, TermEndWith.EoL);
+				AExpression term = ExpressionParser.ReduceExpressionTerm(wc, TermEndWith.EoL);
 				if (term == null)
 				{ warn("書式が間違っています", line, 2, false); return null; }
 				if (!(term.Restructure(exm) is VariableTerm varTerm))
@@ -286,7 +286,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			{
 				Argument ret;
 				CharStream st = line.PopArgumentPrimitive();
-				List<IOperandTerm> termList = [];
+				List<AExpression> termList = [];
 				LexicalAnalyzer.SkipHalfSpace(st);
 				if (st.EOS)
 				{
@@ -306,7 +306,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				while (true)
 				{
 					StrFormWord sfwt = LexicalAnalyzer.AnalyseFormattedString(st, FormStrEndWith.Comma, false);
-					IOperandTerm term = ExpressionParser.ToStrFormTerm(sfwt);
+					AExpression term = ExpressionParser.ToStrFormTerm(sfwt);
 					term = term.Restructure(exm);
 					termList.Add(term);
 					st.ShiftNext();
@@ -411,7 +411,7 @@ namespace MinorShift.Emuera.GameProc.Function
 					return ret;
 				}
 				StrFormWord sfwt = LexicalAnalyzer.AnalyseFormattedString(st, FormStrEndWith.EoL, false);
-				IOperandTerm term = ExpressionParser.ToStrFormTerm(sfwt);
+				AExpression term = ExpressionParser.ToStrFormTerm(sfwt);
 				term = term.Restructure(exm);
 				ret = new ExpressionArgument(term);
 				if (term is SingleTerm)
@@ -451,7 +451,7 @@ namespace MinorShift.Emuera.GameProc.Function
 
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				VariableTerm varTerm = new(GlobalStatic.VariableData.GetSystemVariableToken("NO"), new IOperandTerm[] { new SingleTerm(0) });
+				VariableTerm varTerm = new(GlobalStatic.VariableData.GetSystemVariableToken("NO"), new AExpression[] { new SingleTerm(0) });
 				SortOrder order = SortOrder.ASCENDING;
 				WordCollection wc = popWords(line);
 				if (wc.EOL)
@@ -469,7 +469,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				}
 				else
 				{
-					IOperandTerm term = ExpressionParser.ReduceExpressionTerm(wc, TermEndWith.Comma);
+					AExpression term = ExpressionParser.ReduceExpressionTerm(wc, TermEndWith.Comma);
 					if (term == null)
 					{ warn("書式が間違っています", line, 2, false); return null; }
 					varTerm = term.Restructure(exm) as VariableTerm;
@@ -504,8 +504,8 @@ namespace MinorShift.Emuera.GameProc.Function
 			{
 				SortOrder order = SortOrder.ASCENDING;
 				WordCollection wc = popWords(line);
-				IOperandTerm term3 = new SingleTerm(0);
-				IOperandTerm term4 = null;
+				AExpression term3 = new SingleTerm(0);
+				AExpression term4 = null;
 
 				if (wc.EOL)
 				{
@@ -513,7 +513,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				}
 
 				VariableTerm varTerm;
-				IOperandTerm term = ExpressionParser.ReduceExpressionTerm(wc, TermEndWith.Comma);
+				AExpression term = ExpressionParser.ReduceExpressionTerm(wc, TermEndWith.Comma);
 				if (term == null)
 				{ warn("書式が間違っています", line, 2, false); return null; }
 				varTerm = term.Restructure(exm) as VariableTerm;
@@ -577,7 +577,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
 				CharStream st = line.PopArgumentPrimitive();
-				IOperandTerm funcname;
+				AExpression funcname;
 				if (form)
 				{
 					StrFormWord sfw = LexicalAnalyzer.AnalyseFormattedString(st, FormStrEndWith.LeftParenthesis_Bracket_Comma_Semicolon, true);
@@ -594,8 +594,8 @@ namespace MinorShift.Emuera.GameProc.Function
 				WordCollection wc = LexicalAnalyzer.Analyse(st, LexEndWith.EoL, LexAnalyzeFlag.None);
 				wc.ShiftNext();
 
-				IOperandTerm[] subNames = null;
-				IOperandTerm[] args = null;
+				AExpression[] subNames = null;
+				AExpression[] args = null;
 				if (cur == '[')
 				{
 					subNames = ExpressionParser.ReduceArguments(wc, ArgsEndWith.RightBracket, false);
@@ -616,9 +616,9 @@ namespace MinorShift.Emuera.GameProc.Function
 					{ warn("書式が間違っています", line, 2, false); return null; }
 				}
 				if (subNames == null)
-					subNames = new IOperandTerm[0];
+					subNames = new AExpression[0];
 				if (args == null)
-					args = new IOperandTerm[0];
+					args = new AExpression[0];
 				for (int i = 0; i < subNames.Length; i++)
 					if (subNames != null)
 						subNames[i] = subNames[i].Restructure(exm);
@@ -663,7 +663,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
 				WordCollection destWc = line.PopAssignmentDestStr();
-				IOperandTerm[] destTerms = ExpressionParser.ReduceArguments(destWc, ArgsEndWith.EoL, false);
+				AExpression[] destTerms = ExpressionParser.ReduceArguments(destWc, ArgsEndWith.EoL, false);
 				SpSetArgument ret;
 				if ((destTerms.Length == 0) || (destTerms[0] == null))
 				{ assignwarn("代入文の左辺の読み取りに失敗しました", line, 2, false); return null; }
@@ -684,7 +684,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				if (st == null)
 					st = new CharStream("");
 				OperatorCode op = line.AssignOperator;
-				IOperandTerm src;
+				AExpression src;
 				if (varTerm.IsInteger)
 				{
 					if (op == OperatorCode.AssignmentStr)
@@ -708,7 +708,7 @@ namespace MinorShift.Emuera.GameProc.Function
 						return ret;
 					}
 					WordCollection srcWc = LexicalAnalyzer.Analyse(st, LexEndWith.EoL, LexAnalyzeFlag.None);
-					IOperandTerm[] srcTerms = ExpressionParser.ReduceArguments(srcWc, ArgsEndWith.EoL, false);
+					AExpression[] srcTerms = ExpressionParser.ReduceArguments(srcWc, ArgsEndWith.EoL, false);
 
 					if ((srcTerms.Length == 0) || (srcTerms[0] == null))
 					{ assignwarn("代入文の右辺の読み取りに失敗しました", line, 2, false); return null; }
@@ -776,7 +776,7 @@ namespace MinorShift.Emuera.GameProc.Function
 						LexicalAnalyzer.SkipHalfSpace(st);//文字列の代入なら半角スペースだけを読み飛ばす
 														  //eramakerは代入文では妙なTrim()をする。半端にしか再現できないがとりあえずtrim = true
 						StrFormWord sfwt = LexicalAnalyzer.AnalyseFormattedString(st, FormStrEndWith.EoL, true);
-						IOperandTerm term = ExpressionParser.ToStrFormTerm(sfwt);
+						AExpression term = ExpressionParser.ToStrFormTerm(sfwt);
 						src = term.Restructure(exm);
 						ret = new SpSetArgument(varTerm, src);
 						if (src is SingleTerm)
@@ -790,7 +790,7 @@ namespace MinorShift.Emuera.GameProc.Function
 					else if ((op == OperatorCode.Mult) || (op == OperatorCode.Plus) || (op == OperatorCode.AssignmentStr))
 					{
 						WordCollection srcWc = LexicalAnalyzer.Analyse(st, LexEndWith.EoL, LexAnalyzeFlag.None);
-						IOperandTerm[] srcTerms = ExpressionParser.ReduceArguments(srcWc, ArgsEndWith.EoL, false);
+						AExpression[] srcTerms = ExpressionParser.ReduceArguments(srcWc, ArgsEndWith.EoL, false);
 
 						if ((srcTerms.Length == 0) || (srcTerms[0] == null))
 						{ assignwarn("代入文の右辺の読み取りに失敗しました", line, 2, false); return null; }
@@ -847,11 +847,11 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] args = popTerms(line);
+				AExpression[] args = popTerms(line);
 				string errmes = line.Function.Method.CheckArgumentType(line.Function.Name, args);
 				if (errmes != null)
 					throw new CodeEE(errmes);
-				IOperandTerm mTerm = new FunctionMethodTerm(line.Function.Method, args);
+				AExpression mTerm = new FunctionMethodTerm(line.Function.Method, args);
 				return new MethodArgument(mTerm.Restructure(exm));
 			}
 		}
@@ -878,7 +878,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				{
 					warn("引数が多すぎます", line, 1, false);
 				}
-				IOperandTerm term = ExpressionParser.ToStrFormTerm(sfwt);
+				AExpression term = ExpressionParser.ToStrFormTerm(sfwt);
 				term = term.Restructure(exm);
 				ret = new ExpressionArgument(term);
 				if (term is SingleTerm)
@@ -919,10 +919,10 @@ namespace MinorShift.Emuera.GameProc.Function
 
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] terms = popTerms(line);
+				AExpression[] terms = popTerms(line);
 				if (!checkArgumentType(line, exm, terms))
 					return null;
-				IOperandTerm term;
+				AExpression term;
 				if (terms.Length == 0)
 				{
 					term = new SingleTerm(0);
@@ -946,7 +946,7 @@ namespace MinorShift.Emuera.GameProc.Function
 						warn("0回以下のREPEATです。(eramakerではエラーになります)", line, 0, true);
 					}
 					VariableToken count = GlobalStatic.VariableData.GetSystemVariableToken("COUNT");
-					VariableTerm repCount = new(count, new IOperandTerm[] { new SingleTerm(0) });
+					VariableTerm repCount = new(count, new AExpression[] { new SingleTerm(0) });
 					repCount.Restructure(exm);
 					return new SpForNextArgment(repCount, new SingleTerm(0), term, new SingleTerm(1));
 				}
@@ -981,11 +981,11 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] terms = popTerms(line);
+				AExpression[] terms = popTerms(line);
 				if (!checkArgumentType(line, exm, terms))
 					return null;
 
-				List<IOperandTerm> termList = [.. terms];
+				List<AExpression> termList = [.. terms];
 				ExpressionArrayArgument ret = new(termList);
 				if (terms.Length == 0)
 				{
@@ -1034,7 +1034,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] terms = popTerms(line);
+				AExpression[] terms = popTerms(line);
 				if (!checkArgumentType(line, exm, terms))
 					return null;
 				ExpressionArgument ret;
@@ -1061,7 +1061,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] terms = popTerms(line);
+				AExpression[] terms = popTerms(line);
 				if (!checkArgumentType(line, exm, terms))
 					return null;
 				if (terms.Length == 0)
@@ -1087,7 +1087,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] terms = popTerms(line);
+				AExpression[] terms = popTerms(line);
 				if (!checkArgumentType(line, exm, terms))
 					return null;
 				return new SpBarArgument(terms[0], terms[1], terms[2]);
@@ -1105,12 +1105,12 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] terms = popTerms(line);
+				AExpression[] terms = popTerms(line);
 				if (!checkArgumentType(line, exm, terms))
 					return null;
 				//上の判定で省略不可時はここに来ないので即さばける
 				if (terms.Length == 1)
-					terms = new IOperandTerm[] { terms[0], null };
+					terms = new AExpression[] { terms[0], null };
 				return new SpSwapCharaArgument(terms[0], terms[1]);
 			}
 		}
@@ -1124,7 +1124,7 @@ namespace MinorShift.Emuera.GameProc.Function
 
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] terms = popTerms(line);
+				AExpression[] terms = popTerms(line);
 				if (!checkArgumentType(line, exm, terms))
 					return null;
 				return new SpSaveDataArgument(terms[0], terms[1]);
@@ -1140,8 +1140,8 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] terms = popTerms(line);
-				IOperandTerm term3 = null, term4 = null;
+				AExpression[] terms = popTerms(line);
+				AExpression term3 = null, term4 = null;
 				if (!checkArgumentType(line, exm, terms))
 					return null;
 				if (terms.Length > 2)
@@ -1162,8 +1162,8 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] terms = popTerms(line);
-				IOperandTerm term3 = null, term4 = null;
+				AExpression[] terms = popTerms(line);
+				AExpression term3 = null, term4 = null;
 				if (!checkArgumentType(line, exm, terms))
 					return null;
 				if (terms.Length > 2)
@@ -1183,7 +1183,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] terms = popTerms(line);
+				AExpression[] terms = popTerms(line);
 				if (!checkArgumentType(line, exm, terms))
 					return null;
 				VariableTerm varTerm = getChangeableVariable(terms, 1, line);
@@ -1192,9 +1192,9 @@ namespace MinorShift.Emuera.GameProc.Function
 				if (varTerm.Identifier.IsCharacterData)
 				{ warn("第1引数にキャラクタ変数を指定することはできません", line, 2, false); return null; }
 
-				IOperandTerm start = terms[1];
-				IOperandTerm end = terms[2];
-				IOperandTerm step;
+				AExpression start = terms[1];
+				AExpression end = terms[2];
+				AExpression step;
 				if (start == null)
 					start = new SingleTerm(0);
 				if ((terms.Length > 3) && (terms[3] != null))
@@ -1216,7 +1216,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] terms = popTerms(line);
+				AExpression[] terms = popTerms(line);
 				if (!checkArgumentType(line, exm, terms))
 					return null;
 				VariableTerm varTerm = getChangeableVariable(terms, 1, line);
@@ -1236,7 +1236,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] terms = popTerms(line);
+				AExpression[] terms = popTerms(line);
 				if (!checkArgumentType(line, exm, terms))
 					return null;
 				VariableTerm x = getChangeableVariable(terms, 1, line);
@@ -1263,7 +1263,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] terms = popTerms(line);
+				AExpression[] terms = popTerms(line);
 				if (terms.Length == 0)
 					return new PrintDataArgument(null);
 				if (!checkArgumentType(line, exm, terms))
@@ -1284,11 +1284,11 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] terms = popTerms(line);
+				AExpression[] terms = popTerms(line);
 				if (terms.Length == 0)
 				{
 					VariableToken varToken = GlobalStatic.VariableData.GetSystemVariableToken("RESULTS");
-					VariableTerm varTerm = new(varToken, new IOperandTerm[] { new SingleTerm(0) });
+					VariableTerm varTerm = new(varToken, new AExpression[] { new SingleTerm(0) });
 					return new StrDataArgument(varTerm);
 				}
 				if (!checkArgumentType(line, exm, terms))
@@ -1311,13 +1311,13 @@ namespace MinorShift.Emuera.GameProc.Function
 
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] terms = popTerms(line);
+				AExpression[] terms = popTerms(line);
 				if (!checkArgumentType(line, exm, terms))
 					return null;
 				VariableTerm varTerm = getChangeableVariable(terms, 1, line);
 				if (varTerm == null)
 					return null;
-				List<IOperandTerm> termList = [.. terms];
+				List<AExpression> termList = [.. terms];
 				//最初の項はいらない
 				termList.RemoveAt(0);
 				BitArgument ret = new(varTerm, termList.ToArray());
@@ -1346,7 +1346,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] terms = popTerms(line);
+				AExpression[] terms = popTerms(line);
 				if (!checkArgumentType(line, exm, terms))
 					return null;
 				VariableTerm varTerm = getChangeableVariable(terms, 1, line);
@@ -1358,7 +1358,7 @@ namespace MinorShift.Emuera.GameProc.Function
 					return null;
 				}
 
-				IOperandTerm term, term3 = null, term4 = null;
+				AExpression term, term3 = null, term4 = null;
 				if (terms.Length > 1)
 					term = terms[1];
 				else
@@ -1401,7 +1401,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] terms = popTerms(line);
+				AExpression[] terms = popTerms(line);
 				if (!checkArgumentType(line, exm, terms))
 					return null;
 
@@ -1413,7 +1413,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				//1803beta004 暫定CDFLAGを弾く
 				if (varTerm.Identifier.IsArray2D)
 				{ warn("第１引数に二次元配列の変数を指定することはできません", line, 2, false); return null; }
-				IOperandTerm index, term, term4 = null, term5 = null;
+				AExpression index, term, term4 = null, term5 = null;
 				if (terms.Length > 1)
 					index = terms[1];
 				else
@@ -1455,7 +1455,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] terms = popTerms(line);
+				AExpression[] terms = popTerms(line);
 				if (!checkArgumentType(line, exm, terms))
 					return null;
 				return new SpButtonArgument(terms[0], terms[1]);
@@ -1472,7 +1472,7 @@ namespace MinorShift.Emuera.GameProc.Function
 
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] terms = popTerms(line);
+				AExpression[] terms = popTerms(line);
 				if (!checkArgumentType(line, exm, terms))
 					return null;
 				if (terms.Length == 2)
@@ -1509,7 +1509,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] terms = popTerms(line);
+				AExpression[] terms = popTerms(line);
 				if (!checkArgumentType(line, exm, terms))
 					return null;
 				VariableTerm x = getChangeableVariable(terms, 3, line);
@@ -1517,7 +1517,7 @@ namespace MinorShift.Emuera.GameProc.Function
 					return null;
 				if (!x.Identifier.IsArray1D && !x.Identifier.IsArray2D && !x.Identifier.IsArray3D)
 				{ warn("第３引数は配列変数でなければなりません", line, 2, false); return null; }
-				VariableTerm term = (terms.Length >= 4) ? getChangeableVariable(terms, 4, line) : new VariableTerm(GlobalStatic.VariableData.GetSystemVariableToken("RESULT"), new IOperandTerm[] { new SingleTerm(0) });
+				VariableTerm term = (terms.Length >= 4) ? getChangeableVariable(terms, 4, line) : new VariableTerm(GlobalStatic.VariableData.GetSystemVariableToken("RESULT"), new AExpression[] { new SingleTerm(0) });
 				return new SpSplitArgument(terms[0], terms[1], x.Identifier, term);
 			}
 		}
@@ -1531,7 +1531,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] terms = popTerms(line);
+				AExpression[] terms = popTerms(line);
 				if (!checkArgumentType(line, exm, terms))
 					return null;
 				VariableToken destVar;
@@ -1550,7 +1550,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				if (term == null)
 				{
 					VariableToken varToken = GlobalStatic.VariableData.GetSystemVariableToken("RESULT");
-					term = new VariableTerm(varToken, new IOperandTerm[] { new SingleTerm(0) });
+					term = new VariableTerm(varToken, new AExpression[] { new SingleTerm(0) });
 				}
 				return new SpHtmlSplitArgument(terms[0], destVar, term);
 			}
@@ -1565,11 +1565,11 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] terms = popTerms(line);
+				AExpression[] terms = popTerms(line);
 				if (terms.Length == 0)
 				{
 					VariableToken varToken = GlobalStatic.VariableData.GetSystemVariableToken("RESULT");
-					return new SpGetIntArgument(new VariableTerm(varToken, new IOperandTerm[] { new SingleTerm(0) }));
+					return new SpGetIntArgument(new VariableTerm(varToken, new AExpression[] { new SingleTerm(0) }));
 				}
 				if (!checkArgumentType(line, exm, terms))
 					return null;
@@ -1588,7 +1588,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] terms = popTerms(line);
+				AExpression[] terms = popTerms(line);
 				if (!checkArgumentType(line, exm, terms))
 					return null;
 				VariableTerm x = getChangeableVariable(terms, 1, line);
@@ -1607,7 +1607,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] terms = popTerms(line);
+				AExpression[] terms = popTerms(line);
 				if (!checkArgumentType(line, exm, terms))
 					return null;
 
@@ -1622,8 +1622,8 @@ namespace MinorShift.Emuera.GameProc.Function
 					if (terms[0].GetOperandType() != terms[2].GetOperandType())
 					{ warn("第１引数と第３引数の型が違います", line, 2, false); return null; }
 				}
-				IOperandTerm term4 = terms.Length >= 4 ? terms[3] : new SingleTerm(0);
-				IOperandTerm term5 = terms.Length >= 5 ? terms[4] : null;
+				AExpression term4 = terms.Length >= 4 ? terms[3] : new SingleTerm(0);
+				AExpression term5 = terms.Length >= 5 ? terms[4] : null;
 				return new SpArrayShiftArgument(x, terms[1], terms[2], term4, term5);
 			}
 		}
@@ -1638,7 +1638,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] terms = popTerms(line);
+				AExpression[] terms = popTerms(line);
 				if (!checkArgumentType(line, exm, terms))
 					return null;
 				List<VariableToken> varTokens = [];
@@ -1689,11 +1689,11 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] terms = popTerms(line);
+				AExpression[] terms = popTerms(line);
 				if (!checkArgumentType(line, exm, terms))
 					return null;
 
-				List<IOperandTerm> termList = [.. terms];
+				List<AExpression> termList = [.. terms];
 				ExpressionArrayArgument ret = new(termList);
 
 				for (int i = 2; i < termList.Count; i++)
@@ -1738,7 +1738,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				if (!(wc.Current is IdentifierWord id) || wc.Current.Type != ',')
 				{ warn("書式が間違っています", line, 2, false); return null; }
 				wc.ShiftNext();
-				IOperandTerm name = null;
+				AExpression name = null;
 				string srcCode = null;
 				if (byname)
 				{
@@ -1805,10 +1805,10 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] terms = popTerms(line);
+				AExpression[] terms = popTerms(line);
 				if (!checkArgumentType(line, exm, terms))
 					return null;
-				IOperandTerm term = null;
+				AExpression term = null;
 				ExpressionArgument ret;
 				if (terms.Length == 0)
 				{
@@ -1855,7 +1855,7 @@ namespace MinorShift.Emuera.GameProc.Function
 
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] terms = popTerms(line);
+				AExpression[] terms = popTerms(line);
 				if (!checkArgumentType(line, exm, terms))
 					return null;
 				VariableToken[] vars = new VariableToken[2] { null, null };
@@ -1930,7 +1930,7 @@ namespace MinorShift.Emuera.GameProc.Function
 
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				IOperandTerm[] terms = popTerms(line);
+				AExpression[] terms = popTerms(line);
 				if (!checkArgumentType(line, exm, terms))
 					return null;
 				return new ExpressionsArgument(argumentTypeArray, terms);
