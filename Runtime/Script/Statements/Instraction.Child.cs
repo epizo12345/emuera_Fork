@@ -15,7 +15,7 @@ namespace MinorShift.Emuera.GameProc.Function
 	internal sealed partial class FunctionIdentifier
 	{
 		#region normalFunction
-		private sealed class PRINT_Instruction : AbstractInstruction
+		private sealed class PRINT_Instruction : AInstruction
 		{
 			public PRINT_Instruction(string name)
 			{
@@ -149,7 +149,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class PRINT_DATA_Instruction : AbstractInstruction
+		private sealed class PRINT_DATA_Instruction : AInstruction
 		{
 			public PRINT_DATA_Instruction(string name)
 			{
@@ -236,7 +236,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class HTML_PRINT_Instruction : AbstractInstruction
+		private sealed class HTML_PRINT_Instruction : AInstruction
 		{
 			public HTML_PRINT_Instruction()
 			{
@@ -257,7 +257,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class HTML_TAGSPLIT_Instruction : AbstractInstruction
+		private sealed class HTML_TAGSPLIT_Instruction : AInstruction
 		{
 			public HTML_TAGSPLIT_Instruction()
 			{
@@ -285,7 +285,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		}
 
 
-		private sealed class PRINT_IMG_Instruction : AbstractInstruction
+		private sealed class PRINT_IMG_Instruction : AInstruction
 		{
 			public PRINT_IMG_Instruction()
 			{
@@ -306,7 +306,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class PRINT_RECT_Instruction : AbstractInstruction
+		private sealed class PRINT_RECT_Instruction : AInstruction
 		{
 			public PRINT_RECT_Instruction()
 			{
@@ -327,7 +327,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class PRINT_SPACE_Instruction : AbstractInstruction
+		private sealed class PRINT_SPACE_Instruction : AInstruction
 		{
 			public PRINT_SPACE_Instruction()
 			{
@@ -349,7 +349,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class CUSTOMDRAWLINE_Instruction : AbstractInstruction
+		private sealed class CUSTOMDRAWLINE_Instruction : AInstruction
 		{
 			public CUSTOMDRAWLINE_Instruction()
 			{
@@ -383,7 +383,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class DEBUGPRINT_Instruction : AbstractInstruction
+		private sealed class DEBUGPRINT_Instruction : AInstruction
 		{
 			public DEBUGPRINT_Instruction(bool form, bool newline)
 			{
@@ -408,7 +408,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class DEBUGCLEAR_Instruction : AbstractInstruction
+		private sealed class DEBUGCLEAR_Instruction : AInstruction
 		{
 			public DEBUGCLEAR_Instruction()
 			{
@@ -421,7 +421,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class METHOD_Instruction : AbstractInstruction
+		private sealed class METHOD_Instruction : AInstruction
 		{
 			public METHOD_Instruction()
 			{
@@ -445,7 +445,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		/// <summary>
 		/// 代入文
 		/// </summary>
-		private sealed class SET_Instruction : AbstractInstruction
+		private sealed class SET_Instruction : AInstruction
 		{
 			public SET_Instruction()
 			{
@@ -504,7 +504,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class REUSELASTLINE_Instruction : AbstractInstruction
+		private sealed class REUSELASTLINE_Instruction : AInstruction
 		{
 			public REUSELASTLINE_Instruction()
 			{
@@ -519,7 +519,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class CLEARLINE_Instruction : AbstractInstruction
+		private sealed class CLEARLINE_Instruction : AInstruction
 		{
 			public CLEARLINE_Instruction()
 			{
@@ -535,7 +535,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class STRLEN_Instruction : AbstractInstruction
+		private sealed class STRLEN_Instruction : AInstruction
 		{
 			public STRLEN_Instruction(bool argisform, bool unicode)
 			{
@@ -562,7 +562,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class SETBIT_Instruction : AbstractInstruction
+		private sealed class SETBIT_Instruction : AInstruction
 		{
 			public SETBIT_Instruction(int op)
 			{
@@ -595,7 +595,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class WAIT_Instruction : AbstractInstruction
+		private sealed class WAIT_Instruction : AInstruction
 		{
 			public WAIT_Instruction(bool force)
 			{
@@ -614,7 +614,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class WAITANYKEY_Instruction : AbstractInstruction
+		private sealed class WAITANYKEY_Instruction : AInstruction
 		{
 			public WAITANYKEY_Instruction()
 			{
@@ -627,7 +627,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class TWAIT_Instruction : AbstractInstruction
+		private sealed class TWAIT_Instruction : AInstruction
 		{
 			public TWAIT_Instruction()
 			{
@@ -652,7 +652,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class INPUT_Instruction : AbstractInstruction
+		private sealed class INPUT_Instruction : AInstruction
 		{
 			public INPUT_Instruction()
 			{
@@ -680,7 +680,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				exm.Console.WaitInput(req);
 			}
 		}
-		private sealed class INPUTS_Instruction : AbstractInstruction
+		private sealed class INPUTS_Instruction : AInstruction
 		{
 			public INPUTS_Instruction()
 			{
@@ -709,7 +709,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class ONEINPUT_Instruction : AbstractInstruction
+		private sealed class ONEINPUT_Instruction : AInstruction
 		{
 			public ONEINPUT_Instruction()
 			{
@@ -746,7 +746,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class ONEINPUTS_Instruction : AbstractInstruction
+		private sealed class ONEINPUTS_Instruction : AInstruction
 		{
 			public ONEINPUTS_Instruction()
 			{
@@ -781,7 +781,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class TINPUT_Instruction : AbstractInstruction
+		private sealed class TINPUT_Instruction : AInstruction
 		{
 			public TINPUT_Instruction(bool oneInput)
 			{
@@ -820,7 +820,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class TINPUTS_Instruction : AbstractInstruction
+		private sealed class TINPUTS_Instruction : AInstruction
 		{
 			public TINPUTS_Instruction(bool oneInput)
 			{
@@ -852,7 +852,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class CALLF_Instruction : AbstractInstruction
+		private sealed class CALLF_Instruction : AInstruction
 		{
 			public CALLF_Instruction(bool form)
 			{
@@ -913,7 +913,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class BAR_Instruction : AbstractInstruction
+		private sealed class BAR_Instruction : AInstruction
 		{
 			public BAR_Instruction(bool newline)
 			{
@@ -936,7 +936,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class TIMES_Instruction : AbstractInstruction
+		private sealed class TIMES_Instruction : AInstruction
 		{
 			public TIMES_Instruction()
 			{
@@ -973,7 +973,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		}
 
 
-		private sealed class ADDCHARA_Instruction : AbstractInstruction
+		private sealed class ADDCHARA_Instruction : AInstruction
 		{
 			public ADDCHARA_Instruction(bool flagSp, bool flagDel)
 			{
@@ -1020,7 +1020,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class ADDVOIDCHARA_Instruction : AbstractInstruction
+		private sealed class ADDVOIDCHARA_Instruction : AInstruction
 		{
 			public ADDVOIDCHARA_Instruction()
 			{
@@ -1034,7 +1034,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class SWAPCHARA_Instruction : AbstractInstruction
+		private sealed class SWAPCHARA_Instruction : AInstruction
 		{
 			public SWAPCHARA_Instruction()
 			{
@@ -1050,7 +1050,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				exm.VEvaluator.SwapChara(x, y);
 			}
 		}
-		private sealed class COPYCHARA_Instruction : AbstractInstruction
+		private sealed class COPYCHARA_Instruction : AInstruction
 		{
 			public COPYCHARA_Instruction()
 			{
@@ -1067,7 +1067,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class ADDCOPYCHARA_Instruction : AbstractInstruction
+		private sealed class ADDCOPYCHARA_Instruction : AInstruction
 		{
 			public ADDCOPYCHARA_Instruction()
 			{
@@ -1083,7 +1083,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class SORTCHARA_Instruction : AbstractInstruction
+		private sealed class SORTCHARA_Instruction : AInstruction
 		{
 			public SORTCHARA_Instruction()
 			{
@@ -1108,7 +1108,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class RESETCOLOR_Instruction : AbstractInstruction
+		private sealed class RESETCOLOR_Instruction : AInstruction
 		{
 			public RESETCOLOR_Instruction()
 			{
@@ -1122,7 +1122,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class RESETBGCOLOR_Instruction : AbstractInstruction
+		private sealed class RESETBGCOLOR_Instruction : AInstruction
 		{
 			public RESETBGCOLOR_Instruction()
 			{
@@ -1136,7 +1136,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class FONTBOLD_Instruction : AbstractInstruction
+		private sealed class FONTBOLD_Instruction : AInstruction
 		{
 			public FONTBOLD_Instruction()
 			{
@@ -1149,7 +1149,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				exm.Console.SetStringStyle(exm.Console.StringStyle.FontStyle | FontStyle.Bold);
 			}
 		}
-		private sealed class FONTITALIC_Instruction : AbstractInstruction
+		private sealed class FONTITALIC_Instruction : AInstruction
 		{
 			public FONTITALIC_Instruction()
 			{
@@ -1162,7 +1162,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				exm.Console.SetStringStyle(exm.Console.StringStyle.FontStyle | FontStyle.Italic);
 			}
 		}
-		private sealed class FONTREGULAR_Instruction : AbstractInstruction
+		private sealed class FONTREGULAR_Instruction : AInstruction
 		{
 			public FONTREGULAR_Instruction()
 			{
@@ -1176,7 +1176,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class VARSET_Instruction : AbstractInstruction
+		private sealed class VARSET_Instruction : AInstruction
 		{
 			public VARSET_Instruction()
 			{
@@ -1220,7 +1220,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class CVARSET_Instruction : AbstractInstruction
+		private sealed class CVARSET_Instruction : AInstruction
 		{
 			public CVARSET_Instruction()
 			{
@@ -1276,7 +1276,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class RANDOMIZE_Instruction : AbstractInstruction
+		private sealed class RANDOMIZE_Instruction : AInstruction
 		{
 			public RANDOMIZE_Instruction()
 			{
@@ -1294,7 +1294,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				exm.VEvaluator.Randomize(iValue);
 			}
 		}
-		private sealed class INITRAND_Instruction : AbstractInstruction
+		private sealed class INITRAND_Instruction : AInstruction
 		{
 			public INITRAND_Instruction()
 			{
@@ -1308,7 +1308,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class DUMPRAND_Instruction : AbstractInstruction
+		private sealed class DUMPRAND_Instruction : AInstruction
 		{
 			public DUMPRAND_Instruction()
 			{
@@ -1323,7 +1323,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		}
 
 
-		private sealed class SAVEGLOBAL_Instruction : AbstractInstruction
+		private sealed class SAVEGLOBAL_Instruction : AInstruction
 		{
 			public SAVEGLOBAL_Instruction()
 			{
@@ -1337,7 +1337,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class LOADGLOBAL_Instruction : AbstractInstruction
+		private sealed class LOADGLOBAL_Instruction : AInstruction
 		{
 			public LOADGLOBAL_Instruction()
 			{
@@ -1354,7 +1354,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class RESETDATA_Instruction : AbstractInstruction
+		private sealed class RESETDATA_Instruction : AInstruction
 		{
 			public RESETDATA_Instruction()
 			{
@@ -1369,7 +1369,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class RESETGLOBAL_Instruction : AbstractInstruction
+		private sealed class RESETGLOBAL_Instruction : AInstruction
 		{
 			public RESETGLOBAL_Instruction()
 			{
@@ -1393,7 +1393,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			return (int)value;
 		}
 
-		private sealed class SAVECHARA_Instruction : AbstractInstruction
+		private sealed class SAVECHARA_Instruction : AInstruction
 		{
 			public SAVECHARA_Instruction()
 			{
@@ -1425,7 +1425,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class LOADCHARA_Instruction : AbstractInstruction
+		private sealed class LOADCHARA_Instruction : AInstruction
 		{
 			public LOADCHARA_Instruction()
 			{
@@ -1446,7 +1446,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		}
 
 
-		private sealed class SAVEVAR_Instruction : AbstractInstruction
+		private sealed class SAVEVAR_Instruction : AInstruction
 		{
 			public SAVEVAR_Instruction()
 			{
@@ -1464,7 +1464,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				//exm.VEvaluator.SaveVariable(datFilename, savMes, vars);
 			}
 		}
-		private sealed class LOADVAR_Instruction : AbstractInstruction
+		private sealed class LOADVAR_Instruction : AInstruction
 		{
 			public LOADVAR_Instruction()
 			{
@@ -1486,7 +1486,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class DELDATA_Instruction : AbstractInstruction
+		private sealed class DELDATA_Instruction : AInstruction
 		{
 			public DELDATA_Instruction()
 			{
@@ -1507,7 +1507,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class DO_NOTHING_Instruction : AbstractInstruction
+		private sealed class DO_NOTHING_Instruction : AInstruction
 		{
 			public DO_NOTHING_Instruction()
 			{
@@ -1522,7 +1522,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class REF_Instruction : AbstractInstruction
+		private sealed class REF_Instruction : AInstruction
 		{
 			public REF_Instruction(bool byname)
 			{
@@ -1603,7 +1603,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class TOOLTIP_SETCOLOR_Instruction : AbstractInstruction
+		private sealed class TOOLTIP_SETCOLOR_Instruction : AInstruction
 		{
 			public TOOLTIP_SETCOLOR_Instruction()
 			{
@@ -1626,7 +1626,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class TOOLTIP_SETDELAY_Instruction : AbstractInstruction
+		private sealed class TOOLTIP_SETDELAY_Instruction : AInstruction
 		{
 			public TOOLTIP_SETDELAY_Instruction()
 			{
@@ -1648,7 +1648,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class TOOLTIP_SETDURATION_Instruction : AbstractInstruction
+		private sealed class TOOLTIP_SETDURATION_Instruction : AInstruction
 		{
 			public TOOLTIP_SETDURATION_Instruction()
 			{
@@ -1672,7 +1672,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class INPUTMOUSEKEY_Instruction : AbstractInstruction
+		private sealed class INPUTMOUSEKEY_Instruction : AInstruction
 		{
 			public INPUTMOUSEKEY_Instruction()
 			{
@@ -1698,7 +1698,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class AWAIT_Instruction : AbstractInstruction
+		private sealed class AWAIT_Instruction : AInstruction
 		{
 			public AWAIT_Instruction()
 			{
@@ -1728,7 +1728,7 @@ namespace MinorShift.Emuera.GameProc.Function
 
 		#region flowControlFunction
 
-		private sealed class BEGIN_Instruction : AbstractInstruction
+		private sealed class BEGIN_Instruction : AInstruction
 		{
 			public BEGIN_Instruction()
 			{
@@ -1746,7 +1746,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class SAVELOADGAME_Instruction : AbstractInstruction
+		private sealed class SAVELOADGAME_Instruction : AInstruction
 		{
 			public SAVELOADGAME_Instruction(bool isSave)
 			{
@@ -1770,7 +1770,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class REPEAT_Instruction : AbstractInstruction
+		private sealed class REPEAT_Instruction : AInstruction
 		{
 			public REPEAT_Instruction(bool fornext)
 			{
@@ -1801,7 +1801,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class WHILE_Instruction : AbstractInstruction
+		private sealed class WHILE_Instruction : AInstruction
 		{
 			public WHILE_Instruction()
 			{
@@ -1817,7 +1817,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class SIF_Instruction : AbstractInstruction
+		private sealed class SIF_Instruction : AInstruction
 		{
 			public SIF_Instruction()
 			{
@@ -1859,7 +1859,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class ELSEIF_Instruction : AbstractInstruction
+		private sealed class ELSEIF_Instruction : AInstruction
 		{
 			public ELSEIF_Instruction(FunctionArgType argtype)
 			{
@@ -1876,7 +1876,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				state.JumpTo(func.JumpTo);
 			}
 		}
-		private sealed class ENDIF_Instruction : AbstractInstruction
+		private sealed class ENDIF_Instruction : AInstruction
 		{
 			public ENDIF_Instruction()
 			{
@@ -1888,7 +1888,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class IF_Instruction : AbstractInstruction
+		private sealed class IF_Instruction : AInstruction
 		{
 			public IF_Instruction()
 			{
@@ -1937,7 +1937,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		}
 
 
-		private sealed class SELECTCASE_Instruction : AbstractInstruction
+		private sealed class SELECTCASE_Instruction : AInstruction
 		{
 			public SELECTCASE_Instruction()
 			{
@@ -2008,7 +2008,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class RETURNFORM_Instruction : AbstractInstruction
+		private sealed class RETURNFORM_Instruction : AInstruction
 		{
 			public RETURNFORM_Instruction()
 			{
@@ -2051,7 +2051,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class RETURN_Instruction : AbstractInstruction
+		private sealed class RETURN_Instruction : AInstruction
 		{
 			public RETURN_Instruction()
 			{
@@ -2081,7 +2081,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class CATCH_Instruction : AbstractInstruction
+		private sealed class CATCH_Instruction : AInstruction
 		{
 			public CATCH_Instruction()
 			{
@@ -2095,7 +2095,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class RESTART_Instruction : AbstractInstruction
+		private sealed class RESTART_Instruction : AInstruction
 		{
 			public RESTART_Instruction()
 			{
@@ -2108,7 +2108,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class BREAK_Instruction : AbstractInstruction
+		private sealed class BREAK_Instruction : AInstruction
 		{
 			public BREAK_Instruction()
 			{
@@ -2133,7 +2133,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class CONTINUE_Instruction : AbstractInstruction
+		private sealed class CONTINUE_Instruction : AInstruction
 		{
 			public CONTINUE_Instruction()
 			{
@@ -2189,7 +2189,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class REND_Instruction : AbstractInstruction
+		private sealed class REND_Instruction : AInstruction
 		{
 			public REND_Instruction()
 			{
@@ -2217,7 +2217,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class WEND_Instruction : AbstractInstruction
+		private sealed class WEND_Instruction : AInstruction
 		{
 			public WEND_Instruction()
 			{
@@ -2232,7 +2232,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class LOOP_Instruction : AbstractInstruction
+		private sealed class LOOP_Instruction : AInstruction
 		{
 			public LOOP_Instruction()
 			{
@@ -2248,7 +2248,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		}
 
 
-		private sealed class RETURNF_Instruction : AbstractInstruction
+		private sealed class RETURNF_Instruction : AInstruction
 		{
 			public RETURNF_Instruction()
 			{
@@ -2291,7 +2291,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class CALL_Instruction : AbstractInstruction
+		private sealed class CALL_Instruction : AInstruction
 		{
 			public CALL_Instruction(bool form, bool isJump, bool isTry, bool isTryCatch)
 			{
@@ -2388,7 +2388,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class CALLEVENT_Instruction : AbstractInstruction
+		private sealed class CALLEVENT_Instruction : AInstruction
 		{
 			public CALLEVENT_Instruction()
 			{
@@ -2418,7 +2418,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 		}
 
-		private sealed class GOTO_Instruction : AbstractInstruction
+		private sealed class GOTO_Instruction : AInstruction
 		{
 			public GOTO_Instruction(bool form, bool isTry, bool isTryCatch)
 			{

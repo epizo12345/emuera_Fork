@@ -4,7 +4,7 @@ using MinorShift.Emuera.Sub;
 namespace MinorShift.Emuera.GameProc.Function
 {
 
-	internal abstract class AbstractInstruction
+	internal abstract class AInstruction
 	{
 		protected int flag;
 		public int Flag { get { return flag; } }
