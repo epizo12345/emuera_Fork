@@ -33,6 +33,19 @@ namespace MinorShift.Emuera.GameView
 		readonly Graphics graph = null;
 		readonly Bitmap bmp = null;
 
+		public int GetDisplayLength(ReadOnlySpan<char> chars, Font f)
+		{
+			if (textDrawingMode == TextDrawingMode.TEXTRENDERER)
+			{
+				var size = TextRenderer.MeasureText(graph, chars, f, layoutSize, TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix);
+				return size.Width;
+			}
+			else
+			{
+				return GetDisplayLength(chars.ToString(), f);
+			}
+		}
+
 		public int GetDisplayLength(string s, Font font)
 		{
 			if (string.IsNullOrEmpty(s))
