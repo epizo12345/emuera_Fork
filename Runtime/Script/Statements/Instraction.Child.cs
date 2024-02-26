@@ -1847,7 +1847,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				else
 					func.JumpTo = func.NextLine.NextLine;
 
-				if ((func.JumpTo != null) && (func.Position.LineNo + 1 != func.NextLine.Position.LineNo))
+				if ((func.JumpTo != null) && (func.Position.Value.LineNo + 1 != func.NextLine.Position.Value.LineNo))
 					ParserMediator.Warn("SIF文の次の行が空行またはコメント行です(eramaker:SIF文は意味を失います)", func, 0, false, true);
 			}
 

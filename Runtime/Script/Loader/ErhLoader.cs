@@ -67,7 +67,7 @@ namespace MinorShift.Emuera.GameProc
 		private bool loadHeaderFile(string filepath, string filename)
 		{
 			CharStream st;
-			ScriptPosition position = default;
+			ScriptPosition? position = null;
 			//EraStreamReader eReader = new EraStreamReader(false);
 			//1815修正 _rename.csvの適用
 			//eramakerEXの仕様的には.ERHに適用するのはおかしいけど、もうEmueraの仕様になっちゃってるのでしかたないか
@@ -146,7 +146,7 @@ namespace MinorShift.Emuera.GameProc
 		//#dims puyo, j
 		//static List<string> keywordsList = new List<string>();
 
-		private void analyzeSharpDefine(CharStream st, ScriptPosition position)
+		private void analyzeSharpDefine(CharStream st, ScriptPosition? position)
 		{
 			//LexicalAnalyzer.SkipWhiteSpace(st);呼び出し前に行う。
 			string srcID = LexicalAnalyzer.ReadSingleIdentifier(st);
@@ -249,7 +249,7 @@ namespace MinorShift.Emuera.GameProc
 			idDic.AddMacro(mac);
 		}
 
-		//private void analyzeSharpDim(StringStream st, ScriptPosition position, bool dims)
+		//private void analyzeSharpDim(StringStream st, ScriptPosition? position, bool dims)
 		//{
 		//	//WordCollection wc = LexicalAnalyzer.Analyse(st, LexEndWith.EoL, LexAnalyzeFlag.AllowAssignment);
 		//	//UserDefinedVariableData data = UserDefinedVariableData.Create(wc, dims, false, position);
@@ -312,7 +312,7 @@ namespace MinorShift.Emuera.GameProc
 			return noError;
 		}
 
-		private void analyzeSharpFunction(CharStream st, ScriptPosition position, bool funcs)
+		private void analyzeSharpFunction(CharStream st, ScriptPosition? position, bool funcs)
 		{
 			throw new NotImplCodeEE();
 			//WordCollection wc = LexicalAnalyzer.Analyse(st, LexEndWith.EoL, LexAnalyzeFlag.AllowAssignment);

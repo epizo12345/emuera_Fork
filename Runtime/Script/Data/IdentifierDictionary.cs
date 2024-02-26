@@ -594,7 +594,7 @@ namespace MinorShift.Emuera
 					}
 					//1.721 #FUNCTIONが定義されていない関数は組み込み関数を上書きしない方向に。 PANCTION.ERBのRANDとか。
 					if (!methodDic.ContainsKey(codeStr))
-						throw new CodeEE("#FUNCTIONが定義されていない関数(" + func.Position.Filename + ":" + func.Position.LineNo + "行目)を式中で呼び出そうとしました");
+						throw new CodeEE("#FUNCTIONが定義されていない関数(" + func.Position.Value.Filename + ":" + func.Position.Value.LineNo + "行目)を式中で呼び出そうとしました");
 				}
 			}
 			if (userDefinedOnly)

@@ -20,7 +20,7 @@ namespace MinorShift.Emuera.Sub
 		readonly bool useRename = false;
 		int curNo = 0;
 		int nextNo = 1;
-		string[] _fileLine;
+		string[] _fileLines;
 
 		public bool Open(string path)
 		{
@@ -40,7 +40,7 @@ namespace MinorShift.Emuera.Sub
 			nextNo = 0;
 			try
 			{
-				_fileLine = File.ReadAllLines(filepath, Config.Encode);
+				_fileLines = File.ReadAllLines(filepath, Config.Encode);
 			}
 			catch
 			{
@@ -62,7 +62,7 @@ namespace MinorShift.Emuera.Sub
 			filename = name.ToString();
 			curNo = 0;
 			nextNo = 0;
-			_fileLine = Preload.GetFileLines(path);
+			_fileLines = Preload.GetFileLines(path);
 			return true;
 		}
 
@@ -70,9 +70,9 @@ namespace MinorShift.Emuera.Sub
 		{
 			string ret = null;
 			curNo = nextNo;
-			if (_fileLine.Length > curNo)
+			if (_fileLines.Length > curNo)
 			{
-				ret = _fileLine[curNo];
+				ret = _fileLines[curNo];
 				nextNo++;
 			}
 			return ret;

@@ -164,7 +164,7 @@ namespace MinorShift.Emuera.GameProc
 			readonly Stack<bool> doneStack = new();
 			readonly Stack<string> ppMatch = new();
 
-			internal void AddKeyWord(string token, string token2, ScriptPosition position)
+			internal void AddKeyWord(string token, string token2, ScriptPosition? position)
 			{
 				//bool token2enabled = string.IsNullOrEmpty(token2);
 				switch (token)
@@ -297,7 +297,7 @@ namespace MinorShift.Emuera.GameProc
 					Disabled = true;
 			}
 
-			internal void FileEnd(ScriptPosition position)
+			internal void FileEnd(ScriptPosition? position)
 			{
 				if (ppMatch.Count != 0)
 				{
@@ -329,7 +329,7 @@ namespace MinorShift.Emuera.GameProc
 			LogicalLine lastLine = new NullLine();
 			FunctionLabelLine lastLabelLine = null;
 			CharStream st = null;
-			ScriptPosition position = default;
+			ScriptPosition? position = null;
 			int funcCount = 0;
 			if (Program.AnalysisMode)
 				output.PrintSystemLine("　");
@@ -392,7 +392,7 @@ namespace MinorShift.Emuera.GameProc
 								if (seniorLabel != null)
 								{
 									//output.NewLine();
-									ParserMediator.Warn("関数@" + label.LabelName + "は既に定義(" + seniorLabel.Position.Filename + "の" + seniorLabel.Position.LineNo.ToString() + "行目)されています", position, 1);
+									ParserMediator.Warn("関数@" + label.LabelName + "は既に定義(" + seniorLabel.Position.Value.Filename + "の" + seniorLabel.Position.Value.LineNo.ToString() + "行目)されています", position, 1);
 									funcCount = -1;
 								}
 							}
@@ -411,8 +411,8 @@ namespace MinorShift.Emuera.GameProc
 							gotoLabel.ParentLabelLine = lastLabelLine;
 							if (lastLabelLine != null && !labelDic.AddLabelDollar(gotoLabel))
 							{
-								ScriptPosition pos = labelDic.GetLabelDollar(gotoLabel.LabelName, lastLabelLine).Position;
-								ParserMediator.Warn("ラベル名$" + gotoLabel.LabelName + "は既に同じ関数内(" + pos.Filename + "の" + pos.LineNo.ToString() + "行目)で使用されています", position, 2);
+								ScriptPosition? pos = labelDic.GetLabelDollar(gotoLabel.LabelName, lastLabelLine).Position;
+								ParserMediator.Warn("ラベル名$" + gotoLabel.LabelName + "は既に同じ関数内(" + pos.Value.Filename + "の" + pos.Value.LineNo.ToString() + "行目)で使用されています", position, 2);
 							}
 						}
 					}
@@ -702,7 +702,7 @@ namespace MinorShift.Emuera.GameProc
 						bool ignore = false;
 						if (notCalledWarning == DisplayWarningFlag.ONCE)
 						{
-							string filename = label.Position.Filename.ToUpper();
+							string filename = label.Position.Value.Filename.ToUpper();
 
 							if (!string.IsNullOrEmpty(filename))
 							{
@@ -821,7 +821,7 @@ namespace MinorShift.Emuera.GameProc
 			else if (warnFlag == DisplayWarningFlag.ONCE)
 			{
 
-				string filename = line.Position.Filename.ToUpper();
+				string filename = line.Position.Value.Filename.ToUpper();
 				if (!string.IsNullOrEmpty(filename))
 				{
 					if (ignoredFNFWarningFileList.Contains(filename))

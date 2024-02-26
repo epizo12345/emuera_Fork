@@ -364,7 +364,7 @@ namespace MinorShift.Emuera.GameProc
 				return;//現在の行が特殊な状態ならスルー
 			if (!console.Enabled)
 				return;//クローズしてるとMessageBox.Showができないので。
-			var text = $"現在、{currentLine.Position.Filename}の{currentLine.Position.LineNo}行目を実行中です。\n最後の入力から{elapsedTime}ミリ秒経過し{state.lineCount}行が実行されました。\n処理を中断し強制終了しますか？";
+			var text = $"現在、{currentLine.Position.Value.Filename}の{currentLine.Position.Value.LineNo}行目を実行中です。\n最後の入力から{elapsedTime}ミリ秒経過し{state.lineCount}行が実行されました。\n処理を中断し強制終了しますか？";
 			if (Dialog.ShowPrompt("無限ループの可能性があります", text))
 			{
 				throw new CodeEE("無限ループの疑いにより強制終了が選択されました");
@@ -419,7 +419,7 @@ namespace MinorShift.Emuera.GameProc
 			return methodStack;
 		}
 
-		public ScriptPosition GetRunningPosition()
+		public ScriptPosition? GetRunningPosition()
 		{
 			LogicalLine line = state.ErrorLine;
 			if (line == null)
@@ -475,18 +475,18 @@ namespace MinorShift.Emuera.GameProc
 		private void handleException(Exception exc, LogicalLine current, bool playSound)
 		{
 			console.ThrowError(playSound);
-			ScriptPosition position = default;
+			ScriptPosition? position = null;
 			if ((exc is EmueraException ee) && (ee.Position != null))
 				position = ee.Position;
 			else if ((current != null) && (current.Position != null))
 				position = current.Position;
 			string posString = "";
-			if (position != default)
+			if (position != null)
 			{
-				if (position.LineNo >= 0)
-					posString = position.Filename + "の" + position.LineNo.ToString() + "行目で";
+				if (position.Value.LineNo >= 0)
+					posString = position.Value.Filename + "の" + position.Value.LineNo.ToString() + "行目で";
 				else
-					posString = position.Filename + "で";
+					posString = position.Value.Filename + "で";
 
 			}
 			if (exc is CodeEE)
@@ -505,7 +505,7 @@ namespace MinorShift.Emuera.GameProc
 						printRawLine(position);
 						console.PrintError("エラー内容：" + exc.Message);
 					}
-					console.PrintError("現在の関数：@" + current.ParentLabelLine.LabelName + "（" + current.ParentLabelLine.Position.Filename + "の" + current.ParentLabelLine.Position.LineNo.ToString() + "行目）");
+					console.PrintError("現在の関数：@" + current.ParentLabelLine.LabelName + "（" + current.ParentLabelLine.Position.Value.Filename + "の" + current.ParentLabelLine.Position.Value.LineNo.ToString() + "行目）");
 					console.PrintError("関数呼び出しスタック：");
 					LogicalLine parent;
 					int depth = 0;
@@ -513,7 +513,7 @@ namespace MinorShift.Emuera.GameProc
 					{
 						if (parent.Position != null)
 						{
-							console.PrintErrorButton("↑" + parent.Position.Filename + "の" + parent.Position.LineNo.ToString() + "行目（関数@" + parent.ParentLabelLine.LabelName + "内）", parent.Position);
+							console.PrintErrorButton("↑" + parent.Position.Value.Filename + "の" + parent.Position.Value.LineNo.ToString() + "行目（関数@" + parent.ParentLabelLine.LabelName + "内）", parent.Position);
 						}
 					}
 				}
@@ -540,26 +540,26 @@ namespace MinorShift.Emuera.GameProc
 			}
 		}
 
-		public void printRawLine(ScriptPosition position)
+		public void printRawLine(ScriptPosition? position)
 		{
 			string str = getRawTextFormFilewithLine(position);
 			if (str != "")
 				console.PrintError(str);
 		}
 
-		public string getRawTextFormFilewithLine(ScriptPosition position)
+		public string getRawTextFormFilewithLine(ScriptPosition? position)
 		{
-			string extents = position.Filename[^4..].ToLower();
+			string extents = position.Value.Filename[^4..].ToLower();
 			if (extents == ".erb")
 			{
-				return File.Exists(Program.ErbDir + position.Filename)
-					? position.LineNo > 0 ? File.ReadLines(Program.ErbDir + position.Filename, Config.Encode).Skip(position.LineNo - 1).First() : ""
+				return File.Exists(Program.ErbDir + position.Value.Filename)
+					? position.Value.LineNo > 0 ? File.ReadLines(Program.ErbDir + position.Value.Filename, Config.Encode).Skip(position.Value.LineNo - 1).First() : ""
 					: "";
 			}
 			else if (extents == ".csv")
 			{
-				return File.Exists(Program.CsvDir + position.Filename)
-					? position.LineNo > 0 ? File.ReadLines(Program.CsvDir + position.Filename, Config.Encode).Skip(position.LineNo - 1).First() : ""
+				return File.Exists(Program.CsvDir + position.Value.Filename)
+					? position.Value.LineNo > 0 ? File.ReadLines(Program.CsvDir + position.Value.Filename, Config.Encode).Skip(position.Value.LineNo - 1).First() : ""
 					: "";
 			}
 			else

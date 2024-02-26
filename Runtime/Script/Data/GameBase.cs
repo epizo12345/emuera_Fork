@@ -85,7 +85,7 @@ namespace MinorShift.Emuera.GameData
 			{
 				return true;
 			}
-			ScriptPosition pos = null;
+			ScriptPosition? pos = null;
 			EraStreamReader eReader = new(false);
 			if (!eReader.Open(basePath))
 			{

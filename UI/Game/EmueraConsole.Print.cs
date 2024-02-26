@@ -222,7 +222,7 @@ namespace MinorShift.Emuera.GameView
 		/// <param name="str"></param>
 		/// <param name="position"></param>
 		/// <param name="level">警告レベル.0:軽微なミス.1:無視できる行.2:行が実行されなければ無害.3:致命的</param>
-		public void PrintWarning(string str, ScriptPosition position, int level)
+		public void PrintWarning(string str, ScriptPosition? position, int level)
 		{
 			if (level < Config.DisplayWarningLevel && !Program.AnalysisMode)
 				return;
@@ -231,13 +231,13 @@ namespace MinorShift.Emuera.GameView
 			force_temporary = false;
 			if (position != null)
 			{
-				if (position.LineNo >= 0)
+				if (position.Value.LineNo >= 0)
 				{
-					PrintErrorButton(string.Format("警告Lv{0}:{1}:{2}行目:{3}", level, position.Filename, position.LineNo, str), position, level);
+					PrintErrorButton(string.Format("警告Lv{0}:{1}:{2}行目:{3}", level, position.Value.Filename, position.Value.LineNo, str), position, level);
 					GlobalStatic.Process.printRawLine(position);
 				}
 				else
-					PrintErrorButton(string.Format("警告Lv{0}:{1}:{2}", level, position.Filename, str), position, level);
+					PrintErrorButton(string.Format("警告Lv{0}:{1}:{2}", level, position.Value.Filename, str), position, level);
 
 			}
 			else
@@ -279,7 +279,7 @@ namespace MinorShift.Emuera.GameView
 		}
 
 
-		internal void PrintErrorButton(string str, ScriptPosition pos, int level = 0)
+		internal void PrintErrorButton(string str, ScriptPosition? pos, int level = 0)
 		{
 			if (string.IsNullOrEmpty(str))
 				return;

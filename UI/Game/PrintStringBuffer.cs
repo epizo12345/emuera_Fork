@@ -137,7 +137,7 @@ namespace MinorShift.Emuera.GameView
 			return buf.ToString();
 		}
 
-		public ConsoleDisplayLine AppendAndFlushErrButton(string str, StringStyle style, string input, ScriptPosition pos, StringMeasure sm)
+		public ConsoleDisplayLine AppendAndFlushErrButton(string str, StringStyle style, string input, ScriptPosition? pos, StringMeasure sm)
 		{
 			fromCssToButton();
 			m_stringList.Add(new ConsoleStyledString(str, style));
@@ -296,7 +296,7 @@ namespace MinorShift.Emuera.GameView
 			cssList.Clear();
 			return new ConsoleButtonString(parent, cssArray, input);
 		}
-		private ConsoleButtonString createButton(List<AConsoleDisplayPart> cssList, string input, ScriptPosition pos)
+		private ConsoleButtonString createButton(List<AConsoleDisplayPart> cssList, string input, ScriptPosition? pos)
 		{
 			AConsoleDisplayPart[] cssArray = new AConsoleDisplayPart[cssList.Count];
 			cssList.CopyTo(cssArray);

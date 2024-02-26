@@ -89,7 +89,7 @@ namespace MinorShift.Emuera.GameProc
 				FunctionLabelLine line = parent.LabelDictionary.GetNonEventLabel(label);
 				if (parent.LabelDictionary.GetNonEventLabel(label) != null)
 				{
-					throw new CodeEE("イベント関数でない関数@" + label + "(" + line.Position.Filename + ":" + line.Position.LineNo + "行目)に対しEVENT呼び出しが行われました");
+					throw new CodeEE("イベント関数でない関数@" + label + "(" + line.Position.Value.Filename + ":" + line.Position.Value.LineNo + "行目)に対しEVENT呼び出しが行われました");
 				}
 				return null;
 			}
@@ -119,7 +119,7 @@ namespace MinorShift.Emuera.GameProc
 			}
 			else if (labelline.IsMethod)
 			{
-				throw new CodeEE("#FUCNTION(S)が定義された関数@" + labelline.LabelName + "(" + labelline.Position.Filename + ":" + labelline.Position.LineNo.ToString() + "行目)に対し通常のCALLが行われました");
+				throw new CodeEE("#FUCNTION(S)が定義された関数@" + labelline.LabelName + "(" + labelline.Position.Value.Filename + ":" + labelline.Position.Value.LineNo.ToString() + "行目)に対し通常のCALLが行われました");
 			}
 			called.TopLabel = labelline;
 			called.CurrentLabel = labelline;

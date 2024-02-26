@@ -402,7 +402,7 @@ namespace MinorShift.Emuera.GameView
 
 		public bool notToTitle = false;
 		public bool byError = false;
-		//public ScriptPosition ErrPos = null;
+		//public ScriptPosition? ErrPos = null;
 
 		#region button関連
 		bool lastButtonIsInput = true;
@@ -935,14 +935,14 @@ namespace MinorShift.Emuera.GameView
 			RefreshStrings(true);
 		}
 
-		private void OpenErrorFile(ScriptPosition pos)
+		private void OpenErrorFile(ScriptPosition? pos)
 		{
 			ProcessStartInfo pInfo = new()
 			{
 				FileName = Config.TextEditor
 			};
 			var ignoreCaseCmp = StringComparison.OrdinalIgnoreCase;
-			string fname = pos.Filename.ToString().ToUpper();
+			string fname = pos.Value.Filename.ToString().ToUpper();
 			if (fname.EndsWith(".CSV", ignoreCaseCmp))
 			{
 				if (fname.Contains(Program.CsvDir, ignoreCaseCmp))
@@ -962,17 +962,17 @@ namespace MinorShift.Emuera.GameView
 			switch (Config.EditorType)
 			{
 				case TextEditorType.SAKURA:
-					pInfo.Arguments = "-Y=" + pos.LineNo.ToString() + " \"" + fname + "\"";
+					pInfo.Arguments = "-Y=" + pos.Value.LineNo.ToString() + " \"" + fname + "\"";
 					break;
 				case TextEditorType.TERAPAD:
-					pInfo.Arguments = "/jl=" + pos.LineNo.ToString() + " \"" + fname + "\"";
+					pInfo.Arguments = "/jl=" + pos.Value.LineNo.ToString() + " \"" + fname + "\"";
 					break;
 				case TextEditorType.EMEDITOR:
-					pInfo.Arguments = "/l " + pos.LineNo.ToString() + " \"" + fname + "\"";
+					pInfo.Arguments = "/l " + pos.Value.LineNo.ToString() + " \"" + fname + "\"";
 					break;
 				case TextEditorType.USER_SETTING:
 					if (Config.EditorArg != "" && Config.EditorArg != null)
-						pInfo.Arguments = Config.EditorArg + pos.LineNo.ToString() + " \"" + fname + "\"";
+						pInfo.Arguments = Config.EditorArg + pos.Value.LineNo.ToString() + " \"" + fname + "\"";
 					else
 						pInfo.Arguments = fname;
 					break;
@@ -1428,8 +1428,8 @@ namespace MinorShift.Emuera.GameView
 			}
 			else
 			{
-				builder.AppendLine("ファイル名:" + line.Position.Filename);
-				builder.AppendLine("行番号:" + line.Position.LineNo.ToString() + " 関数名:" + line.ParentLabelLine.LabelName);
+				builder.AppendLine("ファイル名:" + line.Position.Value.Filename);
+				builder.AppendLine("行番号:" + line.Position.Value.LineNo.ToString() + " 関数名:" + line.ParentLabelLine.LabelName);
 				builder.AppendLine("");
 			}
 			builder.AppendLine("*スタックトレース");

@@ -191,7 +191,7 @@ namespace MinorShift.Emuera.GameData
 				output.PrintError(eReader.Filename + "のオープンに失敗しました");
 				return;
 			}
-			ScriptPosition position = default;
+			ScriptPosition? position = null;
 			if (disp)
 				output.PrintSystemLine(eReader.Filename + "読み込み中・・・");
 			try
@@ -221,7 +221,7 @@ namespace MinorShift.Emuera.GameData
 		}
 
 
-		private void changeVariableSizeData(string line, ScriptPosition position)
+		private void changeVariableSizeData(string line, ScriptPosition? position)
 		{
 			string[] tokens = line.Split(',');
 			if (tokens.Length < 2)
@@ -457,7 +457,7 @@ namespace MinorShift.Emuera.GameData
 				ParserMediator.Warn(id.Code.ToString() + "の要素数は既に定義されています（上書きします）", position, 1);
 		}
 
-		private void _decideActualArraySize_sub(VariableCode mainCode, VariableCode nameCode, int[] arraylength, ScriptPosition position)
+		private void _decideActualArraySize_sub(VariableCode mainCode, VariableCode nameCode, int[] arraylength, ScriptPosition? position)
 		{
 			int nameIndex = (int)(nameCode & VariableCode.__LOWERCASE__);
 			int mainLengthIndex = (int)(mainCode & VariableCode.__LOWERCASE__);
@@ -481,7 +481,7 @@ namespace MinorShift.Emuera.GameData
 				MaxDataList[nameIndex] = arraylength[mainLengthIndex];
 		}
 
-		private void decideActualArraySize(ScriptPosition position)
+		private void decideActualArraySize(ScriptPosition? position)
 		{
 			_decideActualArraySize_sub(VariableCode.ABL, VariableCode.ABLNAME, CharacterIntArrayLength, position);
 			_decideActualArraySize_sub(VariableCode.TALENT, VariableCode.TALENTNAME, CharacterIntArrayLength, position);
@@ -985,7 +985,7 @@ namespace MinorShift.Emuera.GameData
 				output.PrintError(eReader.Filename + "のオープンに失敗しました");
 				return;
 			}
-			ScriptPosition position = default;
+			ScriptPosition? position = null;
 			if (disp)
 				output.PrintSystemLine(eReader.Filename + "読み込み中・・・");
 			try
@@ -1108,7 +1108,7 @@ namespace MinorShift.Emuera.GameData
 			return true;
 		}
 
-		private void toCharacterTemplate(ScriptPosition position, CharacterTemplate chara, string[] tokens)
+		private void toCharacterTemplate(ScriptPosition? position, CharacterTemplate chara, string[] tokens)
 		{
 			if (chara == null)
 				return;
@@ -1287,7 +1287,7 @@ namespace MinorShift.Emuera.GameData
 				output.PrintError(eReader.Filename + "のオープンに失敗しました");
 				return;
 			}
-			ScriptPosition position = default;
+			ScriptPosition? position = null;
 
 			if (disp || Program.AnalysisMode)
 				output.PrintSystemLine(eReader.Filename + "読み込み中・・・");

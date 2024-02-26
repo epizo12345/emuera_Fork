@@ -24,7 +24,7 @@ namespace MinorShift.Emuera
 		/// </summary>
 		/// <param name="str"></param>
 		/// <param name="?"></param>
-		public static void ConfigWarn(string str, ScriptPosition pos, int level, string stack)
+		public static void ConfigWarn(string str, ScriptPosition? pos, int level, string stack)
 		{
 			if (level < Config.DisplayWarningLevel && !Program.AnalysisMode)
 				return;
@@ -50,7 +50,7 @@ namespace MinorShift.Emuera
 				RenameDic.Clear();
 
 			var fileLine = File.ReadAllLines(filepath, Config.Encode);
-			ScriptPosition pos = null;
+			ScriptPosition? pos = null;
 			Regex regex = unEscapedCommaRegex();
 			try
 			{
@@ -79,12 +79,12 @@ namespace MinorShift.Emuera
 		#endregion
 
 
-		public static void Warn(string str, ScriptPosition pos, int level)
+		public static void Warn(string str, ScriptPosition? pos, int level)
 		{
 			Warn(str, pos, level, null);
 		}
 
-		public static void Warn(string str, ScriptPosition pos, int level, string stack)
+		public static void Warn(string str, ScriptPosition? pos, int level, string stack)
 		{
 			if (level < Config.DisplayWarningLevel && !Program.AnalysisMode)
 				return;
@@ -147,7 +147,7 @@ namespace MinorShift.Emuera
 
 		private class ParserWarning
 		{
-			public ParserWarning(string mes, ScriptPosition pos, int level, string stackTrace)
+			public ParserWarning(string mes, ScriptPosition? pos, int level, string stackTrace)
 			{
 				WarningMes = mes;
 				WarningPos = pos;
@@ -155,7 +155,7 @@ namespace MinorShift.Emuera
 				StackTrace = stackTrace;
 			}
 			public string WarningMes;
-			public ScriptPosition WarningPos;
+			public ScriptPosition? WarningPos;
 			public int WarningLevel;
 			public string StackTrace;
 		}

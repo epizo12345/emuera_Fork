@@ -10,7 +10,7 @@ namespace MinorShift.Emuera.GameProc
 {
 	internal static class LogicalLineParser
 	{
-		public static bool ParseSharpLine(FunctionLabelLine label, CharStream st, ScriptPosition position, List<string> OnlyLabel)
+		public static bool ParseSharpLine(FunctionLabelLine label, CharStream st, ScriptPosition? position, List<string> OnlyLabel)
 		{
 			st.ShiftNext();//'#'を飛ばす
 			var token = LexicalAnalyzer.ReadSingleIdentifierROS(st);//#～自体にはマクロ非適用
@@ -275,15 +275,15 @@ namespace MinorShift.Emuera.GameProc
 
 		public static LogicalLine ParseLine(string str, EmueraConsole console)
 		{
-			ScriptPosition position = new();
+			ScriptPosition? position = new();
 			CharStream stream = new(str);
 			return ParseLine(stream, position, console);
 		}
 
-		public static LogicalLine ParseLabelLine(CharStream stream, ScriptPosition position, EmueraConsole console)
+		public static LogicalLine ParseLabelLine(CharStream stream, ScriptPosition? position, EmueraConsole console)
 		{
 			bool isFunction = stream.Current == '@';
-			//int lineNo = position.LineNo;
+			//int lineNo = Position.Value.LineNo;
 			string labelName = "";
 			string errMes = "";
 			try
@@ -364,7 +364,7 @@ namespace MinorShift.Emuera.GameProc
 			}
 			return err(position, isFunction, ref labelName, errMes);
 
-			static LogicalLine err(ScriptPosition position, bool isFunction, ref string labelName, string errMes)
+			static LogicalLine err(ScriptPosition? position, bool isFunction, ref string labelName, string errMes)
 			{
 				System.Media.SystemSounds.Hand.Play();
 				if (isFunction)
@@ -378,9 +378,9 @@ namespace MinorShift.Emuera.GameProc
 		}
 
 
-		public static LogicalLine ParseLine(CharStream stream, ScriptPosition position, EmueraConsole console)
+		public static LogicalLine ParseLine(CharStream stream, ScriptPosition? position, EmueraConsole console)
 		{
-			//int lineNo = position.LineNo;
+			//int lineNo = Position.Value.LineNo;
 			string errMes;
 			LexicalAnalyzer.SkipWhiteSpace(stream);//先頭のホワイトスペースを読み飛ばす
 			if (stream.EOS)

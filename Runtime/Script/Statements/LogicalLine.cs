@@ -13,11 +13,11 @@ namespace MinorShift.Emuera.GameProc
 	/// </summary>
 	internal abstract class LogicalLine
 	{
-		protected ScriptPosition position;
+		protected ScriptPosition? position;
 
 		//LogicalLine prevLine;
 		LogicalLine nextLine;
-		public ScriptPosition Position
+		public ScriptPosition? Position
 		{
 			get { return position; }
 		}
@@ -32,7 +32,7 @@ namespace MinorShift.Emuera.GameProc
 		{
 			if (position == null)
 				return base.ToString();
-			return string.Format("{0}:{1}:{2}", position.Filename, position.LineNo, GlobalStatic.Process.getRawTextFormFilewithLine(position));
+			return string.Format("{0}:{1}:{2}", position.Value.Filename, Position.Value.LineNo, GlobalStatic.Process.getRawTextFormFilewithLine(position));
 		}
 
 		protected bool isError;
@@ -55,7 +55,7 @@ namespace MinorShift.Emuera.GameProc
 	///// </summary>
 	//internal sealed class CommentLine : LogicalLine
 	//{
-	//    public CommentLine(ScriptPosition thePosition, string str)
+	//    public CommentLine(ScriptPosition? thePosition, string str)
 	//    {
 	//        base.position = thePosition;
 	//        //comment = str;
@@ -72,7 +72,7 @@ namespace MinorShift.Emuera.GameProc
 	/// </summary>
 	internal sealed class InvalidLine : LogicalLine
 	{
-		public InvalidLine(ScriptPosition thePosition, string err)
+		public InvalidLine(ScriptPosition? thePosition, string err)
 		{
 			base.position = thePosition;
 			errMes = err;
@@ -88,14 +88,14 @@ namespace MinorShift.Emuera.GameProc
 	/// </summary>
 	internal sealed class InstructionLine : LogicalLine
 	{
-		public InstructionLine(ScriptPosition thePosition, FunctionIdentifier theFunc, CharStream theArgPrimitive)
+		public InstructionLine(ScriptPosition? thePosition, FunctionIdentifier theFunc, CharStream theArgPrimitive)
 		{
 			base.position = thePosition;
 			this.func = theFunc;
 			this.argprimitive = theArgPrimitive;
 		}
 
-		public InstructionLine(ScriptPosition thePosition, FunctionIdentifier functionIdentifier, OperatorCode assignOP, WordCollection dest, CharStream theArgPrimitive)
+		public InstructionLine(ScriptPosition? thePosition, FunctionIdentifier functionIdentifier, OperatorCode assignOP, WordCollection dest, CharStream theArgPrimitive)
 		{
 			base.position = thePosition;
 			func = functionIdentifier;
@@ -193,7 +193,7 @@ namespace MinorShift.Emuera.GameProc
 	/// </summary>
 	internal sealed class InvalidLabelLine : FunctionLabelLine
 	{
-		public InvalidLabelLine(ScriptPosition thePosition, string labelname, string err)
+		public InvalidLabelLine(ScriptPosition? thePosition, string labelname, string err)
 		{
 			base.position = thePosition;
 			LabelName = labelname;
@@ -216,7 +216,7 @@ namespace MinorShift.Emuera.GameProc
 	internal class FunctionLabelLine : LogicalLine, IComparable<FunctionLabelLine>
 	{
 		protected FunctionLabelLine() { }
-		public FunctionLabelLine(ScriptPosition thePosition, string labelname, WordCollection wc)
+		public FunctionLabelLine(ScriptPosition? thePosition, string labelname, WordCollection wc)
 		{
 			base.position = thePosition;
 			LabelName = labelname;
@@ -275,8 +275,8 @@ namespace MinorShift.Emuera.GameProc
 			if (FileIndex != other.FileIndex)
 				return FileIndex.CompareTo(other.FileIndex);
 			//position == nullであるLine(デバッグコマンドなど)をSortすることはないはず
-			if (position.LineNo != other.position.LineNo)
-				return position.LineNo.CompareTo(other.position.LineNo);
+			if (Position.Value.LineNo != other.Position.Value.LineNo)
+				return Position.Value.LineNo.CompareTo(other.Position.Value.LineNo);
 			return Index.CompareTo(other.Index);
 		}
 		#endregion
@@ -329,7 +329,7 @@ namespace MinorShift.Emuera.GameProc
 	/// </summary>
 	internal sealed class GotoLabelLine : LogicalLine, IEqualityComparer<GotoLabelLine>
 	{
-		public GotoLabelLine(ScriptPosition thePosition, string labelname)
+		public GotoLabelLine(ScriptPosition? thePosition, string labelname)
 		{
 			base.position = thePosition;
 			this.labelname = labelname;

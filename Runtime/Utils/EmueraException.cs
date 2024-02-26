@@ -6,7 +6,7 @@ namespace MinorShift.Emuera.Sub
 	[Serializable]
 	internal abstract class EmueraException : ApplicationException
 	{
-		protected EmueraException(string errormes, ScriptPosition position)
+		protected EmueraException(string errormes, ScriptPosition? position)
 			: base(errormes)
 		{
 			Position = position;
@@ -16,7 +16,7 @@ namespace MinorShift.Emuera.Sub
 		{
 			Position = null;
 		}
-		public ScriptPosition Position;
+		public ScriptPosition? Position;
 	}
 
 	/// <summary>
@@ -41,7 +41,7 @@ namespace MinorShift.Emuera.Sub
 	[Serializable]
 	internal class CodeEE : EmueraException
 	{
-		public CodeEE(string errormes, ScriptPosition position)
+		public CodeEE(string errormes, ScriptPosition? position)
 			: base(errormes, position)
 		{
 		}
@@ -97,7 +97,7 @@ namespace MinorShift.Emuera.Sub
 	/// <summary>
 	/// エラー箇所を表示するための位置データ。整形前のデータなのでエラー表示以外の理由で参照するべきではない。
 	/// </summary>
-	internal sealed class ScriptPosition : IEquatable<ScriptPosition>, IEqualityComparer<ScriptPosition>
+	readonly record struct ScriptPosition
 	{
 		public ScriptPosition()
 		{
@@ -110,7 +110,7 @@ namespace MinorShift.Emuera.Sub
 			if (srcFile == null)
 				Filename = "";
 			else
-				Filename = srcFile;
+				Filename = string.Intern(srcFile);
 		}
 		public readonly int LineNo;
 		public readonly string Filename;
