@@ -9,6 +9,7 @@ using MinorShift._Library;
 using MinorShift.Emuera.GameData.Function;
 using System.Drawing;
 using MinorShift.Emuera.Runtime.Config;
+using System.Diagnostics;
 
 namespace MinorShift.Emuera.GameProc.Function
 {
@@ -378,7 +379,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			{
 				if (GlobalStatic.Process.SkipPrint)
 					return;
-				GlobalStatic.Console.printCustomBar(((ExpressionArgument)func.Argument).ConstStr, true);
+				GlobalStatic.Console.printCustomBar(func.Argument.ConstStr, true);
 				exm.Console.NewLine();
 			}
 		}
@@ -454,9 +455,8 @@ namespace MinorShift.Emuera.GameProc.Function
 			}
 			public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
 			{
-				if (func.Argument is SpSetArrayArgument)
+				if (func.Argument is SpSetArrayArgument arg)
 				{
-					SpSetArrayArgument arg = (SpSetArrayArgument)func.Argument;
 					if (arg.VariableDest.IsInteger)
 					{
 						if (arg.IsConst)
@@ -1903,11 +1903,8 @@ namespace MinorShift.Emuera.GameProc.Function
 												   //	throw new ExeEE("IFのIF-ELSEIFリストが適正に作成されていない");
 												   //if (func.JumpTo == null)
 												   //	throw new ExeEE("IFに対応するENDIFが設定されていない");
-
-				InstructionLine line;
-				for (int i = 0; i < func.IfCaseList.Count; i++)
+				foreach (var line in func.IfCaseList)
 				{
-					line = func.IfCaseList[i];
 					if (line.IsError)
 						continue;
 					if (line.FunctionCode == FunctionCode.ELSE)
@@ -1923,7 +1920,15 @@ namespace MinorShift.Emuera.GameProc.Function
 
 					//1730 ELSEIFが出したエラーがIFのエラーとして検出されていた
 					state.CurrentLine = line;
-					Int64 value = ((ExpressionArgument)line.Argument).Term.GetIntValue(exm);
+					long value = 0;
+					if (line.Argument.IsConst)
+					{
+						value = line.Argument.ConstInt;
+					}
+					else
+					{
+						value = ((ExpressionArgument)line.Argument).Term.GetIntValue(exm);
+					}
 					if (value != 0)//式が真
 					{
 						ifJumpto = line;
