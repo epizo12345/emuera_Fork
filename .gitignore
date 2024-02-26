@@ -6,5 +6,5 @@ bin/*
 Properties/launchSettings.json
 artifacts/*
 Emuera.csproj.user
-release/*
+_release/*
 src.zip
