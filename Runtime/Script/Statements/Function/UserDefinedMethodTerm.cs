@@ -2,6 +2,7 @@
 using MinorShift.Emuera.GameProc;
 using MinorShift.Emuera.GameData.Expression;
 using MinorShift.Emuera.Sub;
+using System.Collections.Generic;
 
 namespace MinorShift.Emuera.GameData.Function
 {
@@ -47,7 +48,7 @@ namespace MinorShift.Emuera.GameData.Function
 		/// <summary>
 		/// エラーならnullを返す。
 		/// </summary>
-		public static UserDefinedMethodTerm Create(FunctionLabelLine targetLabel, AExpression[] srcArgs, out string errMes)
+		public static UserDefinedMethodTerm Create(FunctionLabelLine targetLabel, List<AExpression> srcArgs, out string errMes)
 		{
 			CalledFunction call = CalledFunction.CreateCalledFunctionMethod(targetLabel, targetLabel.LabelName);
 			UserDefinedFunctionArgument arg = call.ConvertArg(srcArgs, out errMes);
@@ -78,13 +79,13 @@ namespace MinorShift.Emuera.GameData.Function
 	}
 	internal sealed class UserDefinedRefMethodTerm : SuperUserDefinedMethodTerm
 	{
-		public UserDefinedRefMethodTerm(UserDefinedRefMethod reffunc, AExpression[] srcArgs)
+		public UserDefinedRefMethodTerm(UserDefinedRefMethod reffunc, List<AExpression> srcArgs)
 			: base(reffunc.RetType)
 		{
 			this.srcArgs = srcArgs;
 			this.reffunc = reffunc;
 		}
-		AExpression[] srcArgs = null;
+		List<AExpression> srcArgs = null;
 		readonly UserDefinedRefMethod reffunc = null;
 		public override UserDefinedFunctionArgument Argument
 		{
@@ -110,7 +111,7 @@ namespace MinorShift.Emuera.GameData.Function
 
 		public override AExpression Restructure(ExpressionMediator exm)
 		{
-			for (int i = 0; i < srcArgs.Length; i++)
+			for (int i = 0; i < srcArgs.Count; i++)
 			{
 				if ((reffunc.ArgTypeList[i] & UserDifinedFunctionDataArgType.__Ref) == UserDifinedFunctionDataArgType.__Ref)
 					srcArgs[i].Restructure(exm);

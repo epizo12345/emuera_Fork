@@ -17,7 +17,7 @@ namespace MinorShift.Emuera.GameData.Expression
 		{
 			argumentTypeArray = null;
 		}
-		public override string CheckArgumentType(string name, AExpression[] arguments) { throw new ExeEE("型チェックは呼び出し元が行うこと"); }
+		public override string CheckArgumentType(string name, List<AExpression> arguments) { throw new ExeEE("型チェックは呼び出し元が行うこと"); }
 	}
 
 	internal static class OperatorMethodManager
@@ -97,7 +97,7 @@ namespace MinorShift.Emuera.GameData.Expression
 					method = unaryDic[op];
 			}
 			if (method != null)
-				return new FunctionMethodTerm(method, new AExpression[] { o1 });
+				return new FunctionMethodTerm(method, [o1]);
 			string errMes = "";
 			if (o1.GetOperandType() == typeof(Int64))
 				errMes += "数値型";
@@ -125,7 +125,7 @@ namespace MinorShift.Emuera.GameData.Expression
 					method = unaryAfterDic[op];
 			}
 			if (method != null)
-				return new FunctionMethodTerm(method, new AExpression[] { o1 });
+				return new FunctionMethodTerm(method, [o1]);
 			string errMes = "";
 			if (o1.GetOperandType() == typeof(Int64))
 				errMes += "数値型";
@@ -157,7 +157,7 @@ namespace MinorShift.Emuera.GameData.Expression
 					method = binaryMultIntStr;
 			}
 			if (method != null)
-				return new FunctionMethodTerm(method, new AExpression[] { left, right });
+				return new FunctionMethodTerm(method, [left, right]);
 			string errMes = "";
 			if (left.GetOperandType() == typeof(Int64))
 				errMes += "数値型と";
@@ -183,7 +183,7 @@ namespace MinorShift.Emuera.GameData.Expression
 			else if ((o1.GetOperandType() == typeof(Int64)) && (o2.GetOperandType() == typeof(string)) && (o3.GetOperandType() == typeof(string)))
 				method = ternaryIntStrStr;
 			if (method != null)
-				return new FunctionMethodTerm(method, new AExpression[] { o1, o2, o3 });
+				return new FunctionMethodTerm(method, [o1, o2, o3]);
 			throw new CodeEE("三項演算子の使用法が不正です");
 
 		}

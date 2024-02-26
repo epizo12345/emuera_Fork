@@ -525,11 +525,11 @@ namespace MinorShift.Emuera.GameProc
 				{ errMes = "引数の書式が間違っています"; goto err; }
 				if (symbol.Type == '[')//TODO:subNames 結局実装しないかも
 				{
-					AExpression[] subNamesRow = ExpressionParser.ReduceArguments(wc, ArgsEndWith.RightBracket, false);
-					if (subNamesRow.Length == 0)
+					var subNamesRow = ExpressionParser.ReduceArguments(wc, ArgsEndWith.RightBracket, false);
+					if (subNamesRow.Count == 0)
 					{ errMes = "関数定義の[]内の引数は空にできません"; goto err; }
-					subNames = new SingleTerm[subNamesRow.Length];
-					for (int i = 0; i < subNamesRow.Length; i++)
+					subNames = new SingleTerm[subNamesRow.Count];
+					for (int i = 0; i < subNamesRow.Count; i++)
 					{
 						if (subNamesRow[i] == null)
 						{ errMes = "関数定義の引数は省略できません"; goto err; }
@@ -545,14 +545,14 @@ namespace MinorShift.Emuera.GameProc
 				}
 				if (!wc.EOL)
 				{
-					AExpression[] argsRow;
+					List<AExpression> argsRow;
 					if (symbol.Type == ',')
 						argsRow = ExpressionParser.ReduceArguments(wc, ArgsEndWith.EoL, true);
 					else if (symbol.Type == '(')
 						argsRow = ExpressionParser.ReduceArguments(wc, ArgsEndWith.RightParenthesis, true);
 					else
 					{ errMes = "引数の書式が間違っています"; goto err; }
-					int length = argsRow.Length / 2;
+					int length = argsRow.Count / 2;
 					args = new VariableTerm[length];
 					defs = new SingleTerm[length];
 					for (int i = 0; i < length; i++)
@@ -1384,12 +1384,12 @@ namespace MinorShift.Emuera.GameProc
 							if (pFunc.FunctionCode == FunctionCode.TRYGOTOLIST)
 							{
 								var spCallArg = func.Argument as SpCallArgment;
-								if (spCallArg.SubNames.Length != 0)
+								if (spCallArg.SubNames.Count != 0)
 								{
 									ParserMediator.Warn("TRYGOTOLISTの呼び出し対象に[～～]が設定されています", func, 2, true, false);
 									break;
 								}
-								if (spCallArg.RowArgs.Length != 0)
+								if (spCallArg.RowArgs.Count != 0)
 								{
 									ParserMediator.Warn("TRYGOTOLISTの呼び出し対象に引数が設定されています", func, 2, true, false);
 									break;

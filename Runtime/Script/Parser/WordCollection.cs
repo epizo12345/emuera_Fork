@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace MinorShift.Emuera.Sub
 {
@@ -8,7 +9,12 @@ namespace MinorShift.Emuera.Sub
 	/// </summary>
 	internal sealed class WordCollection
 	{
-		public List<Word> Collection = new(10);
+		public WordCollection(int capacity = 5)
+		{
+			Collection = new(capacity);
+		}
+
+		public List<Word> Collection;
 		public int Pointer = 0;
 		private static Word nullToken = new NullWord();
 		public void Add(Word token)

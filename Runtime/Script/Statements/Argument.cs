@@ -18,7 +18,7 @@ namespace MinorShift.Emuera.GameProc.Function
 	/// </summary>
 	internal sealed class ExpressionsArgument : Argument
 	{
-		public ExpressionsArgument(Type[] types, AExpression[] terms)
+		public ExpressionsArgument(Type[] types, List<AExpression> terms)
 		{
 			ArgumentTypeArray = types;
 			ArgumentArray = terms;
@@ -27,7 +27,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		/// 引数の型(ArgumentArrayよりもLengthが大きい可能性があるので見るのはArgumentArrayにすること)
 		/// </summary>
 		readonly public Type[] ArgumentTypeArray;
-		readonly public AExpression[] ArgumentArray;
+		readonly public List<AExpression> ArgumentArray;
 	}
 
 	internal sealed class VoidArgument : Argument
@@ -65,11 +65,11 @@ namespace MinorShift.Emuera.GameProc.Function
 
 	internal sealed class SpPrintVArgument : Argument
 	{
-		public SpPrintVArgument(AExpression[] list)
+		public SpPrintVArgument(List<AExpression> list)
 		{
 			Terms = list;
 		}
-		readonly public AExpression[] Terms;
+		readonly public List<AExpression> Terms;
 	}
 
 	internal sealed class SpTimesArgument : Argument
@@ -172,29 +172,29 @@ namespace MinorShift.Emuera.GameProc.Function
 
 	internal sealed class SpCallFArgment : Argument
 	{
-		public SpCallFArgment(AExpression funcname, AExpression[] subNames, AExpression[] args)
+		public SpCallFArgment(AExpression funcname, List<AExpression> subNames, List<AExpression> args)
 		{
 			FuncnameTerm = funcname;
 			SubNames = subNames;
 			RowArgs = args;
 		}
 		readonly public AExpression FuncnameTerm;
-		readonly public AExpression[] SubNames;
-		readonly public AExpression[] RowArgs;
+		readonly public List<AExpression> SubNames;
+		readonly public List<AExpression> RowArgs;
 		public AExpression FuncTerm;
 	}
 
 	internal sealed class SpCallArgment : Argument
 	{
-		public SpCallArgment(AExpression funcname, AExpression[] subNames, AExpression[] args)
+		public SpCallArgment(AExpression funcname, List<AExpression> subNames, List<AExpression> args)
 		{
 			FuncnameTerm = funcname;
 			SubNames = subNames;
 			RowArgs = args;
 		}
 		readonly public AExpression FuncnameTerm;
-		readonly public AExpression[] SubNames;
-		readonly public AExpression[] RowArgs;
+		readonly public List<AExpression> SubNames;
+		readonly public List<AExpression> RowArgs;
 		public UserDefinedFunctionArgument UDFArgument;
 		public CalledFunction CallFunc;
 	}
@@ -516,20 +516,20 @@ namespace MinorShift.Emuera.GameProc.Function
 
 	internal sealed class SpSetArrayArgument : Argument
 	{
-		public SpSetArrayArgument(VariableTerm var, AExpression[] termList, Int64[] constList)
+		public SpSetArrayArgument(VariableTerm var, List<AExpression> termList, Int64[] constList)
 		{
 			VariableDest = var;
 			TermList = termList;
 			ConstIntList = constList;
 		}
-		public SpSetArrayArgument(VariableTerm var, AExpression[] termList, string[] constList)
+		public SpSetArrayArgument(VariableTerm var, List<AExpression> termList, string[] constList)
 		{
 			VariableDest = var;
 			TermList = termList;
 			ConstStrList = constList;
 		}
 		readonly public VariableTerm VariableDest;
-		readonly public AExpression[] TermList;
+		readonly public List<AExpression> TermList;
 		readonly public Int64[] ConstIntList;
 		readonly public string[] ConstStrList;
 	}

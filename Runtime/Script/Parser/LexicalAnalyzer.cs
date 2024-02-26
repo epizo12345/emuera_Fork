@@ -771,7 +771,7 @@ internal static partial class LexicalAnalyzer
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	public static WordCollection Analyse(CharStream st, LexEndWith endWith, LexAnalyzeFlag flag)
 	{
-		WordCollection ret = new();
+		WordCollection ret = new(Math.Max(4, (st.RowString.Length - st.CurrentPosition) / 3));
 		int nestBracketS = 0;
 		//int nestBracketM = 0;
 		int nestBracketL = 0;

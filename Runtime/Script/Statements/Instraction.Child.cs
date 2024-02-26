@@ -116,7 +116,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				else if (isPrintV)
 				{
 					StringBuilder builder = new();
-					AExpression[] terms = ((SpPrintVArgument)func.Argument).Terms;
+					var terms = ((SpPrintVArgument)func.Argument).Terms;
 					foreach (AExpression termV in terms)
 					{
 						if (termV.GetOperandType() == typeof(Int64))
@@ -463,7 +463,7 @@ namespace MinorShift.Emuera.GameProc.Function
 							arg.VariableDest.SetValue(arg.ConstIntList, exm);
 						else
 						{
-							Int64[] values = new Int64[arg.TermList.Length];
+							Int64[] values = new Int64[arg.TermList.Count];
 							for (int i = 0; i < values.Length; i++)
 							{
 								values[i] = arg.TermList[i].GetIntValue(exm);
@@ -477,7 +477,7 @@ namespace MinorShift.Emuera.GameProc.Function
 							arg.VariableDest.SetValue(arg.ConstStrList, exm);
 						else
 						{
-							string[] values = new string[arg.TermList.Length];
+							string[] values = new string[arg.TermList.Count];
 							for (int i = 0; i < values.Length; i++)
 							{
 								values[i] = arg.TermList[i].GetStrValue(exm);
@@ -1686,7 +1686,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			{
 				ExpressionsArgument arg = (ExpressionsArgument)func.Argument;
 				Int64 time = 0;
-				if (arg.ArgumentArray.Length > 0)
+				if (arg.ArgumentArray.Count > 0)
 					time = arg.ArgumentArray[0].GetIntValue(exm);
 				InputRequest req = new()
 				{

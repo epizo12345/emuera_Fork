@@ -564,7 +564,7 @@ namespace MinorShift.Emuera
 			return null;
 		}
 
-		public AExpression GetFunctionMethod(LabelDictionary labelDic, string codeStr, AExpression[] arguments, bool userDefinedOnly)
+		public AExpression GetFunctionMethod(LabelDictionary labelDic, string codeStr, List<AExpression> arguments, bool userDefinedOnly)
 		{
 			// if (Config.ICFunction)
 			// 	codeStr = codeStr.ToUpper();

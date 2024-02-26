@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using MinorShift.Emuera.Sub;
 using MinorShift.Emuera.GameData.Variable;
 using MinorShift.Emuera.Runtime.Config;
+using System.Runtime.CompilerServices;
 
 namespace MinorShift.Emuera.GameData.Expression
 {
@@ -40,7 +41,8 @@ namespace MinorShift.Emuera.GameData.Expression
 		/// 呼び出し元はCodeEEを適切に処理すること
 		/// </summary>
 		/// <returns></returns>
-		public static AExpression[] ReduceArguments(WordCollection wc, ArgsEndWith endWith, bool isDefine)
+		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
+		public static List<AExpression> ReduceArguments(WordCollection wc, ArgsEndWith endWith, bool isDefine)
 		{
 			if (wc == null)
 				throw new ExeEE("空のストリームを渡された");
@@ -117,7 +119,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				}
 			}
 			local();
-			return [.. terms];
+			return terms;
 		}
 
 
@@ -234,7 +236,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				if (symbol.Type == '[')//1810 多分永久に実装されない
 					throw new CodeEE("[]を使った機能はまだ実装されていません");
 				//引数を処理
-				AExpression[] args = ReduceArguments(wc, ArgsEndWith.RightParenthesis, false);
+				var args = ReduceArguments(wc, ArgsEndWith.RightParenthesis, false);
 				AExpression mToken = GlobalStatic.IdentifierDictionary.GetFunctionMethod(GlobalStatic.LabelDictionary, idStr, args, false);
 				if (mToken == null)
 				{

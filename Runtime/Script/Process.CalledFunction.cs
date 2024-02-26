@@ -147,7 +147,7 @@ namespace MinorShift.Emuera.GameProc
 		/// 1806+v6.99 式中関数の引数に無効な#DIM変数を与えている場合に例外になるのを修正
 		/// 1808beta009 REF型に対応
 		/// </summary>
-		public UserDefinedFunctionArgument ConvertArg(AExpression[] srcArgs, out string errMes)
+		public UserDefinedFunctionArgument ConvertArg(List<AExpression> srcArgs, out string errMes)
 		{
 			errMes = null;
 			if (TopLabel.IsError)
@@ -157,7 +157,7 @@ namespace MinorShift.Emuera.GameProc
 			}
 			FunctionLabelLine func = TopLabel;
 			AExpression[] convertedArg = new AExpression[func.Arg.Length];
-			if (convertedArg.Length < srcArgs.Length)
+			if (convertedArg.Length < srcArgs.Count)
 			{
 				errMes = "引数の数が関数\"@" + func.LabelName + "\"に設定された数を超えています";
 				return null;
@@ -167,7 +167,7 @@ namespace MinorShift.Emuera.GameProc
 			//bool isString = false;
 			for (int i = 0; i < func.Arg.Length; i++)
 			{
-				term = (i < srcArgs.Length) ? srcArgs[i] : null;
+				term = (i < srcArgs.Count) ? srcArgs[i] : null;
 				destArg = func.Arg[i];
 				//isString = destArg.IsString;
 				if (destArg.Identifier.IsReference)//参照渡しの場合

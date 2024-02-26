@@ -43,11 +43,11 @@ namespace MinorShift.Emuera.GameData
 			VariableTerm callnameplayer = new(callnameID, new AExpression[] { player });
 			VariableTerm nameassi = new(nameID, new AExpression[] { assi });
 			VariableTerm callnametarget = new(callnameID, new AExpression[] { target });
-			NameTarget = new FunctionMethodTerm(formatPercent, new AExpression[] { nametarget, null, null });
-			CallnameMaster = new FunctionMethodTerm(formatPercent, new AExpression[] { callnamemaster, null, null });
-			CallnamePlayer = new FunctionMethodTerm(formatPercent, new AExpression[] { callnameplayer, null, null });
-			NameAssi = new FunctionMethodTerm(formatPercent, new AExpression[] { nameassi, null, null });
-			CallnameTarget = new FunctionMethodTerm(formatPercent, new AExpression[] { callnametarget, null, null });
+			NameTarget = new FunctionMethodTerm(formatPercent, [nametarget, null, null]);
+			CallnameMaster = new FunctionMethodTerm(formatPercent, [callnamemaster, null, null]);
+			CallnamePlayer = new FunctionMethodTerm(formatPercent, [callnameplayer, null, null]);
+			NameAssi = new FunctionMethodTerm(formatPercent, [nameassi, null, null]);
+			CallnameTarget = new FunctionMethodTerm(formatPercent, [callnametarget, null, null]);
 		}
 
 		public static StrForm FromWordToken(StrFormWord wt)
@@ -103,7 +103,7 @@ namespace MinorShift.Emuera.GameData
 						right = new SingleTerm("");
 					else
 						right = new StrFormTerm(StrForm.FromWordToken(yenat.Right));
-					termArray[i] = new FunctionMethodTerm(formatYenAt, new AExpression[] { operand, left, right });
+					termArray[i] = new FunctionMethodTerm(formatYenAt, [operand, left, right]);
 					continue;
 				}
 				wc = SWT.Words;
@@ -141,12 +141,12 @@ namespace MinorShift.Emuera.GameData
 				{
 					if (operand.GetOperandType() != typeof(Int64))
 						throw new CodeEE("{}の中の式が数式ではありません");
-					termArray[i] = new FunctionMethodTerm(formatCurlyBrace, new AExpression[] { operand, second, third });
+					termArray[i] = new FunctionMethodTerm(formatCurlyBrace, [operand, second, third]);
 					continue;
 				}
 				if (operand.GetOperandType() != typeof(string))
 					throw new CodeEE("%%の中の式が文字列式ではありません");
-				termArray[i] = new FunctionMethodTerm(formatPercent, new AExpression[] { operand, second, third });
+				termArray[i] = new FunctionMethodTerm(formatPercent, [operand, second, third]);
 			}
 			ret.terms = termArray;
 			return ret;
@@ -228,7 +228,7 @@ namespace MinorShift.Emuera.GameData
 				ReturnType = typeof(string);
 				argumentTypeArray = null;
 			}
-			public override string CheckArgumentType(string name, AExpression[] arguments) { throw new ExeEE("型チェックは呼び出し元が行うこと"); }
+			public override string CheckArgumentType(string name, List<AExpression> arguments) { throw new ExeEE("型チェックは呼び出し元が行うこと"); }
 			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments) { throw new ExeEE("戻り値の型が違う"); }
 			public override SingleTerm GetReturnValue(ExpressionMediator exm, AExpression[] arguments) { return new SingleTerm(GetStrValue(exm, arguments)); }
 		}
