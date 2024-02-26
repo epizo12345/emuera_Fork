@@ -15,6 +15,7 @@ using MinorShift.Emuera.GameProc.Function;
 using MinorShift.Emuera.Content;
 using System.Threading.Tasks;
 using Emuera;
+using MinorShift.Emuera.Runtime.Config;
 
 namespace MinorShift.Emuera.GameView
 {
@@ -867,7 +868,7 @@ namespace MinorShift.Emuera.GameView
 						stopTimer();
 					//if((inputReq.InputType == InputType.IntValue || inputReq.InputType == InputType.StrValue)
 					if (str.Contains("("))
-						str = parseInput(new StringStream(str), false);
+						str = parseInput(new CharStream(str), false);
 					text = str.Split(spliter, StringSplitOptions.None);
 				}
 
@@ -989,7 +990,7 @@ namespace MinorShift.Emuera.GameView
 			return;
 		}
 
-		string parseInput(StringStream st, bool isNest)
+		string parseInput(CharStream st, bool isNest)
 		{
 			StringBuilder sb = new(20);
 			StringBuilder num = new(20);
@@ -1517,7 +1518,7 @@ namespace MinorShift.Emuera.GameView
 					line = LogicalLineParser.ParseLine(com, null);
 				if (line == null || (line is InvalidLine))
 				{
-					WordCollection wc = LexicalAnalyzer.Analyse(new StringStream(com), LexEndWith.EoL, LexAnalyzeFlag.None);
+					WordCollection wc = LexicalAnalyzer.Analyse(new CharStream(com), LexEndWith.EoL, LexAnalyzeFlag.None);
 					IOperandTerm term = ExpressionParser.ReduceExpressionTerm(wc, TermEndWith.EoL);
 					if (term == null)
 						throw new CodeEE("解釈不能なコードです");

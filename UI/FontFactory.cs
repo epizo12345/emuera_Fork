@@ -1,29 +1,28 @@
 using System.Collections.Generic;
 using System.Drawing;
-using MinorShift.Emuera;
+using MinorShift.Emuera.Runtime.Config;
 
-namespace Emuera
+namespace Emuera.UI;
+
+static class FontFactory
 {
-    static class FontFactory
+    static readonly Dictionary<(string fontname, int fontSize, FontStyle fontStyle), Font> fontDic = [];
+
+    public static Font GetFont(string requestFontName, FontStyle style)
     {
-        static readonly Dictionary<(string fontname, int fontSize, FontStyle fontStyle), Font> fontDic = [];
-
-        public static Font GetFont(string requestFontName, FontStyle style)
+        string fontname = requestFontName;
+        if (string.IsNullOrEmpty(requestFontName))
+            fontname = Config.FontName;
+        if (!fontDic.ContainsKey((fontname, Config.FontSize, style)))
         {
-            string fontname = requestFontName;
-            if (string.IsNullOrEmpty(requestFontName))
-                fontname = Config.FontName;
-            if (!fontDic.ContainsKey((fontname, Config.FontSize, style)))
+            var font = new Font(fontname, Config.FontSize, style, GraphicsUnit.Pixel);
+            if (font == null)
             {
-                var font = new Font(fontname, Config.FontSize, style, GraphicsUnit.Pixel);
-                if (font == null)
-                {
-                    return null;
-                }
-
-                fontDic.Add((fontname, Config.FontSize, style), font);
+                return null;
             }
-            return fontDic[(fontname, Config.FontSize, style)];
+
+            fontDic.Add((fontname, Config.FontSize, style), font);
         }
+        return fontDic[(fontname, Config.FontSize, style)];
     }
 }

@@ -8,6 +8,7 @@ using MinorShift.Emuera.GameView;
 using Emuera;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using MinorShift.Emuera.Runtime.Config;
 
 #nullable enable
 
@@ -35,7 +36,7 @@ namespace MinorShift.Emuera.Forms
 
 			BackColor = Config.BackColor;
 
-			richTextBox1.Font = Config.Font;
+			richTextBox1.Font = Config.DefaultFont;
 			richTextBox1.LanguageOption = RichTextBoxLanguageOptions.UIFonts;
 			folderSelectDialog.SelectedPath = Program.ErbDir;
 			folderSelectDialog.ShowNewFolderButton = false;

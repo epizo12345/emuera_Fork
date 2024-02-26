@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Drawing;
 using MinorShift.Emuera.Sub;
+using MinorShift.Emuera.Runtime.Config;
 
 namespace MinorShift.Emuera.GameView
 {

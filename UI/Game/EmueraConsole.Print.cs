@@ -1,4 +1,5 @@
-﻿using MinorShift.Emuera.Sub;
+﻿using MinorShift.Emuera.Runtime.Config;
+using MinorShift.Emuera.Sub;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -386,7 +387,7 @@ namespace MinorShift.Emuera.GameView
 		private void calcPrintCWidth(StringMeasure stringMeasure)
 		{
 			string str = new(' ', Config.PrintCLength);
-			Font font = Config.Font;
+			Font font = Config.DefaultFont;
 			printCWidth = stringMeasure.GetDisplayLength(str, font);
 
 			str += " ";
@@ -405,7 +406,7 @@ namespace MinorShift.Emuera.GameView
 			if (str != null)
 				length = Config.Encode.GetByteCount(str);
 			int printcLength = Config.PrintCLength;
-			var font = new Font(Style.Fontname, Config.Font.Size, Style.FontStyle, GraphicsUnit.Pixel);
+			var font = new Font(Style.Fontname, Config.DefaultFont.Size, Style.FontStyle, GraphicsUnit.Pixel);
 			if (font == null)
 			{
 				return str;
@@ -565,7 +566,7 @@ namespace MinorShift.Emuera.GameView
 			StringBuilder bar = new();
 			bar.Append(barStr);
 			int width = 0;
-			Font font = Config.Font;
+			Font font = Config.DefaultFont;
 			while (width < Config.DrawableWidth)
 			{//境界を越えるまで一文字ずつ増やす
 				bar.Append(barStr);

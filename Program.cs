@@ -12,6 +12,7 @@ using System.CommandLine.Builder;
 using System.Reflection;
 using DotnetEmuera;
 using System.Diagnostics.CodeAnalysis;
+using MinorShift.Emuera.Runtime.Config;
 
 namespace MinorShift.Emuera;
 #nullable enable

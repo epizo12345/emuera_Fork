@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
+using MinorShift.Emuera.Runtime.Config;
 
 namespace MinorShift.Emuera.GameView
 {
@@ -16,8 +17,8 @@ namespace MinorShift.Emuera.GameView
 			textDrawingMode = Config.TextDrawingMode;
 			layoutSize = new Size(Config.WindowX * 2, Config.LineHeight);
 			layoutRect = new RectangleF(0, 0, Config.WindowX * 2, Config.LineHeight);
-			fontDisplaySize = Config.Font.Size / 2 * 1.04f;//実際には指定したフォントより若干幅をとる？
-														   //bmp = new Bitmap(Config.WindowX, Config.LineHeight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+			fontDisplaySize = Config.DefaultFont.Size / 2 * 1.04f;//実際には指定したフォントより若干幅をとる？
+																  //bmp = new Bitmap(Config.WindowX, Config.LineHeight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 			bmp = new Bitmap(16, 16, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 			graph = Graphics.FromImage(bmp);
 		}

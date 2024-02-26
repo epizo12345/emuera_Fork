@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
+using MinorShift.Emuera.Runtime.Config;
 
 namespace MinorShift.Emuera.Content
 {
@@ -97,7 +98,7 @@ namespace MinorShift.Emuera.Content
 				throw new NullReferenceException();
 			Font usingFont = font;
 			if (usingFont == null)
-				usingFont = Config.Font;
+				usingFont = Config.DefaultFont;
 			if (brush != null)
 			{
 				g.DrawString(text, usingFont, brush, x, y);
@@ -118,7 +119,7 @@ namespace MinorShift.Emuera.Content
 				throw new NullReferenceException();
 			Font usingFont = font;
 			if (usingFont == null)
-				usingFont = Config.Font;
+				usingFont = Config.DefaultFont;
 			if (brush != null)
 			{
 				g.DrawString(text, usingFont, brush, new RectangleF(x, y, width, height));

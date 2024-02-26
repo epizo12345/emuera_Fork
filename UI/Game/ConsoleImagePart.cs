@@ -1,4 +1,5 @@
 ﻿using MinorShift.Emuera.Content;
+using MinorShift.Emuera.Runtime.Config;
 using System;
 using System.Drawing;
 using System.Text;
@@ -133,7 +134,7 @@ namespace MinorShift.Emuera.GameView
 			}
 			if (cImage != null)
 				return;
-			Width = sm.GetDisplayLength(Str, Config.Font);
+			Width = sm.GetDisplayLength(Str, Config.DefaultFont);
 			XsubPixel = subPixel;
 		}
 
@@ -163,9 +164,9 @@ namespace MinorShift.Emuera.GameView
 			else
 			{
 				if (mode == TextDrawingMode.GRAPHICS)
-					graph.DrawString(AltText, Config.Font, new SolidBrush(Config.ForeColor), new Point(PointX, pointY));
+					graph.DrawString(AltText, Config.DefaultFont, new SolidBrush(Config.ForeColor), new Point(PointX, pointY));
 				else
-					System.Windows.Forms.TextRenderer.DrawText(graph, AltText.AsSpan(), Config.Font, new Point(PointX, pointY), Config.ForeColor, System.Windows.Forms.TextFormatFlags.NoPrefix);
+					System.Windows.Forms.TextRenderer.DrawText(graph, AltText.AsSpan(), Config.DefaultFont, new Point(PointX, pointY), Config.ForeColor, System.Windows.Forms.TextFormatFlags.NoPrefix);
 			}
 		}
 	}

@@ -2,7 +2,8 @@
 using System.Drawing;
 using System.Windows.Forms;
 using DotnetEmuera;
-using Emuera;
+using Emuera.UI;
+using MinorShift.Emuera.Runtime.Config;
 
 namespace MinorShift.Emuera.GameView
 {

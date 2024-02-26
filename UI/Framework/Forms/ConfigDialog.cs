@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using System.Drawing.Text;
 using DotnetEmuera;
+using MinorShift.Emuera.Runtime.Config;
 
 namespace MinorShift.Emuera.Forms
 {

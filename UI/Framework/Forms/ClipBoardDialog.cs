@@ -2,6 +2,7 @@
 using System.Text;
 using System.Windows.Forms;
 using MinorShift.Emuera.GameView;
+using MinorShift.Emuera.Runtime.Config;
 
 namespace MinorShift.Emuera.Forms
 {
@@ -15,7 +16,7 @@ namespace MinorShift.Emuera.Forms
                 this.ClientSize = new Size(Config.WindowX, 480);
                 textBox1.Width = Config.WindowX;
             }
-            textBox1.Font = Config.Font;
+            textBox1.Font = Config.DefaultFont;
         }
 
         public void Setup(EmueraConsole console)

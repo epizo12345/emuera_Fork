@@ -7,6 +7,7 @@ using MinorShift.Emuera.Sub;
 using MinorShift.Emuera.GameProc;
 using System.IO;
 using MinorShift.Emuera.GameView;
+using MinorShift.Emuera.Runtime.Config;
 
 namespace MinorShift.Emuera.Forms
 {
@@ -124,7 +125,7 @@ namespace MinorShift.Emuera.Forms
 			mainConsole.RunERBFromMemory = true;
 			try
 			{
-				StringStream st = new(str);
+				CharStream st = new(str);
 				WordCollection wc = LexicalAnalyzer.Analyse(st, LexEndWith.EoL, LexAnalyzeFlag.None);
 				IOperandTerm term = ExpressionParser.ReduceExpressionTerm(wc, TermEndWith.EoL);
 				SingleTerm value = term.GetValue(GlobalStatic.EMediator);

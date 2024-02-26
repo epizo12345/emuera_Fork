@@ -4,6 +4,7 @@ using System.IO;
 using Emuera;
 using System.Text.RegularExpressions;
 using System.Linq;
+using MinorShift.Emuera.Runtime.Config;
 
 namespace MinorShift.Emuera.Sub
 {
@@ -84,10 +85,10 @@ namespace MinorShift.Emuera.Sub
 		/// <summary>
 		/// 次の有効な行を読む。LexicalAnalyzer経由でConfigを参照するのでConfig完成までつかわないこと。
 		/// </summary>
-		public StringStream ReadEnabledLine(bool disabled = false)
+		public CharStream ReadEnabledLine(bool disabled = false)
 		{
 			string line;
-			StringStream st;
+			CharStream st;
 			while (true)
 			{
 				line = ReadLine();
@@ -110,7 +111,7 @@ namespace MinorShift.Emuera.Sub
 						match = match.NextMatch();
 					}
 				}
-				st = new StringStream(line);
+				st = new CharStream(line);
 				LexicalAnalyzer.SkipWhiteSpace(st);
 				if (st.EOS)
 					continue;
@@ -170,7 +171,7 @@ namespace MinorShift.Emuera.Sub
 				}
 				b.Append($"{line} ");
 			}
-			st = new StringStream(b.ToString());
+			st = new CharStream(b.ToString());
 			LexicalAnalyzer.SkipWhiteSpace(st);
 			return st;
 		}

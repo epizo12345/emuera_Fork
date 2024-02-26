@@ -41,7 +41,7 @@ namespace MinorShift.Emuera.GameView
 			List<string> strs;
 			if ((!printString.Contains("[")) || (!printString.Contains("]")))
 				goto nonButton;
-			strs = lex(new StringStream(printString));
+			strs = lex(new CharStream(printString));
 			if (strs == null)
 				goto nonButton;
 			bool beforeButton = false;//最初のボタン（"[1]"とか）より前にテキストがある
@@ -198,7 +198,7 @@ namespace MinorShift.Emuera.GameView
 			if (!isNumericWord(str))
 				return false;
 			string buttonStr = str[1..^1];
-			StringStream stInt = new(buttonStr);
+			CharStream stInt = new(buttonStr);
 			LexicalAnalyzer.SkipAllSpace(stInt);
 			try
 			{
@@ -217,7 +217,7 @@ namespace MinorShift.Emuera.GameView
 		/// </summary>
 		/// <param name="st"></param>
 		/// <returns></returns>
-		private static List<string> lex(StringStream st)
+		private static List<string> lex(CharStream st)
 		{
 			List<string> strs = [];
 			int state = 0;

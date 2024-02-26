@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using MinorShift.Emuera.Sub;
 using System.Drawing;
 using MinorShift.Emuera.GameData.Expression;
+using MinorShift.Emuera.Runtime.Config;
 
 namespace MinorShift.Emuera.GameView
 {
@@ -229,7 +230,7 @@ namespace MinorShift.Emuera.GameView
 		public static string[] HtmlTagSplit(string str)
 		{
 			List<string> strList = [];
-			StringStream st = new(str);
+			CharStream st = new(str);
 			int found;
 			while (!st.EOS)
 			{
@@ -267,7 +268,7 @@ namespace MinorShift.Emuera.GameView
 		{
 			List<AConsoleDisplayPart> cssList = [];
 			List<ConsoleButtonString> buttonList = [];
-			StringStream st = new(str);
+			CharStream st = new(str);
 			int found;
 			bool hasComment = str.IndexOf("<!--") >= 0;
 			bool hasReturn = str.IndexOf('\n') >= 0;
@@ -581,7 +582,7 @@ namespace MinorShift.Emuera.GameView
 			return b.ToString();
 		}
 
-		private static AConsoleDisplayPart tagAnalyze(HtmlAnalzeState state, StringStream st)
+		private static AConsoleDisplayPart tagAnalyze(HtmlAnalzeState state, CharStream st)
 		{
 			bool endTag = st.Current == '/';
 			string tag;

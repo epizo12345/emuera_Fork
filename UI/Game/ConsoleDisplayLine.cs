@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using System.Drawing;
+using MinorShift.Emuera.Runtime.Config;
 
 namespace MinorShift.Emuera.GameView
 {
