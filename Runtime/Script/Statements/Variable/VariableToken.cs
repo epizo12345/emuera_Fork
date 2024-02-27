@@ -1702,7 +1702,8 @@ namespace MinorShift.Emuera.GameData.Variable
 			}
 			public override string GetStrValue(ExpressionMediator exm, long[] arguments)
 			{
-				return AssemblyData.emueraVer.ToString();
+				//互換性維持のため
+				return "1.824.0.0";
 			}
 
 		}
