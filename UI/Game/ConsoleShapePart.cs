@@ -17,24 +17,24 @@ namespace MinorShift.Emuera.GameView
 			sb.Append("' param='");
 			for (int i = 0; i < param.Length; i++)
 			{
-				sb.Append(param[i].ToString());
+				sb.Append(param[i]);
 				if (i < param.Length - 1)
 					sb.Append(", ");
 			}
-			sb.Append("'");
+			sb.Append('\'');
 			if (colorchanged)
 			{
 				sb.Append(" color='");
 				sb.Append(HtmlManager.GetColorToString(color));
-				sb.Append("'");
+				sb.Append('\'');
 			}
 			if (bcolor != Config.FocusColor)
 			{
 				sb.Append(" bcolor='");
 				sb.Append(HtmlManager.GetColorToString(bcolor));
-				sb.Append("'");
+				sb.Append('\'');
 			}
-			sb.Append(">");
+			sb.Append('>');
 			ConsoleShapePart ret = null;
 			int lineHeight = Config.FontSize;
 			float[] paramPixel = new float[param.Length];

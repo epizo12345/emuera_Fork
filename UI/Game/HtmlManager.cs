@@ -160,7 +160,7 @@ namespace MinorShift.Emuera.GameView
 							string attrValue = Escape(buttons[buttonCounter].Inputs);
 							b.Append("<button value='");
 							b.Append(attrValue);
-							b.Append("'");
+							b.Append('\'');
 						}
 						else
 						{
@@ -170,15 +170,15 @@ namespace MinorShift.Emuera.GameView
 						{
 							b.Append(" title='");
 							b.Append(titleValue);
-							b.Append("'");
+							b.Append('\'');
 						}
 						if (buttons[buttonCounter].PointXisLocked)
 						{
 							b.Append(" pos='");
 							b.Append(buttons[buttonCounter].RelativePointX.ToString());
-							b.Append("'");
+							b.Append('\'');
 						}
-						b.Append(">");
+						b.Append('>');
 					}
 					AConsoleDisplayPart[] parts = buttons[buttonCounter].StrArray;
 					for (int cssCounter = 0; cssCounter < parts.Length; cssCounter++)
@@ -270,8 +270,8 @@ namespace MinorShift.Emuera.GameView
 			List<ConsoleButtonString> buttonList = [];
 			CharStream st = new(str);
 			int found;
-			bool hasComment = str.IndexOf("<!--") >= 0;
-			bool hasReturn = str.IndexOf('\n') >= 0;
+			bool hasComment = str.Contains("<!--", StringComparison.Ordinal);
+			bool hasReturn = str.Contains('\n', StringComparison.Ordinal);
 			HtmlAnalzeState state = new();
 			while (!st.EOS)
 			{
@@ -429,12 +429,12 @@ namespace MinorShift.Emuera.GameView
 				int unicode;
 				switch (escWord)
 				{
-					case "nbsp": b.Append(" "); break;
-					case "amp": b.Append("&"); break;
-					case "gt": b.Append(">"); break;
-					case "lt": b.Append("<"); break;
-					case "quot": b.Append("\""); break;
-					case "apos": b.Append("\'"); break;
+					case "nbsp": b.Append(' '); break;
+					case "amp": b.Append('&'); break;
+					case "gt": b.Append('>'); break;
+					case "lt": b.Append('<'); break;
+					case "quot": b.Append('"'); break;
+					case "apos": b.Append('\''); break;
 					default:
 						{
 							int iBbase = 10;
@@ -509,7 +509,7 @@ namespace MinorShift.Emuera.GameView
 		public static string GetColorToString(Color color)
 		{
 			StringBuilder b = new();
-			b.Append("#");
+			b.Append('#');
 			int colorValue = color.R * 0x10000 + color.G * 0x100 + color.B;
 			b.Append(colorValue.ToString("X6"));
 			return b.ToString();
@@ -527,23 +527,23 @@ namespace MinorShift.Emuera.GameView
 				{
 					b.Append(" face='");
 					b.Append(HtmlManager.Escape(style.Fontname));
-					b.Append("'");
+					b.Append('\'');
 				}
 				if (style.ColorChanged)
 				{
 					b.Append(" color='#");
 					int colorValue = style.Color.R * 0x10000 + style.Color.G * 0x100 + style.Color.B;
 					b.Append(colorValue.ToString("X6"));
-					b.Append("'");
+					b.Append('\'');
 				}
 				if (style.ButtonColor != Config.FocusColor)
 				{
 					b.Append(" bcolor='#");
 					int colorValue = style.ButtonColor.R * 0x10000 + style.ButtonColor.G * 0x100 + style.ButtonColor.B;
 					b.Append(colorValue.ToString("X6"));
-					b.Append("'");
+					b.Append('\'');
 				}
-				b.Append(">");
+				b.Append('>');
 			}
 			if (style.FontStyle != FontStyle.Regular)
 			{
@@ -761,15 +761,16 @@ namespace MinorShift.Emuera.GameView
 							{
 								if (height != 0)
 									throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
-								if (attrValue.Trim().EndsWith("px"))
+								var trimedAttr = attrValue.AsSpan().Trim();
+								if (trimedAttr.EndsWith("px"))
 								{
 									usePxHeight = true;
-									if (!int.TryParse(attrValue[..^2], out height))
+									if (!int.TryParse(trimedAttr[..^2], out height))
 										throw new CodeEE("<" + tag + ">タグのheight属性の属性値が数値として解釈できません");
 								}
 								else
 								{
-									if (!int.TryParse(attrValue, out height))
+									if (!int.TryParse(trimedAttr, out height))
 										throw new CodeEE("<" + tag + ">タグのheight属性の属性値が数値として解釈できません");
 								}
 							}
@@ -777,16 +778,16 @@ namespace MinorShift.Emuera.GameView
 							{
 								if (width != 0)
 									throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
-
-								if (attrValue.Trim().EndsWith("px"))
+								var trimedAttr = attrValue.AsSpan().Trim();
+								if (trimedAttr.EndsWith("px"))
 								{
 									usePxWidth = true;
-									if (!int.TryParse(attrValue[..^2], out width))
+									if (!int.TryParse(trimedAttr[..^2], out width))
 										throw new CodeEE("<" + tag + ">タグのwidth属性の属性値が数値として解釈できません");
 								}
 								else
 								{
-									if (!int.TryParse(attrValue, out width))
+									if (!int.TryParse(trimedAttr, out width))
 										throw new CodeEE("<" + tag + ">タグのwidth属性の属性値が数値として解釈できません");
 								}
 							}
@@ -824,24 +825,28 @@ namespace MinorShift.Emuera.GameView
 							if (word == null || op == null || op.Code != OperatorCode.Assignment || attr == null)
 								goto error;
 							string attrValue = Unescape(attr.Str);
-							switch (word.Code.ToLower())
+							switch (word.Code)
 							{
 								case "color":
+								case "COLOR":
 									if (color >= 0)
 										throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
 									color = stringToColorInt32(attrValue);
 									break;
 								case "bcolor":
+								case "BCOLOR":
 									if (bcolor >= 0)
 										throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
 									bcolor = stringToColorInt32(attrValue);
 									break;
 								case "type":
+								case "TYPE":
 									if (type != null)
 										throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
 									type = attrValue;
 									break;
 								case "param":
+								case "PARAM":
 									if (param != null)
 										throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
 									{
