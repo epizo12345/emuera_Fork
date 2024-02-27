@@ -564,42 +564,21 @@ namespace MinorShift.Emuera.GameView
 
 		public string getStBar(string barStr)
 		{
-			var bar = string.Create<string>(Config.DrawableWidth, "{0}", (span, _) =>
-			{
-				int width = 0;
-				for (int i = 0;
-				i < Config.DrawableWidth &&
-				width < Config.DrawableWidth;)
-				{
-					barStr.CopyTo(span[i..]);
-					width = stringMeasure.GetDisplayLength(span, Config.DefaultFont);
-					i += barStr.Length;
-				}
-
-				//境界を越えたら、今度は超えなくなるまで一文字ずつ減らす（barStrに複数字の文字列がきた場合に対応するため）
-				width = stringMeasure.GetDisplayLength(span, Config.DefaultFont);
-				for (int j = 1; j < Config.DrawableWidth &&
-					width > Config.DrawableWidth; j++)
-				{
-					span[^j] = '\0';
-					width = stringMeasure.GetDisplayLength(span, Config.DefaultFont);
-				}
-			});
-			// StringBuilder bar = new();
-			// bar.Append(barStr);
-			// int width = 0;
-			// Font font = Config.DefaultFont;
-			// while (width < Config.DrawableWidth)
-			// {//境界を越えるまで一文字ずつ増やす
-			// 	bar.Append(barStr);
-			// 	width = stringMeasure.GetDisplayLength(bar.ToString(), font);
-			// }
-			// while (width > Config.DrawableWidth)
-			// {//境界を越えたら、今度は超えなくなるまで一文字ずつ減らす（barStrに複数字の文字列がきた場合に対応するため）
-			// 	bar.Remove(bar.Length - 1, 1);
-			// 	width = stringMeasure.GetDisplayLength(bar.ToString(), font);
-			// }
-			return bar;
+			var builder = new StringBuilder();
+			builder.Append(barStr);
+			int width = 0;
+			Font font = Config.DefaultFont;
+			while (width < Config.DrawableWidth)
+			{//境界を越えるまで一文字ずつ増やす
+				builder.Append(barStr);
+				width = stringMeasure.GetDisplayLength(builder.ToString(), font);
+			}
+			while (width > Config.DrawableWidth)
+			{//境界を越えたら、今度は超えなくなるまで一文字ずつ減らす（barStrに複数字の文字列がきた場合に対応するため）
+				builder.Remove(builder.Length - 1, 1);
+				width = stringMeasure.GetDisplayLength(builder.ToString(), font);
+			}
+			return builder.ToString();
 		}
 
 		public void setStBar(string barStr)
