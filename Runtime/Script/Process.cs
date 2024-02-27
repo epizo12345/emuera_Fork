@@ -297,11 +297,11 @@ namespace MinorShift.Emuera.GameProc
 			vEvaluator.RESULTS = s;
 		}
 
-		DateTime startTime;
+		Stopwatch startTime = new();
 
 		public void DoScript()
 		{
-			startTime = DateTime.Now;
+			startTime.Restart();
 			state.lineCount = 0;
 			bool systemProcRunning = true;
 			try
@@ -339,7 +339,7 @@ namespace MinorShift.Emuera.GameProc
 
 		public void UpdateCheckInfiniteLoopState()
 		{
-			startTime = DateTime.Now;
+			startTime.Restart();
 			state.lineCount = 0;
 		}
 
@@ -356,7 +356,7 @@ namespace MinorShift.Emuera.GameProc
 			//    console.ReadAnyKey();
 			//    return;
 			//}
-			var elapsedTime = (DateTime.Now - startTime).TotalMilliseconds;
+			var elapsedTime = startTime.ElapsedMilliseconds;
 			if (elapsedTime < Config.InfiniteLoopAlertTime)
 				return;
 			LogicalLine currentLine = state.CurrentLine;
@@ -372,7 +372,7 @@ namespace MinorShift.Emuera.GameProc
 			else
 			{
 				state.lineCount = 0;
-				startTime = DateTime.Now;
+				startTime.Restart();
 			}
 		}
 

@@ -11,6 +11,7 @@ using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.Content;
 using System.Linq;
 using MinorShift.Emuera.Runtime.Config;
+using System.Diagnostics;
 
 namespace MinorShift.Emuera.GameData.Function
 {
@@ -884,6 +885,7 @@ namespace MinorShift.Emuera.GameData.Function
 
         private sealed class GetmsMethod : FunctionMethod
         {
+            static Stopwatch stopwatch = Stopwatch.StartNew();
             public GetmsMethod()
             {
                 ReturnType = typeof(Int64);
