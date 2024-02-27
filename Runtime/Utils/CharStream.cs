@@ -132,7 +132,7 @@ namespace MinorShift.Emuera.Sub
 		/// </summary>
 		public int Find(char c)
 		{
-			return source.AsSpan()[pointer..].IndexOf(c) - pointer;
+			return source.AsSpan()[pointer..].IndexOf(c);
 		}
 
 		public override string ToString()
