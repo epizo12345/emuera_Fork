@@ -111,6 +111,7 @@
             checkBox10 = new System.Windows.Forms.CheckBox();
             checkBox2 = new System.Windows.Forms.CheckBox();
             tabPageSystem2 = new System.Windows.Forms.TabPage();
+            _ignoreRandamizeSeed = new System.Windows.Forms.CheckBox();
             checkBox29 = new System.Windows.Forms.CheckBox();
             checkBox26 = new System.Windows.Forms.CheckBox();
             checkBox27 = new System.Windows.Forms.CheckBox();
@@ -715,6 +716,7 @@
             // 
             // tabPageSystem2
             // 
+            tabPageSystem2.Controls.Add(_ignoreRandamizeSeed);
             tabPageSystem2.Controls.Add(checkBox29);
             tabPageSystem2.Controls.Add(checkBox26);
             tabPageSystem2.Controls.Add(checkBox27);
@@ -723,6 +725,13 @@
             resources.ApplyResources(tabPageSystem2, "tabPageSystem2");
             tabPageSystem2.Name = "tabPageSystem2";
             tabPageSystem2.UseVisualStyleBackColor = true;
+            // 
+            // IgnoreRandamizeSeed
+            // 
+            resources.ApplyResources(_ignoreRandamizeSeed, "IgnoreRandamizeSeed");
+            _ignoreRandamizeSeed.Name = "IgnoreRandamizeSeed";
+            _ignoreRandamizeSeed.UseVisualStyleBackColor = true;
+            _ignoreRandamizeSeed.CheckedChanged += IgnoreRandmizeSeed_CheckedChanged;
             // 
             // checkBox29
             // 
@@ -1145,5 +1154,6 @@
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel4;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
         private System.Windows.Forms.CheckBox _useButtonFocusColor;
+        private System.Windows.Forms.CheckBox _ignoreRandamizeSeed;
     }
 }

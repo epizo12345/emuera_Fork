@@ -631,5 +631,10 @@ namespace MinorShift.Emuera.Forms
         {
             JSONConfig.Data.UseButtonFocusBackgroundColor = _useButtonFocusColor.Checked;
         }
+
+        private void IgnoreRandmizeSeed_CheckedChanged(object sender, EventArgs e)
+        {
+            JSONConfig.Data.IgnoreRandamizeSeed = _ignoreRandamizeSeed.Checked;
+        }
     }
 }

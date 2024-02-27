@@ -35,15 +35,19 @@ namespace MinorShift.Emuera.GameData.Variable
 		{
 			rand = new((int)seed);
 		}
+		public void Randomize()
+		{
+			rand = new();
+		}
 
 		public void InitRanddata()
 		{
-			_ = new Exception("InitRanddata is not implemented");
+			//throw new NotImplementedException("RANDINIT is not implemented");
 		}
 
 		public void DumpRanddata()
 		{
-			_ = new Exception("DumpRanddata is not implemented");
+			//throw new NotImplementedException("RANDDUMP is not implemented");
 		}
 		public Int64 GetNextRand(Int64 max)
 		{
