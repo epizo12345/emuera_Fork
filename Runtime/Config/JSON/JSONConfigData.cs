@@ -9,6 +9,6 @@ class JSONConfigData
     [JsonPropertyName("UseButtonFocusBackgroundColor")]
     public bool UseButtonFocusBackgroundColor { get; set; }
 
-    [JsonPropertyName("IgnoreRandamizeSeed")]
-    public bool IgnoreRandamizeSeed { get; set; }
+    [JsonPropertyName("IgnoreRandamize")]
+    public bool IgnoreRandamize { get; set; }
 }

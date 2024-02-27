@@ -1287,8 +1287,13 @@ namespace MinorShift.Emuera.GameProc.Function
 
 			public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
 			{
+				Int64 iValue;
+				if (func.Argument.IsConst)
+					iValue = func.Argument.ConstInt;
+				else
+					iValue = ((ExpressionArgument)func.Argument).Term.GetIntValue(exm);
 
-				if (JSONConfig.Data.IgnoreRandamizeSeed)
+				if (JSONConfig.Data.IgnoreRandamize)
 				{
 					exm.VEvaluator.Randomize();
 				}
@@ -1296,11 +1301,6 @@ namespace MinorShift.Emuera.GameProc.Function
 				{
 					ParserMediator.Warn("Randomizeを行うと互換性維持のため古い乱数アルゴリズムが使われます", null, 0);
 					ParserMediator.FlushWarningList();
-					Int64 iValue;
-					if (func.Argument.IsConst)
-						iValue = func.Argument.ConstInt;
-					else
-						iValue = ((ExpressionArgument)func.Argument).Term.GetIntValue(exm);
 					exm.VEvaluator.Randomize(iValue);
 				}
 			}

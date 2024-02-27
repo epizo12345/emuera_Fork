@@ -37,7 +37,7 @@ namespace MinorShift.Emuera.GameData.Variable
 		}
 		public void Randomize()
 		{
-			rand = new();
+
 		}
 
 		public void InitRanddata()

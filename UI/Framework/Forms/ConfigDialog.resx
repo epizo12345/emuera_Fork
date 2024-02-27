@@ -2348,31 +2348,31 @@ ERBスクリプトが正常に動作しないことがあります</value>
   <data name="&gt;&gt;tabPageSystem.ZOrder" xml:space="preserve">
     <value>4</value>
   </data>
-  <data name="IgnoreRandamizeSeed.AutoSize" type="System.Boolean, mscorlib">
+  <data name="_ignoreRandamize.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
-  <data name="IgnoreRandamizeSeed.Location" type="System.Drawing.Point, System.Drawing">
+  <data name="_ignoreRandamize.Location" type="System.Drawing.Point, System.Drawing">
     <value>8, 211</value>
   </data>
-  <data name="IgnoreRandamizeSeed.Size" type="System.Drawing.Size, System.Drawing">
-    <value>211, 24</value>
+  <data name="_ignoreRandamize.Size" type="System.Drawing.Size, System.Drawing">
+    <value>169, 24</value>
   </data>
-  <data name="IgnoreRandamizeSeed.TabIndex" type="System.Int32, mscorlib">
+  <data name="_ignoreRandamize.TabIndex" type="System.Int32, mscorlib">
     <value>84</value>
   </data>
-  <data name="IgnoreRandamizeSeed.Text" xml:space="preserve">
-    <value>Randamizeの引数を無視する</value>
+  <data name="_ignoreRandamize.Text" xml:space="preserve">
+    <value>Randamizeを無視する</value>
   </data>
-  <data name="&gt;&gt;IgnoreRandamizeSeed.Name" xml:space="preserve">
-    <value>IgnoreRandamizeSeed</value>
+  <data name="&gt;&gt;_ignoreRandamize.Name" xml:space="preserve">
+    <value>_ignoreRandamize</value>
   </data>
-  <data name="&gt;&gt;IgnoreRandamizeSeed.Type" xml:space="preserve">
+  <data name="&gt;&gt;_ignoreRandamize.Type" xml:space="preserve">
     <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="&gt;&gt;IgnoreRandamizeSeed.Parent" xml:space="preserve">
+  <data name="&gt;&gt;_ignoreRandamize.Parent" xml:space="preserve">
     <value>tabPageSystem2</value>
   </data>
-  <data name="&gt;&gt;IgnoreRandamizeSeed.ZOrder" xml:space="preserve">
+  <data name="&gt;&gt;_ignoreRandamize.ZOrder" xml:space="preserve">
     <value>0</value>
   </data>
   <data name="checkBox29.AutoSize" type="System.Boolean, mscorlib">
