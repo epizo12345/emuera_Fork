@@ -4,11 +4,12 @@
     <OutputType>WinExe</OutputType>
 
     <RootNamespace>MinorShift.Emuera</RootNamespace>
-    <Version>0.2.2.5</Version>
+    <Version>0.2.2.6</Version>
 
 
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>false</SelfContained>
+    <PublishReadyToRun>true</PublishReadyToRun>
 
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
