@@ -893,8 +893,7 @@ namespace MinorShift.Emuera.GameData.Function
             public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
             {
                 //西暦0001年1月1日からの経過時間をミリ秒で。
-                //Ticksは100ナノ秒単位であるが実際にはそんな精度はないので無駄。
-                return DateTime.Now.Ticks / 10000;
+                return (long)(DateTime.Now - new DateTime(0001, 1, 1, 0, 0, 0)).TotalMilliseconds;
             }
         }
 
