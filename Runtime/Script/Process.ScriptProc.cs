@@ -6,7 +6,6 @@ using MinorShift.Emuera.GameData.Expression;
 using MinorShift.Emuera.GameData.Variable;
 using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.GameProc.Function;
-using System.Runtime.Versioning;
 using MinorShift.Emuera.Runtime.Config;
 
 namespace MinorShift.Emuera.GameProc
@@ -97,7 +96,6 @@ namespace MinorShift.Emuera.GameProc
 		}
 
 		#region normal
-		[SupportedOSPlatform("windows")]
 		void doNormalFunction(InstructionLine func)
 		{
 			Int64 iValue = 0;
