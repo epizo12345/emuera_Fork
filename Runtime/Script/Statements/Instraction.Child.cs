@@ -1295,7 +1295,7 @@ namespace MinorShift.Emuera.GameProc.Function
 
 				if (JSONConfig.Data.UseNewRandom)
 				{
-					ParserMediator.Warn("新しい乱数アルゴリズムではRandomizeは無視されます", null, 1);
+					ParserMediator.Warn("新しい乱数アルゴリズムではRANDOMIZEは無視されます", null, 1);
 					ParserMediator.FlushWarningList();
 				}
 				else
