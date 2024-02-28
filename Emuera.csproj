@@ -4,7 +4,7 @@
     <OutputType>WinExe</OutputType>
 
     <RootNamespace>MinorShift.Emuera</RootNamespace>
-    <Version>0.2.2.7</Version>
+    <Version>0.2.2.8</Version>
 
 
     <PublishSingleFile>true</PublishSingleFile>
