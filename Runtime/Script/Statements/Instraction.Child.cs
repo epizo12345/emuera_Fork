@@ -1295,7 +1295,7 @@ namespace MinorShift.Emuera.GameProc.Function
 
 				if (JSONConfig.Data.UseNewRandom)
 				{
-					ParserMediator.Warn("新しい乱数アルゴリズムではRandomizeは無視されます", null, 0);
+					ParserMediator.Warn("新しい乱数アルゴリズムではRandomizeは無視されます", null, 1);
 					ParserMediator.FlushWarningList();
 				}
 				else
@@ -1316,7 +1316,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			{
 				if (JSONConfig.Data.UseNewRandom)
 				{
-					ParserMediator.Warn("新しい乱数アルゴリズムではINITRANDは機能しません", null, 0);
+					ParserMediator.Warn("新しい乱数アルゴリズムではINITRANDは機能しません", null, 1);
 					ParserMediator.FlushWarningList();
 				}
 				else
@@ -1338,7 +1338,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			{
 				if (JSONConfig.Data.UseNewRandom)
 				{
-					ParserMediator.Warn("新しい乱数アルゴリズムではDUMPRANDは機能しません", null, 0);
+					ParserMediator.Warn("新しい乱数アルゴリズムではDUMPRANDは機能しません", null, 1);
 					ParserMediator.FlushWarningList();
 				}
 				else
