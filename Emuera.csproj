@@ -9,7 +9,9 @@
 
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>false</SelfContained>
-    <PublishReadyToRun>true</PublishReadyToRun>
+
+    
+    <TieredCompilation>false</TieredCompilation>
 
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
