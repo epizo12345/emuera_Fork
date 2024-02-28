@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Threading;
 using MinorShift.Emuera.Runtime.Config;
+using DotnetEmuera;
 
 namespace MinorShift.Emuera.GameProc
 {
@@ -441,6 +442,24 @@ namespace MinorShift.Emuera.GameProc
 					{
 						noError = false;
 						ParserMediator.Warn(nextLine.ErrMes, position, 2);
+					}
+					else if (JSONConfig.Data.UseNewRandom &&
+						nextLine is InstructionLine instruction)
+					{
+						switch (instruction.FunctionCode)
+						{
+							case FunctionCode.RANDOMIZE:
+								ParserMediator.Warn("新しい乱数アルゴリズムの使用時はRANDOMIZEは無視されます", position, 1);
+								break;
+							case FunctionCode.DUMPRAND:
+								ParserMediator.Warn("新しい乱数アルゴリズムの使用時はDUMPRANDは無視されます", position, 1);
+								break;
+							case FunctionCode.INITRAND:
+								ParserMediator.Warn("新しい乱数アルゴリズムの使用時はINITRANDは無視されます", position, 1);
+								break;
+							default:
+								break;
+						}
 					}
 				}
 				if (lastLabelLine == null)
