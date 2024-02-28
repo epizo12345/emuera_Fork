@@ -1293,14 +1293,13 @@ namespace MinorShift.Emuera.GameProc.Function
 				else
 					iValue = ((ExpressionArgument)func.Argument).Term.GetIntValue(exm);
 
-				if (JSONConfig.Data.IgnoreRandamize)
+				if (JSONConfig.Data.UseNewRandom)
 				{
-					exm.VEvaluator.Randomize();
+					ParserMediator.Warn("新しい乱数アルゴリズムではRandomizeは無視されます", null, 0);
+					ParserMediator.FlushWarningList();
 				}
 				else
 				{
-					ParserMediator.Warn("Randomizeを行うと互換性維持のため古い乱数アルゴリズムが使われます", null, 0);
-					ParserMediator.FlushWarningList();
 					exm.VEvaluator.Randomize(iValue);
 				}
 			}
@@ -1315,9 +1314,15 @@ namespace MinorShift.Emuera.GameProc.Function
 
 			public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
 			{
-				ParserMediator.Warn(".NET EmueraではINITRANDは機能しません", null, 1);
-				ParserMediator.FlushWarningList();
-				exm.VEvaluator.InitRanddata();
+				if (JSONConfig.Data.UseNewRandom)
+				{
+					ParserMediator.Warn("新しい乱数アルゴリズムではINITRANDは機能しません", null, 0);
+					ParserMediator.FlushWarningList();
+				}
+				else
+				{
+					exm.VEvaluator.InitRanddata();
+				}
 			}
 		}
 
@@ -1331,9 +1336,15 @@ namespace MinorShift.Emuera.GameProc.Function
 
 			public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
 			{
-				ParserMediator.Warn(".NET EmueraではDUMPRANDは機能しません", null, 1);
-				ParserMediator.FlushWarningList();
-				exm.VEvaluator.DumpRanddata();
+				if (JSONConfig.Data.UseNewRandom)
+				{
+					ParserMediator.Warn("新しい乱数アルゴリズムではDUMPRANDは機能しません", null, 0);
+					ParserMediator.FlushWarningList();
+				}
+				else
+				{
+					exm.VEvaluator.DumpRanddata();
+				}
 			}
 		}
 

@@ -9,6 +9,8 @@ using MinorShift.Emuera.GameData.Expression;
 using MinorShift.Emuera.GameProc.Function;
 using System.Windows.Forms;
 using MinorShift.Emuera.Runtime.Config;
+using MinorShift._Library;
+using DotnetEmuera;
 
 namespace MinorShift.Emuera.GameData.Variable
 {
@@ -17,7 +19,8 @@ namespace MinorShift.Emuera.GameData.Variable
 		readonly GameBase gamebase;
 		readonly ConstantData constant;
 		readonly VariableData varData;
-		Random rand = new();
+		MTRandom rand = new();
+		Random _newRand = new();
 
 		public VariableData VariableData { get { return varData; } }
 		internal ConstantData Constant { get { return constant; } }
@@ -33,25 +36,28 @@ namespace MinorShift.Emuera.GameData.Variable
 
 		public void Randomize(long seed)
 		{
-			rand = new((int)seed);
-		}
-		public void Randomize()
-		{
-
+			rand = new(seed);
 		}
 
 		public void InitRanddata()
 		{
-			//throw new NotImplementedException("RANDINIT is not implemented");
+			rand.SetRand(RANDDATA);
 		}
 
 		public void DumpRanddata()
 		{
-			//throw new NotImplementedException("RANDDUMP is not implemented");
+			rand.GetRand(RANDDATA);
 		}
 		public Int64 GetNextRand(Int64 max)
 		{
-			return rand.NextInt64(max);
+			if (JSONConfig.Data.UseNewRandom)
+			{
+				return _newRand.NextInt64(max);
+			}
+			else
+			{
+				return rand.NextInt64(max);
+			}
 		}
 
 		public Int64 getPalamLv(Int64 pl, Int64 maxlv)

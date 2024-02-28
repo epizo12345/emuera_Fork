@@ -286,7 +286,7 @@ namespace MinorShift.Emuera.Forms
             textBox2.Enabled = itemET.Value == TextEditorType.USER_SETTING;
 
             _useButtonFocusColor.Checked = JSONConfig.Data.UseButtonFocusBackgroundColor;
-            _ignoreRandamize.Checked = JSONConfig.Data.IgnoreRandamize;
+            _useNewRandom.Checked = JSONConfig.Data.UseNewRandom;
         }
 
         private void SaveConfig()
@@ -635,7 +635,7 @@ namespace MinorShift.Emuera.Forms
 
         private void IgnoreRandmizeSeed_CheckedChanged(object sender, EventArgs e)
         {
-            JSONConfig.Data.IgnoreRandamize = _ignoreRandamize.Checked;
+            JSONConfig.Data.UseNewRandom = _useNewRandom.Checked;
         }
     }
 }

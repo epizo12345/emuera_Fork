@@ -111,7 +111,7 @@
             checkBox10 = new System.Windows.Forms.CheckBox();
             checkBox2 = new System.Windows.Forms.CheckBox();
             tabPageSystem2 = new System.Windows.Forms.TabPage();
-            _ignoreRandamize = new System.Windows.Forms.CheckBox();
+            _useNewRandom = new System.Windows.Forms.CheckBox();
             checkBox29 = new System.Windows.Forms.CheckBox();
             checkBox26 = new System.Windows.Forms.CheckBox();
             checkBox27 = new System.Windows.Forms.CheckBox();
@@ -716,7 +716,7 @@
             // 
             // tabPageSystem2
             // 
-            tabPageSystem2.Controls.Add(_ignoreRandamize);
+            tabPageSystem2.Controls.Add(_useNewRandom);
             tabPageSystem2.Controls.Add(checkBox29);
             tabPageSystem2.Controls.Add(checkBox26);
             tabPageSystem2.Controls.Add(checkBox27);
@@ -726,12 +726,12 @@
             tabPageSystem2.Name = "tabPageSystem2";
             tabPageSystem2.UseVisualStyleBackColor = true;
             // 
-            // _ignoreRandamize
+            // _useNewRandom
             // 
-            resources.ApplyResources(_ignoreRandamize, "_ignoreRandamize");
-            _ignoreRandamize.Name = "_ignoreRandamize";
-            _ignoreRandamize.UseVisualStyleBackColor = true;
-            _ignoreRandamize.CheckedChanged += IgnoreRandmizeSeed_CheckedChanged;
+            resources.ApplyResources(_useNewRandom, "_useNewRandom");
+            _useNewRandom.Name = "_useNewRandom";
+            _useNewRandom.UseVisualStyleBackColor = true;
+            _useNewRandom.CheckedChanged += IgnoreRandmizeSeed_CheckedChanged;
             // 
             // checkBox29
             // 
@@ -1154,6 +1154,6 @@
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel4;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
         private System.Windows.Forms.CheckBox _useButtonFocusColor;
-        private System.Windows.Forms.CheckBox _ignoreRandamize;
+        private System.Windows.Forms.CheckBox _useNewRandom;
     }
 }
