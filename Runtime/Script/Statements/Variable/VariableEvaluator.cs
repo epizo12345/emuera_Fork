@@ -719,32 +719,37 @@ namespace MinorShift.Emuera.GameData.Variable
 			}
 		}
 
-		public void SortArray(FixedVariableTerm p, GameProc.Function.SortOrder order, int start, int num)
+		public void SortArray(FixedVariableTerm p, GameProc.Function.SortOrder order, int start, int count)
 		{
 			if (order == GameProc.Function.SortOrder.UNDEF)
 				order = GameProc.Function.SortOrder.ASCENDING;
 			if (p.Identifier.IsInteger)
 			{
-				Int64[] array;
+				long[] array;
 				if (p.Identifier.IsCharacterData)
 					array = (long[])p.Identifier.GetArrayChara((int)p.Index1);
 				else
-					array = (Int64[])p.Identifier.GetArray();
+					array = (long[])p.Identifier.GetArray();
+
 
 				if (start >= array.Length)
 					throw new CodeEE($"命令ARRAYSORTの第3引数 {start} が配列{p.Identifier.Name}の範囲を超えています");
-				if (start + num > array.Length)
-					throw new CodeEE($"命令ARRAYSORTの第3引数 {start} と第4引数の和 {num} が配列{p.Identifier.Name}の範囲を超えています");
-				if (num <= 0)
-					num = array.Length - start;
-				Int64[] temp = new Int64[num];
-				Array.Copy(array, start, temp, 0, num);
 
-				if (order == GameProc.Function.SortOrder.ASCENDING)
-					Array.Sort(temp);
-				else if (order == GameProc.Function.SortOrder.DESENDING)
-					Array.Sort(temp, delegate (Int64 a, Int64 b) { return b.CompareTo(a); });
-				Array.Copy(temp, 0, array, start, num);
+				if (count <= 0)
+					count = array.Length - start;
+
+				var end = start + count;
+				if (end > array.Length)
+					throw new CodeEE($"命令ARRAYSORTの第3引数 {start} と第4引数の和 {count} が配列{p.Identifier.Name}の範囲を超えています");
+
+
+				var reqestSpan = array.AsSpan()[start..end];
+
+				reqestSpan.Sort();
+				if (order == GameProc.Function.SortOrder.DESENDING)
+					reqestSpan.Reverse();
+
+				Array.Copy(reqestSpan.ToArray(), 0, array, start, count);
 			}
 			else
 			{
@@ -756,18 +761,22 @@ namespace MinorShift.Emuera.GameData.Variable
 
 				if (start >= array.Length)
 					throw new CodeEE($"命令ARRAYSORTの第3引数 {start} が配列{p.Identifier.Name}の範囲を超えています");
-				if (start + num > array.Length)
-					throw new CodeEE($"命令ARRAYSORTの第3引数 {start} と第4引数の和 {num} が配列{p.Identifier.Name}の範囲を超えています");
-				if (num <= 0)
-					num = array.Length - start;
-				string[] temp = new string[num];
-				Array.Copy(array, start, temp, 0, num);
 
-				if (order == GameProc.Function.SortOrder.ASCENDING)
-					Array.Sort(temp);
-				else if (order == GameProc.Function.SortOrder.DESENDING)
-					Array.Sort(temp, delegate (string a, string b) { return b.CompareTo(a); });
-				Array.Copy(temp, 0, array, start, num);
+				if (count <= 0)
+					count = array.Length - start;
+
+				var end = start + count;
+				if (end > array.Length)
+					throw new CodeEE($"命令ARRAYSORTの第3引数 {start} と第4引数の和 {count} が配列{p.Identifier.Name}の範囲を超えています");
+
+
+				var reqestSpan = array.AsSpan()[start..end];
+
+				reqestSpan.Sort();
+				if (order == GameProc.Function.SortOrder.DESENDING)
+					reqestSpan.Reverse();
+
+				Array.Copy(reqestSpan.ToArray(), 0, array, start, count);
 			}
 		}
 
