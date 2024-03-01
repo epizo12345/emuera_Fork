@@ -148,8 +148,6 @@ namespace MinorShift.Emuera.GameData.Variable
 				string key = code.ToString();
 				if ((key == null) || (key.StartsWith("__") && key.EndsWith("__")))
 					continue;
-				if (Config.IgnoreCase)
-					key = key.ToUpper();
 				if (nameDic.ContainsKey(key))
 					continue;
 #if DEBUG
@@ -280,8 +278,6 @@ namespace MinorShift.Emuera.GameData.Variable
 			VariableCode ret;
 			if (string.IsNullOrEmpty(key))
 				return null;
-			if (Config.IgnoreCase)
-				key = key.ToUpper();
 			if (subStr != null)
 			{
 				if (localvarNameDic.TryGetValue(key, out ret))

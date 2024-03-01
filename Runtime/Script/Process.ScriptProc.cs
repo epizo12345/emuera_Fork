@@ -829,8 +829,6 @@ namespace MinorShift.Emuera.GameProc
 							if (iLine.Argument == null)
 								ArgumentParser.SetArgumentTo(iLine);
 							funcName = ((SpCallArgment)iLine.Argument).FuncnameTerm.GetStrValue(exm);
-							if (Config.IgnoreCase)
-								funcName = funcName.ToUpper();
 							jumpto = state.CurrentCalled.CallLabel(this, funcName);
 							if (jumpto != null)
 								break;

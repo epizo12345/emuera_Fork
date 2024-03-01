@@ -150,8 +150,6 @@ namespace MinorShift.Emuera.GameProc
 			string srcID = LexicalAnalyzer.ReadSingleIdentifier(st);
 			if (srcID == null)
 				throw new CodeEE("置換元の識別子がありません", position);
-			if (Config.IgnoreCase)
-				srcID = srcID.ToUpper();
 
 			//ここで名称重複判定しないと、大変なことになる
 			string errMes = "";
