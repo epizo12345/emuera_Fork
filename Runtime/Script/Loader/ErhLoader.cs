@@ -37,10 +37,8 @@ namespace MinorShift.Emuera.GameProc
 			dimlines = new Queue<DimLineWC>();
 			try
 			{
-				for (int i = 0; i < headerFiles.Count; i++)
+				foreach (var (filename, file) in headerFiles)
 				{
-					string filename = headerFiles[i].Key;
-					string file = headerFiles[i].Value;
 					if (displayReport)
 						output.PrintSystemLine(filename + "読み込み中・・・");
 					noError = loadHeaderFile(file, filename);
