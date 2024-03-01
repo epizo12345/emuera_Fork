@@ -872,8 +872,6 @@ namespace MinorShift.Emuera.GameProc.Function
 					return;
 				}
 				SpCallFArgment callfArg = (SpCallFArgment)func.Argument;
-				if (Config.ICFunction)
-					callfArg.ConstStr = callfArg.ConstStr.ToUpper();
 				try
 				{
 					callfArg.FuncTerm = GlobalStatic.IdentifierDictionary.GetFunctionMethod(GlobalStatic.LabelDictionary, callfArg.ConstStr, callfArg.RowArgs, true);
@@ -1764,8 +1762,6 @@ namespace MinorShift.Emuera.GameProc.Function
 			public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
 			{
 				string keyword = func.Argument.ConstStr;
-				if (Config.ICFunction)//1756 BEGINのキーワードは関数扱いらしい
-					keyword = keyword.ToUpper();
 				state.SetBegin(keyword);
 				state.Return(0);
 				exm.Console.ResetStyle();
@@ -2352,8 +2348,6 @@ namespace MinorShift.Emuera.GameProc.Function
 				}
 				SpCallArgment callArg = (SpCallArgment)func.Argument;
 				string labelName = callArg.ConstStr;
-				// if (Config.ICFunction)
-				// 	labelName = labelName.ToUpper();
 				CalledFunction call = CalledFunction.CallFunction(GlobalStatic.Process, labelName, func);
 				if ((call == null) && (!func.Function.IsTry()))
 				{
@@ -2396,8 +2390,6 @@ namespace MinorShift.Emuera.GameProc.Function
 				else
 				{
 					labelName = spCallArg.FuncnameTerm.GetStrValue(exm);
-					if (Config.ICFunction)
-						labelName = labelName.ToUpper();
 					call = CalledFunction.CallFunction(GlobalStatic.Process, labelName, func);
 				}
 				if (call == null)
@@ -2440,8 +2432,6 @@ namespace MinorShift.Emuera.GameProc.Function
 			public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
 			{
 				string labelName = func.Argument.ConstStr;
-				if (Config.ICFunction)
-					labelName = labelName.ToUpper();
 				CalledFunction call = CalledFunction.CallEventFunction(GlobalStatic.Process, labelName, func);
 				if (call == null)
 					return;

@@ -807,8 +807,6 @@ namespace MinorShift.Emuera.GameProc
 
 							cfa = (SpCallArgment)iLine.Argument;
 							funcName = cfa.FuncnameTerm.GetStrValue(exm);
-							if (Config.ICFunction)
-								funcName = funcName.ToUpper();
 							callto = CalledFunction.CallFunction(this, funcName, func.JumpTo);
 							if (callto == null)
 								continue;
