@@ -207,7 +207,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				return arguments[0].GetIntValue(exm) + arguments[1].GetIntValue(exm);
 			}
@@ -222,7 +222,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				argumentTypeArray = new Type[] { typeof(string), typeof(string) };
 			}
 
-			public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+			public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				return arguments[0].GetStrValue(exm) + arguments[1].GetStrValue(exm);
 			}
@@ -236,7 +236,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				return arguments[0].GetIntValue(exm) - arguments[1].GetIntValue(exm);
 			}
@@ -250,7 +250,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				return arguments[0].GetIntValue(exm) * arguments[1].GetIntValue(exm);
 			}
@@ -263,7 +263,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				CanRestructure = true;
 				ReturnType = typeof(string);
 			}
-			public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+			public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				string str;
 				long value;
@@ -303,7 +303,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				Int64 right = arguments[1].GetIntValue(exm);
 				if (right == 0)
@@ -320,7 +320,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				Int64 right = arguments[1].GetIntValue(exm);
 				if (right == 0)
@@ -338,7 +338,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				if (arguments[0].GetIntValue(exm) == arguments[1].GetIntValue(exm))
 					return 1L;
@@ -355,7 +355,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				if (arguments[0].GetStrValue(exm) == arguments[1].GetStrValue(exm))
 					return 1L;
@@ -371,7 +371,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				if (arguments[0].GetIntValue(exm) != arguments[1].GetIntValue(exm))
 					return 1L;
@@ -386,7 +386,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				CanRestructure = true;
 				ReturnType = typeof(Int64);
 			}
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				if (arguments[0].GetStrValue(exm) != arguments[1].GetStrValue(exm))
 					return 1L;
@@ -403,7 +403,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				if (arguments[0].GetIntValue(exm) > arguments[1].GetIntValue(exm))
 					return 1L;
@@ -418,7 +418,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				CanRestructure = true;
 				ReturnType = typeof(Int64);
 			}
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				int c = string.Compare(arguments[0].GetStrValue(exm), arguments[1].GetStrValue(exm), Config.SCExpression);
 				if (c > 0)
@@ -434,7 +434,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				if (arguments[0].GetIntValue(exm) < arguments[1].GetIntValue(exm))
 					return 1L;
@@ -448,7 +448,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				CanRestructure = true;
 				ReturnType = typeof(Int64);
 			}
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				int c = string.Compare(arguments[0].GetStrValue(exm), arguments[1].GetStrValue(exm), Config.SCExpression);
 				if (c < 0)
@@ -466,7 +466,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				if (arguments[0].GetIntValue(exm) >= arguments[1].GetIntValue(exm))
 					return 1L;
@@ -481,7 +481,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				CanRestructure = true;
 				ReturnType = typeof(Int64);
 			}
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				int c = string.Compare(arguments[0].GetStrValue(exm), arguments[1].GetStrValue(exm), Config.SCExpression);
 				if (c < 0)
@@ -497,7 +497,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				if (arguments[0].GetIntValue(exm) <= arguments[1].GetIntValue(exm))
 					return 1L;
@@ -512,7 +512,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				CanRestructure = true;
 				ReturnType = typeof(Int64);
 			}
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				int c = string.Compare(arguments[0].GetStrValue(exm), arguments[1].GetStrValue(exm), Config.SCExpression);
 				if (c < 0)
@@ -529,7 +529,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				if ((arguments[0].GetIntValue(exm) != 0) && (arguments[1].GetIntValue(exm) != 0))
 					return 1L;
@@ -546,7 +546,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				if ((arguments[0].GetIntValue(exm) != 0) || (arguments[1].GetIntValue(exm) != 0))
 					return 1L;
@@ -562,7 +562,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				Int64 i1 = arguments[0].GetIntValue(exm);
 				Int64 i2 = arguments[1].GetIntValue(exm);
@@ -581,7 +581,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				if ((arguments[0].GetIntValue(exm) == 0) || (arguments[1].GetIntValue(exm) == 0))
 					return 1L;
@@ -598,7 +598,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				if ((arguments[0].GetIntValue(exm) == 0) && (arguments[1].GetIntValue(exm) == 0))
 					return 1L;
@@ -614,7 +614,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				return arguments[0].GetIntValue(exm) & arguments[1].GetIntValue(exm);
 			}
@@ -628,7 +628,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				return arguments[0].GetIntValue(exm) | arguments[1].GetIntValue(exm);
 			}
@@ -642,7 +642,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				return arguments[0].GetIntValue(exm) ^ arguments[1].GetIntValue(exm);
 			}
@@ -656,7 +656,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				return arguments[0].GetIntValue(exm) >> (Int32)arguments[1].GetIntValue(exm);
 			}
@@ -670,7 +670,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				return arguments[0].GetIntValue(exm) << (Int32)arguments[1].GetIntValue(exm);
 			}
@@ -684,7 +684,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				return arguments[0].GetIntValue(exm);
 			}
@@ -698,7 +698,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				long ret = arguments[0].GetIntValue(exm);
 				if (ret == long.MinValue)
@@ -717,7 +717,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				if (arguments[0].GetIntValue(exm) == 0)
 					return 1L;
@@ -732,7 +732,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				return ~arguments[0].GetIntValue(exm);
 			}
@@ -746,7 +746,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				VariableTerm var = (VariableTerm)arguments[0];
 				return var.PlusValue(1L, exm);
@@ -760,7 +760,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				VariableTerm var = (VariableTerm)arguments[0];
 				return var.PlusValue(-1L, exm);
@@ -774,7 +774,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				VariableTerm var = (VariableTerm)arguments[0];
 				return var.PlusValue(1L, exm) - 1;
@@ -789,7 +789,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				VariableTerm var = (VariableTerm)arguments[0];
 				return var.PlusValue(-1L, exm) + 1;
@@ -805,7 +805,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(Int64);
 			}
 
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				return (arguments[0].GetIntValue(exm) != 0) ? arguments[1].GetIntValue(exm) : arguments[2].GetIntValue(exm);
 			}
@@ -819,7 +819,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				ReturnType = typeof(string);
 			}
 
-			public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+			public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				return (arguments[0].GetIntValue(exm) != 0) ? arguments[1].GetStrValue(exm) : arguments[2].GetStrValue(exm);
 			}

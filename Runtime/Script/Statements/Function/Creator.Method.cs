@@ -45,17 +45,17 @@ namespace MinorShift.Emuera.GameData.Function
                     return name + "関数の2番目の引数の型が正しくありません";
                 return null;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 Int64 integer = arguments[0].GetIntValue(exm);
                 if (!Config.CompatiSPChara)
                 {
-                    //if ((arguments.Length > 1) && (arguments[1] != null) && (arguments[1].GetIntValue(exm) != 0))
+                    //if ((arguments.Count > 1) && (arguments[1] != null) && (arguments[1].GetIntValue(exm) != 0))
                     return exm.VEvaluator.GetChara(integer);
                 }
                 //以下互換性用の旧処理
                 bool CheckSp = false;
-                if ((arguments.Length > 1) && (arguments[1] != null) && (arguments[1].GetIntValue(exm) != 0))
+                if ((arguments.Count > 1) && (arguments[1] != null) && (arguments[1].GetIntValue(exm) != 0))
                     CheckSp = true;
                 if (CheckSp)
                 {
@@ -78,7 +78,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(Int64)];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (!Config.CompatiSPChara)
                     throw new CodeEE("SPキャラ関係の機能は標準では使用できません(互換性オプション「SPキャラを使用する」をONにしてください)");
@@ -120,10 +120,10 @@ namespace MinorShift.Emuera.GameData.Function
                     return name + "関数の2番目の変数が数値ではありません";
                 return null;
             }
-            public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+            public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 long x = arguments[0].GetIntValue(exm);
-                long y = (arguments.Length > 1 && arguments[1] != null) ? arguments[1].GetIntValue(exm) : 0;
+                long y = (arguments.Count > 1 && arguments[1] != null) ? arguments[1].GetIntValue(exm) : 0;
                 if (!Config.CompatiSPChara && y != 0)
                     throw new CodeEE("SPキャラ関係の機能は標準では使用できません(互換性オプション「SPキャラを使用する」をONにしてください)");
                 return exm.VEvaluator.GetCharacterStrfromCSVData(x, charaStr, y != 0, 0);
@@ -158,11 +158,11 @@ namespace MinorShift.Emuera.GameData.Function
                     return name + "関数の3番目の変数が数値ではありません";
                 return null;
             }
-            public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+            public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 long x = arguments[0].GetIntValue(exm);
                 long y = arguments[1].GetIntValue(exm);
-                long z = (arguments.Length == 3 && arguments[2] != null) ? arguments[2].GetIntValue(exm) : 0;
+                long z = (arguments.Count == 3 && arguments[2] != null) ? arguments[2].GetIntValue(exm) : 0;
                 if (!Config.CompatiSPChara && z != 0)
                     throw new CodeEE("SPキャラ関係の機能は標準では使用できません(互換性オプション「SPキャラを使用する」をONにしてください)");
                 return exm.VEvaluator.GetCharacterStrfromCSVData(x, CharacterStrData.CSTR, z != 0, y);
@@ -206,11 +206,11 @@ namespace MinorShift.Emuera.GameData.Function
                     return name + "関数の3番目の変数が数値ではありません";
                 return null;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 long x = arguments[0].GetIntValue(exm);
                 long y = arguments[1].GetIntValue(exm);
-                long z = (arguments.Length == 3 && arguments[2] != null) ? arguments[2].GetIntValue(exm) : 0;
+                long z = (arguments.Count == 3 && arguments[2] != null) ? arguments[2].GetIntValue(exm) : 0;
                 if (!Config.CompatiSPChara && z != 0)
                     throw new CodeEE("SPキャラ関係の機能は標準では使用できません(互換性オプション「SPキャラを使用する」をONにしてください)");
                 return exm.VEvaluator.GetCharacterIntfromCSVData(x, charaInt, z != 0, y);
@@ -254,7 +254,7 @@ namespace MinorShift.Emuera.GameData.Function
                     return name + "関数の4番目の引数の型が正しくありません";
                 return null;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 VariableTerm vTerm = (VariableTerm)arguments[0];
                 VariableToken varID = vTerm.Identifier;
@@ -269,9 +269,9 @@ namespace MinorShift.Emuera.GameData.Function
                 }
                 Int64 startindex = 0;
                 Int64 lastindex = exm.VEvaluator.CHARANUM;
-                if (arguments.Length >= 3 && arguments[2] != null)
+                if (arguments.Count >= 3 && arguments[2] != null)
                     startindex = arguments[2].GetIntValue(exm);
-                if (arguments.Length >= 4 && arguments[3] != null)
+                if (arguments.Count >= 4 && arguments[3] != null)
                     lastindex = arguments[3].GetIntValue(exm);
                 if (startindex < 0 || startindex >= exm.VEvaluator.CHARANUM)
                     throw new CodeEE((isLast ? "" : "") + "関数の第3引数(" + startindex.ToString() + ")はキャラクタ位置の範囲外です");
@@ -316,10 +316,10 @@ namespace MinorShift.Emuera.GameData.Function
                     return name + "関数の2番目の変数が数値ではありません";
                 return null;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 Int64 no = arguments[0].GetIntValue(exm);
-                bool isSp = (arguments.Length == 2 && arguments[1] != null) ? (arguments[1].GetIntValue(exm) != 0) : false;
+                bool isSp = (arguments.Count == 2 && arguments[1] != null) ? (arguments[1].GetIntValue(exm) != 0) : false;
                 if (!Config.CompatiSPChara && isSp)
                     throw new CodeEE("SPキャラ関係の機能は標準では使用できません(互換性オプション「SPキャラを使用する」をONにしてください)");
 
@@ -363,22 +363,22 @@ namespace MinorShift.Emuera.GameData.Function
                     return null;
                 return null;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 VariableToken var = GlobalStatic.IdentifierDictionary.GetVariableToken(arguments[0].GetStrValue(exm), null, true);
                 if (var == null)
                     throw new CodeEE("VARSIZEの1番目の引数(\"" + arguments[0].GetStrValue(exm) + "\")が変数名ではありません");
                 int dim = 0;
-                if (arguments.Length == 2 && arguments[1] != null)
+                if (arguments.Count == 2 && arguments[1] != null)
                     dim = (int)arguments[1].GetIntValue(exm);
                 return var.GetLength(dim);
             }
-            public override bool UniqueRestructure(ExpressionMediator exm, AExpression[] arguments)
+            public override bool UniqueRestructure(ExpressionMediator exm, List<AExpression> arguments)
             {
                 arguments[0].Restructure(exm);
-                if (arguments.Length > 1)
+                if (arguments.Count > 1)
                     arguments[1].Restructure(exm);
-                if (arguments[0] is SingleTerm && (arguments.Length == 1 || arguments[1] is SingleTerm))
+                if (arguments[0] is SingleTerm && (arguments.Count == 1 || arguments[1] is SingleTerm))
                 {
                     VariableToken var = GlobalStatic.IdentifierDictionary.GetVariableToken(arguments[0].GetStrValue(exm), null, true);
                     if (var == null || var.IsReference)//可変長の場合は定数化できない
@@ -397,7 +397,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(string)];
                 CanRestructure = true;//起動中に変わることもそうそうないはず……
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 string str = arguments[0].GetStrValue(exm);
                 using (System.Drawing.Text.InstalledFontCollection ifc = new())
@@ -428,7 +428,7 @@ namespace MinorShift.Emuera.GameData.Function
             }
 
             readonly EraSaveFileType type;
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 Int64 target = arguments[0].GetIntValue(exm);
                 if (target < 0)
@@ -455,7 +455,7 @@ namespace MinorShift.Emuera.GameData.Function
             }
 
             readonly EraSaveFileType type;
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 string datFilename = arguments[0].GetStrValue(exm);
                 EraDataResult result = exm.VEvaluator.CheckData(datFilename, type);
@@ -490,10 +490,10 @@ namespace MinorShift.Emuera.GameData.Function
                 return null;
             }
 
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 string pattern = "*";
-                if (arguments.Length > 0 && arguments[0] != null)
+                if (arguments.Count > 0 && arguments[0] != null)
                     pattern = arguments[0].GetStrValue(exm);
                 List<string> filepathes = exm.VEvaluator.GetDatFiles(type == EraSaveFileType.CharVar, pattern);
                 string[] results = exm.VEvaluator.VariableData.DataStringArray[(int)(VariableCode.RESULTS & VariableCode.__LOWERCASE__)];
@@ -514,7 +514,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 return exm.Process.SkipPrint ? 1L : 0L;
             }
@@ -539,7 +539,7 @@ namespace MinorShift.Emuera.GameData.Function
                     ParserMediator.Warn("関数MOUSESKIP()は推奨されません。代わりに関数MESSKIP()を使用してください", GlobalStatic.Process.GetScaningLine(), 1, false, false, null);
                 return null;
             }
-            public override long GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override long GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 return GlobalStatic.Console.MesSkip ? 1L : 0L;
             }
@@ -557,7 +557,7 @@ namespace MinorShift.Emuera.GameData.Function
             }
 
             readonly bool defaultColor;
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 Color color = defaultColor ? Config.ForeColor : GlobalStatic.Console.StringStyle.Color;
                 return color.ToArgb() & 0xFFFFFF;
@@ -572,7 +572,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [];
                 CanRestructure = true;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 return Config.FocusColor.ToArgb() & 0xFFFFFF;
             }
@@ -589,7 +589,7 @@ namespace MinorShift.Emuera.GameData.Function
             }
 
             readonly bool defaultColor;
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 Color color = defaultColor ? Config.BackColor : GlobalStatic.Console.bgColor;
                 return color.ToArgb() & 0xFFFFFF;
@@ -605,7 +605,7 @@ namespace MinorShift.Emuera.GameData.Function
                 CanRestructure = false;
             }
 
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 FontStyle fontstyle = GlobalStatic.Console.StringStyle.FontStyle;
                 long ret = 0;
@@ -629,7 +629,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [];
                 CanRestructure = false;
             }
-            public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+            public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 return GlobalStatic.Console.StringStyle.Fontname;
             }
@@ -643,7 +643,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(long), typeof(long), typeof(long)];
                 CanRestructure = true;
             }
-            public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+            public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 long var = arguments[0].GetIntValue(exm);
                 long max = arguments[1].GetIntValue(exm);
@@ -660,7 +660,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [];
                 CanRestructure = false;
             }
-            public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+            public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (exm.Console.Alignment == GameView.DisplayLineAlignment.LEFT)
                     return "LEFT";
@@ -679,7 +679,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [];
                 CanRestructure = false;
             }
-            public override long GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override long GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 return (exm.Console.Redraw == GameView.ConsoleRedraw.None) ? 0L : 1L;
             }
@@ -693,7 +693,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(string)];
                 CanRestructure = true;
             }
-            public override long GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override long GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 string colorName = arguments[0].GetStrValue(exm);
                 Color color = Color.FromName(colorName);
@@ -719,7 +719,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(long), typeof(long), typeof(long)];
                 CanRestructure = true;
             }
-            public override long GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override long GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 long r = arguments[0].GetIntValue(exm);
                 if (r < 0 || r > 255)
@@ -756,7 +756,7 @@ namespace MinorShift.Emuera.GameData.Function
                     return name + "関数の1番目の引数が関数参照ではありません";
                 return null;
             }
-            public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+            public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 return ((UserDefinedRefMethodNoArgTerm)arguments[0]).GetRefName();
             }
@@ -787,10 +787,10 @@ namespace MinorShift.Emuera.GameData.Function
                     return name + "関数の2番目の引数の型が正しくありません";
                 return null;
             }
-            public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+            public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 long money = arguments[0].GetIntValue(exm);
-                if ((arguments.Length < 2) || (arguments[1] == null))
+                if ((arguments.Count < 2) || (arguments[1] == null))
                     return Config.MoneyFirst ? Config.MoneyLabel + money.ToString() : money.ToString() + Config.MoneyLabel;
                 string format = arguments[1].GetStrValue(exm);
                 string ret;
@@ -814,7 +814,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [];
                 CanRestructure = true;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 return Config.PrintCPerLine;
             }
@@ -828,7 +828,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [];
                 CanRestructure = true;
             }
-            public override long GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override long GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 return Config.PrintCLength;
             }
@@ -842,7 +842,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [];
                 CanRestructure = true;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 return Config.SaveDataNos;
             }
@@ -856,7 +856,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 long date = DateTime.Now.Year;
                 date = date * 100 + DateTime.Now.Month;
@@ -877,7 +877,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [];
                 CanRestructure = false;
             }
-            public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+            public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 return DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss");
             }
@@ -892,7 +892,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 //西暦0001年1月1日からの経過時間をミリ秒で。
                 return (long)(DateTime.Now - new DateTime(0001, 1, 1, 0, 0, 0)).TotalMilliseconds;
@@ -907,7 +907,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 //西暦0001年1月1日からの経過時間を秒で。
                 //Ticksは100ナノ秒単位であるが実際にはそんな精度はないので無駄。
@@ -948,11 +948,11 @@ namespace MinorShift.Emuera.GameData.Function
                     return name + "関数の2番目の引数の型が正しくありません";
                 return null;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 Int64 min = 0;
                 long max;
-                if (arguments.Length == 1)
+                if (arguments.Count == 1)
                     max = arguments[0].GetIntValue(exm);
                 else
                 {
@@ -1001,11 +1001,11 @@ namespace MinorShift.Emuera.GameData.Function
                 }
                 return null;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 Int64 ret = arguments[0].GetIntValue(exm);
 
-                for (int i = 1; i < arguments.Length; i++)
+                for (int i = 1; i < arguments.Count; i++)
                 {
                     Int64 newRet = arguments[i].GetIntValue(exm);
                     if (isMax)
@@ -1031,7 +1031,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(Int64)];
                 CanRestructure = true;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 Int64 ret = arguments[0].GetIntValue(exm);
                 //普通は使わない値なので例外として投げてしまう方向性で
@@ -1049,7 +1049,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(Int64), typeof(Int64)];
                 CanRestructure = true;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 Int64 x = arguments[0].GetIntValue(exm);
                 Int64 y = arguments[1].GetIntValue(exm);
@@ -1072,7 +1072,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(Int64)];
                 CanRestructure = true;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 Int64 ret = arguments[0].GetIntValue(exm);
                 if (ret < 0)
@@ -1089,7 +1089,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(Int64)];
                 CanRestructure = true;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 Int64 ret = arguments[0].GetIntValue(exm);
                 if (ret < 0)
@@ -1115,7 +1115,7 @@ namespace MinorShift.Emuera.GameData.Function
                 Base = b;
                 CanRestructure = true;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 Int64 ret = arguments[0].GetIntValue(exm);
                 if (ret <= 0)
@@ -1145,7 +1145,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(Int64)];
                 CanRestructure = true;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 Int64 ret = arguments[0].GetIntValue(exm);
                 double dret = Math.Exp((double)ret);
@@ -1169,7 +1169,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(Int64)];
                 CanRestructure = true;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 Int64 ret = arguments[0].GetIntValue(exm);
                 return Math.Sign(ret);
@@ -1184,7 +1184,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(Int64), typeof(Int64), typeof(Int64)];
                 CanRestructure = true;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 Int64 value = arguments[0].GetIntValue(exm);
                 Int64 min = arguments[1].GetIntValue(exm);
@@ -1246,11 +1246,11 @@ namespace MinorShift.Emuera.GameData.Function
                     return name + "関数の3番目の変数が数値ではありません";
                 return null;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 VariableTerm varTerm = (VariableTerm)arguments[0];
-                Int64 index1 = (arguments.Length >= 2 && arguments[1] != null) ? arguments[1].GetIntValue(exm) : 0;
-                Int64 index2 = (arguments.Length == 3 && arguments[2] != null) ? arguments[2].GetIntValue(exm) : (isCharaRange ? exm.VEvaluator.CHARANUM : varTerm.GetLastLength());
+                Int64 index1 = (arguments.Count >= 2 && arguments[1] != null) ? arguments[1].GetIntValue(exm) : 0;
+                Int64 index2 = (arguments.Count == 3 && arguments[2] != null) ? arguments[2].GetIntValue(exm) : (isCharaRange ? exm.VEvaluator.CHARANUM : varTerm.GetLastLength());
 
                 FixedVariableTerm p = varTerm.GetFixedVariableTerm(exm);
                 if (!isCharaRange)
@@ -1315,11 +1315,11 @@ namespace MinorShift.Emuera.GameData.Function
                 return null;
             }
 
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 VariableTerm varTerm = arguments[0] as VariableTerm;
-                Int64 start = (arguments.Length > 2 && arguments[2] != null) ? arguments[2].GetIntValue(exm) : 0;
-                Int64 end = (arguments.Length > 3 && arguments[3] != null) ? arguments[3].GetIntValue(exm) : (isCharaRange ? exm.VEvaluator.CHARANUM : varTerm.GetLength());
+                Int64 start = (arguments.Count > 2 && arguments[2] != null) ? arguments[2].GetIntValue(exm) : 0;
+                Int64 end = (arguments.Count > 3 && arguments[3] != null) ? arguments[3].GetIntValue(exm) : (isCharaRange ? exm.VEvaluator.CHARANUM : varTerm.GetLength());
 
                 FixedVariableTerm p = varTerm.GetFixedVariableTerm(exm);
                 if (!isCharaRange)
@@ -1354,10 +1354,10 @@ namespace MinorShift.Emuera.GameData.Function
                 }
             }
 
-            public override bool UniqueRestructure(ExpressionMediator exm, AExpression[] arguments)
+            public override bool UniqueRestructure(ExpressionMediator exm, List<AExpression> arguments)
             {
                 arguments[0].Restructure(exm);
-                for (int i = 1; i < arguments.Length; i++)
+                for (int i = 1; i < arguments.Count; i++)
                 {
                     if (arguments[i] == null)
                         continue;
@@ -1391,13 +1391,13 @@ namespace MinorShift.Emuera.GameData.Function
                 }
                 return null;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 Int64 ret = 0;
                 if (arguments[0].GetOperandType() == typeof(Int64))
                 {
                     Int64 baseValue = arguments[0].GetIntValue(exm);
-                    for (int i = 1; i < arguments.Length; i++)
+                    for (int i = 1; i < arguments.Count; i++)
                     {
                         if (baseValue == arguments[i].GetIntValue(exm))
                             ret += 1;
@@ -1406,7 +1406,7 @@ namespace MinorShift.Emuera.GameData.Function
                 else
                 {
                     string baseString = arguments[0].GetStrValue(exm);
-                    for (int i = 1; i < arguments.Length; i++)
+                    for (int i = 1; i < arguments.Count; i++)
                     {
                         if (baseString == arguments[i].GetStrValue(exm))
                             ret += 1;
@@ -1440,28 +1440,28 @@ namespace MinorShift.Emuera.GameData.Function
                 }
                 return null;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (arguments[0].GetOperandType() == typeof(Int64))
                 {
-                    Int64[] valueArray = new Int64[arguments.Length];
-                    for (int i = 0; i < arguments.Length; i++)
+                    Int64[] valueArray = new Int64[arguments.Count];
+                    for (int i = 0; i < arguments.Count; i++)
                     {
                         valueArray[i] = arguments[i].GetIntValue(exm);
                     }
                     var resultArray = valueArray.Distinct();
-                    if (resultArray.Count() != arguments.Length)
+                    if (resultArray.Count() != arguments.Count)
                         return 0L;
                 }
                 else
                 {
-                    string[] stringArray = new string[arguments.Length];
-                    for (int i = 0; i < arguments.Length; i++)
+                    string[] stringArray = new string[arguments.Count];
+                    for (int i = 0; i < arguments.Count; i++)
                     {
                         stringArray[i] = arguments[i].GetStrValue(exm);
                     }
                     var resultArray = stringArray.Distinct();
-                    if (resultArray.Count() != arguments.Length)
+                    if (resultArray.Count() != arguments.Count)
                         return 0L;
                 }
                 return 1L;
@@ -1492,12 +1492,12 @@ namespace MinorShift.Emuera.GameData.Function
                 }
                 return null;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (arguments[0].GetOperandType() == typeof(Int64))
                 {
                     Int64 baseValue = arguments[0].GetIntValue(exm);
-                    for (int i = 1; i < arguments.Length; i++)
+                    for (int i = 1; i < arguments.Count; i++)
                     {
                         if (baseValue != arguments[i].GetIntValue(exm))
                             return 0L;
@@ -1506,7 +1506,7 @@ namespace MinorShift.Emuera.GameData.Function
                 else
                 {
                     string baseValue = arguments[0].GetStrValue(exm);
-                    for (int i = 1; i < arguments.Length; i++)
+                    for (int i = 1; i < arguments.Count; i++)
                     {
                         if (baseValue != arguments[i].GetStrValue(exm))
                             return 0L;
@@ -1576,11 +1576,11 @@ namespace MinorShift.Emuera.GameData.Function
                     return name + "関数の3番目の引数の型が正しくありません";
                 return null;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 VariableTerm vTerm = (VariableTerm)arguments[0];
-                Int64 start = (arguments.Length > 1 && arguments[1] != null) ? arguments[1].GetIntValue(exm) : 0;
-                Int64 end = (arguments.Length > 2 && arguments[2] != null) ? arguments[2].GetIntValue(exm) : (isCharaRange ? exm.VEvaluator.CHARANUM : vTerm.GetLength());
+                Int64 start = (arguments.Count > 1 && arguments[1] != null) ? arguments[1].GetIntValue(exm) : 0;
+                Int64 end = (arguments.Count > 2 && arguments[2] != null) ? arguments[2].GetIntValue(exm) : (isCharaRange ? exm.VEvaluator.CHARANUM : vTerm.GetLength());
                 FixedVariableTerm p = vTerm.GetFixedVariableTerm(exm);
                 if (!isCharaRange)
                 {
@@ -1618,7 +1618,7 @@ namespace MinorShift.Emuera.GameData.Function
                 }
                 return null;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 Int64 n = arguments[0].GetIntValue(exm);
                 Int64 m = arguments[1].GetIntValue(exm);
@@ -1652,7 +1652,7 @@ namespace MinorShift.Emuera.GameData.Function
                     return name + "関数の2番目の引数の型が正しくありません";
                 return null;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 VariableTerm vToken = (VariableTerm)arguments[0];
                 VariableCode varCode = vToken.Identifier.Code;
@@ -1662,7 +1662,7 @@ namespace MinorShift.Emuera.GameData.Function
                 else
                     return -1;
             }
-            public override bool UniqueRestructure(ExpressionMediator exm, AExpression[] arguments)
+            public override bool UniqueRestructure(ExpressionMediator exm, List<AExpression> arguments)
             {
                 arguments[1] = arguments[1].Restructure(exm);
                 return arguments[1] is SingleTerm;
@@ -1692,7 +1692,7 @@ namespace MinorShift.Emuera.GameData.Function
                 }
                 return null;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 VariableToken var = GlobalStatic.IdentifierDictionary.GetVariableToken(arguments[0].GetStrValue(exm), null, true);
                 if (var == null)
@@ -1722,7 +1722,7 @@ namespace MinorShift.Emuera.GameData.Function
                     return name + "関数の1番目の引数は省略できません";
                 return null;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 Int64 value = arguments[0].GetIntValue(exm);
                 Int64 maxLv = arguments[1].GetIntValue(exm);
@@ -1748,7 +1748,7 @@ namespace MinorShift.Emuera.GameData.Function
                     return name + "関数の1番目の引数は省略できません";
                 return null;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 Int64 value = arguments[0].GetIntValue(exm);
                 Int64 maxLv = arguments[1].GetIntValue(exm);
@@ -1799,14 +1799,14 @@ namespace MinorShift.Emuera.GameData.Function
                 return null;
             }
 
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 bool isExact = false;
                 VariableTerm varTerm = (VariableTerm)arguments[0];
 
-                Int64 start = (arguments.Length > 2 && arguments[2] != null) ? arguments[2].GetIntValue(exm) : 0;
-                Int64 end = (arguments.Length > 3 && arguments[3] != null) ? arguments[3].GetIntValue(exm) : varTerm.GetLength();
-                if (arguments.Length > 4 && arguments[4] != null)
+                Int64 start = (arguments.Count > 2 && arguments[2] != null) ? arguments[2].GetIntValue(exm) : 0;
+                Int64 end = (arguments.Count > 3 && arguments[3] != null) ? arguments[3].GetIntValue(exm) : varTerm.GetLength();
+                if (arguments.Count > 4 && arguments[4] != null)
                     isExact = arguments[4].GetIntValue(exm) != 0;
 
                 FixedVariableTerm p = varTerm.GetFixedVariableTerm(exm);
@@ -1833,12 +1833,12 @@ namespace MinorShift.Emuera.GameData.Function
             }
 
 
-            public override bool UniqueRestructure(ExpressionMediator exm, AExpression[] arguments)
+            public override bool UniqueRestructure(ExpressionMediator exm, List<AExpression> arguments)
             {
                 arguments[0].Restructure(exm);
                 VariableTerm varToken = arguments[0] as VariableTerm;
                 bool isConst = varToken.Identifier.IsConst;
-                for (int i = 1; i < arguments.Length; i++)
+                for (int i = 1; i < arguments.Count; i++)
                 {
                     if (arguments[i] == null)
                         continue;
@@ -1858,7 +1858,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(Int64), typeof(Int64), typeof(Int64)];
                 CanRestructure = true;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 Int64 value = arguments[0].GetIntValue(exm);
                 Int64 min = arguments[1].GetIntValue(exm);
@@ -1916,14 +1916,14 @@ namespace MinorShift.Emuera.GameData.Function
                     return name + "関数の5番目の引数の型が正しくありません";
                 return null;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 Int64 min = arguments[1].GetIntValue(exm);
                 Int64 max = arguments[2].GetIntValue(exm);
 
                 VariableTerm varTerm = arguments[0] as VariableTerm;
-                Int64 start = (arguments.Length > 3 && arguments[3] != null) ? arguments[3].GetIntValue(exm) : 0;
-                Int64 end = (arguments.Length > 4 && arguments[4] != null) ? arguments[4].GetIntValue(exm) : (isCharaRange ? exm.VEvaluator.CHARANUM : varTerm.GetLength());
+                Int64 start = (arguments.Count > 3 && arguments[3] != null) ? arguments[3].GetIntValue(exm) : 0;
+                Int64 end = (arguments.Count > 4 && arguments[4] != null) ? arguments[4].GetIntValue(exm) : (isCharaRange ? exm.VEvaluator.CHARANUM : varTerm.GetLength());
 
                 FixedVariableTerm p = varTerm.GetFixedVariableTerm(exm);
 
@@ -1970,7 +1970,7 @@ namespace MinorShift.Emuera.GameData.Function
                 }
                 return null;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 VariableTerm varTerm = arguments[0] as VariableTerm;
                 int[] sortedArray;
@@ -2082,9 +2082,9 @@ namespace MinorShift.Emuera.GameData.Function
                 }
                 return 1;
             }
-            public override bool UniqueRestructure(ExpressionMediator exm, AExpression[] arguments)
+            public override bool UniqueRestructure(ExpressionMediator exm, List<AExpression> arguments)
             {
-                for (int i = 0; i < arguments.Length; i++)
+                for (int i = 0; i < arguments.Count; i++)
                     arguments[i] = arguments[i].Restructure(exm);
                 return false;
             }
@@ -2100,7 +2100,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(string)];
                 CanRestructure = true;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 string str = arguments[0].GetStrValue(exm);
                 return LangManager.GetStrlenLang(str);
@@ -2115,7 +2115,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(string)];
                 CanRestructure = true;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 string str = arguments[0].GetStrValue(exm);
                 return str.Length;
@@ -2150,14 +2150,14 @@ namespace MinorShift.Emuera.GameData.Function
                     return name + "関数の3番目の引数の型が正しくありません";
                 return null;
             }
-            public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+            public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 string str = arguments[0].GetStrValue(exm);
                 int start = 0;
                 int length = -1;
-                if ((arguments.Length >= 2) && (arguments[1] != null))
+                if ((arguments.Count >= 2) && (arguments[1] != null))
                     start = (int)arguments[1].GetIntValue(exm);
-                if ((arguments.Length >= 3) && (arguments[2] != null))
+                if ((arguments.Count >= 3) && (arguments[2] != null))
                     length = (int)arguments[2].GetIntValue(exm);
 
                 return LangManager.GetSubStringLang(str, start, length);
@@ -2192,14 +2192,14 @@ namespace MinorShift.Emuera.GameData.Function
                     return name + "関数の3番目の引数の型が正しくありません";
                 return null;
             }
-            public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+            public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 string str = arguments[0].GetStrValue(exm);
                 int start = 0;
                 int length = -1;
-                if ((arguments.Length >= 2) && (arguments[1] != null))
+                if ((arguments.Count >= 2) && (arguments[1] != null))
                     start = (int)arguments[1].GetIntValue(exm);
-                if ((arguments.Length >= 3) && (arguments[2] != null))
+                if ((arguments.Count >= 3) && (arguments[2] != null))
                     length = (int)arguments[2].GetIntValue(exm);
                 if ((start >= str.Length) || (length == 0))
                     return "";
@@ -2250,13 +2250,13 @@ namespace MinorShift.Emuera.GameData.Function
                     return name + "関数の3番目の引数の型が正しくありません";
                 return null;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
 
                 string target = arguments[0].GetStrValue(exm);
                 string word = arguments[1].GetStrValue(exm);
                 int UFTstart = 0;
-                if ((arguments.Length >= 3) && (arguments[2] != null))
+                if ((arguments.Count >= 3) && (arguments[2] != null))
                 {
                     if (unicode)
                     {
@@ -2287,7 +2287,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(string), typeof(string)];
                 CanRestructure = true;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 Regex reg;
                 try
@@ -2326,10 +2326,10 @@ namespace MinorShift.Emuera.GameData.Function
                     return name + "関数の2番目の引数の型が正しくありません";
                 return null;
             }
-            public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+            public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 Int64 i = arguments[0].GetIntValue(exm);
-                if ((arguments.Length < 2) || (arguments[1] == null))
+                if ((arguments.Count < 2) || (arguments[1] == null))
                     return i.ToString();
                 string format = arguments[1].GetStrValue(exm);
                 string ret;
@@ -2354,7 +2354,7 @@ namespace MinorShift.Emuera.GameData.Function
                 CanRestructure = true;
             }
 
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 string str = arguments[0].GetStrValue(exm);
                 if (str == null || str == "")
@@ -2413,7 +2413,7 @@ namespace MinorShift.Emuera.GameData.Function
                 strType = type;
                 CanRestructure = true;
             }
-            public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+            public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 string str = arguments[0].GetStrValue(exm);
                 if (str == null || str == "")
@@ -2441,7 +2441,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 return GlobalStatic.Console.EmptyLine ? 1L : 0L;
             }
@@ -2455,7 +2455,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(string), typeof(string), typeof(string)];
                 CanRestructure = true;
             }
-            public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+            public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 string baseString = arguments[0].GetStrValue(exm);
                 Regex reg;
@@ -2479,7 +2479,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(Int64)];
                 CanRestructure = true;
             }
-            public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+            public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 Int64 i = arguments[0].GetIntValue(exm);
                 if ((i < 0) || (i > 0xFFFF))
@@ -2510,7 +2510,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(string)];
                 CanRestructure = true;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 string target = arguments[0].GetStrValue(exm);
                 int length = Encoding.UTF32.GetEncoder().GetByteCount(target.ToCharArray(), 0, target.Length, false);
@@ -2530,7 +2530,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(Int64), typeof(Int64)];
                 CanRestructure = true;
             }
-            public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+            public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 Int64 toBase = arguments[1].GetIntValue(exm);
                 if ((toBase != 2) && (toBase != 8) && (toBase != 10) && (toBase != 16))
@@ -2547,7 +2547,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(string)];
                 CanRestructure = true;
             }
-            public override long GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override long GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 string baseStr = arguments[0].GetStrValue(exm);
 
@@ -2587,7 +2587,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(string)];
                 CanRestructure = true;
             }
-            public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+            public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 return Regex.Escape(arguments[0].GetStrValue(exm));
             }
@@ -2616,12 +2616,12 @@ namespace MinorShift.Emuera.GameData.Function
                     return name + "関数の2番目の引数の型が正しくありません";
                 return null;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 string baseStr = arguments[0].GetStrValue(exm);
                 if (baseStr.Length == 0)
                     return -1;
-                Int64 position = (arguments.Length > 1 && arguments[1] != null) ? arguments[1].GetIntValue(exm) : 0;
+                Int64 position = (arguments.Count > 1 && arguments[1] != null) ? arguments[1].GetIntValue(exm) : 0;
                 if (position < 0)
                     throw new CodeEE("ENCOIDETOUNI関数の第２引数(" + position.ToString() + ")が負の値です");
                 if (position >= baseStr.Length)
@@ -2638,7 +2638,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(string), typeof(Int64)];
                 CanRestructure = true;
             }
-            public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+            public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 string str = arguments[0].GetStrValue(exm);
                 Int64 pos = arguments[1].GetIntValue(exm);
@@ -2656,7 +2656,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(string)];
                 CanRestructure = true;
             }
-            public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+            public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 string str = arguments[0].GetStrValue(exm);
                 if (string.IsNullOrEmpty(str))
@@ -2674,7 +2674,7 @@ namespace MinorShift.Emuera.GameData.Function
                 HasUniqueRestructure = true;
                 CanRestructure = true;
             }
-            public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+            public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 string str = arguments[0].GetStrValue(exm);
                 string destStr;
@@ -2694,7 +2694,7 @@ namespace MinorShift.Emuera.GameData.Function
                 }
                 return destStr;
             }
-            public override bool UniqueRestructure(ExpressionMediator exm, AExpression[] arguments)
+            public override bool UniqueRestructure(ExpressionMediator exm, List<AExpression> arguments)
             {
                 arguments[0].Restructure(exm);
                 //引数が文字列式等ならお手上げなので諦める
@@ -2756,12 +2756,12 @@ namespace MinorShift.Emuera.GameData.Function
                     return name + "関数の4番目の変数が数値ではありません";
                 return null;
             }
-            public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+            public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 VariableTerm varTerm = (VariableTerm)arguments[0];
-                string delimiter = (arguments.Length >= 2 && arguments[1] != null) ? arguments[1].GetStrValue(exm) : ",";
-                Int64 index1 = (arguments.Length >= 3 && arguments[2] != null) ? arguments[2].GetIntValue(exm) : 0;
-                Int64 index2 = (arguments.Length == 4 && arguments[3] != null) ? arguments[3].GetIntValue(exm) : varTerm.GetLastLength() - index1;
+                string delimiter = (arguments.Count >= 2 && arguments[1] != null) ? arguments[1].GetStrValue(exm) : ",";
+                Int64 index1 = (arguments.Count >= 3 && arguments[2] != null) ? arguments[2].GetIntValue(exm) : 0;
+                Int64 index2 = (arguments.Count == 4 && arguments[3] != null) ? arguments[3].GetIntValue(exm) : varTerm.GetLastLength() - index1;
 
                 FixedVariableTerm p = varTerm.GetFixedVariableTerm(exm);
 
@@ -2771,12 +2771,12 @@ namespace MinorShift.Emuera.GameData.Function
                 p.IsArrayRangeValid(index1, index1 + index2, "STRJOIN", 2L, 3L);
                 return exm.VEvaluator.GetJoinedStr(p, delimiter, index1, index2);
             }
-            public override bool UniqueRestructure(ExpressionMediator exm, AExpression[] arguments)
+            public override bool UniqueRestructure(ExpressionMediator exm, List<AExpression> arguments)
             {
                 //第1変数は変数名なので、定数文字列変数だと事故が起こるので独自対応
                 VariableTerm varTerm = (VariableTerm)arguments[0];
                 bool canRerstructure = varTerm.Identifier.IsConst;
-                for (int i = 1; i < arguments.Length; i++)
+                for (int i = 1; i < arguments.Count; i++)
                 {
                     if (arguments[i] == null)
                         continue;
@@ -2805,7 +2805,7 @@ namespace MinorShift.Emuera.GameData.Function
                 CanRestructure = true;
             }
             private readonly string funcname;
-            private SingleTerm GetSingleTerm(ExpressionMediator exm, AExpression[] arguments)
+            private SingleTerm GetSingleTerm(ExpressionMediator exm, List<AExpression> arguments)
             {
                 string str = arguments[0].GetStrValue(exm);
                 if (str == null || str.Length == 0)
@@ -2816,7 +2816,7 @@ namespace MinorShift.Emuera.GameData.Function
                     throw new CodeEE(funcname + "関数:" + errMes);
                 return term;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (ReturnType != typeof(Int64))
                     throw new ExeEE(funcname + "関数:不正な呼び出し");
@@ -2825,7 +2825,7 @@ namespace MinorShift.Emuera.GameData.Function
                     throw new CodeEE(funcname + "関数:型が違います（GETCONFIGS関数を使用してください）");
                 return term.Int;
             }
-            public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+            public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (ReturnType != typeof(string))
                     throw new ExeEE(funcname + "関数:不正な呼び出し");
@@ -2859,10 +2859,10 @@ namespace MinorShift.Emuera.GameData.Function
                     return name + "関数の1番目の引数の型が正しくありません";
                 return null;
             }
-            public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+            public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 Int64 lineNo = 0;
-                if (arguments.Length > 0)
+                if (arguments.Count > 0)
                     lineNo = arguments[0].GetIntValue(exm);
                 if (lineNo < 0)
                     throw new CodeEE("引数を0未満にできません");
@@ -2882,7 +2882,7 @@ namespace MinorShift.Emuera.GameData.Function
                 CanRestructure = false;
             }
 
-            public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+            public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 ConsoleDisplayLine[] dispLines = exm.Console.PopDisplayingLines();
                 if (dispLines == null)
@@ -2899,7 +2899,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(string)];
                 CanRestructure = false;
             }
-            public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+            public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 return HtmlManager.Html2PlainText(arguments[0].GetStrValue(exm));
             }
@@ -2912,7 +2912,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(string)];
                 CanRestructure = false;
             }
-            public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+            public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 return HtmlManager.Escape(arguments[0].GetStrValue(exm));
             }
@@ -2923,7 +2923,7 @@ namespace MinorShift.Emuera.GameData.Function
         /// <summary>
         /// argNo番目の引数をGraphicsImageのIDを示す整数値として読み取り、 GraphicsImage又はnullを返す。
         /// </summary>
-        private static GraphicsImage ReadGraphics(string Name, ExpressionMediator exm, AExpression[] arguments, int argNo)
+        private static GraphicsImage ReadGraphics(string Name, ExpressionMediator exm, List<AExpression> arguments, int argNo)
         {
             Int64 target = arguments[argNo].GetIntValue(exm);
             if (target < 0)//funcname + "関数:GraphicsIDに負の値(" + target.ToString() + ")が指定されました"
@@ -2936,7 +2936,7 @@ namespace MinorShift.Emuera.GameData.Function
         /// <summary>
         /// argNo番目の引数を整数値として読み取り、 アルファ値を含むColor構造体にして返す。
         /// </summary>
-        private static Color ReadColor(string Name, ExpressionMediator exm, AExpression[] arguments, int argNo)
+        private static Color ReadColor(string Name, ExpressionMediator exm, List<AExpression> arguments, int argNo)
         {
             Int64 c64 = arguments[argNo].GetIntValue(exm);
             if (c64 < 0 || c64 > 0xFFFFFFFF)
@@ -2947,7 +2947,7 @@ namespace MinorShift.Emuera.GameData.Function
         /// <summary>
         /// argNo番目を含む2つの引数を整数値として読み取り、Point形式にして返す。
         /// </summary>
-        private static Point ReadPoint(string Name, ExpressionMediator exm, AExpression[] arguments, int argNo)
+        private static Point ReadPoint(string Name, ExpressionMediator exm, List<AExpression> arguments, int argNo)
         {
             Int64 x64 = arguments[argNo].GetIntValue(exm);
             if (x64 < int.MinValue || x64 > int.MaxValue)
@@ -2961,7 +2961,7 @@ namespace MinorShift.Emuera.GameData.Function
         /// <summary>
         /// argNo番目を含む4つの引数を整数値として読み取り、Rectangle形式にして返す。
         /// </summary>
-        private static Rectangle ReadRectangle(string Name, ExpressionMediator exm, AExpression[] arguments, int argNo)
+        private static Rectangle ReadRectangle(string Name, ExpressionMediator exm, List<AExpression> arguments, int argNo)
         {
             Int64 x64 = arguments[argNo].GetIntValue(exm);
             if (x64 < int.MinValue || x64 > int.MaxValue)
@@ -2982,7 +2982,7 @@ namespace MinorShift.Emuera.GameData.Function
         /// <summary>
         /// argNo番目の引数を5x5のカラーマトリクス配列変数として読み取り、 5x5のfloat[][]形式にして返す。
         /// </summary>
-        private static float[][] ReadColormatrix(string Name, ExpressionMediator exm, AExpression[] arguments, int argNo)
+        private static float[][] ReadColormatrix(string Name, ExpressionMediator exm, List<AExpression> arguments, int argNo)
         {
             //数値型二次元以上配列変数のはず
             FixedVariableTerm p = ((VariableTerm)arguments[argNo]).GetFixedVariableTerm(exm);
@@ -3052,7 +3052,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(Int64)];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
                     throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
@@ -3080,7 +3080,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(Int64), typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
                     throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
@@ -3105,7 +3105,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(Int64), typeof(Int64), typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
                     throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
@@ -3129,7 +3129,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
                     throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
@@ -3149,7 +3149,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(Int64), typeof(string), typeof(Int64)];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
                     throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
@@ -3177,7 +3177,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
                     throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
@@ -3199,7 +3199,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(string)];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 string imgname = arguments[0].GetStrValue(exm);
                 ASprite img = AppContents.GetSprite(imgname);
@@ -3230,7 +3230,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(string), typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 string imgname = arguments[0].GetStrValue(exm);
                 ASprite img = AppContents.GetSprite(imgname);
@@ -3258,7 +3258,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(string), typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 string imgname = arguments[0].GetStrValue(exm);
                 ASprite img = AppContents.GetSprite(imgname);
@@ -3284,7 +3284,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 switch (Name)
                 {
@@ -3305,7 +3305,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(Int64), typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
                     throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
@@ -3338,7 +3338,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(Int64), typeof(string)];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
                     throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
@@ -3385,7 +3385,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(Int64)];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
                     throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
@@ -3436,7 +3436,7 @@ namespace MinorShift.Emuera.GameData.Function
                 }
                 return null;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
                     throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
@@ -3451,7 +3451,7 @@ namespace MinorShift.Emuera.GameData.Function
                     return 0;
 
                 Rectangle rect = new(0, 0, g.Width, g.Height);
-                if (arguments.Length == 6)
+                if (arguments.Count == 6)
                 {//四角形は正でも負でもよいが親画像の外を指してはいけない
                     rect = ReadRectangle(Name, exm, arguments, 2);
                     if (rect.X + rect.Width < 0 || rect.X + rect.Width > g.Width || rect.Y + rect.Height < 0 || rect.Y + rect.Height > g.Height)
@@ -3470,7 +3470,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(string)];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 string imgname = arguments[0].GetStrValue(exm);
                 ASprite img = AppContents.GetSprite(imgname);
@@ -3493,7 +3493,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
                     throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
@@ -3517,7 +3517,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(Int64), typeof(Int64), typeof(Int64), typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
                     throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
@@ -3563,7 +3563,7 @@ namespace MinorShift.Emuera.GameData.Function
                     return string.Format(Properties.Resources.SyntaxErrMesMethodGraphicsColorMatrix0, name);
                 return null;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
                     throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
@@ -3575,7 +3575,7 @@ namespace MinorShift.Emuera.GameData.Function
                     return 0;
                 Rectangle destRect = ReadRectangle(Name, exm, arguments, 2);
                 Rectangle srcRect = ReadRectangle(Name, exm, arguments, 6);
-                if (arguments.Length == 10 || arguments[10] == null)
+                if (arguments.Count == 10 || arguments[10] == null)
                 {
                     dest.GDrawG(src, destRect, srcRect);
                     return 1;
@@ -3585,9 +3585,9 @@ namespace MinorShift.Emuera.GameData.Function
                 return 1;
             }
 
-            public override bool UniqueRestructure(ExpressionMediator exm, AExpression[] arguments)
+            public override bool UniqueRestructure(ExpressionMediator exm, List<AExpression> arguments)
             {
-                for (int i = 0; i < arguments.Length; i++)
+                for (int i = 0; i < arguments.Count; i++)
                 {
                     if (arguments[i] == null)
                         continue;
@@ -3614,7 +3614,7 @@ namespace MinorShift.Emuera.GameData.Function
             }
 
 
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
                     throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
@@ -3678,7 +3678,7 @@ namespace MinorShift.Emuera.GameData.Function
                     return string.Format(Properties.Resources.SyntaxErrMesMethodGraphicsColorMatrix0, name);
                 return null;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
                     throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
@@ -3692,12 +3692,12 @@ namespace MinorShift.Emuera.GameData.Function
                     return 0;
 
                 Rectangle destRect = new(0, 0, img.DestBaseSize.Width, img.DestBaseSize.Height);
-                if (arguments.Length == 2)
+                if (arguments.Count == 2)
                 {
                     dest.GDrawCImg(img, destRect);
                     return 1;
                 }
-                if (arguments.Length == 4)
+                if (arguments.Count == 4)
                 {
                     Point p = ReadPoint(Name, exm, arguments, 2);
                     destRect.X = p.X;
@@ -3705,22 +3705,22 @@ namespace MinorShift.Emuera.GameData.Function
                     dest.GDrawCImg(img, destRect);
                     return 1;
                 }
-                if (arguments.Length == 6)
+                if (arguments.Count == 6)
                 {
                     destRect = ReadRectangle(Name, exm, arguments, 2);
                     dest.GDrawCImg(img, destRect);
                     return 1;
                 }
-                //if (arguments.Length == 7)
+                //if (arguments.Count == 7)
                 destRect = ReadRectangle(Name, exm, arguments, 2);
                 float[][] cm = ReadColormatrix(Name, exm, arguments, 6);
                 dest.GDrawCImg(img, destRect, cm);
                 return 1;
             }
 
-            public override bool UniqueRestructure(ExpressionMediator exm, AExpression[] arguments)
+            public override bool UniqueRestructure(ExpressionMediator exm, List<AExpression> arguments)
             {
-                for (int i = 0; i < arguments.Length; i++)
+                for (int i = 0; i < arguments.Count; i++)
                 {
                     if (arguments[i] == null)
                         continue;
@@ -3745,7 +3745,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(string), typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
                     throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
@@ -3783,7 +3783,7 @@ namespace MinorShift.Emuera.GameData.Function
                 CanRestructure = false;
             }
 
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
                     throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
@@ -3823,7 +3823,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 //if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
                 //	throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
@@ -3843,7 +3843,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
 
                 Int64 x64 = arguments[0].GetIntValue(exm);
@@ -3866,7 +3866,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 //if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
                 //	throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
@@ -3885,7 +3885,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 //if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
                 //	throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
@@ -3904,7 +3904,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(Int64), typeof(Int64), typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
                     throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
@@ -3933,7 +3933,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(Int64)];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
                     throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
@@ -3958,7 +3958,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(string), typeof(Int64), typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 //if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
                 //	throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
@@ -4009,7 +4009,7 @@ namespace MinorShift.Emuera.GameData.Function
                 }
                 return null;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
                     throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
@@ -4027,7 +4027,7 @@ namespace MinorShift.Emuera.GameData.Function
                 if (z64 < int.MinValue || z64 > int.MaxValue || z64 == 0)
                     throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodDefaultArgumentOutOfRange0, Name, z64, 5 + 1));
                 string tooltip = null;
-                if (arguments.Length > 6)
+                if (arguments.Count > 6)
                     tooltip = arguments[6].GetStrValue(exm);
                 if (!exm.Console.CBG_SetButtonImage((int)b64, imgN, imgB, p.X, p.Y, (int)z64, tooltip))
                     return 0;
@@ -4046,7 +4046,7 @@ namespace MinorShift.Emuera.GameData.Function
                 CanRestructure = false;
             }
 
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (!exm.Console.IsActive)//アクティブでないならスルー
                     return 0;
@@ -4073,7 +4073,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 switch (Name)
                 {
@@ -4093,7 +4093,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 return exm.Console.IsActive ? 1 : 0;
             }
@@ -4107,7 +4107,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(Int64)];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 Int64 i64 = arguments[0].GetIntValue(exm);
                 if (i64 < int.MinValue || i64 > short.MaxValue)
@@ -4145,14 +4145,14 @@ namespace MinorShift.Emuera.GameData.Function
                 }
                 return null;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 string savText = arguments[0].GetStrValue(exm);
                 Int64 i64 = arguments[1].GetIntValue(exm);
                 if (i64 < 0 || i64 > int.MaxValue)
                     return 0;
-                bool forceSavdir = arguments.Length > 2 && (arguments[2].GetIntValue(exm) != 0);
-                bool forceUTF8 = arguments.Length > 3 && (arguments[3].GetIntValue(exm) != 0);
+                bool forceSavdir = arguments.Count > 2 && (arguments[2].GetIntValue(exm) != 0);
+                bool forceUTF8 = arguments.Count > 3 && (arguments[3].GetIntValue(exm) != 0);
                 int fileIndex = (int)i64;
                 string filepath = forceSavdir ?
                     GetSaveDataPathText(fileIndex, Config.ForceSavDir) :
@@ -4199,13 +4199,13 @@ namespace MinorShift.Emuera.GameData.Function
                 }
                 return null;
             }
-            public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+            public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 Int64 i64 = arguments[0].GetIntValue(exm);
                 if (i64 < 0 || i64 > int.MaxValue)
                     return "";
-                bool forceSavdir = arguments.Length > 1 && (arguments[1].GetIntValue(exm) != 0);
-                bool forceUTF8 = arguments.Length > 2 && (arguments[2].GetIntValue(exm) != 0);
+                bool forceSavdir = arguments.Count > 1 && (arguments[1].GetIntValue(exm) != 0);
+                bool forceUTF8 = arguments.Count > 2 && (arguments[2].GetIntValue(exm) != 0);
                 int fileIndex = (int)i64;
                 string filepath = forceSavdir ?
                     GetSaveDataPathText(fileIndex, Config.ForceSavDir) :
@@ -4242,7 +4242,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
                     throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
@@ -4278,7 +4278,7 @@ namespace MinorShift.Emuera.GameData.Function
                 argumentTypeArray = [typeof(Int64), typeof(Int64)];
                 CanRestructure = false;
             }
-            public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments)
+            public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
                     throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));

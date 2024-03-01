@@ -17,15 +17,15 @@ namespace MinorShift.Emuera.GameData.Function
 
 		public override long GetIntValue(ExpressionMediator exm)
 		{
-			return method.GetIntValue(exm, [.. arguments]);
+			return method.GetIntValue(exm, arguments);
 		}
 		public override string GetStrValue(ExpressionMediator exm)
 		{
-			return method.GetStrValue(exm, [.. arguments]);
+			return method.GetStrValue(exm, arguments);
 		}
 		public override SingleTerm GetValue(ExpressionMediator exm)
 		{
-			return method.GetReturnValue(exm, [.. arguments]);
+			return method.GetReturnValue(exm, arguments);
 		}
 
 		public override AExpression Restructure(ExpressionMediator exm)

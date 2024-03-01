@@ -229,13 +229,13 @@ namespace MinorShift.Emuera.GameData
 				argumentTypeArray = null;
 			}
 			public override string CheckArgumentType(string name, List<AExpression> arguments) { throw new ExeEE("型チェックは呼び出し元が行うこと"); }
-			public override Int64 GetIntValue(ExpressionMediator exm, AExpression[] arguments) { throw new ExeEE("戻り値の型が違う"); }
-			public override SingleTerm GetReturnValue(ExpressionMediator exm, AExpression[] arguments) { return new SingleTerm(GetStrValue(exm, arguments)); }
+			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments) { throw new ExeEE("戻り値の型が違う"); }
+			public override SingleTerm GetReturnValue(ExpressionMediator exm, List<AExpression> arguments) { return new SingleTerm(GetStrValue(exm, arguments)); }
 		}
 
 		private sealed class FormatCurlyBrace : FormattedStringMethod
 		{
-			public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+			public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				string ret = arguments[0].GetIntValue(exm).ToString();
 				if (arguments[1] == null)
@@ -250,7 +250,7 @@ namespace MinorShift.Emuera.GameData
 
 		private sealed class FormatPercent : FormattedStringMethod
 		{
-			public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+			public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				string ret = arguments[0].GetStrValue(exm);
 				if (arguments[1] == null)
@@ -270,7 +270,7 @@ namespace MinorShift.Emuera.GameData
 
 		private sealed class FormatYenAt : FormattedStringMethod
 		{//Operator のTernaryIntStrStrとやってることは同じ
-			public override string GetStrValue(ExpressionMediator exm, AExpression[] arguments)
+			public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
 			{
 				return (arguments[0].GetIntValue(exm) != 0) ? arguments[1].GetStrValue(exm) : arguments[2].GetStrValue(exm);
 			}
