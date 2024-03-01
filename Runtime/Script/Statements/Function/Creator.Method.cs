@@ -1822,7 +1822,7 @@ namespace MinorShift.Emuera.GameData.Function
                     Regex targetString;
                     try
                     {
-                        targetString = new Regex(arguments[1].GetStrValue(exm));
+                        targetString = RegexFactory.GetRegex(arguments[1].GetStrValue(exm));
                     }
                     catch (ArgumentException)
                     {
@@ -2292,7 +2292,7 @@ namespace MinorShift.Emuera.GameData.Function
                 Regex reg;
                 try
                 {
-                    reg = new Regex(arguments[1].GetStrValue(exm));
+                    reg = RegexFactory.GetRegex(arguments[1].GetStrValue(exm));
                 }
                 catch (ArgumentException e)
                 {
@@ -2461,7 +2461,7 @@ namespace MinorShift.Emuera.GameData.Function
                 Regex reg;
                 try
                 {
-                    reg = new Regex(arguments[1].GetStrValue(exm));
+                    reg = RegexFactory.GetRegex(arguments[1].GetStrValue(exm));
                 }
                 catch (ArgumentException e)
                 {
