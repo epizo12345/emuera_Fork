@@ -128,9 +128,9 @@ namespace MinorShift.Emuera.GameData
 						IdentifierWord id = wc.Current as IdentifierWord;
 						if (id == null)
 							throw new CodeEE("','の後にRIGHT又はLEFTがありません");
-						if (string.Equals(id.Code, "LEFT", Config.SCVariable))//標準RIGHT
+						if (string.Equals(id.Code, "LEFT", Config.StringComparison))//標準RIGHT
 							third = new SingleTerm(1);
-						else if (!string.Equals(id.Code, "RIGHT", Config.SCVariable))
+						else if (!string.Equals(id.Code, "RIGHT", Config.StringComparison))
 							throw new CodeEE("','の後にRIGHT又はLEFT以外の単語があります");
 						wc.ShiftNext();
 					}

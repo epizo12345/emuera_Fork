@@ -28,23 +28,14 @@ internal static class Config
 	{
 		nameDic = instance.GetConfigNameDic();
 		IgnoreCase = instance.GetConfigValue<bool>(ConfigCode.IgnoreCase);
-		CompatiFunctionNoignoreCase = instance.GetConfigValue<bool>(ConfigCode.CompatiFunctionNoignoreCase);
-		ICFunction = IgnoreCase && !CompatiFunctionNoignoreCase;
-		ICVariable = IgnoreCase;
 		if (IgnoreCase)
 		{
-
-			if (CompatiFunctionNoignoreCase)
-				SCFunction = StringComparison.Ordinal;
-			else
-				SCFunction = StringComparison.OrdinalIgnoreCase;
-			SCVariable = StringComparison.OrdinalIgnoreCase;
+			StringComparison = StringComparison.OrdinalIgnoreCase;
+			StrComper = StringComparer.OrdinalIgnoreCase;
 		}
 		else
 		{
-			SCFunction = StringComparison.Ordinal;
-			SCVariable = StringComparison.Ordinal;
-			StrComp = StringComparison.Ordinal;
+			StringComparison = StringComparison.Ordinal;
 			StrComper = StringComparer.Ordinal;
 		}
 		UseRenameFile = instance.GetConfigValue<bool>(ConfigCode.UseRenameFile);
@@ -345,33 +336,16 @@ internal static class Config
 
 
 	/// <summary>
-	/// IgnoreCaseはprivateに。代わりにICFunctionかICVariableを使う。
-	/// </summary>
-	private static bool IgnoreCase { get; set; }
-	private static bool CompatiFunctionNoignoreCase { get; set; }
-
-
-	/// <summary>
 	/// 関数名・属性名的な名前のIgnoreCaseフラグ
 	/// 関数・属性・BEGINのキーワード 
 	/// どうせeramaker用の互換処理なのでEmuera専用構文については適当に。
 	/// </summary>
-	public static bool ICFunction { get; private set; }
-
-	/// <summary>
-	/// 変数名、命令名的な名前のIgnoreCaseフラグ 
-	/// 変数・命令・$ラベル名、GOTOの引数 
-	/// </summary>
-	public static bool ICVariable { get; private set; }
+	public static bool IgnoreCase { get; private set; }
 
 	/// <summary>
 	/// 関数名・属性名的な名前の比較フラグ
 	/// </summary>
-	public static StringComparison SCFunction { get; private set; }
-	/// <summary>
-	/// 変数名、命令名的な名前の比較フラグ
-	/// </summary>
-	public static StringComparison SCVariable { get; private set; }
+	public static StringComparison StringComparison { get; private set; }
 	/// <summary>
 	/// ファイル名的な名前の比較フラグ
 	/// </summary>
@@ -540,7 +514,6 @@ internal static class Config
 	public static long RelationDef { get; private set; }
 	#endregion
 
-	public static StringComparison StrComp = StringComparison.OrdinalIgnoreCase;
 	public static StringComparer StrComper = StringComparer.OrdinalIgnoreCase;
 
 }

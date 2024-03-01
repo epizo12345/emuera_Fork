@@ -42,7 +42,7 @@ namespace MinorShift.Emuera.GameProc
 			{
 				wc.ShiftNext();
 				keyword = idw.Code;
-				if (Config.ICVariable)
+				if (Config.IgnoreCase)
 					keyword = keyword.ToUpper();
 				switch (keyword)
 				{
@@ -136,7 +136,7 @@ namespace MinorShift.Emuera.GameProc
 					case 'A':
 						{
 							string str = ((IdentifierWord)wc.Current).Code;
-							if (Config.ICVariable)
+							if (Config.IgnoreCase)
 								str = str.ToUpper();
 							if (str == "REF")
 							{

@@ -281,7 +281,7 @@ namespace MinorShift.Emuera.GameData.Expression
 		{
 			CaseExpression ret = new();
 			IdentifierWord id = wc.Current as IdentifierWord;
-			if ((id != null) && id.Code.Equals("IS", Config.SCVariable))
+			if ((id != null) && id.Code.Equals("IS", Config.StringComparison))
 			{
 				wc.ShiftNext();
 				ret.CaseType = CaseExpressionType.Is;
@@ -304,7 +304,7 @@ namespace MinorShift.Emuera.GameData.Expression
 			if (ret.LeftTerm == null)
 				throw new CodeEE("CASEの引数は省略できません");
 			id = wc.Current as IdentifierWord;
-			if ((id != null) && id.Code.Equals("TO", Config.SCVariable))
+			if ((id != null) && id.Code.Equals("TO", Config.StringComparison))
 			{
 				ret.CaseType = CaseExpressionType.To;
 				wc.ShiftNext();
@@ -312,7 +312,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				if (ret.RightTerm == null)
 					throw new CodeEE("TOキーワードの後に式がありません");
 				id = wc.Current as IdentifierWord;
-				if ((id != null) && id.Code.Equals("TO", Config.SCVariable))
+				if ((id != null) && id.Code.Equals("TO", Config.StringComparison))
 					throw new CodeEE("TOキーワードが2度使われています");
 				if (ret.LeftTerm.GetOperandType() != ret.RightTerm.GetOperandType())
 					throw new CodeEE("TOキーワードの前後の型が一致していません");
@@ -356,14 +356,14 @@ namespace MinorShift.Emuera.GameData.Expression
 					case 'A'://IdentifierWT
 						{
 							string idStr = (token as IdentifierWord).Code;
-							if (idStr.Equals("TO", Config.SCVariable))
+							if (idStr.Equals("TO", Config.StringComparison))
 							{
 								if (allowKeywordTo)
 									return end(stack, ternaryCount);
 								else
 									throw new CodeEE("TOキーワードはここでは使用できません");
 							}
-							else if (idStr.Equals("IS", Config.SCVariable))
+							else if (idStr.Equals("IS", Config.StringComparison))
 								throw new CodeEE("ISキーワードはここでは使用できません");
 							stack.Add(reduceIdentifier(wc, idStr, varCode));
 							continue;

@@ -2463,7 +2463,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				if (func.Argument.IsConst)
 				{
 					string labelName = func.Argument.ConstStr;
-					if (Config.ICVariable)//eramakerではGOTO文は大文字小文字を区別しない
+					if (Config.IgnoreCase)//eramakerではGOTO文は大文字小文字を区別しない
 						labelName = labelName.ToUpper();
 					jumpto = GlobalStatic.LabelDictionary.GetLabelDollar(labelName, func.ParentLabelLine);
 					if (jumpto == null)
@@ -2496,7 +2496,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				else
 				{
 					label = ((SpCallArgment)func.Argument).FuncnameTerm.GetStrValue(exm);
-					if (Config.ICVariable)
+					if (Config.IgnoreCase)
 						label = label.ToUpper();
 					jumpto = state.CurrentCalled.CallLabel(GlobalStatic.Process, label);
 				}

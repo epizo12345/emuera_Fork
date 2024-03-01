@@ -1006,8 +1006,8 @@ namespace MinorShift.Emuera.GameData
 						ParserMediator.Warn("\",\"で始まっています", position, 1);
 						continue;
 					}
-					if (tokens[0].Equals("NO", Config.SCVariable)
-						|| tokens[0].Equals("番号", Config.SCVariable))
+					if (tokens[0].Equals("NO", Config.StringComparison)
+						|| tokens[0].Equals("番号", Config.StringComparison))
 					{
 						if (tmpl != null)
 						{

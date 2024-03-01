@@ -93,7 +93,7 @@ namespace MinorShift.Emuera.GameProc
 						ParserMediator.Warn("解釈できない#行です", position, 1);
 						return false;
 					}
-					if (Config.ICFunction)
+					if (Config.IgnoreCase)
 					{
 						Span<char> dest = new char[sharpID.Length];
 						sharpID.ToUpperInvariant(dest);
@@ -150,7 +150,7 @@ namespace MinorShift.Emuera.GameProc
 			string srcID = LexicalAnalyzer.ReadSingleIdentifier(st);
 			if (srcID == null)
 				throw new CodeEE("置換元の識別子がありません", position);
-			if (Config.ICVariable)
+			if (Config.IgnoreCase)
 				srcID = srcID.ToUpper();
 
 			//ここで名称重複判定しないと、大変なことになる
@@ -230,7 +230,7 @@ namespace MinorShift.Emuera.GameProc
 					}
 					for (int i = 0; i < argID.Count; i++)
 					{
-						if (string.Equals(word.Code, argID[i], Config.SCVariable))
+						if (string.Equals(word.Code, argID[i], Config.StringComparison))
 						{
 							destWc.Remove();
 							destWc.Insert(new MacroWord(i));

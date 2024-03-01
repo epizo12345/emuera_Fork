@@ -315,7 +315,7 @@ namespace MinorShift.Emuera.GameProc
 
 				//labelName = LexicalAnalyzer.ReadString(stream, StrEndWith.LeftParenthesis_Bracket_Comma_Semicolon);
 				//labelName = labelName.Trim();
-				//if (Config.ICVariable)
+				//if (Config.IgnoreCase)
 				//    labelName = labelName.ToUpper();
 				//GlobalStatic.IdentifierDictionary.CheckUserLabelName(ref errMes, ref warnLevel, isFunction, labelName);
 				//if(warnLevel >= 0)

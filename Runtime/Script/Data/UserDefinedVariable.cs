@@ -46,11 +46,11 @@ namespace MinorShift.Emuera.GameProc
 			{
 				wc.ShiftNext();
 				keyword = idw.Code;
-				if (Config.ICVariable)
+				if (Config.IgnoreCase)
 				{
 					keyword = keyword.ToUpper();
 				}
-				var cmp = Config.StrComp;
+				var cmp = Config.StringComparison;
 				//TODO ifの数があたまわるい なんとかしたい
 				switch (keyword)
 				{

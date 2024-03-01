@@ -426,7 +426,7 @@ namespace MinorShift.Emuera
 		{
 			nameDic.Add(mac.Keyword, DefinedNameType.UserMacro);
 			int key;
-			if (Config.ICVariable)
+			if (Config.IgnoreCase)
 			{
 				key = mac.Keyword.GetHashCode(StringComparison.OrdinalIgnoreCase);
 			}
@@ -453,7 +453,7 @@ namespace MinorShift.Emuera
 		public DefineMacro GetMacro(string key)
 		{
 			int hash;
-			if (Config.ICVariable)
+			if (Config.IgnoreCase)
 			{
 				hash = key.GetHashCode(StringComparison.OrdinalIgnoreCase);
 			}
@@ -469,7 +469,7 @@ namespace MinorShift.Emuera
 		public VariableToken GetVariableToken(string key, string subKey, bool allowPrivate)
 		{
 			VariableToken ret;
-			// if (Config.ICVariable)
+			// if (Config.IgnoreCase)
 			// 	key = key.ToUpper();
 			if (allowPrivate)
 			{
@@ -611,7 +611,7 @@ namespace MinorShift.Emuera
 		public void ThrowException(string str, bool isFunc)
 		{
 			string idStr = str;
-			// if (Config.ICFunction || Config.ICVariable) //片方だけなのは互換性用オプションなのでレアケースのはず。対応しない。
+			// if (Config.ICFunction || Config.IgnoreCase) //片方だけなのは互換性用オプションなのでレアケースのはず。対応しない。
 			// 	idStr = idStr.ToUpper();
 			if (!isFunc && privateDimList.Contains(idStr))
 				throw new IdentifierNotFoundCodeEE("変数\"" + str + "\"はこの関数中では定義されていません");
