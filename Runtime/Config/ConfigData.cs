@@ -438,19 +438,21 @@ internal sealed class ConfigData
 	{
 		if (!File.Exists(confPath))
 			return false;
-		var lines = File.ReadLines(confPath);
+		using var eReader = new EraStreamReader(false);
+		if (!eReader.Open(confPath))
+			return false;
 		ScriptPosition? pos = null;
 		try
 		{
-			int lineCount = 0;
-			foreach (var line in lines)
+			string line = null;
+			//bool defineIgnoreWarningFiles = false;
+			while ((line = eReader.ReadLine()) != null)
 			{
-				lineCount++;
-				pos = new ScriptPosition(confPath, lineCount);
-				var trimedLine = line.Trim();
-				if (trimedLine[0] == ';')
+				line = line.Trim();
+				if (line[0] == ';')
 					continue;
-				var tokens = trimedLine.Split(":");
+				pos = new ScriptPosition(eReader.Filename, eReader.LineNo);
+				string[] tokens = line.Split([':']);
 				if (tokens.Length < 2)
 					continue;
 				AConfigItem item = GetConfigItem(tokens[0].Trim());
@@ -500,6 +502,10 @@ internal sealed class ConfigData
 					if (item.TryParse(tokens[1]) && fix)
 						item.Fixed = true;
 				}
+#if DEBUG
+				//else
+				//	throw new Exception("コンフィグファイルが変");
+#endif
 			}
 		}
 		catch (EmueraException ee)
