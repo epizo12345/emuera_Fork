@@ -748,8 +748,6 @@ namespace MinorShift.Emuera.GameData.Variable
 				reqestSpan.Sort();
 				if (order == GameProc.Function.SortOrder.DESENDING)
 					reqestSpan.Reverse();
-
-				Array.Copy(reqestSpan.ToArray(), 0, array, start, count);
 			}
 			else
 			{
@@ -775,8 +773,6 @@ namespace MinorShift.Emuera.GameData.Variable
 				reqestSpan.Sort();
 				if (order == GameProc.Function.SortOrder.DESENDING)
 					reqestSpan.Reverse();
-
-				Array.Copy(reqestSpan.ToArray(), 0, array, start, count);
 			}
 		}
 
