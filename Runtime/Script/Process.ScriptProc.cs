@@ -18,8 +18,8 @@ namespace MinorShift.Emuera.GameProc
 			{
 				//bool sequential = state.Sequential;
 				state.ShiftNextLine();
-				//WinmmTimerから時間を取得するのはそれ自体結構なコストがかかるので10000行に一回くらいで。
-				if (Config.InfiniteLoopAlertTime > 0 && (state.lineCount % 10000 == 0))
+				//時間を取得するのはそれ自体結構なコストがかかるので10000行に一回くらいで。
+				if (Config.InfiniteLoopAlertTime > 0 && (state.lineCount % 50000 == 0))
 					checkInfiniteLoop();
 				LogicalLine line = state.CurrentLine;
 				//これがNULLになる様な処理は現状ないはず
