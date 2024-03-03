@@ -1,10 +1,12 @@
-﻿using MinorShift.Emuera.Runtime.Config;
+﻿using MinorShift._Library;
+using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Sub;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Windows.Forms;
@@ -590,24 +592,15 @@ namespace MinorShift.Emuera.GameView
 
 		private bool outputLog(string fullpath)
 		{
-			StreamWriter writer = null;
 			try
 			{
-				writer = new StreamWriter(fullpath, false, Encoding.Unicode);
-				foreach (ConsoleDisplayLine line in displayLineList)
-				{
-					writer.WriteLine(line.ToString());
-				}
+				var log = GetLog();
+				File.WriteAllText(fullpath, log);
 			}
 			catch (Exception)
 			{
 				Dialog.Show("ログ出力失敗", "ログの出力に失敗しました");
 				return false;
-			}
-			finally
-			{
-				if (writer != null)
-					writer.Close();
 			}
 			return true;
 		}
@@ -637,14 +630,34 @@ namespace MinorShift.Emuera.GameView
 				return false;
 		}
 
-		public void GetDisplayStrings(StringBuilder builder)
+		public string GetLog()
 		{
-			if (displayLineList.Count == 0)
-				return;
+			var builder = new StringBuilder();
+
+
+			builder.AppendLine("# 環境情報");
+			builder.AppendLine($".NET Emuera {AssemblyData.emueraVer}");
+
+			var patchVersionsPath = Path.Combine(Program.ExeDir, "patch_versions");
+			if (Directory.Exists(patchVersionsPath))
+			{
+				builder.AppendLine("# パッチバージョン");
+				var versionTexts = Directory.EnumerateFiles(patchVersionsPath, "*.txt")
+						.Where(x => Path.GetExtension(x) == ".txt")
+						.OrderBy(x => x, StringComparer.Ordinal)
+						.Select(x => File.ReadAllText(x).Trim());
+				var versionText = string.Join("+", versionTexts);
+				builder.AppendLine(versionText);
+			}
+			builder.AppendLine();
+			builder.AppendLine("# ログ");
+			builder.AppendLine();
+
 			for (int i = 0; i < displayLineList.Count; i++)
 			{
 				builder.AppendLine(displayLineList[i].ToString());
 			}
+			return builder.ToString();
 		}
 
 		public ConsoleDisplayLine[] GetDisplayLines(Int64 lineNo)
