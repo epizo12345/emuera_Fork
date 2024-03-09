@@ -24,10 +24,10 @@ namespace MinorShift.Emuera.GameProc
 		readonly Process parentProcess;
 		readonly ExpressionMediator exm;
 		readonly EmueraConsole output;
-		readonly List<string> ignoredFNFWarningFileList = [];
-		int ignoredFNFWarningCount = 0;
+		readonly HashSet<string> ignoredFNFWarningFiles = new(StringComparer.OrdinalIgnoreCase);
+		int ignoredFNFWarningCount;
 
-		int enabledLineCount = 0;
+		int enabledLineCount;
 		LabelDictionary labelDic;
 
 		bool noError = true;
@@ -60,7 +60,7 @@ namespace MinorShift.Emuera.GameProc
 						output.PrintSystemLine(filename + "読み込み中・・・");
 #endif
 					cancellationToken.ThrowIfCancellationRequested();
-					await Task.Run(() => loadErb(file, filename, isOnlyEvent));
+					await Task.Run(() => loadErb(file, filename, isOnlyEvent), cancellationToken);
 				};
 				ParserMediator.FlushWarningList();
 #if DEBUG
@@ -158,9 +158,9 @@ namespace MinorShift.Emuera.GameProc
 
 		private sealed class PPState
 		{
-			bool skip = false;
-			bool done = false;
-			public bool Disabled = false;
+			bool skip;
+			bool done;
+			public bool Disabled;
 			readonly Stack<bool> disabledStack = new();
 			readonly Stack<bool> doneStack = new();
 			readonly Stack<string> ppMatch = new();
@@ -316,7 +316,6 @@ namespace MinorShift.Emuera.GameProc
 		/// <param name="filepath"></param>
 		private void loadErb(string filepath, string filename, List<string> isOnlyEvent)
 		{
-			//読み込んだファイルのパスを記録
 			//一部ファイルの再読み込み時の処理用
 			labelDic.IfFileLoadClearLabelWithPath(filename);
 			using var eReader = new EraStreamReader(Config.UseRenameFile && ParserMediator.RenameDic != null);
@@ -325,7 +324,7 @@ namespace MinorShift.Emuera.GameProc
 			{
 				output.PrintError(eReader.Filename + "のオープンに失敗しました");
 			}
-			PPState ppstate = new();
+			var ppstate = new PPState();
 			LogicalLine nextLine = new NullLine();
 			LogicalLine lastLine = new NullLine();
 			FunctionLabelLine lastLabelLine = null;
@@ -650,7 +649,7 @@ namespace MinorShift.Emuera.GameProc
 		}
 
 
-		public bool useCallForm = false;
+		public bool useCallForm;
 
 		/// <summary>
 		/// 事前処理したファイルをさらに解析し実行可能な状態にする
@@ -684,7 +683,7 @@ namespace MinorShift.Emuera.GameProc
 						break;
 				}
 				labelDepth = -1;
-				List<string> ignoredFNCWarningFileList = [];
+				var ignoredFNCWarningFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 				int ignoredFNCWarningCount = 0;
 
 				bool ignoreAll = false;
@@ -721,18 +720,18 @@ namespace MinorShift.Emuera.GameProc
 						bool ignore = false;
 						if (notCalledWarning == DisplayWarningFlag.ONCE)
 						{
-							string filename = label.Position.Value.Filename.ToUpper();
+							string filename = label.Position.Value.Filename;
 
 							if (!string.IsNullOrEmpty(filename))
 							{
-								if (ignoredFNCWarningFileList.Contains(filename))
+								if (ignoredFNCWarningFiles.Contains(filename))
 								{
 									ignore = true;
 								}
 								else
 								{
 									ignore = false;
-									ignoredFNCWarningFileList.Add(filename);
+									ignoredFNCWarningFiles.Add(filename);
 								}
 							}
 							//break;
@@ -818,8 +817,8 @@ namespace MinorShift.Emuera.GameProc
 		{
 			if (Program.AnalysisMode)
 			{
-				if (warningDic.ContainsKey(str))
-					warningDic[str]++;
+				if (warningDic.TryGetValue(str, out long value))
+					warningDic[str] = ++value;
 				else
 					warningDic.Add(str, 1);
 				return;
@@ -840,17 +839,17 @@ namespace MinorShift.Emuera.GameProc
 			else if (warnFlag == DisplayWarningFlag.ONCE)
 			{
 
-				string filename = line.Position.Value.Filename.ToUpper();
+				string filename = line.Position.Value.Filename;
 				if (!string.IsNullOrEmpty(filename))
 				{
-					if (ignoredFNFWarningFileList.Contains(filename))
+					if (ignoredFNFWarningFiles.Contains(filename))
 					{
 						ignore = true;
 					}
 					else
 					{
 						ignore = false;
-						ignoredFNFWarningFileList.Add(filename);
+						ignoredFNFWarningFiles.Add(filename);
 					}
 				}
 			}
