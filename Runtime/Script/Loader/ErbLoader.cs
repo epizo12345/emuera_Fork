@@ -392,7 +392,7 @@ namespace MinorShift.Emuera.GameProc
 								if (seniorLabel != null)
 								{
 									//output.NewLine();
-									ParserMediator.Warn("関数@" + label.LabelName + "は既に定義(" + seniorLabel.Position.Value.Filename + "の" + seniorLabel.Position.Value.LineNo.ToString() + "行目)されています", position, 1);
+									ParserMediator.Warn($"関数@{label.LabelName}は既に定義({seniorLabel.Position.Value.Filename}の{seniorLabel.Position.Value.LineNo}行目)されています", position, 1);
 									funcCount = -1;
 								}
 							}
@@ -412,7 +412,7 @@ namespace MinorShift.Emuera.GameProc
 							if (lastLabelLine != null && !labelDic.AddLabelDollar(gotoLabel))
 							{
 								ScriptPosition? pos = labelDic.GetLabelDollar(gotoLabel.LabelName, lastLabelLine).Position;
-								ParserMediator.Warn("ラベル名$" + gotoLabel.LabelName + "は既に同じ関数内(" + pos.Value.Filename + "の" + pos.Value.LineNo.ToString() + "行目)で使用されています", position, 2);
+								ParserMediator.Warn($"ラベル名${gotoLabel.LabelName}は既に同じ関数内({pos.Value.Filename}の{pos.Value.LineNo}行目)で使用されています", position, 2);
 							}
 						}
 					}
@@ -763,7 +763,7 @@ namespace MinorShift.Emuera.GameProc
 						output.PrintError("　○一般関数:");
 						foreach (string labelName in warningDic.Keys)
 						{
-							output.PrintError("　　" + labelName + ": " + warningDic[labelName].ToString() + "回");
+							output.PrintError($"　　{labelName}: {warningDic[labelName]}回");
 						}
 					}
 					if (GlobalStatic.tempDic.Keys.Count > 0)
@@ -771,20 +771,20 @@ namespace MinorShift.Emuera.GameProc
 						output.PrintError("　○文中関数:");
 						foreach (string labelName in GlobalStatic.tempDic.Keys)
 						{
-							output.PrintError("　　" + labelName + ": " + GlobalStatic.tempDic[labelName].ToString() + "回");
+							output.PrintError($"　　{labelName}: {GlobalStatic.tempDic[labelName]}回");
 						}
 					}
 				}
 				else
 				{
 					if ((ignoredFNCWarningCount > 0) && (Config.DisplayWarningLevel <= 1) && (notCalledWarning != DisplayWarningFlag.IGNORE))
-						output.PrintError(string.Format("警告Lv1:定義された関数が一度も呼び出されていない事に関する警告を{0}件無視しました", ignoredFNCWarningCount));
+						output.PrintError($"警告Lv1:定義された関数が一度も呼び出されていない事に関する警告を{ignoredFNCWarningCount}件無視しました");
 					if ((ignoredFNFWarningCount > 0) && (Config.DisplayWarningLevel <= 2) && (notCalledWarning != DisplayWarningFlag.IGNORE))
-						output.PrintError(string.Format("警告Lv2:定義されていない関数を呼び出した事に関する警告を{0}件無視しました", ignoredFNFWarningCount));
+						output.PrintError($"警告Lv2:定義されていない関数を呼び出した事に関する警告を{ignoredFNFWarningCount}件無視しました");
 				}
 				ParserMediator.FlushWarningList();
 				if (Config.DisplayReport)
-					output.PrintError(string.Format("非コメント行数:{0}, 全関数合計:{1}, 被呼出関数合計:{2}", enabledLineCount, labelDic.Count, usedLabelCount));
+					output.PrintError($"非コメント行数:{enabledLineCount}, 全関数合計:{labelDic.Count}, 被呼出関数合計:{usedLabelCount}");
 				if (Config.AllowFunctionOverloading && Config.WarnFunctionOverloading)
 				{
 					List<string> overloadedList = GlobalStatic.IdentifierDictionary.GetOverloadedList(labelDic);
@@ -1060,7 +1060,7 @@ namespace MinorShift.Emuera.GameProc
 										VariableTerm destCnt = (iLine.Argument as SpForNextArgment).Cnt;
 										if (destCnt.Identifier.Name == "COUNT" && Cnt.isAllConst && destCnt.isAllConst && destCnt.getEl1forArg == Cnt.getEl1forArg)
 										{
-											ParserMediator.Warn("カウンタ変数にCOUNT:" + Cnt.getEl1forArg.ToString() + "を用いたFOR文が入れ子にされています（無限ループの恐れがあります）", func, 1, false, false);
+											ParserMediator.Warn($"カウンタ変数にCOUNT:{Cnt.getEl1forArg}を用いたFOR文が入れ子にされています（無限ループの恐れがあります）", func, 1, false, false);
 										}
 									}
 								}
