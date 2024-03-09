@@ -175,7 +175,7 @@ namespace MinorShift.Emuera.GameView
 						if (buttons[buttonCounter].PointXisLocked)
 						{
 							b.Append(" pos='");
-							b.Append(buttons[buttonCounter].RelativePointX.ToString());
+							b.Append(buttons[buttonCounter].RelativePointX);
 							b.Append('\'');
 						}
 						b.Append('>');
@@ -885,7 +885,7 @@ namespace MinorShift.Emuera.GameView
 						if (state.CurrentButtonTag != null)
 							throw new CodeEE("<button>又は<nonbutton>が入れ子にされています");
 						HtmlAnalzeStateButtonTag buttonTag = new();
-						bool isButton = tag.ToLower() == "button";
+						bool isButton = tag.Equals("button", StringComparison.OrdinalIgnoreCase);
 						string attrValue;
 						string value = null;
 						//if (wc == null)

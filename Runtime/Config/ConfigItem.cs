@@ -242,7 +242,7 @@ internal sealed class ConfigItem<T> : AConfigItem
 
 
 
-	private bool tryStringToBool(string arg, ref bool p)
+	private static bool tryStringToBool(string arg, ref bool p)
 	{
 		if (arg == null)
 			return false;
@@ -269,7 +269,7 @@ internal sealed class ConfigItem<T> : AConfigItem
 		throw new CodeEE("不正な指定です");
 	}
 
-	private bool tryStringsToColor(string str, out Color c)
+	private static bool tryStringsToColor(string str, out Color c)
 	{
 		string[] tokens = str.Split(',');
 		c = Color.Black;

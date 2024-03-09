@@ -273,7 +273,7 @@ internal sealed class ConfigData
 		return null;
 	}
 
-	public SingleTerm GetConfigValueInERB(string text, ref string errMes)
+	public static SingleTerm GetConfigValueInERB(string text, ref string errMes)
 	{
 		AConfigItem item = Instance.GetItem(text);
 		if (item == null)

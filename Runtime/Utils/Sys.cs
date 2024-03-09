@@ -25,7 +25,7 @@ namespace MinorShift._Library
 		public static readonly string ExeName;
 
 
-		public static Version emueraVer;
+		public readonly static Version emueraVer;
 
 		/// <summary>
 		/// 2重起動防止。既に同名exeが実行されているならばtrueを返す

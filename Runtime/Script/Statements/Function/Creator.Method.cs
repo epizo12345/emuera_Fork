@@ -2811,7 +2811,7 @@ namespace MinorShift.Emuera.GameData.Function
                 if (str == null || str.Length == 0)
                     throw new CodeEE(funcname + "関数に空文字列が渡されました");
                 string errMes = null;
-                SingleTerm term = ConfigData.Instance.GetConfigValueInERB(str, ref errMes);
+                SingleTerm term = ConfigData.GetConfigValueInERB(str, ref errMes);
                 if (errMes != null)
                     throw new CodeEE(funcname + "関数:" + errMes);
                 return term;
