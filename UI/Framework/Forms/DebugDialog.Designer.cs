@@ -172,7 +172,7 @@
             tabPageTrace.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             tabPageTrace.Name = "tabPageTrace";
             tabPageTrace.Padding = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            tabPageTrace.Size = new System.Drawing.Size(505, 375);
+            tabPageTrace.Size = new System.Drawing.Size(504, 326);
             tabPageTrace.TabIndex = 1;
             tabPageTrace.Text = "スタックトレース";
             tabPageTrace.UseVisualStyleBackColor = true;
@@ -187,7 +187,7 @@
             textBoxTrace.Name = "textBoxTrace";
             textBoxTrace.ReadOnly = true;
             textBoxTrace.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            textBoxTrace.Size = new System.Drawing.Size(497, 365);
+            textBoxTrace.Size = new System.Drawing.Size(496, 316);
             textBoxTrace.TabIndex = 0;
             // 
             // tabPageConsole
@@ -198,7 +198,7 @@
             tabPageConsole.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             tabPageConsole.Name = "tabPageConsole";
             tabPageConsole.Padding = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            tabPageConsole.Size = new System.Drawing.Size(505, 375);
+            tabPageConsole.Size = new System.Drawing.Size(504, 326);
             tabPageConsole.TabIndex = 2;
             tabPageConsole.Text = "コンソール";
             tabPageConsole.UseVisualStyleBackColor = true;
@@ -206,10 +206,10 @@
             // textBoxCommand
             // 
             textBoxCommand.Dock = System.Windows.Forms.DockStyle.Bottom;
-            textBoxCommand.Location = new System.Drawing.Point(4, 343);
+            textBoxCommand.Location = new System.Drawing.Point(4, 294);
             textBoxCommand.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             textBoxCommand.Name = "textBoxCommand";
-            textBoxCommand.Size = new System.Drawing.Size(497, 27);
+            textBoxCommand.Size = new System.Drawing.Size(496, 27);
             textBoxCommand.TabIndex = 0;
             textBoxCommand.KeyDown += textBoxCommand_KeyDown;
             // 
@@ -223,7 +223,7 @@
             textBoxConsole.Name = "textBoxConsole";
             textBoxConsole.ReadOnly = true;
             textBoxConsole.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            textBoxConsole.Size = new System.Drawing.Size(497, 236);
+            textBoxConsole.Size = new System.Drawing.Size(496, 236);
             textBoxConsole.TabIndex = 1;
             // 
             // checkBoxTopMost
@@ -284,8 +284,8 @@
             // 
             // DebugDialog
             // 
-            AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
-            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            AutoScaleDimensions = new System.Drawing.SizeF(120F, 120F);
+            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             ClientSize = new System.Drawing.Size(512, 438);
             Controls.Add(tabControlMain);
             Controls.Add(menuStrip1);
