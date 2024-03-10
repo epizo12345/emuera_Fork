@@ -151,8 +151,8 @@ namespace MinorShift.Emuera.GameProc.Function
 			if (minArg < 0)
 				minArg = argstr.Length;
 			string key = argstr + minArg.ToString();
-			if (nargb.ContainsKey(key))
-				return nargb[key];
+			if (nargb.TryGetValue(key, out ArgumentBuilder value))
+				return value;
 			Type[] types = new Type[argstr.Length];
 			for (int i = 0; i < argstr.Length; i++)
 			{
@@ -587,7 +587,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				else
 				{
 					string str = LexicalAnalyzer.ReadString(st, StrEndWith.LeftParenthesis_Bracket_Comma_Semicolon);
-					str = str.Trim(new char[] { ' ', '\t' });
+					str = str.Trim([' ', '\t']);
 					funcname = new SingleTerm(str);
 				}
 				char cur = st.Current;
@@ -851,7 +851,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				string errmes = line.Function.Method.CheckArgumentType(line.Function.Name, args);
 				if (errmes != null)
 					throw new CodeEE(errmes);
-				AExpression mTerm = new FunctionMethodTerm(line.Function.Method, args);
+				var mTerm = new FunctionMethodTerm(line.Function.Method, args);
 				return new MethodArgument(mTerm.Restructure(exm));
 			}
 		}
