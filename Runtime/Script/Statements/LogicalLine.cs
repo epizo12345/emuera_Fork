@@ -302,23 +302,23 @@ namespace MinorShift.Emuera.GameProc
 		/// <summary>
 		/// 引数の値の確定後、引数の代入より前に呼ぶこと
 		/// </summary>
-		internal void In()
+		internal void ScopeIn()
 		{
 #if DEBUG
 			GlobalStatic.StackList.Add(this);
 #endif
 			foreach (UserDefinedVariableToken var in privateVar.Values)
 				if (!var.IsStatic)
-					var.In();
+					var.ScopeIn();
 		}
-		internal void Out()
+		internal void ScopeOut()
 		{
 #if DEBUG
 			GlobalStatic.StackList.Remove(this);
 #endif
 			foreach (UserDefinedVariableToken var in privateVar.Values)
 				if (!var.IsStatic)
-					var.Out();
+					var.ScopeOut();
 		}
 		#endregion
 

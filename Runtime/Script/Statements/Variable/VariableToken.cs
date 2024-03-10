@@ -361,8 +361,8 @@ namespace MinorShift.Emuera.GameData.Variable
 			if ((index2 < 0) || (index2 > sizes[Dimension - 1]))
 				throw new CodeEE(funcName + "命令の第" + i2.ToString() + "引数(" + index2.ToString() + ")は配列" + varName + "の範囲外です");
 		}
-		public abstract void In();
-		public abstract void Out();
+		public abstract void ScopeIn();
+		public abstract void ScopeOut();
 		public bool IsStatic { get; protected set; }
 	}
 
@@ -461,7 +461,7 @@ namespace MinorShift.Emuera.GameData.Variable
 		}
 
 		int counter = 0;
-		public override void In()
+		public override void ScopeIn()
 		{
 			if (counter > 0)
 				arrayList.Add(array);
@@ -469,7 +469,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			array = null;
 		}
 
-		public override void Out()
+		public override void ScopeOut()
 		{
 			//arrayList.RemoveAt(arrayList.Count - 1);
 			if (arrayList.Count > 0)
@@ -1897,8 +1897,8 @@ namespace MinorShift.Emuera.GameData.Variable
 				return array[arguments[0]];
 			}
 			public override object GetArray() { return array; }
-			public override void In() { }
-			public override void Out() { }
+			public override void ScopeIn() { }
+			public override void ScopeOut() { }
 
 		}
 
@@ -1947,8 +1947,8 @@ namespace MinorShift.Emuera.GameData.Variable
 				return array[arguments[0], arguments[1]];
 			}
 			public override object GetArray() { return array; }
-			public override void In() { }
-			public override void Out() { }
+			public override void ScopeIn() { }
+			public override void ScopeOut() { }
 
 		}
 		private sealed class StaticInt3DVariableToken : UserDefinedVariableToken
@@ -1999,8 +1999,8 @@ namespace MinorShift.Emuera.GameData.Variable
 				return array[arguments[0], arguments[1], arguments[2]];
 			}
 			public override object GetArray() { return array; }
-			public override void In() { }
-			public override void Out() { }
+			public override void ScopeIn() { }
+			public override void ScopeOut() { }
 
 		}
 		private sealed class StaticStr1DVariableToken : UserDefinedVariableToken
@@ -2046,8 +2046,8 @@ namespace MinorShift.Emuera.GameData.Variable
 					array[i] = value;
 			}
 			public override object GetArray() { return array; }
-			public override void In() { }
-			public override void Out() { }
+			public override void ScopeIn() { }
+			public override void ScopeOut() { }
 		}
 		private sealed class StaticStr2DVariableToken : UserDefinedVariableToken
 		{
@@ -2089,8 +2089,8 @@ namespace MinorShift.Emuera.GameData.Variable
 						array[i, j] = value;
 			}
 			public override object GetArray() { return array; }
-			public override void In() { }
-			public override void Out() { }
+			public override void ScopeIn() { }
+			public override void ScopeOut() { }
 		}
 
 		private sealed class StaticStr3DVariableToken : UserDefinedVariableToken
@@ -2135,8 +2135,8 @@ namespace MinorShift.Emuera.GameData.Variable
 							array[i, j, k] = value;
 			}
 			public override object GetArray() { return array; }
-			public override void In() { }
-			public override void Out() { }
+			public override void ScopeIn() { }
+			public override void ScopeOut() { }
 		}
 		#endregion
 		#region private dynamic
@@ -2189,7 +2189,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			}
 			public override object GetArray() { return array; }
 
-			public override void In()
+			public override void ScopeIn()
 			{
 				if (array != null)
 					arrayList.Add(array);
@@ -2199,7 +2199,7 @@ namespace MinorShift.Emuera.GameData.Variable
 					Array.Copy(defArray, array, defArray.Length);
 			}
 
-			public override void Out()
+			public override void ScopeOut()
 			{
 				//counter--;
 				//arrayList.RemoveAt(arrayList.Count - 1);
@@ -2257,7 +2257,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			}
 			public override object GetArray() { return array; }
 
-			public override void In()
+			public override void ScopeIn()
 			{
 				if (array != null)
 					arrayList.Add(array);
@@ -2265,7 +2265,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				array = new Int64[sizes[0], sizes[1]];
 			}
 
-			public override void Out()
+			public override void ScopeOut()
 			{
 				//counter--;
 				//arrayList.RemoveAt(arrayList.Count - 1);
@@ -2326,7 +2326,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			}
 			public override object GetArray() { return array; }
 
-			public override void In()
+			public override void ScopeIn()
 			{
 				if (array != null)
 					arrayList.Add(array);
@@ -2334,7 +2334,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				array = new Int64[sizes[0], sizes[1], sizes[2]];
 			}
 
-			public override void Out()
+			public override void ScopeOut()
 			{
 				//counter--;
 				//arrayList.RemoveAt(arrayList.Count - 1);
@@ -2388,7 +2388,7 @@ namespace MinorShift.Emuera.GameData.Variable
 					array[i] = value;
 			}
 			public override object GetArray() { return array; }
-			public override void In()
+			public override void ScopeIn()
 			{
 				//counter++;
 				if (array != null)
@@ -2399,7 +2399,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				//arrayList.Add(array);
 			}
 
-			public override void Out()
+			public override void ScopeOut()
 			{
 				//counter--;
 				//arrayList.RemoveAt(arrayList.Count - 1);
@@ -2455,7 +2455,7 @@ namespace MinorShift.Emuera.GameData.Variable
 						array[i, j] = value;
 			}
 			public override object GetArray() { return array; }
-			public override void In()
+			public override void ScopeIn()
 			{
 				//counter++;
 				if (array != null)
@@ -2464,7 +2464,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				//arrayList.Add(array);
 			}
 
-			public override void Out()
+			public override void ScopeOut()
 			{
 				//counter--;
 				//arrayList.RemoveAt(arrayList.Count - 1);
@@ -2520,7 +2520,7 @@ namespace MinorShift.Emuera.GameData.Variable
 							array[i, j, k] = value;
 			}
 			public override object GetArray() { return array; }
-			public override void In()
+			public override void ScopeIn()
 			{
 				//counter++;
 				if (array != null)
@@ -2529,7 +2529,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				//arrayList.Add(array);
 			}
 
-			public override void Out()
+			public override void ScopeOut()
 			{
 				//counter--;
 				//arrayList.RemoveAt(arrayList.Count - 1);

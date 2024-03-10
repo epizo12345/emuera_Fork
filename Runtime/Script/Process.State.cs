@@ -243,7 +243,7 @@ namespace MinorShift.Emuera.GameProc
 				console.DebugClearTraceLog();
 			foreach (CalledFunction called in functionList)
 				if (called.CurrentLabel.hasPrivDynamicVar)
-					called.CurrentLabel.Out();
+					called.CurrentLabel.ScopeOut();
 			functionList.Clear();
 			begintype = BeginType.NULL;
 		}
@@ -298,7 +298,7 @@ namespace MinorShift.Emuera.GameProc
 			}
 			foreach (CalledFunction called in functionList)
 				if (called.CurrentLabel.hasPrivDynamicVar)
-					called.CurrentLabel.Out();
+					called.CurrentLabel.ScopeOut();
 			functionList.Clear();
 			begintype = BeginType.NULL;
 			return;
@@ -364,7 +364,7 @@ namespace MinorShift.Emuera.GameProc
 			if (called.IsJump)
 			{//JUMPした場合。即座にRETURN RESULTする。
 				if (called.TopLabel.hasPrivDynamicVar)
-					called.TopLabel.Out();
+					called.TopLabel.ScopeOut();
 				functionList.Remove(called);
 				if (Program.DebugMode)
 					console.DebugRemoveTraceLog();
@@ -374,13 +374,13 @@ namespace MinorShift.Emuera.GameProc
 			if (!called.IsEvent)
 			{
 				if (called.TopLabel.hasPrivDynamicVar)
-					called.TopLabel.Out();
+					called.TopLabel.ScopeOut();
 				currentLine = null;
 			}
 			else
 			{
 				if (called.CurrentLabel.hasPrivDynamicVar)
-					called.CurrentLabel.Out();
+					called.CurrentLabel.ScopeOut();
 				//#Singleフラグ付き関数で1が返された。
 				//1752 非0ではなく1と等価であることを見るように修正
 				//1756 全てを終了ではなく#PRIや#LATERのグループごとに修正
@@ -395,7 +395,7 @@ namespace MinorShift.Emuera.GameProc
 				{
 					lineCount++;
 					if (called.CurrentLabel.hasPrivDynamicVar)
-						called.CurrentLabel.In();
+						called.CurrentLabel.ScopeIn();
 				}
 			}
 			if (Program.DebugMode)
@@ -454,7 +454,7 @@ namespace MinorShift.Emuera.GameProc
 				srcArgs.SetTransporter(exm);
 				//プライベート変数更新
 				if (call.TopLabel.hasPrivDynamicVar)
-					call.TopLabel.In();
+					call.TopLabel.ScopeIn();
 				//更新した変数へ引数を代入
 				for (int i = 0; i < call.TopLabel.Arg.Length; i++)
 				{
@@ -473,7 +473,7 @@ namespace MinorShift.Emuera.GameProc
 			{
 				//プライベート変数更新
 				if (call.TopLabel.hasPrivDynamicVar)
-					call.TopLabel.In();
+					call.TopLabel.ScopeIn();
 			}
 			functionList.Add(call);
 			//sequential = false;
