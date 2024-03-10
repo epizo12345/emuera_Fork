@@ -6,6 +6,7 @@ using MinorShift.Emuera.GameProc;
 using MinorShift.Emuera.GameData.Expression;
 using MinorShift._Library;
 using MinorShift.Emuera.Runtime.Config;
+using System.Collections;
 
 namespace MinorShift.Emuera.GameData.Variable
 {
@@ -2148,10 +2149,10 @@ namespace MinorShift.Emuera.GameData.Variable
 			{
 				int[] sizes = data.Lengths;
 				IsStatic = false;
-				arrayList = [];
+				arrayStack = [];
 				defArray = data.DefaultInt;
 			}
-			readonly List<Int64[]> arrayList = null;
+			readonly Stack<long[]> arrayStack = null;
 			Int64[] array = null;
 			Int64[] defArray = null;
 			//int counter = 0;
@@ -2192,7 +2193,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			public override void ScopeIn()
 			{
 				if (array != null)
-					arrayList.Add(array);
+					arrayStack.Push(array);
 				//counter++;
 				array = new Int64[sizes[0]];
 				if (defArray != null)
@@ -2201,12 +2202,9 @@ namespace MinorShift.Emuera.GameData.Variable
 
 			public override void ScopeOut()
 			{
-				//counter--;
-				//arrayList.RemoveAt(arrayList.Count - 1);
-				if (arrayList.Count > 0)
+				if (arrayStack.Count > 0)
 				{
-					array = arrayList[^1];
-					arrayList.RemoveAt(arrayList.Count - 1);
+					array = arrayStack.Pop();
 				}
 				else
 					array = null;
@@ -2219,9 +2217,9 @@ namespace MinorShift.Emuera.GameData.Variable
 			{
 				int[] sizes = data.Lengths;
 				IsStatic = false;
-				arrayList = [];
+				arrayStack = [];
 			}
-			readonly List<Int64[,]> arrayList = null;
+			readonly Stack<long[,]> arrayStack = null;
 			Int64[,] array = null;
 			//int counter = 0;
 			public override void SetDefault() { }
@@ -2260,7 +2258,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			public override void ScopeIn()
 			{
 				if (array != null)
-					arrayList.Add(array);
+					arrayStack.Push(array);
 				//counter++;
 				array = new Int64[sizes[0], sizes[1]];
 			}
@@ -2269,10 +2267,9 @@ namespace MinorShift.Emuera.GameData.Variable
 			{
 				//counter--;
 				//arrayList.RemoveAt(arrayList.Count - 1);
-				if (arrayList.Count > 0)
+				if (arrayStack.Count > 0)
 				{
-					array = arrayList[^1];
-					arrayList.RemoveAt(arrayList.Count - 1);
+					array = arrayStack.Pop();
 				}
 				else
 					array = null;
@@ -2285,9 +2282,9 @@ namespace MinorShift.Emuera.GameData.Variable
 			{
 				int[] sizes = data.Lengths;
 				IsStatic = false;
-				arrayList = [];
+				arrayStack = [];
 			}
-			readonly List<Int64[,,]> arrayList = null;
+			readonly Stack<long[,,]> arrayStack = null;
 			Int64[,,] array = null;
 			//int counter = 0;
 			public override void SetDefault() { }
@@ -2329,7 +2326,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			public override void ScopeIn()
 			{
 				if (array != null)
-					arrayList.Add(array);
+					arrayStack.Push(array);
 				//counter++;
 				array = new Int64[sizes[0], sizes[1], sizes[2]];
 			}
@@ -2338,10 +2335,9 @@ namespace MinorShift.Emuera.GameData.Variable
 			{
 				//counter--;
 				//arrayList.RemoveAt(arrayList.Count - 1);
-				if (arrayList.Count > 0)
+				if (arrayStack.Count > 0)
 				{
-					array = arrayList[^1];
-					arrayList.RemoveAt(arrayList.Count - 1);
+					array = arrayStack.Pop();
 				}
 				else
 					array = null;
@@ -2355,11 +2351,11 @@ namespace MinorShift.Emuera.GameData.Variable
 			{
 				int[] sizes = data.Lengths;
 				IsStatic = false;
-				arrayList = [];
+				arrayStack = [];
 				defArray = data.DefaultStr;
 			}
 			//int counter = 0;
-			readonly List<string[]> arrayList = null;
+			readonly Stack<string[]> arrayStack = null;
 			string[] array = null;
 			string[] defArray = null;
 			public override void SetDefault()
@@ -2392,7 +2388,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			{
 				//counter++;
 				if (array != null)
-					arrayList.Add(array);
+					arrayStack.Push(array);
 				array = new string[sizes[0]];
 				if (defArray != null)
 					Array.Copy(defArray, array, defArray.Length);
@@ -2403,10 +2399,9 @@ namespace MinorShift.Emuera.GameData.Variable
 			{
 				//counter--;
 				//arrayList.RemoveAt(arrayList.Count - 1);
-				if (arrayList.Count > 0)
+				if (arrayStack.Count > 0)
 				{
-					array = arrayList[^1];
-					arrayList.RemoveAt(arrayList.Count - 1);
+					array = arrayStack.Pop();
 				}
 				else
 					array = null;
@@ -2420,10 +2415,10 @@ namespace MinorShift.Emuera.GameData.Variable
 			{
 				int[] sizes = data.Lengths;
 				IsStatic = false;
-				arrayList = [];
+				arrayStack = [];
 			}
 			//int counter = 0;
-			readonly List<string[,]> arrayList = null;
+			readonly Stack<string[,]> arrayStack = null;
 			string[,] array = null;
 			public override void SetDefault()
 			{
@@ -2459,7 +2454,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			{
 				//counter++;
 				if (array != null)
-					arrayList.Add(array);
+					arrayStack.Push(array);
 				array = new string[sizes[0], sizes[1]];
 				//arrayList.Add(array);
 			}
@@ -2468,10 +2463,9 @@ namespace MinorShift.Emuera.GameData.Variable
 			{
 				//counter--;
 				//arrayList.RemoveAt(arrayList.Count - 1);
-				if (arrayList.Count > 0)
+				if (arrayStack.Count > 0)
 				{
-					array = arrayList[^1];
-					arrayList.RemoveAt(arrayList.Count - 1);
+					array = arrayStack.Pop();
 				}
 				else
 					array = null;
@@ -2485,10 +2479,10 @@ namespace MinorShift.Emuera.GameData.Variable
 			{
 				int[] sizes = data.Lengths;
 				IsStatic = false;
-				arrayList = [];
+				arrayStack = [];
 			}
 			//int counter = 0;
-			readonly List<string[,,]> arrayList = null;
+			readonly Stack<string[,,]> arrayStack = null;
 			string[,,] array = null;
 			public override void SetDefault() { }
 
@@ -2524,7 +2518,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			{
 				//counter++;
 				if (array != null)
-					arrayList.Add(array);
+					arrayStack.Push(array);
 				array = new string[sizes[0], sizes[1], sizes[2]];
 				//arrayList.Add(array);
 			}
@@ -2533,10 +2527,9 @@ namespace MinorShift.Emuera.GameData.Variable
 			{
 				//counter--;
 				//arrayList.RemoveAt(arrayList.Count - 1);
-				if (arrayList.Count > 0)
+				if (arrayStack.Count > 0)
 				{
-					array = arrayList[^1];
-					arrayList.RemoveAt(arrayList.Count - 1);
+					array = arrayStack.Pop();
 				}
 				else
 					array = null;
