@@ -30,6 +30,7 @@ namespace MinorShift.Emuera.Forms
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainWindow));
             vScrollBar = new System.Windows.Forms.VScrollBar();
             menuStrip = new System.Windows.Forms.MenuStrip();
             fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -214,7 +215,7 @@ namespace MinorShift.Emuera.Forms
             // コンフィグCToolStripMenuItem
             // 
             コンフィグCToolStripMenuItem.Name = "コンフィグCToolStripMenuItem";
-            コンフィグCToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            コンフィグCToolStripMenuItem.Size = new System.Drawing.Size(113, 22);
             コンフィグCToolStripMenuItem.Text = "設定(&C)";
             コンフィグCToolStripMenuItem.Click += コンフィグCToolStripMenuItem_Click;
             // 
@@ -548,6 +549,7 @@ namespace MinorShift.Emuera.Forms
             Controls.Add(menuStrip);
             DoubleBuffered = true;
             ForeColor = System.Drawing.SystemColors.HighlightText;
+            Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
             MainMenuStrip = menuStrip;
             Name = "MainWindow";
             SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
