@@ -502,10 +502,6 @@ internal sealed class ConfigData
 					if (item.TryParse(tokens[1]) && fix)
 						item.Fixed = true;
 				}
-#if DEBUG
-				//else
-				//	throw new Exception("コンフィグファイルが変");
-#endif
 			}
 		}
 		catch (EmueraException ee)

@@ -177,60 +177,45 @@ internal sealed class ConfigItem<T> : AConfigItem
 		}
 		else if (this is ConfigItem<TextDrawingMode>)
 		{
-			str = str.ToUpper();
-			ret = Enum.IsDefined(typeof(TextDrawingMode), str);
-			if (ret)
+			if (Enum.TryParse<TextDrawingMode>(str, true, out var result))
 			{
-				((ConfigItem<TextDrawingMode>)(AConfigItem)this).Value
-				 = (TextDrawingMode)Enum.Parse(typeof(TextDrawingMode), str);
+				((ConfigItem<TextDrawingMode>)(AConfigItem)this).Value = result;
 			}
 			else
 				throw new CodeEE("不正な指定です");
 		}
 		else if (this is ConfigItem<ReduceArgumentOnLoadFlag>)
 		{
-			str = str.ToUpper();
-			ret = Enum.IsDefined(typeof(ReduceArgumentOnLoadFlag), str);
-			if (ret)
+			if (Enum.TryParse<ReduceArgumentOnLoadFlag>(str, true, out var result))
 			{
-				((ConfigItem<ReduceArgumentOnLoadFlag>)(AConfigItem)this).Value
-				 = (ReduceArgumentOnLoadFlag)Enum.Parse(typeof(ReduceArgumentOnLoadFlag), str);
+				((ConfigItem<ReduceArgumentOnLoadFlag>)(AConfigItem)this).Value = result;
 			}
 			else
 				throw new CodeEE("不正な指定です");
 		}
 		else if (this is ConfigItem<DisplayWarningFlag>)
 		{
-			str = str.ToUpper();
-			ret = Enum.IsDefined(typeof(DisplayWarningFlag), str);
-			if (ret)
+			if (Enum.TryParse<DisplayWarningFlag>(str, true, out var result))
 			{
-				((ConfigItem<DisplayWarningFlag>)(AConfigItem)this).Value
-				 = (DisplayWarningFlag)Enum.Parse(typeof(DisplayWarningFlag), str);
+				((ConfigItem<DisplayWarningFlag>)(AConfigItem)this).Value = result;
 			}
 			else
 				throw new CodeEE("不正な指定です");
 		}
 		else if (this is ConfigItem<UseLanguage>)
 		{
-			str = str.ToUpper();
-			ret = Enum.IsDefined(typeof(UseLanguage), str);
-			if (ret)
+			if (Enum.TryParse<UseLanguage>(str, true, out var result))
 			{
-				((ConfigItem<UseLanguage>)(AConfigItem)this).Value
-					= (UseLanguage)Enum.Parse(typeof(UseLanguage), str);
+				((ConfigItem<UseLanguage>)(AConfigItem)this).Value = result;
 			}
 			else
 				throw new CodeEE("不正な指定です");
 		}
 		else if (this is ConfigItem<TextEditorType>)
 		{
-			str = str.ToUpper();
-			ret = Enum.IsDefined(typeof(TextEditorType), str);
-			if (ret)
+			if (Enum.TryParse<TextEditorType>(str, true, out var result))
 			{
-				((ConfigItem<TextEditorType>)(AConfigItem)this).Value
-					= (TextEditorType)Enum.Parse(typeof(TextEditorType), str);
+				((ConfigItem<TextEditorType>)(AConfigItem)this).Value = result;
 			}
 			else
 				throw new CodeEE("不正な指定です");
@@ -252,16 +237,16 @@ internal sealed class ConfigItem<T> : AConfigItem
 			p = i != 0;
 			return true;
 		}
-		if (str.Equals("NO", StringComparison.CurrentCultureIgnoreCase)
-			|| str.Equals("FALSE", StringComparison.CurrentCultureIgnoreCase)
-			|| str.Equals("後", StringComparison.CurrentCultureIgnoreCase))//"単位の位置"用
+		if (str.Equals("NO", StringComparison.OrdinalIgnoreCase)
+			|| str.Equals("FALSE", StringComparison.OrdinalIgnoreCase)
+			|| str.Equals("後", StringComparison.Ordinal))//"単位の位置"用
 		{
 			p = false;
 			return true;
 		}
-		if (str.Equals("YES", StringComparison.CurrentCultureIgnoreCase)
-			|| str.Equals("TRUE", StringComparison.CurrentCultureIgnoreCase)
-			|| str.Equals("前", StringComparison.CurrentCultureIgnoreCase))
+		if (str.Equals("YES", StringComparison.OrdinalIgnoreCase)
+			|| str.Equals("TRUE", StringComparison.OrdinalIgnoreCase)
+			|| str.Equals("前", StringComparison.Ordinal))
 		{
 			p = true;
 			return true;
