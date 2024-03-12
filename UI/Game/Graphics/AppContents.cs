@@ -91,7 +91,7 @@ namespace MinorShift.Emuera.Content
 					{
 						//アニメスプライト宣言。nullでないとき、フレーム追加モード
 						SpriteAnime currentAnime = null;
-						string directory = Path.GetDirectoryName(path).ToUpper() + "\\";
+						string directory = Path.GetDirectoryName(path) + "\\";
 						string filename = Path.GetFileName(path);
 						string[] lines = File.ReadAllLines(path, Config.Encode);
 						int lineNo = 0;
@@ -158,12 +158,12 @@ namespace MinorShift.Emuera.Content
 		{
 			if (tokens.Length < 2)
 				return null;
-			string name = tokens[0].Trim().ToUpper();//
-			string arg2 = tokens[1].ToUpper();//画像ファイル名
+			string name = tokens[0].Trim();//
+			string arg2 = tokens[1];//画像ファイル名
 			if (name.Length == 0 || arg2.Length == 0)
 				return null;
 			//アニメーションスプライト宣言
-			if (arg2 == "ANIME")
+			if (arg2.Equals("ANIME",StringComparison.OrdinalIgnoreCase))
 			{
 				if (tokens.Length < 4)
 				{
