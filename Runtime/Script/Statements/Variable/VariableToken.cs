@@ -1853,33 +1853,51 @@ namespace MinorShift.Emuera.GameData.Variable
 			public StaticInt1DVariableToken(UserDefinedVariableData data)
 				: base(VariableCode.VAR, data)
 			{
-				int[] sizes = data.Lengths;
+				length = data.Lengths[0];
 				IsStatic = true;
-				array = new Int64[sizes[0]];
+				//array = new long[length];
 				defArray = data.DefaultInt;
-				if (defArray != null)
-					Array.Copy(defArray, array, defArray.Length);
+				//if (defArray != null)
+				//	Array.Copy(defArray, array, defArray.Length);
 			}
+			int length;
 			Int64[] array = null;
 			Int64[] defArray = null;
+
+			void IfNullInitArray()
+			{
+				if (array == null)
+				{
+					array = new long[length];
+					if (defArray != null)
+					{
+						Array.Copy(defArray, array, defArray.Length);
+					}
+				}
+			}
+
 			public override void SetDefault()
 			{
+				IfNullInitArray();
 				Array.Clear(array, 0, totalSize);
 				if (defArray != null)
 					Array.Copy(defArray, array, defArray.Length);
 			}
 			public override Int64 GetIntValue(ExpressionMediator exm, Int64[] arguments)
 			{
+				IfNullInitArray();
 				return array[arguments[0]];
 			}
 
 			public override void SetValue(Int64 value, Int64[] arguments)
 			{
+				IfNullInitArray();
 				array[arguments[0]] = value;
 			}
 
 			public override void SetValue(Int64[] values, Int64[] arguments)
 			{
+				IfNullInitArray();
 				int start = (int)arguments[0];
 				int end = start + values.Length;
 				for (int i = start; i < end; i++)
@@ -1888,16 +1906,22 @@ namespace MinorShift.Emuera.GameData.Variable
 
 			public override void SetValueAll(long value, int start, int end, int charaPos)
 			{
+				IfNullInitArray();
 				for (int i = start; i < end; i++)
 					array[i] = value;
 			}
 
 			public override Int64 PlusValue(Int64 value, Int64[] arguments)
 			{
+				IfNullInitArray();
 				array[arguments[0]] += value;
 				return array[arguments[0]];
 			}
-			public override object GetArray() { return array; }
+			public override object GetArray()
+			{
+				IfNullInitArray();
+				return array;
+			}
 			public override void ScopeIn() { }
 			public override void ScopeOut() { }
 
@@ -1908,26 +1932,39 @@ namespace MinorShift.Emuera.GameData.Variable
 			public StaticInt2DVariableToken(UserDefinedVariableData data)
 				: base(VariableCode.VAR2D, data)
 			{
-				int[] sizes = data.Lengths;
+				size.x = data.Lengths[0];
+				size.y = data.Lengths[1];
 				IsStatic = true;
-				array = new Int64[sizes[0], sizes[1]];
+				//array = new Int64[sizes[0], sizes[1]];
 			}
-			Int64[,] array = null;
+			(int x, int y) size = (0, 0);
+			long[,] array = null;
+
+			void IfNullInitArray()
+			{
+				array ??= new long[sizes[0], sizes[1]];
+			}
+
+
 			public override void SetDefault()
 			{
+				IfNullInitArray();
 				Array.Clear(array, 0, totalSize);
 			}
 			public override Int64 GetIntValue(ExpressionMediator exm, Int64[] arguments)
 			{
+				IfNullInitArray();
 				return array[arguments[0], arguments[1]];
 			}
 			public override void SetValue(Int64 value, Int64[] arguments)
 			{
+				IfNullInitArray();
 				array[arguments[0], arguments[1]] = value;
 			}
 
 			public override void SetValue(Int64[] values, Int64[] arguments)
 			{
+				IfNullInitArray();
 				int start = (int)arguments[1];
 				int end = start + values.Length;
 				for (int i = start; i < end; i++)
@@ -1936,6 +1973,7 @@ namespace MinorShift.Emuera.GameData.Variable
 
 			public override void SetValueAll(long value, int start, int end, int charaPos)
 			{
+				IfNullInitArray();
 				int a1 = array.GetLength(0);
 				int a2 = array.GetLength(1);
 				for (int i = 0; i < a1; i++)
@@ -1944,10 +1982,15 @@ namespace MinorShift.Emuera.GameData.Variable
 			}
 			public override Int64 PlusValue(Int64 value, Int64[] arguments)
 			{
+				IfNullInitArray();
 				array[arguments[0], arguments[1]] += value;
 				return array[arguments[0], arguments[1]];
 			}
-			public override object GetArray() { return array; }
+			public override object GetArray()
+			{
+				IfNullInitArray();
+				return array;
+			}
 			public override void ScopeIn() { }
 			public override void ScopeOut() { }
 
@@ -1957,26 +2000,37 @@ namespace MinorShift.Emuera.GameData.Variable
 			public StaticInt3DVariableToken(UserDefinedVariableData data)
 				: base(VariableCode.VAR3D, data)
 			{
-				int[] sizes = data.Lengths;
+				size.x = data.Lengths[0];
+				size.y = data.Lengths[1];
+				size.z = data.Lengths[2];
 				IsStatic = true;
-				array = new Int64[sizes[0], sizes[1], sizes[2]];
+				//array = new Int64[sizes[0], sizes[1], sizes[2]];
 			}
+			(int x, int y, int z) size = (0, 0, 0);
 			Int64[,,] array = null;
+			void IfNullInitArray()
+			{
+				array ??= new long[sizes[0], sizes[1], sizes[2]];
+			}
 			public override void SetDefault()
 			{
+				IfNullInitArray();
 				Array.Clear(array, 0, totalSize);
 			}
 			public override Int64 GetIntValue(ExpressionMediator exm, Int64[] arguments)
 			{
+				IfNullInitArray();
 				return array[arguments[0], arguments[1], arguments[2]];
 			}
 
 			public override void SetValue(Int64 value, Int64[] arguments)
 			{
+				IfNullInitArray();
 				array[arguments[0], arguments[1], arguments[2]] = value;
 			}
 			public override void SetValue(Int64[] values, Int64[] arguments)
 			{
+				IfNullInitArray();
 				int start = (int)arguments[2];
 				int end = start + values.Length;
 				for (int i = start; i < end; i++)
@@ -1985,6 +2039,7 @@ namespace MinorShift.Emuera.GameData.Variable
 
 			public override void SetValueAll(long value, int start, int end, int charaPos)
 			{
+				IfNullInitArray();
 				int a1 = array.GetLength(0);
 				int a2 = array.GetLength(1);
 				int a3 = array.GetLength(2);
@@ -1996,10 +2051,15 @@ namespace MinorShift.Emuera.GameData.Variable
 
 			public override Int64 PlusValue(Int64 value, Int64[] arguments)
 			{
+				IfNullInitArray();
 				array[arguments[0], arguments[1], arguments[2]] += value;
 				return array[arguments[0], arguments[1], arguments[2]];
 			}
-			public override object GetArray() { return array; }
+			public override object GetArray()
+			{
+				IfNullInitArray();
+				return array;
+			}
 			public override void ScopeIn() { }
 			public override void ScopeOut() { }
 
@@ -2009,33 +2069,49 @@ namespace MinorShift.Emuera.GameData.Variable
 			public StaticStr1DVariableToken(UserDefinedVariableData data)
 				: base(VariableCode.VARS, data)
 			{
-				int[] sizes = data.Lengths;
+				length = data.Lengths[0];
 				IsStatic = true;
-				array = new string[sizes[0]];
+				//array = new string[sizes[0]];
 				defArray = data.DefaultStr;
-				if (defArray != null)
-					Array.Copy(defArray, array, defArray.Length);
+				// if (defArray != null)
+				// 	Array.Copy(defArray, array, defArray.Length);
 			}
+			int length;
 			string[] array = null;
 			string[] defArray = null;
+
+			void IfNullInitArray()
+			{
+				if (array == null)
+				{
+					array = new string[length];
+					if (defArray != null)
+						Array.Copy(defArray, array, defArray.Length);
+				}
+			}
+
 			public override void SetDefault()
 			{
+				IfNullInitArray();
 				Array.Clear(array, 0, totalSize);
 				if (defArray != null)
 					Array.Copy(defArray, array, defArray.Length);
 			}
 			public override string GetStrValue(ExpressionMediator exm, Int64[] arguments)
 			{
+				IfNullInitArray();
 				return array[arguments[0]];
 			}
 
 			public override void SetValue(string value, Int64[] arguments)
 			{
+				IfNullInitArray();
 				array[arguments[0]] = value;
 			}
 
 			public override void SetValue(string[] values, Int64[] arguments)
 			{
+				IfNullInitArray();
 				int start = (int)arguments[0];
 				int end = start + values.Length;
 				for (int i = start; i < end; i++)
@@ -2043,10 +2119,15 @@ namespace MinorShift.Emuera.GameData.Variable
 			}
 			public override void SetValueAll(string value, int start, int end, int charaPos)
 			{
+				IfNullInitArray();
 				for (int i = start; i < end; i++)
 					array[i] = value;
 			}
-			public override object GetArray() { return array; }
+			public override object GetArray()
+			{
+				IfNullInitArray();
+				return array;
+			}
 			public override void ScopeIn() { }
 			public override void ScopeOut() { }
 		}
@@ -2055,27 +2136,42 @@ namespace MinorShift.Emuera.GameData.Variable
 			public StaticStr2DVariableToken(UserDefinedVariableData data)
 				: base(VariableCode.VARS2D, data)
 			{
-				int[] sizes = data.Lengths;
+				size.x = data.Lengths[0];
+				size.y = data.Lengths[1];
 				IsStatic = true;
-				array = new string[sizes[0], sizes[1]];
+				//array = new string[sizes[0], sizes[1]];
 			}
 			string[,] array = null;
+			(int x, int y) size;
+
+			void IfNullInitArray()
+			{
+				if (array == null)
+				{
+					array = new string[size.x, size.y];
+				}
+			}
+
 			public override void SetDefault()
 			{
+				IfNullInitArray();
 				Array.Clear(array, 0, totalSize);
 			}
 			public override string GetStrValue(ExpressionMediator exm, Int64[] arguments)
 			{
+				IfNullInitArray();
 				return array[arguments[0], arguments[1]];
 			}
 
 			public override void SetValue(string value, Int64[] arguments)
 			{
+				IfNullInitArray();
 				array[arguments[0], arguments[1]] = value;
 			}
 
 			public override void SetValue(string[] values, Int64[] arguments)
 			{
+				IfNullInitArray();
 				int start = (int)arguments[1];
 				int end = start + values.Length;
 				for (int i = start; i < end; i++)
@@ -2083,13 +2179,18 @@ namespace MinorShift.Emuera.GameData.Variable
 			}
 			public override void SetValueAll(string value, int start, int end, int charaPos)
 			{
+				IfNullInitArray();
 				int a1 = array.GetLength(0);
 				int a2 = array.GetLength(1);
 				for (int i = 0; i < a1; i++)
 					for (int j = 0; j < a2; j++)
 						array[i, j] = value;
 			}
-			public override object GetArray() { return array; }
+			public override object GetArray()
+			{
+				IfNullInitArray();
+				return array;
+			}
 			public override void ScopeIn() { }
 			public override void ScopeOut() { }
 		}
@@ -2099,27 +2200,43 @@ namespace MinorShift.Emuera.GameData.Variable
 			public StaticStr3DVariableToken(UserDefinedVariableData data)
 				: base(VariableCode.VARS3D, data)
 			{
-				int[] sizes = data.Lengths;
+				size.x = data.Lengths[0];
+				size.y = data.Lengths[1];
+				size.z = data.Lengths[2];
 				IsStatic = true;
-				array = new string[sizes[0], sizes[1], sizes[2]];
+				//array = new string[sizes[0], sizes[1], sizes[2]];
 			}
 			string[,,] array = null;
+			(int x, int y, int z) size;
+
+			void IfNullInitArray()
+			{
+				if (array == null)
+				{
+					array = new string[size.x, size.y, size.z];
+				}
+			}
+
 			public override void SetDefault()
 			{
+				IfNullInitArray();
 				Array.Clear(array, 0, totalSize);
 			}
 			public override string GetStrValue(ExpressionMediator exm, Int64[] arguments)
 			{
+				IfNullInitArray();
 				return array[arguments[0], arguments[1], arguments[2]];
 			}
 
 			public override void SetValue(string value, Int64[] arguments)
 			{
+				IfNullInitArray();
 				array[arguments[0], arguments[1], arguments[2]] = value;
 			}
 
 			public override void SetValue(string[] values, Int64[] arguments)
 			{
+				IfNullInitArray();
 				int start = (int)arguments[2];
 				int end = start + values.Length;
 				for (int i = start; i < end; i++)
@@ -2127,6 +2244,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			}
 			public override void SetValueAll(string value, int start, int end, int charaPos)
 			{
+				IfNullInitArray();
 				int a1 = array.GetLength(0);
 				int a2 = array.GetLength(1);
 				int a3 = array.GetLength(2);
@@ -2135,7 +2253,11 @@ namespace MinorShift.Emuera.GameData.Variable
 						for (int k = 0; k < a3; k++)
 							array[i, j, k] = value;
 			}
-			public override object GetArray() { return array; }
+			public override object GetArray()
+			{
+				IfNullInitArray();
+				return array;
+			}
 			public override void ScopeIn() { }
 			public override void ScopeOut() { }
 		}
@@ -2179,8 +2301,14 @@ namespace MinorShift.Emuera.GameData.Variable
 
 			public override void SetValueAll(long value, int start, int end, int charaPos)
 			{
-				for (int i = start; i < end; i++)
-					array[i] = value;
+				if (value == 0)
+				{
+					Array.Clear(array);
+				}
+				else
+				{
+					Array.Fill(array, value);
+				}
 			}
 
 			public override Int64 PlusValue(Int64 value, Int64[] arguments)

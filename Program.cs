@@ -161,39 +161,10 @@ static partial class Program
 
 		ApplicationConfiguration.Initialize();
 
-		var winState = FormWindowState.Normal;
-		var rebootClientHeight = 0;
-		var rebootLocation = Point.Empty;
-		while (true)
-		{
-			var rebootFlag = false;
-
-			using var win = new Forms.MainWindow(winState, rebootLocation, rebootClientHeight, (_) =>
-			{
-				rebootFlag = true;
-			});
+		using var win = new Forms.MainWindow(args);
 
 
-			Application.Run(win);
-
-			Content.AppContents.UnloadContents();
-			if (!rebootFlag)
-				break;
-
-			winState = win.WindowState;
-
-			if (win.WindowState == FormWindowState.Normal)
-			{
-				rebootClientHeight = win.ClientSize.Height;
-				rebootLocation = win.Location;
-			}
-
-			//条件次第ではParserMediatorが空でない状態で再起動になる場合がある
-			ParserMediator.ClearWarningList();
-			ParserMediator.Initialize(null);
-			GlobalStatic.Reset();
-			ConfigData.Instance.ReLoadConfig();
-		}
+		Application.Run(win);
 
 	}
 

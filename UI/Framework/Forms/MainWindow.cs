@@ -16,20 +16,17 @@ namespace MinorShift.Emuera.Forms
 {
 	internal sealed partial class MainWindow : Form
 	{
-		readonly FormWindowState _rebootWinState;
-		Action<MainWindow> _rebootCallback;
 
-		public MainWindow(FormWindowState formWindowState, Point windowLocation, int windowHeight, Action<MainWindow> rebootCallback)
+		public MainWindow(string[] args)
 		{
 			InitializeComponent();
-			_rebootWinState = formWindowState;
-			_rebootCallback = rebootCallback;
+			this._args = args;
 
 			if (Program.DebugMode)
 				デバッグToolStripMenuItem.Visible = true;
 
 			mainPicBox.SetStyle();
-			initControlSizeAndLocation(windowLocation, windowHeight);
+			initControlSizeAndLocation();
 			richTextBox1.ForeColor = Config.ForeColor;
 			richTextBox1.BackColor = Config.BackColor;
 			mainPicBox.BackColor = Config.BackColor;//これは実際には使用されないはず
@@ -255,7 +252,7 @@ namespace MinorShift.Emuera.Forms
 		/// 1819 リサイズ時の処理を全廃しAnchor&Dock処理にマルナゲ
 		/// 初期設定のみここで行う。ついでに再起動時の位置・サイズ処理も追加
 		/// </summary>
-		private void initControlSizeAndLocation(Point windowLocation, int windowHeight)
+		private void initControlSizeAndLocation()
 		{
 			//Windowのサイズ設定
 			int winWidth = Config.WindowX + vScrollBar.Width;
@@ -265,7 +262,7 @@ namespace MinorShift.Emuera.Forms
 			{
 				FormBorderStyle = FormBorderStyle.Sizable;
 				MaximizeBox = true;
-				winMaximize = Config.WindowMaximixed || _rebootWinState == FormWindowState.Maximized;
+				winMaximize = Config.WindowMaximixed;
 			}
 			else
 			{
@@ -293,14 +290,10 @@ namespace MinorShift.Emuera.Forms
 				StartPosition = FormStartPosition.Manual;
 				Location = new Point(Config.WindowPosX, Config.WindowPosY);
 			}
-			else if (!winMaximize && windowLocation != new Point())
+			else if (!winMaximize)
 			{
 				StartPosition = FormStartPosition.Manual;
-				Location = windowLocation;
 			}
-			//Windowのサイズ設定・再起動時
-			if (!winMaximize && (windowHeight > 0))
-				winHeight = windowHeight;
 			ClientSize = new Size(winWidth, winHeight);
 
 			//EmuVerToolStripTextBox.Location = new Point(Config.WindowX - vScrollBar.Width - EmuVerToolStripTextBox.Width, 3);
@@ -519,12 +512,14 @@ namespace MinorShift.Emuera.Forms
 		//    }
 		//}
 
+		readonly string[] _args = [];
 		public void Reboot()
 		{
-			console.forceStopTimer();
-			console.InitializeCancel();
-			_rebootCallback(this);
-			Close();
+			//新たにアプリケーションを起動する
+			Process.Start(Application.ExecutablePath, _args);
+
+			//現在のアプリケーションを終了する
+			Application.Exit();
 		}
 
 		public void GotoTitle()
@@ -563,9 +558,7 @@ namespace MinorShift.Emuera.Forms
 			dialog.ShowDialog();
 			if (dialog.Result == ConfigDialogResult.SaveReboot)
 			{
-				console.forceStopTimer();
-				_rebootCallback(this);
-				Close();
+				Reboot();
 			}
 		}
 
