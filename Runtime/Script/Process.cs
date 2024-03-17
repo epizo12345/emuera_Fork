@@ -48,7 +48,7 @@ namespace MinorShift.Emuera.GameProc
 		bool initialiing;
 		public bool inInitializeing { get { return initialiing; } }
 
-		public async Task<bool> Initialize(CancellationToken cancellationToken)
+		public async Task<bool> Initialize()
 		{
 			var stopWatch = new Stopwatch();
 			stopWatch.Start();
@@ -202,19 +202,15 @@ namespace MinorShift.Emuera.GameProc
 				Debug.WriteLine("Proc:Init:ERB:Start " + stopWatch.ElapsedMilliseconds + "ms");
 				var loader = new ErbLoader(console, exm, this);
 				if (Program.AnalysisMode)
-					noError = await loader.LoadErbList(Program.AnalysisFiles, labelDic, cancellationToken);
+					noError = await loader.LoadErbList(Program.AnalysisFiles, labelDic);
 				else
-					noError = await loader.LoadErbDir(Program.ErbDir, Config.DisplayReport, labelDic, cancellationToken);
+					noError = await loader.LoadErbDir(Program.ErbDir, Config.DisplayReport, labelDic);
 				Debug.WriteLine("Proc:Init:ERB:End " + stopWatch.ElapsedMilliseconds + "ms");
 
 				initSystemProcess();
 				initialiing = false;
 
 				Debug.WriteLine("Proc:Init:End " + stopWatch.ElapsedMilliseconds + "ms");
-			}
-			catch (OperationCanceledException)
-			{
-
 			}
 			catch (Exception e)
 			{
@@ -230,24 +226,24 @@ namespace MinorShift.Emuera.GameProc
 			return true;
 		}
 
-		public async Task ReloadErb(CancellationToken cancellationToken)
+		public async Task ReloadErb()
 		{
 			await Preload.Load(Program.ErbDir);
 			await Preload.Load(Program.CsvDir);
 			saveCurrentState(false);
 			state.SystemState = SystemStateCode.System_Reloaderb;
 			ErbLoader loader = new(console, exm, this);
-			await loader.LoadErbDir(Program.ErbDir, false, labelDic, cancellationToken);
+			await loader.LoadErbDir(Program.ErbDir, false, labelDic);
 			console.ReadAnyKey();
 		}
 
-		public async Task ReloadPartialErb(List<string> paths, CancellationToken cancellationToken)
+		public async Task ReloadPartialErb(List<string> paths)
 		{
 			saveCurrentState(false);
 			state.SystemState = SystemStateCode.System_Reloaderb;
 			await Preload.Load(paths);
 			var loader = new ErbLoader(console, exm, this);
-			await loader.LoadErbList(paths, labelDic, cancellationToken);
+			await loader.LoadErbList(paths, labelDic);
 			console.ReadAnyKey();
 		}
 
