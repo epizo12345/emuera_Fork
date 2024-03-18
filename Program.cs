@@ -13,6 +13,7 @@ using System.Reflection;
 using DotnetEmuera;
 using System.Diagnostics.CodeAnalysis;
 using MinorShift.Emuera.Runtime.Config;
+using System.Runtime;
 
 namespace MinorShift.Emuera;
 #nullable enable
@@ -49,6 +50,7 @@ static partial class Program
 	{
 		// memo: Shift-JISを扱うためのおまじない
 		System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
 
 		var rootCommand = new RootCommand("Emuera");
 
@@ -91,6 +93,9 @@ static partial class Program
 			//必要なファイルのチェックにはConfig読み込みが必須なので、ここではフラグだけ立てておく
 			AnalysisMode = true;
 		}
+
+		ProfileOptimization.SetProfileRoot(exeDir ?? Environment.CurrentDirectory);
+		ProfileOptimization.StartProfile("profile");
 
 		ConfigData.Instance.LoadConfig();
 		JSONConfig.Load();

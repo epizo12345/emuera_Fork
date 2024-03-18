@@ -15,7 +15,6 @@
     <AnalysisMode>Minimum</AnalysisMode>
 
     
-    <TieredCompilation>false</TieredCompilation>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
   </PropertyGroup>
