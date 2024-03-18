@@ -93,24 +93,18 @@ namespace MinorShift.Emuera.GameProc
 						ParserMediator.Warn("解釈できない#行です", position, 1);
 						return false;
 					}
-					if (Config.IgnoreCase)
-					{
-						Span<char> dest = new char[sharpID.Length];
-						sharpID.ToUpperInvariant(dest);
-						sharpID = dest;
-					}
 					LexicalAnalyzer.SkipWhiteSpace(st);
 					switch (sharpID)
 					{
-						case "DEFINE":
+						case var s when s.Equals("DEFINE", Config.StringComparison):
 							analyzeSharpDefine(st, position);
 							break;
-						case "FUNCTION":
-						case "FUNCTIONS":
+						case var s when s.Equals("FUNCTION", Config.StringComparison) ||
+										s.Equals("FUNCTIONS", Config.StringComparison):
 							analyzeSharpFunction(st, position, sharpID == "FUNCTIONS");
 							break;
-						case "DIM":
-						case "DIMS":
+						case var s when s.Equals("DIM", Config.StringComparison) ||
+										s.Equals("DIMS", Config.StringComparison):
 							//1822 #DIMは保留しておいて後でまとめてやる
 							{
 								WordCollection wc = LexicalAnalyzer.Analyse(st, LexEndWith.EoL, LexAnalyzeFlag.AllowAssignment);

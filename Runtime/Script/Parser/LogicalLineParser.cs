@@ -13,21 +13,18 @@ namespace MinorShift.Emuera.GameProc
 		public static bool ParseSharpLine(FunctionLabelLine label, CharStream st, ScriptPosition? position, List<string> OnlyLabel)
 		{
 			st.ShiftNext();//'#'を飛ばす
-			var token = LexicalAnalyzer.ReadSingleIdentifierROS(st);//#～自体にはマクロ非適用
-																	//#行として不正な行でもAnalyzeに行って引っかかることがあるので、先に存在しない#～は弾いてしまう
-			if (token.IsEmpty || (!token.SequenceEqual("SINGLE") && !token.SequenceEqual("LATER") && !token.SequenceEqual("PRI") && !token.SequenceEqual("ONLY") && !token.SequenceEqual("FUNCTION")
-				 && !token.SequenceEqual("FUNCTIONS")
-				&& !token.SequenceEqual("LOCALSIZE") && !token.SequenceEqual("LOCALSSIZE") && !token.SequenceEqual("DIM") && !token.SequenceEqual("DIMS")))
+			var token = LexicalAnalyzer.ReadSingleIdentifier(st);//#～自体にはマクロ非適用
+																 //#行として不正な行でもAnalyzeに行って引っかかることがあるので、先に存在しない#～は弾いてしまう
+			if (string.IsNullOrEmpty(token))
 			{
 				ParserMediator.Warn("解釈できない#行です", position, 1);
 				return false;
 			}
 			try
 			{
-				WordCollection wc = LexicalAnalyzer.Analyse(st, LexEndWith.EoL, LexAnalyzeFlag.AllowAssignment);
 				switch (token)
 				{
-					case "SINGLE":
+					case var s when s.Equals("SINGLE", Config.StringComparison):
 						if (label.IsMethod)
 						{
 							ParserMediator.Warn("式中関数では#SINGLEは機能しません", position, 1);
@@ -50,7 +47,7 @@ namespace MinorShift.Emuera.GameProc
 						}
 						label.IsSingle = true;
 						break;
-					case "LATER":
+					case var s when s.Equals("LATER", Config.StringComparison):
 						if (label.IsMethod)
 						{
 							ParserMediator.Warn("式中関数では#LATERは機能しません", position, 1);
@@ -75,7 +72,7 @@ namespace MinorShift.Emuera.GameProc
 							ParserMediator.Warn("#PRIと#LATERが重複して使われています(この関数は2度呼ばれます)", position, 1);
 						label.IsLater = true;
 						break;
-					case "PRI":
+					case var s when s.Equals("PRI", Config.StringComparison):
 						if (label.IsMethod)
 						{
 							ParserMediator.Warn("式中関数では#PRIは機能しません", position, 1);
@@ -100,7 +97,7 @@ namespace MinorShift.Emuera.GameProc
 							ParserMediator.Warn("#PRIと#LATERが重複して使われています(この関数は2度呼ばれます)", position, 1);
 						label.IsPri = true;
 						break;
-					case "ONLY":
+					case var s when s.Equals("ONLY", Config.StringComparison):
 						if (label.IsMethod)
 						{
 							ParserMediator.Warn("式中関数では#ONLYは機能しません", position, 1);
@@ -136,8 +133,8 @@ namespace MinorShift.Emuera.GameProc
 							label.IsSingle = false;
 						}
 						break;
-					case "FUNCTION":
-					case "FUNCTIONS":
+					case var s when s.Equals("FUNCTION", Config.StringComparison) ||
+									s.Equals("FUNCTIONS", Config.StringComparison):
 						if (!string.IsNullOrEmpty(label.LabelName) && char.IsDigit(label.LabelName[0]))
 						{
 							ParserMediator.Warn($"#{token}属性は関数名が数字で始まる関数には指定できません", position, 1);
@@ -147,14 +144,14 @@ namespace MinorShift.Emuera.GameProc
 						}
 						if (label.IsMethod)
 						{
-							if ((label.MethodType == typeof(Int64) && token.SequenceEqual("FUNCTION")) || (label.MethodType == typeof(string) && token.SequenceEqual("FUNCTIONS")))
+							if ((label.MethodType == typeof(Int64) && token.Equals("FUNCTION", Config.StringComparison)) || (label.MethodType == typeof(string) && token.Equals("FUNCTIONS", Config.StringComparison)))
 							{
 								ParserMediator.Warn($"関数{label.LabelName}にはすでに#{token}が宣言されています(この行は無視されます)", position, 1);
 								return false;
 							}
-							if (label.MethodType == typeof(Int64) && token.SequenceEqual("FUNCTIONS"))
+							if (label.MethodType == typeof(Int64) && token.Equals("FUNCTIONS", Config.StringComparison))
 								ParserMediator.Warn("関数" + label.LabelName + "にはすでに#FUNCTIONが宣言されています", position, 2);
-							else if (label.MethodType == typeof(string) && token.SequenceEqual("FUNCTION"))
+							else if (label.MethodType == typeof(string) && token.Equals("FUNCTION", Config.StringComparison))
 								ParserMediator.Warn("関数" + label.LabelName + "にはすでに#FUNCTIONSが宣言されています", position, 2);
 							return false;
 						}
@@ -165,7 +162,7 @@ namespace MinorShift.Emuera.GameProc
 						}
 						label.IsMethod = true;
 						label.Depth = 0;
-						if (token.SequenceEqual("FUNCTIONS"))
+						if (token.Equals("FUNCTIONS", Config.StringComparison))
 							label.MethodType = typeof(string);
 						else
 							label.MethodType = typeof(Int64);
@@ -190,9 +187,10 @@ namespace MinorShift.Emuera.GameProc
 							label.IsOnly = false;
 						}
 						break;
-					case "LOCALSIZE":
-					case "LOCALSSIZE":
+					case var s when s.Equals("LOCALSIZE", Config.StringComparison) ||
+									s.Equals("LOCALSSIZE", Config.StringComparison):
 						{
+							WordCollection wc = LexicalAnalyzer.Analyse(st, LexEndWith.EoL, LexAnalyzeFlag.AllowAssignment);
 							if (wc.EOL)
 							{
 								ParserMediator.Warn($"#{token}の後に有効な数値が指定されていません", position, 2);
@@ -221,7 +219,7 @@ namespace MinorShift.Emuera.GameProc
 								break;
 							}
 							int size = (int)sizeTerm.Int;
-							if (token.SequenceEqual("LOCALSIZE"))
+							if (token.Equals("LOCALSIZE", Config.StringComparison))
 							{
 								if (GlobalStatic.IdentifierDictionary.getLocalIsForbid("LOCAL"))
 								{
@@ -245,10 +243,12 @@ namespace MinorShift.Emuera.GameProc
 							}
 						}
 						break;
-					case "DIM":
-					case "DIMS":
+					case var s when s.Equals("DIM", Config.StringComparison) ||
+									s.Equals("DIMS", Config.StringComparison):
 						{
-							UserDefinedVariableData data = UserDefinedVariableData.Create(wc, token.SequenceEqual("DIMS"), true, position);
+							var wc = LexicalAnalyzer.Analyse(st, LexEndWith.EoL, LexAnalyzeFlag.AllowAssignment);
+
+							UserDefinedVariableData data = UserDefinedVariableData.Create(wc, token.Equals("DIMS", Config.StringComparison), true, position);
 							if (!label.AddPrivateVariable(data))
 							{
 								ParserMediator.Warn($"変数名{data.Name}は既に使用されています", position, 2);
@@ -257,20 +257,16 @@ namespace MinorShift.Emuera.GameProc
 							break;
 						}
 					default:
-						ParserMediator.Warn("解釈できない#行です", position, 1);
+						ParserMediator.Warn("#の識別子の後に余分な文字があります", position, 1);
 						break;
 				}
-				if (!wc.EOL)
-					ParserMediator.Warn("#の識別子の後に余分な文字があります", position, 1);
 			}
 			catch (Exception e)
 			{
 				ParserMediator.Warn(e.Message, position, 2);
-				goto err;
+				return false;
 			}
 			return true;
-		err:
-			return false;
 		}
 
 		public static LogicalLine ParseLine(string str, EmueraConsole console)
