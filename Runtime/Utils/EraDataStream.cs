@@ -645,9 +645,9 @@ namespace MinorShift.Emuera.Sub
 				StringBuilder builder = new("");
 				for (int y = 0; y < countY[x]; y++)
 				{
-					builder.Append(array2D[x, y].ToString());
+					builder.Append(array2D[x, y]);
 					if (y != countY[x] - 1)
-						builder.Append(",");
+						builder.Append(',');
 				}
 				writer.WriteLine(builder.ToString());
 			}
@@ -707,9 +707,9 @@ namespace MinorShift.Emuera.Sub
 					}
 					for (int z = 0; z < countZ[x, y]; z++)
 					{
-						builder.Append(array3D[x, y, z].ToString());
+						builder.Append(array3D[x, y, z]);
 						if (z != countZ[x, y] - 1)
-							builder.Append(",");
+							builder.Append(',');
 					}
 					writer.WriteLine(builder.ToString());
 				}

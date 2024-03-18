@@ -101,7 +101,7 @@ namespace MinorShift.Emuera.Content
 							if (line.Length == 0)
 								continue;
 							string str = line.Trim();
-							if (str.Length == 0 || str.StartsWith(";"))
+							if (str.Length == 0 || str.StartsWith(';'))
 								continue;
 							string[] tokens = str.Split(',');
 							//AContentItem item = CreateFromCsv(tokens);
@@ -163,7 +163,7 @@ namespace MinorShift.Emuera.Content
 			if (name.Length == 0 || arg2.Length == 0)
 				return null;
 			//アニメーションスプライト宣言
-			if (arg2.Equals("ANIME",StringComparison.OrdinalIgnoreCase))
+			if (arg2.Equals("ANIME", StringComparison.OrdinalIgnoreCase))
 			{
 				if (tokens.Length < 4)
 				{

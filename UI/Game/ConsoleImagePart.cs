@@ -26,17 +26,17 @@ namespace MinorShift.Emuera.GameView
 			if (raw_height != 0)
 			{
 				sb.Append("' height='");
-				sb.Append(raw_height.ToString());
+				sb.Append(raw_height);
 			}
 			if (raw_width != 0)
 			{
 				sb.Append("' width='");
-				sb.Append(raw_width.ToString());
+				sb.Append(raw_width);
 			}
 			if (raw_ypos != 0)
 			{
 				sb.Append("' ypos='");
-				sb.Append(raw_ypos.ToString());
+				sb.Append(raw_ypos);
 			}
 			sb.Append("'>");
 			AltText = sb.ToString();
