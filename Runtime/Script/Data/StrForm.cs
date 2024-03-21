@@ -32,7 +32,7 @@ namespace MinorShift.Emuera.GameData
 			formatYenAt = new FormatYenAt();
 			VariableToken nameID = GlobalStatic.VariableData.GetSystemVariableToken("NAME");
 			VariableToken callnameID = GlobalStatic.VariableData.GetSystemVariableToken("CALLNAME");
-			AExpression[] zeroArg = new AExpression[] { new SingleTerm(0) };
+			AExpression[] zeroArg = new AExpression[] { new SingleLongTerm(0) };
 			VariableTerm target = new(GlobalStatic.VariableData.GetSystemVariableToken("TARGET"), zeroArg);
 			VariableTerm master = new(GlobalStatic.VariableData.GetSystemVariableToken("MASTER"), zeroArg);
 			VariableTerm player = new(GlobalStatic.VariableData.GetSystemVariableToken("PLAYER"), zeroArg);
@@ -96,11 +96,11 @@ namespace MinorShift.Emuera.GameData
 							throw new CodeEE("三項演算子\\@の第一オペランドが異常です");
 					}
 					else
-						operand = new SingleTerm(0);
+						operand = new SingleLongTerm(0);
 					AExpression left = new StrFormTerm(StrForm.FromWordToken(yenat.Left));
 					AExpression right;
 					if (yenat.Right == null)
-						right = new SingleTerm("");
+						right = new SingleStrTerm("");
 					else
 						right = new StrFormTerm(StrForm.FromWordToken(yenat.Right));
 					termArray[i] = new FunctionMethodTerm(formatYenAt, [operand, left, right]);
@@ -129,7 +129,7 @@ namespace MinorShift.Emuera.GameData
 						if (id == null)
 							throw new CodeEE("','の後にRIGHT又はLEFTがありません");
 						if (string.Equals(id.Code, "LEFT", Config.StringComparison))//標準RIGHT
-							third = new SingleTerm(1);
+							third = new SingleLongTerm(1);
 						else if (!string.Equals(id.Code, "RIGHT", Config.StringComparison))
 							throw new CodeEE("','の後にRIGHT又はLEFT以外の単語があります");
 						wc.ShiftNext();
@@ -230,7 +230,7 @@ namespace MinorShift.Emuera.GameData
 			}
 			public override string CheckArgumentType(string name, List<AExpression> arguments) { throw new ExeEE("型チェックは呼び出し元が行うこと"); }
 			public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments) { throw new ExeEE("戻り値の型が違う"); }
-			public override SingleTerm GetReturnValue(ExpressionMediator exm, List<AExpression> arguments) { return new SingleTerm(GetStrValue(exm, arguments)); }
+			public override SingleTerm GetReturnValue(ExpressionMediator exm, List<AExpression> arguments) { return new SingleStrTerm(GetStrValue(exm, arguments)); }
 		}
 
 		private sealed class FormatCurlyBrace : FormattedStringMethod

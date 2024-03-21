@@ -18,7 +18,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			allArgIsConst = true;
 			for (int i = 0; i < arguments.Length; i++)
 			{
-				if (arguments[i] is SingleTerm singleTerm)
+				if (arguments[i] is SingleLongTerm singleTerm)
 				{
 					transporter[i] = singleTerm.Int;
 				}
@@ -169,16 +169,16 @@ namespace MinorShift.Emuera.GameData.Variable
 		public override SingleTerm GetValue(ExpressionMediator exm)
 		{
 			if (Identifier.VariableType == typeof(Int64))
-				return new SingleTerm(GetIntValue(exm));
+				return new SingleLongTerm(GetIntValue(exm));
 			else
-				return new SingleTerm(GetStrValue(exm));
+				return new SingleStrTerm(GetStrValue(exm));
 		}
 		public virtual void SetValue(SingleTerm value, ExpressionMediator exm)
 		{
-			if (Identifier.VariableType == typeof(Int64))
-				SetValue(value.Int, exm);
+			if (value is SingleLongTerm singleLongTerm)
+				SetValue(singleLongTerm.Int, exm);
 			else
-				SetValue(value.Str, exm);
+				SetValue(((SingleStrTerm)value).Str, exm);
 		}
 		public virtual void SetValue(AExpression value, ExpressionMediator exm)
 		{

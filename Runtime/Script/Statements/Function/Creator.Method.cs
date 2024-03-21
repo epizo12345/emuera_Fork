@@ -349,9 +349,9 @@ namespace MinorShift.Emuera.GameData.Function
                     return name + "関数の1番目の引数は省略できません";
                 if (!arguments[0].IsString)
                     return name + "関数の1番目の引数が文字列ではありません";
-                if (arguments[0] is SingleTerm)
+                if (arguments[0] is SingleStrTerm singleStrTerm)
                 {
-                    string varName = ((SingleTerm)arguments[0]).Str;
+                    string varName = singleStrTerm.Str;
                     if (GlobalStatic.IdentifierDictionary.GetVariableToken(varName, null, true) == null)
                         return name + "関数の1番目の引数が変数名ではありません";
                 }
@@ -1610,9 +1610,9 @@ namespace MinorShift.Emuera.GameData.Function
                 string ret = base.CheckArgumentType(name, arguments);
                 if (ret != null)
                     return ret;
-                if (arguments[1] is SingleTerm)
+                if (arguments[1] is SingleLongTerm singleLongTerm)
                 {
-                    Int64 m = ((SingleTerm)arguments[1]).Int;
+                    Int64 m = singleLongTerm.Int;
                     if (m < 0 || m > 63)
                         return "GETBIT関数の第２引数(" + m.ToString() + ")が範囲(０～６３)を超えています";
                 }
@@ -1684,9 +1684,9 @@ namespace MinorShift.Emuera.GameData.Function
                     return errStr;
                 if (arguments[0] == null)
                     return name + "関数の1番目の引数は省略できません";
-                if (arguments[0] is SingleTerm)
+                if (arguments[0] is SingleStrTerm singleStrTerm)
                 {
-                    string varName = ((SingleTerm)arguments[0]).Str;
+                    string varName = singleStrTerm.Str;
                     if (GlobalStatic.IdentifierDictionary.GetVariableToken(varName, null, true) == null)
                         return name + "関数の1番目の引数が変数名ではありません";
                 }
@@ -2821,18 +2821,18 @@ namespace MinorShift.Emuera.GameData.Function
                 if (ReturnType != typeof(Int64))
                     throw new ExeEE(funcname + "関数:不正な呼び出し");
                 SingleTerm term = GetSingleTerm(exm, arguments);
-                if (term.GetOperandType() != typeof(Int64))
+                if (term is not SingleLongTerm singleLongTerm)
                     throw new CodeEE(funcname + "関数:型が違います（GETCONFIGS関数を使用してください）");
-                return term.Int;
+                return singleLongTerm.Int;
             }
             public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 if (ReturnType != typeof(string))
                     throw new ExeEE(funcname + "関数:不正な呼び出し");
                 SingleTerm term = GetSingleTerm(exm, arguments);
-                if (term.GetOperandType() != typeof(string))
+                if (term is not SingleStrTerm singleStrTerm)
                     throw new CodeEE(funcname + "関数:型が違います（GETCONFIG関数を使用してください）");
-                return term.Str;
+                return singleStrTerm.Str;
             }
         }
         #endregion

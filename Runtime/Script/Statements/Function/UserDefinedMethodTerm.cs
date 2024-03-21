@@ -16,15 +16,13 @@ namespace MinorShift.Emuera.GameData.Function
 		public abstract CalledFunction Call { get; }
 		public override long GetIntValue(ExpressionMediator exm)
 		{
-			SingleTerm term = exm.Process.GetValue(this);
-			if (term == null)
+			if (exm.Process.GetValue(this) is not SingleLongTerm term)
 				return 0;
 			return term.Int;
 		}
 		public override string GetStrValue(ExpressionMediator exm)
 		{
-			SingleTerm term = exm.Process.GetValue(this);
-			if (term == null)
+			if (exm.Process.GetValue(this) is not SingleStrTerm term)
 				return "";
 			return term.Str;
 		}
@@ -34,9 +32,9 @@ namespace MinorShift.Emuera.GameData.Function
 			if (term == null)
 			{
 				if (GetOperandType() == typeof(Int64))
-					return new SingleTerm(0);
+					return new SingleLongTerm(0);
 				else
-					return new SingleTerm("");
+					return new SingleStrTerm("");
 			}
 			return term;
 		}

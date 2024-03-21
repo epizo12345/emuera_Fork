@@ -24,9 +24,9 @@ namespace MinorShift.Emuera.GameData.Expression
         public virtual SingleTerm GetValue(ExpressionMediator exm)
         {
             if (type == typeof(Int64))
-                return new SingleTerm(0);
+                return new SingleLongTerm(0);
             else
-                return new SingleTerm("");
+                return new SingleStrTerm("");
         }
         public bool IsInteger
         {

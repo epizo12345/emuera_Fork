@@ -292,7 +292,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				{
 					if (line.FunctionCode == FunctionCode.RETURNFORM)
 					{
-						termList.Add(new SingleTerm("0"));
+						termList.Add(new SingleStrTerm("0"));
 						ret = new ExpressionArrayArgument(termList)
 						{
 							IsConst = true,
@@ -372,7 +372,7 @@ namespace MinorShift.Emuera.GameProc.Function
 					}
 
 				}
-				Argument ret = new ExpressionArgument(new SingleTerm(rowStr))
+				Argument ret = new ExpressionArgument(new SingleStrTerm(rowStr))
 				{
 					ConstStr = rowStr,
 					IsConst = true
@@ -403,7 +403,7 @@ namespace MinorShift.Emuera.GameProc.Function
 					}
 					//if (line.FunctionCode == FunctionCode.PRINTFORML)
 					//	warn("PRINTFORMLの後ろに空白がありません(eramaker：\'PRINTFORML\'を表示)", line, 0, true);
-					ret = new ExpressionArgument(new SingleTerm(""))
+					ret = new ExpressionArgument(new SingleStrTerm(""))
 					{
 						ConstStr = "",
 						IsConst = true
@@ -451,7 +451,7 @@ namespace MinorShift.Emuera.GameProc.Function
 
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				VariableTerm varTerm = new(GlobalStatic.VariableData.GetSystemVariableToken("NO"), new AExpression[] { new SingleTerm(0) });
+				VariableTerm varTerm = new(GlobalStatic.VariableData.GetSystemVariableToken("NO"), new AExpression[] { new SingleLongTerm(0) });
 				SortOrder order = SortOrder.ASCENDING;
 				WordCollection wc = popWords(line);
 				if (wc.EOL)
@@ -504,7 +504,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			{
 				SortOrder order = SortOrder.ASCENDING;
 				WordCollection wc = popWords(line);
-				AExpression term3 = new SingleTerm(0);
+				AExpression term3 = new SingleLongTerm(0);
 				AExpression term4 = null;
 
 				if (wc.EOL)
@@ -588,7 +588,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				{
 					string str = LexicalAnalyzer.ReadString(st, StrEndWith.LeftParenthesis_Bracket_Comma_Semicolon);
 					str = str.Trim([' ', '\t']);
-					funcname = new SingleTerm(str);
+					funcname = new SingleStrTerm(str);
 				}
 				char cur = st.Current;
 				WordCollection wc = LexicalAnalyzer.Analyse(st, LexEndWith.EoL, LexAnalyzeFlag.None);
@@ -925,7 +925,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				AExpression term;
 				if (terms.Count == 0)
 				{
-					term = new SingleTerm(0);
+					term = new SingleLongTerm(0);
 					if (!nullable)
 					{
 						if (line.Function.IsExtended())
@@ -946,9 +946,9 @@ namespace MinorShift.Emuera.GameProc.Function
 						warn("0回以下のREPEATです。(eramakerではエラーになります)", line, 0, true);
 					}
 					VariableToken count = GlobalStatic.VariableData.GetSystemVariableToken("COUNT");
-					VariableTerm repCount = new(count, new AExpression[] { new SingleTerm(0) });
+					VariableTerm repCount = new(count, new AExpression[] { new SingleLongTerm(0) });
 					repCount.Restructure(exm);
-					return new SpForNextArgment(repCount, new SingleTerm(0), term, new SingleTerm(1));
+					return new SpForNextArgment(repCount, new SingleLongTerm(0), term, new SingleLongTerm(1));
 				}
 				ExpressionArgument ret = new(term);
 				if (term is SingleTerm)
@@ -991,7 +991,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				{
 					if (line.FunctionCode == FunctionCode.RETURN)
 					{
-						termList.Add(new SingleTerm(0));
+						termList.Add(new SingleLongTerm(0));
 						ret.IsConst = true;
 						ret.ConstInt = 0;
 						return ret;
@@ -1001,7 +1001,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				}
 				else if (terms.Count == 1)
 				{
-					if (terms[0] is SingleTerm s)
+					if (terms[0] is SingleLongTerm s)
 					{
 						ret.IsConst = true;
 						ret.ConstInt = s.Int;
@@ -1040,7 +1040,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				ExpressionArgument ret;
 				if (terms.Count == 0)
 				{
-					ret = new ExpressionArgument(new SingleTerm(""))
+					ret = new ExpressionArgument(new SingleStrTerm(""))
 					{
 						ConstStr = "",
 						IsConst = true
@@ -1196,11 +1196,11 @@ namespace MinorShift.Emuera.GameProc.Function
 				AExpression end = terms[2];
 				AExpression step;
 				if (start == null)
-					start = new SingleTerm(0);
+					start = new SingleLongTerm(0);
 				if ((terms.Count > 3) && (terms[3] != null))
 					step = terms[3];
 				else
-					step = new SingleTerm(1);
+					step = new SingleLongTerm(1);
 				if (!start.IsInteger)
 				{ warn("第2引数の型が違います", line, 2, false); return null; }
 				return new SpForNextArgment(varTerm, start, end, step);
@@ -1288,7 +1288,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				if (terms.Count == 0)
 				{
 					VariableToken varToken = GlobalStatic.VariableData.GetSystemVariableToken("RESULTS");
-					VariableTerm varTerm = new(varToken, new AExpression[] { new SingleTerm(0) });
+					VariableTerm varTerm = new(varToken, new AExpression[] { new SingleLongTerm(0) });
 					return new StrDataArgument(varTerm);
 				}
 				if (!checkArgumentType(line, exm, terms))
@@ -1323,7 +1323,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				BitArgument ret = new(varTerm, termList.ToArray());
 				for (int i = 0; i < termList.Count; i++)
 				{
-					if (termList[i] is SingleTerm term)
+					if (termList[i] is SingleLongTerm term)
 					{
 						Int64 bit = term.Int;
 						if ((bit < 0) || (bit > 63))
@@ -1364,9 +1364,9 @@ namespace MinorShift.Emuera.GameProc.Function
 				else
 				{
 					if (varTerm.IsString)
-						term = new SingleTerm("");
+						term = new SingleStrTerm("");
 					else
-						term = new SingleTerm(0);
+						term = new SingleLongTerm(0);
 				}
 				if (varTerm is VariableNoArgTerm)
 				{
@@ -1417,21 +1417,21 @@ namespace MinorShift.Emuera.GameProc.Function
 				if (terms.Count > 1)
 					index = terms[1];
 				else
-					index = new SingleTerm(0);
+					index = new SingleLongTerm(0);
 				if (terms.Count > 2)
 					term = terms[2];
 				else
 				{
 					if (varTerm.IsString)
-						term = new SingleTerm("");
+						term = new SingleStrTerm("");
 					else
-						term = new SingleTerm(0);
+						term = new SingleLongTerm(0);
 				}
 				if (terms.Count > 3)
 					term4 = terms[3];
 				if (terms.Count > 4)
 					term5 = terms[4];
-				if (index is SingleTerm term1 && index.GetOperandType() == typeof(string) && varTerm.Identifier.IsArray1D)
+				if (index is SingleStrTerm term1 && varTerm.Identifier.IsArray1D)
 				{
 					if (!GlobalStatic.ConstantData.isDefined(varTerm.Identifier.Code, term1.Str))
 					{ warn("文字列" + index.GetStrValue(null) + "は変数" + varTerm.Identifier.Name + "の要素ではありません", line, 2, false); return null; }
@@ -1517,7 +1517,7 @@ namespace MinorShift.Emuera.GameProc.Function
 					return null;
 				if (!x.Identifier.IsArray1D && !x.Identifier.IsArray2D && !x.Identifier.IsArray3D)
 				{ warn("第３引数は配列変数でなければなりません", line, 2, false); return null; }
-				VariableTerm term = (terms.Count >= 4) ? getChangeableVariable(terms, 4, line) : new VariableTerm(GlobalStatic.VariableData.GetSystemVariableToken("RESULT"), new AExpression[] { new SingleTerm(0) });
+				VariableTerm term = (terms.Count >= 4) ? getChangeableVariable(terms, 4, line) : new VariableTerm(GlobalStatic.VariableData.GetSystemVariableToken("RESULT"), new AExpression[] { new SingleLongTerm(0) });
 				return new SpSplitArgument(terms[0], terms[1], x.Identifier, term);
 			}
 		}
@@ -1550,7 +1550,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				if (term == null)
 				{
 					VariableToken varToken = GlobalStatic.VariableData.GetSystemVariableToken("RESULT");
-					term = new VariableTerm(varToken, new AExpression[] { new SingleTerm(0) });
+					term = new VariableTerm(varToken, new AExpression[] { new SingleLongTerm(0) });
 				}
 				return new SpHtmlSplitArgument(terms[0], destVar, term);
 			}
@@ -1569,7 +1569,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				if (terms.Count == 0)
 				{
 					VariableToken varToken = GlobalStatic.VariableData.GetSystemVariableToken("RESULT");
-					return new SpGetIntArgument(new VariableTerm(varToken, [new SingleTerm(0)]));
+					return new SpGetIntArgument(new VariableTerm(varToken, [new SingleLongTerm(0)]));
 				}
 				if (!checkArgumentType(line, exm, terms))
 					return null;
@@ -1622,7 +1622,7 @@ namespace MinorShift.Emuera.GameProc.Function
 					if (terms[0].GetOperandType() != terms[2].GetOperandType())
 					{ warn("第１引数と第３引数の型が違います", line, 2, false); return null; }
 				}
-				AExpression term4 = terms.Count >= 4 ? terms[3] : new SingleTerm(0);
+				AExpression term4 = terms.Count >= 4 ? terms[3] : new SingleLongTerm(0);
 				AExpression term5 = terms.Count >= 5 ? terms[4] : null;
 				return new SpArrayShiftArgument(x, terms[1], terms[2], term4, term5);
 			}
@@ -1859,7 +1859,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				if (!checkArgumentType(line, exm, terms))
 					return null;
 				VariableToken[] vars = new VariableToken[2] { null, null };
-				if (terms[0] is SingleTerm term)
+				if (terms[0] is SingleStrTerm term)
 				{
 					if ((vars[0] = GlobalStatic.IdentifierDictionary.GetVariableToken(term.Str, null, true)) == null)
 					{
@@ -1877,7 +1877,7 @@ namespace MinorShift.Emuera.GameProc.Function
 						return null;
 					}
 				}
-				if (terms[1] is SingleTerm term1)
+				if (terms[1] is SingleStrTerm term1)
 				{
 					if ((vars[1] = GlobalStatic.IdentifierDictionary.GetVariableToken(term1.Str, null, true)) == null)
 					{

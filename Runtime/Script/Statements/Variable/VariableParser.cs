@@ -8,7 +8,7 @@ namespace MinorShift.Emuera.GameData.Variable
 	{
 		public static void Initialize()
 		{
-			ZeroTerm = new SingleTerm(0);
+			ZeroTerm = new SingleLongTerm(0);
 			AExpression[] zeroArgs = new AExpression[] { ZeroTerm };
 			TARGET = new VariableTerm(GlobalStatic.VariableData.GetSystemVariableToken("TARGET"), zeroArgs);
 		}
@@ -160,7 +160,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				}
 				if (!Config.CompatiRAND && op1 is SingleTerm op1SingleTerm && id.Code == VariableCode.RAND)
 				{
-					if (op1SingleTerm.Int == 0)
+					if (((SingleLongTerm)op1SingleTerm).Int == 0)
 						throw new CodeEE("RANDの引数に0が与えられています");
 				}
 				terms = [op1];

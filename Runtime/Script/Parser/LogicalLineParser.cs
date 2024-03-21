@@ -203,7 +203,7 @@ namespace MinorShift.Emuera.GameProc
 								break;
 							}
 							AExpression arg = ExpressionParser.ReduceIntegerTerm(wc, TermEndWith.EoL);
-							if ((!(arg.Restructure(null) is SingleTerm sizeTerm)) || (sizeTerm.GetOperandType() != typeof(Int64)))
+							if ((arg.Restructure(null) is not SingleLongTerm sizeTerm) || (sizeTerm.GetOperandType() != typeof(Int64)))
 							{
 								ParserMediator.Warn($"#{token}の後に有効な定数式が指定されていません", position, 2);
 								break;

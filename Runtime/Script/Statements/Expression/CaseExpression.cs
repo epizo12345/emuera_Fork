@@ -51,7 +51,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				return LeftTerm.GetIntValue(exm) <= Is && Is <= RightTerm.GetIntValue(exm);
 			if (CaseType == CaseExpressionType.Is)
 			{
-				AExpression term = OperatorMethodManager.ReduceBinaryTerm(Operator, new SingleTerm(Is), LeftTerm);
+				AExpression term = OperatorMethodManager.ReduceBinaryTerm(Operator, new SingleLongTerm(Is), LeftTerm);
 				return term.GetIntValue(exm) != 0;
 			}
 			return LeftTerm.GetIntValue(exm) == Is;
@@ -66,7 +66,7 @@ namespace MinorShift.Emuera.GameData.Expression
 			}
 			if (CaseType == CaseExpressionType.Is)
 			{
-				AExpression term = OperatorMethodManager.ReduceBinaryTerm(Operator, new SingleTerm(Is), LeftTerm);
+				AExpression term = OperatorMethodManager.ReduceBinaryTerm(Operator, new SingleStrTerm(Is), LeftTerm);
 				return term.GetIntValue(exm) != 0;
 			}
 			return LeftTerm.GetStrValue(exm) == Is;

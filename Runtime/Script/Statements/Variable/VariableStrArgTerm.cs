@@ -46,7 +46,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			strTerm = strTerm.Restructure(exm);
 			if (!(strTerm is SingleTerm))
 				return this;
-			return new SingleTerm(this.GetIntValue(exm));
+			return new SingleLongTerm(this.GetIntValue(exm));
 		}
 	}
 

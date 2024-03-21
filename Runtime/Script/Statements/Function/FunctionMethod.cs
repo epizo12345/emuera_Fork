@@ -40,9 +40,9 @@ namespace MinorShift.Emuera.GameData.Function
 		public virtual SingleTerm GetReturnValue(ExpressionMediator exm, List<AExpression> arguments)
 		{
 			if (ReturnType == typeof(Int64))
-				return new SingleTerm(GetIntValue(exm, arguments));
+				return new SingleLongTerm(GetIntValue(exm, arguments));
 			else
-				return new SingleTerm(GetStrValue(exm, arguments));
+				return new SingleStrTerm(GetStrValue(exm, arguments));
 		}
 
 		/// <summary>

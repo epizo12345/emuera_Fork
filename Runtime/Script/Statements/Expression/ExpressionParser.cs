@@ -169,7 +169,7 @@ namespace MinorShift.Emuera.GameData.Expression
 		{
 			StrForm strf = StrForm.FromWordToken(sfw);
 			if (strf.IsConst)
-				return new SingleTerm(strf.GetString(null));
+				return new SingleStrTerm(strf.GetString(null));
 			return new StrFormTerm(strf);
 		}
 
@@ -268,7 +268,7 @@ namespace MinorShift.Emuera.GameData.Expression
 				if (refToken != null)//関数参照と名前が一致したらそれを返す。実際に使うとエラー
 					return refToken;
 				if (varCode != VariableCode.__NULL__ && GlobalStatic.ConstantData.isDefined(varCode, idStr))//連想配列的な可能性アリ
-					return new SingleTerm(idStr);
+					return new SingleStrTerm(idStr);
 				GlobalStatic.IdentifierDictionary.ThrowException(idStr, false);
 			}
 			throw new ExeEE("エラー投げ損ねた");//ここまででthrowかreturnのどちらかをするはず。
@@ -520,8 +520,8 @@ namespace MinorShift.Emuera.GameData.Expression
 				}
 				throw new CodeEE("式が異常です");
 			}
-			public void Add(Int64 i) { Add(new SingleTerm(i)); }
-			public void Add(string s) { Add(new SingleTerm(s)); }
+			public void Add(Int64 i) { Add(new SingleLongTerm(i)); }
+			public void Add(string s) { Add(new SingleStrTerm(s)); }
 			public void Add(AExpression term)
 			{
 				stack.Push(term);

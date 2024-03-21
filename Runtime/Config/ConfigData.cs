@@ -288,9 +288,9 @@ internal sealed class ConfigData
 			case ConfigCode.AutoSave://"オートセーブを行なう"
 			case ConfigCode.MoneyFirst://"単位の位置"
 				if (item.GetValue<bool>())
-					term = new SingleTerm(1);
+					term = new SingleLongTerm(1);
 				else
-					term = new SingleTerm(0);
+					term = new SingleLongTerm(0);
 				break;
 			//<int>
 			case ConfigCode.WindowX:// "ウィンドウ幅"
@@ -301,7 +301,7 @@ internal sealed class ConfigData
 			case ConfigCode.SaveDataNos:// "表示するセーブデータ数"
 			case ConfigCode.MaxShopItem:// "販売アイテム数"
 			case ConfigCode.ComAbleDefault:// "COM_ABLE初期値"
-				term = new SingleTerm(item.GetValue<int>());
+				term = new SingleLongTerm(item.GetValue<int>());
 				break;
 			//<Color>
 			case ConfigCode.ForeColor://"文字色"
@@ -310,14 +310,14 @@ internal sealed class ConfigData
 			case ConfigCode.LogColor://"履歴文字色"
 				{
 					Color color = item.GetValue<Color>();
-					term = new SingleTerm((color.R * 256 + color.G) * 256 + color.B);
+					term = new SingleLongTerm((color.R * 256 + color.G) * 256 + color.B);
 				}
 				break;
 
 			//<Int64>
 			case ConfigCode.pbandDef:// "PBANDの初期値"
 			case ConfigCode.RelationDef:// "RELATIONの初期値"
-				term = new SingleTerm(item.GetValue<long>());
+				term = new SingleLongTerm(item.GetValue<long>());
 				break;
 
 			//<string>
@@ -328,17 +328,17 @@ internal sealed class ConfigData
 			case ConfigCode.TitleMenuString0:// "システムメニュー0"
 			case ConfigCode.TitleMenuString1:// "システムメニュー1"
 			case ConfigCode.TimeupLabel:// "時間切れ表示"
-				term = new SingleTerm(item.GetValue<string>());
+				term = new SingleStrTerm(item.GetValue<string>());
 				break;
 
 			//<char>
 			case ConfigCode.BarChar1:// "BAR文字1"
 			case ConfigCode.BarChar2:// "BAR文字2"
-				term = new SingleTerm(item.GetValue<char>().ToString());
+				term = new SingleStrTerm(item.GetValue<char>().ToString());
 				break;
 			//<TextDrawingMode>
 			case ConfigCode.TextDrawingMode:// "描画インターフェース"
-				term = new SingleTerm(item.GetValue<TextDrawingMode>().ToString());
+				term = new SingleStrTerm(item.GetValue<TextDrawingMode>().ToString());
 				break;
 			default:
 				{

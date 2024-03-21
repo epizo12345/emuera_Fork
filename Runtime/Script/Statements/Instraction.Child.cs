@@ -368,7 +368,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				else
 					rowStr = st.Substring();
 				rowStr = GlobalStatic.Console.getStBar(rowStr);
-				Argument ret = new ExpressionArgument(new SingleTerm(rowStr))
+				Argument ret = new ExpressionArgument(new SingleStrTerm(rowStr))
 				{
 					ConstStr = rowStr,
 					IsConst = true
@@ -1257,10 +1257,10 @@ namespace MinorShift.Emuera.GameProc.Function
 				}
 				if (!p.Identifier.IsCharacterData)
 					throw new CodeEE("命令CVARSETにキャラクタ変数でない変数" + p.Identifier.Name + "が渡されました");
-				if (index.GetOperandType() == typeof(string) && p.Identifier.IsArray1D)
+				if (index is SingleStrTerm singleStrTerm && p.Identifier.IsArray1D)
 				{
-					if (!GlobalStatic.ConstantData.isDefined(p.Identifier.Code, index.Str))
-						throw new CodeEE("文字列" + index.Str + "は配列変数" + p.Identifier.Name + "の要素ではありません");
+					if (!GlobalStatic.ConstantData.isDefined(p.Identifier.Code, singleStrTerm.Str))
+						throw new CodeEE("文字列" + singleStrTerm.Str + "は配列変数" + p.Identifier.Name + "の要素ではありません");
 				}
 				if (p.Identifier.IsString)
 				{

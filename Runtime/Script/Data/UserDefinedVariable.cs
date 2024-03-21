@@ -213,8 +213,7 @@ namespace MinorShift.Emuera.GameProc
 					if (wc.EOL)
 						throw new CodeEE("カンマの後に有効な定数式が指定されていません", sc);
 					AExpression arg = ExpressionParser.ReduceIntegerTerm(wc, TermEndWith.Comma_Assignment);
-					SingleTerm sizeTerm = arg.Restructure(null) as SingleTerm;
-					if ((sizeTerm == null) || (sizeTerm.GetOperandType() != typeof(Int64)))
+					if (arg.Restructure(null) is not SingleLongTerm sizeTerm)
 						throw new CodeEE("カンマの後に有効な定数式が指定されていません", sc);
 					if (ret.Reference)//参照型には要素数指定不可(0にするか書かないかどっちか
 					{
@@ -275,9 +274,9 @@ namespace MinorShift.Emuera.GameProc
 					if (dims != sTerm.IsString)
 						throw new CodeEE("変数の型と初期値の型が一致していません");
 					if (dims)
-						ret.DefaultStr[i] = sTerm.Str;
+						ret.DefaultStr[i] = ((SingleStrTerm)sTerm).Str;
 					else
-						ret.DefaultInt[i] = sTerm.Int;
+						ret.DefaultInt[i] = ((SingleLongTerm)sTerm).Int;
 				}
 				if (sizeNum.Count == 0)
 					sizeNum.Add(terms.Count);

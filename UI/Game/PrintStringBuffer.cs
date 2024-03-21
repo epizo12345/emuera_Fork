@@ -178,7 +178,7 @@ namespace MinorShift.Emuera.GameView
 		public static ConsoleDisplayLine[] ButtonsToDisplayLines(List<ConsoleButtonString> buttonList, StringMeasure stringMeasure, bool nobr, bool temporary)
 		{
 			if (buttonList.Count == 0)
-				return new ConsoleDisplayLine[0];
+				return [];
 			setWidthToButtonList(buttonList, stringMeasure, nobr);
 			List<ConsoleDisplayLine> lineList = [];
 			List<ConsoleButtonString> lineButtonList = [];
