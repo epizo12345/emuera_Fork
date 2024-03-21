@@ -130,12 +130,13 @@ namespace MinorShift.Emuera.GameView
 				button.DrawTo(graph, pointY, isBackLog, mode);
 		}
 
+		readonly static StringBuilder builder = new();
 		public override string ToString()
 		{
 			if (buttons == null)
 				return "";
-			StringBuilder builder = new();
-			foreach (ConsoleButtonString button in buttons)
+			builder.Clear();
+			foreach (var button in buttons)
 				builder.Append(button.ToString());
 			return builder.ToString();
 		}

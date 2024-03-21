@@ -129,23 +129,17 @@ namespace MinorShift.Emuera.GameData.Variable
 		readonly static Dictionary<string, VariableCode> localvarNameDic = [];
 		readonly static Dictionary<VariableCode, List<VariableCode>> extSaveListDic = [];
 
-		public static Dictionary<string, VariableCode> GetVarNameDic()
-		{
-			return nameDic;
-		}
-
 
 		static VariableIdentifier()
 		{
-			Array array = Enum.GetValues(typeof(VariableCode));
+			var array = Enum.GetValues<VariableCode>();
 
-			nameDic.Add(VariableCode.__FILE__.ToString(), VariableCode.__FILE__);
-			nameDic.Add(VariableCode.__LINE__.ToString(), VariableCode.__LINE__);
-			nameDic.Add(VariableCode.__FUNCTION__.ToString(), VariableCode.__FUNCTION__);
-			foreach (object name in array)
+			nameDic.Add(Enum.GetName(VariableCode.__FILE__), VariableCode.__FILE__);
+			nameDic.Add(Enum.GetName(VariableCode.__LINE__), VariableCode.__LINE__);
+			nameDic.Add(Enum.GetName(VariableCode.__FUNCTION__), VariableCode.__FUNCTION__);
+			foreach (var code in array)
 			{
-				VariableCode code = (VariableCode)name;
-				string key = code.ToString();
+				var key = Enum.GetName(code);
 				if ((key == null) || (key.StartsWith("__") && key.EndsWith("__")))
 					continue;
 				if (nameDic.ContainsKey(key))

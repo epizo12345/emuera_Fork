@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Text;
 using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Sub;
 
@@ -224,14 +225,15 @@ namespace MinorShift.Emuera.GameView
 				css.DrawTo(graph, pointY, isSelecting, isBackLog, mode);
 		}
 
+		readonly static StringBuilder builder = new();
 		public override string ToString()
 		{
 			if (strArray == null)
 				return "";
-			string str = "";
-			foreach (AConsoleDisplayPart css in strArray)
-				str += css.ToString();
-			return str;
+			builder.Clear();
+			foreach (var css in strArray)
+				builder.Append(css.ToString());
+			return builder.ToString();
 		}
 
 	}
