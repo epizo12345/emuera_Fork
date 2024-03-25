@@ -94,7 +94,7 @@ static partial class Program
 			AnalysisMode = true;
 		}
 
-		ProfileOptimization.SetProfileRoot(exeDir ?? Environment.CurrentDirectory);
+		ProfileOptimization.SetProfileRoot(exeDir ?? ExeDir);
 		ProfileOptimization.StartProfile("profile");
 
 		ConfigData.Instance.LoadConfig();
@@ -207,7 +207,13 @@ static partial class Program
 
 	static Program()
 	{
-		SetDirPaths(AppContext.BaseDirectory);
+		var baseDirectory = AppContext.BaseDirectory;
+		if (Directory.Exists(Path.Combine(baseDirectory, "Data", "erb")))
+		{
+			baseDirectory = Path.Combine(baseDirectory, "Data");
+		}
+		SetDirPaths(baseDirectory);
+
 	}
 
 }
