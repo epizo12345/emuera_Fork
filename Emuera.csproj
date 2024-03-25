@@ -4,15 +4,13 @@
     <OutputType>WinExe</OutputType>
 
     <RootNamespace>MinorShift.Emuera</RootNamespace>
-    <Version>0.2.2.13</Version>
+    <Version>0.2.3.0</Version>
 
     
 
     <ApplicationIcon>era_v.ico</ApplicationIcon>
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>false</SelfContained>
-    
-    <AnalysisMode>Minimum</AnalysisMode>
 
     
     <UseWindowsForms>true</UseWindowsForms>
@@ -30,12 +28,12 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Enums.NET" Version="4.0.1" />
+    <PackageReference Include="Enums.NET" Version="4.0.2" />
     <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.49-beta">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="SkiaSharp" Version="2.88.7" />
-    <PackageReference Include="SkiaSharp.Views.WindowsForms" Version="2.88.7" />
+    <PackageReference Include="SkiaSharp" Version="3.0.0-preview.2.1 " />
+    <PackageReference Include="SkiaSharp.Views.WindowsForms" Version="3.0.0-preview.2.1 " />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
   </ItemGroup>
 </Project>
