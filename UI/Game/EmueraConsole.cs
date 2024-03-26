@@ -853,7 +853,7 @@ namespace MinorShift.Emuera.GameView
 				{ text = [str]; }
 				else
 				{
-					if (str.StartsWith("@") && !inputReq.OneInput)
+					if (str.StartsWith('@') && !inputReq.OneInput)
 					{
 						doSystemCommand(str);
 						return;
@@ -864,7 +864,7 @@ namespace MinorShift.Emuera.GameView
 						(inputReq.InputType == InputType.AnyKey || inputReq.InputType == InputType.EnterKey))
 						stopTimer();
 					//if((inputReq.InputType == InputType.IntValue || inputReq.InputType == InputType.StrValue)
-					if (str.Contains("("))
+					if (str.Contains('('))
 						str = parseInput(new CharStream(str), false);
 					text = str.Split(spliter, StringSplitOptions.None);
 				}

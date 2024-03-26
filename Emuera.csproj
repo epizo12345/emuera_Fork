@@ -4,13 +4,15 @@
     <OutputType>WinExe</OutputType>
 
     <RootNamespace>MinorShift.Emuera</RootNamespace>
-    <Version>0.2.3.0</Version>
+    <Version>0.2.3.1</Version>
 
     
 
     <ApplicationIcon>era_v.ico</ApplicationIcon>
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>false</SelfContained>
+
+    <InvariantGlobalization>true</InvariantGlobalization>
 
     
     <UseWindowsForms>true</UseWindowsForms>
