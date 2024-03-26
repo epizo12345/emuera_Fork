@@ -12,8 +12,6 @@
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>false</SelfContained>
 
-    <InvariantGlobalization>true</InvariantGlobalization>
-
     
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>

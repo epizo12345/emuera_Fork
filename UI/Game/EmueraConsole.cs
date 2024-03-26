@@ -864,7 +864,7 @@ namespace MinorShift.Emuera.GameView
 						(inputReq.InputType == InputType.AnyKey || inputReq.InputType == InputType.EnterKey))
 						stopTimer();
 					//if((inputReq.InputType == InputType.IntValue || inputReq.InputType == InputType.StrValue)
-					if (str.Contains('('))
+					if (str.Contains('(', StringComparison.Ordinal))
 						str = parseInput(new CharStream(str), false);
 					text = str.Split(spliter, StringSplitOptions.None);
 				}
@@ -873,9 +873,9 @@ namespace MinorShift.Emuera.GameView
 				for (int i = 0; i < text.Length; i++)
 				{
 					string inputs = text[i];
-					if (inputs.IndexOf("\\e") >= 0)
+					if (inputs.Contains("\\e", StringComparison.Ordinal))
 					{
-						inputs = inputs.Replace("\\e", "");//\eの除去
+						inputs = inputs.Replace("\\e", "", StringComparison.Ordinal);//\eの除去
 						MesSkip = true;
 					}
 
@@ -1511,7 +1511,7 @@ namespace MinorShift.Emuera.GameView
 			try
 			{
 				LogicalLine line = null;
-				if (!com.StartsWith("@") && !com.StartsWith("\"") && !com.StartsWith("\\"))
+				if (!com.StartsWith("@", StringComparison.Ordinal) && !com.StartsWith("\"", StringComparison.Ordinal) && !com.StartsWith("\\", StringComparison.Ordinal))
 					line = LogicalLineParser.ParseLine(com, null);
 				if (line == null || (line is InvalidLine))
 				{

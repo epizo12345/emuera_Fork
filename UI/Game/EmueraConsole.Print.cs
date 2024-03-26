@@ -332,9 +332,9 @@ namespace MinorShift.Emuera.GameView
 		{
 			if (string.IsNullOrEmpty(str))
 				return;
-			if (str.Contains('\n'))
+			if (str.Contains('\n', StringComparison.Ordinal))
 			{
-				int newline = str.IndexOf('\n');
+				int newline = str.IndexOf('\n', StringComparison.Ordinal);
 				string upper = str[..newline];
 				printBuffer.Append(upper, Style);
 				NewLine();
@@ -611,7 +611,7 @@ namespace MinorShift.Emuera.GameView
 			if (filename == null)
 				filename = Program.ExeDir + "emuera.log";
 
-			if (!filename.StartsWith(Program.ExeDir, StringComparison.CurrentCultureIgnoreCase))
+			if (!filename.StartsWith(Program.ExeDir, StringComparison.OrdinalIgnoreCase))
 			{
 				Dialog.Show("ログ出力失敗", "ログファイルは実行ファイル以下のディレクトリにのみ保存できます");
 				return false;
