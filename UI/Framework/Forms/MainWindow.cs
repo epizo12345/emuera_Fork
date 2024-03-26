@@ -512,7 +512,7 @@ namespace MinorShift.Emuera.Forms
 			Process.Start(Application.ExecutablePath, _args);
 
 			//現在のアプリケーションを終了する
-			Application.Exit();
+			Application.ExitThread();
 		}
 
 		public void GotoTitle()
