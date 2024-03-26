@@ -14,14 +14,13 @@ namespace MinorShift.Emuera.GameProc
 	/// </summary>
 	internal abstract class LogicalLine
 	{
-		protected int LineNo;
-		protected string Filename;
+		protected ScriptPosition? scriptPosition;
 
 		//LogicalLine prevLine;
 		LogicalLine nextLine;
 		public ScriptPosition? Position
 		{
-			get { return new ScriptPosition(Filename, LineNo); }
+			get { return scriptPosition; }
 		}
 
 		public FunctionLabelLine ParentLabelLine { get; set; }
@@ -32,9 +31,9 @@ namespace MinorShift.Emuera.GameProc
 		}
 		public override string ToString()
 		{
-			if (Filename == null)
+			if (scriptPosition == null)
 				return base.ToString();
-			return string.Format("{0}:{1}:{2}", Filename, LineNo, GlobalStatic.Process.getRawTextFormFilewithLine(new ScriptPosition(Filename, LineNo)));
+			return string.Format("{0}:{1}:{2}", scriptPosition.Value.Filename, scriptPosition.Value.LineNo, GlobalStatic.Process.getRawTextFormFilewithLine(scriptPosition));
 		}
 
 		protected bool isError;
@@ -76,8 +75,7 @@ namespace MinorShift.Emuera.GameProc
 	{
 		public InvalidLine(ScriptPosition? thePosition, string err)
 		{
-			LineNo = thePosition.Value.LineNo;
-			Filename = thePosition.Value.Filename;
+			scriptPosition = thePosition;
 			errMes = err;
 		}
 		public override bool IsError
@@ -93,16 +91,14 @@ namespace MinorShift.Emuera.GameProc
 	{
 		public InstructionLine(ScriptPosition? thePosition, FunctionIdentifier theFunc, CharStream theArgPrimitive)
 		{
-			LineNo = thePosition.Value.LineNo;
-			Filename = thePosition.Value.Filename;
+			scriptPosition = thePosition;
 			this.func = theFunc;
 			this.argprimitive = theArgPrimitive;
 		}
 
 		public InstructionLine(ScriptPosition? thePosition, FunctionIdentifier functionIdentifier, OperatorCode assignOP, WordCollection dest, CharStream theArgPrimitive)
 		{
-			LineNo = thePosition.Value.LineNo;
-			Filename = thePosition.Value.Filename;
+			scriptPosition = thePosition;
 			func = functionIdentifier;
 			AssignOperator = assignOP;
 			assigndest = dest;
@@ -200,8 +196,7 @@ namespace MinorShift.Emuera.GameProc
 	{
 		public InvalidLabelLine(ScriptPosition? thePosition, string labelname, string err)
 		{
-			LineNo = thePosition.Value.LineNo;
-			Filename = thePosition.Value.Filename;
+			scriptPosition = thePosition;
 			LabelName = labelname;
 			errMes = err;
 			IsSingle = false;
@@ -224,8 +219,7 @@ namespace MinorShift.Emuera.GameProc
 		protected FunctionLabelLine() { }
 		public FunctionLabelLine(ScriptPosition? thePosition, string labelname, WordCollection wc)
 		{
-			LineNo = thePosition.Value.LineNo;
-			Filename = thePosition.Value.Filename;
+			scriptPosition = thePosition;
 			LabelName = labelname;
 			IsSingle = false;
 			hasPrivDynamicVar = false;
@@ -338,8 +332,7 @@ namespace MinorShift.Emuera.GameProc
 	{
 		public GotoLabelLine(ScriptPosition? thePosition, string labelname)
 		{
-			LineNo = thePosition.Value.LineNo;
-			Filename = thePosition.Value.Filename;
+			scriptPosition = thePosition;
 			this.labelname = labelname;
 		}
 		readonly string labelname = "";
