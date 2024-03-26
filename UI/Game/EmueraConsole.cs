@@ -821,7 +821,7 @@ namespace MinorShift.Emuera.GameView
 			RefreshStrings(true);
 		}
 
-		public void PressEnterKey(bool keySkip, string str, bool changedByMouse)
+		public void PressEnterKey(bool keySkip, string input, bool changedByMouse)
 		{
 			MesSkip = keySkip;
 			if ((state == ConsoleState.Running) || (state == ConsoleState.Initializing))
@@ -833,7 +833,7 @@ namespace MinorShift.Emuera.GameView
 			}
 			else if (state == ConsoleState.Error)
 			{
-				if (str == ErrorButtonsText && selectingButton != null && selectingButton.ErrPos != null)
+				if (input == ErrorButtonsText && selectingButton != null && selectingButton.ErrPos != null)
 				{
 					OpenErrorFile(selectingButton.ErrPos);
 					return;
@@ -850,12 +850,12 @@ namespace MinorShift.Emuera.GameView
 			{
 				string[] text;
 				if (changedByMouse)//1823 マウスによって入力されたならマクロ解析を行わない
-				{ text = [str]; }
+				{ text = [input]; }
 				else
 				{
-					if (str.StartsWith('@') && !inputReq.OneInput)
+					if (input.Length > 1 && !inputReq.OneInput && input.StartsWith('@'))
 					{
-						doSystemCommand(str);
+						doSystemCommand(input);
 						return;
 					}
 					if (inputReq.InputType == InputType.Void)
@@ -864,9 +864,9 @@ namespace MinorShift.Emuera.GameView
 						(inputReq.InputType == InputType.AnyKey || inputReq.InputType == InputType.EnterKey))
 						stopTimer();
 					//if((inputReq.InputType == InputType.IntValue || inputReq.InputType == InputType.StrValue)
-					if (str.Contains('(', StringComparison.Ordinal))
-						str = parseInput(new CharStream(str), false);
-					text = str.Split(spliter, StringSplitOptions.None);
+					if (input.Contains('(', StringComparison.Ordinal))
+						input = parseInput(new CharStream(input), false);
+					text = input.Split(spliter, StringSplitOptions.None);
 				}
 
 				inProcess = true;
@@ -1511,7 +1511,7 @@ namespace MinorShift.Emuera.GameView
 			try
 			{
 				LogicalLine line = null;
-				if (!com.StartsWith("@", StringComparison.Ordinal) && !com.StartsWith("\"", StringComparison.Ordinal) && !com.StartsWith("\\", StringComparison.Ordinal))
+				if (!com.StartsWith('@') && !com.StartsWith('"') && !com.StartsWith('\\'))
 					line = LogicalLineParser.ParseLine(com, null);
 				if (line == null || (line is InvalidLine))
 				{
