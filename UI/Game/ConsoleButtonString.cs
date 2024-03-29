@@ -222,7 +222,7 @@ namespace MinorShift.Emuera.GameView
 		{
 			bool isSelecting = IsButton && parent.ButtonIsSelected(this);
 			foreach (AConsoleDisplayPart css in strArray)
-				css.DrawTo(graph, pointY, isSelecting, isBackLog, mode);
+				css.DrawTo(graph, pointY, isSelecting, isBackLog, mode, IsButton);
 		}
 
 		readonly static StringBuilder builder = new();

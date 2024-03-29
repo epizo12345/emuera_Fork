@@ -83,7 +83,7 @@ namespace MinorShift.Emuera.GameView
 			XsubPixel = subPixel;
 		}
 
-		public override void DrawTo(Graphics graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode)
+		public override void DrawTo(Graphics graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
 		{
 			if (this.Error)
 				return;
@@ -101,12 +101,12 @@ namespace MinorShift.Emuera.GameView
 						backcolor = Color.Gray;
 					}
 				}
-
-
 				color = this.ButtonColor;
 			}
 			else if (isBackLog && !colorChanged)
+			{
 				color = Config.LogColor;
+			}
 
 			if (mode == TextDrawingMode.GRAPHICS)
 			{
@@ -114,9 +114,20 @@ namespace MinorShift.Emuera.GameView
 			}
 			else
 			{
-				if (JSONConfig.Data.UseButtonFocusBackgroundColor && backcolor.HasValue)
+				if (JSONConfig.Data.UseButtonFocusBackgroundColor)
 				{
-					TextRenderer.DrawText(graph, Str.AsSpan(), Font, new Point(PointX, pointY), color, backColor: backcolor.Value, TextFormatFlags.NoPrefix);
+					if (isButton && !isBackLog)
+					{
+						if (!backcolor.HasValue)
+						{
+							backcolor = Color.FromArgb(50, 50, 50);
+						}
+						TextRenderer.DrawText(graph, Str.AsSpan(), Font, new Point(PointX, pointY), color, backColor: backcolor.Value, TextFormatFlags.NoPrefix);
+					}
+					else
+					{
+						TextRenderer.DrawText(graph, Str.AsSpan(), Font, new Point(PointX, pointY), color, TextFormatFlags.NoPrefix);
+					}
 				}
 				else
 				{

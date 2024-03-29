@@ -120,7 +120,7 @@ namespace MinorShift.Emuera.GameView
 		readonly RectangleF originalRectF;
 		bool visible = false;
 		Rectangle rect;
-		public override void DrawTo(System.Drawing.Graphics graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode)
+		public override void DrawTo(System.Drawing.Graphics graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
 		{
 			if (!visible)
 				return;
@@ -151,7 +151,7 @@ namespace MinorShift.Emuera.GameView
 			//Width = width;
 		}
 
-		public override void DrawTo(System.Drawing.Graphics graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode) { }
+		public override void DrawTo(System.Drawing.Graphics graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false) { }
 
 		public override void SetWidth(StringMeasure sm, float subPixel)
 		{
@@ -169,7 +169,7 @@ namespace MinorShift.Emuera.GameView
 			AltText = errMes;
 		}
 
-		public override void DrawTo(System.Drawing.Graphics graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode)
+		public override void DrawTo(System.Drawing.Graphics graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
 		{
 			if (mode == TextDrawingMode.GRAPHICS)
 				graph.DrawString(Str, Config.DefaultFont, new SolidBrush(Config.ForeColor), new Point(PointX, pointY));
