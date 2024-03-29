@@ -1201,9 +1201,7 @@ namespace MinorShift.Emuera.GameProc.Function
 					start = (int)spvarsetarg.Start.GetIntValue(exm);
 					if (start > end)
 					{
-						int temp = start;
-						start = end;
-						end = temp;
+						(end, start) = (start, end);
 					}
 				}
 				if (var.IsString)
