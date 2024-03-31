@@ -97,7 +97,9 @@ namespace MinorShift.Emuera.GameData.Variable
 				if (p.Identifier.IsArray1D)
 				{
 					if (start != 0 || end != p.Identifier.GetLength())
+					{
 						p.IsArrayRangeValid((Int64)start, (Int64)end, "VARSET", 3L, 4L);
+					}
 					else if (p.Identifier.IsCharacterData)
 						p.Identifier.CheckElement([p.Index1, p.Index2]);
 				}
