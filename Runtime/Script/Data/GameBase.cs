@@ -29,7 +29,7 @@ namespace MinorShift.Emuera.GameData
 			{
 				StringBuilder versionStr = new();
 				versionStr.Append(ScriptVersion / 1000);
-				versionStr.Append(".");
+				versionStr.Append('.');
 				if ((ScriptVersion % 10) != 0)
 					versionStr.Append((ScriptVersion % 1000).ToString("000"));
 				else
