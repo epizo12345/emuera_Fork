@@ -1240,9 +1240,6 @@ internal static partial class LexicalAnalyzer
 		return new YenAtSubWord(w, left, right);
 	}
 
-	[GeneratedRegex("　")]
-	private static partial Regex whiteSpaceRegex();
-
 	#endregion
 
 }

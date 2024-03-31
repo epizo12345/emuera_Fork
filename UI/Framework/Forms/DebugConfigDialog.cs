@@ -51,20 +51,6 @@ namespace MinorShift.Emuera.Forms
 			updown.Enabled = !item.Fixed;
 		}
 
-		static void setColorBox(ColorBox colorBox, ConfigCode code)
-		{
-			ConfigItem<Color> item = (ConfigItem<Color>)ConfigData.Instance.GetDebugItem(code);
-			colorBox.SelectingColor = item.Value;
-			colorBox.Enabled = !item.Fixed;
-		}
-
-		static void setTextBox(TextBox textBox, ConfigCode code)
-		{
-			ConfigItem<string> item = (ConfigItem<string>)ConfigData.Instance.GetDebugItem(code);
-			textBox.Text = item.Value;
-			textBox.Enabled = !item.Fixed;
-		}
-
 		public void SetConfig(DebugDialog debugDialog)
 		{
 			dd = debugDialog;

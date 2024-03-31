@@ -51,12 +51,8 @@ namespace MinorShift.Emuera.GameData.Expression
 	internal static class OperatorManager
 	{
 
-		readonly static Dictionary<string, OperatorCode> opDictionary;
-		static OperatorManager()
+		readonly static Dictionary<string, OperatorCode> opDictionary = new()
 		{
-
-			opDictionary = new Dictionary<string, OperatorCode>
-			{
 				{ "+", OperatorCode.Plus },
 				{ "-", OperatorCode.Minus },
 				{ "*", OperatorCode.Mult },
@@ -87,7 +83,6 @@ namespace MinorShift.Emuera.GameData.Expression
 				{ "=", OperatorCode.Assignment },
 				{ "'=", OperatorCode.AssignmentStr }
 			};
-		}
 
 		public static string ToOperatorString(OperatorCode op)
 		{

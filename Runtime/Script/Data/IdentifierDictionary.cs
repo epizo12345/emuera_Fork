@@ -675,8 +675,6 @@ namespace MinorShift.Emuera
 		private static partial Regex preCompiledComAbleRegex();
 		[GeneratedRegex("^ABLUP[0-9]+$")]
 		private static partial Regex preCompiledAblupRegex();
-		[GeneratedRegex("COM.*")]
-		private static partial Regex preCompiledCOMRegex();
 		#endregion
 
 

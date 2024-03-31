@@ -185,15 +185,6 @@ namespace MinorShift._Library
 			private const UInt32 PARITY4 = 0xd0c7afa3U;
 #elif MT19937
 		private const int MEXP = 19937;
-		private const int POS1 = 122;
-		private const int SL1 = 18;
-		private const int SL2 = 1;
-		private const int SR1 = 11;
-		private const int SR2 = 1;
-		private const UInt32 MSK1 = 0xdfffffefU;
-		private const UInt32 MSK2 = 0xddfecb7fU;
-		private const UInt32 MSK3 = 0xbffaffffU;
-		private const UInt32 MSK4 = 0xbffffff6U;
 		private const UInt32 PARITY1 = 0x00000001U;
 		private const UInt32 PARITY2 = 0x00000000U;
 		private const UInt32 PARITY3 = 0x00000000U;
@@ -264,10 +255,6 @@ namespace MinorShift._Library
 
 		private const int N = MEXP / 128 + 1;
 		private const int N32 = N * 4;
-		private const int SL2_x8 = SL2 * 8;
-		private const int SR2_x8 = SR2 * 8;
-		private const int SL2_ix8 = 64 - SL2 * 8;
-		private const int SR2_ix8 = 64 - SR2 * 8;
 
 		/// <summary>
 		/// 内部状態ベクトル。

@@ -192,7 +192,6 @@ namespace MinorShift.Emuera.Forms
 
 
 		private readonly string watchFilepath = Program.DebugDir + "watchlist.csv";
-		private readonly string traceFilepath = Program.DebugDir + "trace.log";
 		private readonly string consoleFilepath = Program.DebugDir + "console.log";
 
 		private void saveData()

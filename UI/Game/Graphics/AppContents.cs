@@ -12,13 +12,9 @@ namespace MinorShift.Emuera.Content
 {
 	static class AppContents
 	{
-		static AppContents()
-		{
-			gList = [];
-		}
 		static readonly ConcurrentDictionary<string, AbstractImage> resourceDic = new(Config.StrComper);
 		static readonly ConcurrentDictionary<string, ASprite> imageDictionary = new(Config.StrComper);
-		static readonly ConcurrentDictionary<int, GraphicsImage> gList;
+		static readonly ConcurrentDictionary<int, GraphicsImage> gList = [];
 
 		//static public T GetContent<T>(string name)where T :AContentItem
 		//{

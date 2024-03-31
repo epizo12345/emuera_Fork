@@ -35,15 +35,6 @@ namespace MinorShift.Emuera.GameProc.Function
 		public VoidArgument() { }
 	}
 
-	internal sealed class ErrorArgument : Argument
-	{
-		public ErrorArgument(string errorMes)
-		{
-			this.errorMes = errorMes;
-		}
-		readonly string errorMes;
-	}
-
 	internal sealed class ExpressionArgument : Argument
 	{
 		public ExpressionArgument(AExpression termSrc)
@@ -477,28 +468,6 @@ namespace MinorShift.Emuera.GameProc.Function
 		readonly public ReferenceToken RefVarToken;
 		readonly public VariableToken SrcVarToken;
 		readonly public AExpression SrcTerm;
-	}
-
-	internal sealed class OneInputArgument : Argument
-	{
-		public OneInputArgument(AExpression term, AExpression flag)
-		{
-			Term = term;
-			Flag = flag;
-		}
-		readonly public AExpression Term;
-		readonly public AExpression Flag;
-	}
-
-	internal sealed class OneInputsArgument : Argument
-	{
-		public OneInputsArgument(AExpression term, AExpression flag)
-		{
-			Term = term;
-			Flag = flag;
-		}
-		readonly public AExpression Term;
-		readonly public AExpression Flag;
 	}
 
 	#region set系
