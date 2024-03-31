@@ -137,13 +137,13 @@ namespace MinorShift.Emuera.GameData
 			VariableIntArrayLength = new int[(int)VariableCode.__COUNT_INTEGER_ARRAY__];
 			VariableStrArrayLength = new int[(int)VariableCode.__COUNT_STRING_ARRAY__];
 			VariableIntArray2DLength = new Int64[(int)VariableCode.__COUNT_INTEGER_ARRAY_2D__];
-			VariableStrArray2DLength = new Int64[(int)VariableCode.__COUNT_STRING_ARRAY_2D__];
+			VariableStrArray2DLength = [];
 			VariableIntArray3DLength = new Int64[(int)VariableCode.__COUNT_INTEGER_ARRAY_3D__];
-			VariableStrArray3DLength = new Int64[(int)VariableCode.__COUNT_STRING_ARRAY_3D__];
+			VariableStrArray3DLength = [];
 			CharacterIntArrayLength = new int[(int)VariableCode.__COUNT_CHARACTER_INTEGER_ARRAY__];
 			CharacterStrArrayLength = new int[(int)VariableCode.__COUNT_CHARACTER_STRING_ARRAY__];
 			CharacterIntArray2DLength = new Int64[(int)VariableCode.__COUNT_CHARACTER_INTEGER_ARRAY_2D__];
-			CharacterStrArray2DLength = new Int64[(int)VariableCode.__COUNT_CHARACTER_STRING_ARRAY_2D__];
+			CharacterStrArray2DLength = [];
 			for (int i = 0; i < VariableIntArrayLength.Length; i++)
 				VariableIntArrayLength[i] = 1000;
 			VariableIntArrayLength[(int)(VariableCode.__LOWERCASE__ & VariableCode.FLAG)] = 10000;

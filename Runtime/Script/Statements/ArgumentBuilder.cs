@@ -451,7 +451,7 @@ namespace MinorShift.Emuera.GameProc.Function
 
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
-				VariableTerm varTerm = new(GlobalStatic.VariableData.GetSystemVariableToken("NO"), new AExpression[] { new SingleLongTerm(0) });
+				VariableTerm varTerm = new(GlobalStatic.VariableData.GetSystemVariableToken("NO"), [new SingleLongTerm(0)]);
 				SortOrder order = SortOrder.ASCENDING;
 				WordCollection wc = popWords(line);
 				if (wc.EOL)
@@ -860,7 +860,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public SP_INPUTS_ArgumentBuilder()
 			{
-				argumentTypeArray = new Type[] { typeof(string) };
+				argumentTypeArray = [typeof(string)];
 				//if (nullable)妥協
 				minArg = 0;
 			}
@@ -909,7 +909,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public INT_EXPRESSION_ArgumentBuilder(bool nullable)
 			{
-				argumentTypeArray = new Type[] { typeof(Int64) };
+				argumentTypeArray = [typeof(Int64)];
 				//if (nullable)妥協
 				minArg = 0;
 				this.nullable = nullable;
@@ -946,7 +946,7 @@ namespace MinorShift.Emuera.GameProc.Function
 						warn("0回以下のREPEATです。(eramakerではエラーになります)", line, 0, true);
 					}
 					VariableToken count = GlobalStatic.VariableData.GetSystemVariableToken("COUNT");
-					VariableTerm repCount = new(count, new AExpression[] { new SingleLongTerm(0) });
+					VariableTerm repCount = new(count, [new SingleLongTerm(0)]);
 					repCount.Restructure(exm);
 					return new SpForNextArgment(repCount, new SingleLongTerm(0), term, new SingleLongTerm(1));
 				}
@@ -975,7 +975,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public INT_ANY_ArgumentBuilder()
 			{
-				argumentTypeArray = new Type[] { typeof(Int64) };
+				argumentTypeArray = [typeof(Int64)];
 				minArg = 0;
 				argAny = true;
 			}
@@ -1028,7 +1028,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public STR_EXPRESSION_ArgumentBuilder(bool nullable)
 			{
-				argumentTypeArray = new Type[] { typeof(string) };
+				argumentTypeArray = [typeof(string)];
 				if (nullable)
 					minArg = 0;
 			}
@@ -1055,7 +1055,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public EXPRESSION_ArgumentBuilder(bool nullable)
 			{
-				argumentTypeArray = new Type[] { typeof(void) };
+				argumentTypeArray = [typeof(void)];
 				if (nullable)
 					minArg = 0;
 			}
@@ -1082,7 +1082,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public SP_BAR_ArgumentBuilder()
 			{
-				argumentTypeArray = new Type[] { typeof(Int64), typeof(Int64), typeof(Int64) };
+				argumentTypeArray = [typeof(Int64), typeof(Int64), typeof(Int64)];
 				//minArg = 3;
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
@@ -1099,7 +1099,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			//emuera1803beta2+v1 第2引数省略型に対応
 			public SP_SWAP_ArgumentBuilder(bool nullable)
 			{
-				argumentTypeArray = new Type[] { typeof(Int64), typeof(Int64) };
+				argumentTypeArray = [typeof(Int64), typeof(Int64)];
 				if (nullable)
 					minArg = 1;
 			}
@@ -1119,7 +1119,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public SP_SAVEDATA_ArgumentBuilder()
 			{
-				argumentTypeArray = new Type[] { typeof(Int64), typeof(string) };
+				argumentTypeArray = [typeof(Int64), typeof(string)];
 			}
 
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
@@ -1135,7 +1135,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public SP_TINPUT_ArgumentBuilder()
 			{
-				argumentTypeArray = new Type[] { typeof(Int64), typeof(Int64), typeof(Int64), typeof(string) };
+				argumentTypeArray = [typeof(Int64), typeof(Int64), typeof(Int64), typeof(string)];
 				minArg = 2;
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
@@ -1157,7 +1157,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public SP_TINPUTS_ArgumentBuilder()
 			{
-				argumentTypeArray = new Type[] { typeof(Int64), typeof(string), typeof(Int64), typeof(string) };
+				argumentTypeArray = [typeof(Int64), typeof(string), typeof(Int64), typeof(string)];
 				minArg = 2;
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
@@ -1178,7 +1178,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public SP_FOR_NEXT_ArgumentBuilder()
 			{
-				argumentTypeArray = new Type[] { typeof(Int64), null, typeof(Int64), typeof(Int64) };
+				argumentTypeArray = [typeof(Int64), null, typeof(Int64), typeof(Int64)];
 				minArg = 3;
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
@@ -1211,7 +1211,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public SP_POWER_ArgumentBuilder()
 			{
-				argumentTypeArray = new Type[] { typeof(Int64), typeof(Int64), typeof(Int64) };
+				argumentTypeArray = [typeof(Int64), typeof(Int64), typeof(Int64)];
 				//minArg = 2;
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
@@ -1231,7 +1231,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public SP_SWAPVAR_ArgumentBuilder()
 			{
-				argumentTypeArray = new Type[] { typeof(void), typeof(void) };
+				argumentTypeArray = [typeof(void), typeof(void)];
 				//minArg = 2;
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
@@ -1258,7 +1258,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public VAR_INT_ArgumentBuilder()
 			{
-				argumentTypeArray = new Type[] { typeof(Int64) };
+				argumentTypeArray = [typeof(Int64)];
 				minArg = 0;
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
@@ -1279,7 +1279,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public VAR_STR_ArgumentBuilder()
 			{
-				argumentTypeArray = new Type[] { typeof(string) };
+				argumentTypeArray = [typeof(string)];
 				minArg = 0;
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
@@ -1288,7 +1288,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				if (terms.Count == 0)
 				{
 					VariableToken varToken = GlobalStatic.VariableData.GetSystemVariableToken("RESULTS");
-					VariableTerm varTerm = new(varToken, new AExpression[] { new SingleLongTerm(0) });
+					VariableTerm varTerm = new(varToken, [new SingleLongTerm(0)]);
 					return new StrDataArgument(varTerm);
 				}
 				if (!checkArgumentType(line, exm, terms))
@@ -1304,7 +1304,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public BIT_ARG_ArgumentBuilder()
 			{
-				argumentTypeArray = new Type[] { typeof(Int64), typeof(Int64) };
+				argumentTypeArray = [typeof(Int64), typeof(Int64)];
 				minArg = 2;
 				argAny = true;
 			}
@@ -1341,7 +1341,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public SP_VAR_SET_ArgumentBuilder()
 			{
-				argumentTypeArray = new Type[] { typeof(void), typeof(void), typeof(Int64), typeof(Int64) };
+				argumentTypeArray = [typeof(void), typeof(void), typeof(Int64), typeof(Int64)];
 				minArg = 1;
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
@@ -1396,7 +1396,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public SP_CVAR_SET_ArgumentBuilder()
 			{
-				argumentTypeArray = new Type[] { typeof(void), typeof(void), typeof(void), typeof(Int64), typeof(Int64) };
+				argumentTypeArray = [typeof(void), typeof(void), typeof(void), typeof(Int64), typeof(Int64)];
 				minArg = 1;
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
@@ -1451,7 +1451,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public SP_BUTTON_ArgumentBuilder()
 			{
-				argumentTypeArray = new Type[] { typeof(string), typeof(void) };
+				argumentTypeArray = [typeof(string), typeof(void)];
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
@@ -1466,7 +1466,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public SP_COLOR_ArgumentBuilder()
 			{
-				argumentTypeArray = new Type[] { typeof(Int64), typeof(Int64), typeof(Int64) };
+				argumentTypeArray = [typeof(Int64), typeof(Int64), typeof(Int64)];
 				minArg = 1;
 			}
 
@@ -1504,7 +1504,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public SP_SPLIT_ArgumentBuilder()
 			{
-				argumentTypeArray = new Type[] { typeof(string), typeof(string), typeof(string), typeof(Int64) };
+				argumentTypeArray = [typeof(string), typeof(string), typeof(string), typeof(Int64)];
 				minArg = 3;
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
@@ -1517,7 +1517,7 @@ namespace MinorShift.Emuera.GameProc.Function
 					return null;
 				if (!x.Identifier.IsArray1D && !x.Identifier.IsArray2D && !x.Identifier.IsArray3D)
 				{ warn("第３引数は配列変数でなければなりません", line, 2, false); return null; }
-				VariableTerm term = (terms.Count >= 4) ? getChangeableVariable(terms, 4, line) : new VariableTerm(GlobalStatic.VariableData.GetSystemVariableToken("RESULT"), new AExpression[] { new SingleLongTerm(0) });
+				VariableTerm term = (terms.Count >= 4) ? getChangeableVariable(terms, 4, line) : new VariableTerm(GlobalStatic.VariableData.GetSystemVariableToken("RESULT"), [new SingleLongTerm(0)]);
 				return new SpSplitArgument(terms[0], terms[1], x.Identifier, term);
 			}
 		}
@@ -1526,7 +1526,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public SP_HTMLSPLIT_ArgumentBuilder()
 			{
-				argumentTypeArray = new Type[] { typeof(string), typeof(string), typeof(Int64) };
+				argumentTypeArray = [typeof(string), typeof(string), typeof(Int64)];
 				minArg = 1;
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
@@ -1550,7 +1550,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				if (term == null)
 				{
 					VariableToken varToken = GlobalStatic.VariableData.GetSystemVariableToken("RESULT");
-					term = new VariableTerm(varToken, new AExpression[] { new SingleLongTerm(0) });
+					term = new VariableTerm(varToken, [new SingleLongTerm(0)]);
 				}
 				return new SpHtmlSplitArgument(terms[0], destVar, term);
 			}
@@ -1560,7 +1560,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public SP_GETINT_ArgumentBuilder()
 			{
-				argumentTypeArray = new Type[] { typeof(Int64) };
+				argumentTypeArray = [typeof(Int64)];
 				minArg = 0;
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
@@ -1584,7 +1584,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public SP_CONTROL_ARRAY_ArgumentBuilder()
 			{
-				argumentTypeArray = new Type[] { typeof(void), typeof(Int64), typeof(Int64) };
+				argumentTypeArray = [typeof(void), typeof(Int64), typeof(Int64)];
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
 			{
@@ -1602,7 +1602,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public SP_SHIFT_ARRAY_ArgumentBuilder()
 			{
-				argumentTypeArray = new Type[] { typeof(void), typeof(Int64), typeof(void), typeof(Int64), typeof(Int64) };
+				argumentTypeArray = [typeof(void), typeof(Int64), typeof(void), typeof(Int64), typeof(Int64)];
 				minArg = 3;
 			}
 			public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
@@ -1632,7 +1632,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public SP_SAVEVAR_ArgumentBuilder()
 			{
-				argumentTypeArray = new Type[] { typeof(string), typeof(string), typeof(void) };
+				argumentTypeArray = [typeof(string), typeof(string), typeof(void)];
 				argAny = true;
 				minArg = 3;
 			}
@@ -1683,7 +1683,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public SP_SAVECHARA_ArgumentBuilder()
 			{
-				argumentTypeArray = new Type[] { typeof(string), typeof(string), typeof(Int64) };
+				argumentTypeArray = [typeof(string), typeof(string), typeof(Int64)];
 				minArg = 3;
 				argAny = true;
 			}
@@ -1724,7 +1724,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public SP_REF_ArgumentBuilder(bool byname)
 			{
-				argumentTypeArray = new Type[] { typeof(void), typeof(void) };
+				argumentTypeArray = [typeof(void), typeof(void)];
 				minArg = 2;
 				this.byname = byname;
 			}
@@ -1799,7 +1799,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public SP_INPUT_ArgumentBuilder()
 			{
-				argumentTypeArray = new Type[] { typeof(Int64) };
+				argumentTypeArray = [typeof(Int64)];
 				//if (nullable)妥協
 				minArg = 0;
 			}
@@ -1849,7 +1849,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		{
 			public SP_COPY_ARRAY_Arguments()
 			{
-				argumentTypeArray = new Type[] { typeof(string), typeof(string) };
+				argumentTypeArray = [typeof(string), typeof(string)];
 				minArg = 2;
 			}
 
@@ -1858,7 +1858,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				var terms = popTerms(line);
 				if (!checkArgumentType(line, exm, terms))
 					return null;
-				VariableToken[] vars = new VariableToken[2] { null, null };
+				VariableToken[] vars = [null, null];
 				if (terms[0] is SingleStrTerm term)
 				{
 					if ((vars[0] = GlobalStatic.IdentifierDictionary.GetVariableToken(term.Str, null, true)) == null)

@@ -219,7 +219,7 @@ namespace MinorShift.Emuera.GameData.Expression
 			{
 				CanRestructure = true;
 				ReturnType = typeof(string);
-				argumentTypeArray = new Type[] { typeof(string), typeof(string) };
+				argumentTypeArray = [typeof(string), typeof(string)];
 			}
 
 			public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)

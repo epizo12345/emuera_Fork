@@ -39,7 +39,7 @@ namespace MinorShift.Emuera.GameView
 			if (printString.Length == 0)
 				goto nonButton;
 			List<string> strs;
-			if ((!printString.Contains("[")) || (!printString.Contains("]")))
+			if ((!printString.Contains('[')) || (!printString.Contains(']')))
 				goto nonButton;
 			strs = lex(new CharStream(printString));
 			if (strs == null)

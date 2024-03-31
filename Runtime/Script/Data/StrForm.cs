@@ -32,17 +32,17 @@ namespace MinorShift.Emuera.GameData
 			formatYenAt = new FormatYenAt();
 			VariableToken nameID = GlobalStatic.VariableData.GetSystemVariableToken("NAME");
 			VariableToken callnameID = GlobalStatic.VariableData.GetSystemVariableToken("CALLNAME");
-			AExpression[] zeroArg = new AExpression[] { new SingleLongTerm(0) };
+			AExpression[] zeroArg = [new SingleLongTerm(0)];
 			VariableTerm target = new(GlobalStatic.VariableData.GetSystemVariableToken("TARGET"), zeroArg);
 			VariableTerm master = new(GlobalStatic.VariableData.GetSystemVariableToken("MASTER"), zeroArg);
 			VariableTerm player = new(GlobalStatic.VariableData.GetSystemVariableToken("PLAYER"), zeroArg);
 			VariableTerm assi = new(GlobalStatic.VariableData.GetSystemVariableToken("ASSI"), zeroArg);
 
-			VariableTerm nametarget = new(nameID, new AExpression[] { target });
-			VariableTerm callnamemaster = new(callnameID, new AExpression[] { master });
-			VariableTerm callnameplayer = new(callnameID, new AExpression[] { player });
-			VariableTerm nameassi = new(nameID, new AExpression[] { assi });
-			VariableTerm callnametarget = new(callnameID, new AExpression[] { target });
+			VariableTerm nametarget = new(nameID, [target]);
+			VariableTerm callnamemaster = new(callnameID, [master]);
+			VariableTerm callnameplayer = new(callnameID, [player]);
+			VariableTerm nameassi = new(nameID, [assi]);
+			VariableTerm callnametarget = new(callnameID, [target]);
 			NameTarget = new FunctionMethodTerm(formatPercent, [nametarget, null, null]);
 			CallnameMaster = new FunctionMethodTerm(formatPercent, [callnamemaster, null, null]);
 			CallnamePlayer = new FunctionMethodTerm(formatPercent, [callnameplayer, null, null]);

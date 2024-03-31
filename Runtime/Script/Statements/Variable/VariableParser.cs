@@ -9,7 +9,7 @@ namespace MinorShift.Emuera.GameData.Variable
 		public static void Initialize()
 		{
 			ZeroTerm = new SingleLongTerm(0);
-			AExpression[] zeroArgs = new AExpression[] { ZeroTerm };
+			AExpression[] zeroArgs = [ZeroTerm];
 			TARGET = new VariableTerm(GlobalStatic.VariableData.GetSystemVariableToken("TARGET"), zeroArgs);
 		}
 

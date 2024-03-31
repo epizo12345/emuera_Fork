@@ -31,7 +31,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			dataIntegerArray = new Int64[(int)VariableCode.__COUNT_CHARACTER_INTEGER_ARRAY__][];
 			dataStringArray = new string[(int)VariableCode.__COUNT_CHARACTER_STRING_ARRAY__][];
 			dataIntegerArray2D = new Int64[(int)VariableCode.__COUNT_CHARACTER_INTEGER_ARRAY_2D__][,];
-			dataStringArray2D = new string[(int)VariableCode.__COUNT_CHARACTER_STRING_ARRAY_2D__][,];
+			dataStringArray2D = [];
 			for (int i = 0; i < dataIntegerArray.Length; i++)
 				dataIntegerArray[i] = new Int64[constant.CharacterIntArrayLength[i]];
 			for (int i = 0; i < dataStringArray.Length; i++)
@@ -178,7 +178,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			{
 				case VariableCode.__STRING__:
 				case VariableCode.__INTEGER__:
-					ret = new int[0];
+					ret = [];
 					break;
 				case VariableCode.__INTEGER__ | VariableCode.__ARRAY_1D__:
 					ret = new int[1];

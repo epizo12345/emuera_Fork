@@ -80,7 +80,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			//localString = new VariableLocal<string, StringCalculator>(constant.VariableStrArrayLength[(int)(VariableCode.__LOWERCASE__ & VariableCode.LOCALS)]);
 			//argVars = new VariableLocal<Int64, Int64Calculator>(constant.VariableIntArrayLength[(int)(VariableCode.__LOWERCASE__ & VariableCode.ARG)]);
 			//argString = new VariableLocal<string, StringCalculator>(constant.VariableStrArrayLength[(int)(VariableCode.__LOWERCASE__ & VariableCode.ARGS)]);
-			dataInteger = new Int64[(int)VariableCode.__COUNT_INTEGER__];
+			dataInteger = [];
 
 			dataIntegerArray = new Int64[(int)VariableCode.__COUNT_INTEGER_ARRAY__][];
 			for (int i = 0; i < dataIntegerArray.Length; i++)
@@ -102,7 +102,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				int length2 = (int)(length64 & 0x7FFFFFFF);
 				dataIntegerArray2D[i] = new Int64[length, length2];
 			}
-			dataStringArray2D = new string[(int)VariableCode.__COUNT_STRING_ARRAY_2D__][,];
+			dataStringArray2D = [];
 			for (int i = 0; i < dataStringArray2D.Length; i++)
 			{
 				Int64 length64 = constant.VariableStrArray2DLength[i];
@@ -119,7 +119,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				int length3 = (int)(length64 & 0xFFFFF);
 				dataIntegerArray3D[i] = new Int64[length, length2, length3];
 			}
-			dataStringArray3D = new string[(int)VariableCode.__COUNT_STRING_ARRAY_3D__][,,];
+			dataStringArray3D = [];
 			for (int i = 0; i < dataStringArray3D.Length; i++)
 			{
 				Int64 length64 = constant.VariableStrArray3DLength[i];

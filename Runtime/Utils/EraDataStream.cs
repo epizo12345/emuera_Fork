@@ -314,7 +314,7 @@ namespace MinorShift.Emuera.Sub
 						break;
 					if (str.Length == 0)
 					{
-						valueList.Add(new Int64[0]);
+						valueList.Add([]);
 						continue;
 					}
 					string[] tokens = str.Split(',');
@@ -380,7 +380,7 @@ namespace MinorShift.Emuera.Sub
 						throw new FileEE("セーブデータの形式が不正です");
 					if (str.Equals(FINISHER, StringComparison.Ordinal))
 						break;
-					if (str.Contains("{"))
+					if (str.Contains('{'))
 					{
 						List<Int64[]> tokenList = [];
 						while (true)
@@ -390,7 +390,7 @@ namespace MinorShift.Emuera.Sub
 								break;
 							if (str.Length == 0)
 							{
-								tokenList.Add(new Int64[0]);
+								tokenList.Add([]);
 								continue;
 							}
 							string[] tokens = str.Split(',');
