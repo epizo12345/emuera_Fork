@@ -391,61 +391,40 @@ namespace MinorShift.Emuera.Forms
 				return;
 			}
 		}
-
-		//1750 MainWindowからほぼコピペ
-		string[] prevInputs = new string[100];
-		int selectedInputs = 100;
-		int lastSelected = 100;
+		List<string> history = [];
+		int selectedIndex = 0;
 		void updateInputs()
 		{
-			string cur = textBoxCommand.Text;
-			if (string.IsNullOrEmpty(cur))
+			var input = textBoxCommand.Text;
+			if (string.IsNullOrEmpty(input))
 				return;
-			for (int i = 0; i < prevInputs.Length - 1; i++)
-			{
-				prevInputs[i] = prevInputs[i + 1];
-			}
-			prevInputs[^1] = cur;
-			//entered = console.IsWaintingOnePhrase;
+
+			history.Add(input);
+			selectedIndex++;
 			textBoxCommand.Text = "";
-			//1729a eramakerと同じ処理系に変更 1730a 再修正
-			if (selectedInputs != prevInputs.Length && cur == prevInputs[selectedInputs - 1])
-				lastSelected = --selectedInputs;
-			else
-				lastSelected = 100;
-			selectedInputs = prevInputs.Length;
 		}
 		void movePrev(int move)
 		{
-			if (move == 0)
-				return;
-			//if((selectedInputs != prevInputs.Length) &&(prevInputs[selectedInputs] != richTextBox1.Text))
-			//	selectedInputs =  prevInputs.Length;
-			int next;
-			if (lastSelected != prevInputs.Length && selectedInputs == prevInputs.Length)
+			selectedIndex += move;
+			if (selectedIndex < 0)
 			{
-				if (move == -1)
-					move = 0;
-				next = lastSelected + move;
+				selectedIndex = 0;
+			}
+
+			if (selectedIndex < history.Count)
+			{
+				textBoxCommand.Text = history[selectedIndex];
 			}
 			else
-				next = selectedInputs + move;
-			if ((next < 0) || (next > prevInputs.Length))
-				return;
-			if (next == prevInputs.Length)
 			{
-				selectedInputs = next;
+				selectedIndex = history.Count;
 				textBoxCommand.Text = "";
-				return;
 			}
-			if (string.IsNullOrEmpty(prevInputs[next]))
-				if (++next == prevInputs.Length)
-					return;
 
-			selectedInputs = next;
-			textBoxCommand.Text = prevInputs[next];
 			textBoxCommand.SelectionStart = 0;
 			textBoxCommand.SelectionLength = textBoxCommand.Text.Length;
+
+
 			return;
 		}
 
