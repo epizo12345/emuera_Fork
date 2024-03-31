@@ -133,7 +133,7 @@ namespace MinorShift.Emuera.GameProc.Function
 					str = ((ExpressionArgument)func.Argument).Term.GetStrValue(exm);
 					if (isForms)
 					{
-						str = exm.CheckEscape(str);
+						str = ExpressionMediator.CheckEscape(str);
 						StrFormWord wt = LexicalAnalyzer.AnalyseFormattedString(new CharStream(str), FormStrEndWith.EoL, false);
 						StrForm strForm = StrForm.FromWordToken(wt);
 						str = strForm.GetString(exm);
@@ -929,7 +929,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				Int64 var = barArg.Terms[0].GetIntValue(exm);
 				Int64 max = barArg.Terms[1].GetIntValue(exm);
 				Int64 length = barArg.Terms[2].GetIntValue(exm);
-				exm.Console.Print(exm.CreateBar(var, max, length));
+				exm.Console.Print(ExpressionMediator.CreateBar(var, max, length));
 				if (newline)
 					exm.Console.NewLine();
 			}
@@ -1207,12 +1207,12 @@ namespace MinorShift.Emuera.GameProc.Function
 				if (var.IsString)
 				{
 					string src = spvarsetarg.Term.GetStrValue(exm);
-					exm.VEvaluator.SetValueAll(p, src, start, end);
+					VariableEvaluator.SetValueAll(p, src, start, end);
 				}
 				else
 				{
 					long src = spvarsetarg.Term.GetIntValue(exm);
-					exm.VEvaluator.SetValueAll(p, src, start, end);
+					VariableEvaluator.SetValueAll(p, src, start, end);
 				}
 			}
 		}

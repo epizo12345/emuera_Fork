@@ -990,7 +990,7 @@ namespace MinorShift.Emuera.GameView
 			return;
 		}
 
-		string parseInput(CharStream st, bool isNest)
+		static string parseInput(CharStream st, bool isNest)
 		{
 			StringBuilder sb = new(20);
 			StringBuilder num = new(20);

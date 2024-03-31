@@ -33,7 +33,7 @@ namespace MinorShift.Emuera.GameProc
 		{
 			if (scriptPosition == null)
 				return base.ToString();
-			return string.Format("{0}:{1}:{2}", scriptPosition.Value.Filename, scriptPosition.Value.LineNo, GlobalStatic.Process.getRawTextFormFilewithLine(scriptPosition));
+			return string.Format("{0}:{1}:{2}", scriptPosition.Value.Filename, scriptPosition.Value.LineNo, Process.getRawTextFormFilewithLine(scriptPosition));
 		}
 
 		protected bool isError;

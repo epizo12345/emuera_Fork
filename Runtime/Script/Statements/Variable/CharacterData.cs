@@ -585,7 +585,7 @@ namespace MinorShift.Emuera.GameData.Variable
 		}
 
 
-		private void copyListToArray<T>(List<T> srcList, T[] destArray)
+		private static void copyListToArray<T>(List<T> srcList, T[] destArray)
 		{
 			int count = Math.Min(srcList.Count, destArray.Length);
 			srcList.CopyTo(0, destArray, 0, count);
@@ -594,7 +594,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			//    destArray[i] = srcList[i];
 			//}
 		}
-		private void copyListToArray2D<T>(List<T[]> srcList, T[,] destArray)
+		private static void copyListToArray2D<T>(List<T[]> srcList, T[,] destArray)
 		{
 			int countX = Math.Min(srcList.Count, destArray.GetLength(0));
 			int dLength = destArray.GetLength(1);

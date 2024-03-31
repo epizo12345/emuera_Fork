@@ -57,7 +57,7 @@ namespace MinorShift.Emuera.GameData
 		public Int64 DefaultCharacter = -1;
 		public Int64 DefaultNoItem;
 
-		private bool tryatoi(ReadOnlySpan<char> str, out Int64 i)
+		private static bool tryatoi(ReadOnlySpan<char> str, out Int64 i)
 		{
 			if (Int64.TryParse(str, out i))
 				return true;

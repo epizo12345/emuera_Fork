@@ -78,7 +78,7 @@ namespace MinorShift.Emuera.GameData.Expression
 			return str;
 		}
 
-		public string CheckEscape(string str)
+		public static string CheckEscape(string str)
 		{
 			CharStream st = new(str);
 			StringBuilder buffer = new();
@@ -116,7 +116,7 @@ namespace MinorShift.Emuera.GameData.Expression
 			return buffer.ToString();
 		}
 
-		public string CreateBar(Int64 var, Int64 max, Int64 length)
+		public static string CreateBar(Int64 var, Int64 max, Int64 length)
 		{
 			if (max <= 0)
 				throw new CodeEE("BARの最大値が正の値ではありません");

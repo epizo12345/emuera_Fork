@@ -100,7 +100,7 @@ namespace MinorShift.Emuera.GameView
 			buttons = newButtons;
 		}
 
-		public void Clear(Brush brush, Graphics graph, int pointY)
+		public static void Clear(Brush brush, Graphics graph, int pointY)
 		{
 			Rectangle rect = new(0, pointY, Config.WindowX, Config.LineHeight);
 			graph.FillRectangle(brush, rect);

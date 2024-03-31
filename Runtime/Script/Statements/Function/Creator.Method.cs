@@ -281,12 +281,12 @@ namespace MinorShift.Emuera.GameData.Function
                 if (varID.IsString)
                 {
                     string word = arguments[1].GetStrValue(exm);
-                    ret = exm.VEvaluator.FindChara(varID, elem, word, startindex, lastindex, isLast);
+                    ret = VariableEvaluator.FindChara(varID, elem, word, startindex, lastindex, isLast);
                 }
                 else
                 {
                     Int64 word = arguments[1].GetIntValue(exm);
-                    ret = exm.VEvaluator.FindChara(varID, elem, word, startindex, lastindex, isLast);
+                    ret = VariableEvaluator.FindChara(varID, elem, word, startindex, lastindex, isLast);
                 }
                 return ret;
             }
@@ -495,7 +495,7 @@ namespace MinorShift.Emuera.GameData.Function
                 string pattern = "*";
                 if (arguments.Count > 0 && arguments[0] != null)
                     pattern = arguments[0].GetStrValue(exm);
-                List<string> filepathes = exm.VEvaluator.GetDatFiles(type == EraSaveFileType.CharVar, pattern);
+                List<string> filepathes = VariableEvaluator.GetDatFiles(type == EraSaveFileType.CharVar, pattern);
                 string[] results = exm.VEvaluator.VariableData.DataStringArray[(int)(VariableCode.RESULTS & VariableCode.__LOWERCASE__)];
                 if (filepathes.Count <= results.Length)
                     filepathes.CopyTo(results);
@@ -648,7 +648,7 @@ namespace MinorShift.Emuera.GameData.Function
                 long var = arguments[0].GetIntValue(exm);
                 long max = arguments[1].GetIntValue(exm);
                 long length = arguments[2].GetIntValue(exm);
-                return exm.CreateBar(var, max, length);
+                return ExpressionMediator.CreateBar(var, max, length);
             }
         }
 
@@ -1256,14 +1256,14 @@ namespace MinorShift.Emuera.GameData.Function
                 if (!isCharaRange)
                 {
                     p.IsArrayRangeValid(index1, index2, "SUMARRAY", 2L, 3L);
-                    return exm.VEvaluator.GetArraySum(p, index1, index2);
+                    return VariableEvaluator.GetArraySum(p, index1, index2);
                 }
                 else
                 {
                     Int64 charaNum = exm.VEvaluator.CHARANUM;
                     if (index1 >= charaNum || index1 < 0 || index2 > charaNum || index2 < 0)
                         throw new CodeEE("SUMCARRAY関数の範囲指定がキャラクタ配列の範囲を超えています(" + index1.ToString() + "～" + index2.ToString() + ")");
-                    return exm.VEvaluator.GetArraySumChara(p, index1, index2);
+                    return VariableEvaluator.GetArraySumChara(p, index1, index2);
                 }
             }
         }
@@ -1328,12 +1328,12 @@ namespace MinorShift.Emuera.GameData.Function
                     if (arguments[0].GetOperandType() == typeof(Int64))
                     {
                         Int64 targetValue = arguments[1].GetIntValue(exm);
-                        return exm.VEvaluator.GetMatch(p, targetValue, start, end);
+                        return VariableEvaluator.GetMatch(p, targetValue, start, end);
                     }
                     else
                     {
                         string targetStr = arguments[1].GetStrValue(exm);
-                        return exm.VEvaluator.GetMatch(p, targetStr, start, end);
+                        return VariableEvaluator.GetMatch(p, targetStr, start, end);
                     }
                 }
                 else
@@ -1344,12 +1344,12 @@ namespace MinorShift.Emuera.GameData.Function
                     if (arguments[0].GetOperandType() == typeof(Int64))
                     {
                         Int64 targetValue = arguments[1].GetIntValue(exm);
-                        return exm.VEvaluator.GetMatchChara(p, targetValue, start, end);
+                        return VariableEvaluator.GetMatchChara(p, targetValue, start, end);
                     }
                     else
                     {
                         string targetStr = arguments[1].GetStrValue(exm);
-                        return exm.VEvaluator.GetMatchChara(p, targetStr, start, end);
+                        return VariableEvaluator.GetMatchChara(p, targetStr, start, end);
                     }
                 }
             }
@@ -1585,14 +1585,14 @@ namespace MinorShift.Emuera.GameData.Function
                 if (!isCharaRange)
                 {
                     p.IsArrayRangeValid(start, end, funcName, 2L, 3L);
-                    return exm.VEvaluator.GetMaxArray(p, start, end, isMax);
+                    return VariableEvaluator.GetMaxArray(p, start, end, isMax);
                 }
                 else
                 {
                     Int64 charaNum = exm.VEvaluator.CHARANUM;
                     if (start >= charaNum || start < 0 || end > charaNum || end < 0)
                         throw new CodeEE(funcName + "関数の範囲指定がキャラクタ配列の範囲を超えています(" + start.ToString() + "～" + end.ToString() + ")");
-                    return exm.VEvaluator.GetMaxArrayChara(p, start, end, isMax);
+                    return VariableEvaluator.GetMaxArrayChara(p, start, end, isMax);
                 }
             }
         }
@@ -1815,7 +1815,7 @@ namespace MinorShift.Emuera.GameData.Function
                 if (arguments[0].GetOperandType() == typeof(Int64))
                 {
                     Int64 targetValue = arguments[1].GetIntValue(exm);
-                    return exm.VEvaluator.FindElement(p, targetValue, start, end, isExact, isLast);
+                    return VariableEvaluator.FindElement(p, targetValue, start, end, isExact, isLast);
                 }
                 else
                 {
@@ -1828,7 +1828,7 @@ namespace MinorShift.Emuera.GameData.Function
                     {
                         throw new CodeEE("第2引数が正規表現として不正です");
                     }
-                    return exm.VEvaluator.FindElement(p, targetString, start, end, isExact, isLast);
+                    return VariableEvaluator.FindElement(p, targetString, start, end, isExact, isLast);
                 }
             }
 
@@ -1930,14 +1930,14 @@ namespace MinorShift.Emuera.GameData.Function
                 if (!isCharaRange)
                 {
                     p.IsArrayRangeValid(start, end, "INRANGEARRAY", 4L, 5L);
-                    return exm.VEvaluator.GetInRangeArray(p, min, max, start, end);
+                    return VariableEvaluator.GetInRangeArray(p, min, max, start, end);
                 }
                 else
                 {
                     Int64 charaNum = exm.VEvaluator.CHARANUM;
                     if (start >= charaNum || start < 0 || end > charaNum || end < 0)
                         throw new CodeEE("INRANGECARRAY関数の範囲指定がキャラクタ配列の範囲を超えています(" + start.ToString() + "～" + end.ToString() + ")");
-                    return exm.VEvaluator.GetInRangeArrayChara(p, min, max, start, end);
+                    return VariableEvaluator.GetInRangeArrayChara(p, min, max, start, end);
                 }
             }
         }
@@ -2769,7 +2769,7 @@ namespace MinorShift.Emuera.GameData.Function
                     throw new CodeEE("STRJOINの第4引数(" + index2.ToString() + ")が負の値になっています");
 
                 p.IsArrayRangeValid(index1, index1 + index2, "STRJOIN", 2L, 3L);
-                return exm.VEvaluator.GetJoinedStr(p, delimiter, index1, index2);
+                return VariableEvaluator.GetJoinedStr(p, delimiter, index1, index2);
             }
             public override bool UniqueRestructure(ExpressionMediator exm, List<AExpression> arguments)
             {

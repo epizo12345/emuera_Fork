@@ -851,7 +851,7 @@ namespace MinorShift.Emuera.GameData.Variable
 					copyListToArray3D(value, (Int64[,,])var.GetArray());
 		}
 
-		private void copyListToArray<T>(List<T> srcList, T[] destArray)
+		private static void copyListToArray<T>(List<T> srcList, T[] destArray)
 		{
 			int count = Math.Min(srcList.Count, destArray.Length);
 			for (int i = 0; i < count; i++)
@@ -860,7 +860,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			}
 		}
 
-		private void copyListToArray2D<T>(List<T[]> srcList, T[,] destArray)
+		private static void copyListToArray2D<T>(List<T[]> srcList, T[,] destArray)
 		{
 			int countX = Math.Min(srcList.Count, destArray.GetLength(0));
 			int dLength = destArray.GetLength(1);
@@ -874,7 +874,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				}
 			}
 		}
-		private void copyListToArray3D<T>(List<List<T[]>> srcList, T[,,] destArray)
+		private static void copyListToArray3D<T>(List<List<T[]>> srcList, T[,,] destArray)
 		{
 			int countX = Math.Min(srcList.Count, destArray.GetLength(0));
 			int dLength1 = destArray.GetLength(1);
@@ -1016,7 +1016,7 @@ namespace MinorShift.Emuera.GameData.Variable
 		/// ファイル終端の場合はfalseを返す
 		/// </summary>
 		/// <param name="reader"></param>
-		public bool LoadVariableBinary(EraBinaryDataReader reader)
+		public static bool LoadVariableBinary(EraBinaryDataReader reader)
 		{
 			KeyValuePair<string, EraSaveDataType> nameAndType = reader.ReadVariableCode();
 			VariableToken vToken = null;

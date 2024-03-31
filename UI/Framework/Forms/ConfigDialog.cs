@@ -83,13 +83,14 @@ namespace MinorShift.Emuera.Forms
         }
         public ConfigDialogResult Result = ConfigDialogResult.Cancel;
 
-        void setCheckBox(CheckBox checkbox, ConfigCode code)
+        static void setCheckBox(CheckBox checkbox, ConfigCode code)
         {
             ConfigItem<bool> item = (ConfigItem<bool>)ConfigData.Instance.GetConfigItem(code);
             checkbox.Checked = item.Value;
             checkbox.Enabled = !item.Fixed;
         }
-        void setNumericUpDown(NumericUpDown updown, ConfigCode code)
+
+        static void setNumericUpDown(NumericUpDown updown, ConfigCode code)
         {
             ConfigItem<int> item = (ConfigItem<int>)ConfigData.Instance.GetConfigItem(code);
             decimal value = item.Value;
@@ -101,7 +102,7 @@ namespace MinorShift.Emuera.Forms
             updown.Enabled = !item.Fixed;
         }
 
-        void setColorBox(ColorBox colorBox, ConfigCode code)
+        static void setColorBox(ColorBox colorBox, ConfigCode code)
         {
             ConfigItem<Color> item = (ConfigItem<Color>)ConfigData.Instance.GetConfigItem(code);
             colorBox.SelectingColor = item.Value;
@@ -529,8 +530,7 @@ namespace MinorShift.Emuera.Forms
             }
         }
 
-
-        int setCheckBoxChecked(CheckBox checkbox, bool flag)
+        static int setCheckBoxChecked(CheckBox checkbox, bool flag)
         {
             if (checkbox.Checked == flag)
                 return 0;//変更不要
@@ -540,7 +540,7 @@ namespace MinorShift.Emuera.Forms
             return 1;//変更した
         }
 
-        int setComboBoxChanged(ComboBox combobox, int value)
+        static int setComboBoxChanged(ComboBox combobox, int value)
         {
             if (combobox.SelectedIndex == value)
                 return 0;//変更不要

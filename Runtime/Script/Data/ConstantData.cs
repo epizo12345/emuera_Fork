@@ -1063,7 +1063,7 @@ namespace MinorShift.Emuera.GameData
 			}
 		}
 
-		private bool tryToInt64(string str, out Int64 p)
+		private static bool tryToInt64(string str, out Int64 p)
 		{
 			p = -1;
 			if (string.IsNullOrEmpty(str))

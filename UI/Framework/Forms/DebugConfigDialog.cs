@@ -32,13 +32,14 @@ namespace MinorShift.Emuera.Forms
 		}
 		public ConfigDialogResult Result = ConfigDialogResult.Cancel;
 
-		void setCheckBox(CheckBox checkbox, ConfigCode code)
+		static void setCheckBox(CheckBox checkbox, ConfigCode code)
 		{
 			ConfigItem<bool> item = (ConfigItem<bool>)ConfigData.Instance.GetDebugItem(code);
 			checkbox.Checked = item.Value;
 			checkbox.Enabled = !item.Fixed;
 		}
-		void setNumericUpDown(NumericUpDown updown, ConfigCode code)
+
+		static void setNumericUpDown(NumericUpDown updown, ConfigCode code)
 		{
 			ConfigItem<int> item = (ConfigItem<int>)ConfigData.Instance.GetDebugItem(code);
 			decimal value = item.Value;
@@ -50,13 +51,14 @@ namespace MinorShift.Emuera.Forms
 			updown.Enabled = !item.Fixed;
 		}
 
-		void setColorBox(ColorBox colorBox, ConfigCode code)
+		static void setColorBox(ColorBox colorBox, ConfigCode code)
 		{
 			ConfigItem<Color> item = (ConfigItem<Color>)ConfigData.Instance.GetDebugItem(code);
 			colorBox.SelectingColor = item.Value;
 			colorBox.Enabled = !item.Fixed;
 		}
-		void setTextBox(TextBox textBox, ConfigCode code)
+
+		static void setTextBox(TextBox textBox, ConfigCode code)
 		{
 			ConfigItem<string> item = (ConfigItem<string>)ConfigData.Instance.GetDebugItem(code);
 			textBox.Text = item.Value;

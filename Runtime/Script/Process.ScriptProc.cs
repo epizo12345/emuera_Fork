@@ -607,12 +607,12 @@ namespace MinorShift.Emuera.GameProc
 						if (dest.Identifier.IsInteger)
 						{
 							Int64 def = arrayArg.Num2.GetIntValue(exm);
-							vEvaluator.ShiftArray(dest, shift, def, start, num);
+							VariableEvaluator.ShiftArray(dest, shift, def, start, num);
 						}
 						else
 						{
 							string defs = arrayArg.Num2.GetStrValue(exm);
-							vEvaluator.ShiftArray(dest, shift, defs, start, num);
+							VariableEvaluator.ShiftArray(dest, shift, defs, start, num);
 						}
 						break;
 					}
@@ -630,7 +630,7 @@ namespace MinorShift.Emuera.GameProc
 							throw new CodeEE("ARRAYREMOVEの第３引数が負の値(" + start.ToString() + ")です");
 						if (num == 0)
 							break;
-						vEvaluator.RemoveArray(p, start, num);
+						VariableEvaluator.RemoveArray(p, start, num);
 						break;
 					}
 				case FunctionCode.ARRAYSORT:
@@ -653,7 +653,7 @@ namespace MinorShift.Emuera.GameProc
 						}
 						else
 							num = -1;
-						vEvaluator.SortArray(p, arrayArg.Order, start, num);
+						VariableEvaluator.SortArray(p, arrayArg.Order, start, num);
 						break;
 					}
 				case FunctionCode.ARRAYCOPY:
@@ -693,7 +693,7 @@ namespace MinorShift.Emuera.GameProc
 							if ((vars[0].IsInteger && vars[1].IsString) || (vars[0].IsString && vars[1].IsInteger))
 								throw new CodeEE("ARRAYCOPY命令の２つの配列変数の型が一致していません");
 						}
-						vEvaluator.CopyArray(vars[0], vars[1]);
+						VariableEvaluator.CopyArray(vars[0], vars[1]);
 					}
 					break;
 				case FunctionCode.ENCODETOUNI:
