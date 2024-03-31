@@ -1871,7 +1871,7 @@ namespace MinorShift.Emuera.GameData.Variable
 					array = new long[length];
 					if (defArray != null)
 					{
-						Array.Copy(defArray, array, defArray.Length);
+						defArray.AsSpan().CopyTo(array.AsSpan());
 					}
 				}
 			}
@@ -1879,9 +1879,10 @@ namespace MinorShift.Emuera.GameData.Variable
 			public override void SetDefault()
 			{
 				IfNullInitArray();
-				Array.Clear(array, 0, totalSize);
+				var span = array.AsSpan();
+				span.Clear();
 				if (defArray != null)
-					Array.Copy(defArray, array, defArray.Length);
+					defArray.AsSpan().CopyTo(span);
 			}
 			public override Int64 GetIntValue(ExpressionMediator exm, Int64[] arguments)
 			{
@@ -2301,14 +2302,8 @@ namespace MinorShift.Emuera.GameData.Variable
 
 			public override void SetValueAll(long value, int start, int end, int charaPos)
 			{
-				if (value == default)
-				{
-					Array.Clear(array, start, end - start);
-				}
-				else
-				{
-					Array.Fill(array, value, start, end - start);
-				}
+				var span = array.AsSpan()[start..end];
+				span.Fill(value);
 			}
 
 			public override Int64 PlusValue(Int64 value, Int64[] arguments)
@@ -2325,7 +2320,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				//counter++;
 				array = new Int64[sizes[0]];
 				if (defArray != null)
-					Array.Copy(defArray, array, defArray.Length);
+					defArray.AsSpan().CopyTo(array.AsSpan());
 			}
 
 			public override void ScopeOut()
