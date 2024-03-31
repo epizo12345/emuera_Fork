@@ -6,7 +6,7 @@ using MinorShift.Emuera.Runtime.Config;
 namespace MinorShift.Emuera.Forms
 {
 
-	internal partial class DebugConfigDialog : Form
+	internal sealed partial class DebugConfigDialog : Form
 	{
 		public DebugConfigDialog()
 		{

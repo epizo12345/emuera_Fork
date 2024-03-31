@@ -14,7 +14,7 @@ namespace MinorShift.Emuera.Forms
         SaveReboot = 2,
     }
 
-    internal partial class ConfigDialog : Form
+    internal sealed partial class ConfigDialog : Form
     {
         public ConfigDialog()
         {

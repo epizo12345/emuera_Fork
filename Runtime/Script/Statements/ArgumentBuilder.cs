@@ -634,7 +634,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				{
 					ret.IsConst = true;
 					ret.ConstStr = funcname.GetStrValue(null);
-					if (ret.ConstStr == "")
+					if (string.IsNullOrEmpty(ret.ConstStr))
 					{
 						warn("関数名が指定されていません", line, 2, false);
 						return null;

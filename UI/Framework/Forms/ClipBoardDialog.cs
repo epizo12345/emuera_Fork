@@ -6,7 +6,7 @@ using MinorShift.Emuera.Runtime.Config;
 
 namespace MinorShift.Emuera.Forms
 {
-    internal partial class ClipBoardDialog : Form
+    internal sealed partial class ClipBoardDialog : Form
     {
         public ClipBoardDialog()
         {

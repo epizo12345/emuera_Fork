@@ -5,7 +5,7 @@ using System.Drawing;
 using System.Text;
 namespace MinorShift.Emuera.GameView
 {
-	class ConsoleImagePart : AConsoleDisplayPart
+	sealed class ConsoleImagePart : AConsoleDisplayPart
 	{
 
 		public ConsoleImagePart(string resName, string resNameb, int raw_height, int raw_width, int raw_ypos, bool usePxWidth = false, bool usePxHeight = false)

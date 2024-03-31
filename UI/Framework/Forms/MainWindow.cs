@@ -92,7 +92,7 @@ namespace MinorShift.Emuera.Forms
 			}
 			else if (((keyData & Keys.KeyCode) == Keys.C && (keyData & Keys.Modifiers & Keys.Control) == Keys.Control) || (keyData & Keys.KeyCode) == Keys.Insert && (keyData & Keys.Modifiers & Keys.Control) == Keys.Control)
 			{
-				if (richTextBox1.SelectedText == "")
+				if (string.IsNullOrEmpty(richTextBox1.SelectedText))
 				{
 					ClipBoardDialog dialog = new()
 					{
@@ -136,7 +136,7 @@ namespace MinorShift.Emuera.Forms
 					int macroNum = keyCode - (int)Keys.F1;
 					if (shiftPressed)
 					{
-						if (richTextBox1.Text != "")
+						if (!string.IsNullOrEmpty(richTextBox1.Text))
 							KeyMacro.SetMacro(macroNum, macroGroup, richTextBox1.Text);
 						return true;
 					}

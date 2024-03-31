@@ -89,7 +89,7 @@ namespace MinorShift.Emuera.GameView
 		//ConsoleButtonString selectingButton = null;
 		//ConsoleButtonString lastSelectingButton = null;
 
-		class ClientBackGroundImage : IComparable<ClientBackGroundImage>
+		sealed class ClientBackGroundImage : IComparable<ClientBackGroundImage>
 		{
 			/// <summary>
 			/// zdepth == 0は文字列用ダミーなので他で使ってはいけない
@@ -178,8 +178,7 @@ namespace MinorShift.Emuera.GameView
 		{
 			if (image == null || !image.IsCreated)
 				return false;
-			if (zdepth == 0)
-				throw new ArgumentOutOfRangeException();
+			ArgumentOutOfRangeException.ThrowIfZero(zdepth);
 			ClientBackGroundImage cbg = new(zdepth)
 			{
 				Img = image,
@@ -206,8 +205,7 @@ namespace MinorShift.Emuera.GameView
 
 		public bool CBG_SetButtonImage(int buttonValue, ASprite imageN, ASprite imageB, int x, int y, int zdepth, string tooltip = null)
 		{
-			if (zdepth == 0)
-				throw new ArgumentOutOfRangeException();
+			ArgumentOutOfRangeException.ThrowIfZero(zdepth);
 			ClientBackGroundImage cbg = new(zdepth)
 			{
 				Img = imageN,
@@ -567,7 +565,6 @@ namespace MinorShift.Emuera.GameView
 		Int64 timerID = -1;
 		readonly Stopwatch _genericTimerStopwatch = new();//現在のタイマーを開始した時のミリ秒数（WinmmTimer.TickCount基準）
 		Int64 timer_endTime;//現在のタイマーを終了する時のTickCountミリ秒数
-		bool wait_timeout;
 		bool isTimeout;
 		public bool IsTimeOut { get { return isTimeout; } }
 
@@ -639,8 +636,6 @@ namespace MinorShift.Emuera.GameView
 		/// </summary>
 		private void endTimer()
 		{
-			if (wait_timeout)
-				return;
 			stopTimer();
 			isTimeout = true;
 			if (IsWaitingPrimitive)
@@ -971,7 +966,7 @@ namespace MinorShift.Emuera.GameView
 					pInfo.Arguments = "/l " + pos.Value.LineNo.ToString() + " \"" + fname + "\"";
 					break;
 				case TextEditorType.USER_SETTING:
-					if (Config.EditorArg != "" && Config.EditorArg != null)
+					if (!string.IsNullOrEmpty(Config.EditorArg) && Config.EditorArg != null)
 						pInfo.Arguments = Config.EditorArg + pos.Value.LineNo.ToString() + " \"" + fname + "\"";
 					else
 						pInfo.Arguments = fname;

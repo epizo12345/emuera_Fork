@@ -2357,7 +2357,7 @@ namespace MinorShift.Emuera.GameData.Function
             public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 string str = arguments[0].GetStrValue(exm);
-                if (str == null || str == "")
+                if (str == null || string.IsNullOrEmpty(str))
                     return 0;
                 //全角文字が入ってるなら無条件で0を返す
                 if (str.Length < LangManager.GetStrlenLang(str))
@@ -2416,7 +2416,7 @@ namespace MinorShift.Emuera.GameData.Function
             public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
             {
                 string str = arguments[0].GetStrValue(exm);
-                if (str == null || str == "")
+                if (str == null || string.IsNullOrEmpty(str))
                     return "";
                 switch (strType)
                 {

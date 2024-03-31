@@ -61,8 +61,7 @@ namespace MinorShift._Library
 		//maxが2^nでない大きい値であると値が偏る。
 		public Int64 NextInt64(Int64 max)
 		{
-			if (max <= 0)
-				throw new ArgumentOutOfRangeException();
+			ArgumentOutOfRangeException.ThrowIfNegativeOrZero(max);
 			return (Int64)(NextUInt64() % (UInt64)max);
 		}
 

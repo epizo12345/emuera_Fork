@@ -539,7 +539,7 @@ namespace MinorShift.Emuera.GameProc
 		public void printRawLine(ScriptPosition? position)
 		{
 			string str = getRawTextFormFilewithLine(position);
-			if (str != "")
+			if (!string.IsNullOrEmpty(str))
 				console.PrintError(str);
 		}
 

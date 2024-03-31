@@ -27,7 +27,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			if (dic == null)
 				dic = exm.VEvaluator.Constant.GetKeywordDictionary(out errPos, parentCode, index);
 			string key = strTerm.GetStrValue(exm);
-			if (key == "")
+			if (string.IsNullOrEmpty(key))
 				throw new CodeEE("キーワードを空には出来ません");
 			if (!dic.TryGetValue(key, out int i))
 			{

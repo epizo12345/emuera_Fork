@@ -23,8 +23,7 @@
 		__LOWERCASE__ = 0x0000FFFF,
 
 		__COUNT_SAVE_INTEGER__ = 0x00,//実は全て配列
-		__COUNT_INTEGER__ = 0x00,
-		//PALAMLV, EXPLV, RESULT, COUNT, TARGET, SELECTCOMは禁止設定不可
+									  //PALAMLV, EXPLV, RESULT, COUNT, TARGET, SELECTCOMは禁止設定不可
 		DAY = 0x00 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,//経過日数。
 		MONEY = 0x01 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,//金
 		ITEM = 0x02 | __INTEGER__ | __ARRAY_1D__ | __CAN_FORBID__,//所持数
