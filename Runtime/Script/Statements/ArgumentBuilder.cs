@@ -95,7 +95,7 @@ namespace MinorShift.Emuera.GameProc.Function
 			return true;
 		}
 
-		protected VariableTerm getChangeableVariable(List<AExpression> terms, int i, InstructionLine line)
+		protected static VariableTerm getChangeableVariable(List<AExpression> terms, int i, InstructionLine line)
 		{
 			if (!(terms[i - 1] is VariableTerm varTerm))
 			{

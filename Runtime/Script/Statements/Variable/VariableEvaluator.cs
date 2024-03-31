@@ -2287,7 +2287,7 @@ namespace MinorShift.Emuera.GameData.Variable
 					if (!gamebase.CheckVersion(version))
 						return false;
 					bReader.ReadString();//saveMes
-					varData.LoadFromStreamBinary(bReader);
+					VariableData.LoadFromStreamBinary(bReader);
 				}
 				else
 				{
@@ -2361,7 +2361,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				varData.CharacterList.Add(chara);
 				chara.LoadFromStreamBinary(bReader);
 			}
-			varData.LoadFromStreamBinary(bReader);
+			VariableData.LoadFromStreamBinary(bReader);
 		}
 
 		public bool SaveTo(int saveIndex, string saveText)
@@ -2436,7 +2436,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			return true;
 		}
 
-		public void DelData(int dataIndex)
+		public static void DelData(int dataIndex)
 		{
 			string filepath = getSaveDataPath(dataIndex);
 			if (!File.Exists(filepath))

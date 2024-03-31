@@ -449,7 +449,7 @@ namespace MinorShift.Emuera.GameData.Expression
 		/// <summary>
 		/// 式解決用クラス
 		/// </summary>
-		private class TermStack
+		private sealed class TermStack
 		{
 			/// <summary>
 			/// 次に来るべきものの種類。

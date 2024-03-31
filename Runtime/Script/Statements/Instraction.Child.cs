@@ -1525,7 +1525,7 @@ namespace MinorShift.Emuera.GameProc.Function
 					target = ((ExpressionArgument)func.Argument).Term.GetIntValue(exm);
 
 				int target32 = FunctionIdentifier.toUInt32inArg(target, "DELDATA", 1);
-				exm.VEvaluator.DelData(target32);
+				VariableEvaluator.DelData(target32);
 			}
 		}
 

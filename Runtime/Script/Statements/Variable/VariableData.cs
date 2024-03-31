@@ -1006,7 +1006,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			}
 		}
 
-		public void LoadFromStreamBinary(EraBinaryDataReader bReader)
+		public static void LoadFromStreamBinary(EraBinaryDataReader bReader)
 		{
 			while (LoadVariableBinary(bReader)) { }
 		}
