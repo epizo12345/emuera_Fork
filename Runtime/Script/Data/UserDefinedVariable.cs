@@ -268,8 +268,7 @@ namespace MinorShift.Emuera.GameProc
 					if (terms[i] == null)
 						throw new CodeEE("配列の初期値は省略できません");
 					terms[i] = terms[i].Restructure(GlobalStatic.EMediator);
-					SingleTerm sTerm = terms[i] as SingleTerm;
-					if (sTerm == null)
+					if (terms[i] is not SingleTerm sTerm)
 						throw new CodeEE("配列の初期値には定数のみ指定できます");
 					if (dims != sTerm.IsString)
 						throw new CodeEE("変数の型と初期値の型が一致していません");
