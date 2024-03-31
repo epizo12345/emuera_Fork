@@ -837,8 +837,8 @@ namespace MinorShift.Emuera.GameData.Variable
 
 			varList = userDefinedSaveVarList[i]; i++;
 			foreach (UserDefinedVariableToken var in varList)
-				if (int2DListDic.ContainsKey(var.Name))
-					copyListToArray2D(int2DListDic[var.Name], (Int64[,])var.GetArray());
+				if (int2DListDic.TryGetValue(var.Name, out List<long[]> value))
+					copyListToArray2D(value, (Int64[,])var.GetArray());
 
 			varList = userDefinedSaveVarList[i]; i++;
 			foreach (UserDefinedVariableToken var in varList)
@@ -958,8 +958,8 @@ namespace MinorShift.Emuera.GameData.Variable
 
 			varList = userDefinedGlobalSaveVarList[i]; i++;
 			foreach (UserDefinedVariableToken var in varList)
-				if (int2DListDic.ContainsKey(var.Name))
-					copyListToArray2D(int2DListDic[var.Name], (Int64[,])var.GetArray());
+				if (int2DListDic.TryGetValue(var.Name, out List<long[]> value))
+					copyListToArray2D(value, (Int64[,])var.GetArray());
 
 			varList = userDefinedGlobalSaveVarList[i]; i++;
 			foreach (UserDefinedVariableToken var in varList)
