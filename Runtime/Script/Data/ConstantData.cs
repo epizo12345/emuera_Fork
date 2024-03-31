@@ -963,10 +963,10 @@ namespace MinorShift.Emuera.GameData
 				{
 					targetList = spList;
 				}
-				if (targetList.ContainsKey(tmpl.No))
+				if (targetList.TryGetValue(tmpl.No, out CharacterTemplate chara))
 				{
 
-					if (!Config.CompatiSPChara && (tmpl.IsSpchara != targetList[tmpl.No].IsSpchara))
+					if (!Config.CompatiSPChara && (tmpl.IsSpchara != chara.IsSpchara))
 						ParserMediator.Warn("番号" + tmpl.No.ToString() + "のキャラが複数回定義されています(SPキャラとして定義するには互換性オプション「SPキャラを使用する」をONにしてください)", null, 1);
 					else
 						ParserMediator.Warn("番号" + tmpl.No.ToString() + "のキャラが複数回定義されています", null, 1);
@@ -1428,7 +1428,7 @@ namespace MinorShift.Emuera.GameData
 		internal void SetSpFlag()
 		{
 			//bool res;
-			if (CFlag.ContainsKey(0) && CFlag[0] != 0L)
+			if (CFlag.TryGetValue(0, out long value) && value != 0L)
 				IsSpchara = true;
 		}
 	}

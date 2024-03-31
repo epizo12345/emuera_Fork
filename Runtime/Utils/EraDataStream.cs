@@ -185,8 +185,7 @@ namespace MinorShift.Emuera.Sub
 					throw new FileEE("セーブデータの形式が不正です");
 				string key = str[..index];
 				string value = str.Substring(index + 1, str.Length - index - 1);
-				if (!strList.ContainsKey(key))
-					strList.Add(key, value);
+				strList.TryAdd(key, value);
 			}
 			return strList;
 		}
@@ -212,8 +211,7 @@ namespace MinorShift.Emuera.Sub
 				string valueStr = str.Substring(index + 1, str.Length - index - 1);
 				if (!Int64.TryParse(valueStr, out long value))
 					throw new FileEE("数値として認識できません");
-				if (!intList.ContainsKey(key))
-					intList.Add(key, value);
+				intList.TryAdd(key, value);
 			}
 			return intList;
 		}
@@ -248,8 +246,7 @@ namespace MinorShift.Emuera.Sub
 						throw new FileEE("数値として認識できません");
 					valueList.Add(value);
 				}
-				if (!ret.ContainsKey(key))
-					ret.Add(key, valueList);
+				ret.TryAdd(key, valueList);
 			}
 			return ret;
 		}
@@ -282,8 +279,7 @@ namespace MinorShift.Emuera.Sub
 						break;
 					valueList.Add(str);
 				}
-				if (!ret.ContainsKey(key))
-					ret.Add(key, valueList);
+				ret.TryAdd(key, valueList);
 			}
 			return ret;
 		}
@@ -329,8 +325,7 @@ namespace MinorShift.Emuera.Sub
 							throw new FileEE(tokens[x] + "は数値として認識できません");
 					valueList.Add(intTokens);
 				}
-				if (!ret.ContainsKey(key))
-					ret.Add(key, valueList);
+				ret.TryAdd(key, valueList);
 			}
 			return ret;
 		}
@@ -409,8 +404,7 @@ namespace MinorShift.Emuera.Sub
 						valueList.Add(tokenList);
 					}
 				}
-				if (!ret.ContainsKey(key))
-					ret.Add(key, valueList);
+				ret.TryAdd(key, valueList);
 			}
 			return ret;
 		}

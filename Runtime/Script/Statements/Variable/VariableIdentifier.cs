@@ -253,9 +253,9 @@ namespace MinorShift.Emuera.GameData.Variable
 		{
 			VariableCode gFlag = flag &
 				(VariableCode.__ARRAY_1D__ | VariableCode.__ARRAY_2D__ | VariableCode.__ARRAY_3D__ | VariableCode.__CHARACTER_DATA__ | VariableCode.__STRING__ | VariableCode.__INTEGER__);
-			if (!extSaveListDic.ContainsKey(gFlag))
+			if (!extSaveListDic.TryGetValue(gFlag, out List<VariableCode> value))
 				return [];
-			return extSaveListDic[gFlag];
+			return value;
 		}
 
 		public static VariableIdentifier GetVariableId(VariableCode code)

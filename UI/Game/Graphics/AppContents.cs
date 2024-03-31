@@ -31,8 +31,8 @@ namespace MinorShift.Emuera.Content
 		//}
 		static public GraphicsImage GetGraphics(int i)
 		{
-			if (gList.ContainsKey(i))
-				return gList[i];
+			if (gList.TryGetValue(i, out GraphicsImage value))
+				return value;
 			GraphicsImage g = new(i);
 			gList[i] = g;
 			return g;
@@ -43,9 +43,9 @@ namespace MinorShift.Emuera.Content
 			if (name == null)
 				return null;
 			name = name.ToUpper();
-			if (!imageDictionary.ContainsKey(name))
+			if (!imageDictionary.TryGetValue(name, out ASprite value))
 				return null;
-			return imageDictionary[name];
+			return value;
 		}
 
 		static public void SpriteDispose(string name)

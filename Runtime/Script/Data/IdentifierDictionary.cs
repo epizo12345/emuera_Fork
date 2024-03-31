@@ -154,8 +154,7 @@ namespace MinorShift.Emuera
 				//RANDが衝突している
 				//1808a3 GLOBAL、PRIVATEも
 				//1808beta009 REFも
-				if (!nameDic.ContainsKey(pair.Key))
-					nameDic.Add(pair.Key, DefinedNameType.SystemVariable);
+				nameDic.TryAdd(pair.Key, DefinedNameType.SystemVariable);
 			}
 
 			foreach (KeyValuePair<string, VariableLocal> pair in localvarTokenDic)
@@ -167,8 +166,7 @@ namespace MinorShift.Emuera
 			{
 				//Methodと被る
 				//1808a3 SAVEDATAも
-				if (!nameDic.ContainsKey(pair.Key))
-					nameDic.Add(pair.Key, DefinedNameType.SystemInstrument);
+				nameDic.TryAdd(pair.Key, DefinedNameType.SystemInstrument);
 			}
 		}
 
@@ -272,9 +270,9 @@ namespace MinorShift.Emuera
 			//    return;
 			//}
 
-			if (nameDic.ContainsKey(varName))
+			if (nameDic.TryGetValue(varName, out DefinedNameType value))
 			{
-				switch (nameDic[varName])
+				switch (value)
 				{
 					case DefinedNameType.Reserved:
 						errMes = "変数名" + varName + "はEmueraの予約語です";
@@ -370,9 +368,9 @@ namespace MinorShift.Emuera
 				warnLevel = 2;
 				return;
 			}
-			if (nameDic.ContainsKey(varName))
+			if (nameDic.TryGetValue(varName, out DefinedNameType value))
 			{
-				switch (nameDic[varName])
+				switch (value)
 				{
 					case DefinedNameType.Reserved:
 						errMes = "変数名" + varName + "はEmueraの予約語です";
@@ -557,8 +555,8 @@ namespace MinorShift.Emuera
 
 		public UserDefinedRefMethod GetRefMethod(string codeStr)
 		{
-			if (refmethodDic.ContainsKey(codeStr))
-				return refmethodDic[codeStr];
+			if (refmethodDic.TryGetValue(codeStr, out UserDefinedRefMethod value))
+				return value;
 			return null;
 		}
 
@@ -568,14 +566,14 @@ namespace MinorShift.Emuera
 			// 	codeStr = codeStr.ToUpper();
 			if (arguments == null)//引数なし、名前のみの探索
 			{
-				if (refmethodDic.ContainsKey(codeStr))
-					return new UserDefinedRefMethodNoArgTerm(refmethodDic[codeStr]);
+				if (refmethodDic.TryGetValue(codeStr, out UserDefinedRefMethod value))
+					return new UserDefinedRefMethodNoArgTerm(value);
 				return null;
 			}
 			if ((labelDic != null) && labelDic.Initialized)
 			{
-				if (refmethodDic.ContainsKey(codeStr))
-					return new UserDefinedRefMethodTerm(refmethodDic[codeStr], arguments);
+				if (refmethodDic.TryGetValue(codeStr, out UserDefinedRefMethod value))
+					return new UserDefinedRefMethodTerm(value, arguments);
 				FunctionLabelLine func = labelDic.GetNonEventLabel(codeStr);
 				if (func != null)
 				{
@@ -615,9 +613,9 @@ namespace MinorShift.Emuera
 			// 	idStr = idStr.ToUpper();
 			if (!isFunc && privateDimList.Contains(idStr))
 				throw new IdentifierNotFoundCodeEE("変数\"" + str + "\"はこの関数中では定義されていません");
-			if (nameDic.ContainsKey(idStr))
+			if (nameDic.TryGetValue(idStr, out DefinedNameType value))
 			{
-				DefinedNameType type = nameDic[idStr];
+				DefinedNameType type = value;
 				switch (type)
 				{
 					case DefinedNameType.Reserved:
@@ -663,8 +661,8 @@ namespace MinorShift.Emuera
 		}
 		public bool getVarTokenIsForbid(string key)
 		{
-			if (localvarTokenDic.ContainsKey(key))
-				return localvarTokenDic[key].IsForbid;
+			if (localvarTokenDic.TryGetValue(key, out VariableLocal value))
+				return value.IsForbid;
 			varTokenDic.TryGetValue(key, out VariableToken var);
 			if (var != null)
 				return var.IsForbid;

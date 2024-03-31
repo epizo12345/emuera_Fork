@@ -39,11 +39,11 @@ namespace MinorShift.Emuera.GameProc
 		public FunctionLabelLine GetSameNameLabel(FunctionLabelLine point)
 		{
 			string id = point.LabelName;
-			if (!labelAtDic.ContainsKey(id))
+			if (!labelAtDic.TryGetValue(id, out List<FunctionLabelLine> value))
 				return null;
 			if (point.IsError)
 				return null;
-			List<FunctionLabelLine> labelList = labelAtDic[id];
+			List<FunctionLabelLine> labelList = value;
 			if (labelList.Count <= 1)
 				return null;
 			return labelList[0];

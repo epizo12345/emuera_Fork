@@ -822,18 +822,18 @@ namespace MinorShift.Emuera.GameData.Variable
 			int i = 0;
 			varList = userDefinedSaveVarList[i]; i++;
 			foreach (UserDefinedVariableToken var in varList)
-				if (strListDic.ContainsKey(var.Name))
-					copyListToArray(strListDic[var.Name], (string[])var.GetArray());
+				if (strListDic.TryGetValue(var.Name, out List<string> value))
+					copyListToArray(value, (string[])var.GetArray());
 
 			varList = userDefinedSaveVarList[i]; i++;
 			foreach (UserDefinedVariableToken var in varList)
-				if (intListDic.ContainsKey(var.Name))
-					copyListToArray(intListDic[var.Name], (Int64[])var.GetArray());
+				if (intListDic.TryGetValue(var.Name, out List<long> value))
+					copyListToArray(value, (Int64[])var.GetArray());
 
 			varList = userDefinedSaveVarList[i]; i++;
 			foreach (UserDefinedVariableToken var in varList)
-				if (str2DListDic.ContainsKey(var.Name))
-					copyListToArray2D(str2DListDic[var.Name], (string[,])var.GetArray());
+				if (str2DListDic.TryGetValue(var.Name, out List<string[]> value))
+					copyListToArray2D(value, (string[,])var.GetArray());
 
 			varList = userDefinedSaveVarList[i]; i++;
 			foreach (UserDefinedVariableToken var in varList)
@@ -842,13 +842,13 @@ namespace MinorShift.Emuera.GameData.Variable
 
 			varList = userDefinedSaveVarList[i]; i++;
 			foreach (UserDefinedVariableToken var in varList)
-				if (str3DListDic.ContainsKey(var.Name))
-					copyListToArray3D(str3DListDic[var.Name], (string[,,])var.GetArray());
+				if (str3DListDic.TryGetValue(var.Name, out List<List<string[]>> value))
+					copyListToArray3D(value, (string[,,])var.GetArray());
 
 			varList = userDefinedSaveVarList[i];// i++;
 			foreach (UserDefinedVariableToken var in varList)
-				if (int3DListDic.ContainsKey(var.Name))
-					copyListToArray3D(int3DListDic[var.Name], (Int64[,,])var.GetArray());
+				if (int3DListDic.TryGetValue(var.Name, out List<List<long[]>> value))
+					copyListToArray3D(value, (Int64[,,])var.GetArray());
 		}
 
 		private void copyListToArray<T>(List<T> srcList, T[] destArray)
@@ -943,18 +943,18 @@ namespace MinorShift.Emuera.GameData.Variable
 			int i = 0;
 			varList = userDefinedGlobalSaveVarList[i]; i++;
 			foreach (UserDefinedVariableToken var in varList)
-				if (strListDic.ContainsKey(var.Name))
-					copyListToArray(strListDic[var.Name], (string[])var.GetArray());
+				if (strListDic.TryGetValue(var.Name, out List<string> value))
+					copyListToArray(value, (string[])var.GetArray());
 
 			varList = userDefinedGlobalSaveVarList[i]; i++;
 			foreach (UserDefinedVariableToken var in varList)
-				if (intListDic.ContainsKey(var.Name))
-					copyListToArray(intListDic[var.Name], (Int64[])var.GetArray());
+				if (intListDic.TryGetValue(var.Name, out List<long> value))
+					copyListToArray(value, (Int64[])var.GetArray());
 
 			varList = userDefinedGlobalSaveVarList[i]; i++;
 			foreach (UserDefinedVariableToken var in varList)
-				if (str2DListDic.ContainsKey(var.Name))
-					copyListToArray2D(str2DListDic[var.Name], (string[,])var.GetArray());
+				if (str2DListDic.TryGetValue(var.Name, out List<string[]> value))
+					copyListToArray2D(value, (string[,])var.GetArray());
 
 			varList = userDefinedGlobalSaveVarList[i]; i++;
 			foreach (UserDefinedVariableToken var in varList)
@@ -963,13 +963,13 @@ namespace MinorShift.Emuera.GameData.Variable
 
 			varList = userDefinedGlobalSaveVarList[i]; i++;
 			foreach (UserDefinedVariableToken var in varList)
-				if (str3DListDic.ContainsKey(var.Name))
-					copyListToArray3D(str3DListDic[var.Name], (string[,,])var.GetArray());
+				if (str3DListDic.TryGetValue(var.Name, out List<List<string[]>> value))
+					copyListToArray3D(value, (string[,,])var.GetArray());
 
 			varList = userDefinedGlobalSaveVarList[i];// i++;
 			foreach (UserDefinedVariableToken var in varList)
-				if (int3DListDic.ContainsKey(var.Name))
-					copyListToArray3D(int3DListDic[var.Name], (Int64[,,])var.GetArray());
+				if (int3DListDic.TryGetValue(var.Name, out List<List<long[]>> value))
+					copyListToArray3D(value, (Int64[,,])var.GetArray());
 		}
 
 		public void SaveGlobalToStreamBinary(EraBinaryDataWriter writer)
