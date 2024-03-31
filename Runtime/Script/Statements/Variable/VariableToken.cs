@@ -354,9 +354,21 @@ namespace MinorShift.Emuera.GameData.Variable
 			if (sizes.Length >= 3 && ((arguments[2] < 0) || (arguments[2] >= sizes[2])))
 				throw new CodeEE("配列型変数" + varName + "の第３引数(" + arguments[2].ToString() + ")は配列の範囲外です");
 		}
+		void CheckBounds(long i1, long i2, long i3)
+		{
+			//if (array == null)
+			//	throw new ExeEE("プライベート変数" + varName + "の配列が用意されていない");
+
+			if ((i1 < 0) || (i1 >= sizes[0]))
+				throw new CodeEE($"配列型変数{varName}の第１引数({i1})は配列の範囲外です");
+			if (sizes.Length >= 2 && ((i2 < 0) || (i2 >= sizes[1])))
+				throw new CodeEE($"配列型変数{varName}の第２引数({i2})は配列の範囲外です");
+			if (sizes.Length >= 3 && ((i3 < 0) || (i3 >= sizes[2])))
+				throw new CodeEE($"配列型変数{varName}の第３引数({i3})は配列の範囲外です");
+		}
 		public override void IsArrayRangeValid(Int64[] arguments, Int64 index1, Int64 index2, string funcName, Int64 i1, Int64 i2)
 		{
-			CheckElement(arguments);
+			CheckBounds(arguments[0], arguments[1], arguments[2]);
 			if ((index1 < 0) || (index1 > sizes[Dimension - 1]))
 				throw new CodeEE(funcName + "命令の第" + i1.ToString() + "引数(" + index1.ToString() + ")は配列" + varName + "の範囲外です");
 			if ((index2 < 0) || (index2 > sizes[Dimension - 1]))
