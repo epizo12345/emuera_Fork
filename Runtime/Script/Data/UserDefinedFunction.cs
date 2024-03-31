@@ -25,8 +25,8 @@ namespace MinorShift.Emuera.GameProc
 		private UserDefinedFunctionData()
 		{
 		}
-		public string Name = null;
-		public bool TypeIsStr = false;
+		public string Name;
+		public bool TypeIsStr;
 		public UserDifinedFunctionDataArgType[] ArgList;
 
 		public static UserDefinedFunctionData Create(WordCollection wc, bool dims, ScriptPosition? sc)

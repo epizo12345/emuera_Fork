@@ -13,16 +13,16 @@ namespace MinorShift.Emuera.GameData
 		public string ScriptDetail = "";//詳細な説明
 		public string ScriptYear = "";
 		public string ScriptTitle = "";
-		public Int64 ScriptUniqueCode = 0;
+		public Int64 ScriptUniqueCode;
 		//1.713 訂正。eramakerのバージョンの初期値は1000ではなく0だった
-		public Int64 ScriptVersion = 0;//1000;
-									   //1.713 上の変更とあわせて。セーブデータのバージョンが1000であり、現在のバージョンが未定義である場合、セーブデータのバージョンを同じとみなす
-		public bool ScriptVersionDefined = false;
+		public Int64 ScriptVersion;//1000;
+								   //1.713 上の変更とあわせて。セーブデータのバージョンが1000であり、現在のバージョンが未定義である場合、セーブデータのバージョンを同じとみなす
+		public bool ScriptVersionDefined;
 		public Int64 ScriptCompatibleMinVersion = -1;
 		public string Compatible_EmueraVer = "0.000.0.0";
 
 		//1.727 追加。Form.Text
-		public string ScriptWindowTitle = null;
+		public string ScriptWindowTitle;
 		public string ScriptVersionText
 		{
 			get
@@ -55,7 +55,7 @@ namespace MinorShift.Emuera.GameData
 		}
 
 		public Int64 DefaultCharacter = -1;
-		public Int64 DefaultNoItem = 0;
+		public Int64 DefaultNoItem;
 
 		private bool tryatoi(ReadOnlySpan<char> str, out Int64 i)
 		{

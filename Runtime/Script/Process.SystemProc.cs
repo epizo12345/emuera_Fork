@@ -7,7 +7,7 @@ namespace MinorShift.Emuera.GameProc
 {
 	internal sealed partial class Process
 	{
-		private string[] TrainName = null;
+		private string[] TrainName;
 		delegate void SystemProcess();
 		Dictionary<SystemStateCode, SystemProcess> systemProcessDictionary = [];
 		private void initSystemProcess()
@@ -73,7 +73,7 @@ namespace MinorShift.Emuera.GameProc
 
 
 
-		Int64 systemResult = 0;
+		Int64 systemResult;
 		int lastCalledComable = -1;
 		int lastAddCom = -1;
 		//(Train.csv中の値・定義されていなければ-1) == comAble[(表示されている値)];
@@ -260,9 +260,9 @@ namespace MinorShift.Emuera.GameProc
 		}
 
 		List<Int64> coms = [];
-		bool isCTrain = false;
-		int count = 0;
-		bool skipPrint = false;
+		bool isCTrain;
+		int count;
+		bool skipPrint;
 		public bool SkipPrint { get { return skipPrint; } set { skipPrint = value; } }
 		void endCallEventTrain()
 		{
@@ -311,7 +311,7 @@ namespace MinorShift.Emuera.GameProc
 			return string.Format("{0}[{1,3}]", trainName, comNo);
 		}
 
-		int printComCount = 0;
+		int printComCount;
 		void endCallComAbleXX()
 		{
 			//選択肢追加。RESULTが0の場合は選択肢の番号のみ増やして追加はしない。
@@ -481,7 +481,7 @@ namespace MinorShift.Emuera.GameProc
 				endCallEventComEnd();
 			}
 		}
-		public bool NeedWaitToEventComEnd = false;
+		public bool NeedWaitToEventComEnd;
 		bool needCheck = true;
 		void endCallEventComEnd()
 		{
@@ -804,7 +804,7 @@ namespace MinorShift.Emuera.GameProc
 		bool[] dataIsAvailable = new bool[21];
 		bool isFirstTime = true;
 		const int AutoSaveIndex = 99;
-		int page = 0;
+		int page;
 		void printSaveDataText()
 		{
 			if (isFirstTime)

@@ -30,8 +30,8 @@ namespace MinorShift.Emuera.GameView
 		readonly RectangleF layoutRect;
 		readonly float fontDisplaySize;
 
-		readonly Graphics graph = null;
-		readonly Bitmap bmp = null;
+		readonly Graphics graph;
+		readonly Bitmap bmp;
 
 		public int GetDisplayLength(ReadOnlySpan<char> chars, Font f)
 		{
@@ -78,7 +78,7 @@ namespace MinorShift.Emuera.GameView
 		}
 
 
-		bool disposed = false;
+		bool disposed;
 		public void Dispose()
 		{
 			if (disposed)

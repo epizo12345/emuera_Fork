@@ -18,7 +18,7 @@ namespace MinorShift.Emuera.Sub
 		{
 			writer = new BinaryWriter(fs, Encoding.Unicode);
 		}
-		BinaryWriter writer = null;
+		BinaryWriter writer;
 
 		public void WriteHeader()
 		{

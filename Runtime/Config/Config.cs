@@ -18,7 +18,7 @@ internal static class Config
 
 	public static Encoding Encode = Encoding.GetEncoding("SHIFT-JIS");
 	public static Encoding SaveEncode = Encoding.GetEncoding("SHIFT-JIS");
-	private static Dictionary<ConfigCode, string> nameDic = null;
+	private static Dictionary<ConfigCode, string> nameDic;
 	public static string GetConfigName(ConfigCode code)
 	{
 		return nameDic[code];

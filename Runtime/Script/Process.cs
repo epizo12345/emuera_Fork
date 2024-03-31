@@ -43,7 +43,7 @@ namespace MinorShift.Emuera.GameProc
 		private IdentifierDictionary idDic;
 		ProcessState state;
 		ProcessState originalState;//リセットする時のために
-		bool noError = false;
+		bool noError;
 		//色々あって復活させてみる
 		bool initialiing;
 		public bool inInitializeing { get { return initialiing; } }
@@ -372,7 +372,7 @@ namespace MinorShift.Emuera.GameProc
 			}
 		}
 
-		int methodStack = 0;
+		int methodStack;
 		public SingleTerm GetValue(SuperUserDefinedMethodTerm udmt)
 		{
 			methodStack++;
@@ -431,7 +431,7 @@ namespace MinorShift.Emuera.GameProc
 					return state.Scope;
 				}
 		*/
-		public LogicalLine scaningLine = null;
+		public LogicalLine scaningLine;
 		internal LogicalLine GetScaningLine()
 		{
 			if (scaningLine != null)

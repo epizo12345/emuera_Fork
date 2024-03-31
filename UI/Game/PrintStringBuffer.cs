@@ -26,7 +26,7 @@ namespace MinorShift.Emuera.GameView
 		readonly EmueraConsole parent;
 		StringBuilder builder = new();
 		List<AConsoleDisplayPart> m_stringList = [];
-		StringStyle lastStringStyle = new();
+		StringStyle lastStringStyle;
 		List<ConsoleButtonString> m_buttonList = [];
 
 		public int BufferStrLength

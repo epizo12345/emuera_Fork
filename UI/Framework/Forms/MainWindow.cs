@@ -323,7 +323,7 @@ namespace MinorShift.Emuera.Forms
 				console.RefreshStrings(true);
 		}
 
-		bool changeTextbyMouse = false;
+		bool changeTextbyMouse;
 		private void mainPicBox_MouseDown(object sender, MouseEventArgs e)
 		{
 			if (!Config.UseMouse)
@@ -977,7 +977,7 @@ namespace MinorShift.Emuera.Forms
 			PressEnterKey(false, false);
 		}
 
-		int macroGroup = 0;
+		int macroGroup;
 		private void マクロToolStripMenuItem_Click(object? sender, EventArgs e)
 		{
 			if ((console == null) || console.IsInProcess)
@@ -1027,7 +1027,7 @@ namespace MinorShift.Emuera.Forms
 			}
 		}
 
-		int labelTimerCount = 0;
+		int labelTimerCount;
 		private void setNewMacroGroup(int group)
 		{
 			labelTimerCount = 0;

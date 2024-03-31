@@ -83,8 +83,8 @@ namespace MinorShift.Emuera.GameData.Function
 			this.srcArgs = srcArgs;
 			this.reffunc = reffunc;
 		}
-		List<AExpression> srcArgs = null;
-		readonly UserDefinedRefMethod reffunc = null;
+		List<AExpression> srcArgs;
+		readonly UserDefinedRefMethod reffunc;
 		public override UserDefinedFunctionArgument Argument
 		{
 			get
@@ -129,7 +129,7 @@ namespace MinorShift.Emuera.GameData.Function
 		{
 			this.reffunc = reffunc;
 		}
-		readonly UserDefinedRefMethod reffunc = null;
+		readonly UserDefinedRefMethod reffunc;
 		public override UserDefinedFunctionArgument Argument
 		{ get { throw new CodeEE("引数のない関数参照" + reffunc.Name + "を呼び出しました"); } }
 		public override CalledFunction Call

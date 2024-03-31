@@ -18,7 +18,7 @@ namespace MinorShift.Emuera.GameView
 	internal sealed partial class EmueraConsole : IDisposable
 	{
 		private readonly List<ConsoleDisplayLine> displayLineList;
-		public bool noOutputLog = false;
+		public bool noOutputLog;
 		public Color bgColor = Config.BackColor;
 
 		private readonly PrintStringBuffer printBuffer;
@@ -75,10 +75,10 @@ namespace MinorShift.Emuera.GameView
 		/// <summary>
 		/// DRAWLINE用文字列
 		/// </summary>
-		string stBar = null;
+		string stBar;
 
-		Stopwatch _drawStopwatch = null;
-		bool forceTextBoxColor = false;
+		Stopwatch _drawStopwatch;
+		bool forceTextBoxColor;
 		public void SetBgColor(Color color)
 		{
 			this.bgColor = color;
@@ -107,8 +107,8 @@ namespace MinorShift.Emuera.GameView
 		/// 最後に描画した時にlineNoの値
 		/// </summary>
 		int lastDrawnLineNo = -1;
-		int lineNo = 0;
-		Int64 logicalLineCount = 0;
+		int lineNo;
+		Int64 logicalLineCount;
 		public long LineCount { get { return logicalLineCount; } }
 		private void addRangeDisplayLine(ConsoleDisplayLine[] lineList)
 		{

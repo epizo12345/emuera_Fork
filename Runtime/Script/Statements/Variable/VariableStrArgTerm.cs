@@ -19,8 +19,8 @@ namespace MinorShift.Emuera.GameData.Variable
 		AExpression strTerm;
 		readonly VariableCode parentCode;
 		readonly int index;
-		Dictionary<string, int> dic = null;
-		string errPos = null;
+		Dictionary<string, int> dic;
+		string errPos;
 
 		public override Int64 GetIntValue(ExpressionMediator exm)
 		{

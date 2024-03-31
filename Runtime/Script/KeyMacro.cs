@@ -21,7 +21,7 @@ namespace MinorShift.Emuera
 		/// </summary>
 		static string[] macroName = new string[MaxMacro];
 		static string[] groupName = new string[MaxGroup];
-		static bool isMacroChanged = false;
+		static bool isMacroChanged;
 		static KeyMacro()
 		{
 			for (int g = 0; g < MaxGroup; g++)

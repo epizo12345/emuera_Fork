@@ -9,19 +9,19 @@ namespace MinorShift.Emuera.GameProc
 
 	internal sealed class UserDefinedVariableData
 	{
-		public string Name = null;
-		public bool TypeIsStr = false;
-		public bool Reference = false;
+		public string Name;
+		public bool TypeIsStr;
+		public bool Reference;
 		public int Dimension = 1;
-		public int[] Lengths = null;
-		public Int64[] DefaultInt = null;
-		public string[] DefaultStr = null;
-		public bool Global = false;
-		public bool Save = false;
+		public int[] Lengths;
+		public Int64[] DefaultInt;
+		public string[] DefaultStr;
+		public bool Global;
+		public bool Save;
 		public bool Static = true;
-		public bool Private = false;
-		public bool CharaData = false;
-		public bool Const = false;
+		public bool Private;
+		public bool CharaData;
+		public bool Const;
 
 		//1822 Privateの方もDIMだけ遅延させようとしたけどちょっと課題がおおいのでやめとく
 		public static UserDefinedVariableData Create(DimLineWC dimline)

@@ -83,7 +83,7 @@ namespace MinorShift.Emuera.GameView
 		}
 		#region 1823 cbg関連
 		private readonly List<ClientBackGroundImage> cbgList = [];
-		private GraphicsImage cbgButtonMap = null;
+		private GraphicsImage cbgButtonMap;
 		private int selectingCBGButtonInt = -1;
 		private int lastSelectingCBGButtonInt = -1;
 		//ConsoleButtonString selectingButton = null;
@@ -97,14 +97,14 @@ namespace MinorShift.Emuera.GameView
 			/// <param name="zdepth"></param>
 			internal ClientBackGroundImage(int zdepth)
 			{ this.zdepth = zdepth; }
-			public ASprite Img = null;
-			public ASprite ImgB = null;
+			public ASprite Img;
+			public ASprite ImgB;
 			public int x;
 			public int y;
 			public readonly int zdepth;
-			public bool isButton = false;
+			public bool isButton;
 			public int buttonValue;
-			public string tooltipString = null;
+			public string tooltipString;
 			public int CompareTo(ClientBackGroundImage other)
 			{
 				if (other == null)
@@ -397,16 +397,16 @@ namespace MinorShift.Emuera.GameView
 			state = ConsoleState.Error;
 		}
 
-		public bool notToTitle = false;
-		public bool byError = false;
+		public bool notToTitle;
+		public bool byError;
 		//public ScriptPosition? ErrPos = null;
 
 		#region button関連
 		bool lastButtonIsInput = true;
-		public bool updatedGeneration = false;
-		int lastButtonGeneration = 0;//最後に追加された選択肢の世代。これと世代が一致しない選択肢は選択できない。
-		int newButtonGeneration = 0;//次に追加される選択肢の世代。Input又はInputsごとに増加
-									//public int LastButtonGeneration { get { return lastButtonGeneration; } }
+		public bool updatedGeneration;
+		int lastButtonGeneration;//最後に追加された選択肢の世代。これと世代が一致しない選択肢は選択できない。
+		int newButtonGeneration;//次に追加される選択肢の世代。Input又はInputsごとに増加
+								//public int LastButtonGeneration { get { return lastButtonGeneration; } }
 		public int NewButtonGeneration { get { return newButtonGeneration; } }
 		public void UpdateGeneration() { lastButtonGeneration = newButtonGeneration; updatedGeneration = true; }
 		public void forceUpdateGeneration() { newButtonGeneration++; lastButtonGeneration = newButtonGeneration; updatedGeneration = true; }
@@ -447,21 +447,21 @@ namespace MinorShift.Emuera.GameView
 		/// <summary>
 		/// 選択中のボタン。INPUTやINPUTSに対応したものでなければならない
 		/// </summary>
-		ConsoleButtonString selectingButton = null;
-		ConsoleButtonString lastSelectingButton = null;
+		ConsoleButtonString selectingButton;
+		ConsoleButtonString lastSelectingButton;
 		public ConsoleButtonString SelectingButton { get { return selectingButton; } }
 		public bool ButtonIsSelected(ConsoleButtonString button) { return selectingButton == button; }
 
 		/// <summary>
 		/// ToolTip表示したフラグ
 		/// </summary>
-		bool tooltipUsed = false;
+		bool tooltipUsed;
 		/// <summary>
 		/// マウスの直下にあるテキスト。ボタンであってもよい。
 		/// ToolTip表示用。世代無視、履歴中も表示
 		/// </summary>
-		ConsoleButtonString pointingString = null;
-		ConsoleButtonString lastPointingString = null;
+		ConsoleButtonString pointingString;
+		ConsoleButtonString lastPointingString;
 		#endregion
 
 		#region Input & Timer系
@@ -470,7 +470,7 @@ namespace MinorShift.Emuera.GameView
 		//Int64 defNum;
 		//string defStr;
 
-		private InputRequest inputReq = null;
+		private InputRequest inputReq;
 		public void Await(int time)
 		{
 			if (!Enabled || state != ConsoleState.Running)
@@ -531,7 +531,7 @@ namespace MinorShift.Emuera.GameView
 		/// <summary>
 		/// INPUT中のアニメーション用タイマー
 		/// </summary>
-		Timer redrawTimer = null;
+		Timer redrawTimer;
 
 		private void tickRedrawTimer(object sender, EventArgs e)
 		{
@@ -567,14 +567,14 @@ namespace MinorShift.Emuera.GameView
 		Int64 timerID = -1;
 		readonly Stopwatch _genericTimerStopwatch = new();//現在のタイマーを開始した時のミリ秒数（WinmmTimer.TickCount基準）
 		Int64 timer_endTime;//現在のタイマーを終了する時のTickCountミリ秒数
-		bool wait_timeout = false;
-		bool isTimeout = false;
+		bool wait_timeout;
+		bool isTimeout;
 		public bool IsTimeOut { get { return isTimeout; } }
 
 		/// <summary>
 		/// 1824 TINPUT時に直接タイマーをセットせずに最初の再描画が終わってからタイマーをセットする（そうしないとTINPUTと再描画だけでループしてしまうので）
 		/// </summary>
-		bool need_settimer = false;
+		bool need_settimer;
 
 		private void presetTimer()
 		{
@@ -748,9 +748,9 @@ namespace MinorShift.Emuera.GameView
 		#region 入力系
 		readonly string[] spliter = ["\\n", "\r\n", "\n", "\r"];//本物の改行コードが来ることは無いはずだけど一応
 
-		public bool MesSkip = false;
-		private bool inProcess = false;
-		volatile public bool KillMacro = false;
+		public bool MesSkip;
+		private bool inProcess;
+		volatile public bool KillMacro;
 
 		internal void MouseWheel(Point point, int delta)
 		{
@@ -1065,7 +1065,7 @@ namespace MinorShift.Emuera.GameView
 		}
 
 
-		bool runningERBfromMemory = false;
+		bool runningERBfromMemory;
 		/// <summary>
 		/// 通常コンソールからのDebugコマンド、及びデバッグウインドウの変数ウォッチなど、
 		/// *.ERBファイルが存在しないスクリプトを実行中
@@ -1155,7 +1155,7 @@ namespace MinorShift.Emuera.GameView
 				RefreshStrings(true);
 		}
 
-		string debugTitle = null;
+		string debugTitle;
 		public void SetWindowTitle(string str)
 		{
 			if (Program.DebugMode)
@@ -1384,7 +1384,7 @@ namespace MinorShift.Emuera.GameView
 			window.ToolTip.InitialDelay = delay;
 		}
 
-		int tooltip_duration = 0;
+		int tooltip_duration;
 		public void SetToolTipDuration(int duration)
 		{
 			tooltip_duration = duration;
@@ -1405,7 +1405,7 @@ namespace MinorShift.Emuera.GameView
 		#endregion
 
 		#region DebugMode系
-		DebugDialog dd = null;
+		DebugDialog dd;
 		public DebugDialog DebugDialog { get { return dd; } }
 		StringBuilder dConsoleLog = new("");
 		public string DebugConsoleLog { get { return dConsoleLog.ToString(); } }
@@ -1793,8 +1793,8 @@ namespace MinorShift.Emuera.GameView
 			RefreshStrings(true);
 		}
 
-		bool force_temporary = false;
-		bool timer_suspended = false;
+		bool force_temporary;
+		bool timer_suspended;
 		ConsoleState prevState;
 		InputRequest prevReq;
 

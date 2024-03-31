@@ -10,7 +10,7 @@ namespace MinorShift.Emuera.GameView
 	{
 		public string Str = "";
 		public Int64 Input;
-		public bool CanSelect = false;
+		public bool CanSelect;
 		public override string ToString()
 		{
 			return Str;

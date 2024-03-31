@@ -1882,7 +1882,7 @@ namespace MinorShift.Emuera.GameData.Function
                 isCharaRange = isChara;
                 CanRestructure = false;
             }
-            private readonly bool isCharaRange = false;
+            private readonly bool isCharaRange;
             public override string CheckArgumentType(string name, List<AExpression> arguments)
             {
                 if (arguments.Count < 2)
@@ -2229,7 +2229,7 @@ namespace MinorShift.Emuera.GameData.Function
                 this.unicode = unicode;
             }
 
-            readonly bool unicode = false;
+            readonly bool unicode;
             public override string CheckArgumentType(string name, List<AExpression> arguments)
             {
                 //通常３つ、１つ省略可能で２～３の引数が必要。

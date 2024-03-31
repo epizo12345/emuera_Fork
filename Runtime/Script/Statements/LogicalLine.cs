@@ -109,7 +109,7 @@ namespace MinorShift.Emuera.GameProc
 
 		WordCollection assigndest;
 		public OperatorCode AssignOperator { get; private set; }
-		Int64 subData = 0;
+		Int64 subData;
 		public FunctionCode FunctionCode
 		{
 			get { return func.Code; }
@@ -161,14 +161,14 @@ namespace MinorShift.Emuera.GameProc
 			set { step = value; }
 		}
 
-		private LogicalLine jumpto = null;
-		private LogicalLine jumptoendcatch = null;
+		private LogicalLine jumpto;
+		private LogicalLine jumptoendcatch;
 		//IF文とSELECT文のみが使う。
-		public List<InstructionLine> IfCaseList = null;
+		public List<InstructionLine> IfCaseList;
 		//PRINTDATA文のみが使う。
-		public List<List<InstructionLine>> dataList = null;
+		public List<List<InstructionLine>> dataList;
 		//TRYCALLLIST系が使う
-		public List<InstructionLine> callList = null;
+		public List<InstructionLine> callList;
 
 		public LogicalLine JumpTo
 		{

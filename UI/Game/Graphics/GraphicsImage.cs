@@ -24,9 +24,9 @@ namespace MinorShift.Emuera.Content
 		}
 		public readonly int ID;
 		Size size;
-		Brush brush = null;
-		Pen pen = null;
-		Font font = null;
+		Brush brush;
+		Pen pen;
+		Font font;
 		//Bitmap b;
 		//Graphics g;
 

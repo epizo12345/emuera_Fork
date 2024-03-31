@@ -15,7 +15,7 @@ namespace MinorShift.Emuera.Sub
 		}
 
 		public List<Word> Collection;
-		public int Pointer = 0;
+		public int Pointer;
 		private static Word nullToken = new NullWord();
 		public void Add(Word token)
 		{

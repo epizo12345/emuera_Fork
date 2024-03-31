@@ -114,7 +114,7 @@ namespace MinorShift.Emuera.Forms
 					textBox.Enabled = !item.Fixed;
 				}
 		*/
-        MainWindow parent = null;
+        MainWindow parent;
         public void SetConfig(MainWindow mainWindow)
         {
             parent = mainWindow;

@@ -118,7 +118,7 @@ namespace MinorShift.Emuera.GameView
 		public override int Top { get { return top; } }
 		public override int Bottom { get { return bottom; } }
 		readonly RectangleF originalRectF;
-		bool visible = false;
+		bool visible;
 		Rectangle rect;
 		public override void DrawTo(System.Drawing.Graphics graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
 		{

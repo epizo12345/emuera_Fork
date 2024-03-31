@@ -26,9 +26,9 @@ namespace MinorShift.Emuera.GameData.Expression
 		readonly static Dictionary<OperatorCode, OperatorMethod> unaryAfterDic = [];
 		readonly static Dictionary<OperatorCode, OperatorMethod> binaryIntIntDic = [];
 		readonly static Dictionary<OperatorCode, OperatorMethod> binaryStrStrDic = [];
-		readonly static OperatorMethod binaryMultIntStr = null;
-		readonly static OperatorMethod ternaryIntIntInt = null;
-		readonly static OperatorMethod ternaryIntStrStr = null;
+		readonly static OperatorMethod binaryMultIntStr;
+		readonly static OperatorMethod ternaryIntIntInt;
+		readonly static OperatorMethod ternaryIntStrStr;
 
 		static OperatorMethodManager()
 		{

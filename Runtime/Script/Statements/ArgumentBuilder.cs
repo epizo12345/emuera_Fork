@@ -43,7 +43,7 @@ namespace MinorShift.Emuera.GameProc.Function
 		/// <summary>
 		/// 引数の数に制限なし。
 		/// </summary>
-		protected bool argAny = false;
+		protected bool argAny;
 		protected bool checkArgumentType(InstructionLine line, ExpressionMediator exm, List<AExpression> arguments)
 		{
 			if (arguments == null)

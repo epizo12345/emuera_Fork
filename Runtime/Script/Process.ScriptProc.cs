@@ -760,8 +760,8 @@ namespace MinorShift.Emuera.GameProc
 			return;
 		}
 
-		bool saveSkip = false;
-		bool userDefinedSkip = false;
+		bool saveSkip;
+		bool userDefinedSkip;
 
 		#endregion
 

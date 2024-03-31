@@ -13,18 +13,18 @@ namespace MinorShift.Emuera.GameData
 	internal sealed class StrForm
 	{
 		private StrForm() { }
-		string[] strs = null;//terms.Length + 1
-		AExpression[] terms = null;
+		string[] strs;//terms.Length + 1
+		AExpression[] terms;
 
 		#region static
-		static FormattedStringMethod formatCurlyBrace = null;
-		static FormattedStringMethod formatPercent = null;
-		static FormattedStringMethod formatYenAt = null;
-		static FunctionMethodTerm NameTarget = null;// "***"
-		static FunctionMethodTerm CallnameMaster = null;// "+++"
-		static FunctionMethodTerm CallnamePlayer = null;// "==="
-		static FunctionMethodTerm NameAssi = null;// "///"
-		static FunctionMethodTerm CallnameTarget = null;// "$$$"
+		static FormattedStringMethod formatCurlyBrace;
+		static FormattedStringMethod formatPercent;
+		static FormattedStringMethod formatYenAt;
+		static FunctionMethodTerm NameTarget;// "***"
+		static FunctionMethodTerm CallnameMaster;// "+++"
+		static FunctionMethodTerm CallnamePlayer;// "==="
+		static FunctionMethodTerm NameAssi;// "///"
+		static FunctionMethodTerm CallnameTarget;// "$$$"
 		public static void Initialize()
 		{
 			formatCurlyBrace = new FormatCurlyBrace();

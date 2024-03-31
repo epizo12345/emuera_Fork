@@ -36,11 +36,11 @@ namespace MinorShift.Emuera.GameProc
 					|| InputType == InputType.PrimitiveMouseKey;
 			}
 		}
-		public bool OneInput = false;
-		public bool StopMesskip = false;
-		public bool IsSystemInput = false;
+		public bool OneInput;
+		public bool StopMesskip;
+		public bool IsSystemInput;
 
-		public bool HasDefValue = false;
+		public bool HasDefValue;
 		public long DefIntValue;
 		public string DefStrValue;
 
@@ -48,6 +48,6 @@ namespace MinorShift.Emuera.GameProc
 		public bool DisplayTime;
 		public string TimeUpMes;
 
-		static Int64 LastRequestID = 0;
+		static Int64 LastRequestID;
 	}
 }

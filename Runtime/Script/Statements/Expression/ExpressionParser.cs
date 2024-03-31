@@ -455,10 +455,10 @@ namespace MinorShift.Emuera.GameData.Expression
 			/// 次に来るべきものの種類。
 			/// (前置)単項演算子か値待ちなら0、二項・三項演算子待ちなら1、値待ちなら2、++、--、!に対応する値待ちの場合は3。
 			/// </summary>
-			int state = 0;
-			bool hasBefore = false;
-			bool hasAfter = false;
-			bool waitAfter = false;
+			int state;
+			bool hasBefore;
+			bool hasAfter;
+			bool waitAfter;
 			Stack<Object> stack = new(5);
 			public void Add(OperatorCode op)
 			{

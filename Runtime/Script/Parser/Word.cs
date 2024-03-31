@@ -6,7 +6,7 @@ namespace MinorShift.Emuera.Sub
 	internal abstract class Word
 	{
 		public abstract char Type { get; }
-		public bool IsMacro = false;
+		public bool IsMacro;
 		public virtual void SetIsMacro()
 		{
 			IsMacro = true;

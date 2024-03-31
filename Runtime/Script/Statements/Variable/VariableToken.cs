@@ -316,7 +316,7 @@ namespace MinorShift.Emuera.GameData.Variable
 		}
 
 		public abstract void SetDefault();
-		protected bool isConst = false;
+		protected bool isConst;
 		protected int[] sizes;
 		protected int totalSize;
 		//public bool IsGlobal { get; protected set; }
@@ -430,8 +430,8 @@ namespace MinorShift.Emuera.GameData.Variable
 			arrayList = [];
 			IsForbid = false;
 		}
-		protected List<Array> arrayList = null;
-		protected Array array = null;
+		protected List<Array> arrayList;
+		protected Array array;
 
 		public override void SetDefault()
 		{//Defaultのセットは参照元がやるべき
@@ -473,7 +473,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				throw new CodeEE(funcName + "命令の第" + i2.ToString() + "引数(" + index2.ToString() + ")は配列" + varName + "の範囲外です");
 		}
 
-		int counter = 0;
+		int counter;
 		public override void ScopeIn()
 		{
 			if (counter > 0)
@@ -1359,7 +1359,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				this.array = array;
 				IsForbid = array.Length == 0;
 			}
-			Int64[] array = null;
+			Int64[] array;
 			public override Int64 GetIntValue(ExpressionMediator exm, Int64[] arguments)
 			{
 				return array[arguments[0]];
@@ -1404,7 +1404,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				IsForbid = array.Length == 0;
 			}
 
-			string[] array = null;
+			string[] array;
 			public override string GetStrValue(ExpressionMediator exm, Int64[] arguments)
 			{
 				return array[arguments[0]];
@@ -1731,7 +1731,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				: base(varCode, varData, subId, size)
 			{
 			}
-			Int64[] array = null;
+			Int64[] array;
 
 			public override void SetDefault()
 			{
@@ -1799,7 +1799,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				: base(varCode, varData, subId, size)
 			{
 			}
-			string[] array = null;
+			string[] array;
 			public override void SetDefault()
 			{
 				if (array != null)
@@ -1873,8 +1873,8 @@ namespace MinorShift.Emuera.GameData.Variable
 				//	Array.Copy(defArray, array, defArray.Length);
 			}
 			int length;
-			Int64[] array = null;
-			Int64[] defArray = null;
+			Int64[] array;
+			Int64[] defArray;
 
 			void IfNullInitArray()
 			{
@@ -1951,7 +1951,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				//array = new Int64[sizes[0], sizes[1]];
 			}
 			(int x, int y) size = (0, 0);
-			long[,] array = null;
+			long[,] array;
 
 			void IfNullInitArray()
 			{
@@ -2020,7 +2020,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				//array = new Int64[sizes[0], sizes[1], sizes[2]];
 			}
 			(int x, int y, int z) size = (0, 0, 0);
-			Int64[,,] array = null;
+			Int64[,,] array;
 			void IfNullInitArray()
 			{
 				array ??= new long[sizes[0], sizes[1], sizes[2]];
@@ -2090,8 +2090,8 @@ namespace MinorShift.Emuera.GameData.Variable
 				// 	Array.Copy(defArray, array, defArray.Length);
 			}
 			int length;
-			string[] array = null;
-			string[] defArray = null;
+			string[] array;
+			string[] defArray;
 
 			void IfNullInitArray()
 			{
@@ -2154,7 +2154,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				IsStatic = true;
 				//array = new string[sizes[0], sizes[1]];
 			}
-			string[,] array = null;
+			string[,] array;
 			(int x, int y) size;
 
 			void IfNullInitArray()
@@ -2219,7 +2219,7 @@ namespace MinorShift.Emuera.GameData.Variable
 				IsStatic = true;
 				//array = new string[sizes[0], sizes[1], sizes[2]];
 			}
-			string[,,] array = null;
+			string[,,] array;
 			(int x, int y, int z) size;
 
 			void IfNullInitArray()
@@ -2287,9 +2287,9 @@ namespace MinorShift.Emuera.GameData.Variable
 				arrayStack = [];
 				defArray = data.DefaultInt;
 			}
-			readonly Stack<long[]> arrayStack = null;
-			Int64[] array = null;
-			Int64[] defArray = null;
+			readonly Stack<long[]> arrayStack;
+			Int64[] array;
+			Int64[] defArray;
 			//int counter = 0;
 			public override void SetDefault()
 			{
@@ -2354,8 +2354,8 @@ namespace MinorShift.Emuera.GameData.Variable
 				IsStatic = false;
 				arrayStack = [];
 			}
-			readonly Stack<long[,]> arrayStack = null;
-			Int64[,] array = null;
+			readonly Stack<long[,]> arrayStack;
+			Int64[,] array;
 			//int counter = 0;
 			public override void SetDefault() { }
 			public override Int64 GetIntValue(ExpressionMediator exm, Int64[] arguments)
@@ -2419,8 +2419,8 @@ namespace MinorShift.Emuera.GameData.Variable
 				IsStatic = false;
 				arrayStack = [];
 			}
-			readonly Stack<long[,,]> arrayStack = null;
-			Int64[,,] array = null;
+			readonly Stack<long[,,]> arrayStack;
+			Int64[,,] array;
 			//int counter = 0;
 			public override void SetDefault() { }
 			public override Int64 GetIntValue(ExpressionMediator exm, Int64[] arguments)
@@ -2490,9 +2490,9 @@ namespace MinorShift.Emuera.GameData.Variable
 				defArray = data.DefaultStr;
 			}
 			//int counter = 0;
-			readonly Stack<string[]> arrayStack = null;
-			string[] array = null;
-			string[] defArray = null;
+			readonly Stack<string[]> arrayStack;
+			string[] array;
+			string[] defArray;
 			public override void SetDefault()
 			{
 			}
@@ -2559,8 +2559,8 @@ namespace MinorShift.Emuera.GameData.Variable
 				arrayStack = [];
 			}
 			//int counter = 0;
-			readonly Stack<string[,]> arrayStack = null;
-			string[,] array = null;
+			readonly Stack<string[,]> arrayStack;
+			string[,] array;
 			public override void SetDefault()
 			{
 			}
@@ -2623,8 +2623,8 @@ namespace MinorShift.Emuera.GameData.Variable
 				arrayStack = [];
 			}
 			//int counter = 0;
-			readonly Stack<string[,,]> arrayStack = null;
-			string[,,] array = null;
+			readonly Stack<string[,,]> arrayStack;
+			string[,,] array;
 			public override void SetDefault() { }
 
 			public override string GetStrValue(ExpressionMediator exm, Int64[] arguments)

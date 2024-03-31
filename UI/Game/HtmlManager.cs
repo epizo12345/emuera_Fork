@@ -51,7 +51,7 @@ namespace MinorShift.Emuera.GameView
 		{
 			public int Color = -1;
 			public int BColor = -1;
-			public string FontName = null;
+			public string FontName;
 			//public int PointX = 0;
 			//public bool PointXisLocked = false;
 		}
@@ -60,12 +60,12 @@ namespace MinorShift.Emuera.GameView
 		{
 			public bool IsButton = true;
 			public bool IsButtonTag = true;
-			public Int64 ButtonValueInt = 0;
-			public string ButtonValueStr = null;
-			public string ButtonTitle = null;
-			public bool ButtonIsInteger = false;
-			public int PointX = 0;
-			public bool PointXisLocked = false;
+			public Int64 ButtonValueInt;
+			public string ButtonValueStr;
+			public string ButtonTitle;
+			public bool ButtonIsInteger;
+			public int PointX;
+			public bool PointXisLocked;
 		}
 
 		private sealed class HtmlAnalzeState
@@ -73,23 +73,23 @@ namespace MinorShift.Emuera.GameView
 			public bool LineHead = true;//行頭フラグ。一度もテキストが出てきてない状態
 			public FontStyle FontStyle = FontStyle.Regular;
 			public List<HtmlAnalzeStateFontTag> FonttagList = [];
-			public bool FlagNobr = false;//falseの時に</nobr>するとエラー
-			public bool FlagP = false;//falseの時に</p>するとエラー
-			public bool FlagNobrClosed = false;//trueの時に</nobr>するとエラー
-			public bool FlagPClosed = false;//trueの時に</p>するとエラー
+			public bool FlagNobr;//falseの時に</nobr>するとエラー
+			public bool FlagP;//falseの時に</p>するとエラー
+			public bool FlagNobrClosed;//trueの時に</nobr>するとエラー
+			public bool FlagPClosed;//trueの時に</p>するとエラー
 			public DisplayLineAlignment Alignment = DisplayLineAlignment.LEFT;
 
 			/// <summary>
 			/// 今まで追加された文字列についてのボタンタグ情報
 			/// </summary>
-			public HtmlAnalzeStateButtonTag LastButtonTag = null;
+			public HtmlAnalzeStateButtonTag LastButtonTag;
 			/// <summary>
 			/// 最新のボタンタグ情報
 			/// </summary>
-			public HtmlAnalzeStateButtonTag CurrentButtonTag = null;
+			public HtmlAnalzeStateButtonTag CurrentButtonTag;
 
-			public bool FlagBr = false;//<br>による強制改行の予約
-			public bool FlagButton = false;//<button></button>によるボタン化の予約
+			public bool FlagBr;//<br>による強制改行の予約
+			public bool FlagButton;//<button></button>によるボタン化の予約
 
 			public StringStyle GetSS()
 			{

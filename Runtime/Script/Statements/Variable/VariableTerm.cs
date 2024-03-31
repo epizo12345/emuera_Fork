@@ -31,7 +31,7 @@ namespace MinorShift.Emuera.GameData.Variable
 		public VariableToken Identifier;
 		private readonly AExpression[] arguments;
 		protected Int64[] transporter;
-		protected bool allArgIsConst = false;
+		protected bool allArgIsConst;
 
 		public Int64 GetElementInt(int i, ExpressionMediator exm)
 		{

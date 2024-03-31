@@ -141,7 +141,7 @@ namespace MinorShift.Emuera.GameProc
 		}
 
 
-		static FunctionMethod tostrMethod = null;
+		static FunctionMethod tostrMethod;
 		/// <summary>
 		/// 1803beta005 予め引数の数を合わせて規定値を代入しておく
 		/// 1806+v6.99 式中関数の引数に無効な#DIM変数を与えている場合に例外になるのを修正
@@ -256,7 +256,7 @@ namespace MinorShift.Emuera.GameProc
 		public FunctionLabelLine CurrentLabel { get; private set; }
 		public FunctionLabelLine TopLabel { get; private set; }
 		int counter = -1;
-		int group = 0;
+		int group;
 		LogicalLine returnAddress;
 		public readonly string FunctionName = "";
 		public bool IsJump { get; set; }
