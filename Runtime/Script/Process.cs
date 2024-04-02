@@ -75,10 +75,12 @@ namespace MinorShift.Emuera.GameProc
 
 				Debug.WriteLine("Proc:Init:Image:Start " + stopWatch.ElapsedMilliseconds + "ms");
 				//リソースフォルダ読み込み
-				if (!await Task.Run(Content.AppContents.LoadContents))
+				var err = await Task.Run(Content.AppContents.LoadContents);
+				if (err != null)
 				{
 					ParserMediator.FlushWarningList();
 					console.PrintSystemLine("リソースフォルダ読み込み中に異常が発見されたため処理を終了します");
+					console.Print(err.Message);
 					return false;
 				}
 				ParserMediator.FlushWarningList();

@@ -73,10 +73,10 @@ namespace MinorShift.Emuera.Content
 			imageDictionary[imgName] = newCImg;
 		}
 
-		static public bool LoadContents()
+		static public Exception LoadContents()
 		{
 			if (!Directory.Exists(Program.ContentDir))
-				return true;
+				return null;
 			try
 			{
 				//resourcesフォルダ内の全てのcsvファイルを探索する
@@ -115,12 +115,11 @@ namespace MinorShift.Emuera.Content
 						}
 					});
 			}
-			catch
+			catch (Exception e)
 			{
-				return false;
-				//throw new CodeEE("リソースファイルのロード中にエラーが発生しました");
+				return e;
 			}
-			return true;
+			return null;
 		}
 
 		static public void UnloadContents()
