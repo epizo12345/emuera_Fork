@@ -150,7 +150,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			}
 		}
 
-		public virtual Int64 PlusValue(Int64 value, ExpressionMediator exm)
+		public virtual Int64 ChangeValue(Int64 value, ExpressionMediator exm)
 		{
 			try
 			{
@@ -371,7 +371,7 @@ namespace MinorShift.Emuera.GameData.Variable
 			}
 		}
 
-		public override Int64 PlusValue(Int64 value, ExpressionMediator exm)
+		public override Int64 ChangeValue(Int64 value, ExpressionMediator exm)
 		{
 			try
 			{
@@ -422,7 +422,7 @@ namespace MinorShift.Emuera.GameData.Variable
 		{ throw new CodeEE("変数" + Identifier.Name + "に必要な引数が不足しています"); }
 		public override void SetValue(string[] array, ExpressionMediator exm)
 		{ throw new CodeEE("変数" + Identifier.Name + "に必要な引数が不足しています"); }
-		public override Int64 PlusValue(Int64 value, ExpressionMediator exm)
+		public override Int64 ChangeValue(Int64 value, ExpressionMediator exm)
 		{ throw new CodeEE("変数" + Identifier.Name + "に必要な引数が不足しています"); }
 		public override SingleTerm GetValue(ExpressionMediator exm)
 		{ throw new CodeEE("変数" + Identifier.Name + "に必要な引数が不足しています"); }

@@ -913,21 +913,29 @@ namespace MinorShift.Emuera.GameView
 						throw new ExeEE("");
 #endif
 					if (KillMacro)
-						goto endMacro;
+					{
+						endMacro();
+						return;
+					}
 				}
 			}
 			finally
 			{
 				inProcess = false;
 			}
-		endMacro:
-			if (state == ConsoleState.WaitInput && inputReq.NeedValue)
+
+			endMacro();
+
+			void endMacro()
 			{
-				Point point = window.MainPicBox.PointToClient(Control.MousePosition);
-				if (window.MainPicBox.ClientRectangle.Contains(point))
-					MoveMouse(point);
+				if (state == ConsoleState.WaitInput && inputReq.NeedValue)
+				{
+					Point point = window.MainPicBox.PointToClient(Control.MousePosition);
+					if (window.MainPicBox.ClientRectangle.Contains(point))
+						MoveMouse(point);
+				}
+				RefreshStrings(true);
 			}
-			RefreshStrings(true);
 		}
 
 		private void OpenErrorFile(ScriptPosition? pos)
@@ -937,7 +945,7 @@ namespace MinorShift.Emuera.GameView
 				FileName = Config.TextEditor
 			};
 			var ignoreCaseCmp = StringComparison.OrdinalIgnoreCase;
-			string fname = pos.Value.Filename.ToString().ToUpper();
+			string fname = pos.Value.Filename.ToUpper();
 			if (fname.EndsWith(".CSV", ignoreCaseCmp))
 			{
 				if (fname.Contains(Program.CsvDir, ignoreCaseCmp))

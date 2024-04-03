@@ -493,7 +493,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				{
 					Int64 src = spsetarg.IsConst ? spsetarg.ConstInt : spsetarg.Term.GetIntValue(exm);
 					if (spsetarg.AddConst)
-						spsetarg.VariableDest.PlusValue(src, exm);
+						spsetarg.VariableDest.ChangeValue(src, exm);
 					else
 						spsetarg.VariableDest.SetValue(src, exm);
 				}
@@ -2151,7 +2151,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				{
 					unchecked
 					{//eramakerではBREAK時にCOUNTが回る
-						jumpTo.LoopCounter.PlusValue(jumpTo.LoopStep, exm);
+						jumpTo.LoopCounter.ChangeValue(jumpTo.LoopStep, exm);
 					}
 				}
 				state.JumpTo(iLine);
@@ -2178,7 +2178,7 @@ namespace MinorShift.Emuera.GameProc.Function
 					}
 					unchecked
 					{
-						jumpTo.LoopCounter.PlusValue(jumpTo.LoopStep, exm);
+						jumpTo.LoopCounter.ChangeValue(jumpTo.LoopStep, exm);
 					}
 					Int64 counter = jumpTo.LoopCounter.GetIntValue(exm);
 					//まだ回数が残っているなら、
@@ -2232,7 +2232,7 @@ namespace MinorShift.Emuera.GameProc.Function
 				}
 				unchecked
 				{
-					jumpTo.LoopCounter.PlusValue(jumpTo.LoopStep, exm);
+					jumpTo.LoopCounter.ChangeValue(jumpTo.LoopStep, exm);
 				}
 				Int64 counter = jumpTo.LoopCounter.GetIntValue(exm);
 				//まだ回数が残っているなら、
