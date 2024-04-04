@@ -12,6 +12,8 @@ namespace MinorShift._Library
 			//1815 .exeが東方板のNGワードに引っかかるそうなので除去
 			ExeName = Path.GetFileNameWithoutExtension(ExePath);
 			emueraVer = typeof(AssemblyData).Assembly.GetName().Version;
+
+			EmueraVersionText = ".NET Emuera" + emueraVer;
 		}
 
 		/// <summary>
@@ -26,6 +28,8 @@ namespace MinorShift._Library
 
 
 		public readonly static Version emueraVer;
+
+		public readonly static string EmueraVersionText;
 
 		/// <summary>
 		/// 2重起動防止。既に同名exeが実行されているならばtrueを返す

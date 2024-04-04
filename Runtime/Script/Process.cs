@@ -450,17 +450,17 @@ namespace MinorShift.Emuera.GameProc
 			console.ThrowError(playSound);
 			if (exc is CodeEE)
 			{
-				console.PrintError("関数の終端でエラーが発生しました:" + AssemblyData.ExeName);
+				console.PrintError("関数の終端でエラーが発生しました:" + AssemblyData.EmueraVersionText);
 				console.PrintError(exc.Message);
 			}
 			else if (exc is ExeEE)
 			{
-				console.PrintError("関数の終端でEmueraのエラーが発生しました:" + AssemblyData.ExeName);
+				console.PrintError("関数の終端でEmueraのエラーが発生しました:" + AssemblyData.EmueraVersionText);
 				console.PrintError(exc.Message);
 			}
 			else
 			{
-				console.PrintError("関数の終端で予期しないエラーが発生しました:" + AssemblyData.ExeName);
+				console.PrintError("関数の終端で予期しないエラーが発生しました:" + AssemblyData.EmueraVersionText);
 				console.PrintError(exc.GetType().ToString() + ":" + exc.Message);
 				string[] stack = exc.StackTrace.Split('\n');
 				for (int i = 0; i < stack.Length; i++)
@@ -499,7 +499,7 @@ namespace MinorShift.Emuera.GameProc
 					}
 					else
 					{
-						console.PrintErrorButton(posString + "エラーが発生しました:" + AssemblyData.ExeName, position);
+						console.PrintErrorButton(posString + "エラーが発生しました:" + AssemblyData.EmueraVersionText, position);
 						printRawLine(position);
 						console.PrintError("エラー内容：" + exc.Message);
 					}
@@ -517,18 +517,18 @@ namespace MinorShift.Emuera.GameProc
 				}
 				else
 				{
-					console.PrintError(posString + "エラーが発生しました:" + AssemblyData.ExeName);
+					console.PrintError(posString + "エラーが発生しました:" + AssemblyData.EmueraVersionText);
 					console.PrintError(exc.Message);
 				}
 			}
 			else if (exc is ExeEE)
 			{
-				console.PrintError(posString + "Emueraのエラーが発生しました:" + AssemblyData.ExeName);
+				console.PrintError(posString + "Emueraのエラーが発生しました:" + AssemblyData.EmueraVersionText);
 				console.PrintError(exc.Message);
 			}
 			else
 			{
-				console.PrintError(posString + "予期しないエラーが発生しました:" + AssemblyData.ExeName);
+				console.PrintError(posString + "予期しないエラーが発生しました:" + AssemblyData.EmueraVersionText);
 				console.PrintError(exc.GetType().ToString() + ":" + exc.Message);
 				string[] stack = exc.StackTrace.Split('\n');
 				for (int i = 0; i < stack.Length; i++)

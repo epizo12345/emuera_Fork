@@ -636,7 +636,7 @@ namespace MinorShift.Emuera.GameView
 
 
 			builder.AppendLine("# 環境情報");
-			builder.AppendLine($".NET Emuera {AssemblyData.emueraVer}");
+			builder.AppendLine(AssemblyData.EmueraVersionText);
 
 			var patchVersionsPath = Path.Combine(Program.ExeDir, "patch_versions");
 			if (Directory.Exists(patchVersionsPath))

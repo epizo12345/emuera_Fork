@@ -44,7 +44,7 @@ namespace MinorShift.Emuera.Forms
 			openFileDialog.Multiselect = true;
 			openFileDialog.RestoreDirectory = true;
 
-			string Emuera_verInfo = ".NET Emuera " + AssemblyData.emueraVer;
+			string Emuera_verInfo = AssemblyData.EmueraVersionText;
 			EmuVerToolStripTextBox.Text = Emuera_verInfo;
 
 			console = new EmueraConsole(this);
