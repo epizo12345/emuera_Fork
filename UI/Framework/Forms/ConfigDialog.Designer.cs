@@ -541,29 +541,29 @@
             // 
             // colorBoxBG
             // 
-            colorBoxBG.LabelText = "背景色";
             resources.ApplyResources(colorBoxBG, "colorBoxBG");
+            colorBoxBG.LabelText = "背景色";
             colorBoxBG.Name = "colorBoxBG";
             colorBoxBG.SelectingColor = System.Drawing.Color.Transparent;
             // 
             // colorBoxFG
             // 
-            colorBoxFG.LabelText = "文字色";
             resources.ApplyResources(colorBoxFG, "colorBoxFG");
+            colorBoxFG.LabelText = "文字色";
             colorBoxFG.Name = "colorBoxFG";
             colorBoxFG.SelectingColor = System.Drawing.Color.Transparent;
             // 
             // colorBoxSelecting
             // 
-            colorBoxSelecting.LabelText = "選択中文字色";
             resources.ApplyResources(colorBoxSelecting, "colorBoxSelecting");
+            colorBoxSelecting.LabelText = "選択中文字色";
             colorBoxSelecting.Name = "colorBoxSelecting";
             colorBoxSelecting.SelectingColor = System.Drawing.Color.Transparent;
             // 
             // colorBoxBacklog
             // 
-            colorBoxBacklog.LabelText = "履歴文字色";
             resources.ApplyResources(colorBoxBacklog, "colorBoxBacklog");
+            colorBoxBacklog.LabelText = "履歴文字色";
             colorBoxBacklog.Name = "colorBoxBacklog";
             colorBoxBacklog.SelectingColor = System.Drawing.Color.Transparent;
             // 

@@ -209,13 +209,13 @@ namespace MinorShift.Emuera.Forms
             ヘルプHToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { コンフィグCToolStripMenuItem });
             ヘルプHToolStripMenuItem.ForeColor = System.Drawing.SystemColors.MenuText;
             ヘルプHToolStripMenuItem.Name = "ヘルプHToolStripMenuItem";
-            ヘルプHToolStripMenuItem.Size = new System.Drawing.Size(65, 20);
-            ヘルプHToolStripMenuItem.Text = "ヘルプ(&H)";
+            ヘルプHToolStripMenuItem.Size = new System.Drawing.Size(57, 20);
+            ヘルプHToolStripMenuItem.Text = "設定(&S)";
             // 
             // コンフィグCToolStripMenuItem
             // 
             コンフィグCToolStripMenuItem.Name = "コンフィグCToolStripMenuItem";
-            コンフィグCToolStripMenuItem.Size = new System.Drawing.Size(113, 22);
+            コンフィグCToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             コンフィグCToolStripMenuItem.Text = "設定(&C)";
             コンフィグCToolStripMenuItem.Click += コンフィグCToolStripMenuItem_Click;
             // 
