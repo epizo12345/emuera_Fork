@@ -28,6 +28,19 @@ static partial class Preload
                 Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories).AsParallel().ForAll((childPath) =>
                 {
                     var key = childPath;
+                    if (false)
+                    {
+                        using var file = File.Open(childPath, FileMode.Open);
+                        Span<byte> bom = stackalloc byte[3];
+                        _ = file.Read(bom);
+                        file.Close();
+                        if (!bom.SequenceEqual<byte>([0xEF, 0xBB, 0xBF]))
+                        {
+
+                        }
+                    }
+
+
                     var value = File.ReadAllLines(childPath, Config.Encode);
                     lock (files)
                     {
