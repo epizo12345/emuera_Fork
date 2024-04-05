@@ -13,7 +13,7 @@ namespace MinorShift._Library
 			ExeName = Path.GetFileNameWithoutExtension(ExePath);
 			emueraVer = typeof(AssemblyData).Assembly.GetName().Version;
 
-			EmueraVersionText = ".NET Emuera" + emueraVer;
+			EmueraVersionText = ".NET Emuera " + emueraVer;
 		}
 
 		/// <summary>
