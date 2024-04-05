@@ -1,14 +1,14 @@
 ﻿using Microsoft.VisualBasic;
-using MinorShift.Emuera.GameData.Variable;
 using MinorShift.Emuera.GameProc;
 using MinorShift.Emuera.GameProc.Function;
 using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.Runtime.Config;
-using MinorShift.Emuera.Sub;
+using MinorShift.Emuera.Runtime.Script.Statements.Variable;
+using MinorShift.Emuera.Runtime.Utils;
 using System;
 using System.Text;
 
-namespace MinorShift.Emuera.GameData.Expression;
+namespace MinorShift.Emuera.Runtime.Script.Statements.Expression;
 
 //1756 元ExpressionEvaluator。GetValueの仕事はなくなったので改名。
 //AExpression間での通信や共通の処理に使う。
@@ -31,13 +31,13 @@ internal sealed class ExpressionMediator
     private bool forceKatakana;
     private bool halftoFull;
 
-    public void ForceKana(Int64 flag)
+    public void ForceKana(long flag)
     {
         if (flag < 0 || flag > 3)
             throw new CodeEE("命令FORCEKANAの引数が指定可能な範囲(0～3)を超えています");
-        forceKatakana = (flag == 1) ? true : false;
-        forceHiragana = (flag > 1) ? true : false;
-        halftoFull = (flag == 3) ? true : false;
+        forceKatakana = flag == 1 ? true : false;
+        forceHiragana = flag > 1 ? true : false;
+        halftoFull = flag == 3 ? true : false;
     }
 
     public bool ForceKana()
@@ -116,7 +116,7 @@ internal sealed class ExpressionMediator
         return buffer.ToString();
     }
 
-    public static string CreateBar(Int64 var, Int64 max, Int64 length)
+    public static string CreateBar(long var, long max, long length)
     {
         if (max <= 0)
             throw new CodeEE("BARの最大値が正の値ではありません");
@@ -135,8 +135,8 @@ internal sealed class ExpressionMediator
             count = 0;
         if (count > length)
             count = (int)length;
-        builder.Append(Config.BarChar1, count);
-        builder.Append(Config.BarChar2, (int)length - count);
+        builder.Append(Config.Config.BarChar1, count);
+        builder.Append(Config.Config.BarChar2, (int)length - count);
         builder.Append(']');
         return builder.ToString();
     }

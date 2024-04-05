@@ -1,10 +1,11 @@
-﻿using MinorShift.Emuera.Sub;
+﻿using MinorShift.Emuera.Runtime.Utils;
+using MinorShift.Emuera.Sub;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 
-namespace MinorShift.Emuera.Content;
+namespace MinorShift.Emuera.UI.Game.Image;
 
 
 
@@ -69,7 +70,7 @@ internal abstract class ASpriteSingle : ASprite
     }
     public override Color SpriteGetColor(int x, int y)
     {
-        Bitmap bmp = this.Bitmap;
+        Bitmap bmp = Bitmap;
         if (bmp == null)
             return Color.Transparent;
         int bmpX = x + SrcRectangle.X;
@@ -134,7 +135,7 @@ internal sealed class SpriteF : ASpriteSingle
     public SpriteF(string name, ConstImage image, Rectangle rect, Point pos)
         : base(name, image, rect)
     {
-        this.DestBasePosition = pos;
+        DestBasePosition = pos;
     }
 }
 
@@ -175,7 +176,7 @@ internal sealed class SpriteAnime : ASprite
         }
     }
     List<AnimeFrame> FrameList;
-    public Int64 totaltime;
+    public long totaltime;
 
     internal bool AddFrame(AbstractImage parentImage, Rectangle rect, Point pos, int delay)
     {

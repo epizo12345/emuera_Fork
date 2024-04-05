@@ -1,12 +1,16 @@
-﻿using MinorShift.Emuera.GameData.Expression;
-using MinorShift.Emuera.GameData.Variable;
+﻿using MinorShift.Emuera.GameData.Variable;
+using MinorShift.Emuera.GameProc;
 using MinorShift.Emuera.GameProc.Function;
 using MinorShift.Emuera.Runtime.Config;
-using MinorShift.Emuera.Sub;
+using MinorShift.Emuera.Runtime.Script.Data;
+using MinorShift.Emuera.Runtime.Script.Parser;
+using MinorShift.Emuera.Runtime.Script.Statements.Expression;
+using MinorShift.Emuera.Runtime.Script.Statements.Variable;
+using MinorShift.Emuera.Runtime.Utils;
 using System;
 using System.Collections.Generic;
 
-namespace MinorShift.Emuera.GameProc;
+namespace MinorShift.Emuera.Runtime.Script.Statements;
 
 /// <summary>
 /// 命令文1行に相当する抽象クラス
@@ -91,8 +95,8 @@ internal sealed class InstructionLine : LogicalLine
     public InstructionLine(ScriptPosition? thePosition, FunctionIdentifier theFunc, CharStream theArgPrimitive)
     {
         scriptPosition = thePosition;
-        this.func = theFunc;
-        this.argprimitive = theArgPrimitive;
+        func = theFunc;
+        argprimitive = theArgPrimitive;
     }
 
     public InstructionLine(ScriptPosition? thePosition, FunctionIdentifier functionIdentifier, OperatorCode assignOP, WordCollection dest, CharStream theArgPrimitive)
@@ -101,14 +105,14 @@ internal sealed class InstructionLine : LogicalLine
         func = functionIdentifier;
         AssignOperator = assignOP;
         assigndest = dest;
-        this.argprimitive = theArgPrimitive;
+        argprimitive = theArgPrimitive;
     }
     readonly FunctionIdentifier func;
     CharStream argprimitive;
 
     WordCollection assigndest;
     public OperatorCode AssignOperator { get; private set; }
-    Int64 subData;
+    long subData;
     public FunctionCode FunctionCode
     {
         get { return func.Code; }
@@ -134,7 +138,7 @@ internal sealed class InstructionLine : LogicalLine
     /// <summary>
     /// 繰り返しの終了を記憶する
     /// </summary>
-    public Int64 LoopEnd
+    public long LoopEnd
     {
         get { return subData; }
         set { subData = value; }
@@ -150,11 +154,11 @@ internal sealed class InstructionLine : LogicalLine
         set { cnt = value; }
     }
 
-    Int64 step;
+    long step;
     /// <summary>
     /// 繰り返しのたびに増加する値を記憶する
     /// </summary>
-    public Int64 LoopStep
+    public long LoopStep
     {
         get { return step; }
         set { step = value; }
@@ -281,7 +285,7 @@ internal class FunctionLabelLine : LogicalLine, IComparable<FunctionLabelLine>
     }
     #endregion
     #region private変数
-    readonly Dictionary<string, UserDefinedVariableToken> privateVar = new(Config.StrComper);
+    readonly Dictionary<string, UserDefinedVariableToken> privateVar = new(Config.Config.StrComper);
     internal bool AddPrivateVariable(UserDefinedVariableData data)
     {
         if (privateVar.ContainsKey(data.Name))
@@ -344,9 +348,9 @@ internal sealed class GotoLabelLine : LogicalLine, IEqualityComparer<GotoLabelLi
 
     public bool Equals(GotoLabelLine x, GotoLabelLine y)
     {
-        if ((x == null) || (y == null))
+        if (x == null || y == null)
             return false;
-        return (x.ParentLabelLine == y.ParentLabelLine) && (x.labelname == y.labelname);
+        return x.ParentLabelLine == y.ParentLabelLine && x.labelname == y.labelname;
     }
 
     public int GetHashCode(GotoLabelLine obj)

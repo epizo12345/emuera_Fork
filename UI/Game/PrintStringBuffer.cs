@@ -1,11 +1,12 @@
-﻿using MinorShift.Emuera.Runtime.Config;
-using MinorShift.Emuera.Sub;
+﻿using MinorShift.Emuera.GameView;
+using MinorShift.Emuera.Runtime.Config;
+using MinorShift.Emuera.Runtime.Utils;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Text;
 
-namespace MinorShift.Emuera.GameView;
+namespace MinorShift.Emuera.UI.Game;
 
 /*
 	 * ConsoleStyledString = string + StringStyle
@@ -66,7 +67,7 @@ internal sealed class PrintStringBuffer
             return;
         if (force_button)
             fromCssToButton();
-        if ((builder.Length == 0) || (lastStringStyle == style))
+        if (builder.Length == 0 || lastStringStyle == style)
         {
             if (builder.Length > 2000)
                 return;
@@ -122,7 +123,7 @@ internal sealed class PrintStringBuffer
     {
         get
         {
-            return (m_buttonList.Count == 0) && (builder.Length == 0) && (m_stringList.Count == 0);
+            return m_buttonList.Count == 0 && builder.Length == 0 && m_stringList.Count == 0;
         }
     }
 
@@ -155,15 +156,15 @@ internal sealed class PrintStringBuffer
         ConsoleButtonString[] dispLineButtonArray = new ConsoleButtonString[m_buttonList.Count];
         m_buttonList.CopyTo(dispLineButtonArray);
         ConsoleDisplayLine line = new(dispLineButtonArray, true, temporary);
-        this.clearBuffer();
+        clearBuffer();
         return line;
     }
 
     public ConsoleDisplayLine[] Flush(StringMeasure stringMeasure, bool temporary)
     {
         fromCssToButton();
-        ConsoleDisplayLine[] ret = PrintStringBuffer.ButtonsToDisplayLines(m_buttonList, stringMeasure, false, temporary);
-        this.clearBuffer();
+        ConsoleDisplayLine[] ret = ButtonsToDisplayLines(m_buttonList, stringMeasure, false, temporary);
+        clearBuffer();
         return ret;
     }
 
@@ -205,7 +206,7 @@ internal sealed class PrintStringBuffer
             //「ボタンの途中で行を折りかえさない」がfalseなら分割する
             //このボタンが単体で表示可能領域を上回るなら分割必須
             //クリック可能なボタンでないなら分割する。ただし「ver1739以前の非ボタン折り返しを再現する」ならクリックの可否を区別しない
-            if ((!Config.ButtonWrap) || (lineButtonList.Count == 0) || (!buttonList[i].IsButton && !Config.CompatiLinefeedAs1739))
+            if (!Config.ButtonWrap || lineButtonList.Count == 0 || !buttonList[i].IsButton && !Config.CompatiLinefeedAs1739)
             {//ボタン分割する
                 int divIndex = getDivideIndex(buttonList[i], stringMeasure);
                 if (divIndex > 0)
@@ -216,7 +217,7 @@ internal sealed class PrintStringBuffer
                     lineButtonList.Add(buttonList[i]);
                     i++;
                 }
-                else if (divIndex == 0 && (lineButtonList.Count > 0))
+                else if (divIndex == 0 && lineButtonList.Count > 0)
                 {//まるごと次の行に送る
                 }
                 else//分割できない要素のみで構成されたボタンは分割できない
@@ -518,7 +519,7 @@ internal sealed class PrintStringBuffer
         int i = lowLength;//およその文字数を推定←やめた
 
         string test;
-        while ((highLength - lowLength) > 1)//差が一文字以下になるまで繰り返す。
+        while (highLength - lowLength > 1)//差が一文字以下になるまで繰り返す。
         {
             test = str[..i];
             if (sm.GetDisplayLength(test, font) <= widthLimit)//サイズ内ならlowLengthを更新。文字数を増やす。

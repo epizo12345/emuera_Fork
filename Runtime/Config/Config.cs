@@ -1,5 +1,5 @@
-﻿using Emuera.UI;
-using MinorShift._Library;
+﻿using MinorShift.Emuera.Runtime.Utils;
+using MinorShift.Emuera.UI;
 using System;
 using System.Collections.Generic;
 using System.Drawing;

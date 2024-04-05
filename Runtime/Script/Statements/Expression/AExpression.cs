@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace MinorShift.Emuera.GameData.Expression;
+namespace MinorShift.Emuera.Runtime.Script.Statements.Expression;
 
 internal abstract class AExpression
 {
@@ -13,7 +13,7 @@ internal abstract class AExpression
         return type;
     }
 
-    public virtual Int64 GetIntValue(ExpressionMediator exm)
+    public virtual long GetIntValue(ExpressionMediator exm)
     {
         return 0;
     }
@@ -23,14 +23,14 @@ internal abstract class AExpression
     }
     public virtual SingleTerm GetValue(ExpressionMediator exm)
     {
-        if (type == typeof(Int64))
+        if (type == typeof(long))
             return new SingleLongTerm(0);
         else
             return new SingleStrTerm("");
     }
     public bool IsInteger
     {
-        get { return type == typeof(Int64); }
+        get { return type == typeof(long); }
     }
     public bool IsString
     {

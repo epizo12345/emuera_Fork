@@ -1,8 +1,9 @@
-﻿using MinorShift.Emuera.Sub;
+﻿using MinorShift.Emuera.Runtime.Utils;
+using MinorShift.Emuera.Sub;
 using System;
 using System.Collections.Generic;
 
-namespace MinorShift.Emuera.GameData.Variable;
+namespace MinorShift.Emuera.Runtime.Script.Statements.Variable;
 
 //1756 全ての機能をVariableTokenとManagerに委譲、消滅
 //……しようと思ったがConstantDataから参照されているので捨て切れなかった。
@@ -139,7 +140,7 @@ internal sealed class VariableIdentifier
         foreach (var code in array)
         {
             var key = Enum.GetName(code);
-            if ((key == null) || (key.StartsWith("__") && key.EndsWith("__")))
+            if (key == null || key.StartsWith("__") && key.EndsWith("__"))
                 continue;
             if (nameDic.ContainsKey(key))
                 continue;
@@ -149,11 +150,11 @@ internal sealed class VariableIdentifier
                 if ((code & VariableCode.__ARRAY_1D__) == VariableCode.__ARRAY_1D__)
                     throw new ExeEE("ARRAY2DとARRAY1Dは排他");
             }
-            if (((code & VariableCode.__INTEGER__) != VariableCode.__INTEGER__)
-                && ((code & VariableCode.__STRING__) != VariableCode.__STRING__))
+            if ((code & VariableCode.__INTEGER__) != VariableCode.__INTEGER__
+                && (code & VariableCode.__STRING__) != VariableCode.__STRING__)
                 throw new ExeEE("INTEGERとSTRINGのどちらかは必須");
-            if (((code & VariableCode.__INTEGER__) == VariableCode.__INTEGER__)
-                && ((code & VariableCode.__STRING__) == VariableCode.__STRING__))
+            if ((code & VariableCode.__INTEGER__) == VariableCode.__INTEGER__
+                && (code & VariableCode.__STRING__) == VariableCode.__STRING__)
                 throw new ExeEE("INTEGERとSTRINGは排他");
             if ((code & VariableCode.__EXTENDED__) != VariableCode.__EXTENDED__)
             {
@@ -166,15 +167,15 @@ internal sealed class VariableIdentifier
                 if ((code & VariableCode.__ARRAY_2D__) == VariableCode.__ARRAY_2D__)
                     throw new ExeEE("ARRAY2DにはEXTENDEDフラグ必須");
             }
-            if (((code & VariableCode.__SAVE_EXTENDED__) == VariableCode.__SAVE_EXTENDED__)
-                && ((code & VariableCode.__UNCHANGEABLE__) == VariableCode.__UNCHANGEABLE__))
+            if ((code & VariableCode.__SAVE_EXTENDED__) == VariableCode.__SAVE_EXTENDED__
+                && (code & VariableCode.__UNCHANGEABLE__) == VariableCode.__UNCHANGEABLE__)
                 throw new ExeEE("CALCとSAVE_EXTENDEDは排他");
-            if (((code & VariableCode.__SAVE_EXTENDED__) == VariableCode.__SAVE_EXTENDED__)
-                && ((code & VariableCode.__CALC__) == VariableCode.__CALC__))
+            if ((code & VariableCode.__SAVE_EXTENDED__) == VariableCode.__SAVE_EXTENDED__
+                && (code & VariableCode.__CALC__) == VariableCode.__CALC__)
                 throw new ExeEE("UNCHANGEABLEとSAVE_EXTENDEDは排他");
-            if (((code & VariableCode.__SAVE_EXTENDED__) == VariableCode.__SAVE_EXTENDED__)
-                && ((code & VariableCode.__ARRAY_2D__) == VariableCode.__ARRAY_2D__)
-                && ((code & VariableCode.__STRING__) == VariableCode.__STRING__))
+            if ((code & VariableCode.__SAVE_EXTENDED__) == VariableCode.__SAVE_EXTENDED__
+                && (code & VariableCode.__ARRAY_2D__) == VariableCode.__ARRAY_2D__
+                && (code & VariableCode.__STRING__) == VariableCode.__STRING__)
                 throw new ExeEE("STRINGかつARRAY2DのSAVE_EXTENDEDは未実装");
 #endif
             nameDic.Add(key, code);

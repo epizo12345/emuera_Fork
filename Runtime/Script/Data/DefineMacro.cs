@@ -1,6 +1,6 @@
-﻿using MinorShift.Emuera.Sub;
+﻿using MinorShift.Emuera.Runtime.Script.Parser;
 
-namespace MinorShift.Emuera.GameData;
+namespace MinorShift.Emuera.Runtime.Script.Data;
 
 internal sealed class DefineMacro
 {

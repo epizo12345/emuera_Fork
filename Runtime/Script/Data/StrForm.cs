@@ -1,14 +1,15 @@
-﻿using MinorShift._Library;
-using MinorShift.Emuera.GameData.Expression;
-using MinorShift.Emuera.GameData.Function;
-using MinorShift.Emuera.GameData.Variable;
+﻿using MinorShift.Emuera.GameData.Variable;
 using MinorShift.Emuera.Runtime.Config;
-using MinorShift.Emuera.Sub;
+using MinorShift.Emuera.Runtime.Script.Parser;
+using MinorShift.Emuera.Runtime.Script.Statements.Expression;
+using MinorShift.Emuera.Runtime.Script.Statements.Function;
+using MinorShift.Emuera.Runtime.Script.Statements.Variable;
+using MinorShift.Emuera.Runtime.Utils;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace MinorShift.Emuera.GameData;
+namespace MinorShift.Emuera.Runtime.Script.Data;
 
 internal sealed class StrForm
 {
@@ -97,12 +98,12 @@ internal sealed class StrForm
                 }
                 else
                     operand = new SingleLongTerm(0);
-                AExpression left = new StrFormTerm(StrForm.FromWordToken(yenat.Left));
+                AExpression left = new StrFormTerm(FromWordToken(yenat.Left));
                 AExpression right;
                 if (yenat.Right == null)
                     right = new SingleStrTerm("");
                 else
-                    right = new StrFormTerm(StrForm.FromWordToken(yenat.Right));
+                    right = new StrFormTerm(FromWordToken(yenat.Right));
                 termArray[i] = new FunctionMethodTerm(formatYenAt, [operand, left, right]);
                 continue;
             }
@@ -128,9 +129,9 @@ internal sealed class StrForm
                     IdentifierWord id = wc.Current as IdentifierWord;
                     if (id == null)
                         throw new CodeEE("','の後にRIGHT又はLEFTがありません");
-                    if (string.Equals(id.Code, "LEFT", Config.StringComparison))//標準RIGHT
+                    if (string.Equals(id.Code, "LEFT", Config.Config.StringComparison))//標準RIGHT
                         third = new SingleLongTerm(1);
-                    else if (!string.Equals(id.Code, "RIGHT", Config.StringComparison))
+                    else if (!string.Equals(id.Code, "RIGHT", Config.Config.StringComparison))
                         throw new CodeEE("','の後にRIGHT又はLEFT以外の単語があります");
                     wc.ShiftNext();
                 }
@@ -139,7 +140,7 @@ internal sealed class StrForm
             }
             if (SWT is CurlyBraceSubWord)
             {
-                if (operand.GetOperandType() != typeof(Int64))
+                if (operand.GetOperandType() != typeof(long))
                     throw new CodeEE("{}の中の式が数式ではありません");
                 termArray[i] = new FunctionMethodTerm(formatCurlyBrace, [operand, second, third]);
                 continue;
@@ -163,7 +164,7 @@ internal sealed class StrForm
 
     public AExpression GetAExpression()
     {
-        if ((strs.Length == 2) && (strs[0].Length == 0) && (strs[1].Length == 0))
+        if (strs.Length == 2 && strs[0].Length == 0 && strs[1].Length == 0)
             return terms[0];
         return null;
     }
@@ -229,7 +230,7 @@ internal sealed class StrForm
             argumentTypeArray = null;
         }
         public override string CheckArgumentType(string name, List<AExpression> arguments) { throw new ExeEE("型チェックは呼び出し元が行うこと"); }
-        public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments) { throw new ExeEE("戻り値の型が違う"); }
+        public override long GetIntValue(ExpressionMediator exm, List<AExpression> arguments) { throw new ExeEE("戻り値の型が違う"); }
         public override SingleTerm GetReturnValue(ExpressionMediator exm, List<AExpression> arguments) { return new SingleStrTerm(GetStrValue(exm, arguments)); }
     }
 
@@ -272,7 +273,7 @@ internal sealed class StrForm
     {//Operator のTernaryIntStrStrとやってることは同じ
         public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
         {
-            return (arguments[0].GetIntValue(exm) != 0) ? arguments[1].GetStrValue(exm) : arguments[2].GetStrValue(exm);
+            return arguments[0].GetIntValue(exm) != 0 ? arguments[1].GetStrValue(exm) : arguments[2].GetStrValue(exm);
         }
     }
 

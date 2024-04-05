@@ -1,4 +1,4 @@
-﻿using MinorShift.Emuera.Forms;
+﻿using MinorShift.Emuera.UI.Framework.Forms;
 namespace MinorShift.Emuera.Forms
 {
     partial class MainWindow

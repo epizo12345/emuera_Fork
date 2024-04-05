@@ -1,17 +1,18 @@
-﻿using MinorShift.Emuera.Sub;
+﻿using MinorShift.Emuera.Runtime.Utils;
+using MinorShift.Emuera.Sub;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 
-namespace MinorShift.Emuera;
+namespace MinorShift.Emuera.Runtime.Config;
 
 internal abstract class AConfigItem
 {
     public AConfigItem(ConfigCode code, string text)
     {
-        this.Code = code;
-        this.Name = EnumsNET.Enums.AsString(code);
-        this.Text = text;
+        Code = code;
+        Name = EnumsNET.Enums.AsString(code);
+        Text = text;
     }
 
     public static ConfigItem<T> Copy<T>(ConfigItem<T> other)
@@ -40,7 +41,7 @@ internal sealed class ConfigItem<T> : AConfigItem
 {
     public ConfigItem(ConfigCode code, string text, T t) : base(code, text)
     {
-        this.val = t;
+        val = t;
     }
     private T val;
     public T Value
@@ -59,8 +60,8 @@ internal sealed class ConfigItem<T> : AConfigItem
 
         ConfigItem<T> item = (ConfigItem<T>)other;
         item.Fixed = false;
-        item.Value = this.Value;
-        item.Fixed = this.Fixed;
+        item.Value = Value;
+        item.Fixed = Fixed;
     }
 
     public override void SetValue<U>(U p)
@@ -108,9 +109,9 @@ internal sealed class ConfigItem<T> : AConfigItem
     public override bool TryParse(string param)
     {
         bool ret = false;
-        if ((param == null) || (param.Length == 0))
+        if (param == null || param.Length == 0)
             return false;
-        if (this.Fixed)
+        if (Fixed)
             return false;
         string str = param.Trim();
         if (this is ConfigItem<bool>)
@@ -134,31 +135,31 @@ internal sealed class ConfigItem<T> : AConfigItem
             if (ret)
                 ((ConfigItem<char>)(AConfigItem)this).Value = c;
         }
-        else if (this is ConfigItem<Int32>)
+        else if (this is ConfigItem<int>)
         {
-            ret = Int32.TryParse(str, out int i);
+            ret = int.TryParse(str, out int i);
             if (ret)
-                ((ConfigItem<Int32>)(AConfigItem)this).Value = i;
+                ((ConfigItem<int>)(AConfigItem)this).Value = i;
             else
                 throw new CodeEE("数字でない文字が含まれています");
         }
-        else if (this is ConfigItem<Int64>)
+        else if (this is ConfigItem<long>)
         {
-            ret = Int64.TryParse(str, out long i);
+            ret = long.TryParse(str, out long i);
             if (ret)
-                ((ConfigItem<Int64>)(AConfigItem)this).Value = i;
+                ((ConfigItem<long>)(AConfigItem)this).Value = i;
             else
                 throw new CodeEE("数字でない文字が含まれています");
         }
-        else if (this is ConfigItem<List<Int64>>)
+        else if (this is ConfigItem<List<long>>)
         {
-            ((ConfigItem<List<Int64>>)(AConfigItem)this).Value.Clear();
+            ((ConfigItem<List<long>>)(AConfigItem)this).Value.Clear();
             string[] strs = str.Split('/');
             foreach (string st in strs)
             {
-                ret = Int64.TryParse(st.Trim(), out long i);
+                ret = long.TryParse(st.Trim(), out long i);
                 if (ret)
-                    ((ConfigItem<List<Int64>>)(AConfigItem)this).Value.Add(i);
+                    ((ConfigItem<List<long>>)(AConfigItem)this).Value.Add(i);
                 else
                 {
                     throw new CodeEE("数字でない文字が含まれています");
@@ -232,7 +233,7 @@ internal sealed class ConfigItem<T> : AConfigItem
         if (arg == null)
             return false;
         string str = arg.Trim();
-        if (Int32.TryParse(str, out int i))
+        if (int.TryParse(str, out int i))
         {
             p = i != 0;
             return true;
@@ -260,11 +261,11 @@ internal sealed class ConfigItem<T> : AConfigItem
         c = Color.Black;
         if (tokens.Length < 3)
             return false;
-        if (!Int32.TryParse(tokens[0].Trim(), out int r) || (r < 0) || (r > 255))
+        if (!int.TryParse(tokens[0].Trim(), out int r) || r < 0 || r > 255)
             return false;
-        if (!Int32.TryParse(tokens[1].Trim(), out int g) || (g < 0) || (g > 255))
+        if (!int.TryParse(tokens[1].Trim(), out int g) || g < 0 || g > 255)
             return false;
-        if (!Int32.TryParse(tokens[2].Trim(), out int b) || (b < 0) || (b > 255))
+        if (!int.TryParse(tokens[2].Trim(), out int b) || b < 0 || b > 255)
             return false;
         c = Color.FromArgb(r, g, b);
         return true;

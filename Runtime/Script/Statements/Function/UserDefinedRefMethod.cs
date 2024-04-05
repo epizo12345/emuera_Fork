@@ -1,8 +1,9 @@
 ﻿using MinorShift.Emuera.GameData.Variable;
-using MinorShift.Emuera.GameProc;
+using MinorShift.Emuera.Runtime.Script;
+using MinorShift.Emuera.Runtime.Script.Data;
 using System;
 
-namespace MinorShift.Emuera.GameData.Function;
+namespace MinorShift.Emuera.Runtime.Script.Statements.Function;
 
 internal sealed class UserDefinedRefMethod
 {
@@ -20,7 +21,7 @@ internal sealed class UserDefinedRefMethod
         if (funcData.TypeIsStr)
             ret.RetType = typeof(string);
         else
-            ret.RetType = typeof(Int64);
+            ret.RetType = typeof(long);
         ret.ArgTypeList = funcData.ArgList;
         return ret;
     }

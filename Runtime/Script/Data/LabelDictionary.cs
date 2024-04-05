@@ -1,9 +1,10 @@
 ﻿using MinorShift.Emuera.Runtime.Config;
+using MinorShift.Emuera.Runtime.Script.Statements;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
-namespace MinorShift.Emuera.GameProc;
+namespace MinorShift.Emuera.Runtime.Script.Data;
 
 //1.713 LogicalLine.csから分割
 /// <summary>
@@ -18,9 +19,9 @@ internal sealed class LabelDictionary
     /// <summary>
     /// 本体。全てのFunctionLabelLineを記録
     /// </summary>
-    ConcurrentDictionary<string, List<FunctionLabelLine>> labelAtDic = new(Config.StrComper);
+    ConcurrentDictionary<string, List<FunctionLabelLine>> labelAtDic = new(Config.Config.StrComper);
     List<FunctionLabelLine> invalidList = [];
-    ConcurrentDictionary<string, Dictionary<FunctionLabelLine, GotoLabelLine>> labelDollarList = new(Config.StrComper);
+    ConcurrentDictionary<string, Dictionary<FunctionLabelLine, GotoLabelLine>> labelDollarList = new(Config.Config.StrComper);
     int count;
 
     ConcurrentDictionary<string, int> loadedFileDic = [];
@@ -49,8 +50,8 @@ internal sealed class LabelDictionary
     }
 
 
-    Dictionary<string, List<FunctionLabelLine>[]> eventLabelDic = new(Config.StrComper);
-    Dictionary<string, FunctionLabelLine> noneventLabelDic = new(Config.StrComper);
+    Dictionary<string, List<FunctionLabelLine>[]> eventLabelDic = new(Config.Config.StrComper);
+    Dictionary<string, FunctionLabelLine> noneventLabelDic = new(Config.Config.StrComper);
 
     public void SortLabels()
     {
@@ -74,7 +75,7 @@ internal sealed class LabelDictionary
             }
             //1810alpha010 オプションによりイベント関数をイベント関数でないかのように呼び出すことを許可
             //eramaker仕様 - #PRI #LATER #SINGLE等を無視し、最先に定義された関数1つのみを呼び出す
-            if (Config.CompatiCallEvent)
+            if (Config.Config.CompatiCallEvent)
                 noneventLabelDic.Add(key, list[0]);
             List<FunctionLabelLine>[] eventLabels = new List<FunctionLabelLine>[4];
             List<FunctionLabelLine> onlylist = [];
@@ -95,7 +96,7 @@ internal sealed class LabelDictionary
                     prilist.Add(list[i]);
                 if (list[i].IsLater)
                     laterlist.Add(list[i]);//#PRIかつ#LATERなら二重に登録する。eramakerの仕様
-                if ((!list[i].IsPri) && (!list[i].IsLater))
+                if (!list[i].IsPri && !list[i].IsLater)
                     normallist.Add(list[i]);
             }
             if (localMax < GlobalStatic.IdentifierDictionary.getLocalDefaultSize("LOCAL"))
@@ -152,7 +153,7 @@ internal sealed class LabelDictionary
             labelLines = pair.Value;
             foreach (FunctionLabelLine labelLine in labelLines)
             {
-                if (string.Equals(labelLine.Position.Value.Filename, fname, Config.SCIgnoreCase))
+                if (string.Equals(labelLine.Position.Value.Filename, fname, Config.Config.SCIgnoreCase))
                     removeLine.Add(labelLine);
             }
             foreach (FunctionLabelLine remove in removeLine)
@@ -173,7 +174,7 @@ internal sealed class LabelDictionary
         }
         for (int i = 0; i < invalidList.Count; i++)
         {
-            if (string.Equals(invalidList[i].Position.Value.Filename, fname, Config.SCIgnoreCase))
+            if (string.Equals(invalidList[i].Position.Value.Filename, fname, Config.Config.SCIgnoreCase))
             {
                 invalidList.RemoveAt(i);
                 i--;

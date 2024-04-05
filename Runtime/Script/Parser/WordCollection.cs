@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace MinorShift.Emuera.Sub;
+namespace MinorShift.Emuera.Runtime.Script.Parser;
 
 /// <summary>
 /// 字句解析結果の保存場所。Listとその現在位置を結びつけるためのもの。
@@ -66,23 +66,23 @@ internal sealed class WordCollection
     public WordCollection Clone()
     {
         WordCollection ret = new();
-        for (int i = 0; i < this.Collection.Count; i++)
+        for (int i = 0; i < Collection.Count; i++)
         {
-            ret.Collection.Add(this.Collection[i]);
+            ret.Collection.Add(Collection[i]);
         }
         return ret;
     }
     public WordCollection Clone(int start, int count)
     {
         WordCollection ret = new();
-        if (start > this.Collection.Count)
+        if (start > Collection.Count)
             return ret;
         int end = start + count;
-        if (end > this.Collection.Count)
-            end = this.Collection.Count;
+        if (end > Collection.Count)
+            end = Collection.Count;
         for (int i = start; i < end; i++)
         {
-            ret.Collection.Add(this.Collection[i]);
+            ret.Collection.Add(Collection[i]);
         }
         return ret;
     }

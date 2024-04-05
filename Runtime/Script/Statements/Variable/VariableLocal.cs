@@ -1,7 +1,7 @@
-﻿using MinorShift.Emuera.GameProc;
+﻿using MinorShift.Emuera.GameData.Variable;
 using System.Collections.Generic;
 
-namespace MinorShift.Emuera.GameData.Variable;
+namespace MinorShift.Emuera.Runtime.Script.Statements.Variable;
 
 internal delegate LocalVariableToken CreateLocalVariableToken(VariableCode varCode, string subKey, int size);
 internal sealed class VariableLocal
@@ -44,7 +44,7 @@ internal sealed class VariableLocal
             newSize = func.ArgsLength;
         if (newSize > 0)
         {
-            if ((newSize < size) && ((varCode == VariableCode.ARG) || (varCode == VariableCode.ARGS)))
+            if (newSize < size && (varCode == VariableCode.ARG || varCode == VariableCode.ARGS))
                 newSize = size;
             ret = creater(varCode, subKey, newSize);
         }

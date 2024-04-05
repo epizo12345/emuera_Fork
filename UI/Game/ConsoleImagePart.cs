@@ -1,9 +1,9 @@
-﻿using MinorShift.Emuera.Content;
-using MinorShift.Emuera.Runtime.Config;
+﻿using MinorShift.Emuera.Runtime.Config;
+using MinorShift.Emuera.UI.Game.Image;
 using System;
 using System.Drawing;
 using System.Text;
-namespace MinorShift.Emuera.GameView;
+namespace MinorShift.Emuera.UI.Game;
 
 sealed class ConsoleImagePart : AConsoleDisplayPart
 {
@@ -84,7 +84,7 @@ sealed class ConsoleImagePart : AConsoleDisplayPart
             {
                 Width = Config.FontSize * raw_width / 100;
             }
-            XsubPixel = ((float)Config.FontSize * raw_width / 100f) - Width;
+            XsubPixel = (float)Config.FontSize * raw_width / 100f - Width;
         }
         top = raw_ypos * Config.FontSize / 100;
         destRect = new Rectangle(0, top, Width, height);
@@ -127,7 +127,7 @@ sealed class ConsoleImagePart : AConsoleDisplayPart
     public override bool CanDivide { get { return false; } }
     public override void SetWidth(StringMeasure sm, float subPixel)
     {
-        if (this.Error)
+        if (Error)
         {
             Width = 0;
             return;
@@ -147,7 +147,7 @@ sealed class ConsoleImagePart : AConsoleDisplayPart
 
     public override void DrawTo(Graphics graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
     {
-        if (this.Error)
+        if (Error)
             return;
         ASprite img = cImage;
         if (isSelecting && cImageB != null)

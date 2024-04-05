@@ -1,8 +1,10 @@
-﻿using MinorShift.Emuera.GameData.Expression;
+﻿using MinorShift.Emuera.GameData.Variable;
+using MinorShift.Emuera.Runtime.Script.Statements.Expression;
+using MinorShift.Emuera.Runtime.Utils;
 using MinorShift.Emuera.Sub;
 using System;
 
-namespace MinorShift.Emuera.GameData.Variable;
+namespace MinorShift.Emuera.Runtime.Script.Statements.Variable;
 
 
 internal class VariableTerm : AExpression
@@ -11,9 +13,9 @@ internal class VariableTerm : AExpression
     public VariableTerm(VariableToken token, AExpression[] args)
         : base(token.VariableType)
     {
-        this.Identifier = token;
+        Identifier = token;
         arguments = args;
-        transporter = new Int64[arguments.Length];
+        transporter = new long[arguments.Length];
 
         allArgIsConst = true;
         for (int i = 0; i < arguments.Length; i++)
@@ -30,10 +32,10 @@ internal class VariableTerm : AExpression
     }
     public VariableToken Identifier;
     private readonly AExpression[] arguments;
-    protected Int64[] transporter;
+    protected long[] transporter;
     protected bool allArgIsConst;
 
-    public Int64 GetElementInt(int i, ExpressionMediator exm)
+    public long GetElementInt(int i, ExpressionMediator exm)
     {
         if (allArgIsConst)
             return transporter[i];
@@ -43,7 +45,7 @@ internal class VariableTerm : AExpression
     public bool isAllConst { get { return allArgIsConst; } }
     public int getEl1forArg { get { return (int)transporter[0]; } }
 
-    public override Int64 GetIntValue(ExpressionMediator exm)
+    public override long GetIntValue(ExpressionMediator exm)
     {
         try
         {
@@ -54,7 +56,7 @@ internal class VariableTerm : AExpression
         }
         catch (Exception e)
         {
-            if ((e is IndexOutOfRangeException) || (e is ArgumentOutOfRangeException) || (e is OverflowException))
+            if (e is IndexOutOfRangeException || e is ArgumentOutOfRangeException || e is OverflowException)
                 Identifier.CheckElement(transporter);
             throw;
         }
@@ -73,12 +75,12 @@ internal class VariableTerm : AExpression
         }
         catch (Exception e)
         {
-            if ((e is IndexOutOfRangeException) || (e is ArgumentOutOfRangeException) || (e is OverflowException))
+            if (e is IndexOutOfRangeException || e is ArgumentOutOfRangeException || e is OverflowException)
                 Identifier.CheckElement(transporter);
             throw;
         }
     }
-    public virtual void SetValue(Int64 value, ExpressionMediator exm)
+    public virtual void SetValue(long value, ExpressionMediator exm)
     {
         try
         {
@@ -89,7 +91,7 @@ internal class VariableTerm : AExpression
         }
         catch (Exception e)
         {
-            if ((e is IndexOutOfRangeException) || (e is ArgumentOutOfRangeException) || (e is OverflowException))
+            if (e is IndexOutOfRangeException || e is ArgumentOutOfRangeException || e is OverflowException)
                 Identifier.CheckElement(transporter);
             throw;
         }
@@ -105,13 +107,13 @@ internal class VariableTerm : AExpression
         }
         catch (Exception e)
         {
-            if ((e is IndexOutOfRangeException) || (e is ArgumentOutOfRangeException) || (e is OverflowException))
+            if (e is IndexOutOfRangeException || e is ArgumentOutOfRangeException || e is OverflowException)
                 Identifier.CheckElement(transporter);
             throw;
         }
     }
 
-    public virtual void SetValue(Int64[] array, ExpressionMediator exm)
+    public virtual void SetValue(long[] array, ExpressionMediator exm)
     {
         try
         {
@@ -122,7 +124,7 @@ internal class VariableTerm : AExpression
         }
         catch (Exception e)
         {
-            if ((e is IndexOutOfRangeException) || (e is ArgumentOutOfRangeException) || (e is OverflowException))
+            if (e is IndexOutOfRangeException || e is ArgumentOutOfRangeException || e is OverflowException)
             {
                 Identifier.CheckElement(transporter);
                 throw new CodeEE("配列変数" + Identifier.Name + "の要素数を超えて代入しようとしました");
@@ -141,7 +143,7 @@ internal class VariableTerm : AExpression
         }
         catch (Exception e)
         {
-            if ((e is IndexOutOfRangeException) || (e is ArgumentOutOfRangeException) || (e is OverflowException))
+            if (e is IndexOutOfRangeException || e is ArgumentOutOfRangeException || e is OverflowException)
             {
                 Identifier.CheckElement(transporter);
                 throw new CodeEE("配列変数" + Identifier.Name + "の要素数を超えて代入しようとしました");
@@ -150,7 +152,7 @@ internal class VariableTerm : AExpression
         }
     }
 
-    public virtual Int64 ChangeValue(Int64 value, ExpressionMediator exm)
+    public virtual long ChangeValue(long value, ExpressionMediator exm)
     {
         try
         {
@@ -161,14 +163,14 @@ internal class VariableTerm : AExpression
         }
         catch (Exception e)
         {
-            if ((e is IndexOutOfRangeException) || (e is ArgumentOutOfRangeException) || (e is OverflowException))
+            if (e is IndexOutOfRangeException || e is ArgumentOutOfRangeException || e is OverflowException)
                 Identifier.CheckElement(transporter);
             throw;
         }
     }
     public override SingleTerm GetValue(ExpressionMediator exm)
     {
-        if (Identifier.VariableType == typeof(Int64))
+        if (Identifier.VariableType == typeof(long))
             return new SingleLongTerm(GetIntValue(exm));
         else
             return new SingleStrTerm(GetStrValue(exm));
@@ -182,20 +184,20 @@ internal class VariableTerm : AExpression
     }
     public virtual void SetValue(AExpression value, ExpressionMediator exm)
     {
-        if (Identifier.VariableType == typeof(Int64))
+        if (Identifier.VariableType == typeof(long))
             SetValue(value.GetIntValue(exm), exm);
         else
             SetValue(value.GetStrValue(exm), exm);
     }
-    public Int32 GetLength()
+    public int GetLength()
     {
         return Identifier.GetLength();
     }
-    public Int32 GetLength(int dimension)
+    public int GetLength(int dimension)
     {
         return Identifier.GetLength(dimension);
     }
-    public Int32 GetLastLength()
+    public int GetLastLength()
     {
         if (Identifier.IsArray1D)
             return Identifier.GetLength();
@@ -237,7 +239,7 @@ internal class VariableTerm : AExpression
             {
                 //キャラクターデータの第1引数はこの時点でチェックしても意味がないのと
                 //ARG系は限界超えてても必要な数に拡張されるのでチェックしなくていい
-                if ((i == 0 && Identifier.IsCharacterData) || Identifier.Name == "ARG" || Identifier.Name == "ARGS")
+                if (i == 0 && Identifier.IsCharacterData || Identifier.Name == "ARG" || Identifier.Name == "ARGS")
                     canCheck[i] = false;
                 else
                     canCheck[i] = true;
@@ -261,13 +263,13 @@ internal class VariableTerm : AExpression
         //添え字が全部定数があることがこの関数の前提(そもそもそうでないと使い道がない)
         if (!allArgIsConst)
             return false;
-        if (this.Identifier.Name != term.Identifier.Name)
+        if (Identifier.Name != term.Identifier.Name)
             return false;
         else
         {
             for (int i = 0; i < transporter.Length; i++)
             {
-                if (this.transporter[i] != term.transporter[i])
+                if (transporter[i] != term.transporter[i])
                     return false;
             }
         }
@@ -296,25 +298,25 @@ internal sealed class FixedVariableTerm : VariableTerm
     public FixedVariableTerm(VariableToken token)
         : base(token)
     {
-        this.Identifier = token;
-        transporter = new Int64[3];
+        Identifier = token;
+        transporter = new long[3];
         allArgIsConst = true;
     }
-    public FixedVariableTerm(VariableToken token, Int64[] args)
+    public FixedVariableTerm(VariableToken token, long[] args)
         : base(token)
     {
         allArgIsConst = true;
-        this.Identifier = token;
-        transporter = new Int64[3];
+        Identifier = token;
+        transporter = new long[3];
         for (int i = 0; i < args.Length; i++)
             transporter[i] = args[i];
     }
-    public Int64 Index1 { get { return transporter[0]; } set { transporter[0] = value; } }
-    public Int64 Index2 { get { return transporter[1]; } set { transporter[1] = value; } }
-    public Int64 Index3 { get { return transporter[2]; } set { transporter[2] = value; } }
+    public long Index1 { get { return transporter[0]; } set { transporter[0] = value; } }
+    public long Index2 { get { return transporter[1]; } set { transporter[1] = value; } }
+    public long Index3 { get { return transporter[2]; } set { transporter[2] = value; } }
 
 
-    public override Int64 GetIntValue(ExpressionMediator exm)
+    public override long GetIntValue(ExpressionMediator exm)
     {
         try
         {
@@ -322,7 +324,7 @@ internal sealed class FixedVariableTerm : VariableTerm
         }
         catch (Exception e)
         {
-            if ((e is IndexOutOfRangeException) || (e is ArgumentOutOfRangeException) || (e is OverflowException))
+            if (e is IndexOutOfRangeException || e is ArgumentOutOfRangeException || e is OverflowException)
                 Identifier.CheckElement(transporter);
             throw;
         }
@@ -338,13 +340,13 @@ internal sealed class FixedVariableTerm : VariableTerm
         }
         catch (Exception e)
         {
-            if ((e is IndexOutOfRangeException) || (e is ArgumentOutOfRangeException) || (e is OverflowException))
+            if (e is IndexOutOfRangeException || e is ArgumentOutOfRangeException || e is OverflowException)
                 Identifier.CheckElement(transporter);
             throw;
         }
     }
 
-    public override void SetValue(Int64 value, ExpressionMediator exm)
+    public override void SetValue(long value, ExpressionMediator exm)
     {
         try
         {
@@ -352,7 +354,7 @@ internal sealed class FixedVariableTerm : VariableTerm
         }
         catch (Exception e)
         {
-            if ((e is IndexOutOfRangeException) || (e is ArgumentOutOfRangeException) || (e is OverflowException))
+            if (e is IndexOutOfRangeException || e is ArgumentOutOfRangeException || e is OverflowException)
                 Identifier.CheckElement(transporter);
             throw;
         }
@@ -365,13 +367,13 @@ internal sealed class FixedVariableTerm : VariableTerm
         }
         catch (Exception e)
         {
-            if ((e is IndexOutOfRangeException) || (e is ArgumentOutOfRangeException) || (e is OverflowException))
+            if (e is IndexOutOfRangeException || e is ArgumentOutOfRangeException || e is OverflowException)
                 Identifier.CheckElement(transporter);
             throw;
         }
     }
 
-    public override Int64 ChangeValue(Int64 value, ExpressionMediator exm)
+    public override long ChangeValue(long value, ExpressionMediator exm)
     {
         try
         {
@@ -379,7 +381,7 @@ internal sealed class FixedVariableTerm : VariableTerm
         }
         catch (Exception e)
         {
-            if ((e is IndexOutOfRangeException) || (e is ArgumentOutOfRangeException) || (e is OverflowException))
+            if (e is IndexOutOfRangeException || e is ArgumentOutOfRangeException || e is OverflowException)
                 Identifier.CheckElement(transporter);
             throw;
         }
@@ -392,7 +394,7 @@ internal sealed class FixedVariableTerm : VariableTerm
         return this;
     }
 
-    public void IsArrayRangeValid(Int64 index1, Int64 index2, string funcName, Int64 i1, Int64 i2)
+    public void IsArrayRangeValid(long index1, long index2, string funcName, long i1, long i2)
     {
         Identifier.IsArrayRangeValid(transporter, index1, index2, funcName, i1, i2);
     }
@@ -407,22 +409,22 @@ internal sealed class VariableNoArgTerm : VariableTerm
     public VariableNoArgTerm(VariableToken token)
         : base(token)
     {
-        this.Identifier = token;
-        this.allArgIsConst = true;
+        Identifier = token;
+        allArgIsConst = true;
     }
-    public override Int64 GetIntValue(ExpressionMediator exm)
+    public override long GetIntValue(ExpressionMediator exm)
     { throw new CodeEE("変数" + Identifier.Name + "に必要な引数が不足しています"); }
     public override string GetStrValue(ExpressionMediator exm)
     { throw new CodeEE("変数" + Identifier.Name + "に必要な引数が不足しています"); }
-    public override void SetValue(Int64 value, ExpressionMediator exm)
+    public override void SetValue(long value, ExpressionMediator exm)
     { throw new CodeEE("変数" + Identifier.Name + "に必要な引数が不足しています"); }
     public override void SetValue(string value, ExpressionMediator exm)
     { throw new CodeEE("変数" + Identifier.Name + "に必要な引数が不足しています"); }
-    public override void SetValue(Int64[] array, ExpressionMediator exm)
+    public override void SetValue(long[] array, ExpressionMediator exm)
     { throw new CodeEE("変数" + Identifier.Name + "に必要な引数が不足しています"); }
     public override void SetValue(string[] array, ExpressionMediator exm)
     { throw new CodeEE("変数" + Identifier.Name + "に必要な引数が不足しています"); }
-    public override Int64 ChangeValue(Int64 value, ExpressionMediator exm)
+    public override long ChangeValue(long value, ExpressionMediator exm)
     { throw new CodeEE("変数" + Identifier.Name + "に必要な引数が不足しています"); }
     public override SingleTerm GetValue(ExpressionMediator exm)
     { throw new CodeEE("変数" + Identifier.Name + "に必要な引数が不足しています"); }

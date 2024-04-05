@@ -6,7 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Emuera;
+namespace MinorShift.Emuera.Runtime.Utils;
 static partial class Preload
 {
     static Dictionary<string, string[]> files = new(StringComparer.OrdinalIgnoreCase);
@@ -41,7 +41,7 @@ static partial class Preload
                     }
 
 
-                    var value = File.ReadAllLines(childPath, Config.Encode);
+                    var value = File.ReadAllLines(childPath, Config.Config.Encode);
                     lock (files)
                     {
                         files[key] = value;
@@ -52,7 +52,7 @@ static partial class Preload
         else
         {
             var key = path;
-            var value = File.ReadAllLines(path, Config.Encode);
+            var value = File.ReadAllLines(path, Config.Config.Encode);
             files[key] = value;
         };
 

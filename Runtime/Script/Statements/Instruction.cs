@@ -1,7 +1,9 @@
-﻿using MinorShift.Emuera.GameData.Expression;
+﻿using MinorShift.Emuera.GameProc.Function;
+using MinorShift.Emuera.Runtime.Script.Statements.Expression;
+using MinorShift.Emuera.Runtime.Utils;
 using MinorShift.Emuera.Sub;
 
-namespace MinorShift.Emuera.GameProc.Function;
+namespace MinorShift.Emuera.Runtime.Script.Statements;
 
 
 internal abstract class AInstruction

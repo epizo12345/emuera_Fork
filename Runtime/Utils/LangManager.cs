@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace MinorShift._Library;
+namespace MinorShift.Emuera.Runtime.Utils;
 
 //マルチ言語に対応可能な形式に変更
 internal static class LangManager
@@ -42,9 +42,9 @@ internal static class LangManager
     public static string GetSubStringLang(string str, int startindex, int length)
     {
         int totalByte = GetStrlenLang(str);
-        if ((startindex >= totalByte) || (length == 0))
+        if (startindex >= totalByte || length == 0)
             return "";
-        if ((length < 0) || (length > totalByte))
+        if (length < 0 || length > totalByte)
             length = totalByte;
 
         StringBuilder ret = new();

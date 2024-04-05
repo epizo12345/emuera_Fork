@@ -1,13 +1,15 @@
-﻿using Emuera;
-using MinorShift._Library;
-using MinorShift.Emuera.GameData;
-using MinorShift.Emuera.GameData.Expression;
-using MinorShift.Emuera.GameData.Function;
-using MinorShift.Emuera.GameData.Variable;
-using MinorShift.Emuera.GameProc.Function;
-using MinorShift.Emuera.GameView;
+﻿using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.Runtime.Config;
-using MinorShift.Emuera.Sub;
+using MinorShift.Emuera.Runtime.Script;
+using MinorShift.Emuera.Runtime.Script.Data;
+using MinorShift.Emuera.Runtime.Script.Loader;
+using MinorShift.Emuera.Runtime.Script.Parser;
+using MinorShift.Emuera.Runtime.Script.Statements;
+using MinorShift.Emuera.Runtime.Script.Statements.Expression;
+using MinorShift.Emuera.Runtime.Script.Statements.Function;
+using MinorShift.Emuera.Runtime.Script.Statements.Variable;
+using MinorShift.Emuera.Runtime.Utils;
+using MinorShift.Emuera.UI.Game.Image;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -73,7 +75,7 @@ internal sealed partial class Process(EmueraConsole view)
 
             Debug.WriteLine("Proc:Init:Image:Start " + stopWatch.ElapsedMilliseconds + "ms");
             //リソースフォルダ読み込み
-            var err = await Task.Run(Content.AppContents.LoadContents);
+            var err = await Task.Run(AppContents.LoadContents);
             if (err != null)
             {
                 ParserMediator.FlushWarningList();

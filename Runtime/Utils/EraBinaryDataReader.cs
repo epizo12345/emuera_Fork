@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace MinorShift.Emuera.Sub;
+namespace MinorShift.Emuera.Runtime.Utils;
 
 #region reader/writer共通データ
 public enum EraSaveFileType : byte
@@ -49,9 +49,9 @@ static class Ebdb//EraBinaryData中のマジックナンバーなバイト
 static class EraBDConst
 {
     //Headerはpngのパクリ
-    public const UInt64 Header = 0x0A1A0A0D41524589UL;
-    public const UInt32 Version1808 = 1808;
-    public const UInt32 DataCount = 0;
+    public const ulong Header = 0x0A1A0A0D41524589UL;
+    public const uint Version1808 = 1808;
+    public const uint DataCount = 0;
 }
 #endregion
 
@@ -63,7 +63,7 @@ internal abstract class EraBinaryDataReader : IDisposable
 {
     private EraBinaryDataReader() { }
 
-    protected EraBinaryDataReader(BinaryReader stream, int ver, UInt32[] buf)
+    protected EraBinaryDataReader(BinaryReader stream, int ver, uint[] buf)
     {
         reader = stream;
         version = ver;
@@ -71,7 +71,7 @@ internal abstract class EraBinaryDataReader : IDisposable
     }
     protected BinaryReader reader;
     protected readonly int version;
-    protected readonly UInt32[] data;
+    protected readonly uint[] data;
 
     public abstract int ReaderVersion { get; }
     /// <summary>
@@ -84,7 +84,7 @@ internal abstract class EraBinaryDataReader : IDisposable
     {
         try
         {
-            if ((fs == null) || (fs.Length < 16))
+            if (fs == null || fs.Length < 16)
                 return null;
             BinaryReader reader = new(fs, Encoding.Unicode);
 
@@ -92,7 +92,7 @@ internal abstract class EraBinaryDataReader : IDisposable
                 return null;
             int version = (int)reader.ReadUInt32();
             int datacount = (int)reader.ReadUInt32();
-            UInt32[] data = new UInt32[datacount];
+            uint[] data = new uint[datacount];
             for (int i = 0; i < datacount; i++)
                 data[i] = reader.ReadUInt32();
             if (version == EraBDConst.Version1808)
@@ -112,13 +112,13 @@ internal abstract class EraBinaryDataReader : IDisposable
     /// システム用の特殊処理・圧縮なし
     /// </summary>
     /// <returns></returns>
-    public abstract Int64 ReadInt64();
+    public abstract long ReadInt64();
 
     public abstract string ReadString();
-    public abstract Int64 ReadInt();
-    public abstract void ReadIntArray(Int64[] refArray, bool needInit);
-    public abstract void ReadIntArray2D(Int64[,] refArray, bool needInit);
-    public abstract void ReadIntArray3D(Int64[,,] refArray, bool needInit);
+    public abstract long ReadInt();
+    public abstract void ReadIntArray(long[] refArray, bool needInit);
+    public abstract void ReadIntArray2D(long[,] refArray, bool needInit);
+    public abstract void ReadIntArray3D(long[,,] refArray, bool needInit);
     public abstract void ReadStrArray(string[] refArray, bool needInit);
     public abstract void ReadStrArray2D(string[,] refArray, bool needInit);
     public abstract void ReadStrArray3D(string[,,] refArray, bool needInit);
@@ -140,7 +140,7 @@ internal abstract class EraBinaryDataReader : IDisposable
 
     private sealed class EraBinaryDataReader1808 : EraBinaryDataReader
     {
-        public EraBinaryDataReader1808(BinaryReader stream, int ver, UInt32[] buf)
+        public EraBinaryDataReader1808(BinaryReader stream, int ver, uint[] buf)
             : base(stream, ver, buf)
         {
         }
@@ -162,7 +162,7 @@ internal abstract class EraBinaryDataReader : IDisposable
             throw new FileEE("ファイルデータ型異常");
         }
 
-        private Int64 m_ReadInt()
+        private long m_ReadInt()
         {
             byte b = reader.ReadByte();
             if (b <= Ebdb.Byte)
@@ -176,7 +176,7 @@ internal abstract class EraBinaryDataReader : IDisposable
             throw new FileEE("バイナリデータの異常");
         }
 
-        public override Int64 ReadInt64()
+        public override long ReadInt64()
         {
             return reader.ReadInt64();
         }
@@ -191,7 +191,7 @@ internal abstract class EraBinaryDataReader : IDisposable
         }
 
         //配列じゃないやつは特殊処理
-        public override Int64 ReadInt()
+        public override long ReadInt()
         {
             return m_ReadInt();
         }
@@ -202,14 +202,14 @@ internal abstract class EraBinaryDataReader : IDisposable
             return reader.ReadString();
         }
 
-        public override void ReadIntArray(Int64[] refArray, bool needInit)
+        public override void ReadIntArray(long[] refArray, bool needInit)
         {
-            Int64[] oriArray = null;
+            long[] oriArray = null;
             byte b;
             int x = 0;
             int saveLength0 = reader.ReadInt32();
             if (refArray == null)//読み捨て。レアケースのはず
-                refArray = new Int64[saveLength0];
+                refArray = new long[saveLength0];
 
             int length0 = refArray.Length;
 
@@ -218,7 +218,7 @@ internal abstract class EraBinaryDataReader : IDisposable
             {
                 oriArray = refArray;
                 //1818修正 サイズ違いの時にあふれないように/配列は最大まで確保、作業するのは重複部分だけ
-                refArray = new Int64[Math.Max(length0, saveLength0)];
+                refArray = new long[Math.Max(length0, saveLength0)];
 
                 length0 = Math.Min(length0, saveLength0);
             }
@@ -258,16 +258,16 @@ internal abstract class EraBinaryDataReader : IDisposable
             }
             return;
         }
-        public override void ReadIntArray2D(Int64[,] refArray, bool needInit)
+        public override void ReadIntArray2D(long[,] refArray, bool needInit)
         {
-            Int64[,] oriArray = null;
+            long[,] oriArray = null;
             byte b;
             int x = 0;
             int y = 0;
             int saveLength0 = reader.ReadInt32();
             int saveLength1 = reader.ReadInt32();
             if (refArray == null)
-                refArray = new Int64[saveLength0, saveLength1];
+                refArray = new long[saveLength0, saveLength1];
             int length0 = refArray.GetLength(0);
             int length1 = refArray.GetLength(1);
 
@@ -275,7 +275,7 @@ internal abstract class EraBinaryDataReader : IDisposable
             {
                 oriArray = refArray;
                 //1818修正 サイズ違いの時にあふれないように/配列は最大まで確保、作業するのは重複部分だけ
-                refArray = new Int64[Math.Max(length0, saveLength0), Math.Max(length1, saveLength1)];
+                refArray = new long[Math.Max(length0, saveLength0), Math.Max(length1, saveLength1)];
 
                 length0 = Math.Min(length0, saveLength0);
                 length1 = Math.Min(length1, saveLength1);
@@ -350,9 +350,9 @@ internal abstract class EraBinaryDataReader : IDisposable
         /// </summary>
         /// <param name="refArray">データを書き出す先。読み捨てるならnull</param>
         /// <param name="needInit">データがない部分を0で埋める必要があるか</param>
-        public override void ReadIntArray3D(Int64[,,] refArray, bool needInit)
+        public override void ReadIntArray3D(long[,,] refArray, bool needInit)
         {
-            Int64[,,] oriArray = null;
+            long[,,] oriArray = null;
             byte b;
             int x = 0;
             int y = 0;
@@ -361,7 +361,7 @@ internal abstract class EraBinaryDataReader : IDisposable
             int saveLength1 = reader.ReadInt32();
             int saveLength2 = reader.ReadInt32();
             if (refArray == null)
-                refArray = new Int64[saveLength0, saveLength1, saveLength2];
+                refArray = new long[saveLength0, saveLength1, saveLength2];
             int length0 = refArray.GetLength(0);
             int length1 = refArray.GetLength(1);
             int length2 = refArray.GetLength(2);
@@ -370,7 +370,7 @@ internal abstract class EraBinaryDataReader : IDisposable
             {
                 oriArray = refArray;
                 //1818修正 サイズ違いの時にあふれないように/配列は最大まで確保、作業するのは重複部分だけ
-                refArray = new Int64[Math.Max(length0, saveLength0), Math.Max(length1, saveLength1), Math.Max(length2, saveLength2)];
+                refArray = new long[Math.Max(length0, saveLength0), Math.Max(length1, saveLength1), Math.Max(length2, saveLength2)];
 
                 length0 = Math.Min(length0, saveLength0);
                 length1 = Math.Min(length1, saveLength1);

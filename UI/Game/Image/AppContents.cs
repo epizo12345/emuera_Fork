@@ -1,5 +1,5 @@
 ﻿using MinorShift.Emuera.Runtime.Config;
-using MinorShift.Emuera.Sub;
+using MinorShift.Emuera.Runtime.Utils;
 using SkiaSharp.Views.Desktop;
 using System;
 using System.Collections.Concurrent;
@@ -7,7 +7,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 
-namespace MinorShift.Emuera.Content;
+namespace MinorShift.Emuera.UI.Game.Image;
 
 static class AppContents
 {

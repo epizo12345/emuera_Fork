@@ -1,6 +1,7 @@
-﻿using MinorShift.Emuera.GameData.Variable;
-using MinorShift.Emuera.GameView;
-using MinorShift.Emuera.Runtime.Config;
+﻿using MinorShift.Emuera.GameView;
+using MinorShift.Emuera.Runtime.Script.Parser;
+using MinorShift.Emuera.Runtime.Script.Statements.Variable;
+using MinorShift.Emuera.Runtime.Utils;
 using MinorShift.Emuera.Sub;
 using System;
 using System.Collections.Generic;
@@ -8,7 +9,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 
-namespace MinorShift.Emuera.GameData;
+namespace MinorShift.Emuera.Runtime.Script.Data;
 
 internal enum CharacterStrData
 {
@@ -69,14 +70,14 @@ internal sealed class ConstantData
 
     public int[] VariableIntArrayLength;
     public int[] VariableStrArrayLength;
-    public Int64[] VariableIntArray2DLength;
-    public Int64[] VariableStrArray2DLength;
-    public Int64[] VariableIntArray3DLength;
-    public Int64[] VariableStrArray3DLength;
+    public long[] VariableIntArray2DLength;
+    public long[] VariableStrArray2DLength;
+    public long[] VariableIntArray3DLength;
+    public long[] VariableStrArray3DLength;
     public int[] CharacterIntArrayLength;
     public int[] CharacterStrArrayLength;
-    public Int64[] CharacterIntArray2DLength;
-    public Int64[] CharacterStrArray2DLength;
+    public long[] CharacterIntArray2DLength;
+    public long[] CharacterStrArray2DLength;
 
     //private readonly GameBase gamebase;
     private readonly string[][] names = new string[(int)VariableCode.__COUNT_CSV_STRING_ARRAY_1D__][];
@@ -87,7 +88,7 @@ internal sealed class ConstantData
         return names[(int)(code & VariableCode.__LOWERCASE__)];
     }
 
-    public Int64[] ItemPrice;
+    public long[] ItemPrice;
 
     private readonly List<CharacterTemplate> CharacterTmplList;
     private EmueraConsole output;
@@ -98,7 +99,7 @@ internal sealed class ConstantData
         setDefaultArrayLength();
 
         CharacterTmplList = [];
-        useCompatiName = Config.CompatiCALLNAME;
+        useCompatiName = Config.Config.CompatiCALLNAME;
     }
 
     readonly bool useCompatiName;
@@ -134,13 +135,13 @@ internal sealed class ConstantData
 
         VariableIntArrayLength = new int[(int)VariableCode.__COUNT_INTEGER_ARRAY__];
         VariableStrArrayLength = new int[(int)VariableCode.__COUNT_STRING_ARRAY__];
-        VariableIntArray2DLength = new Int64[(int)VariableCode.__COUNT_INTEGER_ARRAY_2D__];
+        VariableIntArray2DLength = new long[(int)VariableCode.__COUNT_INTEGER_ARRAY_2D__];
         VariableStrArray2DLength = [];
-        VariableIntArray3DLength = new Int64[(int)VariableCode.__COUNT_INTEGER_ARRAY_3D__];
+        VariableIntArray3DLength = new long[(int)VariableCode.__COUNT_INTEGER_ARRAY_3D__];
         VariableStrArray3DLength = [];
         CharacterIntArrayLength = new int[(int)VariableCode.__COUNT_CHARACTER_INTEGER_ARRAY__];
         CharacterStrArrayLength = new int[(int)VariableCode.__COUNT_CHARACTER_STRING_ARRAY__];
-        CharacterIntArray2DLength = new Int64[(int)VariableCode.__COUNT_CHARACTER_INTEGER_ARRAY_2D__];
+        CharacterIntArray2DLength = new long[(int)VariableCode.__COUNT_CHARACTER_INTEGER_ARRAY_2D__];
         CharacterStrArray2DLength = [];
         for (int i = 0; i < VariableIntArrayLength.Length; i++)
             VariableIntArrayLength[i] = 1000;
@@ -234,12 +235,12 @@ internal sealed class ConstantData
             ParserMediator.Warn("一つ目の値を変数名として認識できません", position, 1);
             return;
         }
-        if ((!id.IsArray1D) && (!id.IsArray2D) && (!id.IsArray3D))
+        if (!id.IsArray1D && !id.IsArray2D && !id.IsArray3D)
         {
             ParserMediator.Warn("配列変数でない変数" + id.ToString() + "のサイズを変更できません", position, 1);
             return;
         }
-        if (id.IsCalc || (id.Code == VariableCode.RANDDATA))
+        if (id.IsCalc || id.Code == VariableCode.RANDDATA)
         {
             ParserMediator.Warn(id.ToString() + "のサイズは変更できません", position, 1);
             return;
@@ -309,12 +310,12 @@ internal sealed class ConstantData
                 ParserMediator.Warn("三つ目の値を整数値として認識できません", position, 1);
                 return;
             }
-            if ((length < 1) || (length2 < 1))
+            if (length < 1 || length2 < 1)
             {
                 ParserMediator.Warn("配列サイズを1未満にはできません", position, 1);
                 return;
             }
-            if ((length > 1000000) || (length2 > 1000000))
+            if (length > 1000000 || length2 > 1000000)
             {
                 ParserMediator.Warn("配列サイズを1000000より大きくすることはできません", position, 1);
                 return;
@@ -346,13 +347,13 @@ internal sealed class ConstantData
                 ParserMediator.Warn("四つ目の値を整数値として認識できません", position, 1);
                 return;
             }
-            if ((length < 1) || (length2 < 1) || (length3 < 1))
+            if (length < 1 || length2 < 1 || length3 < 1)
             {
                 ParserMediator.Warn("配列サイズを1未満にはできません", position, 1);
                 return;
             }
             //1802 サイズ保存の都合上、2^20超えるとバグる
-            if ((length > 1000000) || (length2 > 1000000) || (length3 > 1000000))
+            if (length > 1000000 || length2 > 1000000 || length3 > 1000000)
             {
                 ParserMediator.Warn("配列サイズを1000000より大きくすることはできません", position, 1);
                 return;
@@ -409,7 +410,7 @@ internal sealed class ConstantData
                     {
                         if (id.IsArray2D)
                         {
-                            Int64 length64 = (((Int64)length) << 32) + ((Int64)length2);
+                            long length64 = ((long)length << 32) + length2;
                             if (id.IsInteger)
                                 CharacterIntArray2DLength[id.CodeInt] = length64;
                             else if (id.IsString)
@@ -425,7 +426,7 @@ internal sealed class ConstantData
                     }
                     else if (id.IsArray2D)
                     {
-                        Int64 length64 = (((Int64)length) << 32) + ((Int64)length2);
+                        long length64 = ((long)length << 32) + length2;
                         if (id.IsInteger)
                             VariableIntArray2DLength[id.CodeInt] = length64;
                         else if (id.IsString)
@@ -434,7 +435,7 @@ internal sealed class ConstantData
                     else if (id.IsArray3D)
                     {
                         //Int64 length3d = ((Int64)length << 32) + ((Int64)length2 << 16) + (Int64)length3;
-                        Int64 length3d = ((Int64)length << 40) + ((Int64)length2 << 20) + (Int64)length3;
+                        long length3d = ((long)length << 40) + ((long)length2 << 20) + length3;
                         if (id.IsInteger)
                             VariableIntArray3DLength[id.CodeInt] = length3d;
                         else
@@ -543,13 +544,13 @@ internal sealed class ConstantData
         //一部変更されたら双方変更されたと扱う
         bool cdflagNameLengthChanged = changedCode.Contains(VariableCode.CDFLAGNAME1) || changedCode.Contains(VariableCode.CDFLAGNAME2);
         int mainLengthIndex = (int)(VariableCode.__LOWERCASE__ & VariableCode.CDFLAG);
-        Int64 length64 = CharacterIntArray2DLength[mainLengthIndex];
+        long length64 = CharacterIntArray2DLength[mainLengthIndex];
         int length1 = (int)(length64 >> 32);
         int length2 = (int)(length64 & 0x7FFFFFFF);
         if (changedCode.Contains(VariableCode.CDFLAG) && cdflagNameLengthChanged)
         {
             //調整が面倒なので投げる
-            if ((length1 != MaxDataList[cdflag1Index]) || (length2 != MaxDataList[cdflag2Index]))
+            if (length1 != MaxDataList[cdflag1Index] || length2 != MaxDataList[cdflag2Index])
                 throw new CodeEE("CDFLAGの要素数とCDFLAGNAME1及びCDFLAGNAME2の要素数が一致していません", position);
         }
         else if (cdflagNameLengthChanged && !changedCode.Contains(VariableCode.CDFLAG))
@@ -561,7 +562,7 @@ internal sealed class ConstantData
                 //調整が面倒なので投げる
                 throw new CodeEE("CDFLAGの要素数が多すぎます（CDFLAGNAME1とCDFLAGNAME2の要素数の積が100万を超えています）", position);
             }
-            CharacterIntArray2DLength[mainLengthIndex] = (((Int64)length1) << 32) + ((Int64)length2);
+            CharacterIntArray2DLength[mainLengthIndex] = ((long)length1 << 32) + length2;
         }
         else if (!cdflagNameLengthChanged && changedCode.Contains(VariableCode.CDFLAG))
         {
@@ -583,7 +584,7 @@ internal sealed class ConstantData
             names[i] = new string[MaxDataList[i]];
             nameToIntDics[i] = [];
         }
-        ItemPrice = new Int64[MaxDataList[itemIndex]];
+        ItemPrice = new long[MaxDataList[itemIndex]];
 
         loadDataTo(Path.Combine(csvDir, "ABL.CSV"), ablIndex, null, disp);
         loadDataTo(Path.Combine(csvDir, "EXP.CSV"), expIndex, null, disp);
@@ -649,7 +650,7 @@ internal sealed class ConstantData
         if (varCode == VariableCode.CDFLAG)
         {
             dic = GetKeywordDictionary(out _, VariableCode.CDFLAGNAME1, -1);
-            if ((dic == null) || (!dic.ContainsKey(str)))
+            if (dic == null || !dic.ContainsKey(str))
                 dic = GetKeywordDictionary(out _, VariableCode.CDFLAGNAME2, -1);
             if (dic == null)
                 return false;
@@ -890,7 +891,7 @@ internal sealed class ConstantData
         return ret;
     }
 
-    public CharacterTemplate GetCharacterTemplate(Int64 index)
+    public CharacterTemplate GetCharacterTemplate(long index)
     {
         foreach (CharacterTemplate chara in CharacterTmplList)
         {
@@ -900,7 +901,7 @@ internal sealed class ConstantData
         return null;
     }
 
-    public CharacterTemplate GetCharacterTemplate_UseSp(Int64 index, bool sp)
+    public CharacterTemplate GetCharacterTemplate_UseSp(long index, bool sp)
     {
         var i = CharacterTmplList.BinarySearch(null, Comparer<CharacterTemplate>.Create((left, right) => (int)(left.No - index)));
         if (i < 0)
@@ -910,7 +911,7 @@ internal sealed class ConstantData
         return CharacterTmplList[i];
     }
 
-    public CharacterTemplate GetCharacterTemplateFromCsvNo(Int64 index)
+    public CharacterTemplate GetCharacterTemplateFromCsvNo(long index)
     {
         foreach (CharacterTemplate chara in CharacterTmplList)
         {
@@ -937,7 +938,7 @@ internal sealed class ConstantData
     {
         if (!Directory.Exists(csvDir))
             return;
-        List<KeyValuePair<string, string>> csvPaths = Config.GetFiles(csvDir, "CHARA*.CSV");
+        List<KeyValuePair<string, string>> csvPaths = Config.Config.GetFiles(csvDir, "CHARA*.CSV");
 
         for (int i = 0; i < csvPaths.Count; i++)
             loadCharacterDataFile(csvPaths[i].Value, csvPaths[i].Key, disp);
@@ -952,19 +953,19 @@ internal sealed class ConstantData
         foreach (CharacterTemplate tmpl in CharacterTmplList)
             tmpl.SetSpFlag();
 
-        Dictionary<Int64, CharacterTemplate> nList = [];
-        Dictionary<Int64, CharacterTemplate> spList = [];
+        Dictionary<long, CharacterTemplate> nList = [];
+        Dictionary<long, CharacterTemplate> spList = [];
         foreach (CharacterTemplate tmpl in CharacterTmplList)
         {
-            Dictionary<Int64, CharacterTemplate> targetList = nList;
-            if (Config.CompatiSPChara && tmpl.IsSpchara)
+            Dictionary<long, CharacterTemplate> targetList = nList;
+            if (Config.Config.CompatiSPChara && tmpl.IsSpchara)
             {
                 targetList = spList;
             }
             if (targetList.TryGetValue(tmpl.No, out CharacterTemplate chara))
             {
 
-                if (!Config.CompatiSPChara && (tmpl.IsSpchara != chara.IsSpchara))
+                if (!Config.Config.CompatiSPChara && tmpl.IsSpchara != chara.IsSpchara)
                     ParserMediator.Warn("番号" + tmpl.No.ToString() + "のキャラが複数回定義されています(SPキャラとして定義するには互換性オプション「SPキャラを使用する」をONにしてください)", null, 1);
                 else
                     ParserMediator.Warn("番号" + tmpl.No.ToString() + "のキャラが複数回定義されています", null, 1);
@@ -988,7 +989,7 @@ internal sealed class ConstantData
             output.PrintSystemLine(eReader.Filename + "読み込み中・・・");
         try
         {
-            Int64 index = -1;
+            long index = -1;
             CharStream st = null;
             while ((st = eReader.ReadEnabledLine()) != null)
             {
@@ -1004,15 +1005,15 @@ internal sealed class ConstantData
                     ParserMediator.Warn("\",\"で始まっています", position, 1);
                     continue;
                 }
-                if (tokens[0].Equals("NO", Config.StringComparison)
-                    || tokens[0].Equals("番号", Config.StringComparison))
+                if (tokens[0].Equals("NO", Config.Config.StringComparison)
+                    || tokens[0].Equals("番号", Config.Config.StringComparison))
                 {
                     if (tmpl != null)
                     {
                         ParserMediator.Warn("番号が二重に定義されました", position, 1);
                         continue;
                     }
-                    if (!Int64.TryParse(tokens[1].TrimEnd(), out index))
+                    if (!long.TryParse(tokens[1].TrimEnd(), out index))
                     {
                         ParserMediator.Warn(tokens[1] + "を整数値に変換できません", position, 1);
                         continue;
@@ -1061,7 +1062,7 @@ internal sealed class ConstantData
         }
     }
 
-    private static bool tryToInt64(string str, out Int64 p)
+    private static bool tryToInt64(string str, out long p)
     {
         p = -1;
         if (string.IsNullOrEmpty(str))
@@ -1111,7 +1112,7 @@ internal sealed class ConstantData
         if (chara == null)
             return;
         int length;
-        Dictionary<int, Int64> intArray = null;
+        Dictionary<int, long> intArray = null;
         Dictionary<int, string> strArray = null;
         Dictionary<string, int> namearray;
 
@@ -1222,13 +1223,13 @@ internal sealed class ConstantData
             return;
         }
         bool p1isNumeric = tryToInt64(tokens[1].TrimEnd(), out long p1);
-        if (p1isNumeric && ((p1 < 0) || (p1 >= length)))
+        if (p1isNumeric && (p1 < 0 || p1 >= length))
         {
             ParserMediator.Warn(p1.ToString() + "は配列の範囲外です", position, 1);
             return;
         }
         int index = (int)p1;
-        if ((!p1isNumeric) && (namearray != null))
+        if (!p1isNumeric && namearray != null)
         {
             if (!namearray.TryGetValue(tokens[1], out index))
             {
@@ -1243,7 +1244,7 @@ internal sealed class ConstantData
             }
         }
 
-        if ((index < 0) || (index >= length))
+        if (index < 0 || index >= length)
         {
             if (p1isNumeric)
                 ParserMediator.Warn(index.ToString() + "は配列の範囲外です", position, 1);
@@ -1263,7 +1264,7 @@ internal sealed class ConstantData
         }
         else
         {
-            if ((tokens.Length < 3) || !tryToInt64(tokens[2], out long p2))
+            if (tokens.Length < 3 || !tryToInt64(tokens[2], out long p2))
                 p2 = 1;
             if (intArray.ContainsKey(index))
                 ParserMediator.Warn(varname + "の" + index.ToString() + "番目の要素は既に定義されています(上書きします)", position, 1);
@@ -1272,7 +1273,7 @@ internal sealed class ConstantData
     }
 
 
-    private void loadDataTo(string csvPath, int targetIndex, Int64[] targetI, bool disp)
+    private void loadDataTo(string csvPath, int targetIndex, long[] targetI, bool disp)
     {
 
         if (!File.Exists(csvPath))
@@ -1313,7 +1314,7 @@ internal sealed class ConstantData
                     ParserMediator.Warn("禁止設定された名前配列です", position, 2);
                     break;
                 }
-                if ((index < 0) || (target.Length <= index))
+                if (index < 0 || target.Length <= index)
                 {
                     ParserMediator.Warn(index.ToString() + "は配列の範囲外です", position, 1);
                     continue;
@@ -1321,10 +1322,10 @@ internal sealed class ConstantData
                 if (!defined.Add(index))
                     ParserMediator.Warn(index.ToString() + "番目の要素はすでに定義されています（新しい値で上書きします）", position, 1);
                 target[index] = ros[dest[1]].ToString();
-                if ((targetI != null) && (length >= 3))
+                if (targetI != null && length >= 3)
                 {
 
-                    if (!Int64.TryParse(ros[dest[2]].TrimEnd(), out long price))
+                    if (!long.TryParse(ros[dest[2]].TrimEnd(), out long price))
                     {
                         ParserMediator.Warn("金額が読み取れません", position, 1);
                         continue;
@@ -1361,21 +1362,21 @@ internal sealed class CharacterTemplate
     public string Callname;
     public string Nickname;
     public string Mastername;
-    public readonly Int64 No;
-    public readonly Dictionary<Int32, Int64> Maxbase = [];
-    public readonly Dictionary<Int32, Int64> Mark = [];
-    public readonly Dictionary<Int32, Int64> Exp = [];
-    public readonly Dictionary<Int32, Int64> Abl = [];
-    public readonly Dictionary<Int32, Int64> Talent = [];
-    public readonly Dictionary<Int32, Int64> Relation = [];
-    public readonly Dictionary<Int32, Int64> CFlag = [];
-    public readonly Dictionary<Int32, Int64> Equip = [];
-    public readonly Dictionary<Int32, Int64> Juel = [];
-    public readonly Dictionary<Int32, string> CStr = [];
-    public Int64 csvNo;
+    public readonly long No;
+    public readonly Dictionary<int, long> Maxbase = [];
+    public readonly Dictionary<int, long> Mark = [];
+    public readonly Dictionary<int, long> Exp = [];
+    public readonly Dictionary<int, long> Abl = [];
+    public readonly Dictionary<int, long> Talent = [];
+    public readonly Dictionary<int, long> Relation = [];
+    public readonly Dictionary<int, long> CFlag = [];
+    public readonly Dictionary<int, long> Equip = [];
+    public readonly Dictionary<int, long> Juel = [];
+    public readonly Dictionary<int, string> CStr = [];
+    public long csvNo;
     public bool IsSpchara { get; private set; }
 
-    public CharacterTemplate(Int64 index, ConstantData constant)
+    public CharacterTemplate(long index, ConstantData constant)
     {
         arraySize = constant.CharacterIntArrayLength;
         cstrSize = constant.CharacterStrArrayLength[(int)(VariableCode.__LOWERCASE__ & VariableCode.CSTR)];

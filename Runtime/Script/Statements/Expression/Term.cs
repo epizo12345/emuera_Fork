@@ -1,12 +1,13 @@
-﻿using System;
+﻿using MinorShift.Emuera.Runtime.Script.Data;
+using System;
 
-namespace MinorShift.Emuera.GameData.Expression;
+namespace MinorShift.Emuera.Runtime.Script.Statements.Expression;
 
 
 internal sealed class NullTerm : AExpression
 {
-    public NullTerm(Int64 i)
-        : base(typeof(Int64))
+    public NullTerm(long i)
+        : base(typeof(long))
     {
     }
 
@@ -84,7 +85,7 @@ internal sealed class SingleLongTerm : SingleTerm
         return this;
     }
 
-    public Int64 Int
+    public long Int
     {
         get
         {

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace MinorShift.Emuera.GameData.Expression;
+namespace MinorShift.Emuera.Runtime.Script.Statements.Expression;
 
 internal enum OperatorCode
 {

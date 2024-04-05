@@ -1,4 +1,4 @@
-﻿namespace MinorShift.Emuera.Content;
+﻿namespace MinorShift.Emuera.UI.Game.Image;
 
 abstract class AContentItem
 {

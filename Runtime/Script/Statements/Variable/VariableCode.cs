@@ -1,4 +1,4 @@
-﻿namespace MinorShift.Emuera.GameData.Variable;
+﻿namespace MinorShift.Emuera.Runtime.Script.Statements.Variable;
 
 internal enum VariableCode
 {

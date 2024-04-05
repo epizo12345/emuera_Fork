@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace MinorShift._Library;
+namespace MinorShift.Emuera.Runtime.Utils;
 
 public static class AssemblyData
 {

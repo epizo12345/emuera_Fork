@@ -32,7 +32,7 @@ http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/SFMT/
 
 #define MT19937
 using System;
-namespace MinorShift._Library;
+namespace MinorShift.Emuera.Runtime.Utils;
 
 
 /// <summary>
@@ -49,30 +49,30 @@ public sealed class MTRandom
     /// <summary>
     /// seedを種とした、(2^MEXP-1)周期の擬似乱数ジェネレーターを初期化します。
     /// </summary>
-    public MTRandom(Int64 seed)
+    public MTRandom(long seed)
     {
         unchecked
         {
-            init_gen_rand((UInt32)seed);
+            init_gen_rand((uint)seed);
         }
     }
 
 
     //maxが2^nでない大きい値であると値が偏る。
-    public Int64 NextInt64(Int64 max)
+    public long NextInt64(long max)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(max);
-        return (Int64)(NextUInt64() % (UInt64)max);
+        return (long)(NextUInt64() % (ulong)max);
     }
 
-    public Int64 NextInt64()
+    public long NextInt64()
     {
-        unchecked { return (Int64)NextUInt64(); }
+        unchecked { return (long)NextUInt64(); }
     }
 
-    public UInt64 NextUInt64()
+    public ulong NextUInt64()
     {
-        UInt64 ret = NextUInt32();
+        ulong ret = NextUInt32();
         ret = (ret << 32) + NextUInt32();
         return ret;
     }
@@ -83,23 +83,23 @@ public sealed class MTRandom
     /// <returns></returns>
     public double NextDouble()
     {
-        return (double)NextUInt32() * ((double)1.0 / 4294967296.0);
+        return NextUInt32() * ((double)1.0 / 4294967296.0);
         /* divided by 2^32 */
     }
 
-    public void SetRand(Int64[] array)
+    public void SetRand(long[] array)
     {
-        if ((array == null) || (array.Length != (N32 + 1)))
+        if (array == null || array.Length != N32 + 1)
             throw new ArgumentOutOfRangeException();
 
         for (int i = 0; i < N32; i++)
-            sfmt[i] = (UInt32)array[i];
+            sfmt[i] = (uint)array[i];
         idx = (int)array[N32];
     }
 
-    public void GetRand(Int64[] array)
+    public void GetRand(long[] array)
     {
-        if ((array == null) || (array.Length != (N32 + 1)))
+        if (array == null || array.Length != N32 + 1)
             throw new ArgumentOutOfRangeException();
         for (int i = 0; i < N32; i++)
             array[i] = sfmt[i];
@@ -185,10 +185,10 @@ public sealed class MTRandom
 			private const UInt32 PARITY4 = 0xd0c7afa3U;
 #elif MT19937
     private const int MEXP = 19937;
-    private const UInt32 PARITY1 = 0x00000001U;
-    private const UInt32 PARITY2 = 0x00000000U;
-    private const UInt32 PARITY3 = 0x00000000U;
-    private const UInt32 PARITY4 = 0x13c9e684U;
+    private const uint PARITY1 = 0x00000001U;
+    private const uint PARITY2 = 0x00000000U;
+    private const uint PARITY3 = 0x00000000U;
+    private const uint PARITY4 = 0x13c9e684U;
     //private const UInt32 PARITY4 = 0x20000000U;
 #elif MT44497
 			private const int MEXP = 44497;
@@ -259,7 +259,7 @@ public sealed class MTRandom
     /// <summary>
     /// 内部状態ベクトル。
     /// </summary>
-    private UInt32[] sfmt;
+    private uint[] sfmt;
     /// <summary>
     /// 内部状態ベクトルのうち、次に乱数として使用するインデックス。
     /// </summary>
@@ -268,7 +268,7 @@ public sealed class MTRandom
     /// <summary>
     /// 符号なし32bitの擬似乱数を取得します。
     /// </summary>
-    private UInt32 NextUInt32()
+    private uint NextUInt32()
     {
         if (idx >= N32)
         {
@@ -282,15 +282,15 @@ public sealed class MTRandom
     /// ジェネレーターを初期化します。
     /// </summary>
     /// <param name="seed"></param>
-    private void init_gen_rand(UInt32 seed)
+    private void init_gen_rand(uint seed)
     {
         int i;
         //内部状態配列確保
-        sfmt = new UInt32[N32];
+        sfmt = new uint[N32];
         //内部状態配列初期化
         sfmt[0] = seed;
         for (i = 1; i < N32; i++)
-            sfmt[i] = (UInt32)(1812433253 * (sfmt[i - 1] ^ (sfmt[i - 1] >> 30)) + i);
+            sfmt[i] = (uint)(1812433253 * (sfmt[i - 1] ^ sfmt[i - 1] >> 30) + i);
         //確認
         period_certification();
         //初期位置設定
@@ -302,10 +302,10 @@ public sealed class MTRandom
     /// </summary>
     private void period_certification()
     {
-        UInt32[] PARITY = [PARITY1, PARITY2, PARITY3, PARITY4];
-        UInt32 inner = 0;
+        uint[] PARITY = [PARITY1, PARITY2, PARITY3, PARITY4];
+        uint inner = 0;
         int i, j;
-        UInt32 work;
+        uint work;
 
         for (i = 0; i < 4; i++) inner ^= sfmt[i] & PARITY[i];
         for (i = 16; i > 0; i >>= 1) inner ^= inner >> i;
@@ -372,7 +372,7 @@ public sealed class MTRandom
     private void gen_rand_all_19937()
     {
         int a, b, c, d;
-        UInt32[] p = this.sfmt;
+        uint[] p = sfmt;
 
         const int cMEXP = 19937;
         const int cPOS1 = 122;
@@ -391,10 +391,10 @@ public sealed class MTRandom
         d = (cN - 1) * 4;
         do
         {
-            p[a + 3] = p[a + 3] ^ (p[a + 3] << 8) ^ (p[a + 2] >> 24) ^ (p[c + 3] >> 8) ^ ((p[b + 3] >> cSR1) & cMSK4) ^ (p[d + 3] << cSL1);
-            p[a + 2] = p[a + 2] ^ (p[a + 2] << 8) ^ (p[a + 1] >> 24) ^ (p[c + 3] << 24) ^ (p[c + 2] >> 8) ^ ((p[b + 2] >> cSR1) & cMSK3) ^ (p[d + 2] << cSL1);
-            p[a + 1] = p[a + 1] ^ (p[a + 1] << 8) ^ (p[a + 0] >> 24) ^ (p[c + 2] << 24) ^ (p[c + 1] >> 8) ^ ((p[b + 1] >> cSR1) & cMSK2) ^ (p[d + 1] << cSL1);
-            p[a + 0] = p[a + 0] ^ (p[a + 0] << 8) ^ (p[c + 1] << 24) ^ (p[c + 0] >> 8) ^ ((p[b + 0] >> cSR1) & cMSK1) ^ (p[d + 0] << cSL1);
+            p[a + 3] = p[a + 3] ^ p[a + 3] << 8 ^ p[a + 2] >> 24 ^ p[c + 3] >> 8 ^ p[b + 3] >> cSR1 & cMSK4 ^ p[d + 3] << cSL1;
+            p[a + 2] = p[a + 2] ^ p[a + 2] << 8 ^ p[a + 1] >> 24 ^ p[c + 3] << 24 ^ p[c + 2] >> 8 ^ p[b + 2] >> cSR1 & cMSK3 ^ p[d + 2] << cSL1;
+            p[a + 1] = p[a + 1] ^ p[a + 1] << 8 ^ p[a + 0] >> 24 ^ p[c + 2] << 24 ^ p[c + 1] >> 8 ^ p[b + 1] >> cSR1 & cMSK2 ^ p[d + 1] << cSL1;
+            p[a + 0] = p[a + 0] ^ p[a + 0] << 8 ^ p[c + 1] << 24 ^ p[c + 0] >> 8 ^ p[b + 0] >> cSR1 & cMSK1 ^ p[d + 0] << cSL1;
             c = d; d = a; a += 4; b += 4;
             if (b >= cN32) b = 0;
         } while (a < cN32);

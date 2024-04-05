@@ -1,10 +1,13 @@
-﻿using MinorShift._Library;
-using MinorShift.Emuera.Content;
-using MinorShift.Emuera.GameData.Expression;
-using MinorShift.Emuera.GameData.Variable;
-using MinorShift.Emuera.GameView;
+﻿using MinorShift.Emuera.GameData.Variable;
 using MinorShift.Emuera.Runtime.Config;
-using MinorShift.Emuera.Sub;
+using MinorShift.Emuera.Runtime.Script.Data;
+using MinorShift.Emuera.Runtime.Script.Parser;
+using MinorShift.Emuera.Runtime.Script.Statements.Expression;
+using MinorShift.Emuera.Runtime.Script.Statements.Function;
+using MinorShift.Emuera.Runtime.Script.Statements.Variable;
+using MinorShift.Emuera.Runtime.Utils;
+using MinorShift.Emuera.UI.Game;
+using MinorShift.Emuera.UI.Game.Image;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -661,9 +664,9 @@ internal static partial class FunctionMethodCreator
         }
         public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
         {
-            if (exm.Console.Alignment == GameView.DisplayLineAlignment.LEFT)
+            if (exm.Console.Alignment == DisplayLineAlignment.LEFT)
                 return "LEFT";
-            else if (exm.Console.Alignment == GameView.DisplayLineAlignment.CENTER)
+            else if (exm.Console.Alignment == DisplayLineAlignment.CENTER)
                 return "CENTER";
             else
                 return "RIGHT";

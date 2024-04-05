@@ -1,4 +1,4 @@
-﻿namespace MinorShift.Emuera.Sub;
+﻿namespace MinorShift.Emuera.Runtime.Script.Parser;
 
 /// <summary>
 /// FormattedStringWTの中身用のトークン

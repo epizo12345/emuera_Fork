@@ -1,12 +1,13 @@
-﻿using MinorShift.Emuera.GameData.Expression;
-using MinorShift.Emuera.GameProc.Function;
+﻿using MinorShift.Emuera.GameProc.Function;
 using MinorShift.Emuera.GameView;
-using MinorShift.Emuera.Runtime.Config;
-using MinorShift.Emuera.Sub;
+using MinorShift.Emuera.Runtime.Script.Data;
+using MinorShift.Emuera.Runtime.Script.Statements;
+using MinorShift.Emuera.Runtime.Script.Statements.Expression;
+using MinorShift.Emuera.Runtime.Utils;
 using System;
 using System.Collections.Generic;
 
-namespace MinorShift.Emuera.GameProc;
+namespace MinorShift.Emuera.Runtime.Script.Parser;
 
 internal static class LogicalLineParser
 {
@@ -24,7 +25,7 @@ internal static class LogicalLineParser
         {
             switch (token)
             {
-                case var s when s.Equals("SINGLE", Config.StringComparison):
+                case var s when s.Equals("SINGLE", Config.Config.StringComparison):
                     if (label.IsMethod)
                     {
                         ParserMediator.Warn("式中関数では#SINGLEは機能しません", position, 1);
@@ -47,7 +48,7 @@ internal static class LogicalLineParser
                     }
                     label.IsSingle = true;
                     break;
-                case var s when s.Equals("LATER", Config.StringComparison):
+                case var s when s.Equals("LATER", Config.Config.StringComparison):
                     if (label.IsMethod)
                     {
                         ParserMediator.Warn("式中関数では#LATERは機能しません", position, 1);
@@ -72,7 +73,7 @@ internal static class LogicalLineParser
                         ParserMediator.Warn("#PRIと#LATERが重複して使われています(この関数は2度呼ばれます)", position, 1);
                     label.IsLater = true;
                     break;
-                case var s when s.Equals("PRI", Config.StringComparison):
+                case var s when s.Equals("PRI", Config.Config.StringComparison):
                     if (label.IsMethod)
                     {
                         ParserMediator.Warn("式中関数では#PRIは機能しません", position, 1);
@@ -97,7 +98,7 @@ internal static class LogicalLineParser
                         ParserMediator.Warn("#PRIと#LATERが重複して使われています(この関数は2度呼ばれます)", position, 1);
                     label.IsPri = true;
                     break;
-                case var s when s.Equals("ONLY", Config.StringComparison):
+                case var s when s.Equals("ONLY", Config.Config.StringComparison):
                     if (label.IsMethod)
                     {
                         ParserMediator.Warn("式中関数では#ONLYは機能しません", position, 1);
@@ -133,8 +134,8 @@ internal static class LogicalLineParser
                         label.IsSingle = false;
                     }
                     break;
-                case var s when s.Equals("FUNCTION", Config.StringComparison) ||
-                                s.Equals("FUNCTIONS", Config.StringComparison):
+                case var s when s.Equals("FUNCTION", Config.Config.StringComparison) ||
+                                s.Equals("FUNCTIONS", Config.Config.StringComparison):
                     if (!string.IsNullOrEmpty(label.LabelName) && char.IsDigit(label.LabelName[0]))
                     {
                         ParserMediator.Warn($"#{token}属性は関数名が数字で始まる関数には指定できません", position, 1);
@@ -144,14 +145,14 @@ internal static class LogicalLineParser
                     }
                     if (label.IsMethod)
                     {
-                        if ((label.MethodType == typeof(Int64) && token.Equals("FUNCTION", Config.StringComparison)) || (label.MethodType == typeof(string) && token.Equals("FUNCTIONS", Config.StringComparison)))
+                        if (label.MethodType == typeof(long) && token.Equals("FUNCTION", Config.Config.StringComparison) || label.MethodType == typeof(string) && token.Equals("FUNCTIONS", Config.Config.StringComparison))
                         {
                             ParserMediator.Warn($"関数{label.LabelName}にはすでに#{token}が宣言されています(この行は無視されます)", position, 1);
                             return false;
                         }
-                        if (label.MethodType == typeof(Int64) && token.Equals("FUNCTIONS", Config.StringComparison))
+                        if (label.MethodType == typeof(long) && token.Equals("FUNCTIONS", Config.Config.StringComparison))
                             ParserMediator.Warn("関数" + label.LabelName + "にはすでに#FUNCTIONが宣言されています", position, 2);
-                        else if (label.MethodType == typeof(string) && token.Equals("FUNCTION", Config.StringComparison))
+                        else if (label.MethodType == typeof(string) && token.Equals("FUNCTION", Config.Config.StringComparison))
                             ParserMediator.Warn("関数" + label.LabelName + "にはすでに#FUNCTIONSが宣言されています", position, 2);
                         return false;
                     }
@@ -162,10 +163,10 @@ internal static class LogicalLineParser
                     }
                     label.IsMethod = true;
                     label.Depth = 0;
-                    if (token.Equals("FUNCTIONS", Config.StringComparison))
+                    if (token.Equals("FUNCTIONS", Config.Config.StringComparison))
                         label.MethodType = typeof(string);
                     else
-                        label.MethodType = typeof(Int64);
+                        label.MethodType = typeof(long);
                     if (label.IsPri)
                     {
                         ParserMediator.Warn("式中関数では#PRIは機能しません", position, 1);
@@ -187,8 +188,8 @@ internal static class LogicalLineParser
                         label.IsOnly = false;
                     }
                     break;
-                case var s when s.Equals("LOCALSIZE", Config.StringComparison) ||
-                                s.Equals("LOCALSSIZE", Config.StringComparison):
+                case var s when s.Equals("LOCALSIZE", Config.Config.StringComparison) ||
+                                s.Equals("LOCALSSIZE", Config.Config.StringComparison):
                     {
                         WordCollection wc = LexicalAnalyzer.Analyse(st, LexEndWith.EoL, LexAnalyzeFlag.AllowAssignment);
                         if (wc.EOL)
@@ -203,7 +204,7 @@ internal static class LogicalLineParser
                             break;
                         }
                         AExpression arg = ExpressionParser.ReduceIntegerTerm(wc, TermEndWith.EoL);
-                        if ((arg.Restructure(null) is not SingleLongTerm sizeTerm) || (sizeTerm.GetOperandType() != typeof(Int64)))
+                        if (arg.Restructure(null) is not SingleLongTerm sizeTerm || sizeTerm.GetOperandType() != typeof(long))
                         {
                             ParserMediator.Warn($"#{token}の後に有効な定数式が指定されていません", position, 2);
                             break;
@@ -213,13 +214,13 @@ internal static class LogicalLineParser
                             ParserMediator.Warn($"#{token}に0以下の値({sizeTerm.Int})が与えられました。設定は無視されます", position, 1);
                             break;
                         }
-                        if (sizeTerm.Int >= Int32.MaxValue)
+                        if (sizeTerm.Int >= int.MaxValue)
                         {
                             ParserMediator.Warn($"#{token}に大きすぎる値({sizeTerm.Int})が与えられました。設定は無視されます", position, 1);
                             break;
                         }
                         int size = (int)sizeTerm.Int;
-                        if (token.Equals("LOCALSIZE", Config.StringComparison))
+                        if (token.Equals("LOCALSIZE", Config.Config.StringComparison))
                         {
                             if (GlobalStatic.IdentifierDictionary.getLocalIsForbid("LOCAL"))
                             {
@@ -243,12 +244,12 @@ internal static class LogicalLineParser
                         }
                     }
                     break;
-                case var s when s.Equals("DIM", Config.StringComparison) ||
-                                s.Equals("DIMS", Config.StringComparison):
+                case var s when s.Equals("DIM", Config.Config.StringComparison) ||
+                                s.Equals("DIMS", Config.Config.StringComparison):
                     {
                         var wc = LexicalAnalyzer.Analyse(st, LexEndWith.EoL, LexAnalyzeFlag.AllowAssignment);
 
-                        UserDefinedVariableData data = UserDefinedVariableData.Create(wc, token.Equals("DIMS", Config.StringComparison), true, position);
+                        UserDefinedVariableData data = UserDefinedVariableData.Create(wc, token.Equals("DIMS", Config.Config.StringComparison), true, position);
                         if (!label.AddPrivateVariable(data))
                         {
                             ParserMediator.Warn($"変数名{data.Name}は既に使用されています", position, 2);
@@ -311,7 +312,7 @@ internal static class LogicalLineParser
 
             //labelName = LexicalAnalyzer.ReadString(stream, StrEndWith.LeftParenthesis_Bracket_Comma_Semicolon);
             //labelName = labelName.Trim();
-            //if (Config.IgnoreCase)
+            //if (Config.Config.IgnoreCase)
             //    labelName = labelName.ToUpper();
             //GlobalStatic.IdentifierDictionary.CheckUserLabelName(ref errMes, ref warnLevel, isFunction, labelName);
             //if(warnLevel >= 0)
@@ -390,7 +391,7 @@ internal static class LogicalLineParser
             if (op == '+' || op == '-')
             {
                 WordCollection wc = LexicalAnalyzer.Analyse(stream, LexEndWith.EoL, LexAnalyzeFlag.None);
-                if ((wc.Current is not OperatorWord opWT) || ((opWT.Code != OperatorCode.Increment) && (opWT.Code != OperatorCode.Decrement)))
+                if (wc.Current is not OperatorWord opWT || opWT.Code != OperatorCode.Increment && opWT.Code != OperatorCode.Decrement)
                 {
                     if (op == '+')
                         errMes = "行が\'+\'から始まっていますが、インクリメントではありません";
@@ -419,10 +420,10 @@ internal static class LogicalLineParser
                     if (stream.EOS) //引数の無い関数
                         return new InstructionLine(position, func, stream);
                     var current = stream.Current;
-                    if ((current != ';') && (current != ' ') && (current != '\t') && (!Config.SystemAllowFullSpace || (current != '　')))
+                    if (current != ';' && current != ' ' && current != '\t' && (!Config.Config.SystemAllowFullSpace || current != '　'))
                     {
                         if (current == '　')
-                            errMes = "命令で行が始まっていますが、命令の直後に半角スペース・タブ以外の文字が来ています(この警告はシステムオプション「" + Config.GetConfigName(ConfigCode.SystemAllowFullSpace) + "」により無視できます)";
+                            errMes = "命令で行が始まっていますが、命令の直後に半角スペース・タブ以外の文字が来ています(この警告はシステムオプション「" + Config.Config.GetConfigName(Config.ConfigCode.SystemAllowFullSpace) + "」により無視できます)";
                         else
                             errMes = "命令で行が始まっていますが、命令の直後に半角スペース・タブ以外の文字が来ています";
                         return new InvalidLine(position, errMes);

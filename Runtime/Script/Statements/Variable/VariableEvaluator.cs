@@ -1,17 +1,18 @@
-﻿using DotnetEmuera;
-using MinorShift._Library;
-using MinorShift.Emuera.GameData.Expression;
-using MinorShift.Emuera.GameProc.Function;
+﻿using MinorShift.Emuera.GameData.Variable;
 using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.Runtime.Config;
-using MinorShift.Emuera.Sub;
+using MinorShift.Emuera.Runtime.Config.JSON;
+using MinorShift.Emuera.Runtime.Script.Data;
+using MinorShift.Emuera.Runtime.Script.Statements;
+using MinorShift.Emuera.Runtime.Script.Statements.Expression;
+using MinorShift.Emuera.Runtime.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace MinorShift.Emuera.GameData.Variable;
+namespace MinorShift.Emuera.Runtime.Script.Statements.Variable;
 
 internal sealed class VariableEvaluator : IDisposable
 {
@@ -47,7 +48,7 @@ internal sealed class VariableEvaluator : IDisposable
     {
         rand.GetRand(RANDDATA);
     }
-    public Int64 GetNextRand(Int64 max)
+    public long GetNextRand(long max)
     {
         if (JSONConfig.Data.UseNewRandom)
         {
@@ -59,7 +60,7 @@ internal sealed class VariableEvaluator : IDisposable
         }
     }
 
-    public Int64 getPalamLv(Int64 pl, Int64 maxlv)
+    public long getPalamLv(long pl, long maxlv)
     {
         for (int i = 0; i < (int)maxlv; i++)
         {
@@ -69,7 +70,7 @@ internal sealed class VariableEvaluator : IDisposable
         return maxlv;
     }
 
-    public Int64 getExpLv(Int64 pl, Int64 maxlv)
+    public long getExpLv(long pl, long maxlv)
     {
         for (int i = 0; i < (int)maxlv; i++)
         {
@@ -79,7 +80,7 @@ internal sealed class VariableEvaluator : IDisposable
         return maxlv;
     }
 
-    public static void SetValueAll(FixedVariableTerm p, Int64 srcValue, int start, int end)
+    public static void SetValueAll(FixedVariableTerm p, long srcValue, int start, int end)
     {
         //呼び出し元で判定済み
         //if (!p.Identifier.IsInteger)
@@ -97,7 +98,7 @@ internal sealed class VariableEvaluator : IDisposable
             {
                 if (start != 0 || end != p.Identifier.GetLength())
                 {
-                    p.IsArrayRangeValid((Int64)start, (Int64)end, "VARSET", 3L, 4L);
+                    p.IsArrayRangeValid(start, end, "VARSET", 3L, 4L);
                 }
                 else if (p.Identifier.IsCharacterData)
                     p.Identifier.CheckElement([p.Index1, p.Index2]);
@@ -134,7 +135,7 @@ internal sealed class VariableEvaluator : IDisposable
             if (p.Identifier.IsArray1D)
             {
                 if (start != 0 || end != p.Identifier.GetLength())
-                    p.IsArrayRangeValid((Int64)start, (Int64)end, "VARSET", 3L, 4L);
+                    p.IsArrayRangeValid(start, end, "VARSET", 3L, 4L);
                 else if (p.Identifier.IsCharacterData)
                     p.Identifier.CheckElement([p.Index1, p.Index2]);
             }
@@ -147,7 +148,7 @@ internal sealed class VariableEvaluator : IDisposable
         }
     }
 
-    public void SetValueAllEachChara(FixedVariableTerm p, SingleTerm index, Int64 srcValue, int start, int end)
+    public void SetValueAllEachChara(FixedVariableTerm p, SingleTerm index, long srcValue, int start, int end)
     {
         if (!p.Identifier.IsInteger)
             throw new CodeEE("整数型でない変数" + p.Identifier.Name + "に整数値を代入しようとしました");
@@ -161,7 +162,7 @@ internal sealed class VariableEvaluator : IDisposable
             return;
 
         //CharacterData chara = varData.CharacterList[0];
-        Int64 indexNum = -1;
+        long indexNum = -1;
 
         if (p.Identifier.IsArray1D)
         {
@@ -199,7 +200,7 @@ internal sealed class VariableEvaluator : IDisposable
         if (varData.CharacterList.Count == 0)
             return;
 
-        Int64 indexNum = -1;
+        long indexNum = -1;
 
         if (p.Identifier.IsArray1D)
         {
@@ -217,9 +218,9 @@ internal sealed class VariableEvaluator : IDisposable
         }
     }
 
-    public static Int64 GetArraySum(FixedVariableTerm p, Int64 index1, Int64 index2)
+    public static long GetArraySum(FixedVariableTerm p, long index1, long index2)
     {
-        Int64 sum = 0;
+        long sum = 0;
 
         if (p.Identifier.IsCharacterData)
         {
@@ -256,9 +257,9 @@ internal sealed class VariableEvaluator : IDisposable
         return sum;
     }
 
-    public static Int64 GetArraySumChara(FixedVariableTerm p, Int64 index1, Int64 index2)
+    public static long GetArraySumChara(FixedVariableTerm p, long index1, long index2)
     {
-        Int64 sum = 0;
+        long sum = 0;
 
         for (int i = (int)index1; i < (int)index2; i++)
         {
@@ -267,7 +268,7 @@ internal sealed class VariableEvaluator : IDisposable
         return sum;
     }
 
-    public static string GetJoinedStr(FixedVariableTerm p, string delimiter, Int64 index1, Int64 length)
+    public static string GetJoinedStr(FixedVariableTerm p, string delimiter, long index1, long length)
     {
         string sum = "";
 
@@ -280,12 +281,12 @@ internal sealed class VariableEvaluator : IDisposable
             else if (p.Identifier.IsArray2D)
             {
                 for (int i = 0; i < (int)length; i++)
-                    sum += p.Identifier.GetStrValue(GlobalStatic.EMediator, [p.Index1, index1 + i]) + ((i < ((int)length - 1)) ? delimiter : "");
+                    sum += p.Identifier.GetStrValue(GlobalStatic.EMediator, [p.Index1, index1 + i]) + (i < (int)length - 1 ? delimiter : "");
             }
             else
             {
                 for (int i = 0; i < (int)length; i++)
-                    sum += p.Identifier.GetStrValue(GlobalStatic.EMediator, [p.Index1, p.Index2, index1 + i]) + ((i < ((int)length - 1)) ? delimiter : "");
+                    sum += p.Identifier.GetStrValue(GlobalStatic.EMediator, [p.Index1, p.Index2, index1 + i]) + (i < (int)length - 1 ? delimiter : "");
             }
         }
         else
@@ -293,25 +294,25 @@ internal sealed class VariableEvaluator : IDisposable
             if (p.Identifier.IsArray1D)
             {
                 for (int i = 0; i < (int)length; i++)
-                    sum += p.Identifier.GetIntValue(GlobalStatic.EMediator, [index1 + i]).ToString() + ((i < ((int)length - 1)) ? delimiter : "");
+                    sum += p.Identifier.GetIntValue(GlobalStatic.EMediator, [index1 + i]).ToString() + (i < (int)length - 1 ? delimiter : "");
             }
             else if (p.Identifier.IsArray2D)
             {
                 for (int i = 0; i < (int)length; i++)
-                    sum += p.Identifier.GetIntValue(GlobalStatic.EMediator, [p.Index1, index1 + i]).ToString() + ((i < ((int)length - 1)) ? delimiter : "");
+                    sum += p.Identifier.GetIntValue(GlobalStatic.EMediator, [p.Index1, index1 + i]).ToString() + (i < (int)length - 1 ? delimiter : "");
             }
             else
             {
                 for (int i = 0; i < (int)length; i++)
-                    sum += p.Identifier.GetIntValue(GlobalStatic.EMediator, [p.Index1, p.Index2, index1 + i]).ToString() + ((i < ((int)length - 1)) ? delimiter : "");
+                    sum += p.Identifier.GetIntValue(GlobalStatic.EMediator, [p.Index1, p.Index2, index1 + i]).ToString() + (i < (int)length - 1 ? delimiter : "");
             }
         }
         return sum;
     }
 
-    public static Int64 GetMatch(FixedVariableTerm p, Int64 target, Int64 start, Int64 end)
+    public static long GetMatch(FixedVariableTerm p, long target, long start, long end)
     {
-        Int64 ret = 0;
+        long ret = 0;
 
         for (int i = (int)start; i < (int)end; i++)
             if (p.Identifier.GetIntValue(GlobalStatic.EMediator, p.Identifier.IsCharacterData ? [p.Index1, i] : [i]) == target)
@@ -320,21 +321,21 @@ internal sealed class VariableEvaluator : IDisposable
         return ret;
     }
 
-    public static Int64 GetMatch(FixedVariableTerm p, string target, Int64 start, Int64 end)
+    public static long GetMatch(FixedVariableTerm p, string target, long start, long end)
     {
-        Int64 ret = 0;
+        long ret = 0;
         bool targetIsNullOrEmpty = string.IsNullOrEmpty(target);
 
         for (int i = (int)start; i < (int)end; i++)
-            if ((p.Identifier.GetStrValue(GlobalStatic.EMediator, p.Identifier.IsCharacterData ? [p.Index1, i] : [i]) == target) || (targetIsNullOrEmpty && string.IsNullOrEmpty(p.Identifier.GetStrValue(GlobalStatic.EMediator, p.Identifier.IsCharacterData ? [p.Index1, i] : [i]))))
+            if (p.Identifier.GetStrValue(GlobalStatic.EMediator, p.Identifier.IsCharacterData ? [p.Index1, i] : [i]) == target || targetIsNullOrEmpty && string.IsNullOrEmpty(p.Identifier.GetStrValue(GlobalStatic.EMediator, p.Identifier.IsCharacterData ? [p.Index1, i] : [i])))
                 ret++;
 
         return ret;
     }
 
-    public static Int64 GetMatchChara(FixedVariableTerm p, Int64 target, Int64 start, Int64 end)
+    public static long GetMatchChara(FixedVariableTerm p, long target, long start, long end)
     {
-        Int64 ret = 0;
+        long ret = 0;
 
         for (int i = (int)start; i < (int)end; i++)
         {
@@ -345,23 +346,23 @@ internal sealed class VariableEvaluator : IDisposable
         return ret;
     }
 
-    public static Int64 GetMatchChara(FixedVariableTerm p, string target, Int64 start, Int64 end)
+    public static long GetMatchChara(FixedVariableTerm p, string target, long start, long end)
     {
-        Int64 ret = 0;
+        long ret = 0;
         bool targetIsNullOrEmpty = string.IsNullOrEmpty(target);
 
         for (int i = (int)start; i < (int)end; i++)
         {
-            if ((p.Identifier.GetStrValue(GlobalStatic.EMediator, [i, p.Index2, p.Index3]) == target) || (targetIsNullOrEmpty && string.IsNullOrEmpty(p.Identifier.GetStrValue(GlobalStatic.EMediator, [i, p.Index2, p.Index3]))))
+            if (p.Identifier.GetStrValue(GlobalStatic.EMediator, [i, p.Index2, p.Index3]) == target || targetIsNullOrEmpty && string.IsNullOrEmpty(p.Identifier.GetStrValue(GlobalStatic.EMediator, [i, p.Index2, p.Index3])))
                 ret++;
         }
 
         return ret;
     }
 
-    public static Int64 FindElement(FixedVariableTerm p, Int64 target, Int64 start, Int64 end, bool isExact, bool isLast)
+    public static long FindElement(FixedVariableTerm p, long target, long start, long end, bool isExact, bool isLast)
     {
-        Int64[] array;
+        long[] array;
 
         //指定値の配列要素の範囲外かのチェックは済んでるので、これだけでよい
         if (start >= end)
@@ -370,14 +371,14 @@ internal sealed class VariableEvaluator : IDisposable
         if (p.Identifier.IsCharacterData)
             array = (long[])p.Identifier.GetArrayChara((int)p.Index1);
         else
-            array = (Int64[])p.Identifier.GetArray();
+            array = (long[])p.Identifier.GetArray();
 
         if (isLast)
         {
             for (int i = (int)end - 1; i >= (int)start; i--)
             {
                 if (target == array[i])
-                    return (Int64)i;
+                    return i;
             }
         }
         else
@@ -385,13 +386,13 @@ internal sealed class VariableEvaluator : IDisposable
             for (int i = (int)start; i < (int)end; i++)
             {
                 if (target == array[i])
-                    return (Int64)i;
+                    return i;
             }
         }
         return -1;
     }
 
-    public static Int64 FindElement(FixedVariableTerm p, Regex target, Int64 start, Int64 end, bool isExact, bool isLast)
+    public static long FindElement(FixedVariableTerm p, Regex target, long start, long end, bool isExact, bool isLast)
     {
         string[] array;
 
@@ -415,13 +416,13 @@ internal sealed class VariableEvaluator : IDisposable
                     Match match = target.Match(str);
                     //正規表現に引っかかった文字列の長さ＝元の文字列の長さなら完全一致
                     if (match.Success && str.Length == match.Length)
-                        return (Int64)i;
+                        return i;
                 }
                 else
                 {
                     //部分一致なのでひっかかればOK
                     if (target.IsMatch(str))
-                        return (Int64)i;
+                        return i;
                 }
             }
         }
@@ -436,23 +437,23 @@ internal sealed class VariableEvaluator : IDisposable
                     //正規表現に引っかかった文字列の長さ＝元の文字列の長さなら完全一致
                     Match match = target.Match(str);
                     if (match.Success && str.Length == match.Length)
-                        return (Int64)i;
+                        return i;
                 }
                 else
                 {
                     //部分一致なのでひっかかればOK
                     if (target.IsMatch(str))
-                        return (Int64)i;
+                        return i;
                 }
             }
         }
         return -1;
     }
 
-    public static Int64 GetMaxArray(FixedVariableTerm p, Int64 start, Int64 end, bool isMax)
+    public static long GetMaxArray(FixedVariableTerm p, long start, long end, bool isMax)
     {
-        Int64 value;
-        Int64 ret = p.Identifier.GetIntValue(GlobalStatic.EMediator, p.Identifier.IsCharacterData ? [p.Index1, start] : [start]);
+        long value;
+        long ret = p.Identifier.GetIntValue(GlobalStatic.EMediator, p.Identifier.IsCharacterData ? [p.Index1, start] : [start]);
         for (int i = (int)start + 1; i < (int)end; i++)
         {
             value = p.Identifier.GetIntValue(GlobalStatic.EMediator, p.Identifier.IsCharacterData ? [p.Index1, i] : [i]);
@@ -470,10 +471,10 @@ internal sealed class VariableEvaluator : IDisposable
         return ret;
     }
 
-    public static Int64 GetMaxArrayChara(FixedVariableTerm p, Int64 start, Int64 end, bool isMax)
+    public static long GetMaxArrayChara(FixedVariableTerm p, long start, long end, bool isMax)
     {
-        Int64 ret;
-        Int64 value;
+        long ret;
+        long value;
 
         ret = p.Identifier.GetIntValue(GlobalStatic.EMediator, [start, p.Index2, p.Index3]);
         for (int i = (int)start + 1; i < (int)end; i++)
@@ -495,10 +496,10 @@ internal sealed class VariableEvaluator : IDisposable
         return ret;
     }
 
-    public static Int64 GetInRangeArray(FixedVariableTerm p, Int64 min, Int64 max, Int64 start, Int64 end)
+    public static long GetInRangeArray(FixedVariableTerm p, long min, long max, long start, long end)
     {
-        Int64 value;
-        Int64 ret = 0;
+        long value;
+        long ret = 0;
 
         for (int i = (int)start; i < (int)end; i++)
         {
@@ -510,10 +511,10 @@ internal sealed class VariableEvaluator : IDisposable
         return ret;
     }
 
-    public static Int64 GetInRangeArrayChara(FixedVariableTerm p, Int64 min, Int64 max, Int64 start, Int64 end)
+    public static long GetInRangeArrayChara(FixedVariableTerm p, long min, long max, long start, long end)
     {
-        Int64 ret = 0;
-        Int64 value;
+        long ret = 0;
+        long value;
 
         for (int i = (int)start; i < (int)end; i++)
         {
@@ -525,20 +526,20 @@ internal sealed class VariableEvaluator : IDisposable
         return ret;
     }
 
-    public static void ShiftArray(FixedVariableTerm p, int shift, Int64 def, int start, int num)
+    public static void ShiftArray(FixedVariableTerm p, int shift, long def, int start, int num)
     {
-        Int64[] array;
+        long[] array;
         if (p.Identifier.IsCharacterData)
             array = (long[])p.Identifier.GetArrayChara((int)p.Index1);
         else
-            array = (Int64[])p.Identifier.GetArray();
+            array = (long[])p.Identifier.GetArray();
 
         if (start >= array.Length)
             throw new CodeEE("命令ARRAYSHIFTの第４引数(" + start.ToString() + ")が配列" + p.Identifier.Name + "の範囲を超えています");
 
         if (num == -1)
             num = array.Length - start;
-        if ((start + num) > array.Length)
+        if (start + num > array.Length)
             num = array.Length - start;
 
         if (Math.Abs(shift) >= array.Length && start == 0 && num >= array.Length)
@@ -556,18 +557,18 @@ internal sealed class VariableEvaluator : IDisposable
             sourceStart = -shift;
             destStart = start;
         }
-        Int64[] temp = new Int64[num];
+        long[] temp = new long[num];
         Buffer.BlockCopy(array, start * 8, temp, 0, 8 * num);
 
         //これを満たすのはshift > 0であることは自明
         if (sourceStart == 0)
         {
             if (length > 0)
-                for (int i = start; i < (start + shift); i++)
+                for (int i = start; i < start + shift; i++)
                     array[i] = def;
             else
             {
-                for (int i = start; i < (start + num); i++)
+                for (int i = start; i < start + num; i++)
                     array[i] = def;
                 return;
             }
@@ -575,11 +576,11 @@ internal sealed class VariableEvaluator : IDisposable
         else
         {
             if (length > 0)
-                for (int i = start + length; i < (start + num); i++)
+                for (int i = start + length; i < start + num; i++)
                     array[i] = def;
             else
             {
-                for (int i = start; i < (start + num); i++)
+                for (int i = start; i < start + num; i++)
                     array[i] = def;
                 return;
             }
@@ -615,7 +616,7 @@ internal sealed class VariableEvaluator : IDisposable
 
         if (num == -1)
             num = arrays.Length - start;
-        if ((start + num) > arrays.Length)
+        if (start + num > arrays.Length)
             num = arrays.Length - start;
 
         if (Math.Abs(shift) >= arrays.Length && start == 0 && num >= arrays.Length)
@@ -642,11 +643,11 @@ internal sealed class VariableEvaluator : IDisposable
         if (destStart > start)
         {
             if (length > 0)
-                for (int i = start; i < (start + shift); i++)
+                for (int i = start; i < start + shift; i++)
                     arrays[i] = def;
             else
             {
-                for (int i = start; i < (start + num); i++)
+                for (int i = start; i < start + num; i++)
                     arrays[i] = def;
                 return;
             }
@@ -654,11 +655,11 @@ internal sealed class VariableEvaluator : IDisposable
         else
         {
             if (length > 0)
-                for (int i = start + length; i < (start + num); i++)
+                for (int i = start + length; i < start + num; i++)
                     arrays[i] = def;
             else
             {
-                for (int i = start; i < (start + num); i++)
+                for (int i = start; i < start + num; i++)
                     arrays[i] = def;
                 return;
             }
@@ -674,17 +675,17 @@ internal sealed class VariableEvaluator : IDisposable
     {
         if (p.Identifier.IsInteger)
         {
-            Int64[] array;
+            long[] array;
             if (p.Identifier.IsCharacterData)
                 array = (long[])p.Identifier.GetArrayChara((int)p.Index1);
             else
-                array = (Int64[])p.Identifier.GetArray();
+                array = (long[])p.Identifier.GetArray();
 
             if (start >= array.Length)
                 throw new CodeEE("命令ARRAYREMOVEの第２引数(" + start.ToString() + ")が配列" + p.Identifier.Name + "の範囲を超えています");
             if (num <= 0)
                 num = array.Length;
-            Int64[] temp = new Int64[array.Length];
+            long[] temp = new long[array.Length];
             //array.CopyTo(temp, 0);
             //for (int i = 0; i < array.Length; i++)
             //    array[i] = 0;
@@ -692,7 +693,7 @@ internal sealed class VariableEvaluator : IDisposable
             if (start > 0)
                 //Array.Copy(array, 0, temp, 0, start);
                 Buffer.BlockCopy(array, 0, temp, 0, start * 8);
-            if ((start + num) < array.Length)
+            if (start + num < array.Length)
                 //Array.Copy(array, (start + num), temp, start, (array.Length - (start + num)));
                 Buffer.BlockCopy(array, (start + num) * 8, temp, start * 8, (array.Length - (start + num)) * 8);
             //temp.CopyTo(array, 0);
@@ -714,16 +715,16 @@ internal sealed class VariableEvaluator : IDisposable
             //    arrays[i] = "";
             if (start > 0)
                 Array.Copy(arrays, 0, temps, 0, start);
-            if ((start + num) < arrays.Length)
+            if (start + num < arrays.Length)
                 Array.Copy(arrays, start + num, temps, start, arrays.Length - (start + num));
             temps.CopyTo(arrays, 0);
         }
     }
 
-    public static void SortArray(FixedVariableTerm p, GameProc.Function.SortOrder order, int start, int count)
+    public static void SortArray(FixedVariableTerm p, SortOrder order, int start, int count)
     {
-        if (order == GameProc.Function.SortOrder.UNDEF)
-            order = GameProc.Function.SortOrder.ASCENDING;
+        if (order == SortOrder.UNDEF)
+            order = SortOrder.ASCENDING;
         if (p.Identifier.IsInteger)
         {
             long[] array;
@@ -747,7 +748,7 @@ internal sealed class VariableEvaluator : IDisposable
             var reqestSpan = array.AsSpan()[start..end];
 
             reqestSpan.Sort();
-            if (order == GameProc.Function.SortOrder.DESENDING)
+            if (order == SortOrder.DESENDING)
                 reqestSpan.Reverse();
         }
         else
@@ -772,7 +773,7 @@ internal sealed class VariableEvaluator : IDisposable
             var reqestSpan = array.AsSpan()[start..end];
 
             reqestSpan.Sort();
-            if (order == GameProc.Function.SortOrder.DESENDING)
+            if (order == SortOrder.DESENDING)
                 reqestSpan.Reverse();
         }
     }
@@ -785,18 +786,18 @@ internal sealed class VariableEvaluator : IDisposable
         {
             if (var1.IsArray1D)
             {
-                Int64[] array1 = (Int64[])var1.GetArray();
-                Int64[] array2 = (Int64[])var2.GetArray();
-                int length = (array1.Length >= array2.Length) ? array2.Length : array1.Length;
+                long[] array1 = (long[])var1.GetArray();
+                long[] array2 = (long[])var2.GetArray();
+                int length = array1.Length >= array2.Length ? array2.Length : array1.Length;
                 for (int i = 0; i < length; i++)
                     array2[i] = array1[i];
             }
             else if (var1.IsArray2D)
             {
-                Int64[,] array1 = (Int64[,])var1.GetArray();
-                Int64[,] array2 = (Int64[,])var2.GetArray();
-                int length1 = (array1.GetLength(0) >= array2.GetLength(0)) ? array2.GetLength(0) : array1.GetLength(0);
-                int length2 = (array1.GetLength(1) >= array2.GetLength(1)) ? array2.GetLength(1) : array1.GetLength(1);
+                long[,] array1 = (long[,])var1.GetArray();
+                long[,] array2 = (long[,])var2.GetArray();
+                int length1 = array1.GetLength(0) >= array2.GetLength(0) ? array2.GetLength(0) : array1.GetLength(0);
+                int length2 = array1.GetLength(1) >= array2.GetLength(1) ? array2.GetLength(1) : array1.GetLength(1);
                 for (int i = 0; i < length1; i++)
                 {
                     for (int j = 0; j < length2; j++)
@@ -805,11 +806,11 @@ internal sealed class VariableEvaluator : IDisposable
             }
             else
             {
-                Int64[,,] array1 = (Int64[,,])var1.GetArray();
-                Int64[,,] array2 = (Int64[,,])var2.GetArray();
-                int length1 = (array1.GetLength(0) >= array2.GetLength(0)) ? array2.GetLength(0) : array1.GetLength(0);
-                int length2 = (array1.GetLength(1) >= array2.GetLength(1)) ? array2.GetLength(1) : array1.GetLength(1);
-                int length3 = (array1.GetLength(2) >= array2.GetLength(2)) ? array2.GetLength(2) : array1.GetLength(2);
+                long[,,] array1 = (long[,,])var1.GetArray();
+                long[,,] array2 = (long[,,])var2.GetArray();
+                int length1 = array1.GetLength(0) >= array2.GetLength(0) ? array2.GetLength(0) : array1.GetLength(0);
+                int length2 = array1.GetLength(1) >= array2.GetLength(1) ? array2.GetLength(1) : array1.GetLength(1);
+                int length3 = array1.GetLength(2) >= array2.GetLength(2) ? array2.GetLength(2) : array1.GetLength(2);
                 for (int i = 0; i < length1; i++)
                 {
                     for (int j = 0; j < length2; j++)
@@ -826,7 +827,7 @@ internal sealed class VariableEvaluator : IDisposable
             {
                 string[] array1 = (string[])var1.GetArray();
                 string[] array2 = (string[])var2.GetArray();
-                int length = (array1.Length >= array2.Length) ? array2.Length : array1.Length;
+                int length = array1.Length >= array2.Length ? array2.Length : array1.Length;
                 for (int i = 0; i < length; i++)
                     array2[i] = array1[i];
             }
@@ -834,8 +835,8 @@ internal sealed class VariableEvaluator : IDisposable
             {
                 string[,] array1 = (string[,])var1.GetArray();
                 string[,] array2 = (string[,])var2.GetArray();
-                int length1 = (array1.GetLength(0) >= array2.GetLength(0)) ? array2.GetLength(0) : array1.GetLength(0);
-                int length2 = (array1.GetLength(1) >= array2.GetLength(1)) ? array2.GetLength(1) : array1.GetLength(1);
+                int length1 = array1.GetLength(0) >= array2.GetLength(0) ? array2.GetLength(0) : array1.GetLength(0);
+                int length2 = array1.GetLength(1) >= array2.GetLength(1) ? array2.GetLength(1) : array1.GetLength(1);
                 for (int i = 0; i < length1; i++)
                 {
                     for (int j = 0; j < length2; j++)
@@ -846,9 +847,9 @@ internal sealed class VariableEvaluator : IDisposable
             {
                 string[,,] array1 = (string[,,])var1.GetArray();
                 string[,,] array2 = (string[,,])var2.GetArray();
-                int length1 = (array1.GetLength(0) >= array2.GetLength(0)) ? array2.GetLength(0) : array1.GetLength(0);
-                int length2 = (array1.GetLength(1) >= array2.GetLength(1)) ? array2.GetLength(1) : array1.GetLength(1);
-                int length3 = (array1.GetLength(2) >= array2.GetLength(2)) ? array2.GetLength(2) : array1.GetLength(2);
+                int length1 = array1.GetLength(0) >= array2.GetLength(0) ? array2.GetLength(0) : array1.GetLength(0);
+                int length2 = array1.GetLength(1) >= array2.GetLength(1) ? array2.GetLength(1) : array1.GetLength(1);
+                int length3 = array1.GetLength(2) >= array2.GetLength(2) ? array2.GetLength(2) : array1.GetLength(2);
                 for (int i = 0; i < length1; i++)
                 {
                     for (int j = 0; j < length2; j++)
@@ -864,8 +865,8 @@ internal sealed class VariableEvaluator : IDisposable
 
     public string GetHavingItemsString()
     {
-        Int64[] array = this.ITEM;
-        string[] itemnames = this.ITEMNAME;
+        long[] array = ITEM;
+        string[] itemnames = ITEMNAME;
         int length = Math.Min(array.Length, itemnames.Length);
         int count = 0;
         StringBuilder builder = new(100);
@@ -903,13 +904,13 @@ internal sealed class VariableEvaluator : IDisposable
     //	return builder.ToString();
     //}
 
-    public string GetCharacterDataString(Int64 target, FunctionCode func)
+    public string GetCharacterDataString(long target, FunctionCode func)
     {
         StringBuilder builder = new(100);
-        if ((target < 0) || (target >= varData.CharacterList.Count))
+        if (target < 0 || target >= varData.CharacterList.Count)
             throw new CodeEE("存在しない登録キャラクタを参照しようとしました");
         CharacterData chara = varData.CharacterList[(int)target];
-        Int64[] array;
+        long[] array;
         string[] arrayName;
         int i;
         switch (func)
@@ -988,23 +989,23 @@ internal sealed class VariableEvaluator : IDisposable
         return builder.ToString();
     }
 
-    public string GetCharacterParamString(Int64 target, int paramCode)
+    public string GetCharacterParamString(long target, int paramCode)
     {
-        if ((target < 0) || (target >= varData.CharacterList.Count))
+        if (target < 0 || target >= varData.CharacterList.Count)
             throw new CodeEE("存在しない登録キャラクタを参照しようとしました");
         //そもそも呼び出し元がint i = 0; i < 100; i++)でこの条件が満たされる可能性0
         //if ((paramCode < 0) || (paramCode >= constant.ParamName.Length))
         //    throw new ExeEE("存在しない名称を取得しようとした");
         CharacterData chara = varData.CharacterList[(int)target];
-        Int64 param = chara.DataIntegerArray[(int)(VariableCode.PALAM & VariableCode.__LOWERCASE__)][paramCode];
-        Int64[] paramlv = varData.DataIntegerArray[(int)(VariableCode.PALAMLV & VariableCode.__LOWERCASE__)];
+        long param = chara.DataIntegerArray[(int)(VariableCode.PALAM & VariableCode.__LOWERCASE__)][paramCode];
+        long[] paramlv = varData.DataIntegerArray[(int)(VariableCode.PALAMLV & VariableCode.__LOWERCASE__)];
         string paramName = constant.GetCsvNameList(VariableCode.PALAMNAME)[paramCode];
-        if ((param == 0) && string.IsNullOrEmpty(paramName))
+        if (param == 0 && string.IsNullOrEmpty(paramName))
             return null;
         if (paramName == null)
             paramName = "";
         char c = '-';
-        Int64 border = paramlv[1];
+        long border = paramlv[1];
         if (param >= border)
         {
             c = '=';
@@ -1023,7 +1024,7 @@ internal sealed class VariableEvaluator : IDisposable
         StringBuilder bar = new(100);
 
         bar.Append('[');
-        if ((border <= 0) || (border <= param))
+        if (border <= 0 || border <= param)
             bar.Append(c, 10);
         else if (param <= 0)
             bar.Append('.', 10);
@@ -1041,7 +1042,7 @@ internal sealed class VariableEvaluator : IDisposable
 
     }
 
-    public void AddCharacter(Int64 charaTmplNo)
+    public void AddCharacter(long charaTmplNo)
     {
         CharacterTemplate tmpl = constant.GetCharacterTemplate(charaTmplNo);
         if (tmpl == null)
@@ -1050,7 +1051,7 @@ internal sealed class VariableEvaluator : IDisposable
         varData.CharacterList.Add(chara);
     }
 
-    public void AddCharacter_UseSp(Int64 charaTmplNo, bool isSp)
+    public void AddCharacter_UseSp(long charaTmplNo, bool isSp)
     {
         CharacterTemplate tmpl = constant.GetCharacterTemplate_UseSp(charaTmplNo, isSp);
         if (tmpl == null)
@@ -1059,7 +1060,7 @@ internal sealed class VariableEvaluator : IDisposable
         varData.CharacterList.Add(chara);
     }
 
-    public void AddCharacterFromCsvNo(Int64 CsvNo)
+    public void AddCharacterFromCsvNo(long CsvNo)
     {
         CharacterTemplate tmpl = constant.GetCharacterTemplateFromCsvNo(CsvNo);
         if (tmpl == null)
@@ -1076,20 +1077,20 @@ internal sealed class VariableEvaluator : IDisposable
         varData.CharacterList.Add(chara);
     }
 
-    public void DelCharacter(Int64 charaNo)
+    public void DelCharacter(long charaNo)
     {
-        if ((charaNo < 0) || (charaNo >= varData.CharacterList.Count))
+        if (charaNo < 0 || charaNo >= varData.CharacterList.Count)
             throw new CodeEE("存在しない登録キャラクタ(" + charaNo.ToString() + ")を削除しようとしました");
         varData.CharacterList[(int)charaNo].Dispose();
         varData.CharacterList.RemoveAt((int)charaNo);
     }
 
-    public void DelCharacter(Int64[] charaNoList)
+    public void DelCharacter(long[] charaNoList)
     {
         List<CharacterData> DelList = [];
-        foreach (Int64 charaNo in charaNoList)
+        foreach (long charaNo in charaNoList)
         {
-            if ((charaNo < 0) || (charaNo >= varData.CharacterList.Count))
+            if (charaNo < 0 || charaNo >= varData.CharacterList.Count)
                 throw new CodeEE("存在しない登録キャラクタ(" + charaNoList.ToString() + ")を削除しようとしました");
             CharacterData chara = varData.CharacterList[(int)charaNo];
             if (DelList.Contains(chara))
@@ -1110,15 +1111,15 @@ internal sealed class VariableEvaluator : IDisposable
         varData.CharacterList.Clear();
     }
 
-    public void PickUpChara(Int64[] NoList)
+    public void PickUpChara(long[] NoList)
     {
-        List<Int64> pickList = [];
-        Int64 oldTarget = this.TARGET;
-        Int64 oldAssi = this.ASSI;
-        Int64 oldMaster = this.MASTER;
-        this.TARGET = -1;
-        this.ASSI = -1;
-        this.MASTER = -1;
+        List<long> pickList = [];
+        long oldTarget = TARGET;
+        long oldAssi = ASSI;
+        long oldMaster = MASTER;
+        TARGET = -1;
+        ASSI = -1;
+        MASTER = -1;
         //同じキャラが複数出てこないようにリストを整理
         for (int i = 0; i < NoList.Length; i++)
         {
@@ -1129,21 +1130,21 @@ internal sealed class VariableEvaluator : IDisposable
         {
             if (i != pickList[i])
             {
-                SwapChara(pickList[i], (Int64)i);
-                if (pickList.IndexOf((Int64)i) > i)
-                    pickList[pickList.IndexOf((Int64)i)] = pickList[i];
+                SwapChara(pickList[i], i);
+                if (pickList.IndexOf(i) > i)
+                    pickList[pickList.IndexOf(i)] = pickList[i];
             }
-            if (this.TARGET < 0 && pickList[i] == oldTarget)
-                this.TARGET = i;
-            if (this.ASSI < 0 && pickList[i] == oldAssi)
-                this.ASSI = i;
-            if (this.MASTER < 0 && pickList[i] == oldMaster)
-                this.MASTER = i;
+            if (TARGET < 0 && pickList[i] == oldTarget)
+                TARGET = i;
+            if (ASSI < 0 && pickList[i] == oldAssi)
+                ASSI = i;
+            if (MASTER < 0 && pickList[i] == oldMaster)
+                MASTER = i;
         }
         if (pickList.Count < varData.CharacterList.Count)
         {
             for (int i = varData.CharacterList.Count - 1; i >= pickList.Count; i--)
-                DelCharacter((Int64)i);
+                DelCharacter(i);
         }
     }
 
@@ -1163,26 +1164,26 @@ internal sealed class VariableEvaluator : IDisposable
         varData.SetDefaultGlobalValue();
     }
 
-    public void CopyChara(Int64 x, Int64 y)
+    public void CopyChara(long x, long y)
     {
-        if ((x < 0) || (x >= varData.CharacterList.Count))
+        if (x < 0 || x >= varData.CharacterList.Count)
             throw new CodeEE("コピー元のキャラクタが存在しません");
-        if ((y < 0) || (y >= varData.CharacterList.Count))
+        if (y < 0 || y >= varData.CharacterList.Count)
             throw new CodeEE("コピー先のキャラクタが存在しません");
         varData.CharacterList[(int)x].CopyTo(varData.CharacterList[(int)y], varData);
     }
 
-    public void AddCopyChara(Int64 x)
+    public void AddCopyChara(long x)
     {
-        if ((x < 0) || (x >= varData.CharacterList.Count))
+        if (x < 0 || x >= varData.CharacterList.Count)
             throw new CodeEE("コピー元のキャラクタが存在しません");
         AddPseudoCharacter();
         varData.CharacterList[(int)x].CopyTo(varData.CharacterList[^1], varData);
     }
 
-    public void SwapChara(Int64 x, Int64 y)
+    public void SwapChara(long x, long y)
     {
-        if ((x < 0) || (x >= varData.CharacterList.Count) || (y < 0) || (y >= varData.CharacterList.Count))
+        if (x < 0 || x >= varData.CharacterList.Count || y < 0 || y >= varData.CharacterList.Count)
             throw new CodeEE("存在しない登録キャラクタを入れ替えようとしました");
         if (x == y)
             return;
@@ -1191,36 +1192,36 @@ internal sealed class VariableEvaluator : IDisposable
         varData.CharacterList[(int)x] = data;
     }
 
-    public void SortChara(VariableToken sortkey, Int64 elem, GameProc.Function.SortOrder sortorder, bool fixMaster)
+    public void SortChara(VariableToken sortkey, long elem, SortOrder sortorder, bool fixMaster)
     {
         if (varData.CharacterList.Count <= 1)
             return;
-        if (sortorder == GameProc.Function.SortOrder.UNDEF)
-            sortorder = GameProc.Function.SortOrder.ASCENDING;
+        if (sortorder == SortOrder.UNDEF)
+            sortorder = SortOrder.ASCENDING;
         if (sortkey == null)
             sortkey = GlobalStatic.VariableData.GetSystemVariableToken("NO");
         CharacterData masterChara = null;
         CharacterData targetChara = null;
         CharacterData assiChara = null;
-        if (this.MASTER >= 0 && this.MASTER < varData.CharacterList.Count)
-            masterChara = varData.CharacterList[(int)this.MASTER];
-        if (this.TARGET >= 0 && this.TARGET < varData.CharacterList.Count)
-            targetChara = varData.CharacterList[(int)this.TARGET];
-        if (this.ASSI >= 0 && this.ASSI < varData.CharacterList.Count)
-            assiChara = varData.CharacterList[(int)this.ASSI];
+        if (MASTER >= 0 && MASTER < varData.CharacterList.Count)
+            masterChara = varData.CharacterList[(int)MASTER];
+        if (TARGET >= 0 && TARGET < varData.CharacterList.Count)
+            targetChara = varData.CharacterList[(int)TARGET];
+        if (ASSI >= 0 && ASSI < varData.CharacterList.Count)
+            assiChara = varData.CharacterList[(int)ASSI];
 
         for (int i = 0; i < varData.CharacterList.Count; i++)
         {
             varData.CharacterList[i].temp_CurrentOrder = i;
             varData.CharacterList[i].SetSortKey(sortkey, elem);
         }
-        if (fixMaster && (masterChara != null))
+        if (fixMaster && masterChara != null)
         {
             if (varData.CharacterList.Count <= 2)
                 return;
             varData.CharacterList.Remove(masterChara);
         }
-        if (sortorder == GameProc.Function.SortOrder.ASCENDING)
+        if (sortorder == SortOrder.ASCENDING)
             varData.CharacterList.Sort(CharacterData.AscCharacterComparison);
         else// if (sortorder == SortOrder.DESENDING)
             varData.CharacterList.Sort(CharacterData.DescCharacterComparison);
@@ -1228,22 +1229,22 @@ internal sealed class VariableEvaluator : IDisposable
         //else
         //    throw new ExeEE("ソート順序不明");
 
-        if (fixMaster && (masterChara != null))
+        if (fixMaster && masterChara != null)
         {
-            varData.CharacterList.Insert((int)this.MASTER, masterChara);
+            varData.CharacterList.Insert((int)MASTER, masterChara);
         }
         for (int i = 0; i < varData.CharacterList.Count; i++)
             varData.CharacterList[i].temp_CurrentOrder = i;
-        if ((masterChara != null) && (!fixMaster))
-            this.MASTER = masterChara.temp_CurrentOrder;
+        if (masterChara != null && !fixMaster)
+            MASTER = masterChara.temp_CurrentOrder;
         if (targetChara != null)
-            this.TARGET = targetChara.temp_CurrentOrder;
+            TARGET = targetChara.temp_CurrentOrder;
         if (assiChara != null)
-            this.ASSI = assiChara.temp_CurrentOrder;
+            ASSI = assiChara.temp_CurrentOrder;
     }
 
 
-    internal static Int64 FindChara(VariableToken varID, Int64 elem64, string word, Int64 startIndex, Int64 lastIndex, bool isLast)
+    internal static long FindChara(VariableToken varID, long elem64, string word, long startIndex, long lastIndex, bool isLast)
     {
         if (startIndex >= lastIndex)
             return -1;
@@ -1258,7 +1259,7 @@ internal sealed class VariableEvaluator : IDisposable
         //int count = varData.CharacterList.Count;
         if (isLast)
         {
-            for (Int64 i = lastIndex - 1; i >= startIndex; i--)
+            for (long i = lastIndex - 1; i >= startIndex; i--)
             {
                 fvp.Index1 = i;
                 if (word == fvp.GetStrValue(null))
@@ -1267,7 +1268,7 @@ internal sealed class VariableEvaluator : IDisposable
         }
         else
         {
-            for (Int64 i = startIndex; i < lastIndex; i++)
+            for (long i = startIndex; i < lastIndex; i++)
             {
                 fvp.Index1 = i;
                 if (word == fvp.GetStrValue(null))
@@ -1277,7 +1278,7 @@ internal sealed class VariableEvaluator : IDisposable
         return -1;
     }
 
-    internal static Int64 FindChara(VariableToken varID, Int64 elem64, Int64 word, Int64 startIndex, Int64 lastIndex, bool isLast)
+    internal static long FindChara(VariableToken varID, long elem64, long word, long startIndex, long lastIndex, bool isLast)
     {
         if (startIndex >= lastIndex)
             return -1;
@@ -1292,7 +1293,7 @@ internal sealed class VariableEvaluator : IDisposable
         //int count = varData.CharacterList.Count;
         if (isLast)
         {
-            for (Int64 i = lastIndex - 1; i >= startIndex; i--)
+            for (long i = lastIndex - 1; i >= startIndex; i--)
             {
                 fvp.Index1 = i;
                 if (word == fvp.GetIntValue(null))
@@ -1301,7 +1302,7 @@ internal sealed class VariableEvaluator : IDisposable
         }
         else
         {
-            for (Int64 i = startIndex; i < lastIndex; i++)
+            for (long i = startIndex; i < lastIndex; i++)
             {
                 fvp.Index1 = i;
                 if (word == fvp.GetIntValue(null))
@@ -1311,18 +1312,18 @@ internal sealed class VariableEvaluator : IDisposable
         return -1;
     }
 
-    public Int64 GetChara(Int64 charaNo)
+    public long GetChara(long charaNo)
     {
         int i;
         for (i = 0; i < varData.CharacterList.Count; i++)
         {
             if (varData.CharacterList[i].NO == charaNo)
-                return (Int64)i;
+                return i;
         }
         return -1;
     }
 
-    public Int64 GetChara_UseSp(Int64 charaNo, bool getSp)
+    public long GetChara_UseSp(long charaNo, bool getSp)
     {
         //後天的にNOを変更する場合も考慮し、chara*.csvで定義されているかどうかは調べない。
         //CharacterTemplate tmpl = constant.GetCharacterTemplate(charaNo, false);
@@ -1335,13 +1336,13 @@ internal sealed class VariableEvaluator : IDisposable
             {
                 bool isSp = varData.CharacterList[i].CFlag[0] != 0;
                 if (isSp == getSp)
-                    return (Int64)i;
+                    return i;
             }
         }
         return -1;
     }
 
-    public Int64 ExistCsv(Int64 charaNo, bool getSp)
+    public long ExistCsv(long charaNo, bool getSp)
     {
         //SPキャラ廃止に伴う問題は呼び出し元で処理
         CharacterTemplate tmpl = constant.GetCharacterTemplate_UseSp(charaNo, getSp);
@@ -1351,7 +1352,7 @@ internal sealed class VariableEvaluator : IDisposable
             return 1;
     }
 
-    public string GetCharacterStrfromCSVData(Int64 charaTmplNo, CharacterStrData type, bool isSp, Int64 arg2Long)
+    public string GetCharacterStrfromCSVData(long charaTmplNo, CharacterStrData type, bool isSp, long arg2Long)
     {
         //SPキャラ廃止に伴う問題は呼び出し元で処理
         CharacterTemplate tmpl = constant.GetCharacterTemplate_UseSp(charaTmplNo, isSp);
@@ -1397,7 +1398,7 @@ internal sealed class VariableEvaluator : IDisposable
         }
     }
 
-    public Int64 GetCharacterIntfromCSVData(Int64 charaTmplNo, CharacterIntData type, bool isSp, Int64 arg2Long)
+    public long GetCharacterIntfromCSVData(long charaTmplNo, CharacterIntData type, bool isSp, long arg2Long)
     {
         //SPキャラ廃止に伴う問題は呼び出し元で処理
         CharacterTemplate tmpl = constant.GetCharacterTemplate_UseSp(charaTmplNo, isSp);
@@ -1406,7 +1407,7 @@ internal sealed class VariableEvaluator : IDisposable
         if (arg2Long >= tmpl.ArrayLength(type) || arg2Long < 0)
             throw new CodeEE("参照可能範囲外を参照しました");
         int arg2 = (int)arg2Long;
-        Dictionary<int, Int64> intDic;
+        Dictionary<int, long> intDic;
         switch (type)
         {
             case CharacterIntData.BASE:
@@ -1440,7 +1441,7 @@ internal sealed class VariableEvaluator : IDisposable
         ASSIPLAY = 0;
         PREVCOM = -1;
         NEXTCOM = -1;
-        Int64[] array;
+        long[] array;
         string[] sarray;
         array = varData.DataIntegerArray[(int)(VariableCode.TFLAG & VariableCode.__LOWERCASE__)];
         for (int i = 0; i < array.Length; i++)
@@ -1480,7 +1481,7 @@ internal sealed class VariableEvaluator : IDisposable
     public void UpdateAfterShowUsercom()
     {
         //UP = 0,DOWN = 0,LOSEBASE = 0
-        Int64[] array;
+        long[] array;
         array = varData.DataIntegerArray[(int)(VariableCode.UP & VariableCode.__LOWERCASE__)];
         for (int i = 0; i < array.Length; i++)
             array[i] = 0;
@@ -1513,7 +1514,7 @@ internal sealed class VariableEvaluator : IDisposable
     public void UpdateAfterInputCom()
     {
         //本家の仕様にあわせ、選択中以外のキャラクタも全部リセット。
-        Int64[] array;
+        long[] array;
         foreach (CharacterData chara in varData.CharacterList)
         {
             array = chara.DataIntegerArray[(int)(VariableCode.NOWEX & VariableCode.__LOWERCASE__)];
@@ -1526,7 +1527,7 @@ internal sealed class VariableEvaluator : IDisposable
     public void UpdateAfterSourceCheck()
     {
         //本家の仕様にあわせ、選択中以外のキャラクタも全部リセット。
-        Int64[] array;
+        long[] array;
         foreach (CharacterData chara in varData.CharacterList)
         {
             array = chara.DataIntegerArray[(int)(VariableCode.SOURCE & VariableCode.__LOWERCASE__)];
@@ -1540,12 +1541,12 @@ internal sealed class VariableEvaluator : IDisposable
     //1756 ↑だったのは今は昔の話である
     public void UpdateInUpcheck(EmueraConsole window, bool skipPrint)
     {
-        Int64[] up, down, param;
+        long[] up, down, param;
         string[] paramname = constant.GetCsvNameList(VariableCode.PALAMNAME);
         up = varData.DataIntegerArray[(int)(VariableCode.UP & VariableCode.__LOWERCASE__)];
         down = varData.DataIntegerArray[(int)(VariableCode.DOWN & VariableCode.__LOWERCASE__)];
-        Int64 target = TARGET;
-        if ((target < 0) || (target >= varData.CharacterList.Count))
+        long target = TARGET;
+        if (target < 0 || target >= varData.CharacterList.Count)
             goto end;
         CharacterData chara = varData.CharacterList[(int)target];
         param = chara.DataIntegerArray[(int)(VariableCode.PALAM & VariableCode.__LOWERCASE__)];
@@ -1558,7 +1559,7 @@ internal sealed class VariableEvaluator : IDisposable
         for (int i = 0; i < length; i++)
         {
             //本家の仕様では負の値は無効。
-            if ((up[i] <= 0) && (down[i] <= 0))
+            if (up[i] <= 0 && down[i] <= 0)
                 continue;
             StringBuilder builder = new();
             if (!skipPrint)
@@ -1594,11 +1595,11 @@ internal sealed class VariableEvaluator : IDisposable
             down[i] = 0;
     }
 
-    public void CUpdateInUpcheck(EmueraConsole window, Int64 target, bool skipPrint)
+    public void CUpdateInUpcheck(EmueraConsole window, long target, bool skipPrint)
     {
-        Int64[] up, down, param;
+        long[] up, down, param;
         string[] paramname = constant.GetCsvNameList(VariableCode.PALAMNAME);
-        if ((target < 0) || (target >= varData.CharacterList.Count))
+        if (target < 0 || target >= varData.CharacterList.Count)
             return;
         CharacterData chara = varData.CharacterList[(int)target];
         up = chara.DataIntegerArray[(int)(VariableCode.CUP & VariableCode.__LOWERCASE__)];
@@ -1613,7 +1614,7 @@ internal sealed class VariableEvaluator : IDisposable
         for (int i = 0; i < length; i++)
         {
             //本家の仕様では負の値は無効。
-            if ((up[i] <= 0) && (down[i] <= 0))
+            if (up[i] <= 0 && down[i] <= 0)
                 continue;
             StringBuilder builder = new();
             if (!skipPrint)
@@ -1651,20 +1652,20 @@ internal sealed class VariableEvaluator : IDisposable
     {
         long[] array = chara.DataIntegerArray[(int)(VariableCode.STAIN & VariableCode.__LOWERCASE__)];
         //STAINの配列要素数 < _REPLACE.CSVのSTAIN初期値の指定数の時エラーになるのを対処
-        if (array.Length >= Config.StainDefault.Count)
+        if (array.Length >= Config.Config.StainDefault.Count)
         {
-            Config.StainDefault.CopyTo(array);
-            for (int i = Config.StainDefault.Count; i < array.Length; i++)
+            Config.Config.StainDefault.CopyTo(array);
+            for (int i = Config.Config.StainDefault.Count; i < array.Length; i++)
                 array[i] = 0;
         }
         else
         {
             for (int i = 0; i < array.Length; i++)
-                array[i] = Config.StainDefault[i];
+                array[i] = Config.Config.StainDefault[i];
         }
     }
 
-    public void SetDefaultStain(Int64 no)
+    public void SetDefaultStain(long no)
     {
         if (no < 0 || no >= varData.CharacterList.Count)
             throw new CodeEE("存在しないキャラクターを参照しようとしました");
@@ -1679,7 +1680,7 @@ internal sealed class VariableEvaluator : IDisposable
     /// <returns></returns>
     public void VarSize(VariableToken varID)
     {
-        Int64[] resultArray = RESULT_ARRAY;
+        long[] resultArray = RESULT_ARRAY;
         if (varID.IsArray2D)
         {
             resultArray[0] = varID.GetLength(0);
@@ -1697,21 +1698,21 @@ internal sealed class VariableEvaluator : IDisposable
         }
     }
 
-    public bool ItemSales(Int64 itemNo)
+    public bool ItemSales(long itemNo)
     {
-        Int64[] itemSales = ITEMSALES;
+        long[] itemSales = ITEMSALES;
         string[] itemNames = constant.GetCsvNameList(VariableCode.ITEMNAME);
-        if ((itemNo < 0) || (itemNo >= itemSales.Length) || (itemNo >= itemNames.Length))
+        if (itemNo < 0 || itemNo >= itemSales.Length || itemNo >= itemNames.Length)
             return false;
         int index = (int)itemNo;
-        return (itemSales[index] != 0) && (itemNames[index] != null);
+        return itemSales[index] != 0 && itemNames[index] != null;
     }
 
-    public bool BuyItem(Int64 itemNo)
+    public bool BuyItem(long itemNo)
     {
         if (!ItemSales(itemNo))
             return false;
-        Int64[] itemPrice = constant.ItemPrice;
+        long[] itemPrice = constant.ItemPrice;
         if (itemNo >= itemPrice.Length)
             return false;
         int index = (int)itemNo;
@@ -1737,7 +1738,7 @@ internal sealed class VariableEvaluator : IDisposable
     //ちーと
     public void IamaMunchkin()
     {
-        if ((MASTER < 0) || (MASTER >= varData.CharacterList.Count))
+        if (MASTER < 0 || MASTER >= varData.CharacterList.Count)
             return;
         varData.CharacterList[(int)MASTER].DataString[(int)(VariableCode.NAME & VariableCode.__LOWERCASE__)] = "イカサマ";
         varData.CharacterList[(int)MASTER].DataString[(int)(VariableCode.CALLNAME & VariableCode.__LOWERCASE__)] = "イカサマ";
@@ -1758,9 +1759,9 @@ internal sealed class VariableEvaluator : IDisposable
     #region File操作
 
 
-    private static string getSaveDataPathG() { return Config.SavDir + "global.sav"; }
-    private static string getSaveDataPath(int index) { return string.Format("{0}save{1:00}.sav", Config.SavDir, index); }
-    private static string getSaveDataPath(string s) { return string.Format("{0}save{1:00}.sav", Config.SavDir, s); }
+    private static string getSaveDataPathG() { return Config.Config.SavDir + "global.sav"; }
+    private static string getSaveDataPath(int index) { return string.Format("{0}save{1:00}.sav", Config.Config.SavDir, index); }
+    private static string getSaveDataPath(string s) { return string.Format("{0}save{1:00}.sav", Config.Config.SavDir, s); }
 
     private static string getSaveDataPathV(int index) { return Program.DatDir + string.Format("var_{0:00}.dat", index); }
     private static string getSaveDataPathC(int index) { return Program.DatDir + string.Format("chara_{0:00}.dat", index); }
@@ -1871,7 +1872,7 @@ internal sealed class VariableEvaluator : IDisposable
         FileStream fs = null;
         EraBinaryDataReader bReader = null;
         EraDataReader reader = null;
-        Int64 version;
+        long version;
         try
         {
             fs = new FileStream(filename, FileMode.Open, FileAccess.Read);
@@ -2004,7 +2005,7 @@ internal sealed class VariableEvaluator : IDisposable
         FileStream fs = null;
         try
         {
-            Config.CreateSavDir();
+            Config.Config.CreateSavDir();
             fs = new FileStream(filepath, FileMode.Create, FileAccess.Write);
             bWriter = new EraBinaryDataWriter(fs);
             bWriter.WriteHeader();
@@ -2054,11 +2055,11 @@ internal sealed class VariableEvaluator : IDisposable
 
             if (!gamebase.UniqueCodeEqualTo(bReader.ReadInt64()))
                 return;
-            Int64 version = bReader.ReadInt64();
+            long version = bReader.ReadInt64();
             if (!gamebase.CheckVersion(version))
                 return;
             bReader.ReadString();//saveMes
-            Int64 loadnum = bReader.ReadInt64();
+            long loadnum = bReader.ReadInt64();
             for (int i = 0; i < loadnum; i++)
             {
                 CharacterData chara = new(constant, varData);
@@ -2091,7 +2092,7 @@ internal sealed class VariableEvaluator : IDisposable
         FileStream fs = null;
         try
         {
-            Config.CreateSavDir();
+            Config.Config.CreateSavDir();
             fs = new FileStream(filepath, FileMode.Create, FileAccess.Write);
             bWriter = new EraBinaryDataWriter(fs);
             bWriter.WriteHeader();
@@ -2138,7 +2139,7 @@ internal sealed class VariableEvaluator : IDisposable
 
             if (!gamebase.UniqueCodeEqualTo(bReader.ReadInt64()))
                 return;
-            Int64 version = bReader.ReadInt64();
+            long version = bReader.ReadInt64();
             if (!gamebase.CheckVersion(version))
                 return;
             bReader.ReadString();//saveMes
@@ -2182,7 +2183,7 @@ internal sealed class VariableEvaluator : IDisposable
     {
         if (!gamebase.UniqueCodeEqualTo(reader.ReadInt64()))
             throw new FileEE("異なるゲームのセーブデータです");
-        Int64 version = reader.ReadInt64();
+        long version = reader.ReadInt64();
         if (!gamebase.CheckVersion(version))
             throw new FileEE("セーブデータのバーションが異なります");
         string text = reader.ReadString();//PUTFORM
@@ -2218,9 +2219,9 @@ internal sealed class VariableEvaluator : IDisposable
         string filepath = getSaveDataPathG();
         try
         {
-            Config.CreateSavDir();
+            Config.Config.CreateSavDir();
             using var fs = new FileStream(filepath, FileMode.Create, FileAccess.Write);
-            if (Config.SystemSaveInBinary)
+            if (Config.Config.SystemSaveInBinary)
             {
 
                 using var bWriter = new EraBinaryDataWriter(fs);
@@ -2282,7 +2283,7 @@ internal sealed class VariableEvaluator : IDisposable
                     return false;
                 if (!gamebase.UniqueCodeEqualTo(bReader.ReadInt64()))
                     return false;
-                Int64 version = bReader.ReadInt64();
+                long version = bReader.ReadInt64();
                 if (!gamebase.CheckVersion(version))
                     return false;
                 bReader.ReadString();//saveMes
@@ -2293,7 +2294,7 @@ internal sealed class VariableEvaluator : IDisposable
                 reader = new EraDataReader(fs);
                 if (!gamebase.UniqueCodeEqualTo(reader.ReadInt64()))
                     return false;
-                Int64 version = reader.ReadInt64();
+                long version = reader.ReadInt64();
                 if (!gamebase.CheckVersion(version))
                     return false;
                 varData.LoadGlobalFromStream(reader);
@@ -2342,7 +2343,7 @@ internal sealed class VariableEvaluator : IDisposable
             throw new FileEE("セーブデータが壊れています");
         if (!gamebase.UniqueCodeEqualTo(bReader.ReadInt64()))
             throw new FileEE("異なるゲームのセーブデータです");
-        Int64 version = bReader.ReadInt64();
+        long version = bReader.ReadInt64();
         if (!gamebase.CheckVersion(version))
             throw new FileEE("セーブデータのバーションが異なります");
         string text = bReader.ReadString();//PUTFORM
@@ -2371,9 +2372,9 @@ internal sealed class VariableEvaluator : IDisposable
         EraBinaryDataWriter bWriter = null;
         try
         {
-            Config.CreateSavDir();
+            Config.Config.CreateSavDir();
             fs = new FileStream(filepath, FileMode.Create, FileAccess.Write);
-            if (Config.SystemSaveInBinary)
+            if (Config.Config.SystemSaveInBinary)
             {
                 bWriter = new EraBinaryDataWriter(fs);
                 SaveToStreamBinary(bWriter, saveText);
@@ -2464,16 +2465,16 @@ internal sealed class VariableEvaluator : IDisposable
 
     #endregion
     #region Property
-    public Int64[] RESULT_ARRAY
+    public long[] RESULT_ARRAY
     {
         get { return varData.DataIntegerArray[(int)(VariableCode.RESULT & VariableCode.__LOWERCASE__)]; }
     }
-    public Int64 RESULT
+    public long RESULT
     {
         get { return varData.DataIntegerArray[(int)(VariableCode.RESULT & VariableCode.__LOWERCASE__)][0]; }
         set { varData.DataIntegerArray[(int)(VariableCode.RESULT & VariableCode.__LOWERCASE__)][0] = value; }
     }
-    public Int64 COUNT
+    public long COUNT
     {
         get { return varData.DataIntegerArray[(int)(VariableCode.COUNT & VariableCode.__LOWERCASE__)][0]; }
         set { varData.DataIntegerArray[(int)(VariableCode.COUNT & VariableCode.__LOWERCASE__)][0] = value; }
@@ -2494,16 +2495,16 @@ internal sealed class VariableEvaluator : IDisposable
         get { return varData.DataStringArray[(int)(VariableCode.RESULTS & VariableCode.__LOWERCASE__)]; }
     }
 
-    public Int64 TARGET
+    public long TARGET
     {
         get { return varData.DataIntegerArray[(int)(VariableCode.TARGET & VariableCode.__LOWERCASE__)][0]; }
         set { varData.DataIntegerArray[(int)(VariableCode.TARGET & VariableCode.__LOWERCASE__)][0] = value; }
     }
-    public Int64[] SELECTCOM_ARRAY
+    public long[] SELECTCOM_ARRAY
     {
         get { return varData.DataIntegerArray[(int)(VariableCode.SELECTCOM & VariableCode.__LOWERCASE__)]; }
     }
-    public Int64 SELECTCOM
+    public long SELECTCOM
     {
         get { return varData.DataIntegerArray[(int)(VariableCode.SELECTCOM & VariableCode.__LOWERCASE__)][0]; }
         set { varData.DataIntegerArray[(int)(VariableCode.SELECTCOM & VariableCode.__LOWERCASE__)][0] = value; }
@@ -2513,22 +2514,22 @@ internal sealed class VariableEvaluator : IDisposable
         get { return constant.GetCsvNameList(VariableCode.ITEMNAME); }
     }
 
-    public Int64[] ITEMSALES
+    public long[] ITEMSALES
     {
         get { return varData.DataIntegerArray[(int)(VariableCode.ITEMSALES & VariableCode.__LOWERCASE__)]; }
     }
 
-    public Int64[] ITEMPRICE
+    public long[] ITEMPRICE
     {
         get { return constant.ItemPrice; }
     }
 
-    private Int64[] ITEM
+    private long[] ITEM
     {
         get { return varData.DataIntegerArray[(int)(VariableCode.ITEM & VariableCode.__LOWERCASE__)]; }
     }
 
-    public Int64[] RANDDATA
+    public long[] RANDDATA
     {
         get { return varData.DataIntegerArray[(int)(VariableCode.RANDDATA & VariableCode.__LOWERCASE__)]; }
     }
@@ -2538,7 +2539,7 @@ internal sealed class VariableEvaluator : IDisposable
         get { return varData.DataString[(int)(VariableCode.SAVEDATA_TEXT & VariableCode.__LOWERCASE__)]; }
         set { varData.DataString[(int)(VariableCode.SAVEDATA_TEXT & VariableCode.__LOWERCASE__)] = value; }
     }
-    public Int64 CHARANUM
+    public long CHARANUM
     {
         get { return varData.CharacterList.Count; }
     }
@@ -2546,14 +2547,14 @@ internal sealed class VariableEvaluator : IDisposable
 
 
 
-    private Int64 get_Variable_canforbid(VariableCode code)
+    private long get_Variable_canforbid(VariableCode code)
     {
         long[] array = varData.DataIntegerArray[(int)(code & VariableCode.__LOWERCASE__)];
         if (array.Length == 0)
             return -1;
         return array[0];
     }
-    private void set_Variable_canforbid(VariableCode code, Int64 value)
+    private void set_Variable_canforbid(VariableCode code, long value)
     {
         long[] array = varData.DataIntegerArray[(int)(code & VariableCode.__LOWERCASE__)];
         if (array.Length == 0)
@@ -2561,37 +2562,37 @@ internal sealed class VariableEvaluator : IDisposable
         array[0] = value;
     }
 
-    public Int64 MASTER
+    public long MASTER
     {
         get { return get_Variable_canforbid(VariableCode.MASTER); }
         set { set_Variable_canforbid(VariableCode.MASTER, value); }
     }
-    public Int64 ASSI
+    public long ASSI
     {
         get { return get_Variable_canforbid(VariableCode.ASSI); }
         set { set_Variable_canforbid(VariableCode.ASSI, value); }
     }
-    public Int64 ASSIPLAY
+    public long ASSIPLAY
     {
         set { set_Variable_canforbid(VariableCode.ASSIPLAY, value); }
     }
-    public Int64 PREVCOM
+    public long PREVCOM
     {
         get { return get_Variable_canforbid(VariableCode.PREVCOM); }
         set { set_Variable_canforbid(VariableCode.PREVCOM, value); }
     }
-    public Int64 NEXTCOM
+    public long NEXTCOM
     {
         get { return get_Variable_canforbid(VariableCode.NEXTCOM); }
         set { set_Variable_canforbid(VariableCode.NEXTCOM, value); }
     }
-    private Int64 MONEY
+    private long MONEY
     {
         get { return get_Variable_canforbid(VariableCode.MONEY); }
         set { set_Variable_canforbid(VariableCode.MONEY, value); }
     }
 
-    private Int64 BOUGHT
+    private long BOUGHT
     {
         set { set_Variable_canforbid(VariableCode.BOUGHT, value); }
     }

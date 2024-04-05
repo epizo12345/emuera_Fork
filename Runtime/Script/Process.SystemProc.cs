@@ -1,5 +1,8 @@
-﻿using MinorShift.Emuera.Runtime.Config;
-using MinorShift.Emuera.Sub;
+﻿using MinorShift.Emuera.Runtime;
+using MinorShift.Emuera.Runtime.Config;
+using MinorShift.Emuera.Runtime.Script;
+using MinorShift.Emuera.Runtime.Utils;
+using MinorShift.Emuera.UI.Game;
 using System;
 using System.Collections.Generic;
 
@@ -170,7 +173,7 @@ internal sealed partial class Process
         //標準のタイトル画面
         console.PrintBar();
         console.NewLine();
-        console.Alignment = GameView.DisplayLineAlignment.CENTER;
+        console.Alignment = DisplayLineAlignment.CENTER;
         console.PrintSingleLine(gamebase.ScriptTitle);
         if (gamebase.ScriptVersion != 0)
             console.PrintSingleLine(gamebase.ScriptVersionText);
@@ -178,7 +181,7 @@ internal sealed partial class Process
         console.PrintSingleLine("(" + gamebase.ScriptYear + ")");
         console.NewLine();
         console.PrintSingleLine(gamebase.ScriptDetail);
-        console.Alignment = GameView.DisplayLineAlignment.LEFT;
+        console.Alignment = DisplayLineAlignment.LEFT;
 
         console.PrintBar();
         console.NewLine();

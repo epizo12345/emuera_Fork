@@ -2,7 +2,7 @@
 using System.Drawing;
 using System.Text;
 
-namespace MinorShift.Emuera.GameView;
+namespace MinorShift.Emuera.UI.Game;
 
 internal enum DisplayLineLastState
 {
@@ -55,7 +55,7 @@ internal sealed class ConsoleDisplayLine
     {
         if (aligned)
             return;
-        this.aligned = true;
+        aligned = true;
         this.align = align;
         if (buttons.Length == 0)
             return;
@@ -83,7 +83,7 @@ internal sealed class ConsoleDisplayLine
         //移動距離
         int shiftX = movetoX - pointX;
         if (shiftX != 0)
-            this.ShiftPositionX(shiftX);
+            ShiftPositionX(shiftX);
     }
 
     public void ShiftPositionX(int shiftX)

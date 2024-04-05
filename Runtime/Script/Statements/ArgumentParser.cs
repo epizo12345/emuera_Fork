@@ -1,4 +1,5 @@
-﻿using MinorShift.Emuera.Sub;
+﻿using MinorShift.Emuera.Runtime.Script.Statements;
+using MinorShift.Emuera.Runtime.Utils;
 
 namespace MinorShift.Emuera.GameProc.Function;
 

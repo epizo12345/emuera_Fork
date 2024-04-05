@@ -1,7 +1,7 @@
 ﻿using MinorShift.Emuera.Runtime.Config;
 using System;
 
-namespace MinorShift.Emuera.GameData.Expression;
+namespace MinorShift.Emuera.Runtime.Script.Statements.Expression;
 
 internal enum CaseExpressionType
 {
@@ -45,7 +45,7 @@ internal sealed class CaseExpression
         return base.ToString();
     }
 
-    public bool GetBool(Int64 Is, ExpressionMediator exm)
+    public bool GetBool(long Is, ExpressionMediator exm)
     {
         if (CaseType == CaseExpressionType.To)
             return LeftTerm.GetIntValue(exm) <= Is && Is <= RightTerm.GetIntValue(exm);
@@ -61,8 +61,8 @@ internal sealed class CaseExpression
     {
         if (CaseType == CaseExpressionType.To)
         {
-            return string.Compare(LeftTerm.GetStrValue(exm), Is, Config.SCExpression) <= 0
-                && string.Compare(Is, RightTerm.GetStrValue(exm), Config.SCExpression) <= 0;
+            return string.Compare(LeftTerm.GetStrValue(exm), Is, Config.Config.SCExpression) <= 0
+                && string.Compare(Is, RightTerm.GetStrValue(exm), Config.Config.SCExpression) <= 0;
         }
         if (CaseType == CaseExpressionType.Is)
         {

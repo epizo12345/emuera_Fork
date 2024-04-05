@@ -1,8 +1,10 @@
-﻿using MinorShift.Emuera.GameData.Expression;
+﻿using MinorShift.Emuera.GameData.Variable;
 using MinorShift.Emuera.Runtime.Config;
-using MinorShift.Emuera.Sub;
+using MinorShift.Emuera.Runtime.Script.Parser;
+using MinorShift.Emuera.Runtime.Script.Statements.Expression;
+using MinorShift.Emuera.Runtime.Utils;
 
-namespace MinorShift.Emuera.GameData.Variable;
+namespace MinorShift.Emuera.Runtime.Script.Statements.Variable;
 
 internal static class VariableParser
 {
@@ -89,9 +91,9 @@ internal static class VariableParser
         {
             if (id.IsArray2D)
             {
-                if ((op1 == null) && (op2 == null) && (op3 == null))
+                if (op1 == null && op2 == null && op3 == null)
                     return new VariableNoArgTerm(id);
-                if ((op1 == null) || (op2 == null) || (op3 == null))
+                if (op1 == null || op2 == null || op3 == null)
                     throw new CodeEE("キャラクタ二次元配列変数" + id.Name + "の引数は省略できません");
                 terms = [op1, op2, op3];
             }
@@ -99,11 +101,11 @@ internal static class VariableParser
             {
                 if (op3 != null)
                     throw new CodeEE("キャラクタ変数" + id.Name + "の引数が多すぎます");
-                if ((op1 == null) && (op2 == null) && (op3 == null) && Config.SystemNoTarget)
+                if (op1 == null && op2 == null && op3 == null && Config.Config.SystemNoTarget)
                     return new VariableNoArgTerm(id);
                 if (op2 == null)
                 {
-                    if (Config.SystemNoTarget)
+                    if (Config.Config.SystemNoTarget)
                         throw new CodeEE("キャラクタ配列変数" + id.Name + "の引数は省略できません(コンフィグにより禁止が選択されています)");
                     if (op1 == null)
                         op2 = ZeroTerm;
@@ -117,11 +119,11 @@ internal static class VariableParser
             {
                 if (op2 != null)
                     throw new CodeEE("キャラクタ変数" + id.Name + "の引数が多すぎます");
-                if ((op1 == null) && (op2 == null) && (op3 == null) && Config.SystemNoTarget)
+                if (op1 == null && op2 == null && op3 == null && Config.Config.SystemNoTarget)
                     return new VariableNoArgTerm(id);
                 if (op1 == null)
                 {
-                    if (Config.SystemNoTarget)
+                    if (Config.Config.SystemNoTarget)
                         throw new CodeEE("キャラクタ変数" + id.Name + "の引数は省略できません(コンフィグにより禁止が選択されています)");
                     op1 = TARGET;
                 }
@@ -130,17 +132,17 @@ internal static class VariableParser
         }
         else if (id.IsArray3D)
         {
-            if ((op1 == null) && (op2 == null) && (op3 == null))
+            if (op1 == null && op2 == null && op3 == null)
                 return new VariableNoArgTerm(id);
-            if ((op1 == null) || (op2 == null) || (op3 == null))
+            if (op1 == null || op2 == null || op3 == null)
                 throw new CodeEE("三次元配列変数" + id.Name + "の引数は省略できません");
             terms = [op1, op2, op3];
         }
         else if (id.IsArray2D)
         {
-            if ((op1 == null) && (op2 == null) && (op3 == null))
+            if (op1 == null && op2 == null && op3 == null)
                 return new VariableNoArgTerm(id);
-            if ((op1 == null) || (op2 == null))
+            if (op1 == null || op2 == null)
                 throw new CodeEE("二次元配列変数" + id.Name + "の引数は省略できません");
             if (op3 != null)
                 throw new CodeEE("二次元配列" + id.Name + "の引数が多すぎます");
@@ -153,12 +155,12 @@ internal static class VariableParser
             if (op1 == null)
             {
                 op1 = ZeroTerm;
-                if (!Config.CompatiRAND && id.Code == VariableCode.RAND)
+                if (!Config.Config.CompatiRAND && id.Code == VariableCode.RAND)
                 {
                     throw new CodeEE("RANDの引数が省略されています");
                 }
             }
-            if (!Config.CompatiRAND && op1 is SingleTerm op1SingleTerm && id.Code == VariableCode.RAND)
+            if (!Config.Config.CompatiRAND && op1 is SingleTerm op1SingleTerm && id.Code == VariableCode.RAND)
             {
                 if (((SingleLongTerm)op1SingleTerm).Int == 0)
                     throw new CodeEE("RANDの引数に0が与えられています");

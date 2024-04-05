@@ -1,13 +1,14 @@
-﻿using MinorShift.Emuera.GameData;
-using MinorShift.Emuera.GameData.Expression;
-using MinorShift.Emuera.Runtime.Config;
+﻿using MinorShift.Emuera.Runtime.Config;
+using MinorShift.Emuera.Runtime.Script.Data;
+using MinorShift.Emuera.Runtime.Script.Statements.Expression;
+using MinorShift.Emuera.Runtime.Utils;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace MinorShift.Emuera.Sub;
+namespace MinorShift.Emuera.Runtime.Script.Parser;
 
 enum LexEndWith
 {
@@ -131,9 +132,9 @@ internal static partial class LexicalAnalyzer
 
     public static bool UseMacro = true;
     #region read
-    public static Int64 ReadInt64(CharStream st, bool retZero)
+    public static long ReadInt64(CharStream st, bool retZero)
     {
-        Int64 significand;
+        long significand;
         int expBase = 0;
         int exponent = 0;
         int stStartPos = st.CurrentPosition;
@@ -142,13 +143,13 @@ internal static partial class LexicalAnalyzer
         if (st.Current == '0')
         {
             char c = st.Next;
-            if ((c == 'x') || (c == 'X'))
+            if (c == 'x' || c == 'X')
             {
                 fromBase = 16;
                 st.ShiftNext();
                 st.ShiftNext();
             }
-            else if ((c == 'b') || (c == 'B'))
+            else if (c == 'b' || c == 'B')
             {
                 fromBase = 2;
                 st.ShiftNext();
@@ -169,9 +170,9 @@ internal static partial class LexicalAnalyzer
                 return 0;
         }
         significand = readDigits(st, fromBase);
-        if ((st.Current == 'p') || (st.Current == 'P'))
+        if (st.Current == 'p' || st.Current == 'P')
             expBase = 2;
-        else if ((st.Current == 'e') || (st.Current == 'E'))
+        else if (st.Current == 'e' || st.Current == 'E')
             expBase = 10;
         if (expBase != 0)
         {
@@ -179,25 +180,25 @@ internal static partial class LexicalAnalyzer
             unchecked { exponent = (int)readDigits(st, fromBase); }
         }
         stEndPos = st.CurrentPosition;
-        if ((expBase != 0) && (exponent != 0))
+        if (expBase != 0 && exponent != 0)
         {
 
             double d = significand * Math.Pow(expBase, exponent);
-            if (double.IsNaN(d) || double.IsInfinity(d) || (d > Int64.MaxValue) || (d < Int64.MinValue))
+            if (double.IsNaN(d) || double.IsInfinity(d) || d > long.MaxValue || d < long.MinValue)
                 throw new CodeEE($"\"{st.SubstringROS(stStartPos, stEndPos)}\"は64ビット符号付整数の範囲を超えています");
-            significand = (Int64)d;
+            significand = (long)d;
         }
         return significand;
     }
     //static Regex reg = new Regex(@"[0-9A-Fa-f]+", RegexOptions.Compiled);
-    private static Int64 readDigits(CharStream st, int fromBase)
+    private static long readDigits(CharStream st, int fromBase)
     {
         int start = st.CurrentPosition;
         //1756 正規表現を使ってみたがほぼ変わらなかったので没
         //Match m = reg.Match(st.RowString, st.CurrentPosition);
         //st.Jump(m.Length);
         char c = st.Current;
-        if ((c == '-') || (c == '+'))
+        if (c == '-' || c == '+')
         {
             st.ShiftNext();
         }
@@ -234,7 +235,7 @@ internal static partial class LexicalAnalyzer
                 c = st.Current;
                 if (char.IsDigit(c))
                 {
-                    if ((c != '0') && (c != '1'))
+                    if (c != '0' && c != '1')
                         throw new CodeEE("二進法表記の中で使用できない文字が使われています");
                     st.ShiftNext();
                     continue;
@@ -247,7 +248,7 @@ internal static partial class LexicalAnalyzer
         {
             if (fromBase == 10)
             {
-                return Int64.Parse(strInt);
+                return long.Parse(strInt);
             }
             return Convert.ToInt64(strInt.ToString(), fromBase);
         }
@@ -279,21 +280,21 @@ internal static partial class LexicalAnalyzer
         //大雑把に読み込んでエラー処理はConvertクラスに任せる。
         //仮数小数部
 
-        if ((st.Current == '-') || (st.Current == '+'))
+        if (st.Current == '-' || st.Current == '+')
         {
             st.ShiftNext();
         }
         while (!st.EOS)
         {//仮数部
             char c = st.Current;
-            if (char.IsDigit(c) || (c == '.'))
+            if (char.IsDigit(c) || c == '.')
             {
                 st.ShiftNext();
                 continue;
             }
             break;
         }
-        if ((st.Current == 'e') || (st.Current == 'E'))
+        if (st.Current == 'e' || st.Current == 'E')
         {
             st.ShiftNext();
             if (st.Current == '-')
@@ -303,7 +304,7 @@ internal static partial class LexicalAnalyzer
             while (!st.EOS)
             {//指数部
                 char c = st.Current;
-                if (char.IsDigit(c) || (c == '.'))
+                if (char.IsDigit(c) || c == '.')
                 {
                     st.ShiftNext();
                     continue;
@@ -436,7 +437,7 @@ internal static partial class LexicalAnalyzer
                             return;
                         break;
                     case ',':
-                        if ((endWith == StrEndWith.Comma) || (endWith == StrEndWith.LeftParenthesis_Bracket_Comma_Semicolon))
+                        if (endWith == StrEndWith.Comma || endWith == StrEndWith.LeftParenthesis_Bracket_Comma_Semicolon)
                             return;
                         break;
                     case '(':
@@ -724,7 +725,7 @@ internal static partial class LexicalAnalyzer
                     st.ShiftNext();
                     continue;
                 case '　':
-                    if (!Config.SystemAllowFullSpace)
+                    if (!Config.Config.SystemAllowFullSpace)
                         return count;
                     goto case ' ';
                 case ';':
@@ -790,8 +791,8 @@ internal static partial class LexicalAnalyzer
                         st.ShiftNext();
                         continue;
                     case '　':
-                        if (!Config.SystemAllowFullSpace)
-                            throw new CodeEE("字句解析中に予期しない全角スペースを発見しました(この警告はシステムオプション「" + Config.GetConfigName(ConfigCode.SystemAllowFullSpace) + "」により無視できます)");
+                        if (!Config.Config.SystemAllowFullSpace)
+                            throw new CodeEE("字句解析中に予期しない全角スペースを発見しました(この警告はシステムオプション「" + Config.Config.GetConfigName(ConfigCode.SystemAllowFullSpace) + "」により無視できます)");
                         st.ShiftNext();
                         continue;
                     case '0':
@@ -824,13 +825,13 @@ internal static partial class LexicalAnalyzer
                     case '~':
                     case '?':
                     case '#':
-                        if ((nestBracketS == 0) && (nestBracketL == 0))
+                        if (nestBracketS == 0 && nestBracketL == 0)
                         {
                             if (endWith == LexEndWith.Operator)
                                 return;//代入演算子のはずである。呼び出し元がチェックするはず
-                            else if ((endWith == LexEndWith.Percent) && (st.Current == '%'))
+                            else if (endWith == LexEndWith.Percent && st.Current == '%')
                                 return;
-                            else if ((endWith == LexEndWith.Question) && (st.Current == '?'))
+                            else if (endWith == LexEndWith.Question && st.Current == '?')
                                 return;
                         }
                         ret.Add(new OperatorWord(ReadOperator(st, (flag & LexAnalyzeFlag.AllowAssignment) == LexAnalyzeFlag.AllowAssignment)));
@@ -869,7 +870,7 @@ internal static partial class LexicalAnalyzer
                         ret.Add(new SymbolWord('[')); nestBracketL++; st.ShiftNext(); continue;
                     case ':': ret.Add(new SymbolWord(':')); st.ShiftNext(); continue;
                     case ',':
-                        if ((endWith == LexEndWith.Comma) && (nestBracketS == 0))// && (nestBracketL == 0))
+                        if (endWith == LexEndWith.Comma && nestBracketS == 0)// && (nestBracketL == 0))
                             return;
                         ret.Add(new SymbolWord(',')); st.ShiftNext(); continue;
                     //case '}': ret.Add(new SymbolWT('}')); nestBracketM--; continue;
@@ -887,7 +888,7 @@ internal static partial class LexicalAnalyzer
                         if ((flag & LexAnalyzeFlag.AnalyzePrintV) != LexAnalyzeFlag.AnalyzePrintV)
                         {
                             //AssignmentStr用特殊処理 代入文の代入演算子を探索中で'=の場合のみ許可
-                            if ((endWith == LexEndWith.Operator) && (nestBracketS == 0) && (nestBracketL == 0) && st.Next == '=')
+                            if (endWith == LexEndWith.Operator && nestBracketS == 0 && nestBracketL == 0 && st.Next == '=')
                                 return;
                             throw new CodeEE("字句解析中に予期しない文字'" + st.Current + "'を発見しました");
                         }
@@ -959,7 +960,7 @@ internal static partial class LexicalAnalyzer
             }
         };
         local();
-        if ((nestBracketS != 0) || (nestBracketL != 0))
+        if (nestBracketS != 0 || nestBracketL != 0)
         {
             if (nestBracketS < 0)
                 throw new CodeEE("字句解析中に対応する'('のない')'を発見しました");
@@ -1116,7 +1117,7 @@ internal static partial class LexicalAnalyzer
                     buffer.Append(cur);
                     break;
                 case ',':
-                    if ((endWith == FormStrEndWith.Comma) || (endWith == FormStrEndWith.LeftParenthesis_Bracket_Comma_Semicolon))
+                    if (endWith == FormStrEndWith.Comma || endWith == FormStrEndWith.LeftParenthesis_Bracket_Comma_Semicolon)
                         goto end;
                     buffer.Append(cur);
                     break;
@@ -1148,7 +1149,7 @@ internal static partial class LexicalAnalyzer
                 case '=':
                 case '/':
                 case '$':
-                    if (!Config.SystemIgnoreTripleSymbol && st.TripleSymbol())
+                    if (!Config.Config.SystemIgnoreTripleSymbol && st.TripleSymbol())
                     {
                         strs.Add(buffer.ToString());
                         buffer.Remove(0, buffer.Length);
@@ -1174,7 +1175,7 @@ internal static partial class LexicalAnalyzer
                         case 'n': buffer.Append('\n'); break;
                         case '@'://\@～～?～～#～～\@
                             {
-                                if ((endWith == FormStrEndWith.YenAt) || (endWith == FormStrEndWith.Sharp))
+                                if (endWith == FormStrEndWith.YenAt || endWith == FormStrEndWith.Sharp)
                                     goto end;
                                 strs.Add(buffer.ToString());
                                 buffer.Remove(0, buffer.Length);

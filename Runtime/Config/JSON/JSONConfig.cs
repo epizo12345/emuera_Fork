@@ -4,7 +4,7 @@ using System.IO;
 using System.Text.Json;
 
 
-namespace DotnetEmuera;
+namespace MinorShift.Emuera.Runtime.Config.JSON;
 static class JSONConfig
 {
     public static JSONConfigData Data;

@@ -1,16 +1,18 @@
-﻿using MinorShift.Emuera.GameData.Expression;
-using MinorShift.Emuera.GameData.Function;
-using MinorShift.Emuera.GameData.Variable;
+﻿using MinorShift.Emuera.GameData.Variable;
+using MinorShift.Emuera.Runtime.Script;
+using MinorShift.Emuera.Runtime.Script.Statements.Expression;
+using MinorShift.Emuera.Runtime.Script.Statements.Function;
+using MinorShift.Emuera.Runtime.Script.Statements.Variable;
 using System;
 using System.Collections.Generic;
 
-namespace MinorShift.Emuera.GameProc.Function;
+namespace MinorShift.Emuera.Runtime.Script.Statements;
 
 internal abstract class Argument
 {
     public bool IsConst;
     public string ConstStr;
-    public Int64 ConstInt;
+    public long ConstInt;
 }
 
 /// <summary>
@@ -194,10 +196,10 @@ internal sealed class SpForNextArgment : Argument
 {
     public SpForNextArgment(VariableTerm var, AExpression start, AExpression end, AExpression step)
     {
-        this.Cnt = var;
-        this.Start = start;
-        this.End = end;
-        this.Step = step;
+        Cnt = var;
+        Start = start;
+        End = end;
+        Step = step;
     }
     readonly public VariableTerm Cnt;
     readonly public AExpression Start;
@@ -485,7 +487,7 @@ internal sealed class SpSetArgument : Argument
 
 internal sealed class SpSetArrayArgument : Argument
 {
-    public SpSetArrayArgument(VariableTerm var, List<AExpression> termList, Int64[] constList)
+    public SpSetArrayArgument(VariableTerm var, List<AExpression> termList, long[] constList)
     {
         VariableDest = var;
         TermList = termList;
@@ -499,7 +501,7 @@ internal sealed class SpSetArrayArgument : Argument
     }
     readonly public VariableTerm VariableDest;
     readonly public List<AExpression> TermList;
-    readonly public Int64[] ConstIntList;
+    readonly public long[] ConstIntList;
     readonly public string[] ConstStrList;
 }
 #endregion

@@ -1,7 +1,6 @@
-
 using System.Text.Json.Serialization;
 
-namespace DotnetEmuera;
+namespace MinorShift.Emuera.Runtime.Config.JSON;
 //JSONの定義
 sealed class JSONConfigData
 {

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace MinorShift.Emuera.Sub;
+namespace MinorShift.Emuera.Runtime.Utils;
 
 
 internal abstract class EmueraException : ApplicationException

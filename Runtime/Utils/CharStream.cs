@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace MinorShift.Emuera.Sub;
+namespace MinorShift.Emuera.Runtime.Utils;
 
 /// <summary>
 /// 文字列を1文字ずつ評価するためのクラス
@@ -159,7 +159,7 @@ internal sealed class CharStream
     {
         if (pointer + 3 > source.Length)
             return false;
-        return (source[pointer] == source[pointer + 1]) && (source[pointer] == source[pointer + 2]);
+        return source[pointer] == source[pointer + 1] && source[pointer] == source[pointer + 2];
     }
 
 

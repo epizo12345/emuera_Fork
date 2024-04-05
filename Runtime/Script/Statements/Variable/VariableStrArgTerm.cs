@@ -1,16 +1,17 @@
-﻿using MinorShift.Emuera.GameData.Expression;
+﻿using MinorShift.Emuera.Runtime.Script.Statements.Expression;
+using MinorShift.Emuera.Runtime.Utils;
 using MinorShift.Emuera.Sub;
 using System;
 using System.Collections.Generic;
 
-namespace MinorShift.Emuera.GameData.Variable;
+namespace MinorShift.Emuera.Runtime.Script.Statements.Variable;
 
 
 //変数の引数のうち文字列型のもの。
 internal sealed class VariableStrArgTerm : AExpression
 {
     public VariableStrArgTerm(VariableCode code, AExpression strTerm, int index)
-        : base(typeof(Int64))
+        : base(typeof(long))
     {
         this.strTerm = strTerm;
         parentCode = code;
@@ -22,7 +23,7 @@ internal sealed class VariableStrArgTerm : AExpression
     Dictionary<string, int> dic;
     string errPos;
 
-    public override Int64 GetIntValue(ExpressionMediator exm)
+    public override long GetIntValue(ExpressionMediator exm)
     {
         if (dic == null)
             dic = exm.VEvaluator.Constant.GetKeywordDictionary(out errPos, parentCode, index);
@@ -46,6 +47,6 @@ internal sealed class VariableStrArgTerm : AExpression
         strTerm = strTerm.Restructure(exm);
         if (!(strTerm is SingleTerm))
             return this;
-        return new SingleLongTerm(this.GetIntValue(exm));
+        return new SingleLongTerm(GetIntValue(exm));
     }
 }

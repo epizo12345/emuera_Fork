@@ -1,12 +1,15 @@
-﻿using MinorShift.Emuera.GameData;
-using MinorShift.Emuera.GameData.Variable;
+﻿using MinorShift.Emuera.GameData.Variable;
+using MinorShift.Emuera.GameProc;
 using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.Runtime.Config;
+using MinorShift.Emuera.Runtime.Script.Data;
+using MinorShift.Emuera.Runtime.Script.Parser;
+using MinorShift.Emuera.Runtime.Utils;
 using MinorShift.Emuera.Sub;
 using System;
 using System.Collections.Generic;
 
-namespace MinorShift.Emuera.GameProc;
+namespace MinorShift.Emuera.Runtime.Script.Loader;
 
 internal sealed class ErhLoader
 {
@@ -32,7 +35,7 @@ internal sealed class ErhLoader
     /// <returns></returns>
     public bool LoadHeaderFiles(string headerDir, bool displayReport)
     {
-        List<KeyValuePair<string, string>> headerFiles = Config.GetFiles(headerDir, "*.ERH");
+        List<KeyValuePair<string, string>> headerFiles = Config.Config.GetFiles(headerDir, "*.ERH");
         bool noError = true;
         dimlines = new Queue<DimLineWC>();
         try
@@ -96,15 +99,15 @@ internal sealed class ErhLoader
                 LexicalAnalyzer.SkipWhiteSpace(st);
                 switch (sharpID)
                 {
-                    case var s when s.Equals("DEFINE", Config.StringComparison):
+                    case var s when s.Equals("DEFINE", Config.Config.StringComparison):
                         analyzeSharpDefine(st, position);
                         break;
-                    case var s when s.Equals("FUNCTION", Config.StringComparison) ||
-                                    s.Equals("FUNCTIONS", Config.StringComparison):
+                    case var s when s.Equals("FUNCTION", Config.Config.StringComparison) ||
+                                    s.Equals("FUNCTIONS", Config.Config.StringComparison):
                         analyzeSharpFunction(st, position, sharpID == "FUNCTIONS");
                         break;
-                    case var s when s.Equals("DIM", Config.StringComparison) ||
-                                    s.Equals("DIMS", Config.StringComparison):
+                    case var s when s.Equals("DIM", Config.Config.StringComparison) ||
+                                    s.Equals("DIMS", Config.Config.StringComparison):
                         //1822 #DIMは保留しておいて後でまとめてやる
                         {
                             WordCollection wc = LexicalAnalyzer.Analyse(st, LexEndWith.EoL, LexAnalyzeFlag.AllowAssignment);
@@ -222,7 +225,7 @@ internal sealed class ErhLoader
                 }
                 for (int i = 0; i < argID.Count; i++)
                 {
-                    if (string.Equals(word.Code, argID[i], Config.StringComparison))
+                    if (string.Equals(word.Code, argID[i], Config.Config.StringComparison))
                     {
                         destWc.Remove();
                         destWc.Insert(new MacroWord(i));

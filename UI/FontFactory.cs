@@ -2,7 +2,7 @@ using MinorShift.Emuera.Runtime.Config;
 using System.Collections.Generic;
 using System.Drawing;
 
-namespace Emuera.UI;
+namespace MinorShift.Emuera.UI;
 
 static class FontFactory
 {

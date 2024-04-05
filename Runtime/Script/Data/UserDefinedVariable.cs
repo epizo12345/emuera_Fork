@@ -1,10 +1,11 @@
-﻿using MinorShift.Emuera.GameData.Expression;
-using MinorShift.Emuera.Runtime.Config;
-using MinorShift.Emuera.Sub;
+﻿using MinorShift.Emuera.Runtime.Config;
+using MinorShift.Emuera.Runtime.Script.Parser;
+using MinorShift.Emuera.Runtime.Script.Statements.Expression;
+using MinorShift.Emuera.Runtime.Utils;
 using System;
 using System.Collections.Generic;
 
-namespace MinorShift.Emuera.GameProc;
+namespace MinorShift.Emuera.Runtime.Script.Data;
 
 
 internal sealed class UserDefinedVariableData
@@ -14,7 +15,7 @@ internal sealed class UserDefinedVariableData
     public bool Reference;
     public int Dimension = 1;
     public int[] Lengths;
-    public Int64[] DefaultInt;
+    public long[] DefaultInt;
     public string[] DefaultStr;
     public bool Global;
     public bool Save;
@@ -46,7 +47,7 @@ internal sealed class UserDefinedVariableData
         {
             wc.ShiftNext();
             keyword = idw.Code;
-            var cmp = Config.StringComparison;
+            var cmp = Config.Config.StringComparison;
             //TODO ifの数があたまわるい なんとかしたい
             switch (keyword)
             {
@@ -222,7 +223,7 @@ internal sealed class UserDefinedVariableData
 
                     continue;
                 }
-                else if ((sizeTerm.Int <= 0) || (sizeTerm.Int > 1000000))
+                else if (sizeTerm.Int <= 0 || sizeTerm.Int > 1000000)
                     throw new CodeEE("ユーザー定義変数のサイズは1以上1000000以下でなければなりません", sc);
                 sizeNum.Add((int)sizeTerm.Int);
             }
@@ -261,7 +262,7 @@ internal sealed class UserDefinedVariableData
             if (dims)
                 ret.DefaultStr = new string[terms.Count];
             else
-                ret.DefaultInt = new Int64[terms.Count];
+                ret.DefaultInt = new long[terms.Count];
 
             for (int i = 0; i < terms.Count; i++)
             {
@@ -297,15 +298,15 @@ internal sealed class UserDefinedVariableData
         ret.Lengths = new int[sizeNum.Count];
         if (ret.Reference)
             return ret;
-        Int64 totalBytes = 1;
+        long totalBytes = 1;
         for (int i = 0; i < sizeNum.Count; i++)
         {
             ret.Lengths[i] = sizeNum[i];
             totalBytes *= ret.Lengths[i];
         }
-        if ((totalBytes <= 0) || (totalBytes > 1000000))
+        if (totalBytes <= 0 || totalBytes > 1000000)
             throw new CodeEE("ユーザー定義変数のサイズは1以上1000000以下でなければなりません", sc);
-        if (!isPrivate && ret.Save && !Config.SystemSaveInBinary)
+        if (!isPrivate && ret.Save && !Config.Config.SystemSaveInBinary)
         {
             if (dims && ret.Dimension > 1)
                 throw new CodeEE("文字列型の多次元配列変数にSAVEDATAフラグを付ける場合には「バイナリ型セーブ」オプションが必須です", sc);

@@ -1,7 +1,7 @@
-﻿using MinorShift.Emuera.GameData.Expression;
+﻿using MinorShift.Emuera.Runtime.Script.Statements.Expression;
 using System;
 
-namespace MinorShift.Emuera.Sub;
+namespace MinorShift.Emuera.Runtime.Script.Parser;
 
 internal abstract class Word
 {
@@ -37,9 +37,9 @@ internal sealed class IdentifierWord : Word
 
 internal sealed class LiteralIntegerWord : Word
 {
-    public LiteralIntegerWord(Int64 i) { code = i; }
-    readonly Int64 code;
-    public Int64 Int { get { return code; } }
+    public LiteralIntegerWord(long i) { code = i; }
+    readonly long code;
+    public long Int { get { return code; } }
     public override char Type { get { return '0'; } }
     public override string ToString()
     {

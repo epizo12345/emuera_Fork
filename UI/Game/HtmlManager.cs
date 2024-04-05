@@ -1,13 +1,15 @@
-﻿using MinorShift.Emuera.GameData.Expression;
+﻿using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.Runtime.Config;
-using MinorShift.Emuera.Sub;
+using MinorShift.Emuera.Runtime.Script.Parser;
+using MinorShift.Emuera.Runtime.Script.Statements.Expression;
+using MinorShift.Emuera.Runtime.Utils;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace MinorShift.Emuera.GameView;
+namespace MinorShift.Emuera.UI.Game;
 
 //TODO:1810～
 /* Emuera用Htmlもどきが実装すべき要素
@@ -60,7 +62,7 @@ internal static class HtmlManager
     {
         public bool IsButton = true;
         public bool IsButtonTag = true;
-        public Int64 ButtonValueInt;
+        public long ButtonValueInt;
         public string ButtonValueStr;
         public string ButtonTitle;
         public bool ButtonIsInteger;
@@ -104,11 +106,11 @@ internal static class HtmlManager
                 if (font.Color >= 0)
                 {
                     colorChanged = true;
-                    c = Color.FromArgb(font.Color >> 16, (font.Color >> 8) & 0xFF, font.Color & 0xFF);
+                    c = Color.FromArgb(font.Color >> 16, font.Color >> 8 & 0xFF, font.Color & 0xFF);
                 }
                 if (font.BColor >= 0)
                 {
-                    b = Color.FromArgb(font.BColor >> 16, (font.BColor >> 8) & 0xFF, font.BColor & 0xFF);
+                    b = Color.FromArgb(font.BColor >> 16, font.BColor >> 8 & 0xFF, font.BColor & 0xFF);
                 }
             }
             return new StringStyle(c, colorChanged, b, FontStyle, fontname);
@@ -516,7 +518,7 @@ internal static class HtmlManager
     }
     private static string getStringStyleStartingTag(StringStyle style)
     {
-        bool fontChanged = !((style.Fontname == null || style.Fontname == Config.FontName) && !style.ColorChanged && (style.ButtonColor == Config.FocusColor));
+        bool fontChanged = !((style.Fontname == null || style.Fontname == Config.FontName) && !style.ColorChanged && style.ButtonColor == Config.FocusColor);
         if (!fontChanged && style.FontStyle == FontStyle.Regular)
             return "";
         StringBuilder b = new();
@@ -526,7 +528,7 @@ internal static class HtmlManager
             if (style.Fontname != null && style.Fontname != Config.FontName)
             {
                 b.Append(" face='");
-                b.Append(HtmlManager.Escape(style.Fontname));
+                b.Append(Escape(style.Fontname));
                 b.Append('\'');
             }
             if (style.ColorChanged)
@@ -562,7 +564,7 @@ internal static class HtmlManager
 
     private static string getClosingStyleStartingTag(StringStyle style)
     {
-        bool fontChanged = !((style.Fontname == null || style.Fontname == Config.FontName) && !style.ColorChanged && (style.ButtonColor == Config.FocusColor));
+        bool fontChanged = !((style.Fontname == null || style.Fontname == Config.FontName) && !style.ColorChanged && style.ButtonColor == Config.FocusColor);
         if (!fontChanged && style.FontStyle == FontStyle.Regular)
             return "";
         StringBuilder b = new();
@@ -609,12 +611,12 @@ internal static class HtmlManager
                     state.FontStyle ^= endStyle;
                     return null;
                 case "p":
-                    if ((!state.FlagP) || state.FlagPClosed)
+                    if (!state.FlagP || state.FlagPClosed)
                         throw new CodeEE("</p>の前に<p>がありません");
                     state.FlagPClosed = true;
                     return null;
                 case "nobr":
-                    if ((!state.FlagNobr) || state.FlagNobrClosed)
+                    if (!state.FlagNobr || state.FlagNobrClosed)
                         throw new CodeEE("</nobr>の前に<nobr>がありません");
                     state.FlagNobrClosed = true;
                     return null;
@@ -871,11 +873,11 @@ internal static class HtmlManager
                     Color b = Config.FocusColor;
                     if (color >= 0)
                     {
-                        c = Color.FromArgb(color >> 16, (color >> 8) & 0xFF, color & 0xFF);
+                        c = Color.FromArgb(color >> 16, color >> 8 & 0xFF, color & 0xFF);
                     }
                     if (bcolor >= 0)
                     {
-                        b = Color.FromArgb(bcolor >> 16, (bcolor >> 8) & 0xFF, bcolor & 0xFF);
+                        b = Color.FromArgb(bcolor >> 16, bcolor >> 8 & 0xFF, bcolor & 0xFF);
                     }
                     return ConsoleShapePart.CreateShape(type, param, c, b, color >= 0);
                 }
@@ -932,7 +934,7 @@ internal static class HtmlManager
                     {
                         //if (value == null)
                         //	throw new CodeEE("<" + tag + ">タグにvalue属性が設定されていません");
-                        buttonTag.ButtonIsInteger = Int64.TryParse(value, out long intValue);
+                        buttonTag.ButtonIsInteger = long.TryParse(value, out long intValue);
                         buttonTag.ButtonValueInt = intValue;
                         buttonTag.ButtonValueStr = value;
                     }

@@ -1,9 +1,10 @@
-﻿using MinorShift.Emuera.GameData.Expression;
+﻿using MinorShift.Emuera.Runtime.Script.Statements.Expression;
+using MinorShift.Emuera.Runtime.Utils;
 using MinorShift.Emuera.Sub;
 using System;
 using System.Collections.Generic;
 
-namespace MinorShift.Emuera.GameData.Function;
+namespace MinorShift.Emuera.Runtime.Script.Statements.Function;
 
 internal abstract class FunctionMethod
 {
@@ -35,11 +36,11 @@ internal abstract class FunctionMethod
     public bool HasUniqueRestructure { get; protected set; }
 
     //実際の計算。
-    public virtual Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments) { throw new ExeEE("戻り値の型が違う or 未実装"); }
+    public virtual long GetIntValue(ExpressionMediator exm, List<AExpression> arguments) { throw new ExeEE("戻り値の型が違う or 未実装"); }
     public virtual string GetStrValue(ExpressionMediator exm, List<AExpression> arguments) { throw new ExeEE("戻り値の型が違う or 未実装"); }
     public virtual SingleTerm GetReturnValue(ExpressionMediator exm, List<AExpression> arguments)
     {
-        if (ReturnType == typeof(Int64))
+        if (ReturnType == typeof(long))
             return new SingleLongTerm(GetIntValue(exm, arguments));
         else
             return new SingleStrTerm(GetStrValue(exm, arguments));

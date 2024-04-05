@@ -1,11 +1,13 @@
-﻿using MinorShift.Emuera.GameData.Expression;
-using MinorShift.Emuera.GameData.Variable;
+﻿using MinorShift.Emuera.GameData.Variable;
 using MinorShift.Emuera.GameView;
+using MinorShift.Emuera.Runtime.Script.Statements;
+using MinorShift.Emuera.Runtime.Script.Statements.Expression;
+using MinorShift.Emuera.Runtime.Utils;
 using MinorShift.Emuera.Sub;
 using System;
 using System.Collections.Generic;
 
-namespace MinorShift.Emuera.GameProc;
+namespace MinorShift.Emuera.Runtime.Script;
 
 //1756 インナークラス解除して一般に開放
 
@@ -117,7 +119,7 @@ internal sealed class ProcessState
 
     SystemStateCode sysStateCode = SystemStateCode.Title_Begin;
     BeginType begintype = BeginType.NULL;
-    public bool isBegun { get { return (begintype != BeginType.NULL) ? true : false; } }
+    public bool isBegun { get { return begintype != BeginType.NULL ? true : false; } }
 
     public LogicalLine CurrentLine { get { return currentLine; } set { currentLine = value; } }
     public LogicalLine ErrorLine
@@ -347,7 +349,7 @@ internal sealed class ProcessState
         }
     }
 
-    public void Return(Int64 ret)
+    public void Return(long ret)
     {
         if (IsFunctionMethod)
         {
@@ -386,7 +388,7 @@ internal sealed class ProcessState
             //1756 全てを終了ではなく#PRIや#LATERのグループごとに修正
             if (called.IsOnly)
                 called.FinishEvent();
-            else if (called.HasSingleFlag && (ret == 1))
+            else if (called.HasSingleFlag && ret == 1)
                 called.ShiftNextGroup();
             else
                 called.ShiftNext();//次の同名関数に進む。
@@ -462,7 +464,7 @@ internal sealed class ProcessState
                 {
                     if (call.TopLabel.Arg[i].Identifier.IsReference)
                         ((ReferenceToken)call.TopLabel.Arg[i].Identifier).SetRef(srcArgs.TransporterRef[i]);
-                    else if (srcArgs.Arguments[i].GetOperandType() == typeof(Int64))
+                    else if (srcArgs.Arguments[i].GetOperandType() == typeof(long))
                         call.TopLabel.Arg[i].SetValue(srcArgs.TransporterInt[i], exm);
                     else
                         call.TopLabel.Arg[i].SetValue(srcArgs.TransporterStr[i], exm);
@@ -532,11 +534,11 @@ internal sealed class ProcessState
             //どうせ消すからコピー不要
             //foreach (CalledFunction func in functionList)
             //	ret.functionList.Add(func.Clone());
-            currentLine = this.currentLine,
+            currentLine = currentLine,
             //ret.nextLine = this.nextLine;
             //ret.sequential = this.sequential;
-            sysStateCode = this.sysStateCode,
-            begintype = this.begintype
+            sysStateCode = sysStateCode,
+            begintype = begintype
         };
         //ret.MethodReturnValue = this.MethodReturnValue;
         return ret;
