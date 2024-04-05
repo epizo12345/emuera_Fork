@@ -1,17 +1,16 @@
-﻿using System;
+﻿using MinorShift._Library;
+using MinorShift.Emuera.Content;
+using MinorShift.Emuera.GameData.Expression;
+using MinorShift.Emuera.GameData.Variable;
+using MinorShift.Emuera.GameView;
+using MinorShift.Emuera.Runtime.Config;
+using MinorShift.Emuera.Sub;
+using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using MinorShift.Emuera.GameData.Expression;
-using MinorShift.Emuera.Sub;
-using MinorShift._Library;
-using MinorShift.Emuera.GameData.Variable;
-using System.Drawing;
-using MinorShift.Emuera.GameView;
-using MinorShift.Emuera.Content;
-using System.Linq;
-using MinorShift.Emuera.Runtime.Config;
-using System.Diagnostics;
 
 namespace MinorShift.Emuera.GameData.Function
 {

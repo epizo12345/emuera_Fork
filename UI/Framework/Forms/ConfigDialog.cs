@@ -1,9 +1,9 @@
-﻿using System;
-using System.Drawing;
-using System.Windows.Forms;
-using System.Drawing.Text;
-using DotnetEmuera;
+﻿using DotnetEmuera;
 using MinorShift.Emuera.Runtime.Config;
+using System;
+using System.Drawing;
+using System.Drawing.Text;
+using System.Windows.Forms;
 
 namespace MinorShift.Emuera.Forms
 {

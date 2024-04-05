@@ -1,682 +1,682 @@
-﻿using System;
-using System.Collections.Generic;
-using MinorShift.Emuera.Sub;
+﻿using MinorShift._Library;
 using MinorShift.Emuera.GameData;
-using MinorShift.Emuera.GameData.Variable;
-using MinorShift.Emuera.GameData.Function;
-using MinorShift.Emuera.GameProc;
-using System.Text.RegularExpressions;
-using MinorShift.Emuera.GameProc.Function;
 using MinorShift.Emuera.GameData.Expression;
-using MinorShift._Library;
+using MinorShift.Emuera.GameData.Function;
+using MinorShift.Emuera.GameData.Variable;
+using MinorShift.Emuera.GameProc;
+using MinorShift.Emuera.GameProc.Function;
 using MinorShift.Emuera.Runtime.Config;
+using MinorShift.Emuera.Sub;
+using System;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace MinorShift.Emuera
 {
-	//1756 新設。
-	//また、使用されている名前を記憶し衝突を検出する。
-	internal sealed partial class IdentifierDictionary
-	{
-		private static readonly System.Buffers.SearchValues<char> badSymbolAsIdentifier = System.Buffers.SearchValues.Create(new char[]
-		{
-			'+', '-', '*', '/', '%', '=', '!', '<', '>', '|', '&', '^', '~',
-			' ', '　', '\t' ,
-			'\"','(', ')', '{', '}', '[', ']', ',', '.', ':',
-			'\\', '@', '$', '#', '?', ';', '\'',
+    //1756 新設。
+    //また、使用されている名前を記憶し衝突を検出する。
+    internal sealed partial class IdentifierDictionary
+    {
+        private static readonly System.Buffers.SearchValues<char> badSymbolAsIdentifier = System.Buffers.SearchValues.Create(new char[]
+        {
+            '+', '-', '*', '/', '%', '=', '!', '<', '>', '|', '&', '^', '~',
+            ' ', '　', '\t' ,
+            '\"','(', ')', '{', '}', '[', ']', ',', '.', ':',
+            '\\', '@', '$', '#', '?', ';', '\'',
 			//'_'はOK
 		});
 
-		private enum DefinedNameType
-		{
-			None = 0,
-			Reserved,
-			SystemVariable,
-			SystemMethod,
-			SystemInstrument,
-			//UserIdentifier,
-			UserGlobalVariable,
-			UserMacro,
-			UserRefMethod,
-			NameSpace,
-		}
-		readonly static Regex regexCom = preCompiledComRegex();
-		readonly static Regex regexComAble = preCompiledComAbleRegex();
-		readonly static Regex regexAblup = preCompiledAblupRegex();
-		#region static
+        private enum DefinedNameType
+        {
+            None = 0,
+            Reserved,
+            SystemVariable,
+            SystemMethod,
+            SystemInstrument,
+            //UserIdentifier,
+            UserGlobalVariable,
+            UserMacro,
+            UserRefMethod,
+            NameSpace,
+        }
+        readonly static Regex regexCom = preCompiledComRegex();
+        readonly static Regex regexComAble = preCompiledComAbleRegex();
+        readonly static Regex regexAblup = preCompiledAblupRegex();
+        #region static
 
-		public static bool IsEventLabelName(string labelName)
-		{
-			switch (labelName)
-			{
-				case "EVENTFIRST":
-				case "EVENTTRAIN":
-				case "EVENTSHOP":
-				case "EVENTBUY":
-				case "EVENTCOM":
-				case "EVENTTURNEND":
-				case "EVENTCOMEND":
-				case "EVENTEND":
-				case "EVENTLOAD":
-					return true;
-			}
-			return false;
-		}
-		public static bool IsSystemLabelName(string labelName)
-		{
-			switch (labelName)
-			{
-				case "EVENTFIRST":
-				case "EVENTTRAIN":
-				case "EVENTSHOP":
-				case "EVENTBUY":
-				case "EVENTCOM":
-				case "EVENTTURNEND":
-				case "EVENTCOMEND":
-				case "EVENTEND":
-				case "SHOW_STATUS":
-				case "SHOW_USERCOM":
-				case "USERCOM":
-				case "SOURCE_CHECK":
-				case "CALLTRAINEND":
-				case "SHOW_JUEL":
-				case "SHOW_ABLUP_SELECT":
-				case "USERABLUP":
-				case "SHOW_SHOP":
-				case "SAVEINFO":
-				case "USERSHOP":
+        public static bool IsEventLabelName(string labelName)
+        {
+            switch (labelName)
+            {
+                case "EVENTFIRST":
+                case "EVENTTRAIN":
+                case "EVENTSHOP":
+                case "EVENTBUY":
+                case "EVENTCOM":
+                case "EVENTTURNEND":
+                case "EVENTCOMEND":
+                case "EVENTEND":
+                case "EVENTLOAD":
+                    return true;
+            }
+            return false;
+        }
+        public static bool IsSystemLabelName(string labelName)
+        {
+            switch (labelName)
+            {
+                case "EVENTFIRST":
+                case "EVENTTRAIN":
+                case "EVENTSHOP":
+                case "EVENTBUY":
+                case "EVENTCOM":
+                case "EVENTTURNEND":
+                case "EVENTCOMEND":
+                case "EVENTEND":
+                case "SHOW_STATUS":
+                case "SHOW_USERCOM":
+                case "USERCOM":
+                case "SOURCE_CHECK":
+                case "CALLTRAINEND":
+                case "SHOW_JUEL":
+                case "SHOW_ABLUP_SELECT":
+                case "USERABLUP":
+                case "SHOW_SHOP":
+                case "SAVEINFO":
+                case "USERSHOP":
 
-				case "EVENTLOAD":
-				case "TITLE_LOADGAME":
-				case "SYSTEM_AUTOSAVE":
-				case "SYSTEM_TITLE":
-				case "SYSTEM_LOADEND":
-					return true;
-			}
-			if (regexCom.IsMatch(labelName))
-				return true;
-			if (regexComAble.IsMatch(labelName))
-				return true;
-			if (regexAblup.IsMatch(labelName))
-				return true;
-			return false;
-		}
-		#endregion
-
-
-		readonly Dictionary<string, DefinedNameType> nameDic = new(Config.StrComper);
-
-		List<string> privateDimList = [];
-		//Dictionary<string, VariableToken> userDefinedVarDic = new Dictionary<string, VariableToken>();
-
-		VariableData varData;
-		readonly Dictionary<string, VariableToken> varTokenDic;
-		readonly Dictionary<string, VariableLocal> localvarTokenDic;
-		readonly Dictionary<string, FunctionIdentifier> instructionDic;
-		readonly Dictionary<string, FunctionMethod> methodDic;
-		readonly Dictionary<string, UserDefinedRefMethod> refmethodDic;
-		public List<UserDefinedCharaVariableToken> CharaDimList = [];
-		#region initialize
-		public IdentifierDictionary(VariableData varData)
-		{
-			this.varData = varData;
-			nameDic.Clear();
-			//予約語を登録。式中に登場すると構文解析が崩壊する名前群。
-			//ただしeramaker用スクリプトなら特に気にすることはない。式中に出てこない単語も同様。
-			nameDic.Add("IS", DefinedNameType.Reserved);
-			nameDic.Add("TO", DefinedNameType.Reserved);
-			nameDic.Add("INT", DefinedNameType.Reserved);
-			nameDic.Add("STR", DefinedNameType.Reserved);
-			nameDic.Add("REFFUNC", DefinedNameType.Reserved);
-			nameDic.Add("STATIC", DefinedNameType.Reserved);
-			nameDic.Add("DYNAMIC", DefinedNameType.Reserved);
-			nameDic.Add("GLOBAL", DefinedNameType.Reserved);
-			nameDic.Add("PRIVATE", DefinedNameType.Reserved);
-			nameDic.Add("SAVEDATA", DefinedNameType.Reserved);
-			nameDic.Add("CHARADATA", DefinedNameType.Reserved);//CHARDATAから変更
-			nameDic.Add("REF", DefinedNameType.Reserved);
-			nameDic.Add("__DEBUG__", DefinedNameType.Reserved);
-			nameDic.Add("__SKIP__", DefinedNameType.Reserved);
-			nameDic.Add("_", DefinedNameType.Reserved);
-			instructionDic = FunctionIdentifier.GetInstructionNameDic();
-
-			varTokenDic = varData.GetVarTokenDicClone();
-			localvarTokenDic = varData.GetLocalvarTokenDic();
-			methodDic = FunctionMethodCreator.GetMethodList();
-			refmethodDic = new(Config.StrComper);
-
-			foreach (KeyValuePair<string, FunctionMethod> pair in methodDic)
-			{
-				nameDic.Add(pair.Key, DefinedNameType.SystemMethod);
-			}
-
-			foreach (KeyValuePair<string, VariableToken> pair in varTokenDic)
-			{
-				//RANDが衝突している
-				//1808a3 GLOBAL、PRIVATEも
-				//1808beta009 REFも
-				nameDic.TryAdd(pair.Key, DefinedNameType.SystemVariable);
-			}
-
-			foreach (KeyValuePair<string, VariableLocal> pair in localvarTokenDic)
-			{
-				nameDic.Add(pair.Key, DefinedNameType.SystemVariable);
-			}
-
-			foreach (KeyValuePair<string, FunctionIdentifier> pair in instructionDic)
-			{
-				//Methodと被る
-				//1808a3 SAVEDATAも
-				nameDic.TryAdd(pair.Key, DefinedNameType.SystemInstrument);
-			}
-		}
-
-		//public void SetSystemInstrumentName(List<string> names)
-		//{
-		//}
-
-		public void CheckUserLabelName(out string errMes, ref int warnLevel, bool isFunction, string labelName)
-		{
-			errMes = "";
-			if (labelName.Length == 0)
-			{
-				errMes = "ラベル名がありません";
-				warnLevel = 2;
-				return;
-			}
-			//1.721 記号をサポートしない方向に変更
-			if (labelName.AsSpan().ContainsAny(badSymbolAsIdentifier))
-			{
-				errMes = "ラベル名" + labelName + "に\"_\"以外の記号が含まれています";
-				warnLevel = 1;
-				return;
-			}
-			if (char.IsDigit(labelName[0]) && labelName[0].ToString().Length == LangManager.GetStrlenLang(labelName[0].ToString()))
-			{
-				errMes = "ラベル名" + labelName + "が半角数字から始まっています";
-				warnLevel = 0;
-				return;
-			}
-			if (!isFunction || !Config.WarnFunctionOverloading)
-				return;
-			if (nameDic.TryGetValue(labelName, out DefinedNameType value))
-			{
-				switch (value)
-				{
-					case DefinedNameType.Reserved:
-						if (Config.AllowFunctionOverloading)
-						{
-							errMes = "関数名" + labelName + "はEmueraの予約語と衝突しています。Emuera専用構文の構文解析に支障をきたす恐れがあります";
-							warnLevel = 1;
-						}
-						else
-						{
-							errMes = "関数名" + labelName + "はEmueraの予約語です";
-							warnLevel = 2;
-						}
-						break;
-					case DefinedNameType.SystemMethod:
-						if (Config.AllowFunctionOverloading)
-						{
-							errMes = "関数名" + labelName + "はEmueraの式中関数を上書きします";
-							warnLevel = 1;
-						}
-						else
-						{
-							errMes = "関数名" + labelName + "はEmueraの式中関数名として使われています";
-							warnLevel = 2;
-						}
-						break;
-					case DefinedNameType.SystemVariable:
-						errMes = "関数名" + labelName + "はEmueraの変数で使われています";
-						warnLevel = 1;
-						break;
-					case DefinedNameType.SystemInstrument:
-						errMes = "関数名" + labelName + "はEmueraの変数もしくは命令で使われています";
-						warnLevel = 1;
-						break;
-					case DefinedNameType.UserMacro:
-						//字句解析がうまくいっていれば本来あり得ないはず
-						errMes = "関数名" + labelName + "はマクロに使用されています";
-						warnLevel = 2;
-						break;
-					case DefinedNameType.UserRefMethod:
-						errMes = "関数名" + labelName + "は参照型関数の名称に使用されています";
-						warnLevel = 2;
-						break;
-				}
-			}
-			return;
-		}
-
-		public void CheckUserVarName(ref string errMes, ref int warnLevel, string varName)
-		{
-			//if (varName.Length == 0)
-			//{
-			//    errMes = "変数名がありません";
-			//    warnLevel = 2;
-			//    return;
-			//}
-			//1.721 記号をサポートしない方向に変更
-			if (varName.AsSpan().IndexOfAny(badSymbolAsIdentifier) != -1)
-			{
-				errMes = "変数名" + varName + "に\"_\"以外の記号が含まれています";
-				warnLevel = 2;
-				return;
-			}
-			//if (char.IsDigit(varName[0]))
-			//{
-			//    errMes = "変数名" + varName + "が半角数字から始まっています";
-			//    warnLevel = 2;
-			//    return;
-			//}
-
-			if (nameDic.TryGetValue(varName, out DefinedNameType value))
-			{
-				switch (value)
-				{
-					case DefinedNameType.Reserved:
-						errMes = "変数名" + varName + "はEmueraの予約語です";
-						warnLevel = 2;
-						break;
-					case DefinedNameType.SystemInstrument:
-					case DefinedNameType.SystemMethod:
-						//代入文が使えなくなるために命令名との衝突は致命的。
-						errMes = "変数名" + varName + "はEmueraの命令名として使われています";
-						warnLevel = 2;
-						break;
-					case DefinedNameType.SystemVariable:
-						errMes = "変数名" + varName + "はEmueraの変数名として使われています";
-						warnLevel = 2;
-						break;
-					case DefinedNameType.UserMacro:
-						errMes = "変数名" + varName + "は既にマクロ名に使用されています";
-						warnLevel = 2;
-						break;
-					case DefinedNameType.UserGlobalVariable:
-						errMes = "変数名" + varName + "はユーザー定義の広域変数名に使用されています";
-						warnLevel = 2;
-						break;
-					case DefinedNameType.UserRefMethod:
-						errMes = "変数名" + varName + "は参照型関数の名称に使用されています";
-						warnLevel = 2;
-						break;
-				}
-			}
-		}
-
-		public void CheckUserMacroName(ref string errMes, ref int warnLevel, string macroName)
-		{
-			if (macroName.AsSpan().IndexOfAny(badSymbolAsIdentifier) != -1)
-			{
-				errMes = "マクロ名" + macroName + "に\"_\"以外の記号が含まれています";
-				warnLevel = 2;
-				return;
-			}
-			if (nameDic.TryGetValue(macroName, out DefinedNameType value))
-			{
-				switch (value)
-				{
-					case DefinedNameType.Reserved:
-						errMes = "マクロ名" + macroName + "はEmueraの予約語です";
-						warnLevel = 2;
-						break;
-					case DefinedNameType.SystemInstrument:
-					case DefinedNameType.SystemMethod:
-						//命令名を上書きした時が面倒なのでとりあえず許可しない
-						errMes = "マクロ名" + macroName + "はEmueraの命令名として使われています";
-						warnLevel = 2;
-						break;
-					case DefinedNameType.SystemVariable:
-						//別に上書きしてもいいがとりあえず許可しないでおく。いずれ解放するかもしれない
-						errMes = "マクロ名" + macroName + "はEmueraの変数名として使われています";
-						warnLevel = 2;
-						break;
-					case DefinedNameType.UserMacro:
-						errMes = "マクロ名" + macroName + "は既にマクロ名に使用されています";
-						warnLevel = 2;
-						break;
-					case DefinedNameType.UserGlobalVariable:
-						errMes = "マクロ名" + macroName + "はユーザー定義の広域変数名に使用されています";
-						warnLevel = 2;
-						break;
-					case DefinedNameType.UserRefMethod:
-						errMes = "マクロ名" + macroName + "は参照型関数の名称に使用されています";
-						warnLevel = 2;
-						break;
-				}
-			}
-		}
-
-		public void CheckUserPrivateVarName(ref string errMes, ref int warnLevel, string varName)
-		{
-			if (varName.Length == 0)
-			{
-				errMes = "変数名がありません";
-				warnLevel = 2;
-				return;
-			}
-			//1.721 記号をサポートしない方向に変更
-			if (varName.AsSpan().IndexOfAny(badSymbolAsIdentifier) != -1)
-			{
-				errMes = "変数名" + varName + "に\"_\"以外の記号が含まれています";
-				warnLevel = 2;
-				return;
-			}
-			if (char.IsDigit(varName[0]))
-			{
-				errMes = "変数名" + varName + "が半角数字から始まっています";
-				warnLevel = 2;
-				return;
-			}
-			if (nameDic.TryGetValue(varName, out DefinedNameType value))
-			{
-				switch (value)
-				{
-					case DefinedNameType.Reserved:
-						errMes = "変数名" + varName + "はEmueraの予約語です";
-						warnLevel = 2;
-						return;
-					case DefinedNameType.SystemInstrument:
-					case DefinedNameType.SystemMethod:
-						//代入文が使えなくなるために命令名との衝突は致命的。
-						errMes = "変数名" + varName + "はEmueraの命令名として使われています";
-						warnLevel = 2;
-						return;
-					case DefinedNameType.SystemVariable:
-						//システム変数の上書きは不可
-						errMes = "変数名" + varName + "はEmueraの変数名として使われています";
-						warnLevel = 2;
-						break;
-					case DefinedNameType.UserMacro:
-						//字句解析がうまくいっていれば本来あり得ないはず
-						errMes = "変数名" + varName + "はマクロに使用されています";
-						warnLevel = 2;
-						break;
-					case DefinedNameType.UserGlobalVariable:
-						//広域変数の上書きは禁止しておく
-						errMes = "変数名" + varName + "はユーザー定義の広域変数名に使用されています";
-						warnLevel = 2;
-						break;
-					case DefinedNameType.UserRefMethod:
-						errMes = "変数名" + varName + "は参照型関数の名称に使用されています";
-						warnLevel = 2;
-						break;
-				}
-			}
-			privateDimList.Add(varName);
-		}
-		#endregion
-
-		#region header.erb
-		//1807 ErbLoaderに移動
-		Dictionary<int, DefineMacro> macroDic = [];
-
-		internal void AddUseDefinedVariable(VariableToken var)
-		{
-			varTokenDic.Add(var.Name, var);
-			if (var.IsCharacterData)
-			{
-
-			}
-			nameDic.Add(var.Name, DefinedNameType.UserGlobalVariable);
-		}
-		internal void AddMacro(DefineMacro mac)
-		{
-			nameDic.Add(mac.Keyword, DefinedNameType.UserMacro);
-			int key;
-			if (Config.IgnoreCase)
-			{
-				key = mac.Keyword.GetHashCode(StringComparison.OrdinalIgnoreCase);
-			}
-			else
-			{
-				key = mac.Keyword.GetHashCode(StringComparison.Ordinal);
-			}
-			macroDic.Add(key, mac);
-		}
-		internal void AddRefMethod(UserDefinedRefMethod refm)
-		{
-			refmethodDic.Add(refm.Name, refm);
-			nameDic.Add(refm.Name, DefinedNameType.UserRefMethod);
-		}
-		#endregion
-
-		#region get
-
-		public bool UseMacro()
-		{
-			return macroDic.Count > 0;
-		}
-
-		public DefineMacro GetMacro(string key)
-		{
-			int hash;
-			if (Config.IgnoreCase)
-			{
-				hash = key.GetHashCode(StringComparison.OrdinalIgnoreCase);
-			}
-			else
-			{
-				hash = key.GetHashCode(StringComparison.Ordinal);
-			}
-			if (macroDic.TryGetValue(hash, out var value))
-				return value;
-			return null;
-		}
-
-		public VariableToken GetVariableToken(string key, string subKey, bool allowPrivate)
-		{
-			VariableToken ret;
-			// if (Config.IgnoreCase)
-			// 	key = key.ToUpper();
-			if (allowPrivate)
-			{
-				LogicalLine line = GlobalStatic.Process.GetScaningLine();
-				if ((line != null) && (line.ParentLabelLine != null))
-				{
-					ret = line.ParentLabelLine.GetPrivateVariable(key);
-					if (ret != null)
-					{
-						if (subKey != null)
-							throw new CodeEE("プライベート変数" + key + "に対して@が使われました");
-						return ret;
-					}
-				}
-			}
-			if (localvarTokenDic.TryGetValue(key, out VariableLocal value))
-			{
-				if (value.IsForbid)
-				{
-					throw new CodeEE("呼び出された変数\"" + key + "\"は設定により使用が禁止されています");
-				}
-				LogicalLine line = GlobalStatic.Process.GetScaningLine();
-				if (string.IsNullOrEmpty(subKey))
-				{
-					//システムの入力待ち中にデバッグコマンドからLOCALを呼んだとき。
-					if ((line == null) || (line.ParentLabelLine == null))
-						throw new CodeEE("実行中の関数が存在しないため" + key + "を取得又は変更できませんでした");
-					subKey = line.ParentLabelLine.LabelName;
-				}
-				else
-				{
-					ParserMediator.Warn("コード中でローカル変数を@付きで呼ぶことは推奨されません(代わりに*.ERHファイルの利用を検討してください)", line, 1, false, false);
-					// if (Config.ICFunction)
-					// 	subKey = subKey.ToUpper();
-				}
-				LocalVariableToken retLocal = value.GetExistLocalVariableToken(subKey);
-				retLocal ??= value.GetNewLocalVariableToken(subKey, line.ParentLabelLine);
-				return retLocal;
-			}
-			if (varTokenDic.TryGetValue(key, out ret))
-			{
-				//一文字変数の禁止オプションを考えた名残
-				//if (Config.ForbidOneCodeVariable && ret.CanForbid)
-				//    throw new CodeEE("設定によりシステム一文字数値変数の使用が禁止されています(呼び出された変数：" + ret.Name +")");
-				if (ret.IsForbid)
-				{
-					if (!ret.CanForbid)
-						throw new ExeEE("CanForbidでない変数\"" + ret.Name + "\"にIsForbidがついている");
-					throw new CodeEE("呼び出された変数\"" + ret.Name + "\"は設定により使用が禁止されています");
-				}
-				if (subKey != null)
-					throw new CodeEE("ローカル変数でない変数" + key + "に対して@が使われました");
-				return ret;
-			}
-			if (subKey != null)
-				throw new CodeEE("@の使い方が不正です");
-			return null;
-		}
-
-		public FunctionIdentifier GetFunctionIdentifier(string str)
-		{
-			string key = str;
-			if (string.IsNullOrEmpty(key))
-				return null;
-			if (instructionDic.TryGetValue(key, out FunctionIdentifier ret))
-				return ret;
-			else
-				return null;
-		}
-
-		public List<string> GetOverloadedList(LabelDictionary labelDic)
-		{
-			List<string> list = [];
-			foreach (KeyValuePair<string, FunctionMethod> pair in methodDic)
-			{
-				FunctionLabelLine func = labelDic.GetNonEventLabel(pair.Key);
-				if (func == null)
-					continue;
-				if (!func.IsMethod)
-					continue;
-				list.Add(pair.Key);
-			}
-			return list;
-		}
-
-		public UserDefinedRefMethod GetRefMethod(string codeStr)
-		{
-			if (refmethodDic.TryGetValue(codeStr, out UserDefinedRefMethod value))
-				return value;
-			return null;
-		}
-
-		public AExpression GetFunctionMethod(LabelDictionary labelDic, string codeStr, List<AExpression> arguments, bool userDefinedOnly)
-		{
-			// if (Config.ICFunction)
-			// 	codeStr = codeStr.ToUpper();
-			if (arguments == null)//引数なし、名前のみの探索
-			{
-				if (refmethodDic.TryGetValue(codeStr, out UserDefinedRefMethod value))
-					return new UserDefinedRefMethodNoArgTerm(value);
-				return null;
-			}
-			if ((labelDic != null) && labelDic.Initialized)
-			{
-				if (refmethodDic.TryGetValue(codeStr, out UserDefinedRefMethod value))
-					return new UserDefinedRefMethodTerm(value, arguments);
-				FunctionLabelLine func = labelDic.GetNonEventLabel(codeStr);
-				if (func != null)
-				{
-					if (userDefinedOnly && !func.IsMethod)
-					{
-						throw new CodeEE("#FUNCTIONが指定されていない関数\"@" + func.LabelName + "\"をCALLF系命令で呼び出そうとしました");
-					}
-					if (func.IsMethod)
-					{
-						AExpression ret = UserDefinedMethodTerm.Create(func, arguments, out string errMes);
-						if (ret == null)
-							throw new CodeEE(errMes);
-						return ret;
-					}
-					//1.721 #FUNCTIONが定義されていない関数は組み込み関数を上書きしない方向に。 PANCTION.ERBのRANDとか。
-					if (!methodDic.ContainsKey(codeStr))
-						throw new CodeEE("#FUNCTIONが定義されていない関数(" + func.Position.Value.Filename + ":" + func.Position.Value.LineNo + "行目)を式中で呼び出そうとしました");
-				}
-			}
-			if (userDefinedOnly)
-				return null;
-			if (!methodDic.TryGetValue(codeStr, out FunctionMethod method))
-				return null;
-			string errmes = method.CheckArgumentType(codeStr, arguments);
-			if (errmes != null)
-				throw new CodeEE(errmes);
-			return new FunctionMethodTerm(method, arguments);
-		}
-
-		//1756 作成中途
-		//名前リストを元に何がやりたかったのかを推定してCodeEEを投げる
-		//1822 DIMリストの解決中にIdentifierNotFoundCodeEEが飛んだ場合にはやり直しの可能性がある
-		public void ThrowException(string str, bool isFunc)
-		{
-			string idStr = str;
-			// if (Config.ICFunction || Config.IgnoreCase) //片方だけなのは互換性用オプションなのでレアケースのはず。対応しない。
-			// 	idStr = idStr.ToUpper();
-			if (!isFunc && privateDimList.Contains(idStr))
-				throw new IdentifierNotFoundCodeEE("変数\"" + str + "\"はこの関数中では定義されていません");
-			if (nameDic.TryGetValue(idStr, out DefinedNameType value))
-			{
-				DefinedNameType type = value;
-				switch (type)
-				{
-					case DefinedNameType.Reserved:
-						throw new CodeEE("Emueraの予約語\"" + str + "\"が不正な使われ方をしています");
-					case DefinedNameType.SystemVariable:
-					case DefinedNameType.UserGlobalVariable:
-						if (isFunc)
-							throw new CodeEE("変数名\"" + str + "\"が関数のように使われています");
-						break;
-					case DefinedNameType.SystemMethod:
-					case DefinedNameType.UserRefMethod:
-						if (!isFunc)
-							throw new CodeEE("関数名\"" + str + "\"が変数のように使われています");
-						break;
-					case DefinedNameType.UserMacro:
-						throw new CodeEE("予期しないマクロ名\"" + str + "\"です");
-					case DefinedNameType.SystemInstrument:
-						if (isFunc)
-							throw new CodeEE("命令名\"" + str + "\"が関数のように使われています");
-						else
-							throw new CodeEE("命令名\"" + str + "\"が変数のように使われています");
-
-				}
-			}
-			throw new IdentifierNotFoundCodeEE("\"" + idStr + "\"は解釈できない識別子です");
-		}
-		#endregion
-
-		#region util
-		public void resizeLocalVars(string key, string subKey, int newSize)
-		{
-			localvarTokenDic[key].ResizeLocalVariableToken(subKey, newSize);
-		}
-
-		public int getLocalDefaultSize(string key)
-		{
-			return localvarTokenDic[key].GetDefaultSize();
-		}
-
-		public bool getLocalIsForbid(string key)
-		{
-			return localvarTokenDic[key].IsForbid;
-		}
-		public bool getVarTokenIsForbid(string key)
-		{
-			if (localvarTokenDic.TryGetValue(key, out VariableLocal value))
-				return value.IsForbid;
-			varTokenDic.TryGetValue(key, out VariableToken var);
-			if (var != null)
-				return var.IsForbid;
-			return true;
-		}
-
-		[GeneratedRegex("^COM[0-9]+$")]
-		private static partial Regex preCompiledComRegex();
-		[GeneratedRegex("^COM_ABLE[0-9]+$")]
-		private static partial Regex preCompiledComAbleRegex();
-		[GeneratedRegex("^ABLUP[0-9]+$")]
-		private static partial Regex preCompiledAblupRegex();
-		#endregion
+                case "EVENTLOAD":
+                case "TITLE_LOADGAME":
+                case "SYSTEM_AUTOSAVE":
+                case "SYSTEM_TITLE":
+                case "SYSTEM_LOADEND":
+                    return true;
+            }
+            if (regexCom.IsMatch(labelName))
+                return true;
+            if (regexComAble.IsMatch(labelName))
+                return true;
+            if (regexAblup.IsMatch(labelName))
+                return true;
+            return false;
+        }
+        #endregion
 
 
-	}
+        readonly Dictionary<string, DefinedNameType> nameDic = new(Config.StrComper);
+
+        List<string> privateDimList = [];
+        //Dictionary<string, VariableToken> userDefinedVarDic = new Dictionary<string, VariableToken>();
+
+        VariableData varData;
+        readonly Dictionary<string, VariableToken> varTokenDic;
+        readonly Dictionary<string, VariableLocal> localvarTokenDic;
+        readonly Dictionary<string, FunctionIdentifier> instructionDic;
+        readonly Dictionary<string, FunctionMethod> methodDic;
+        readonly Dictionary<string, UserDefinedRefMethod> refmethodDic;
+        public List<UserDefinedCharaVariableToken> CharaDimList = [];
+        #region initialize
+        public IdentifierDictionary(VariableData varData)
+        {
+            this.varData = varData;
+            nameDic.Clear();
+            //予約語を登録。式中に登場すると構文解析が崩壊する名前群。
+            //ただしeramaker用スクリプトなら特に気にすることはない。式中に出てこない単語も同様。
+            nameDic.Add("IS", DefinedNameType.Reserved);
+            nameDic.Add("TO", DefinedNameType.Reserved);
+            nameDic.Add("INT", DefinedNameType.Reserved);
+            nameDic.Add("STR", DefinedNameType.Reserved);
+            nameDic.Add("REFFUNC", DefinedNameType.Reserved);
+            nameDic.Add("STATIC", DefinedNameType.Reserved);
+            nameDic.Add("DYNAMIC", DefinedNameType.Reserved);
+            nameDic.Add("GLOBAL", DefinedNameType.Reserved);
+            nameDic.Add("PRIVATE", DefinedNameType.Reserved);
+            nameDic.Add("SAVEDATA", DefinedNameType.Reserved);
+            nameDic.Add("CHARADATA", DefinedNameType.Reserved);//CHARDATAから変更
+            nameDic.Add("REF", DefinedNameType.Reserved);
+            nameDic.Add("__DEBUG__", DefinedNameType.Reserved);
+            nameDic.Add("__SKIP__", DefinedNameType.Reserved);
+            nameDic.Add("_", DefinedNameType.Reserved);
+            instructionDic = FunctionIdentifier.GetInstructionNameDic();
+
+            varTokenDic = varData.GetVarTokenDicClone();
+            localvarTokenDic = varData.GetLocalvarTokenDic();
+            methodDic = FunctionMethodCreator.GetMethodList();
+            refmethodDic = new(Config.StrComper);
+
+            foreach (KeyValuePair<string, FunctionMethod> pair in methodDic)
+            {
+                nameDic.Add(pair.Key, DefinedNameType.SystemMethod);
+            }
+
+            foreach (KeyValuePair<string, VariableToken> pair in varTokenDic)
+            {
+                //RANDが衝突している
+                //1808a3 GLOBAL、PRIVATEも
+                //1808beta009 REFも
+                nameDic.TryAdd(pair.Key, DefinedNameType.SystemVariable);
+            }
+
+            foreach (KeyValuePair<string, VariableLocal> pair in localvarTokenDic)
+            {
+                nameDic.Add(pair.Key, DefinedNameType.SystemVariable);
+            }
+
+            foreach (KeyValuePair<string, FunctionIdentifier> pair in instructionDic)
+            {
+                //Methodと被る
+                //1808a3 SAVEDATAも
+                nameDic.TryAdd(pair.Key, DefinedNameType.SystemInstrument);
+            }
+        }
+
+        //public void SetSystemInstrumentName(List<string> names)
+        //{
+        //}
+
+        public void CheckUserLabelName(out string errMes, ref int warnLevel, bool isFunction, string labelName)
+        {
+            errMes = "";
+            if (labelName.Length == 0)
+            {
+                errMes = "ラベル名がありません";
+                warnLevel = 2;
+                return;
+            }
+            //1.721 記号をサポートしない方向に変更
+            if (labelName.AsSpan().ContainsAny(badSymbolAsIdentifier))
+            {
+                errMes = "ラベル名" + labelName + "に\"_\"以外の記号が含まれています";
+                warnLevel = 1;
+                return;
+            }
+            if (char.IsDigit(labelName[0]) && labelName[0].ToString().Length == LangManager.GetStrlenLang(labelName[0].ToString()))
+            {
+                errMes = "ラベル名" + labelName + "が半角数字から始まっています";
+                warnLevel = 0;
+                return;
+            }
+            if (!isFunction || !Config.WarnFunctionOverloading)
+                return;
+            if (nameDic.TryGetValue(labelName, out DefinedNameType value))
+            {
+                switch (value)
+                {
+                    case DefinedNameType.Reserved:
+                        if (Config.AllowFunctionOverloading)
+                        {
+                            errMes = "関数名" + labelName + "はEmueraの予約語と衝突しています。Emuera専用構文の構文解析に支障をきたす恐れがあります";
+                            warnLevel = 1;
+                        }
+                        else
+                        {
+                            errMes = "関数名" + labelName + "はEmueraの予約語です";
+                            warnLevel = 2;
+                        }
+                        break;
+                    case DefinedNameType.SystemMethod:
+                        if (Config.AllowFunctionOverloading)
+                        {
+                            errMes = "関数名" + labelName + "はEmueraの式中関数を上書きします";
+                            warnLevel = 1;
+                        }
+                        else
+                        {
+                            errMes = "関数名" + labelName + "はEmueraの式中関数名として使われています";
+                            warnLevel = 2;
+                        }
+                        break;
+                    case DefinedNameType.SystemVariable:
+                        errMes = "関数名" + labelName + "はEmueraの変数で使われています";
+                        warnLevel = 1;
+                        break;
+                    case DefinedNameType.SystemInstrument:
+                        errMes = "関数名" + labelName + "はEmueraの変数もしくは命令で使われています";
+                        warnLevel = 1;
+                        break;
+                    case DefinedNameType.UserMacro:
+                        //字句解析がうまくいっていれば本来あり得ないはず
+                        errMes = "関数名" + labelName + "はマクロに使用されています";
+                        warnLevel = 2;
+                        break;
+                    case DefinedNameType.UserRefMethod:
+                        errMes = "関数名" + labelName + "は参照型関数の名称に使用されています";
+                        warnLevel = 2;
+                        break;
+                }
+            }
+            return;
+        }
+
+        public void CheckUserVarName(ref string errMes, ref int warnLevel, string varName)
+        {
+            //if (varName.Length == 0)
+            //{
+            //    errMes = "変数名がありません";
+            //    warnLevel = 2;
+            //    return;
+            //}
+            //1.721 記号をサポートしない方向に変更
+            if (varName.AsSpan().IndexOfAny(badSymbolAsIdentifier) != -1)
+            {
+                errMes = "変数名" + varName + "に\"_\"以外の記号が含まれています";
+                warnLevel = 2;
+                return;
+            }
+            //if (char.IsDigit(varName[0]))
+            //{
+            //    errMes = "変数名" + varName + "が半角数字から始まっています";
+            //    warnLevel = 2;
+            //    return;
+            //}
+
+            if (nameDic.TryGetValue(varName, out DefinedNameType value))
+            {
+                switch (value)
+                {
+                    case DefinedNameType.Reserved:
+                        errMes = "変数名" + varName + "はEmueraの予約語です";
+                        warnLevel = 2;
+                        break;
+                    case DefinedNameType.SystemInstrument:
+                    case DefinedNameType.SystemMethod:
+                        //代入文が使えなくなるために命令名との衝突は致命的。
+                        errMes = "変数名" + varName + "はEmueraの命令名として使われています";
+                        warnLevel = 2;
+                        break;
+                    case DefinedNameType.SystemVariable:
+                        errMes = "変数名" + varName + "はEmueraの変数名として使われています";
+                        warnLevel = 2;
+                        break;
+                    case DefinedNameType.UserMacro:
+                        errMes = "変数名" + varName + "は既にマクロ名に使用されています";
+                        warnLevel = 2;
+                        break;
+                    case DefinedNameType.UserGlobalVariable:
+                        errMes = "変数名" + varName + "はユーザー定義の広域変数名に使用されています";
+                        warnLevel = 2;
+                        break;
+                    case DefinedNameType.UserRefMethod:
+                        errMes = "変数名" + varName + "は参照型関数の名称に使用されています";
+                        warnLevel = 2;
+                        break;
+                }
+            }
+        }
+
+        public void CheckUserMacroName(ref string errMes, ref int warnLevel, string macroName)
+        {
+            if (macroName.AsSpan().IndexOfAny(badSymbolAsIdentifier) != -1)
+            {
+                errMes = "マクロ名" + macroName + "に\"_\"以外の記号が含まれています";
+                warnLevel = 2;
+                return;
+            }
+            if (nameDic.TryGetValue(macroName, out DefinedNameType value))
+            {
+                switch (value)
+                {
+                    case DefinedNameType.Reserved:
+                        errMes = "マクロ名" + macroName + "はEmueraの予約語です";
+                        warnLevel = 2;
+                        break;
+                    case DefinedNameType.SystemInstrument:
+                    case DefinedNameType.SystemMethod:
+                        //命令名を上書きした時が面倒なのでとりあえず許可しない
+                        errMes = "マクロ名" + macroName + "はEmueraの命令名として使われています";
+                        warnLevel = 2;
+                        break;
+                    case DefinedNameType.SystemVariable:
+                        //別に上書きしてもいいがとりあえず許可しないでおく。いずれ解放するかもしれない
+                        errMes = "マクロ名" + macroName + "はEmueraの変数名として使われています";
+                        warnLevel = 2;
+                        break;
+                    case DefinedNameType.UserMacro:
+                        errMes = "マクロ名" + macroName + "は既にマクロ名に使用されています";
+                        warnLevel = 2;
+                        break;
+                    case DefinedNameType.UserGlobalVariable:
+                        errMes = "マクロ名" + macroName + "はユーザー定義の広域変数名に使用されています";
+                        warnLevel = 2;
+                        break;
+                    case DefinedNameType.UserRefMethod:
+                        errMes = "マクロ名" + macroName + "は参照型関数の名称に使用されています";
+                        warnLevel = 2;
+                        break;
+                }
+            }
+        }
+
+        public void CheckUserPrivateVarName(ref string errMes, ref int warnLevel, string varName)
+        {
+            if (varName.Length == 0)
+            {
+                errMes = "変数名がありません";
+                warnLevel = 2;
+                return;
+            }
+            //1.721 記号をサポートしない方向に変更
+            if (varName.AsSpan().IndexOfAny(badSymbolAsIdentifier) != -1)
+            {
+                errMes = "変数名" + varName + "に\"_\"以外の記号が含まれています";
+                warnLevel = 2;
+                return;
+            }
+            if (char.IsDigit(varName[0]))
+            {
+                errMes = "変数名" + varName + "が半角数字から始まっています";
+                warnLevel = 2;
+                return;
+            }
+            if (nameDic.TryGetValue(varName, out DefinedNameType value))
+            {
+                switch (value)
+                {
+                    case DefinedNameType.Reserved:
+                        errMes = "変数名" + varName + "はEmueraの予約語です";
+                        warnLevel = 2;
+                        return;
+                    case DefinedNameType.SystemInstrument:
+                    case DefinedNameType.SystemMethod:
+                        //代入文が使えなくなるために命令名との衝突は致命的。
+                        errMes = "変数名" + varName + "はEmueraの命令名として使われています";
+                        warnLevel = 2;
+                        return;
+                    case DefinedNameType.SystemVariable:
+                        //システム変数の上書きは不可
+                        errMes = "変数名" + varName + "はEmueraの変数名として使われています";
+                        warnLevel = 2;
+                        break;
+                    case DefinedNameType.UserMacro:
+                        //字句解析がうまくいっていれば本来あり得ないはず
+                        errMes = "変数名" + varName + "はマクロに使用されています";
+                        warnLevel = 2;
+                        break;
+                    case DefinedNameType.UserGlobalVariable:
+                        //広域変数の上書きは禁止しておく
+                        errMes = "変数名" + varName + "はユーザー定義の広域変数名に使用されています";
+                        warnLevel = 2;
+                        break;
+                    case DefinedNameType.UserRefMethod:
+                        errMes = "変数名" + varName + "は参照型関数の名称に使用されています";
+                        warnLevel = 2;
+                        break;
+                }
+            }
+            privateDimList.Add(varName);
+        }
+        #endregion
+
+        #region header.erb
+        //1807 ErbLoaderに移動
+        Dictionary<int, DefineMacro> macroDic = [];
+
+        internal void AddUseDefinedVariable(VariableToken var)
+        {
+            varTokenDic.Add(var.Name, var);
+            if (var.IsCharacterData)
+            {
+
+            }
+            nameDic.Add(var.Name, DefinedNameType.UserGlobalVariable);
+        }
+        internal void AddMacro(DefineMacro mac)
+        {
+            nameDic.Add(mac.Keyword, DefinedNameType.UserMacro);
+            int key;
+            if (Config.IgnoreCase)
+            {
+                key = mac.Keyword.GetHashCode(StringComparison.OrdinalIgnoreCase);
+            }
+            else
+            {
+                key = mac.Keyword.GetHashCode(StringComparison.Ordinal);
+            }
+            macroDic.Add(key, mac);
+        }
+        internal void AddRefMethod(UserDefinedRefMethod refm)
+        {
+            refmethodDic.Add(refm.Name, refm);
+            nameDic.Add(refm.Name, DefinedNameType.UserRefMethod);
+        }
+        #endregion
+
+        #region get
+
+        public bool UseMacro()
+        {
+            return macroDic.Count > 0;
+        }
+
+        public DefineMacro GetMacro(string key)
+        {
+            int hash;
+            if (Config.IgnoreCase)
+            {
+                hash = key.GetHashCode(StringComparison.OrdinalIgnoreCase);
+            }
+            else
+            {
+                hash = key.GetHashCode(StringComparison.Ordinal);
+            }
+            if (macroDic.TryGetValue(hash, out var value))
+                return value;
+            return null;
+        }
+
+        public VariableToken GetVariableToken(string key, string subKey, bool allowPrivate)
+        {
+            VariableToken ret;
+            // if (Config.IgnoreCase)
+            // 	key = key.ToUpper();
+            if (allowPrivate)
+            {
+                LogicalLine line = GlobalStatic.Process.GetScaningLine();
+                if ((line != null) && (line.ParentLabelLine != null))
+                {
+                    ret = line.ParentLabelLine.GetPrivateVariable(key);
+                    if (ret != null)
+                    {
+                        if (subKey != null)
+                            throw new CodeEE("プライベート変数" + key + "に対して@が使われました");
+                        return ret;
+                    }
+                }
+            }
+            if (localvarTokenDic.TryGetValue(key, out VariableLocal value))
+            {
+                if (value.IsForbid)
+                {
+                    throw new CodeEE("呼び出された変数\"" + key + "\"は設定により使用が禁止されています");
+                }
+                LogicalLine line = GlobalStatic.Process.GetScaningLine();
+                if (string.IsNullOrEmpty(subKey))
+                {
+                    //システムの入力待ち中にデバッグコマンドからLOCALを呼んだとき。
+                    if ((line == null) || (line.ParentLabelLine == null))
+                        throw new CodeEE("実行中の関数が存在しないため" + key + "を取得又は変更できませんでした");
+                    subKey = line.ParentLabelLine.LabelName;
+                }
+                else
+                {
+                    ParserMediator.Warn("コード中でローカル変数を@付きで呼ぶことは推奨されません(代わりに*.ERHファイルの利用を検討してください)", line, 1, false, false);
+                    // if (Config.ICFunction)
+                    // 	subKey = subKey.ToUpper();
+                }
+                LocalVariableToken retLocal = value.GetExistLocalVariableToken(subKey);
+                retLocal ??= value.GetNewLocalVariableToken(subKey, line.ParentLabelLine);
+                return retLocal;
+            }
+            if (varTokenDic.TryGetValue(key, out ret))
+            {
+                //一文字変数の禁止オプションを考えた名残
+                //if (Config.ForbidOneCodeVariable && ret.CanForbid)
+                //    throw new CodeEE("設定によりシステム一文字数値変数の使用が禁止されています(呼び出された変数：" + ret.Name +")");
+                if (ret.IsForbid)
+                {
+                    if (!ret.CanForbid)
+                        throw new ExeEE("CanForbidでない変数\"" + ret.Name + "\"にIsForbidがついている");
+                    throw new CodeEE("呼び出された変数\"" + ret.Name + "\"は設定により使用が禁止されています");
+                }
+                if (subKey != null)
+                    throw new CodeEE("ローカル変数でない変数" + key + "に対して@が使われました");
+                return ret;
+            }
+            if (subKey != null)
+                throw new CodeEE("@の使い方が不正です");
+            return null;
+        }
+
+        public FunctionIdentifier GetFunctionIdentifier(string str)
+        {
+            string key = str;
+            if (string.IsNullOrEmpty(key))
+                return null;
+            if (instructionDic.TryGetValue(key, out FunctionIdentifier ret))
+                return ret;
+            else
+                return null;
+        }
+
+        public List<string> GetOverloadedList(LabelDictionary labelDic)
+        {
+            List<string> list = [];
+            foreach (KeyValuePair<string, FunctionMethod> pair in methodDic)
+            {
+                FunctionLabelLine func = labelDic.GetNonEventLabel(pair.Key);
+                if (func == null)
+                    continue;
+                if (!func.IsMethod)
+                    continue;
+                list.Add(pair.Key);
+            }
+            return list;
+        }
+
+        public UserDefinedRefMethod GetRefMethod(string codeStr)
+        {
+            if (refmethodDic.TryGetValue(codeStr, out UserDefinedRefMethod value))
+                return value;
+            return null;
+        }
+
+        public AExpression GetFunctionMethod(LabelDictionary labelDic, string codeStr, List<AExpression> arguments, bool userDefinedOnly)
+        {
+            // if (Config.ICFunction)
+            // 	codeStr = codeStr.ToUpper();
+            if (arguments == null)//引数なし、名前のみの探索
+            {
+                if (refmethodDic.TryGetValue(codeStr, out UserDefinedRefMethod value))
+                    return new UserDefinedRefMethodNoArgTerm(value);
+                return null;
+            }
+            if ((labelDic != null) && labelDic.Initialized)
+            {
+                if (refmethodDic.TryGetValue(codeStr, out UserDefinedRefMethod value))
+                    return new UserDefinedRefMethodTerm(value, arguments);
+                FunctionLabelLine func = labelDic.GetNonEventLabel(codeStr);
+                if (func != null)
+                {
+                    if (userDefinedOnly && !func.IsMethod)
+                    {
+                        throw new CodeEE("#FUNCTIONが指定されていない関数\"@" + func.LabelName + "\"をCALLF系命令で呼び出そうとしました");
+                    }
+                    if (func.IsMethod)
+                    {
+                        AExpression ret = UserDefinedMethodTerm.Create(func, arguments, out string errMes);
+                        if (ret == null)
+                            throw new CodeEE(errMes);
+                        return ret;
+                    }
+                    //1.721 #FUNCTIONが定義されていない関数は組み込み関数を上書きしない方向に。 PANCTION.ERBのRANDとか。
+                    if (!methodDic.ContainsKey(codeStr))
+                        throw new CodeEE("#FUNCTIONが定義されていない関数(" + func.Position.Value.Filename + ":" + func.Position.Value.LineNo + "行目)を式中で呼び出そうとしました");
+                }
+            }
+            if (userDefinedOnly)
+                return null;
+            if (!methodDic.TryGetValue(codeStr, out FunctionMethod method))
+                return null;
+            string errmes = method.CheckArgumentType(codeStr, arguments);
+            if (errmes != null)
+                throw new CodeEE(errmes);
+            return new FunctionMethodTerm(method, arguments);
+        }
+
+        //1756 作成中途
+        //名前リストを元に何がやりたかったのかを推定してCodeEEを投げる
+        //1822 DIMリストの解決中にIdentifierNotFoundCodeEEが飛んだ場合にはやり直しの可能性がある
+        public void ThrowException(string str, bool isFunc)
+        {
+            string idStr = str;
+            // if (Config.ICFunction || Config.IgnoreCase) //片方だけなのは互換性用オプションなのでレアケースのはず。対応しない。
+            // 	idStr = idStr.ToUpper();
+            if (!isFunc && privateDimList.Contains(idStr))
+                throw new IdentifierNotFoundCodeEE("変数\"" + str + "\"はこの関数中では定義されていません");
+            if (nameDic.TryGetValue(idStr, out DefinedNameType value))
+            {
+                DefinedNameType type = value;
+                switch (type)
+                {
+                    case DefinedNameType.Reserved:
+                        throw new CodeEE("Emueraの予約語\"" + str + "\"が不正な使われ方をしています");
+                    case DefinedNameType.SystemVariable:
+                    case DefinedNameType.UserGlobalVariable:
+                        if (isFunc)
+                            throw new CodeEE("変数名\"" + str + "\"が関数のように使われています");
+                        break;
+                    case DefinedNameType.SystemMethod:
+                    case DefinedNameType.UserRefMethod:
+                        if (!isFunc)
+                            throw new CodeEE("関数名\"" + str + "\"が変数のように使われています");
+                        break;
+                    case DefinedNameType.UserMacro:
+                        throw new CodeEE("予期しないマクロ名\"" + str + "\"です");
+                    case DefinedNameType.SystemInstrument:
+                        if (isFunc)
+                            throw new CodeEE("命令名\"" + str + "\"が関数のように使われています");
+                        else
+                            throw new CodeEE("命令名\"" + str + "\"が変数のように使われています");
+
+                }
+            }
+            throw new IdentifierNotFoundCodeEE("\"" + idStr + "\"は解釈できない識別子です");
+        }
+        #endregion
+
+        #region util
+        public void resizeLocalVars(string key, string subKey, int newSize)
+        {
+            localvarTokenDic[key].ResizeLocalVariableToken(subKey, newSize);
+        }
+
+        public int getLocalDefaultSize(string key)
+        {
+            return localvarTokenDic[key].GetDefaultSize();
+        }
+
+        public bool getLocalIsForbid(string key)
+        {
+            return localvarTokenDic[key].IsForbid;
+        }
+        public bool getVarTokenIsForbid(string key)
+        {
+            if (localvarTokenDic.TryGetValue(key, out VariableLocal value))
+                return value.IsForbid;
+            varTokenDic.TryGetValue(key, out VariableToken var);
+            if (var != null)
+                return var.IsForbid;
+            return true;
+        }
+
+        [GeneratedRegex("^COM[0-9]+$")]
+        private static partial Regex preCompiledComRegex();
+        [GeneratedRegex("^COM_ABLE[0-9]+$")]
+        private static partial Regex preCompiledComAbleRegex();
+        [GeneratedRegex("^ABLUP[0-9]+$")]
+        private static partial Regex preCompiledAblupRegex();
+        #endregion
+
+
+    }
 }

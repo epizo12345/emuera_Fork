@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
-using MinorShift.Emuera.Runtime.Config;
+﻿using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Sub;
+using System.Collections.Generic;
 
 
 namespace MinorShift.Emuera.GameData.Function

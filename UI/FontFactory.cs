@@ -1,6 +1,6 @@
+using MinorShift.Emuera.Runtime.Config;
 using System.Collections.Generic;
 using System.Drawing;
-using MinorShift.Emuera.Runtime.Config;
 
 namespace Emuera.UI;
 

@@ -1,8 +1,7 @@
 //新設したコンフィグ設定のロード、セーブ、公開を担当する。
+using MinorShift.Emuera;
 using System.IO;
 using System.Text.Json;
-using MinorShift._Library;
-using MinorShift.Emuera;
 
 
 namespace DotnetEmuera;

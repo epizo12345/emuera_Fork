@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using MinorShift.Emuera.GameProc;
+﻿using MinorShift.Emuera.GameProc;
+using System.Collections.Generic;
 
 namespace MinorShift.Emuera.GameData.Variable
 {

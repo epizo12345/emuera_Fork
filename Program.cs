@@ -1,26 +1,21 @@
-﻿using System;
-using System.Drawing;
-using System.Collections.Generic;
+﻿using DotnetEmuera;
 using MinorShift._Library;
-using System.IO;
+using MinorShift.Emuera.Runtime.Config;
+using System;
+using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Parsing;
-using System.Windows.Forms;
-using System.Threading.Tasks;
-using Windows.Win32;
-using System.CommandLine.Builder;
-using System.Reflection;
-using DotnetEmuera;
 using System.Diagnostics.CodeAnalysis;
-using MinorShift.Emuera.Runtime.Config;
+using System.IO;
 using System.Runtime;
+using System.Windows.Forms;
 
 namespace MinorShift.Emuera;
 #nullable enable
 
 static partial class Program
 {
-	/*
+    /*
 	コードの開始地点。
 	ここでMainWindowを作り、
 	MainWindowがProcessを作り、
@@ -42,178 +37,178 @@ static partial class Program
 	TODO: 1819 MainWindow & Consoleの入力・表示組とProcess&Dataのデータ処理組だけでも分離したい
 
 	*/
-	/// <summary>
-	/// アプリケーションのメイン エントリ ポイントです。
-	/// </summary>
-	[STAThread]
-	static void Main(string[] args)
-	{
-		// memo: Shift-JISを扱うためのおまじない
-		System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+    /// <summary>
+    /// アプリケーションのメイン エントリ ポイントです。
+    /// </summary>
+    [STAThread]
+    static void Main(string[] args)
+    {
+        // memo: Shift-JISを扱うためのおまじない
+        System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
 
-		var rootCommand = new RootCommand("Emuera");
+        var rootCommand = new RootCommand("Emuera");
 
-		var exeDirOption = new Option<string>(
-			name: "--ExeDir",
-			description: "与えられたフォルダのEraを起動します"
-		);
-		rootCommand.AddOption(exeDirOption);
+        var exeDirOption = new Option<string>(
+            name: "--ExeDir",
+            description: "与えられたフォルダのEraを起動します"
+        );
+        rootCommand.AddOption(exeDirOption);
 
-		var debugModeOption = new Option<bool>(
-			name: "-Debug",
-			description: "デバッグモード"
-		);
-		debugModeOption.AddAlias("-debug");
-		debugModeOption.AddAlias("-DEBUG");
-		rootCommand.AddOption(debugModeOption);
+        var debugModeOption = new Option<bool>(
+            name: "-Debug",
+            description: "デバッグモード"
+        );
+        debugModeOption.AddAlias("-debug");
+        debugModeOption.AddAlias("-DEBUG");
+        rootCommand.AddOption(debugModeOption);
 
-		var filesArg = new Argument<string[]>(
-			"解析するファイル"
-		)
-		{ Arity = ArgumentArity.ZeroOrMore };
-		rootCommand.AddArgument(filesArg);
+        var filesArg = new Argument<string[]>(
+            "解析するファイル"
+        )
+        { Arity = ArgumentArity.ZeroOrMore };
+        rootCommand.AddArgument(filesArg);
 
-		var result = rootCommand.Parse(args);
+        var result = rootCommand.Parse(args);
 
-		//実行ディレクトリが引数で与えられた場合
-		var exeDir = result.GetValueForOption(exeDirOption);
-		if (exeDir != null)
-		{
-			SetDirPaths(exeDir);
-		}
+        //実行ディレクトリが引数で与えられた場合
+        var exeDir = result.GetValueForOption(exeDirOption);
+        if (exeDir != null)
+        {
+            SetDirPaths(exeDir);
+        }
 
-		var debugMode = result.GetValueForOption(debugModeOption);
-		DebugMode = debugMode;
+        var debugMode = result.GetValueForOption(debugModeOption);
+        DebugMode = debugMode;
 
-		var fileArgs = result.GetValueForArgument(filesArg);
-		var analysisRequestPaths = fileArgs;
-		if (analysisRequestPaths.Length > 0)
-		{
-			//必要なファイルのチェックにはConfig読み込みが必須なので、ここではフラグだけ立てておく
-			AnalysisMode = true;
-		}
+        var fileArgs = result.GetValueForArgument(filesArg);
+        var analysisRequestPaths = fileArgs;
+        if (analysisRequestPaths.Length > 0)
+        {
+            //必要なファイルのチェックにはConfig読み込みが必須なので、ここではフラグだけ立てておく
+            AnalysisMode = true;
+        }
 
-		ProfileOptimization.SetProfileRoot(exeDir ?? ExeDir);
-		ProfileOptimization.StartProfile("profile");
+        ProfileOptimization.SetProfileRoot(exeDir ?? ExeDir);
+        ProfileOptimization.StartProfile("profile");
 
-		ConfigData.Instance.LoadConfig();
-		JSONConfig.Load();
-
-
-		//二重起動の禁止かつ二重起動
-		if ((!Config.AllowMultipleInstances) && AssemblyData.PrevInstance())
-		{
-			Dialog.Show("既に起動しています", "多重起動を許可する場合、emuera.configを書き換えて下さい");
-			return;
-		}
-		if (!Directory.Exists(CsvDir))
-		{
-			Dialog.Show("csvフォルダが見つかりません", CsvDir);
-			return;
-		}
-		if (!Directory.Exists(ErbDir))
-		{
-			Dialog.Show("erbフォルダが見つかりません", ErbDir);
-			return;
-		}
+        ConfigData.Instance.LoadConfig();
+        JSONConfig.Load();
 
 
-
-		if (DebugMode)
-		{
-			ConfigData.Instance.LoadDebugConfig();
-			if (!Directory.Exists(DebugDir))
-			{
-				try
-				{
-					Directory.CreateDirectory(DebugDir);
-				}
-				catch
-				{
-					Dialog.Show("debugフォルダの作成に失敗しました", DebugDir);
-					return;
-				}
-			}
-		}
-		if (AnalysisMode)
-		{
-			foreach (var path in analysisRequestPaths)
-			{
-				if (!Path.Exists(path))
-				{
-					Dialog.Show("与えられたファイル・フォルダは存在しません");
-					return;
-				}
-				if (File.GetAttributes(path).HasFlag(FileAttributes.Directory))
-				{
-					foreach (var file in Config.GetFiles(path + "\\", "*.ERB"))
-					{
-						AnalysisFiles.Add(file.Value);
-					}
-				}
-				else
-				{
-					if (!Path.GetExtension(path).Equals(".ERB", StringComparison.OrdinalIgnoreCase))
-					{
-						Dialog.Show("ドロップ可能なファイルはERBファイルのみです");
-						return;
-					}
-					AnalysisFiles.Add(path);
-				}
-			}
-		}
-
-		ApplicationConfiguration.Initialize();
-
-		using var win = new Forms.MainWindow(args);
+        //二重起動の禁止かつ二重起動
+        if ((!Config.AllowMultipleInstances) && AssemblyData.PrevInstance())
+        {
+            Dialog.Show("既に起動しています", "多重起動を許可する場合、emuera.configを書き換えて下さい");
+            return;
+        }
+        if (!Directory.Exists(CsvDir))
+        {
+            Dialog.Show("csvフォルダが見つかりません", CsvDir);
+            return;
+        }
+        if (!Directory.Exists(ErbDir))
+        {
+            Dialog.Show("erbフォルダが見つかりません", ErbDir);
+            return;
+        }
 
 
-		Application.Run(win);
 
-	}
+        if (DebugMode)
+        {
+            ConfigData.Instance.LoadDebugConfig();
+            if (!Directory.Exists(DebugDir))
+            {
+                try
+                {
+                    Directory.CreateDirectory(DebugDir);
+                }
+                catch
+                {
+                    Dialog.Show("debugフォルダの作成に失敗しました", DebugDir);
+                    return;
+                }
+            }
+        }
+        if (AnalysisMode)
+        {
+            foreach (var path in analysisRequestPaths)
+            {
+                if (!Path.Exists(path))
+                {
+                    Dialog.Show("与えられたファイル・フォルダは存在しません");
+                    return;
+                }
+                if (File.GetAttributes(path).HasFlag(FileAttributes.Directory))
+                {
+                    foreach (var file in Config.GetFiles(path + "\\", "*.ERB"))
+                    {
+                        AnalysisFiles.Add(file.Value);
+                    }
+                }
+                else
+                {
+                    if (!Path.GetExtension(path).Equals(".ERB", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Dialog.Show("ドロップ可能なファイルはERBファイルのみです");
+                        return;
+                    }
+                    AnalysisFiles.Add(path);
+                }
+            }
+        }
 
-	[MemberNotNull(nameof(ExeDir))]
-	[MemberNotNull(nameof(CsvDir))]
-	[MemberNotNull(nameof(ErbDir))]
-	[MemberNotNull(nameof(DebugDir))]
-	[MemberNotNull(nameof(DatDir))]
-	[MemberNotNull(nameof(ContentDir))]
-	private static void SetDirPaths(string exeDir)
-	{
-		ExeDir = Path.GetFullPath(new DirectoryInfo(exeDir).FullName + Path.DirectorySeparatorChar);
+        ApplicationConfiguration.Initialize();
 
-		CsvDir = Path.Combine(ExeDir, "csv") + Path.DirectorySeparatorChar;
-		ErbDir = Path.Combine(ExeDir, "erb") + Path.DirectorySeparatorChar;
-		DebugDir = Path.Combine(ExeDir, "debug") + Path.DirectorySeparatorChar;
-		DatDir = Path.Combine(ExeDir, "dat") + Path.DirectorySeparatorChar;
-		ContentDir = Path.Combine(ExeDir, "resources") + Path.DirectorySeparatorChar;
-	}
+        using var win = new Forms.MainWindow(args);
 
-	/// <summary>
-	/// 実行ファイルのディレクトリ。最後にPath.DirectorySeparatorCharを付けたstring
-	/// </summary>
-	public static string ExeDir { get; private set; }
-	public static string CsvDir { get; private set; }
-	public static string ErbDir { get; private set; }
-	public static string DebugDir { get; private set; }
-	public static string DatDir { get; private set; }
-	public static string ContentDir { get; private set; }
 
-	public static bool AnalysisMode { get; private set; }
-	public static List<string> AnalysisFiles = [];
+        Application.Run(win);
 
-	public static bool DebugMode { get; private set; }
+    }
 
-	static Program()
-	{
-		var baseDirectory = AppContext.BaseDirectory;
-		if (Directory.Exists(Path.Combine(baseDirectory, "Data", "erb")))
-		{
-			baseDirectory = Path.Combine(baseDirectory, "Data");
-		}
-		SetDirPaths(baseDirectory);
+    [MemberNotNull(nameof(ExeDir))]
+    [MemberNotNull(nameof(CsvDir))]
+    [MemberNotNull(nameof(ErbDir))]
+    [MemberNotNull(nameof(DebugDir))]
+    [MemberNotNull(nameof(DatDir))]
+    [MemberNotNull(nameof(ContentDir))]
+    private static void SetDirPaths(string exeDir)
+    {
+        ExeDir = Path.GetFullPath(new DirectoryInfo(exeDir).FullName + Path.DirectorySeparatorChar);
 
-	}
+        CsvDir = Path.Combine(ExeDir, "csv") + Path.DirectorySeparatorChar;
+        ErbDir = Path.Combine(ExeDir, "erb") + Path.DirectorySeparatorChar;
+        DebugDir = Path.Combine(ExeDir, "debug") + Path.DirectorySeparatorChar;
+        DatDir = Path.Combine(ExeDir, "dat") + Path.DirectorySeparatorChar;
+        ContentDir = Path.Combine(ExeDir, "resources") + Path.DirectorySeparatorChar;
+    }
+
+    /// <summary>
+    /// 実行ファイルのディレクトリ。最後にPath.DirectorySeparatorCharを付けたstring
+    /// </summary>
+    public static string ExeDir { get; private set; }
+    public static string CsvDir { get; private set; }
+    public static string ErbDir { get; private set; }
+    public static string DebugDir { get; private set; }
+    public static string DatDir { get; private set; }
+    public static string ContentDir { get; private set; }
+
+    public static bool AnalysisMode { get; private set; }
+    public static List<string> AnalysisFiles = [];
+
+    public static bool DebugMode { get; private set; }
+
+    static Program()
+    {
+        var baseDirectory = AppContext.BaseDirectory;
+        if (Directory.Exists(Path.Combine(baseDirectory, "Data", "erb")))
+        {
+            baseDirectory = Path.Combine(baseDirectory, "Data");
+        }
+        SetDirPaths(baseDirectory);
+
+    }
 
 }

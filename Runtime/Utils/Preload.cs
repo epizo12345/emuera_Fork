@@ -1,10 +1,10 @@
+using MinorShift.Emuera.Runtime.Config;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using MinorShift.Emuera.Runtime.Config;
 
 namespace Emuera;
 static partial class Preload
