@@ -125,8 +125,7 @@ internal sealed class StrForm
                 wc.ShiftNext();
                 if (!wc.EOL)
                 {
-                    IdentifierWord id = wc.Current as IdentifierWord;
-                    if (id == null)
+                    if (wc.Current is not IdentifierWord id)
                         throw new CodeEE("','の後にRIGHT又はLEFTがありません");
                     if (string.Equals(id.Code, "LEFT", Config.Config.StringComparison))//標準RIGHT
                         third = new SingleLongTerm(1);

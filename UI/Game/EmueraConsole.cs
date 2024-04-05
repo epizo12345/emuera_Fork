@@ -1415,9 +1415,6 @@ internal sealed partial class EmueraConsole : IDisposable
     StringBuilder dConsoleLog = new("");
     public string DebugConsoleLog { get { return dConsoleLog.ToString(); } }
     List<string> dTraceLogList = [];
-#pragma warning disable CS0414 // フィールド 'EmueraConsole.dTraceLogChanged' が割り当てられていますが、値は使用されていません。
-    bool dTraceLogChanged = true;
-#pragma warning restore CS0414 // フィールド 'EmueraConsole.dTraceLogChanged' が割り当てられていますが、値は使用されていません。
     public string GetDebugTraceLog(bool force)
     {
         //if (!dTraceLogChanged && !force)
@@ -1491,14 +1488,12 @@ internal sealed partial class EmueraConsole : IDisposable
         //ERBファイル以外のもの(デバッグコマンド、変数ウォッチ)を実行中なら無視
         if (!Program.DebugMode || runningERBfromMemory)
             return;
-        dTraceLogChanged = true;
         dTraceLogList.Add(str);
     }
     public void DebugRemoveTraceLog()
     {
         if (!Program.DebugMode || runningERBfromMemory)
             return;
-        dTraceLogChanged = true;
         if (dTraceLogList.Count > 0)
             dTraceLogList.RemoveAt(dTraceLogList.Count - 1);
     }
@@ -1506,7 +1501,6 @@ internal sealed partial class EmueraConsole : IDisposable
     {
         if (!Program.DebugMode || runningERBfromMemory)
             return;
-        dTraceLogChanged = true;
         dTraceLogList.Clear();
     }
 
