@@ -2,143 +2,142 @@
 using System.Drawing;
 using System.Text;
 
-namespace MinorShift.Emuera.GameView
+namespace MinorShift.Emuera.GameView;
+
+internal enum DisplayLineLastState
 {
-    internal enum DisplayLineLastState
+    None = 0,
+    Normal = 1,
+    Selected = 2,
+    BackLog = 3,
+}
+
+internal enum DisplayLineAlignment
+{
+    LEFT = 0,
+    CENTER = 1,
+    RIGHT = 2,
+}
+/// <summary>
+/// 表示行。1つ以上のボタン（ConsoleButtonString）からなる
+/// </summary>
+internal sealed class ConsoleDisplayLine
+{
+
+    //public ConsoleDisplayLine(EmueraConsole parentWindow, ConsoleButtonString[] buttons, bool isLogical, bool temporary)
+    public ConsoleDisplayLine(ConsoleButtonString[] buttons, bool isLogical, bool temporary)
     {
-        None = 0,
-        Normal = 1,
-        Selected = 2,
-        BackLog = 3,
+        //parent = parentWindow;
+        if (buttons == null)
+        {
+            //これはthis.buttonの間違い？
+            buttons = [];
+            return;
+        }
+        this.buttons = buttons;
+        foreach (ConsoleButtonString button in buttons)
+            button.ParentLine = this;
+        IsLogicalLine = isLogical;
+        IsTemporary = temporary;
+    }
+    public int LineNo = -1;
+
+    ///論理行の最初となる場合だけtrue。表示の都合で改行された2行目以降はfalse
+    readonly public bool IsLogicalLine = true;
+    readonly public bool IsTemporary;
+    //EmueraConsole parent;
+    ConsoleButtonString[] buttons;
+    DisplayLineAlignment align;
+    public ConsoleButtonString[] Buttons { get { return buttons; } }
+    public DisplayLineAlignment Align { get { return align; } }
+    bool aligned;
+    public void SetAlignment(DisplayLineAlignment align)
+    {
+        if (aligned)
+            return;
+        this.aligned = true;
+        this.align = align;
+        if (buttons.Length == 0)
+            return;
+        //DisplayLineの幅
+        int width = 0;
+        foreach (ConsoleButtonString button in buttons)
+            width += button.Width;
+        //現在位置
+        int pointX = buttons[0].PointX;
+
+        //目標位置
+        int movetoX = 0;
+        if (align == DisplayLineAlignment.LEFT)
+        {
+            //位置固定に対応
+            if (IsLogicalLine)
+                return;
+            movetoX = 0;
+        }
+        else if (align == DisplayLineAlignment.CENTER)
+            movetoX = Config.WindowX / 2 - width / 2;
+        else if (align == DisplayLineAlignment.RIGHT)
+            movetoX = Config.WindowX - width;
+
+        //移動距離
+        int shiftX = movetoX - pointX;
+        if (shiftX != 0)
+            this.ShiftPositionX(shiftX);
     }
 
-    internal enum DisplayLineAlignment
+    public void ShiftPositionX(int shiftX)
     {
-        LEFT = 0,
-        CENTER = 1,
-        RIGHT = 2,
+        foreach (ConsoleButtonString button in buttons)
+            button.ShiftPositionX(shiftX);
     }
-    /// <summary>
-    /// 表示行。1つ以上のボタン（ConsoleButtonString）からなる
-    /// </summary>
-    internal sealed class ConsoleDisplayLine
+
+    public void ChangeStr(ConsoleButtonString[] newButtons)
     {
+        buttons = null;
+        foreach (ConsoleButtonString button in newButtons)
+            button.ParentLine = this;
+        buttons = newButtons;
+    }
 
-        //public ConsoleDisplayLine(EmueraConsole parentWindow, ConsoleButtonString[] buttons, bool isLogical, bool temporary)
-        public ConsoleDisplayLine(ConsoleButtonString[] buttons, bool isLogical, bool temporary)
-        {
-            //parent = parentWindow;
-            if (buttons == null)
-            {
-                //これはthis.buttonの間違い？
-                buttons = [];
-                return;
-            }
-            this.buttons = buttons;
-            foreach (ConsoleButtonString button in buttons)
-                button.ParentLine = this;
-            IsLogicalLine = isLogical;
-            IsTemporary = temporary;
-        }
-        public int LineNo = -1;
+    public static void Clear(Brush brush, Graphics graph, int pointY)
+    {
+        Rectangle rect = new(0, pointY, Config.WindowX, Config.LineHeight);
+        graph.FillRectangle(brush, rect);
+    }
 
-        ///論理行の最初となる場合だけtrue。表示の都合で改行された2行目以降はfalse
-        readonly public bool IsLogicalLine = true;
-        readonly public bool IsTemporary;
-        //EmueraConsole parent;
-        ConsoleButtonString[] buttons;
-        DisplayLineAlignment align;
-        public ConsoleButtonString[] Buttons { get { return buttons; } }
-        public DisplayLineAlignment Align { get { return align; } }
-        bool aligned;
-        public void SetAlignment(DisplayLineAlignment align)
-        {
-            if (aligned)
-                return;
-            this.aligned = true;
-            this.align = align;
-            if (buttons.Length == 0)
-                return;
-            //DisplayLineの幅
-            int width = 0;
-            foreach (ConsoleButtonString button in buttons)
-                width += button.Width;
-            //現在位置
-            int pointX = buttons[0].PointX;
+    //public ConsoleButtonString GetPointingButton(int pointX)
+    //{
+    //	////1815 優先順位を逆順にする
+    //	////後から描画されるボタンが優先されるように
+    //	for (int i = 0; i < buttons.Length; i++)
+    //	{
+    //		ConsoleButtonString button = buttons[buttons.Length - i - 1];
+    //		if ((button.PointX <= pointX) && (button.PointX + button.Width >= pointX))
+    //			return button;
+    //	}
+    //	//foreach (ConsoleButtonString button in buttons)
+    //	//{
+    //	//    if ((button.PointX <= pointX) && (button.PointX + button.Width >= pointX))
+    //	//        return button;
+    //	//}
+    //	return null;
+    //}
 
-            //目標位置
-            int movetoX = 0;
-            if (align == DisplayLineAlignment.LEFT)
-            {
-                //位置固定に対応
-                if (IsLogicalLine)
-                    return;
-                movetoX = 0;
-            }
-            else if (align == DisplayLineAlignment.CENTER)
-                movetoX = Config.WindowX / 2 - width / 2;
-            else if (align == DisplayLineAlignment.RIGHT)
-                movetoX = Config.WindowX - width;
+    public void DrawTo(Graphics graph, int pointY, bool isBackLog, bool force, TextDrawingMode mode)
+    {
+        foreach (ConsoleButtonString button in buttons)
+            button.DrawTo(graph, pointY, isBackLog, mode);
+    }
 
-            //移動距離
-            int shiftX = movetoX - pointX;
-            if (shiftX != 0)
-                this.ShiftPositionX(shiftX);
-        }
-
-        public void ShiftPositionX(int shiftX)
-        {
-            foreach (ConsoleButtonString button in buttons)
-                button.ShiftPositionX(shiftX);
-        }
-
-        public void ChangeStr(ConsoleButtonString[] newButtons)
-        {
-            buttons = null;
-            foreach (ConsoleButtonString button in newButtons)
-                button.ParentLine = this;
-            buttons = newButtons;
-        }
-
-        public static void Clear(Brush brush, Graphics graph, int pointY)
-        {
-            Rectangle rect = new(0, pointY, Config.WindowX, Config.LineHeight);
-            graph.FillRectangle(brush, rect);
-        }
-
-        //public ConsoleButtonString GetPointingButton(int pointX)
-        //{
-        //	////1815 優先順位を逆順にする
-        //	////後から描画されるボタンが優先されるように
-        //	for (int i = 0; i < buttons.Length; i++)
-        //	{
-        //		ConsoleButtonString button = buttons[buttons.Length - i - 1];
-        //		if ((button.PointX <= pointX) && (button.PointX + button.Width >= pointX))
-        //			return button;
-        //	}
-        //	//foreach (ConsoleButtonString button in buttons)
-        //	//{
-        //	//    if ((button.PointX <= pointX) && (button.PointX + button.Width >= pointX))
-        //	//        return button;
-        //	//}
-        //	return null;
-        //}
-
-        public void DrawTo(Graphics graph, int pointY, bool isBackLog, bool force, TextDrawingMode mode)
-        {
-            foreach (ConsoleButtonString button in buttons)
-                button.DrawTo(graph, pointY, isBackLog, mode);
-        }
-
-        readonly static StringBuilder builder = new();
-        public override string ToString()
-        {
-            if (buttons == null)
-                return "";
-            builder.Clear();
-            foreach (var button in buttons)
-                builder.Append(button.ToString());
-            return builder.ToString();
-        }
+    readonly static StringBuilder builder = new();
+    public override string ToString()
+    {
+        if (buttons == null)
+            return "";
+        builder.Clear();
+        foreach (var button in buttons)
+            builder.Append(button.ToString());
+        return builder.ToString();
     }
 }

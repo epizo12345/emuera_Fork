@@ -1,76 +1,75 @@
 ﻿using MinorShift.Emuera.Runtime.Config;
 using System;
 
-namespace MinorShift.Emuera.GameData.Expression
+namespace MinorShift.Emuera.GameData.Expression;
+
+internal enum CaseExpressionType
 {
-    internal enum CaseExpressionType
+    Normal = 1,
+    To = 2,
+    Is = 3,
+}
+internal sealed class CaseExpression
+{
+    public CaseExpressionType CaseType = CaseExpressionType.Normal;
+    public AExpression LeftTerm;
+    public AExpression RightTerm;
+
+    public OperatorCode Operator;
+    public Type GetOperandType()
     {
-        Normal = 1,
-        To = 2,
-        Is = 3,
+        if (LeftTerm != null)
+            return LeftTerm.GetOperandType();
+        return typeof(void);
     }
-    internal sealed class CaseExpression
+
+    public void Reduce(ExpressionMediator exm)
     {
-        public CaseExpressionType CaseType = CaseExpressionType.Normal;
-        public AExpression LeftTerm;
-        public AExpression RightTerm;
+        LeftTerm = LeftTerm.Restructure(exm);
+        if (CaseType == CaseExpressionType.To)
+            RightTerm = RightTerm.Restructure(exm);
+    }
 
-        public OperatorCode Operator;
-        public Type GetOperandType()
+    public override string ToString()
+    {
+        switch (CaseType)
         {
-            if (LeftTerm != null)
-                return LeftTerm.GetOperandType();
-            return typeof(void);
+            case CaseExpressionType.Normal:
+                return LeftTerm.ToString();
+            case CaseExpressionType.Is:
+                return "Is " + Operator.ToString() + " " + LeftTerm.ToString();
+            case CaseExpressionType.To:
+                return LeftTerm.ToString() + " To " + RightTerm.ToString();
         }
 
-        public void Reduce(ExpressionMediator exm)
-        {
-            LeftTerm = LeftTerm.Restructure(exm);
-            if (CaseType == CaseExpressionType.To)
-                RightTerm = RightTerm.Restructure(exm);
-        }
+        return base.ToString();
+    }
 
-        public override string ToString()
+    public bool GetBool(Int64 Is, ExpressionMediator exm)
+    {
+        if (CaseType == CaseExpressionType.To)
+            return LeftTerm.GetIntValue(exm) <= Is && Is <= RightTerm.GetIntValue(exm);
+        if (CaseType == CaseExpressionType.Is)
         {
-            switch (CaseType)
-            {
-                case CaseExpressionType.Normal:
-                    return LeftTerm.ToString();
-                case CaseExpressionType.Is:
-                    return "Is " + Operator.ToString() + " " + LeftTerm.ToString();
-                case CaseExpressionType.To:
-                    return LeftTerm.ToString() + " To " + RightTerm.ToString();
-            }
-
-            return base.ToString();
+            AExpression term = OperatorMethodManager.ReduceBinaryTerm(Operator, new SingleLongTerm(Is), LeftTerm);
+            return term.GetIntValue(exm) != 0;
         }
+        return LeftTerm.GetIntValue(exm) == Is;
+    }
 
-        public bool GetBool(Int64 Is, ExpressionMediator exm)
+    public bool GetBool(string Is, ExpressionMediator exm)
+    {
+        if (CaseType == CaseExpressionType.To)
         {
-            if (CaseType == CaseExpressionType.To)
-                return LeftTerm.GetIntValue(exm) <= Is && Is <= RightTerm.GetIntValue(exm);
-            if (CaseType == CaseExpressionType.Is)
-            {
-                AExpression term = OperatorMethodManager.ReduceBinaryTerm(Operator, new SingleLongTerm(Is), LeftTerm);
-                return term.GetIntValue(exm) != 0;
-            }
-            return LeftTerm.GetIntValue(exm) == Is;
+            return string.Compare(LeftTerm.GetStrValue(exm), Is, Config.SCExpression) <= 0
+                && string.Compare(Is, RightTerm.GetStrValue(exm), Config.SCExpression) <= 0;
         }
-
-        public bool GetBool(string Is, ExpressionMediator exm)
+        if (CaseType == CaseExpressionType.Is)
         {
-            if (CaseType == CaseExpressionType.To)
-            {
-                return string.Compare(LeftTerm.GetStrValue(exm), Is, Config.SCExpression) <= 0
-                    && string.Compare(Is, RightTerm.GetStrValue(exm), Config.SCExpression) <= 0;
-            }
-            if (CaseType == CaseExpressionType.Is)
-            {
-                AExpression term = OperatorMethodManager.ReduceBinaryTerm(Operator, new SingleStrTerm(Is), LeftTerm);
-                return term.GetIntValue(exm) != 0;
-            }
-            return LeftTerm.GetStrValue(exm) == Is;
+            AExpression term = OperatorMethodManager.ReduceBinaryTerm(Operator, new SingleStrTerm(Is), LeftTerm);
+            return term.GetIntValue(exm) != 0;
         }
+        return LeftTerm.GetStrValue(exm) == Is;
     }
 }
 

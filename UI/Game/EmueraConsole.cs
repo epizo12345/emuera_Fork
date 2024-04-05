@@ -17,1935 +17,1934 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace MinorShift.Emuera.GameView
+namespace MinorShift.Emuera.GameView;
+
+//入出力待ちの状況。
+internal enum ConsoleState
 {
-    //入出力待ちの状況。
-    internal enum ConsoleState
+    Initializing = 0,
+    Quit = 5,//QUIT
+    Error = 6,//Exceptionによる強制終了
+    Running = 7,
+    WaitInput = 20,
+    Sleep = 21,//DoEvents
+
+    //WaitKey = 1,//WAIT
+    //WaitSystemInteger = 2,//Systemが要求するInput
+    //WaitInteger = 3,//INPUT
+    //WaitString = 4,//INPUTS
+    //WaitIntegerWithTimer = 8,
+    //WaitStringWithTimer = 9,
+    //Timeout = 10,
+    //Timeouts = 11,
+    //WaitKeyWithTimer = 12,
+    //WaitKeyWithTimerF = 13,
+    //WaitOneInteger = 14,
+    //WaitOneString = 15,
+    //WaitOneIntegerWithTimer = 16,
+    //WaitOneStringWithTimer = 17,
+    //WaitAnyKey = 18,
+
+}
+
+internal enum ConsoleRedraw
+{
+    None = 0,
+    Normal = 1,
+}
+
+internal sealed partial class EmueraConsole : IDisposable
+{
+
+    public EmueraConsole(MainWindow parent)
     {
-        Initializing = 0,
-        Quit = 5,//QUIT
-        Error = 6,//Exceptionによる強制終了
-        Running = 7,
-        WaitInput = 20,
-        Sleep = 21,//DoEvents
+        window = parent;
 
-        //WaitKey = 1,//WAIT
-        //WaitSystemInteger = 2,//Systemが要求するInput
-        //WaitInteger = 3,//INPUT
-        //WaitString = 4,//INPUTS
-        //WaitIntegerWithTimer = 8,
-        //WaitStringWithTimer = 9,
-        //Timeout = 10,
-        //Timeouts = 11,
-        //WaitKeyWithTimer = 12,
-        //WaitKeyWithTimerF = 13,
-        //WaitOneInteger = 14,
-        //WaitOneString = 15,
-        //WaitOneIntegerWithTimer = 16,
-        //WaitOneStringWithTimer = 17,
-        //WaitAnyKey = 18,
+        //1.713 この段階でsetStBarを使用してはいけない
+        //setStBar(StaticConfig.DrawLineString);
+        state = ConsoleState.Initializing;
+        if (Config.FPS > 0)
+            msPerFrame = 1000 / (uint)Config.FPS;
+        displayLineList = [];
+        printBuffer = new PrintStringBuffer(this);
 
+        genericTimer = new();
+        genericTimer.Elapsed += tickTimer;
+        genericTimer.Interval = 10;
+        genericTimer.Enabled = false;
+        CBG_Clear();//文字列描画用ダミー追加
+
+        redrawTimer = new Timer
+        {
+            Enabled = false//TODO:1824アニメ用再描画タイマー有効化関数の追加
+        };
+        redrawTimer.Tick += new EventHandler(tickRedrawTimer);
+        redrawTimer.Interval = 10;
+    }
+    #region 1823 cbg関連
+    private readonly List<ClientBackGroundImage> cbgList = [];
+    private GraphicsImage cbgButtonMap;
+    private int selectingCBGButtonInt = -1;
+    private int lastSelectingCBGButtonInt = -1;
+    //ConsoleButtonString selectingButton = null;
+    //ConsoleButtonString lastSelectingButton = null;
+
+    sealed class ClientBackGroundImage : IComparable<ClientBackGroundImage>
+    {
+        /// <summary>
+        /// zdepth == 0は文字列用ダミーなので他で使ってはいけない
+        /// </summary>
+        /// <param name="zdepth"></param>
+        internal ClientBackGroundImage(int zdepth)
+        { this.zdepth = zdepth; }
+        public ASprite Img;
+        public ASprite ImgB;
+        public int x;
+        public int y;
+        public readonly int zdepth;
+        public bool isButton;
+        public int buttonValue;
+        public string tooltipString;
+        public int CompareTo(ClientBackGroundImage other)
+        {
+            if (other == null)
+                return -1;
+            //逆順でSort
+            return -zdepth.CompareTo(other.zdepth);
+        }
+    }
+    public void CBG_Clear()
+    {
+        foreach (ClientBackGroundImage cimg in cbgList)
+        {
+            //使い捨て無名Imageを一応disposeしておく
+            if (cimg.Img != null && cimg.Img.Name.Length == 0)
+                cimg.Img.Dispose();
+        }
+        cbgList.Clear();
+        CBG_ClearBMap();
+        cbgList.Add(new ClientBackGroundImage(0));
     }
 
-    internal enum ConsoleRedraw
+    public void CBG_ClearRange(int zmin, int zmax)
     {
-        None = 0,
-        Normal = 1,
+        if (zmin > zmax)
+            return;
+        for (int i = 0; i < cbgList.Count; i++)
+        {
+            ClientBackGroundImage cimg = cbgList[i];
+            if (cimg.zdepth < zmin || cimg.zdepth > zmax || cimg.zdepth == 0)//0はダミーなので削除しない
+                continue;
+
+            //使い捨て無名Imageを一応disposeしておく
+            if (cimg.Img != null && cimg.Img.Name.Length == 0)
+                cimg.Img.Dispose();
+            cbgList.RemoveAt(i);
+            i--;
+        }
     }
 
-    internal sealed partial class EmueraConsole : IDisposable
+    public void CBG_ClearButton()
     {
-
-        public EmueraConsole(MainWindow parent)
+        for (int i = 0; i < cbgList.Count; i++)
         {
-            window = parent;
+            ClientBackGroundImage cimg = cbgList[i];
+            if (!cimg.isButton)
+                continue;
 
-            //1.713 この段階でsetStBarを使用してはいけない
-            //setStBar(StaticConfig.DrawLineString);
-            state = ConsoleState.Initializing;
-            if (Config.FPS > 0)
-                msPerFrame = 1000 / (uint)Config.FPS;
-            displayLineList = [];
-            printBuffer = new PrintStringBuffer(this);
-
-            genericTimer = new();
-            genericTimer.Elapsed += tickTimer;
-            genericTimer.Interval = 10;
-            genericTimer.Enabled = false;
-            CBG_Clear();//文字列描画用ダミー追加
-
-            redrawTimer = new Timer
-            {
-                Enabled = false//TODO:1824アニメ用再描画タイマー有効化関数の追加
-            };
-            redrawTimer.Tick += new EventHandler(tickRedrawTimer);
-            redrawTimer.Interval = 10;
+            //使い捨て無名Imageを一応disposeしておく
+            if (cimg.Img != null && cimg.Img.Name.Length == 0)
+                cimg.Img.Dispose();
+            cbgList.RemoveAt(i);
+            i--;
         }
-        #region 1823 cbg関連
-        private readonly List<ClientBackGroundImage> cbgList = [];
-        private GraphicsImage cbgButtonMap;
-        private int selectingCBGButtonInt = -1;
-        private int lastSelectingCBGButtonInt = -1;
-        //ConsoleButtonString selectingButton = null;
-        //ConsoleButtonString lastSelectingButton = null;
+        CBG_ClearBMap();
+    }
 
-        sealed class ClientBackGroundImage : IComparable<ClientBackGroundImage>
-        {
-            /// <summary>
-            /// zdepth == 0は文字列用ダミーなので他で使ってはいけない
-            /// </summary>
-            /// <param name="zdepth"></param>
-            internal ClientBackGroundImage(int zdepth)
-            { this.zdepth = zdepth; }
-            public ASprite Img;
-            public ASprite ImgB;
-            public int x;
-            public int y;
-            public readonly int zdepth;
-            public bool isButton;
-            public int buttonValue;
-            public string tooltipString;
-            public int CompareTo(ClientBackGroundImage other)
-            {
-                if (other == null)
-                    return -1;
-                //逆順でSort
-                return -zdepth.CompareTo(other.zdepth);
-            }
-        }
-        public void CBG_Clear()
-        {
-            foreach (ClientBackGroundImage cimg in cbgList)
-            {
-                //使い捨て無名Imageを一応disposeしておく
-                if (cimg.Img != null && cimg.Img.Name.Length == 0)
-                    cimg.Img.Dispose();
-            }
-            cbgList.Clear();
-            CBG_ClearBMap();
-            cbgList.Add(new ClientBackGroundImage(0));
-        }
+    public void CBG_ClearBMap()
+    {
+        cbgButtonMap = null;
+        selectingCBGButtonInt = -1;
+        lastSelectingCBGButtonInt = -1;
+    }
 
-        public void CBG_ClearRange(int zmin, int zmax)
+    public bool CBG_SetGraphics(GraphicsImage gra, int x, int y, int zdepth)
+    {
+        if (gra == null || !gra.IsCreated)
+            return false;
+        return CBG_SetImage(new SpriteG("", gra, new Rectangle(0, 0, gra.Width, gra.Height)), x, y, zdepth);
+    }
+    public bool CBG_SetImage(ASprite image, int x, int y, int zdepth)
+    {
+        if (image == null || !image.IsCreated)
+            return false;
+        ArgumentOutOfRangeException.ThrowIfZero(zdepth);
+        ClientBackGroundImage cbg = new(zdepth)
         {
-            if (zmin > zmax)
-                return;
-            for (int i = 0; i < cbgList.Count; i++)
-            {
-                ClientBackGroundImage cimg = cbgList[i];
-                if (cimg.zdepth < zmin || cimg.zdepth > zmax || cimg.zdepth == 0)//0はダミーなので削除しない
-                    continue;
+            Img = image,
+            x = x,
+            y = y
+        };
+        //cbg.zdepth = zdepth;
+        cbgList.Add(cbg);
+        cbgList.Sort();
+        return true;
+    }
 
-                //使い捨て無名Imageを一応disposeしておく
-                if (cimg.Img != null && cimg.Img.Name.Length == 0)
-                    cimg.Img.Dispose();
-                cbgList.RemoveAt(i);
-                i--;
-            }
-        }
+    public bool CBG_SetButtonMap(GraphicsImage gra)
+    {
+        if (gra == null || !gra.IsCreated)
+            return false;
+        if (cbgButtonMap == gra)
+            return false;
+        cbgButtonMap = gra;
+        selectingCBGButtonInt = -1;
+        lastSelectingCBGButtonInt = -1;
+        return true;
+    }
 
-        public void CBG_ClearButton()
+    public bool CBG_SetButtonImage(int buttonValue, ASprite imageN, ASprite imageB, int x, int y, int zdepth, string tooltip = null)
+    {
+        ArgumentOutOfRangeException.ThrowIfZero(zdepth);
+        ClientBackGroundImage cbg = new(zdepth)
         {
-            for (int i = 0; i < cbgList.Count; i++)
-            {
-                ClientBackGroundImage cimg = cbgList[i];
-                if (!cimg.isButton)
-                    continue;
-
-                //使い捨て無名Imageを一応disposeしておく
-                if (cimg.Img != null && cimg.Img.Name.Length == 0)
-                    cimg.Img.Dispose();
-                cbgList.RemoveAt(i);
-                i--;
-            }
-            CBG_ClearBMap();
-        }
-
-        public void CBG_ClearBMap()
-        {
-            cbgButtonMap = null;
-            selectingCBGButtonInt = -1;
-            lastSelectingCBGButtonInt = -1;
-        }
-
-        public bool CBG_SetGraphics(GraphicsImage gra, int x, int y, int zdepth)
-        {
-            if (gra == null || !gra.IsCreated)
-                return false;
-            return CBG_SetImage(new SpriteG("", gra, new Rectangle(0, 0, gra.Width, gra.Height)), x, y, zdepth);
-        }
-        public bool CBG_SetImage(ASprite image, int x, int y, int zdepth)
-        {
-            if (image == null || !image.IsCreated)
-                return false;
-            ArgumentOutOfRangeException.ThrowIfZero(zdepth);
-            ClientBackGroundImage cbg = new(zdepth)
-            {
-                Img = image,
-                x = x,
-                y = y
-            };
+            Img = imageN,
+            ImgB = imageB,
+            x = x,
+            y = y,
             //cbg.zdepth = zdepth;
-            cbgList.Add(cbg);
-            cbgList.Sort();
-            return true;
-        }
+            isButton = true,
+            buttonValue = buttonValue,
+            tooltipString = tooltip
+        };
+        cbgList.Add(cbg);
+        cbgList.Sort();
+        return true;
+    }
+    public int ClientWidth { get { return window.MainPicBox.Width; } }
+    public int ClientHeight { get { return window.MainPicBox.Height; } }
+    #endregion
 
-        public bool CBG_SetButtonMap(GraphicsImage gra)
+    const string ErrorButtonsText = "__openFileWithDebug__";
+    private readonly MainWindow window;
+
+    MinorShift.Emuera.GameProc.Process process;
+    ConsoleState state = ConsoleState.Initializing;
+    public bool Enabled { get { return window.Created; } }
+
+    /// <summary>
+    /// 現在、Emueraがアクティブかどうか
+    /// </summary>
+    internal bool IsActive
+    { get { return !(window == null || !window.Created || Form.ActiveForm == null); } }
+
+    /// <summary>
+    /// スクリプトが継続中かどうか
+    /// 入力系はメッセージスキップやマクロも含めてIsInProcessを参照すべき
+    /// </summary>
+    internal bool IsRunning
+    {
+        get
         {
-            if (gra == null || !gra.IsCreated)
-                return false;
-            if (cbgButtonMap == gra)
-                return false;
-            cbgButtonMap = gra;
-            selectingCBGButtonInt = -1;
-            lastSelectingCBGButtonInt = -1;
-            return true;
+            if (state == ConsoleState.Initializing)
+                return true;
+            return state == ConsoleState.Running || runningERBfromMemory;
         }
+    }
 
-        public bool CBG_SetButtonImage(int buttonValue, ASprite imageN, ASprite imageB, int x, int y, int zdepth, string tooltip = null)
+    internal bool IsInProcess
+    {
+        get
         {
-            ArgumentOutOfRangeException.ThrowIfZero(zdepth);
-            ClientBackGroundImage cbg = new(zdepth)
-            {
-                Img = imageN,
-                ImgB = imageB,
-                x = x,
-                y = y,
-                //cbg.zdepth = zdepth;
-                isButton = true,
-                buttonValue = buttonValue,
-                tooltipString = tooltip
-            };
-            cbgList.Add(cbg);
-            cbgList.Sort();
-            return true;
+            if (state == ConsoleState.Initializing)
+                return true;
+            if (state == ConsoleState.Sleep)
+                return true;
+            if (inProcess)
+                return true;
+            return state == ConsoleState.Running || runningERBfromMemory;
         }
-        public int ClientWidth { get { return window.MainPicBox.Width; } }
-        public int ClientHeight { get { return window.MainPicBox.Height; } }
-        #endregion
+    }
 
-        const string ErrorButtonsText = "__openFileWithDebug__";
-        private readonly MainWindow window;
-
-        MinorShift.Emuera.GameProc.Process process;
-        ConsoleState state = ConsoleState.Initializing;
-        public bool Enabled { get { return window.Created; } }
-
-        /// <summary>
-        /// 現在、Emueraがアクティブかどうか
-        /// </summary>
-        internal bool IsActive
-        { get { return !(window == null || !window.Created || Form.ActiveForm == null); } }
-
-        /// <summary>
-        /// スクリプトが継続中かどうか
-        /// 入力系はメッセージスキップやマクロも含めてIsInProcessを参照すべき
-        /// </summary>
-        internal bool IsRunning
+    internal bool IsError
+    {
+        get
         {
-            get
-            {
-                if (state == ConsoleState.Initializing)
-                    return true;
-                return state == ConsoleState.Running || runningERBfromMemory;
-            }
+            return state == ConsoleState.Error;
         }
+    }
 
-        internal bool IsInProcess
+    internal bool IsWaitingEnterKey
+    {
+        get
         {
-            get
-            {
-                if (state == ConsoleState.Initializing)
-                    return true;
-                if (state == ConsoleState.Sleep)
-                    return true;
-                if (inProcess)
-                    return true;
-                return state == ConsoleState.Running || runningERBfromMemory;
-            }
+            if ((state == ConsoleState.Quit) || (state == ConsoleState.Error))
+                return true;
+            if (state == ConsoleState.WaitInput)
+                return inputReq.InputType == InputType.AnyKey || inputReq.InputType == InputType.EnterKey;
+            return false;
         }
+    }
 
-        internal bool IsError
+    internal bool IsWaitAnyKey
+    {
+        get
         {
-            get
-            {
-                return state == ConsoleState.Error;
-            }
+            return state == ConsoleState.WaitInput && inputReq.InputType == InputType.AnyKey;
         }
+    }
 
-        internal bool IsWaitingEnterKey
+    internal bool IsWaintingOnePhrase
+    {
+        get
         {
-            get
-            {
-                if ((state == ConsoleState.Quit) || (state == ConsoleState.Error))
-                    return true;
-                if (state == ConsoleState.WaitInput)
-                    return inputReq.InputType == InputType.AnyKey || inputReq.InputType == InputType.EnterKey;
-                return false;
-            }
+            return state == ConsoleState.WaitInput && inputReq.OneInput;
         }
+    }
 
-        internal bool IsWaitAnyKey
+    internal bool IsRunningTimer
+    {
+        get
         {
-            get
-            {
-                return state == ConsoleState.WaitInput && inputReq.InputType == InputType.AnyKey;
-            }
+            return state == ConsoleState.WaitInput && inputReq.Timelimit > 0 && !isTimeout;
         }
+    }
 
-        internal bool IsWaintingOnePhrase
+    internal bool IsWaitingPrimitive
+    {
+        get
         {
-            get
-            {
-                return state == ConsoleState.WaitInput && inputReq.OneInput;
-            }
+            if (state == ConsoleState.WaitInput)
+                return inputReq.InputType == InputType.PrimitiveMouseKey;
+            return false;
         }
+    }
 
-        internal bool IsRunningTimer
+    internal string SelectedString
+    {
+        get
         {
-            get
-            {
-                return state == ConsoleState.WaitInput && inputReq.Timelimit > 0 && !isTimeout;
-            }
-        }
-
-        internal bool IsWaitingPrimitive
-        {
-            get
-            {
-                if (state == ConsoleState.WaitInput)
-                    return inputReq.InputType == InputType.PrimitiveMouseKey;
-                return false;
-            }
-        }
-
-        internal string SelectedString
-        {
-            get
-            {
-                if (selectingButton == null)
-                    return null;
-                if (state == ConsoleState.Error)
-                    return selectingButton.Inputs;
-                if (state != ConsoleState.WaitInput)
-                    return null;
-                if (inputReq.InputType == InputType.IntValue && selectingButton.IsInteger)
-                    return selectingButton.Input.ToString();
-                if (inputReq.InputType == InputType.StrValue)
-                    return selectingButton.Inputs;
+            if (selectingButton == null)
                 return null;
-            }
-        }
-
-        public async Task Initialize()
-        {
-            var boottimeDebugStopwatch = Stopwatch.StartNew();
-            Debug.WriteLine("Init:Start");
-            Debug.WriteLine("File:Preload:Start");
-            //必要なソースファイルを事前にメモリに一気に読み込む
-            _genericTimerStopwatch.Restart();
-
-            Preload.Clear();
-            await Preload.Load(Program.ErbDir);
-            await Preload.Load(Program.CsvDir);
-
-            Debug.WriteLine("File:Preload:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
-
-            GlobalStatic.Console = this;
-            // GlobalStatic.MainWindow = window;
-            process = new GameProc.Process(this);
-            GlobalStatic.Process = process;
-            if (Program.DebugMode && Config.DebugShowWindow)
-            {
-                OpenDebugDialog();
-                window.Focus();
-            }
-            ClearDisplay();
-            if (!await process.Initialize())
-            {
-                state = ConsoleState.Error;
-                OutputLog(null);
-                PrintFlush(false);
-                RefreshStrings(true);
-                return;
-            }
-            RunEmueraProgram("");
-            RefreshStrings(true);
-
-            Debug.WriteLine("Init:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
-        }
-
-
-        public void Quit() { state = ConsoleState.Quit; }
-        public void ThrowTitleError(bool error)
-        {
-            state = ConsoleState.Error;
-            notToTitle = true;
-            byError = error;
-        }
-        public void ThrowError(bool playSound)
-        {
-            if (playSound)
-                System.Media.SystemSounds.Hand.Play();
-            forceUpdateGeneration();
-            UseUserStyle = false;
-            PrintFlush(false);
-            RefreshStrings(false);
-            state = ConsoleState.Error;
-        }
-
-        public bool notToTitle;
-        public bool byError;
-        //public ScriptPosition? ErrPos = null;
-
-        #region button関連
-        bool lastButtonIsInput = true;
-        public bool updatedGeneration;
-        int lastButtonGeneration;//最後に追加された選択肢の世代。これと世代が一致しない選択肢は選択できない。
-        int newButtonGeneration;//次に追加される選択肢の世代。Input又はInputsごとに増加
-                                //public int LastButtonGeneration { get { return lastButtonGeneration; } }
-        public int NewButtonGeneration { get { return newButtonGeneration; } }
-        public void UpdateGeneration() { lastButtonGeneration = newButtonGeneration; updatedGeneration = true; }
-        public void forceUpdateGeneration() { newButtonGeneration++; lastButtonGeneration = newButtonGeneration; updatedGeneration = true; }
-        LogicalLine lastInputLine;
-
-        private void newGeneration()
-        {
-            //値の入力を求められない時は更新は必要ないはず
-            if (state != ConsoleState.WaitInput || !inputReq.NeedValue)
-                return;
-            if (!updatedGeneration && process.getCurrentLine != lastInputLine)
-            {
-                //ボタン無しで次の入力に来たなら強制で世代更新
-                lastButtonGeneration = newButtonGeneration;
-            }
-            else
-                updatedGeneration = false;
-            lastInputLine = process.getCurrentLine;
-            //古い選択肢を選択できないように。INPUTで使った選択肢をINPUTSには流用できないように。
-            if (inputReq.InputType == InputType.IntValue)
-            {
-                if (lastButtonGeneration == newButtonGeneration)
-                    unchecked { newButtonGeneration++; }
-                else if (!lastButtonIsInput)
-                    lastButtonGeneration = newButtonGeneration;
-                lastButtonIsInput = true;
-            }
+            if (state == ConsoleState.Error)
+                return selectingButton.Inputs;
+            if (state != ConsoleState.WaitInput)
+                return null;
+            if (inputReq.InputType == InputType.IntValue && selectingButton.IsInteger)
+                return selectingButton.Input.ToString();
             if (inputReq.InputType == InputType.StrValue)
-            {
-                if (lastButtonGeneration == newButtonGeneration)
-                    unchecked { newButtonGeneration++; }
-                else if (lastButtonIsInput)
-                    lastButtonGeneration = newButtonGeneration;
-                lastButtonIsInput = false;
-            }
+                return selectingButton.Inputs;
+            return null;
         }
+    }
 
-        /// <summary>
-        /// 選択中のボタン。INPUTやINPUTSに対応したものでなければならない
-        /// </summary>
-        ConsoleButtonString selectingButton;
-        ConsoleButtonString lastSelectingButton;
-        public ConsoleButtonString SelectingButton { get { return selectingButton; } }
-        public bool ButtonIsSelected(ConsoleButtonString button) { return selectingButton == button; }
+    public async Task Initialize()
+    {
+        var boottimeDebugStopwatch = Stopwatch.StartNew();
+        Debug.WriteLine("Init:Start");
+        Debug.WriteLine("File:Preload:Start");
+        //必要なソースファイルを事前にメモリに一気に読み込む
+        _genericTimerStopwatch.Restart();
 
-        /// <summary>
-        /// ToolTip表示したフラグ
-        /// </summary>
-        bool tooltipUsed;
-        /// <summary>
-        /// マウスの直下にあるテキスト。ボタンであってもよい。
-        /// ToolTip表示用。世代無視、履歴中も表示
-        /// </summary>
-        ConsoleButtonString pointingString;
-        ConsoleButtonString lastPointingString;
-        #endregion
+        Preload.Clear();
+        await Preload.Load(Program.ErbDir);
+        await Preload.Load(Program.CsvDir);
 
-        #region Input & Timer系
+        Debug.WriteLine("File:Preload:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
 
-        //bool hasDefValue = false;
-        //Int64 defNum;
-        //string defStr;
-
-        private InputRequest inputReq;
-        public void Await(int time)
+        GlobalStatic.Console = this;
+        // GlobalStatic.MainWindow = window;
+        process = new GameProc.Process(this);
+        GlobalStatic.Process = process;
+        if (Program.DebugMode && Config.DebugShowWindow)
         {
-            if (!Enabled || state != ConsoleState.Running)
-            {
-                this.Quit();
-                return;
-            }
+            OpenDebugDialog();
+            window.Focus();
+        }
+        ClearDisplay();
+        if (!await process.Initialize())
+        {
+            state = ConsoleState.Error;
+            OutputLog(null);
+            PrintFlush(false);
             RefreshStrings(true);
-            state = ConsoleState.Sleep;
-            process.UpdateCheckInfiniteLoopState();
-            System.Windows.Forms.Application.DoEvents();
-            if (time > 0)
-                System.Threading.Thread.Sleep(time);
-            ////DoEvents()の間にウインドウが閉じられたらおしまい。
-            //if (!Enabled || state != ConsoleState.Sleep)
-            //{
-            //	ReadAnyKey();
-            //	return;
-            //}
-
-            state = ConsoleState.Running;
+            return;
         }
+        RunEmueraProgram("");
+        RefreshStrings(true);
 
-        public void WaitInput(InputRequest req)
+        Debug.WriteLine("Init:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
+    }
+
+
+    public void Quit() { state = ConsoleState.Quit; }
+    public void ThrowTitleError(bool error)
+    {
+        state = ConsoleState.Error;
+        notToTitle = true;
+        byError = error;
+    }
+    public void ThrowError(bool playSound)
+    {
+        if (playSound)
+            System.Media.SystemSounds.Hand.Play();
+        forceUpdateGeneration();
+        UseUserStyle = false;
+        PrintFlush(false);
+        RefreshStrings(false);
+        state = ConsoleState.Error;
+    }
+
+    public bool notToTitle;
+    public bool byError;
+    //public ScriptPosition? ErrPos = null;
+
+    #region button関連
+    bool lastButtonIsInput = true;
+    public bool updatedGeneration;
+    int lastButtonGeneration;//最後に追加された選択肢の世代。これと世代が一致しない選択肢は選択できない。
+    int newButtonGeneration;//次に追加される選択肢の世代。Input又はInputsごとに増加
+                            //public int LastButtonGeneration { get { return lastButtonGeneration; } }
+    public int NewButtonGeneration { get { return newButtonGeneration; } }
+    public void UpdateGeneration() { lastButtonGeneration = newButtonGeneration; updatedGeneration = true; }
+    public void forceUpdateGeneration() { newButtonGeneration++; lastButtonGeneration = newButtonGeneration; updatedGeneration = true; }
+    LogicalLine lastInputLine;
+
+    private void newGeneration()
+    {
+        //値の入力を求められない時は更新は必要ないはず
+        if (state != ConsoleState.WaitInput || !inputReq.NeedValue)
+            return;
+        if (!updatedGeneration && process.getCurrentLine != lastInputLine)
         {
-            state = ConsoleState.WaitInput;
-            inputReq = req;
-            if (req.Timelimit > 0)
-            {
-                if (req.OneInput)
-                    window.update_lastinput();
-                presetTimer();
-                //				setTimer();
-            }
-            //updateMousePosition();
-            //Point point = window.MainPicBox.PointToClient(Control.MousePosition);
-            //if (window.MainPicBox.ClientRectangle.Contains(point))
-            //{
-            //	PrintFlush(false);
-            //	MoveMouse(point);
-            //}
+            //ボタン無しで次の入力に来たなら強制で世代更新
+            lastButtonGeneration = newButtonGeneration;
         }
-
-        public void ReadAnyKey(bool anykey = false, bool stopMesskip = false)
+        else
+            updatedGeneration = false;
+        lastInputLine = process.getCurrentLine;
+        //古い選択肢を選択できないように。INPUTで使った選択肢をINPUTSには流用できないように。
+        if (inputReq.InputType == InputType.IntValue)
         {
-            InputRequest req = new();
-            if (!anykey)
-                req.InputType = InputType.EnterKey;
-            else
-                req.InputType = InputType.AnyKey;
-            req.StopMesskip = stopMesskip;
-            inputReq = req;
-            state = ConsoleState.WaitInput;
-            process.NeedWaitToEventComEnd = false;
+            if (lastButtonGeneration == newButtonGeneration)
+                unchecked { newButtonGeneration++; }
+            else if (!lastButtonIsInput)
+                lastButtonGeneration = newButtonGeneration;
+            lastButtonIsInput = true;
         }
-
-
-        /// <summary>
-        /// INPUT中のアニメーション用タイマー
-        /// </summary>
-        Timer redrawTimer;
-
-        private void tickRedrawTimer(object sender, EventArgs e)
+        if (inputReq.InputType == InputType.StrValue)
         {
-            if (!redrawTimer.Enabled)
-                return;
-            //INPUT待ちでないとき、又はタイマー付きINPUT状態の場合はこれ以外の処理に任せる
-            if (state != ConsoleState.WaitInput || genericTimer.Enabled)
-            {
-                return;
-            }
-            window.Refresh();//OnPaint発行
+            if (lastButtonGeneration == newButtonGeneration)
+                unchecked { newButtonGeneration++; }
+            else if (lastButtonIsInput)
+                lastButtonGeneration = newButtonGeneration;
+            lastButtonIsInput = false;
         }
+    }
 
-        /// <summary>
-        /// アニメーション用タイマーの設定。0以下の値を指定するとタイマー停止
-        /// </summary>
-        public void setRedrawTimer(int tickcount)
+    /// <summary>
+    /// 選択中のボタン。INPUTやINPUTSに対応したものでなければならない
+    /// </summary>
+    ConsoleButtonString selectingButton;
+    ConsoleButtonString lastSelectingButton;
+    public ConsoleButtonString SelectingButton { get { return selectingButton; } }
+    public bool ButtonIsSelected(ConsoleButtonString button) { return selectingButton == button; }
+
+    /// <summary>
+    /// ToolTip表示したフラグ
+    /// </summary>
+    bool tooltipUsed;
+    /// <summary>
+    /// マウスの直下にあるテキスト。ボタンであってもよい。
+    /// ToolTip表示用。世代無視、履歴中も表示
+    /// </summary>
+    ConsoleButtonString pointingString;
+    ConsoleButtonString lastPointingString;
+    #endregion
+
+    #region Input & Timer系
+
+    //bool hasDefValue = false;
+    //Int64 defNum;
+    //string defStr;
+
+    private InputRequest inputReq;
+    public void Await(int time)
+    {
+        if (!Enabled || state != ConsoleState.Running)
         {
-            if (tickcount <= 0)
-            {
-                redrawTimer.Enabled = false;
-                return;
-            }
-            if (tickcount < 10)
-                tickcount = 10;
-            redrawTimer.Interval = tickcount;
-            redrawTimer.Enabled = true;
+            this.Quit();
+            return;
         }
+        RefreshStrings(true);
+        state = ConsoleState.Sleep;
+        process.UpdateCheckInfiniteLoopState();
+        System.Windows.Forms.Application.DoEvents();
+        if (time > 0)
+            System.Threading.Thread.Sleep(time);
+        ////DoEvents()の間にウインドウが閉じられたらおしまい。
+        //if (!Enabled || state != ConsoleState.Sleep)
+        //{
+        //	ReadAnyKey();
+        //	return;
+        //}
 
+        state = ConsoleState.Running;
+    }
 
-
-        System.Timers.Timer genericTimer = new();
-        Int64 timerID = -1;
-        readonly Stopwatch _genericTimerStopwatch = new();//現在のタイマーを開始した時のミリ秒数（WinmmTimer.TickCount基準）
-        Int64 timer_endTime;//現在のタイマーを終了する時のTickCountミリ秒数
-        bool isTimeout;
-        public bool IsTimeOut { get { return isTimeout; } }
-
-        /// <summary>
-        /// 1824 TINPUT時に直接タイマーをセットせずに最初の再描画が終わってからタイマーをセットする（そうしないとTINPUTと再描画だけでループしてしまうので）
-        /// </summary>
-        bool need_settimer;
-
-        private void presetTimer()
+    public void WaitInput(InputRequest req)
+    {
+        state = ConsoleState.WaitInput;
+        inputReq = req;
+        if (req.Timelimit > 0)
         {
-            need_settimer = true;
-
-            if (inputReq.DisplayTime)
-            {
-                var remainingMs = inputReq.Timelimit - _genericTimerStopwatch.ElapsedMilliseconds;
-                PrintSingleLine($"残り {remainingMs} ms");
-            }
+            if (req.OneInput)
+                window.update_lastinput();
+            presetTimer();
+            //				setTimer();
         }
-        private void setTimer()
+        //updateMousePosition();
+        //Point point = window.MainPicBox.PointToClient(Control.MousePosition);
+        //if (window.MainPicBox.ClientRectangle.Contains(point))
+        //{
+        //	PrintFlush(false);
+        //	MoveMouse(point);
+        //}
+    }
+
+    public void ReadAnyKey(bool anykey = false, bool stopMesskip = false)
+    {
+        InputRequest req = new();
+        if (!anykey)
+            req.InputType = InputType.EnterKey;
+        else
+            req.InputType = InputType.AnyKey;
+        req.StopMesskip = stopMesskip;
+        inputReq = req;
+        state = ConsoleState.WaitInput;
+        process.NeedWaitToEventComEnd = false;
+    }
+
+
+    /// <summary>
+    /// INPUT中のアニメーション用タイマー
+    /// </summary>
+    Timer redrawTimer;
+
+    private void tickRedrawTimer(object sender, EventArgs e)
+    {
+        if (!redrawTimer.Enabled)
+            return;
+        //INPUT待ちでないとき、又はタイマー付きINPUT状態の場合はこれ以外の処理に任せる
+        if (state != ConsoleState.WaitInput || genericTimer.Enabled)
         {
-            isTimeout = false;
-            timerID = inputReq.ID;
-            genericTimer.Enabled = true;
-            _genericTimerStopwatch.Restart();
-            timer_endTime = inputReq.Timelimit;
+            return;
         }
+        window.Refresh();//OnPaint発行
+    }
 
-        //汎用
-        private void tickTimer(object sender, EventArgs e)
+    /// <summary>
+    /// アニメーション用タイマーの設定。0以下の値を指定するとタイマー停止
+    /// </summary>
+    public void setRedrawTimer(int tickcount)
+    {
+        if (tickcount <= 0)
         {
-            if (!genericTimer.Enabled)
-                return;
-            if (state != ConsoleState.WaitInput || inputReq.Timelimit <= 0 || timerID != inputReq.ID)
-            {
-                stopTimer();
-                return;
-            }
-            var elapsedMs = _genericTimerStopwatch.ElapsedMilliseconds;
-            if (elapsedMs >= timer_endTime)
-            {
-                endTimer();
-                return;
-            }
-
-            if (inputReq.DisplayTime)
-            {
-                var remainingMs = inputReq.Timelimit - _genericTimerStopwatch.ElapsedMilliseconds;
-                window.Invoke(() => changeLastLine($"残り {remainingMs / 1000.0f:0.0}"));
-            }
+            redrawTimer.Enabled = false;
+            return;
         }
+        if (tickcount < 10)
+            tickcount = 10;
+        redrawTimer.Interval = tickcount;
+        redrawTimer.Enabled = true;
+    }
 
-        private void stopTimer()
+
+
+    System.Timers.Timer genericTimer = new();
+    Int64 timerID = -1;
+    readonly Stopwatch _genericTimerStopwatch = new();//現在のタイマーを開始した時のミリ秒数（WinmmTimer.TickCount基準）
+    Int64 timer_endTime;//現在のタイマーを終了する時のTickCountミリ秒数
+    bool isTimeout;
+    public bool IsTimeOut { get { return isTimeout; } }
+
+    /// <summary>
+    /// 1824 TINPUT時に直接タイマーをセットせずに最初の再描画が終わってからタイマーをセットする（そうしないとTINPUTと再描画だけでループしてしまうので）
+    /// </summary>
+    bool need_settimer;
+
+    private void presetTimer()
+    {
+        need_settimer = true;
+
+        if (inputReq.DisplayTime)
         {
-            //if (state == ConsoleState.WaitKeyWithTimerF && countTime < timeLimit)
-            //{
-            //	wait_timeout = true;
-            //	while (countTime < timeLimit)
-            //	{
-            //		Application.DoEvents();
-            //	}
-            //	wait_timeout = false;
-            //}
-            genericTimer.Enabled = false;
-            //timer.Dispose();
+            var remainingMs = inputReq.Timelimit - _genericTimerStopwatch.ElapsedMilliseconds;
+            PrintSingleLine($"残り {remainingMs} ms");
         }
+    }
+    private void setTimer()
+    {
+        isTimeout = false;
+        timerID = inputReq.ID;
+        genericTimer.Enabled = true;
+        _genericTimerStopwatch.Restart();
+        timer_endTime = inputReq.Timelimit;
+    }
 
-        /// <summary>
-        /// tickTimerからのみ呼ぶ
-        /// </summary>
-        private void endTimer()
+    //汎用
+    private void tickTimer(object sender, EventArgs e)
+    {
+        if (!genericTimer.Enabled)
+            return;
+        if (state != ConsoleState.WaitInput || inputReq.Timelimit <= 0 || timerID != inputReq.ID)
         {
             stopTimer();
-            isTimeout = true;
-            if (IsWaitingPrimitive)
+            return;
+        }
+        var elapsedMs = _genericTimerStopwatch.ElapsedMilliseconds;
+        if (elapsedMs >= timer_endTime)
+        {
+            endTimer();
+            return;
+        }
+
+        if (inputReq.DisplayTime)
+        {
+            var remainingMs = inputReq.Timelimit - _genericTimerStopwatch.ElapsedMilliseconds;
+            window.Invoke(() => changeLastLine($"残り {remainingMs / 1000.0f:0.0}"));
+        }
+    }
+
+    private void stopTimer()
+    {
+        //if (state == ConsoleState.WaitKeyWithTimerF && countTime < timeLimit)
+        //{
+        //	wait_timeout = true;
+        //	while (countTime < timeLimit)
+        //	{
+        //		Application.DoEvents();
+        //	}
+        //	wait_timeout = false;
+        //}
+        genericTimer.Enabled = false;
+        //timer.Dispose();
+    }
+
+    /// <summary>
+    /// tickTimerからのみ呼ぶ
+    /// </summary>
+    private void endTimer()
+    {
+        stopTimer();
+        isTimeout = true;
+        if (IsWaitingPrimitive)
+        {
+            //callEmueraProgramは呼び出し先で行う。
+            InputMouseKey(4, 0, 0, 0, 0);
+            return;
+        }
+        if (inputReq.DisplayTime)
+            changeLastLine(inputReq.TimeUpMes);
+        else if (inputReq.TimeUpMes != null)
+            PrintSingleLine(inputReq.TimeUpMes);
+        window.Invoke(() =>
+        {
+            RunEmueraProgram("");//ディフォルト入力の処理はcallEmueraProgram側で
+            if (state == ConsoleState.WaitInput && inputReq.NeedValue)
             {
-                //callEmueraProgramは呼び出し先で行う。
-                InputMouseKey(4, 0, 0, 0, 0);
-                return;
+                Point point = window.MainPicBox.PointToClient(Control.MousePosition);
+                if (window.MainPicBox.ClientRectangle.Contains(point))
+                    MoveMouse(point);
             }
-            if (inputReq.DisplayTime)
-                changeLastLine(inputReq.TimeUpMes);
-            else if (inputReq.TimeUpMes != null)
-                PrintSingleLine(inputReq.TimeUpMes);
-            window.Invoke(() =>
+            RefreshStrings(true);
+        });
+
+    }
+
+    public void forceStopTimer()
+    {
+        if (genericTimer.Enabled)
+        {
+            genericTimer.Enabled = false;
+        }
+    }
+    #endregion
+
+    #region Call系
+    /// <summary>
+    /// スクリプト実行。RefreshStringsはしないので呼び出し側がすること
+    /// </summary>
+    /// <param name="input"></param>
+    private void RunEmueraProgram(string input)
+    {
+        //入力文字列の表示処理を行わない場合はstr == null
+        if (input != null)
+        {
+            //INPUT文字列をPRINTする処理など
+            if (!doInputToEmueraProgram(input))
+                return;
+            if (state == ConsoleState.Error)
+                return;
+        }
+        state = ConsoleState.Running;
+        process.DoScript();
+        if (state == ConsoleState.Running)
+        {//RunningならProcessは処理を継続するべき
+            state = ConsoleState.Error;
+            PrintError("emueraのエラー：プログラムの状態を特定できません");
+        }
+        if (state == ConsoleState.Error && !noOutputLog)
+            OutputLog(Program.ExeDir + "emuera.log");
+        PrintFlush(false);
+        //1819 Refreshは呼び出し側で行う
+        //RefreshStrings(false);
+        newGeneration();
+    }
+
+    private bool doInputToEmueraProgram(string str)
+    {
+        if (state == ConsoleState.WaitInput)
+        {
+            Int64 inputValue;
+
+            switch (inputReq.InputType)
             {
-                RunEmueraProgram("");//ディフォルト入力の処理はcallEmueraProgram側で
-                if (state == ConsoleState.WaitInput && inputReq.NeedValue)
+                case InputType.IntValue:
+                    if (string.IsNullOrEmpty(str) && inputReq.HasDefValue && !IsRunningTimer)
+                    {
+                        inputValue = inputReq.DefIntValue;
+                        str = inputValue.ToString();
+                    }
+                    else if (!Int64.TryParse(str, out inputValue))
+                        return false;
+                    if (inputReq.IsSystemInput)
+                        process.InputSystemInteger(inputValue);
+                    else
+                        process.InputInteger(inputValue);
+                    break;
+                case InputType.StrValue:
+                    if (string.IsNullOrEmpty(str) && inputReq.HasDefValue && !IsRunningTimer)
+                        str = inputReq.DefStrValue;
+                    //空入力と時間切れ
+                    if (str == null)
+                        str = "";
+                    process.InputString(str);
+                    break;
+            }
+            stopTimer();
+        }
+        Print(str);
+        PrintFlush(false);
+        return true;
+    }
+    #endregion
+
+    #region 入力系
+    readonly string[] spliter = ["\\n", "\r\n", "\n", "\r"];//本物の改行コードが来ることは無いはずだけど一応
+
+    public bool MesSkip;
+    private bool inProcess;
+    volatile public bool KillMacro;
+
+    internal void MouseWheel(Point point, int delta)
+    {
+        if (!IsWaitingPrimitive)
+            return;
+        //pointはクライアント左上基準の座標。
+        //clientPointをクライアント左下基準の座標に置き換え
+        Point clientPoint = point;
+        clientPoint.Y = point.Y - ClientHeight;
+        InputMouseKey(2, delta, clientPoint.X, clientPoint.Y, 0);
+    }
+
+    internal void MouseDown(Point point, MouseButtons button)
+    {
+        if (!IsWaitingPrimitive)
+            return;
+        //pointはクライアント左上基準の座標。
+        //clientPointをクライアント左下基準の座標に置き換え
+        Point clientPoint = point;
+        clientPoint.Y = point.Y - ClientHeight;
+        int buttonNum = -1;
+        if (cbgButtonMap != null && cbgButtonMap.IsCreated)
+        {
+            //マップ画像の左上基準の座標に置き換え
+            Point mapPoint = clientPoint;
+            mapPoint.Y = clientPoint.Y + cbgButtonMap.Height;
+            if (mapPoint.X >= 0 && mapPoint.Y >= 0 && mapPoint.X < cbgButtonMap.Width && mapPoint.Y < cbgButtonMap.Height)
+            {
+                Color c = cbgButtonMap.Bitmap.GetPixel(mapPoint.X, mapPoint.Y);
+                if (c.A == 255)
+                {
+                    buttonNum = c.ToArgb() & 0xFFFFFF;
+                }
+            }
+
+        }
+        InputMouseKey(1, (int)button, clientPoint.X, clientPoint.Y, buttonNum);
+    }
+
+    //1823 Key入力を捕まえる
+    internal void PressPrimitiveKey(Keys keycode, Keys keydata, Keys keymod)
+    {
+        if (IsWaitingPrimitive)
+            InputMouseKey(3, (int)keycode, (int)keydata, 0, 0);
+    }
+
+    //1823 Key入力を捕まえる
+    internal void InputMouseKey(int type, int result1, int result2, int result3, int result4)
+    {
+        process.InputResult5(type, result1, result2, result3, result4);
+
+        inProcess = true;
+        try
+        {
+            //1823 Escキーもマクロも右クリックも不可。単純に押されたキーを送るのみ。
+            RunEmueraProgram(null);
+            if (state == ConsoleState.WaitInput && inputReq.NeedValue)
+            {
+                window.Invoke(() =>
                 {
                     Point point = window.MainPicBox.PointToClient(Control.MousePosition);
                     if (window.MainPicBox.ClientRectangle.Contains(point))
                         MoveMouse(point);
-                }
-                RefreshStrings(true);
-            });
-
-        }
-
-        public void forceStopTimer()
-        {
-            if (genericTimer.Enabled)
-            {
-                genericTimer.Enabled = false;
+                });
             }
         }
-        #endregion
-
-        #region Call系
-        /// <summary>
-        /// スクリプト実行。RefreshStringsはしないので呼び出し側がすること
-        /// </summary>
-        /// <param name="input"></param>
-        private void RunEmueraProgram(string input)
+        finally
         {
-            //入力文字列の表示処理を行わない場合はstr == null
-            if (input != null)
-            {
-                //INPUT文字列をPRINTする処理など
-                if (!doInputToEmueraProgram(input))
-                    return;
-                if (state == ConsoleState.Error)
-                    return;
-            }
-            state = ConsoleState.Running;
-            process.DoScript();
-            if (state == ConsoleState.Running)
-            {//RunningならProcessは処理を継続するべき
-                state = ConsoleState.Error;
-                PrintError("emueraのエラー：プログラムの状態を特定できません");
-            }
-            if (state == ConsoleState.Error && !noOutputLog)
-                OutputLog(Program.ExeDir + "emuera.log");
-            PrintFlush(false);
-            //1819 Refreshは呼び出し側で行う
-            //RefreshStrings(false);
-            newGeneration();
+            inProcess = false;
         }
+        RefreshStrings(true);
+    }
 
-        private bool doInputToEmueraProgram(string str)
+    public void PressEnterKey(bool keySkip, string input, bool changedByMouse)
+    {
+        MesSkip = keySkip;
+        if ((state == ConsoleState.Running) || (state == ConsoleState.Initializing))
+            return;
+        else if (state == ConsoleState.Quit)
         {
-            if (state == ConsoleState.WaitInput)
+            window.Close();
+            return;
+        }
+        else if (state == ConsoleState.Error)
+        {
+            if (input == ErrorButtonsText && selectingButton != null && selectingButton.ErrPos != null)
             {
-                Int64 inputValue;
-
-                switch (inputReq.InputType)
+                OpenErrorFile(selectingButton.ErrPos);
+                return;
+            }
+            window.Close();
+            return;
+        }
+#if DEBUG
+        if (state != ConsoleState.WaitInput || inputReq == null)
+            throw new ExeEE("");
+#endif
+        KillMacro = false;
+        try
+        {
+            string[] text;
+            if (changedByMouse)//1823 マウスによって入力されたならマクロ解析を行わない
+            { text = [input]; }
+            else
+            {
+                if (input.Length > 1 && !inputReq.OneInput && input.StartsWith('@'))
                 {
-                    case InputType.IntValue:
-                        if (string.IsNullOrEmpty(str) && inputReq.HasDefValue && !IsRunningTimer)
-                        {
-                            inputValue = inputReq.DefIntValue;
-                            str = inputValue.ToString();
-                        }
-                        else if (!Int64.TryParse(str, out inputValue))
-                            return false;
-                        if (inputReq.IsSystemInput)
-                            process.InputSystemInteger(inputValue);
-                        else
-                            process.InputInteger(inputValue);
+                    doSystemCommand(input);
+                    return;
+                }
+                if (inputReq.InputType == InputType.Void)
+                    return;
+                if (genericTimer.Enabled &&
+                    (inputReq.InputType == InputType.AnyKey || inputReq.InputType == InputType.EnterKey))
+                    stopTimer();
+                //if((inputReq.InputType == InputType.IntValue || inputReq.InputType == InputType.StrValue)
+                if (input.Contains('(', StringComparison.Ordinal))
+                    input = parseInput(new CharStream(input), false);
+                text = input.Split(spliter, StringSplitOptions.None);
+            }
+
+            inProcess = true;
+            for (int i = 0; i < text.Length; i++)
+            {
+                string inputs = text[i];
+                if (inputs.Contains("\\e", StringComparison.Ordinal))
+                {
+                    inputs = inputs.Replace("\\e", "", StringComparison.Ordinal);//\eの除去
+                    MesSkip = true;
+                }
+
+                if (inputReq.OneInput && (!Config.AllowLongInputByMouse || !changedByMouse) && inputs.Length > 1)
+                    inputs = inputs.Remove(1);
+                //1819 TODO:入力無効系（強制待ちTWAIT）でスキップとマクロを止めるかそのままか
+                //現在はそのまま。強制待ち中はスキップの開始もできないのにスキップ中なら飛ばせる。
+                if (inputReq.InputType == InputType.Void)
+                {
+                    i--;
+                    inputs = "";
+                }
+                RunEmueraProgram(inputs);
+                RefreshStrings(false);
+                while (MesSkip && state == ConsoleState.WaitInput)
+                {
+                    //TODO:入力無効を通していいか？スキップ停止をマクロでは飛ばせていいのか？
+                    if (inputReq.NeedValue)
                         break;
-                    case InputType.StrValue:
-                        if (string.IsNullOrEmpty(str) && inputReq.HasDefValue && !IsRunningTimer)
-                            str = inputReq.DefStrValue;
-                        //空入力と時間切れ
-                        if (str == null)
-                            str = "";
-                        process.InputString(str);
+                    if (inputReq.StopMesskip)
+                        break;
+                    RunEmueraProgram("");
+                    RefreshStrings(false);
+                    //DoEventを呼ばないと描画処理すらまったく行われない
+                    Application.DoEvents();
+                    //EscがマクロストップかつEscがスキップ開始だからEscでスキップを止められても即開始しちゃったりするからあんまり意味ないよね
+                    //if (KillMacro)
+                    //	goto endMacro;
+                }
+                MesSkip = false;
+                if (state != ConsoleState.WaitInput)
+                    break;
+                //マクロループ時は待ち処理が起こらないのでここでシステムキューを捌く
+                Application.DoEvents();
+#if DEBUG
+                if (state != ConsoleState.WaitInput || inputReq == null)
+                    throw new ExeEE("");
+#endif
+                if (KillMacro)
+                {
+                    endMacro();
+                    return;
+                }
+            }
+        }
+        finally
+        {
+            inProcess = false;
+        }
+
+        endMacro();
+
+        void endMacro()
+        {
+            if (state == ConsoleState.WaitInput && inputReq.NeedValue)
+            {
+                Point point = window.MainPicBox.PointToClient(Control.MousePosition);
+                if (window.MainPicBox.ClientRectangle.Contains(point))
+                    MoveMouse(point);
+            }
+            RefreshStrings(true);
+        }
+    }
+
+    private void OpenErrorFile(ScriptPosition? pos)
+    {
+        ProcessStartInfo pInfo = new()
+        {
+            FileName = Config.TextEditor
+        };
+        var ignoreCaseCmp = StringComparison.OrdinalIgnoreCase;
+        string fname = pos.Value.Filename.ToUpper();
+        if (fname.EndsWith(".CSV", ignoreCaseCmp))
+        {
+            if (fname.Contains(Program.CsvDir, ignoreCaseCmp))
+                fname = fname.Replace(Program.CsvDir, "", ignoreCaseCmp);
+            fname = Program.CsvDir + fname;
+        }
+        else
+        {
+            //解析モードの場合は見ているファイルがERB\の下にあるとは限らないかつフルパスを持っているのでこの補正はしなくてよい
+            if (!Program.AnalysisMode)
+            {
+                if (fname.Contains(Program.ErbDir, ignoreCaseCmp))
+                    fname = fname.Replace(Program.ErbDir, "", ignoreCaseCmp);
+                fname = Path.Combine(Program.ErbDir + fname);
+            }
+        }
+        switch (Config.EditorType)
+        {
+            case TextEditorType.SAKURA:
+                pInfo.Arguments = "-Y=" + pos.Value.LineNo.ToString() + " \"" + fname + "\"";
+                break;
+            case TextEditorType.TERAPAD:
+                pInfo.Arguments = "/jl=" + pos.Value.LineNo.ToString() + " \"" + fname + "\"";
+                break;
+            case TextEditorType.EMEDITOR:
+                pInfo.Arguments = "/l " + pos.Value.LineNo.ToString() + " \"" + fname + "\"";
+                break;
+            case TextEditorType.USER_SETTING:
+                if (!string.IsNullOrEmpty(Config.EditorArg) && Config.EditorArg != null)
+                    pInfo.Arguments = Config.EditorArg + pos.Value.LineNo.ToString() + " \"" + fname + "\"";
+                else
+                    pInfo.Arguments = fname;
+                break;
+        }
+        try
+        {
+            System.Diagnostics.Process.Start(pInfo);
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            System.Media.SystemSounds.Hand.Play();
+            PrintError("エディタを開くことができませんでした");
+            forceUpdateGeneration();
+        }
+        return;
+    }
+
+    static string parseInput(CharStream st, bool isNest)
+    {
+        StringBuilder sb = new(20);
+        StringBuilder num = new(20);
+        bool hasRet = false;
+        while (!st.EOS && (!isNest || st.Current != ')'))
+        {
+            if (st.Current == '(')
+            {
+                st.ShiftNext();
+                string tstr = parseInput(st, true);
+
+                if (!st.EOS)
+                {
+                    st.ShiftNext();
+                    if (st.Current == '*')
+                    {
+                        st.ShiftNext();
+                        while (char.IsNumber(st.Current))
+                        {
+                            num.Append(st.Current);
+                            st.ShiftNext();
+                        }
+                        var numStr = num.ToString();
+                        if (!string.IsNullOrEmpty(numStr))
+                        {
+                            var res = int.Parse(numStr);
+                            for (int i = 0; i < res; i++)
+                                sb.Append(tstr);
+                            num.Remove(0, num.Length);
+                        }
+                    }
+                    else
+                        sb.Append(tstr);
+                    continue;
+                }
+                else
+                {
+                    sb.Append(tstr);
+                    break;
+                }
+            }
+            else if (st.Current == '\\')
+            {
+                st.ShiftNext();
+                switch (st.Current)
+                {
+                    case 'n':
+                        if (!hasRet)
+                            sb.Append('\n');
+                        else
+                            hasRet = false;
+                        break;
+                    case 'r':
+                        sb.Append('\r');
+                        break;
+                    case 'e':
+                        sb.Append("\\e\n");
+                        hasRet = true;
+                        break;
+                    case '\n':
+                        break;
+                    default:
+                        sb.Append(st.Current);
                         break;
                 }
-                stopTimer();
             }
-            Print(str);
+            else
+                sb.Append(st.Current);
+            st.ShiftNext();
+        }
+        return sb.ToString();
+    }
+
+
+    bool runningERBfromMemory;
+    /// <summary>
+    /// 通常コンソールからのDebugコマンド、及びデバッグウインドウの変数ウォッチなど、
+    /// *.ERBファイルが存在しないスクリプトを実行中
+    /// 1750 IsDebugから改名
+    /// </summary>
+    public bool RunERBFromMemory { get { return runningERBfromMemory; } set { runningERBfromMemory = value; } }
+    void doSystemCommand(string command)
+    {
+        if (genericTimer.Enabled)
+        {
+            PrintError("タイマー系命令の待ち時間中はコマンドを入力できません");
+            PrintError("");//タイマー表示処理に消されちゃうかもしれないので
+            RefreshStrings(true);
+            return;
+        }
+        if (IsInProcess)
+        {
+            PrintError("スクリプト実行中はコマンドを入力できません");
+            RefreshStrings(true);
+            return;
+        }
+        StringComparison sc = Config.StringComparison;
+        Print(command);
+        PrintFlush(false);
+        RefreshStrings(true);
+        string com = command[1..];
+        if (com.Length == 0)
+            return;
+        if (com.Equals("REBOOT", sc))
+        {
+            window.Reboot();
+            return;
+        }
+        else if (com.Equals("OUTPUT", sc) || com.Equals("OUTPUTLOG", sc))
+        {
+            this.OutputLog(Program.ExeDir + "emuera.log");
+            return;
+        }
+        else if (com.Equals("QUIT", sc) || com.Equals("EXIT", sc))
+        {
+            window.Close();
+            return;
+        }
+        else if (com.Equals("CONFIG", sc))
+        {
+            window.ShowConfigDialog();
+            return;
+        }
+        else if (com.Equals("DEBUG", sc))
+        {
+            if (!Program.DebugMode)
+            {
+                PrintError("デバッグウインドウは-Debug引数付きで起動したときのみ使えます");
+                RefreshStrings(true);
+                return;
+            }
+            OpenDebugDialog();
+        }
+        else
+        {
+            if (!Config.UseDebugCommand)
+            {
+                PrintError("デバッグコマンドを使用できない設定になっています");
+                RefreshStrings(true);
+                return;
+            }
+            //処理をDebugMode系へ移動
+            DebugCommand(com, Config.ChangeMasterNameIfDebug, false);
             PrintFlush(false);
-            return true;
         }
-        #endregion
+        RefreshStrings(true);
+    }
+    #endregion
 
-        #region 入力系
-        readonly string[] spliter = ["\\n", "\r\n", "\n", "\r"];//本物の改行コードが来ることは無いはずだけど一応
+    #region 描画系
+    Stopwatch _frameDeltaTimer = Stopwatch.StartNew();
+    uint msPerFrame = 1000 / 60;//60FPS
+    ConsoleRedraw redraw = ConsoleRedraw.Normal;
+    public ConsoleRedraw Redraw { get { return redraw; } }
+    public void SetRedraw(Int64 i)
+    {
+        if ((i & 1) == 0)
+            redraw = ConsoleRedraw.None;
+        else
+            redraw = ConsoleRedraw.Normal;
+        if ((i & 2) != 0)
+            RefreshStrings(true);
+    }
 
-        public bool MesSkip;
-        private bool inProcess;
-        volatile public bool KillMacro;
-
-        internal void MouseWheel(Point point, int delta)
+    string debugTitle;
+    public void SetWindowTitle(string str)
+    {
+        if (Program.DebugMode)
         {
-            if (!IsWaitingPrimitive)
-                return;
-            //pointはクライアント左上基準の座標。
-            //clientPointをクライアント左下基準の座標に置き換え
-            Point clientPoint = point;
-            clientPoint.Y = point.Y - ClientHeight;
-            InputMouseKey(2, delta, clientPoint.X, clientPoint.Y, 0);
+            debugTitle = str;
+            window.Text = str + " (Debug Mode)";
         }
+        else
+            window.Text = str;
+    }
 
-        internal void MouseDown(Point point, MouseButtons button)
+    public void SetEmueraVersionInfo(string str)
+    {
+        window.TextBox.Text = str;
+    }
+    public string GetWindowTitle()
+    {
+        if (Program.DebugMode && debugTitle != null)
+            return debugTitle;
+        return window.Text;
+    }
+
+
+    /// <summary>
+    /// 1818以前のRefreshStringsからselectingButton部分を抽出
+    /// ここでOnPaintを発行
+    /// </summary>
+    public void RefreshStrings(bool force_Paint)
+    {
+        bool isBackLog = window.ScrollBar.Value != window.ScrollBar.Maximum;
+        //ログ表示はREDRAWの設定に関係なく行うようにする
+        if ((redraw == ConsoleRedraw.None) && (!force_Paint) && (!isBackLog))
+            return;
+        //選択中ボタンの適性チェック
+        if (selectingButton != null)
         {
-            if (!IsWaitingPrimitive)
+            //履歴表示中は選択肢無効→画面外に出てしまったボタンも履歴から選択できるように
+            //if (isBackLog)
+            //	selectingButton = null;
+            //数値か文字列の入力待ち状態でなければ無効
+            if (state != ConsoleState.Error && state != ConsoleState.WaitInput)
+                selectingButton = null;
+            else if ((state == ConsoleState.WaitInput) && !inputReq.NeedValue)
+                selectingButton = null;
+            //選択肢が最新でないなら無効
+            else if (selectingButton.Generation != lastButtonGeneration)
+                selectingButton = null;
+        }
+        if (!force_Paint)
+        {//forceならば確実に再描画。
+         //履歴表示中でなく、最終行を表示済みであり、選択中ボタンが変更されていないなら更新不要
+            if ((!isBackLog) && (lastDrawnLineNo == lineNo) && (lastSelectingButton == selectingButton))
                 return;
+            //まだ書き換えるタイミングでないなら次の更新を待ってみる
+            //ただし、入力待ちなど、しばらく更新のタイミングがない場合には強制的に書き換えてみる
+            if (_frameDeltaTimer.ElapsedMilliseconds < msPerFrame && (state == ConsoleState.Running || state == ConsoleState.Initializing))
+                return;
+        }
+        if (forceTextBoxColor)
+        {
+            var sec = _genericTimerStopwatch.ElapsedMilliseconds;
+            //色変化が速くなりすぎないように一定時間以内の再呼び出しは強制待ちにする
+            if (_drawStopwatch == null)
+            {
+                _drawStopwatch = Stopwatch.StartNew();
+            }
+            else
+            {
+                while (_drawStopwatch.ElapsedMilliseconds < msPerFrame)
+                {
+                    Application.DoEvents();
+                }
+            }
+            window.TextBox.BackColor = this.bgColor;
+
+            _drawStopwatch.Restart();
+        }
+        window.Invoke(() =>
+        {
+            verticalScrollBarUpdate();
+            window.Refresh();//OnPaint発行
+        });
+    }
+
+    /// <summary>
+    /// 1818以前のRefreshStringsの後半とm_RefreshStringsを融合
+    /// 全面Clear法のみにしたのでさっぱりした。ダブルバッファリングはOnPaintが勝手にやるはず
+    /// </summary>
+    /// <param name="graph"></param>
+    public void OnPaint(Graphics graph)
+    {
+
+        //デバッグ用。描画が超重い環境を想定1
+        //System.Threading.Thread.Sleep(100);
+
+        //描画中にEmueraが閉じられると廃棄されたPictureBoxにアクセスしてしまったりするので
+        //OnPaintからgraphをもらった直後だから大丈夫だとは思うけど一応
+        if (!this.Enabled)
+            return;
+        //1824 アニメスプライト用・現在フレームの時間を決定
+        _frameDeltaTimer.Restart();
+
+        bool isBackLog = window.ScrollBar.Value != window.ScrollBar.Maximum;
+        int pointY = window.MainPicBox.Height - Config.LineHeight;
+
+
+        int bottomLineNo = window.ScrollBar.Value - 1;
+        int topLineNo = bottomLineNo - (pointY / Config.LineHeight + 1);
+        if (topLineNo < 0)
+            topLineNo = 0;
+        pointY -= (bottomLineNo - topLineNo) * Config.LineHeight;
+        if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
+        {
+        }
+        else
+        {
+            graph.Clear(this.bgColor);
+            //1823 cbg追加
+            for (int j = 0; j < cbgList.Count; j++)
+            {
+                if (cbgList[j].zdepth == 0)
+                {
+                    //1823以前の文字列描画
+                    for (int i = topLineNo;
+                    i <= bottomLineNo &&
+                    i < displayLineList.Count;//何処かで非同期にDisplayLineListを触ってるやつがいる気がする...
+                    i++)
+                    {
+                        displayLineList[i].DrawTo(graph, pointY, isBackLog, true, Config.TextDrawingMode);
+                        pointY += Config.LineHeight;
+                    }
+                    continue;
+                }
+                ASprite img = cbgList[j].Img;
+                if (cbgList[j].isButton && cbgList[j].buttonValue == selectingCBGButtonInt)
+                    img = cbgList[j].ImgB;
+                if (img == null || !img.IsCreated)
+                    continue;
+                img.GraphicsDraw(graph, new Point(cbgList[j].x, cbgList[j].y + window.MainPicBox.Height - img.DestBaseSize.Height));
+                //Bitmap bmp = img.Bitmap;
+                //graph.DrawImage(bmp,
+                //	new Rectangle(cbgList[j].x + img.DestBasePosition.X, window.MainPicBox.Height - img.SrcRectangle.Height + cbgList[j].y + img.DestBasePosition.Y, img.SrcRectangle.Width, img.SrcRectangle.Height),
+                //	img.SrcRectangle, GraphicsUnit.Pixel);
+            }
+
+        }
+        //ToolTip描画
+        if (lastPointingString != pointingString || lastSelectingCBGButtonInt != selectingCBGButtonInt)
+        {
+            if (tooltipUsed)
+                window.ToolTip.RemoveAll();
+            string title = null;
+            if (pointingString != null)
+                title = pointingString.Title;
+            else if (selectingCBGButtonInt > 0)
+            {
+                foreach (var cbg in cbgList)
+                {
+                    if (!cbg.isButton || cbg.buttonValue != selectingCBGButtonInt)
+                        continue;
+                    if (string.IsNullOrEmpty(cbg.tooltipString))
+                        continue;
+                    title = cbg.tooltipString;
+                    break;
+                }
+            }
+            if (!string.IsNullOrEmpty(title))
+            {
+                if (tooltip_duration == 0)
+                    window.ToolTip.SetToolTip(window.MainPicBox, title);
+                else
+                {
+                    if (window.ToolTip.InitialDelay == 0)
+                    {
+                        Point mousePos = window.MainPicBox.PointToClient(MainWindow.MousePosition);
+                        window.ToolTip.Show(title, window.MainPicBox, new Point(mousePos.X, mousePos.Y + 18), tooltip_duration);
+                    }
+                    else
+                    {
+                        System.Threading.SynchronizationContext context = System.Threading.SynchronizationContext.Current;
+                        System.Threading.Tasks.Task.Run(async () =>
+                        {
+                            ConsoleButtonString savedPointingString = pointingString;
+                            await System.Threading.Tasks.Task.Delay(window.ToolTip.InitialDelay);
+                            context.Post((state) =>
+                            {
+                                MoveMouse(GetMousePosition());
+                                if (lastPointingString == savedPointingString)
+                                {
+                                    Point mousePos = window.MainPicBox.PointToClient(MainWindow.MousePosition);
+                                    window.ToolTip.Show(title, window.MainPicBox, new Point(mousePos.X, mousePos.Y + 18), tooltip_duration);
+                                }
+                            }, null);
+                        });
+                    }
+                }
+                tooltipUsed = true;
+            }
+            lastPointingString = pointingString;
+            lastSelectingCBGButtonInt = selectingCBGButtonInt;
+        }
+        if (isBackLog)
+            lastDrawnLineNo = -1;
+        else
+            lastDrawnLineNo = lineNo;
+        lastSelectingButton = selectingButton;
+        /*デバッグ用。描画が超重い環境を想定2
+			System.Threading.Thread.Sleep(50);
+			*/
+        forceTextBoxColor = false;
+        if (need_settimer)
+        {
+            need_settimer = false;
+            setTimer();
+        }
+    }
+
+    public void SetToolTipColor(Color foreColor, Color backColor)
+    {
+        window.ToolTip.ForeColor = foreColor;
+        window.ToolTip.BackColor = backColor;
+
+    }
+    public void SetToolTipDelay(int delay)
+    {
+        window.ToolTip.InitialDelay = delay;
+    }
+
+    int tooltip_duration;
+    public void SetToolTipDuration(int duration)
+    {
+        tooltip_duration = duration;
+    }
+
+
+    //private Graphics getGraphics()
+    //{
+    //	//消したいが怖いので残し
+    //	if (!window.Created)
+    //		throw new ExeEE("存在しないウィンドウにアクセスした");
+    //	//if (Config.UseImageBuffer)
+    //	//	return Graphics.FromImage(window.MainPicBox.Image);
+    //	//else
+    //		return window.MainPicBox.CreateGraphics();
+    //}
+
+    #endregion
+
+    #region DebugMode系
+    DebugDialog dd;
+    public DebugDialog DebugDialog { get { return dd; } }
+    StringBuilder dConsoleLog = new("");
+    public string DebugConsoleLog { get { return dConsoleLog.ToString(); } }
+    List<string> dTraceLogList = [];
+#pragma warning disable CS0414 // フィールド 'EmueraConsole.dTraceLogChanged' が割り当てられていますが、値は使用されていません。
+    bool dTraceLogChanged = true;
+#pragma warning restore CS0414 // フィールド 'EmueraConsole.dTraceLogChanged' が割り当てられていますが、値は使用されていません。
+    public string GetDebugTraceLog(bool force)
+    {
+        //if (!dTraceLogChanged && !force)
+        //	return null;
+        StringBuilder builder = new("");
+        LogicalLine line = process.GetScaningLine();
+        builder.AppendLine("*実行中の行");
+        if ((line == null) || (line.Position == null))
+        {
+            builder.AppendLine("ファイル名:なし");
+            builder.AppendLine("行番号:なし 関数名:なし");
+            builder.AppendLine("");
+        }
+        else
+        {
+            builder.AppendLine("ファイル名:" + line.Position.Value.Filename);
+            builder.AppendLine("行番号:" + line.Position.Value.LineNo.ToString() + " 関数名:" + line.ParentLabelLine.LabelName);
+            builder.AppendLine("");
+        }
+        builder.AppendLine("*スタックトレース");
+        for (int i = dTraceLogList.Count - 1; i >= 0; i--)
+        {
+            builder.AppendLine(dTraceLogList[i]);
+        }
+        return builder.ToString();
+    }
+    public void OpenDebugDialog()
+    {
+        if (!Program.DebugMode)
+            return;
+        if (dd != null)
+        {
+            if (dd.Created)
+            {
+                dd.Focus();
+                return;
+            }
+            else
+            {
+                dd.Dispose();
+                dd = null;
+            }
+        }
+        dd = new DebugDialog();
+        dd.SetParent(this, process);
+        dd.Show();
+    }
+
+    public void DebugPrint(string str)
+    {
+        if (!Program.DebugMode)
+            return;
+        dConsoleLog.Append(str);
+    }
+
+    public void DebugClear()
+    {
+        dConsoleLog.Remove(0, dConsoleLog.Length);
+    }
+
+    public void DebugNewLine()
+    {
+        if (!Program.DebugMode)
+            return;
+        dConsoleLog.Append(Environment.NewLine);
+    }
+
+    public void DebugAddTraceLog(string str)
+    {
+        //Emueraがデバッグモードで起動されていないなら無視
+        //ERBファイル以外のもの(デバッグコマンド、変数ウォッチ)を実行中なら無視
+        if (!Program.DebugMode || runningERBfromMemory)
+            return;
+        dTraceLogChanged = true;
+        dTraceLogList.Add(str);
+    }
+    public void DebugRemoveTraceLog()
+    {
+        if (!Program.DebugMode || runningERBfromMemory)
+            return;
+        dTraceLogChanged = true;
+        if (dTraceLogList.Count > 0)
+            dTraceLogList.RemoveAt(dTraceLogList.Count - 1);
+    }
+    public void DebugClearTraceLog()
+    {
+        if (!Program.DebugMode || runningERBfromMemory)
+            return;
+        dTraceLogChanged = true;
+        dTraceLogList.Clear();
+    }
+
+    public void DebugCommand(string com, bool munchkin, bool outputDebugConsole)
+    {
+        ConsoleState temp_state = state;
+        runningERBfromMemory = true;
+        //スクリプト等が失敗した場合に備えて念のための保存
+        GlobalStatic.Process.saveCurrentState(false);
+        try
+        {
+            LogicalLine line = null;
+            if (!com.StartsWith('@') && !com.StartsWith('"') && !com.StartsWith('\\'))
+                line = LogicalLineParser.ParseLine(com, null);
+            if (line == null || (line is InvalidLine))
+            {
+                WordCollection wc = LexicalAnalyzer.Analyse(new CharStream(com), LexEndWith.EoL, LexAnalyzeFlag.None);
+                AExpression term = ExpressionParser.ReduceExpressionTerm(wc, TermEndWith.EoL);
+                if (term == null)
+                    throw new CodeEE("解釈不能なコードです");
+                if (term.GetOperandType() == typeof(Int64))
+                {
+                    if (outputDebugConsole)
+                        com = "DEBUGPRINTFORML {" + com + "}";
+                    else
+                        com = "PRINTVL " + com;
+                }
+                else
+                {
+                    if (outputDebugConsole)
+                        com = "DEBUGPRINTFORML %" + com + "%";
+                    else
+                        com = "PRINTFORMSL " + com;
+                }
+                line = LogicalLineParser.ParseLine(com, null);
+            }
+            if (line == null)
+                throw new CodeEE("解釈不能なコードです");
+            if (line is InvalidLine)
+                throw new CodeEE(line.ErrMes);
+            if (!(line is InstructionLine))
+                throw new CodeEE("デバッグコマンドで使用できるのは代入文か命令文だけです");
+            InstructionLine func = (InstructionLine)line;
+            if (func.Function.IsFlowContorol())
+                throw new CodeEE("フロー制御命令は使用できません");
+            //__METHOD_SAFE__をみるならいらないかも
+            if (func.Function.IsWaitInput())
+                throw new CodeEE(func.Function.Name + "命令は使用できません");
+            //1750 __METHOD_SAFE__とほぼ条件同じだよねってことで
+            if (!func.Function.IsMethodSafe())
+                throw new CodeEE(func.Function.Name + "命令は使用できません");
+            //1756 SIFの次に来てはいけないものはここでも不可。
+            if (func.Function.IsPartial())
+                throw new CodeEE(func.Function.Name + "命令は使用できません");
+            switch (func.FunctionCode)
+            {//取りこぼし
+             //逆にOUTPUTLOG、QUITはDebugCommandの前に捕まえる
+                case FunctionCode.PUTFORM:
+                case FunctionCode.UPCHECK:
+                case FunctionCode.CUPCHECK:
+                case FunctionCode.SAVEDATA:
+                    throw new CodeEE(func.Function.Name + "命令は使用できません");
+            }
+            ArgumentParser.SetArgumentTo(func);
+            if (func.IsError)
+                throw new CodeEE(func.ErrMes);
+            process.DoDebugNormalFunction(func, munchkin);
+            if (func.FunctionCode == FunctionCode.SET)
+            {
+                if (!outputDebugConsole)
+                    PrintSingleLine(com);
+                //DebugWindowのほうは少しくどくなるのでいらないかな
+            }
+        }
+        catch (Exception e)
+        {
+            if (outputDebugConsole)
+            {
+                DebugPrint(e.Message);
+                DebugNewLine();
+            }
+            else
+                PrintError(e.Message);
+            process.clearMethodStack();
+        }
+        finally
+        {
+            //確実に元の状態に戻す
+            GlobalStatic.Process.loadPrevState();
+            runningERBfromMemory = false;
+            state = temp_state;
+        }
+    }
+    #endregion
+
+    #region Window.Form系
+
+    internal Point GetMousePosition()
+    {
+        if (window == null || !window.Created)
+            return new Point();
+        //クライアント左上基準の座標取得
+        Point pos = window.MainPicBox.PointToClient(Cursor.Position);
+        //クライアント左下基準の座標に置き換え
+        pos.Y -= ClientHeight;
+        return pos;
+    }
+
+    /// <summary>
+    /// マウス位置をボタンの選択状態に反映させる
+    /// </summary>
+    /// <param name="point"></param>
+    /// <returns>この後でRefreshStringsが必要かどうか</returns>
+    public bool MoveMouse(Point point)
+    {
+
+        if (cbgButtonMap != null && cbgButtonMap.IsCreated)
+        {
             //pointはクライアント左上基準の座標。
             //clientPointをクライアント左下基準の座標に置き換え
             Point clientPoint = point;
             clientPoint.Y = point.Y - ClientHeight;
             int buttonNum = -1;
-            if (cbgButtonMap != null && cbgButtonMap.IsCreated)
+            //マップ画像の左上基準の座標に置き換え
+            Point mapPoint = clientPoint;
+            mapPoint.Y = mapPoint.Y + cbgButtonMap.Height;
+            if (mapPoint.X >= 0 && mapPoint.Y >= 0 && mapPoint.X < cbgButtonMap.Width && mapPoint.Y < cbgButtonMap.Height)
             {
-                //マップ画像の左上基準の座標に置き換え
-                Point mapPoint = clientPoint;
-                mapPoint.Y = clientPoint.Y + cbgButtonMap.Height;
-                if (mapPoint.X >= 0 && mapPoint.Y >= 0 && mapPoint.X < cbgButtonMap.Width && mapPoint.Y < cbgButtonMap.Height)
+                Color c = cbgButtonMap.Bitmap.GetPixel(mapPoint.X, mapPoint.Y);
+                if (c.A == 255)
                 {
-                    Color c = cbgButtonMap.Bitmap.GetPixel(mapPoint.X, mapPoint.Y);
-                    if (c.A == 255)
+                    buttonNum = c.ToArgb() & 0xFFFFFF;
+                }
+            }
+            if (buttonNum >= 0)
+            {
+                bool ret = pointingString != null || selectingButton != null || buttonNum != selectingCBGButtonInt;
+                selectingCBGButtonInt = buttonNum;
+                pointingString = null;
+                selectingButton = null;
+                return ret;
+            }
+            else if (selectingCBGButtonInt >= 0)
+            {
+                selectingCBGButtonInt = -1;
+                pointingString = null;
+                selectingButton = null;
+                return true;
+            }
+        }
+        selectingCBGButtonInt = -1;
+        ConsoleButtonString select = null;
+        ConsoleButtonString pointing = null;
+        bool canSelect = false;
+        //数値か文字列の入力待ち状態でなければ選択中にはならない
+        if (state == ConsoleState.Error)
+            canSelect = true;
+        else if (state == ConsoleState.WaitInput && inputReq.NeedValue)
+            canSelect = true;
+        //スクリプト実行中は無視//入力・マクロ処理中は無視
+        if (this.IsInProcess)
+            goto end;
+        //履歴表示中は無視
+        //if (window.ScrollBar.Value != window.ScrollBar.Maximum)
+        //	goto end;
+        int pointX = point.X;
+        int pointY = point.Y;
+        ConsoleDisplayLine curLine;
+
+        int bottomLineNo = window.ScrollBar.Value - 1;
+        if (displayLineList.Count - 1 < bottomLineNo)
+            bottomLineNo = displayLineList.Count - 1;//1820 この処理不要な気がするけどエラー報告があったので入れとく
+        int topLineNo = bottomLineNo - (window.MainPicBox.Height / Config.LineHeight);
+        if (topLineNo < 0)
+            topLineNo = 0;
+        int relPointY = pointY - window.MainPicBox.Height;
+        //下から上へ探索し発見次第打ち切り
+        for (int i = bottomLineNo; i >= topLineNo; i--)
+        {
+            relPointY += Config.LineHeight;
+            curLine = displayLineList[i];
+
+            for (int b = 0; b < curLine.Buttons.Length; b++)
+            {
+                ConsoleButtonString button = curLine.Buttons[curLine.Buttons.Length - b - 1];
+                if (button == null || button.StrArray == null)
+                    continue;
+                if ((button.PointX <= pointX) && (button.PointX + button.Width >= pointX))
+                {
+                    //if (relPointY >= 0 && relPointY <= Config.FontSize)
+                    //{
+                    //	pointing = button;
+                    //	if(pointing.IsButton)
+                    //		goto breakfor;
+                    //}
+                    foreach (AConsoleDisplayPart part in button.StrArray)
                     {
-                        buttonNum = c.ToArgb() & 0xFFFFFF;
+                        if (part == null)
+                            continue;
+                        if ((part.PointX <= pointX) && (part.PointX + part.Width >= pointX)
+                            && (relPointY >= part.Top) && (relPointY <= part.Bottom))
+                        {
+                            pointing = button;
+                            if (pointing.IsButton)
+                                goto breakfor;
+                        }
                     }
                 }
-
             }
-            InputMouseKey(1, (int)button, clientPoint.X, clientPoint.Y, buttonNum);
         }
 
-        //1823 Key入力を捕まえる
-        internal void PressPrimitiveKey(Keys keycode, Keys keydata, Keys keymod)
-        {
-            if (IsWaitingPrimitive)
-                InputMouseKey(3, (int)keycode, (int)keydata, 0, 0);
-        }
 
-        //1823 Key入力を捕まえる
-        internal void InputMouseKey(int type, int result1, int result2, int result3, int result4)
-        {
-            process.InputResult5(type, result1, result2, result3, result4);
+    //int posy_bottom2up = window.MainPicBox.Height - pointY;
+    //int logNum = window.ScrollBar.Maximum - window.ScrollBar.Value;
+    ////表示中の一番下の行番号
+    //int curBottomLineNo = displayLineList.Count - logNum;
+    //int curPointingLineNo = curBottomLineNo - (posy_bottom2up / Config.LineHeight + 1);
+    //if ((curPointingLineNo < 0) || (curPointingLineNo >= displayLineList.Count))
+    //	curLine = null;
+    //else
+    //	curLine =  displayLineList[curPointingLineNo];
+    //if (curLine == null)
+    //	goto end;
 
-            inProcess = true;
-            try
-            {
-                //1823 Escキーもマクロも右クリックも不可。単純に押されたキーを送るのみ。
-                RunEmueraProgram(null);
-                if (state == ConsoleState.WaitInput && inputReq.NeedValue)
-                {
-                    window.Invoke(() =>
-                    {
-                        Point point = window.MainPicBox.PointToClient(Control.MousePosition);
-                        if (window.MainPicBox.ClientRectangle.Contains(point))
-                            MoveMouse(point);
-                    });
-                }
-            }
-            finally
-            {
-                inProcess = false;
-            }
+    //pointing = curLine.GetPointingButton(pointX);
+    breakfor:
+        if ((pointing == null) || (pointing.Generation != lastButtonGeneration))
+            canSelect = false;
+        else if (!pointing.IsButton)
+            canSelect = false;
+        else if (state == ConsoleState.WaitInput && inputReq.InputType == InputType.IntValue && (!pointing.IsInteger))
+            canSelect = false;
+        end:
+        if (canSelect)
+            select = pointing;
+        bool needRefresh = select != selectingButton || pointing != pointingString;
+        pointingString = pointing;
+        selectingButton = select;
+        return needRefresh;
+    }
+
+
+    public void LeaveMouse()
+    {
+        bool needRefresh = selectingButton != null || pointingString != null;
+        selectingButton = null;
+        pointingString = null;
+        if (needRefresh)
+        {
             RefreshStrings(true);
         }
+    }
 
-        public void PressEnterKey(bool keySkip, string input, bool changedByMouse)
+    private void verticalScrollBarUpdate()
+    {
+        int max = displayLineList.Count;
+        int move = max - window.ScrollBar.Maximum;
+        if (move == 0)
+            return;
+        if (move > 0)
         {
-            MesSkip = keySkip;
-            if ((state == ConsoleState.Running) || (state == ConsoleState.Initializing))
-                return;
-            else if (state == ConsoleState.Quit)
-            {
-                window.Close();
-                return;
-            }
-            else if (state == ConsoleState.Error)
-            {
-                if (input == ErrorButtonsText && selectingButton != null && selectingButton.ErrPos != null)
-                {
-                    OpenErrorFile(selectingButton.ErrPos);
-                    return;
-                }
-                window.Close();
-                return;
-            }
-#if DEBUG
-            if (state != ConsoleState.WaitInput || inputReq == null)
-                throw new ExeEE("");
-#endif
-            KillMacro = false;
-            try
-            {
-                string[] text;
-                if (changedByMouse)//1823 マウスによって入力されたならマクロ解析を行わない
-                { text = [input]; }
-                else
-                {
-                    if (input.Length > 1 && !inputReq.OneInput && input.StartsWith('@'))
-                    {
-                        doSystemCommand(input);
-                        return;
-                    }
-                    if (inputReq.InputType == InputType.Void)
-                        return;
-                    if (genericTimer.Enabled &&
-                        (inputReq.InputType == InputType.AnyKey || inputReq.InputType == InputType.EnterKey))
-                        stopTimer();
-                    //if((inputReq.InputType == InputType.IntValue || inputReq.InputType == InputType.StrValue)
-                    if (input.Contains('(', StringComparison.Ordinal))
-                        input = parseInput(new CharStream(input), false);
-                    text = input.Split(spliter, StringSplitOptions.None);
-                }
-
-                inProcess = true;
-                for (int i = 0; i < text.Length; i++)
-                {
-                    string inputs = text[i];
-                    if (inputs.Contains("\\e", StringComparison.Ordinal))
-                    {
-                        inputs = inputs.Replace("\\e", "", StringComparison.Ordinal);//\eの除去
-                        MesSkip = true;
-                    }
-
-                    if (inputReq.OneInput && (!Config.AllowLongInputByMouse || !changedByMouse) && inputs.Length > 1)
-                        inputs = inputs.Remove(1);
-                    //1819 TODO:入力無効系（強制待ちTWAIT）でスキップとマクロを止めるかそのままか
-                    //現在はそのまま。強制待ち中はスキップの開始もできないのにスキップ中なら飛ばせる。
-                    if (inputReq.InputType == InputType.Void)
-                    {
-                        i--;
-                        inputs = "";
-                    }
-                    RunEmueraProgram(inputs);
-                    RefreshStrings(false);
-                    while (MesSkip && state == ConsoleState.WaitInput)
-                    {
-                        //TODO:入力無効を通していいか？スキップ停止をマクロでは飛ばせていいのか？
-                        if (inputReq.NeedValue)
-                            break;
-                        if (inputReq.StopMesskip)
-                            break;
-                        RunEmueraProgram("");
-                        RefreshStrings(false);
-                        //DoEventを呼ばないと描画処理すらまったく行われない
-                        Application.DoEvents();
-                        //EscがマクロストップかつEscがスキップ開始だからEscでスキップを止められても即開始しちゃったりするからあんまり意味ないよね
-                        //if (KillMacro)
-                        //	goto endMacro;
-                    }
-                    MesSkip = false;
-                    if (state != ConsoleState.WaitInput)
-                        break;
-                    //マクロループ時は待ち処理が起こらないのでここでシステムキューを捌く
-                    Application.DoEvents();
-#if DEBUG
-                    if (state != ConsoleState.WaitInput || inputReq == null)
-                        throw new ExeEE("");
-#endif
-                    if (KillMacro)
-                    {
-                        endMacro();
-                        return;
-                    }
-                }
-            }
-            finally
-            {
-                inProcess = false;
-            }
-
-            endMacro();
-
-            void endMacro()
-            {
-                if (state == ConsoleState.WaitInput && inputReq.NeedValue)
-                {
-                    Point point = window.MainPicBox.PointToClient(Control.MousePosition);
-                    if (window.MainPicBox.ClientRectangle.Contains(point))
-                        MoveMouse(point);
-                }
-                RefreshStrings(true);
-            }
+            window.ScrollBar.Maximum = max;
+            window.ScrollBar.Value += move;
         }
-
-        private void OpenErrorFile(ScriptPosition? pos)
+        else
         {
-            ProcessStartInfo pInfo = new()
-            {
-                FileName = Config.TextEditor
-            };
-            var ignoreCaseCmp = StringComparison.OrdinalIgnoreCase;
-            string fname = pos.Value.Filename.ToUpper();
-            if (fname.EndsWith(".CSV", ignoreCaseCmp))
-            {
-                if (fname.Contains(Program.CsvDir, ignoreCaseCmp))
-                    fname = fname.Replace(Program.CsvDir, "", ignoreCaseCmp);
-                fname = Program.CsvDir + fname;
-            }
-            else
-            {
-                //解析モードの場合は見ているファイルがERB\の下にあるとは限らないかつフルパスを持っているのでこの補正はしなくてよい
-                if (!Program.AnalysisMode)
-                {
-                    if (fname.Contains(Program.ErbDir, ignoreCaseCmp))
-                        fname = fname.Replace(Program.ErbDir, "", ignoreCaseCmp);
-                    fname = Path.Combine(Program.ErbDir + fname);
-                }
-            }
-            switch (Config.EditorType)
-            {
-                case TextEditorType.SAKURA:
-                    pInfo.Arguments = "-Y=" + pos.Value.LineNo.ToString() + " \"" + fname + "\"";
-                    break;
-                case TextEditorType.TERAPAD:
-                    pInfo.Arguments = "/jl=" + pos.Value.LineNo.ToString() + " \"" + fname + "\"";
-                    break;
-                case TextEditorType.EMEDITOR:
-                    pInfo.Arguments = "/l " + pos.Value.LineNo.ToString() + " \"" + fname + "\"";
-                    break;
-                case TextEditorType.USER_SETTING:
-                    if (!string.IsNullOrEmpty(Config.EditorArg) && Config.EditorArg != null)
-                        pInfo.Arguments = Config.EditorArg + pos.Value.LineNo.ToString() + " \"" + fname + "\"";
-                    else
-                        pInfo.Arguments = fname;
-                    break;
-            }
-            try
-            {
-                System.Diagnostics.Process.Start(pInfo);
-            }
-            catch (System.ComponentModel.Win32Exception)
-            {
-                System.Media.SystemSounds.Hand.Play();
-                PrintError("エディタを開くことができませんでした");
-                forceUpdateGeneration();
-            }
+            if (max > window.ScrollBar.Value)
+                window.ScrollBar.Value = max;
+            window.ScrollBar.Maximum = max;
+        }
+        window.ScrollBar.Enabled = max > 0;
+    }
+    #endregion
+
+
+
+    public void GotoTitle()
+    {
+        forceStopTimer();
+        ClearDisplay();
+        //動的作成の分だけは削除する
+        AppContents.UnloadGraphicList();
+        redraw = ConsoleRedraw.Normal;
+        UseUserStyle = false;
+        userStyle = new StringStyle(Config.ForeColor, FontStyle.Regular, null);
+        process.BeginTitle();
+        ReadAnyKey(false, false);
+        RunEmueraProgram("");
+        RefreshStrings(true);
+    }
+
+    bool force_temporary;
+    bool timer_suspended;
+    ConsoleState prevState;
+    InputRequest prevReq;
+
+    public async Task ReloadErb()
+    {
+        if (state == ConsoleState.Error)
+        {
+            Dialog.Show("エラー発生時はこの機能は使えません");
             return;
         }
-
-        static string parseInput(CharStream st, bool isNest)
+        if (state == ConsoleState.Initializing)
         {
-            StringBuilder sb = new(20);
-            StringBuilder num = new(20);
-            bool hasRet = false;
-            while (!st.EOS && (!isNest || st.Current != ')'))
-            {
-                if (st.Current == '(')
-                {
-                    st.ShiftNext();
-                    string tstr = parseInput(st, true);
-
-                    if (!st.EOS)
-                    {
-                        st.ShiftNext();
-                        if (st.Current == '*')
-                        {
-                            st.ShiftNext();
-                            while (char.IsNumber(st.Current))
-                            {
-                                num.Append(st.Current);
-                                st.ShiftNext();
-                            }
-                            var numStr = num.ToString();
-                            if (!string.IsNullOrEmpty(numStr))
-                            {
-                                var res = int.Parse(numStr);
-                                for (int i = 0; i < res; i++)
-                                    sb.Append(tstr);
-                                num.Remove(0, num.Length);
-                            }
-                        }
-                        else
-                            sb.Append(tstr);
-                        continue;
-                    }
-                    else
-                    {
-                        sb.Append(tstr);
-                        break;
-                    }
-                }
-                else if (st.Current == '\\')
-                {
-                    st.ShiftNext();
-                    switch (st.Current)
-                    {
-                        case 'n':
-                            if (!hasRet)
-                                sb.Append('\n');
-                            else
-                                hasRet = false;
-                            break;
-                        case 'r':
-                            sb.Append('\r');
-                            break;
-                        case 'e':
-                            sb.Append("\\e\n");
-                            hasRet = true;
-                            break;
-                        case '\n':
-                            break;
-                        default:
-                            sb.Append(st.Current);
-                            break;
-                    }
-                }
-                else
-                    sb.Append(st.Current);
-                st.ShiftNext();
-            }
-            return sb.ToString();
+            Dialog.Show("初期化中はこの機能は使えません");
+            return;
         }
-
-
-        bool runningERBfromMemory;
-        /// <summary>
-        /// 通常コンソールからのDebugコマンド、及びデバッグウインドウの変数ウォッチなど、
-        /// *.ERBファイルが存在しないスクリプトを実行中
-        /// 1750 IsDebugから改名
-        /// </summary>
-        public bool RunERBFromMemory { get { return runningERBfromMemory; } set { runningERBfromMemory = value; } }
-        void doSystemCommand(string command)
+        bool notRedraw = false;
+        if (redraw == ConsoleRedraw.None)
         {
-            if (genericTimer.Enabled)
-            {
-                PrintError("タイマー系命令の待ち時間中はコマンドを入力できません");
-                PrintError("");//タイマー表示処理に消されちゃうかもしれないので
-                RefreshStrings(true);
-                return;
-            }
-            if (IsInProcess)
-            {
-                PrintError("スクリプト実行中はコマンドを入力できません");
-                RefreshStrings(true);
-                return;
-            }
-            StringComparison sc = Config.StringComparison;
-            Print(command);
-            PrintFlush(false);
-            RefreshStrings(true);
-            string com = command[1..];
-            if (com.Length == 0)
-                return;
-            if (com.Equals("REBOOT", sc))
-            {
-                window.Reboot();
-                return;
-            }
-            else if (com.Equals("OUTPUT", sc) || com.Equals("OUTPUTLOG", sc))
-            {
-                this.OutputLog(Program.ExeDir + "emuera.log");
-                return;
-            }
-            else if (com.Equals("QUIT", sc) || com.Equals("EXIT", sc))
-            {
-                window.Close();
-                return;
-            }
-            else if (com.Equals("CONFIG", sc))
-            {
-                window.ShowConfigDialog();
-                return;
-            }
-            else if (com.Equals("DEBUG", sc))
-            {
-                if (!Program.DebugMode)
-                {
-                    PrintError("デバッグウインドウは-Debug引数付きで起動したときのみ使えます");
-                    RefreshStrings(true);
-                    return;
-                }
-                OpenDebugDialog();
-            }
-            else
-            {
-                if (!Config.UseDebugCommand)
-                {
-                    PrintError("デバッグコマンドを使用できない設定になっています");
-                    RefreshStrings(true);
-                    return;
-                }
-                //処理をDebugMode系へ移動
-                DebugCommand(com, Config.ChangeMasterNameIfDebug, false);
-                PrintFlush(false);
-            }
-            RefreshStrings(true);
-        }
-        #endregion
-
-        #region 描画系
-        Stopwatch _frameDeltaTimer = Stopwatch.StartNew();
-        uint msPerFrame = 1000 / 60;//60FPS
-        ConsoleRedraw redraw = ConsoleRedraw.Normal;
-        public ConsoleRedraw Redraw { get { return redraw; } }
-        public void SetRedraw(Int64 i)
-        {
-            if ((i & 1) == 0)
-                redraw = ConsoleRedraw.None;
-            else
-                redraw = ConsoleRedraw.Normal;
-            if ((i & 2) != 0)
-                RefreshStrings(true);
-        }
-
-        string debugTitle;
-        public void SetWindowTitle(string str)
-        {
-            if (Program.DebugMode)
-            {
-                debugTitle = str;
-                window.Text = str + " (Debug Mode)";
-            }
-            else
-                window.Text = str;
-        }
-
-        public void SetEmueraVersionInfo(string str)
-        {
-            window.TextBox.Text = str;
-        }
-        public string GetWindowTitle()
-        {
-            if (Program.DebugMode && debugTitle != null)
-                return debugTitle;
-            return window.Text;
-        }
-
-
-        /// <summary>
-        /// 1818以前のRefreshStringsからselectingButton部分を抽出
-        /// ここでOnPaintを発行
-        /// </summary>
-        public void RefreshStrings(bool force_Paint)
-        {
-            bool isBackLog = window.ScrollBar.Value != window.ScrollBar.Maximum;
-            //ログ表示はREDRAWの設定に関係なく行うようにする
-            if ((redraw == ConsoleRedraw.None) && (!force_Paint) && (!isBackLog))
-                return;
-            //選択中ボタンの適性チェック
-            if (selectingButton != null)
-            {
-                //履歴表示中は選択肢無効→画面外に出てしまったボタンも履歴から選択できるように
-                //if (isBackLog)
-                //	selectingButton = null;
-                //数値か文字列の入力待ち状態でなければ無効
-                if (state != ConsoleState.Error && state != ConsoleState.WaitInput)
-                    selectingButton = null;
-                else if ((state == ConsoleState.WaitInput) && !inputReq.NeedValue)
-                    selectingButton = null;
-                //選択肢が最新でないなら無効
-                else if (selectingButton.Generation != lastButtonGeneration)
-                    selectingButton = null;
-            }
-            if (!force_Paint)
-            {//forceならば確実に再描画。
-             //履歴表示中でなく、最終行を表示済みであり、選択中ボタンが変更されていないなら更新不要
-                if ((!isBackLog) && (lastDrawnLineNo == lineNo) && (lastSelectingButton == selectingButton))
-                    return;
-                //まだ書き換えるタイミングでないなら次の更新を待ってみる
-                //ただし、入力待ちなど、しばらく更新のタイミングがない場合には強制的に書き換えてみる
-                if (_frameDeltaTimer.ElapsedMilliseconds < msPerFrame && (state == ConsoleState.Running || state == ConsoleState.Initializing))
-                    return;
-            }
-            if (forceTextBoxColor)
-            {
-                var sec = _genericTimerStopwatch.ElapsedMilliseconds;
-                //色変化が速くなりすぎないように一定時間以内の再呼び出しは強制待ちにする
-                if (_drawStopwatch == null)
-                {
-                    _drawStopwatch = Stopwatch.StartNew();
-                }
-                else
-                {
-                    while (_drawStopwatch.ElapsedMilliseconds < msPerFrame)
-                    {
-                        Application.DoEvents();
-                    }
-                }
-                window.TextBox.BackColor = this.bgColor;
-
-                _drawStopwatch.Restart();
-            }
-            window.Invoke(() =>
-            {
-                verticalScrollBarUpdate();
-                window.Refresh();//OnPaint発行
-            });
-        }
-
-        /// <summary>
-        /// 1818以前のRefreshStringsの後半とm_RefreshStringsを融合
-        /// 全面Clear法のみにしたのでさっぱりした。ダブルバッファリングはOnPaintが勝手にやるはず
-        /// </summary>
-        /// <param name="graph"></param>
-        public void OnPaint(Graphics graph)
-        {
-
-            //デバッグ用。描画が超重い環境を想定1
-            //System.Threading.Thread.Sleep(100);
-
-            //描画中にEmueraが閉じられると廃棄されたPictureBoxにアクセスしてしまったりするので
-            //OnPaintからgraphをもらった直後だから大丈夫だとは思うけど一応
-            if (!this.Enabled)
-                return;
-            //1824 アニメスプライト用・現在フレームの時間を決定
-            _frameDeltaTimer.Restart();
-
-            bool isBackLog = window.ScrollBar.Value != window.ScrollBar.Maximum;
-            int pointY = window.MainPicBox.Height - Config.LineHeight;
-
-
-            int bottomLineNo = window.ScrollBar.Value - 1;
-            int topLineNo = bottomLineNo - (pointY / Config.LineHeight + 1);
-            if (topLineNo < 0)
-                topLineNo = 0;
-            pointY -= (bottomLineNo - topLineNo) * Config.LineHeight;
-            if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-            {
-            }
-            else
-            {
-                graph.Clear(this.bgColor);
-                //1823 cbg追加
-                for (int j = 0; j < cbgList.Count; j++)
-                {
-                    if (cbgList[j].zdepth == 0)
-                    {
-                        //1823以前の文字列描画
-                        for (int i = topLineNo;
-                        i <= bottomLineNo &&
-                        i < displayLineList.Count;//何処かで非同期にDisplayLineListを触ってるやつがいる気がする...
-                        i++)
-                        {
-                            displayLineList[i].DrawTo(graph, pointY, isBackLog, true, Config.TextDrawingMode);
-                            pointY += Config.LineHeight;
-                        }
-                        continue;
-                    }
-                    ASprite img = cbgList[j].Img;
-                    if (cbgList[j].isButton && cbgList[j].buttonValue == selectingCBGButtonInt)
-                        img = cbgList[j].ImgB;
-                    if (img == null || !img.IsCreated)
-                        continue;
-                    img.GraphicsDraw(graph, new Point(cbgList[j].x, cbgList[j].y + window.MainPicBox.Height - img.DestBaseSize.Height));
-                    //Bitmap bmp = img.Bitmap;
-                    //graph.DrawImage(bmp,
-                    //	new Rectangle(cbgList[j].x + img.DestBasePosition.X, window.MainPicBox.Height - img.SrcRectangle.Height + cbgList[j].y + img.DestBasePosition.Y, img.SrcRectangle.Width, img.SrcRectangle.Height),
-                    //	img.SrcRectangle, GraphicsUnit.Pixel);
-                }
-
-            }
-            //ToolTip描画
-            if (lastPointingString != pointingString || lastSelectingCBGButtonInt != selectingCBGButtonInt)
-            {
-                if (tooltipUsed)
-                    window.ToolTip.RemoveAll();
-                string title = null;
-                if (pointingString != null)
-                    title = pointingString.Title;
-                else if (selectingCBGButtonInt > 0)
-                {
-                    foreach (var cbg in cbgList)
-                    {
-                        if (!cbg.isButton || cbg.buttonValue != selectingCBGButtonInt)
-                            continue;
-                        if (string.IsNullOrEmpty(cbg.tooltipString))
-                            continue;
-                        title = cbg.tooltipString;
-                        break;
-                    }
-                }
-                if (!string.IsNullOrEmpty(title))
-                {
-                    if (tooltip_duration == 0)
-                        window.ToolTip.SetToolTip(window.MainPicBox, title);
-                    else
-                    {
-                        if (window.ToolTip.InitialDelay == 0)
-                        {
-                            Point mousePos = window.MainPicBox.PointToClient(MainWindow.MousePosition);
-                            window.ToolTip.Show(title, window.MainPicBox, new Point(mousePos.X, mousePos.Y + 18), tooltip_duration);
-                        }
-                        else
-                        {
-                            System.Threading.SynchronizationContext context = System.Threading.SynchronizationContext.Current;
-                            System.Threading.Tasks.Task.Run(async () =>
-                            {
-                                ConsoleButtonString savedPointingString = pointingString;
-                                await System.Threading.Tasks.Task.Delay(window.ToolTip.InitialDelay);
-                                context.Post((state) =>
-                                {
-                                    MoveMouse(GetMousePosition());
-                                    if (lastPointingString == savedPointingString)
-                                    {
-                                        Point mousePos = window.MainPicBox.PointToClient(MainWindow.MousePosition);
-                                        window.ToolTip.Show(title, window.MainPicBox, new Point(mousePos.X, mousePos.Y + 18), tooltip_duration);
-                                    }
-                                }, null);
-                            });
-                        }
-                    }
-                    tooltipUsed = true;
-                }
-                lastPointingString = pointingString;
-                lastSelectingCBGButtonInt = selectingCBGButtonInt;
-            }
-            if (isBackLog)
-                lastDrawnLineNo = -1;
-            else
-                lastDrawnLineNo = lineNo;
-            lastSelectingButton = selectingButton;
-            /*デバッグ用。描画が超重い環境を想定2
-			System.Threading.Thread.Sleep(50);
-			*/
-            forceTextBoxColor = false;
-            if (need_settimer)
-            {
-                need_settimer = false;
-                setTimer();
-            }
-        }
-
-        public void SetToolTipColor(Color foreColor, Color backColor)
-        {
-            window.ToolTip.ForeColor = foreColor;
-            window.ToolTip.BackColor = backColor;
-
-        }
-        public void SetToolTipDelay(int delay)
-        {
-            window.ToolTip.InitialDelay = delay;
-        }
-
-        int tooltip_duration;
-        public void SetToolTipDuration(int duration)
-        {
-            tooltip_duration = duration;
-        }
-
-
-        //private Graphics getGraphics()
-        //{
-        //	//消したいが怖いので残し
-        //	if (!window.Created)
-        //		throw new ExeEE("存在しないウィンドウにアクセスした");
-        //	//if (Config.UseImageBuffer)
-        //	//	return Graphics.FromImage(window.MainPicBox.Image);
-        //	//else
-        //		return window.MainPicBox.CreateGraphics();
-        //}
-
-        #endregion
-
-        #region DebugMode系
-        DebugDialog dd;
-        public DebugDialog DebugDialog { get { return dd; } }
-        StringBuilder dConsoleLog = new("");
-        public string DebugConsoleLog { get { return dConsoleLog.ToString(); } }
-        List<string> dTraceLogList = [];
-#pragma warning disable CS0414 // フィールド 'EmueraConsole.dTraceLogChanged' が割り当てられていますが、値は使用されていません。
-        bool dTraceLogChanged = true;
-#pragma warning restore CS0414 // フィールド 'EmueraConsole.dTraceLogChanged' が割り当てられていますが、値は使用されていません。
-        public string GetDebugTraceLog(bool force)
-        {
-            //if (!dTraceLogChanged && !force)
-            //	return null;
-            StringBuilder builder = new("");
-            LogicalLine line = process.GetScaningLine();
-            builder.AppendLine("*実行中の行");
-            if ((line == null) || (line.Position == null))
-            {
-                builder.AppendLine("ファイル名:なし");
-                builder.AppendLine("行番号:なし 関数名:なし");
-                builder.AppendLine("");
-            }
-            else
-            {
-                builder.AppendLine("ファイル名:" + line.Position.Value.Filename);
-                builder.AppendLine("行番号:" + line.Position.Value.LineNo.ToString() + " 関数名:" + line.ParentLabelLine.LabelName);
-                builder.AppendLine("");
-            }
-            builder.AppendLine("*スタックトレース");
-            for (int i = dTraceLogList.Count - 1; i >= 0; i--)
-            {
-                builder.AppendLine(dTraceLogList[i]);
-            }
-            return builder.ToString();
-        }
-        public void OpenDebugDialog()
-        {
-            if (!Program.DebugMode)
-                return;
-            if (dd != null)
-            {
-                if (dd.Created)
-                {
-                    dd.Focus();
-                    return;
-                }
-                else
-                {
-                    dd.Dispose();
-                    dd = null;
-                }
-            }
-            dd = new DebugDialog();
-            dd.SetParent(this, process);
-            dd.Show();
-        }
-
-        public void DebugPrint(string str)
-        {
-            if (!Program.DebugMode)
-                return;
-            dConsoleLog.Append(str);
-        }
-
-        public void DebugClear()
-        {
-            dConsoleLog.Remove(0, dConsoleLog.Length);
-        }
-
-        public void DebugNewLine()
-        {
-            if (!Program.DebugMode)
-                return;
-            dConsoleLog.Append(Environment.NewLine);
-        }
-
-        public void DebugAddTraceLog(string str)
-        {
-            //Emueraがデバッグモードで起動されていないなら無視
-            //ERBファイル以外のもの(デバッグコマンド、変数ウォッチ)を実行中なら無視
-            if (!Program.DebugMode || runningERBfromMemory)
-                return;
-            dTraceLogChanged = true;
-            dTraceLogList.Add(str);
-        }
-        public void DebugRemoveTraceLog()
-        {
-            if (!Program.DebugMode || runningERBfromMemory)
-                return;
-            dTraceLogChanged = true;
-            if (dTraceLogList.Count > 0)
-                dTraceLogList.RemoveAt(dTraceLogList.Count - 1);
-        }
-        public void DebugClearTraceLog()
-        {
-            if (!Program.DebugMode || runningERBfromMemory)
-                return;
-            dTraceLogChanged = true;
-            dTraceLogList.Clear();
-        }
-
-        public void DebugCommand(string com, bool munchkin, bool outputDebugConsole)
-        {
-            ConsoleState temp_state = state;
-            runningERBfromMemory = true;
-            //スクリプト等が失敗した場合に備えて念のための保存
-            GlobalStatic.Process.saveCurrentState(false);
-            try
-            {
-                LogicalLine line = null;
-                if (!com.StartsWith('@') && !com.StartsWith('"') && !com.StartsWith('\\'))
-                    line = LogicalLineParser.ParseLine(com, null);
-                if (line == null || (line is InvalidLine))
-                {
-                    WordCollection wc = LexicalAnalyzer.Analyse(new CharStream(com), LexEndWith.EoL, LexAnalyzeFlag.None);
-                    AExpression term = ExpressionParser.ReduceExpressionTerm(wc, TermEndWith.EoL);
-                    if (term == null)
-                        throw new CodeEE("解釈不能なコードです");
-                    if (term.GetOperandType() == typeof(Int64))
-                    {
-                        if (outputDebugConsole)
-                            com = "DEBUGPRINTFORML {" + com + "}";
-                        else
-                            com = "PRINTVL " + com;
-                    }
-                    else
-                    {
-                        if (outputDebugConsole)
-                            com = "DEBUGPRINTFORML %" + com + "%";
-                        else
-                            com = "PRINTFORMSL " + com;
-                    }
-                    line = LogicalLineParser.ParseLine(com, null);
-                }
-                if (line == null)
-                    throw new CodeEE("解釈不能なコードです");
-                if (line is InvalidLine)
-                    throw new CodeEE(line.ErrMes);
-                if (!(line is InstructionLine))
-                    throw new CodeEE("デバッグコマンドで使用できるのは代入文か命令文だけです");
-                InstructionLine func = (InstructionLine)line;
-                if (func.Function.IsFlowContorol())
-                    throw new CodeEE("フロー制御命令は使用できません");
-                //__METHOD_SAFE__をみるならいらないかも
-                if (func.Function.IsWaitInput())
-                    throw new CodeEE(func.Function.Name + "命令は使用できません");
-                //1750 __METHOD_SAFE__とほぼ条件同じだよねってことで
-                if (!func.Function.IsMethodSafe())
-                    throw new CodeEE(func.Function.Name + "命令は使用できません");
-                //1756 SIFの次に来てはいけないものはここでも不可。
-                if (func.Function.IsPartial())
-                    throw new CodeEE(func.Function.Name + "命令は使用できません");
-                switch (func.FunctionCode)
-                {//取りこぼし
-                 //逆にOUTPUTLOG、QUITはDebugCommandの前に捕まえる
-                    case FunctionCode.PUTFORM:
-                    case FunctionCode.UPCHECK:
-                    case FunctionCode.CUPCHECK:
-                    case FunctionCode.SAVEDATA:
-                        throw new CodeEE(func.Function.Name + "命令は使用できません");
-                }
-                ArgumentParser.SetArgumentTo(func);
-                if (func.IsError)
-                    throw new CodeEE(func.ErrMes);
-                process.DoDebugNormalFunction(func, munchkin);
-                if (func.FunctionCode == FunctionCode.SET)
-                {
-                    if (!outputDebugConsole)
-                        PrintSingleLine(com);
-                    //DebugWindowのほうは少しくどくなるのでいらないかな
-                }
-            }
-            catch (Exception e)
-            {
-                if (outputDebugConsole)
-                {
-                    DebugPrint(e.Message);
-                    DebugNewLine();
-                }
-                else
-                    PrintError(e.Message);
-                process.clearMethodStack();
-            }
-            finally
-            {
-                //確実に元の状態に戻す
-                GlobalStatic.Process.loadPrevState();
-                runningERBfromMemory = false;
-                state = temp_state;
-            }
-        }
-        #endregion
-
-        #region Window.Form系
-
-        internal Point GetMousePosition()
-        {
-            if (window == null || !window.Created)
-                return new Point();
-            //クライアント左上基準の座標取得
-            Point pos = window.MainPicBox.PointToClient(Cursor.Position);
-            //クライアント左下基準の座標に置き換え
-            pos.Y -= ClientHeight;
-            return pos;
-        }
-
-        /// <summary>
-        /// マウス位置をボタンの選択状態に反映させる
-        /// </summary>
-        /// <param name="point"></param>
-        /// <returns>この後でRefreshStringsが必要かどうか</returns>
-        public bool MoveMouse(Point point)
-        {
-
-            if (cbgButtonMap != null && cbgButtonMap.IsCreated)
-            {
-                //pointはクライアント左上基準の座標。
-                //clientPointをクライアント左下基準の座標に置き換え
-                Point clientPoint = point;
-                clientPoint.Y = point.Y - ClientHeight;
-                int buttonNum = -1;
-                //マップ画像の左上基準の座標に置き換え
-                Point mapPoint = clientPoint;
-                mapPoint.Y = mapPoint.Y + cbgButtonMap.Height;
-                if (mapPoint.X >= 0 && mapPoint.Y >= 0 && mapPoint.X < cbgButtonMap.Width && mapPoint.Y < cbgButtonMap.Height)
-                {
-                    Color c = cbgButtonMap.Bitmap.GetPixel(mapPoint.X, mapPoint.Y);
-                    if (c.A == 255)
-                    {
-                        buttonNum = c.ToArgb() & 0xFFFFFF;
-                    }
-                }
-                if (buttonNum >= 0)
-                {
-                    bool ret = pointingString != null || selectingButton != null || buttonNum != selectingCBGButtonInt;
-                    selectingCBGButtonInt = buttonNum;
-                    pointingString = null;
-                    selectingButton = null;
-                    return ret;
-                }
-                else if (selectingCBGButtonInt >= 0)
-                {
-                    selectingCBGButtonInt = -1;
-                    pointingString = null;
-                    selectingButton = null;
-                    return true;
-                }
-            }
-            selectingCBGButtonInt = -1;
-            ConsoleButtonString select = null;
-            ConsoleButtonString pointing = null;
-            bool canSelect = false;
-            //数値か文字列の入力待ち状態でなければ選択中にはならない
-            if (state == ConsoleState.Error)
-                canSelect = true;
-            else if (state == ConsoleState.WaitInput && inputReq.NeedValue)
-                canSelect = true;
-            //スクリプト実行中は無視//入力・マクロ処理中は無視
-            if (this.IsInProcess)
-                goto end;
-            //履歴表示中は無視
-            //if (window.ScrollBar.Value != window.ScrollBar.Maximum)
-            //	goto end;
-            int pointX = point.X;
-            int pointY = point.Y;
-            ConsoleDisplayLine curLine;
-
-            int bottomLineNo = window.ScrollBar.Value - 1;
-            if (displayLineList.Count - 1 < bottomLineNo)
-                bottomLineNo = displayLineList.Count - 1;//1820 この処理不要な気がするけどエラー報告があったので入れとく
-            int topLineNo = bottomLineNo - (window.MainPicBox.Height / Config.LineHeight);
-            if (topLineNo < 0)
-                topLineNo = 0;
-            int relPointY = pointY - window.MainPicBox.Height;
-            //下から上へ探索し発見次第打ち切り
-            for (int i = bottomLineNo; i >= topLineNo; i--)
-            {
-                relPointY += Config.LineHeight;
-                curLine = displayLineList[i];
-
-                for (int b = 0; b < curLine.Buttons.Length; b++)
-                {
-                    ConsoleButtonString button = curLine.Buttons[curLine.Buttons.Length - b - 1];
-                    if (button == null || button.StrArray == null)
-                        continue;
-                    if ((button.PointX <= pointX) && (button.PointX + button.Width >= pointX))
-                    {
-                        //if (relPointY >= 0 && relPointY <= Config.FontSize)
-                        //{
-                        //	pointing = button;
-                        //	if(pointing.IsButton)
-                        //		goto breakfor;
-                        //}
-                        foreach (AConsoleDisplayPart part in button.StrArray)
-                        {
-                            if (part == null)
-                                continue;
-                            if ((part.PointX <= pointX) && (part.PointX + part.Width >= pointX)
-                                && (relPointY >= part.Top) && (relPointY <= part.Bottom))
-                            {
-                                pointing = button;
-                                if (pointing.IsButton)
-                                    goto breakfor;
-                            }
-                        }
-                    }
-                }
-            }
-
-
-        //int posy_bottom2up = window.MainPicBox.Height - pointY;
-        //int logNum = window.ScrollBar.Maximum - window.ScrollBar.Value;
-        ////表示中の一番下の行番号
-        //int curBottomLineNo = displayLineList.Count - logNum;
-        //int curPointingLineNo = curBottomLineNo - (posy_bottom2up / Config.LineHeight + 1);
-        //if ((curPointingLineNo < 0) || (curPointingLineNo >= displayLineList.Count))
-        //	curLine = null;
-        //else
-        //	curLine =  displayLineList[curPointingLineNo];
-        //if (curLine == null)
-        //	goto end;
-
-        //pointing = curLine.GetPointingButton(pointX);
-        breakfor:
-            if ((pointing == null) || (pointing.Generation != lastButtonGeneration))
-                canSelect = false;
-            else if (!pointing.IsButton)
-                canSelect = false;
-            else if (state == ConsoleState.WaitInput && inputReq.InputType == InputType.IntValue && (!pointing.IsInteger))
-                canSelect = false;
-            end:
-            if (canSelect)
-                select = pointing;
-            bool needRefresh = select != selectingButton || pointing != pointingString;
-            pointingString = pointing;
-            selectingButton = select;
-            return needRefresh;
-        }
-
-
-        public void LeaveMouse()
-        {
-            bool needRefresh = selectingButton != null || pointingString != null;
-            selectingButton = null;
-            pointingString = null;
-            if (needRefresh)
-            {
-                RefreshStrings(true);
-            }
-        }
-
-        private void verticalScrollBarUpdate()
-        {
-            int max = displayLineList.Count;
-            int move = max - window.ScrollBar.Maximum;
-            if (move == 0)
-                return;
-            if (move > 0)
-            {
-                window.ScrollBar.Maximum = max;
-                window.ScrollBar.Value += move;
-            }
-            else
-            {
-                if (max > window.ScrollBar.Value)
-                    window.ScrollBar.Value = max;
-                window.ScrollBar.Maximum = max;
-            }
-            window.ScrollBar.Enabled = max > 0;
-        }
-        #endregion
-
-
-
-        public void GotoTitle()
-        {
-            forceStopTimer();
-            ClearDisplay();
-            //動的作成の分だけは削除する
-            AppContents.UnloadGraphicList();
+            notRedraw = true;
             redraw = ConsoleRedraw.Normal;
-            UseUserStyle = false;
-            userStyle = new StringStyle(Config.ForeColor, FontStyle.Regular, null);
-            process.BeginTitle();
-            ReadAnyKey(false, false);
-            RunEmueraProgram("");
-            RefreshStrings(true);
         }
-
-        bool force_temporary;
-        bool timer_suspended;
-        ConsoleState prevState;
-        InputRequest prevReq;
-
-        public async Task ReloadErb()
+        if (genericTimer.Enabled)
         {
-            if (state == ConsoleState.Error)
-            {
-                Dialog.Show("エラー発生時はこの機能は使えません");
-                return;
-            }
-            if (state == ConsoleState.Initializing)
-            {
-                Dialog.Show("初期化中はこの機能は使えません");
-                return;
-            }
-            bool notRedraw = false;
-            if (redraw == ConsoleRedraw.None)
-            {
-                notRedraw = true;
-                redraw = ConsoleRedraw.Normal;
-            }
-            if (genericTimer.Enabled)
-            {
-                genericTimer.Enabled = false;
-                timer_suspended = true;
-            }
-            prevState = state;
-            prevReq = inputReq;
-            state = ConsoleState.Initializing;
-            PrintSingleLine("ERB再読み込み中……", true);
-            force_temporary = true;
-            await process.ReloadErb();
-            force_temporary = false;
-            PrintSingleLine("再読み込み完了", true);
-            RefreshStrings(true);
-            //強制的にボタン世代が切り替わるのを防ぐ
-            updatedGeneration = true;
-            if (notRedraw)
-                redraw = ConsoleRedraw.None;
+            genericTimer.Enabled = false;
+            timer_suspended = true;
         }
-
-        public void ReloadErbFinished()
-        {
-            state = prevState;
-            inputReq = prevReq;
-            PrintSingleLine(" ");
-            if (timer_suspended)
-            {
-                timer_suspended = false;
-                genericTimer.Enabled = true;
-                //タイマー待機中の時間ずれは修正しない。タイマー中にリロードしたらほぼ強制タイムアウトする程度は仕様のうちであろう。
-            }
-        }
-
-        public async Task ReloadPartialErb(List<string> path)
-        {
-            if (state == ConsoleState.Error)
-            {
-                Dialog.Show("エラー発生時はこの機能は使えません");
-                return;
-            }
-            if (state == ConsoleState.Initializing)
-            {
-                Dialog.Show("初期化中はこの機能は使えません");
-                return;
-            }
-            bool notRedraw = false;
-            if (redraw == ConsoleRedraw.None)
-            {
-                notRedraw = true;
-                redraw = ConsoleRedraw.Normal;
-            }
-            if (genericTimer.Enabled)
-            {
-                genericTimer.Enabled = false;
-                timer_suspended = true;
-            }
-            prevState = state;
-            prevReq = inputReq;
-            state = ConsoleState.Initializing;
-            PrintSingleLine("ERB再読み込み中……", true);
-            force_temporary = true;
-            await process.ReloadPartialErb(path);
-            force_temporary = false;
-            PrintSingleLine("再読み込み完了", true);
-            RefreshStrings(true);
-            //強制的にボタン世代が切り替わるのを防ぐ
-            updatedGeneration = true;
-            if (notRedraw)
-                redraw = ConsoleRedraw.None;
-        }
-
-        public async Task ReloadFolder(string erbPath)
-        {
-            if (state == ConsoleState.Error)
-            {
-                Dialog.Show("エラー発生時はこの機能は使えません");
-                return;
-            }
-            if (state == ConsoleState.Initializing)
-            {
-                Dialog.Show("初期化中はこの機能は使えません");
-                return;
-            }
-            if (genericTimer.Enabled)
-            {
-                genericTimer.Enabled = false;
-                timer_suspended = true;
-            }
-            List<string> paths = [];
-            SearchOption op = SearchOption.AllDirectories;
-            if (!Config.SearchSubdirectory)
-                op = SearchOption.TopDirectoryOnly;
-            var fnames = Directory.EnumerateFiles(erbPath, "*.ERB", op);
-            foreach (var fname in fnames)
-            {
-                if (Ascii.EqualsIgnoreCase(Path.GetExtension(fname), ".ERB"))
-                    paths.Add(fname);
-            }
-            bool notRedraw = false;
-            if (redraw == ConsoleRedraw.None)
-            {
-                notRedraw = true;
-                redraw = ConsoleRedraw.Normal;
-            }
-            prevState = state;
-            prevReq = inputReq;
-            state = ConsoleState.Initializing;
-            PrintSingleLine("ERB再読み込み中……", true);
-            force_temporary = true;
-            await process.ReloadPartialErb(paths);
-            force_temporary = false;
-            PrintSingleLine("再読み込み完了", true);
-            RefreshStrings(true);
-            //強制的にボタン世代が切り替わるのを防ぐ
-            updatedGeneration = true;
-            if (notRedraw)
-                redraw = ConsoleRedraw.None;
-        }
-
-        public void Dispose()
-        {
-            if (genericTimer != null)
-                genericTimer.Dispose();
-            //timer = null;
-            //stringMeasure.Dispose();
-        }
-
-
+        prevState = state;
+        prevReq = inputReq;
+        state = ConsoleState.Initializing;
+        PrintSingleLine("ERB再読み込み中……", true);
+        force_temporary = true;
+        await process.ReloadErb();
+        force_temporary = false;
+        PrintSingleLine("再読み込み完了", true);
+        RefreshStrings(true);
+        //強制的にボタン世代が切り替わるのを防ぐ
+        updatedGeneration = true;
+        if (notRedraw)
+            redraw = ConsoleRedraw.None;
     }
+
+    public void ReloadErbFinished()
+    {
+        state = prevState;
+        inputReq = prevReq;
+        PrintSingleLine(" ");
+        if (timer_suspended)
+        {
+            timer_suspended = false;
+            genericTimer.Enabled = true;
+            //タイマー待機中の時間ずれは修正しない。タイマー中にリロードしたらほぼ強制タイムアウトする程度は仕様のうちであろう。
+        }
+    }
+
+    public async Task ReloadPartialErb(List<string> path)
+    {
+        if (state == ConsoleState.Error)
+        {
+            Dialog.Show("エラー発生時はこの機能は使えません");
+            return;
+        }
+        if (state == ConsoleState.Initializing)
+        {
+            Dialog.Show("初期化中はこの機能は使えません");
+            return;
+        }
+        bool notRedraw = false;
+        if (redraw == ConsoleRedraw.None)
+        {
+            notRedraw = true;
+            redraw = ConsoleRedraw.Normal;
+        }
+        if (genericTimer.Enabled)
+        {
+            genericTimer.Enabled = false;
+            timer_suspended = true;
+        }
+        prevState = state;
+        prevReq = inputReq;
+        state = ConsoleState.Initializing;
+        PrintSingleLine("ERB再読み込み中……", true);
+        force_temporary = true;
+        await process.ReloadPartialErb(path);
+        force_temporary = false;
+        PrintSingleLine("再読み込み完了", true);
+        RefreshStrings(true);
+        //強制的にボタン世代が切り替わるのを防ぐ
+        updatedGeneration = true;
+        if (notRedraw)
+            redraw = ConsoleRedraw.None;
+    }
+
+    public async Task ReloadFolder(string erbPath)
+    {
+        if (state == ConsoleState.Error)
+        {
+            Dialog.Show("エラー発生時はこの機能は使えません");
+            return;
+        }
+        if (state == ConsoleState.Initializing)
+        {
+            Dialog.Show("初期化中はこの機能は使えません");
+            return;
+        }
+        if (genericTimer.Enabled)
+        {
+            genericTimer.Enabled = false;
+            timer_suspended = true;
+        }
+        List<string> paths = [];
+        SearchOption op = SearchOption.AllDirectories;
+        if (!Config.SearchSubdirectory)
+            op = SearchOption.TopDirectoryOnly;
+        var fnames = Directory.EnumerateFiles(erbPath, "*.ERB", op);
+        foreach (var fname in fnames)
+        {
+            if (Ascii.EqualsIgnoreCase(Path.GetExtension(fname), ".ERB"))
+                paths.Add(fname);
+        }
+        bool notRedraw = false;
+        if (redraw == ConsoleRedraw.None)
+        {
+            notRedraw = true;
+            redraw = ConsoleRedraw.Normal;
+        }
+        prevState = state;
+        prevReq = inputReq;
+        state = ConsoleState.Initializing;
+        PrintSingleLine("ERB再読み込み中……", true);
+        force_temporary = true;
+        await process.ReloadPartialErb(paths);
+        force_temporary = false;
+        PrintSingleLine("再読み込み完了", true);
+        RefreshStrings(true);
+        //強制的にボタン世代が切り替わるのを防ぐ
+        updatedGeneration = true;
+        if (notRedraw)
+            redraw = ConsoleRedraw.None;
+    }
+
+    public void Dispose()
+    {
+        if (genericTimer != null)
+            genericTimer.Dispose();
+        //timer = null;
+        //stringMeasure.Dispose();
+    }
+
+
 }

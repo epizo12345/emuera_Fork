@@ -1,86 +1,85 @@
 ﻿using System.Text;
 
-namespace MinorShift._Library
+namespace MinorShift._Library;
+
+//マルチ言語に対応可能な形式に変更
+internal static class LangManager
 {
-    //マルチ言語に対応可能な形式に変更
-    internal static class LangManager
+    static Encoding lang;
+
+    public static void setEncode(int code)
     {
-        static Encoding lang;
+        lang = Encoding.GetEncoding(code);
+    }
 
-        public static void setEncode(int code)
+    public static int GetStrlenLang(string str)
+    {
+        if (Ascii.IsValid(str))
         {
-            lang = Encoding.GetEncoding(code);
+            return str.Length;
         }
+        return lang.GetByteCount(str);
+    }
+    public static int GetUFTIndex(string str, int LangIndex)
+    {
+        if (LangIndex <= 0)
+            return 0;
+        int totalByte = GetStrlenLang(str);
+        if (LangIndex >= totalByte)
+            return str.Length;
+        int UTFcnt = 0;
+        int JIScnt = 0;
+        for (int i = 0; i < str.Length; i++)
+        {
+            JIScnt += lang.GetByteCount(str[UTFcnt].ToString());
+            UTFcnt++;
+            if (JIScnt >= LangIndex)
+                break;
+        }
+        return UTFcnt;
+    }
 
-        public static int GetStrlenLang(string str)
+    public static string GetSubStringLang(string str, int startindex, int length)
+    {
+        int totalByte = GetStrlenLang(str);
+        if ((startindex >= totalByte) || (length == 0))
+            return "";
+        if ((length < 0) || (length > totalByte))
+            length = totalByte;
+
+        StringBuilder ret = new();
+        int UTFcnt = 0;
+        int JIScnt = 0;
+
+        if (startindex <= 0)
         {
-            if (Ascii.IsValid(str))
-            {
-                return str.Length;
-            }
-            return lang.GetByteCount(str);
+            if (length == totalByte)
+                return str;
         }
-        public static int GetUFTIndex(string str, int LangIndex)
+        else
         {
-            if (LangIndex <= 0)
-                return 0;
-            int totalByte = GetStrlenLang(str);
-            if (LangIndex >= totalByte)
-                return str.Length;
-            int UTFcnt = 0;
-            int JIScnt = 0;
             for (int i = 0; i < str.Length; i++)
             {
                 JIScnt += lang.GetByteCount(str[UTFcnt].ToString());
                 UTFcnt++;
-                if (JIScnt >= LangIndex)
+                if (JIScnt >= startindex)
                     break;
             }
-            return UTFcnt;
-        }
-
-        public static string GetSubStringLang(string str, int startindex, int length)
-        {
-            int totalByte = GetStrlenLang(str);
-            if ((startindex >= totalByte) || (length == 0))
+            if (UTFcnt >= str.Length)
                 return "";
-            if ((length < 0) || (length > totalByte))
-                length = totalByte;
-
-            StringBuilder ret = new();
-            int UTFcnt = 0;
-            int JIScnt = 0;
-
-            if (startindex <= 0)
-            {
-                if (length == totalByte)
-                    return str;
-            }
-            else
-            {
-                for (int i = 0; i < str.Length; i++)
-                {
-                    JIScnt += lang.GetByteCount(str[UTFcnt].ToString());
-                    UTFcnt++;
-                    if (JIScnt >= startindex)
-                        break;
-                }
-                if (UTFcnt >= str.Length)
-                    return "";
-            }
-
-            JIScnt = 0;
-            while (true)
-            {
-                ret.Append(str[UTFcnt]);
-                JIScnt += lang.GetByteCount(str[UTFcnt].ToString());
-                UTFcnt++;
-                if (JIScnt >= length)
-                    break;
-                if (UTFcnt >= str.Length)
-                    break;
-            }
-            return ret.ToString();
         }
+
+        JIScnt = 0;
+        while (true)
+        {
+            ret.Append(str[UTFcnt]);
+            JIScnt += lang.GetByteCount(str[UTFcnt].ToString());
+            UTFcnt++;
+            if (JIScnt >= length)
+                break;
+            if (UTFcnt >= str.Length)
+                break;
+        }
+        return ret.ToString();
     }
 }
