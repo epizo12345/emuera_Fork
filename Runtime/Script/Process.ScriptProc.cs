@@ -134,7 +134,7 @@ internal sealed partial class Process
                     str = bArg.PrintStrTerm.GetStrValue(exm);
                     //ボタン処理に絡んで表示がおかしくなるため、PRINTBUTTONでの改行コードはオミット
                     str = str.Replace("\n", "");
-                    bool isRight = (func.FunctionCode == FunctionCode.PRINTBUTTONC) ? true : false;
+                    bool isRight = (func.FunctionCode == FunctionCode.PRINTBUTTONC);
                     if (bArg.ButtonWord.GetOperandType() == typeof(long))
                         exm.Console.PrintButtonC(str, bArg.ButtonWord.GetIntValue(exm), isRight);
                     else

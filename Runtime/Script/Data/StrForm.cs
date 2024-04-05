@@ -61,8 +61,7 @@ internal sealed class StrForm
         for (int i = 0; i < wt.SubWords.Length; i++)
         {
             SubWord SWT = wt.SubWords[i];
-            TripleSymbolSubWord tSymbol = SWT as TripleSymbolSubWord;
-            if (tSymbol != null)
+            if (SWT is TripleSymbolSubWord tSymbol)
             {
                 switch (tSymbol.Code)
                 {

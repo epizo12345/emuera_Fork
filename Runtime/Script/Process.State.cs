@@ -119,7 +119,7 @@ internal sealed class ProcessState
 
     SystemStateCode sysStateCode = SystemStateCode.Title_Begin;
     BeginType begintype = BeginType.NULL;
-    public bool isBegun { get { return begintype != BeginType.NULL ? true : false; } }
+    public bool isBegun { get { return begintype != BeginType.NULL; } }
 
     public LogicalLine CurrentLine { get { return currentLine; } set { currentLine = value; } }
     public LogicalLine ErrorLine

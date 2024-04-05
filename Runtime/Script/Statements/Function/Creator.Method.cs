@@ -402,19 +402,17 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             string str = arguments[0].GetStrValue(exm);
-            using (System.Drawing.Text.InstalledFontCollection ifc = new())
+            using System.Drawing.Text.InstalledFontCollection ifc = new();
+            Int64 isInstalled = 0;
+            foreach (System.Drawing.FontFamily ff in ifc.Families)
             {
-                Int64 isInstalled = 0;
-                foreach (System.Drawing.FontFamily ff in ifc.Families)
+                if (ff.Name == str)
                 {
-                    if (ff.Name == str)
-                    {
-                        isInstalled = 1;
-                        break;
-                    }
+                    isInstalled = 1;
+                    break;
                 }
-                return isInstalled;
             }
+            return isInstalled;
         }
 
     }
@@ -1944,7 +1942,7 @@ internal static partial class FunctionMethodCreator
                 for (int i = 0; i < sortedArray.Length; i++)
                     sortedArray[i] = sortList[i].Value;
             }
-            foreach (VariableTerm term in arguments)//もう少し賢い方法はないものだろうか
+            foreach (VariableTerm term in arguments.Cast<VariableTerm>())//もう少し賢い方法はないものだろうか
             {
                 if (term.Identifier.IsArray1D)
                 {
