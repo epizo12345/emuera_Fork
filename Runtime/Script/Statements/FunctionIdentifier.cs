@@ -386,6 +386,11 @@ internal sealed partial class FunctionIdentifier
         addFunction(FunctionCode.ENCODETOUNI, argb[FunctionArgType.FORM_STR_NULLABLE], METHOD_SAFE | EXTENDED);//式中関数版を追加。処理が全然違う
         #endregion
 
+        addFunction(FunctionCode.VAR, new VAR_Instruction());
+        addFunction(FunctionCode.VARS, new VARS_Instruction());
+
+
+
         Dictionary<string, FunctionMethod> methodList = FunctionMethodCreator.GetMethodList();
         foreach (KeyValuePair<string, FunctionMethod> pair in methodList)
         {

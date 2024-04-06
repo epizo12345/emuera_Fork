@@ -14,12 +14,100 @@ using MinorShift.Emuera.UI.Game;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Text;
 
 namespace MinorShift.Emuera.GameProc.Function;
 
 internal sealed partial class FunctionIdentifier
 {
+
+
+    private sealed class VAR_Instruction : AInstruction
+    {
+        public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
+        {
+            var varName = func.Argument.ConstStr;
+            var varData = new UserDefinedVariableData();
+            varData.Name = varName;
+            varData.Static = false;
+            varData.Lengths = [1];
+            varData.TypeIsStr = false;
+            func.ParentLabelLine.AddPrivateVariable(varData);
+            var privateVar = func.ParentLabelLine.GetPrivateVariable(varName);
+            privateVar.ScopeIn();
+            privateVar.SetValue(((IntAsignArgument)func.Argument).Exp.GetIntValue(exm), [0]);
+        }
+
+        public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
+        {
+            var tokens = line.PopArgumentPrimitive().Substring().Split(' ');
+            var i = tokens[^1].IndexOf(';');
+            if (i != -1)
+            {
+                tokens[^1] = tokens[^1][..i];
+            }
+            var varName = tokens[0];
+            if (tokens.Length == 1)
+            {
+                return new IntAsignArgument(varName);
+            }
+            else
+            {
+                if (tokens[1] != "=")
+                {
+                    throw new Exception();
+                }
+                var wc = LexicalAnalyzer.Analyse(new CharStream(tokens[2]), LexEndWith.EoL, LexAnalyzeFlag.None);
+                var exp = ExpressionParser.ReduceIntegerTerm(wc, TermEndWith.EoL);
+                return new IntAsignArgument(varName, exp);
+            }
+
+
+
+        }
+    }
+    private sealed class VARS_Instruction : AInstruction
+    {
+        public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
+        {
+            var varName = func.Argument.ConstStr;
+            var varData = new UserDefinedVariableData();
+            varData.Name = varName;
+            varData.Static = false;
+            varData.Lengths = [1];
+            varData.TypeIsStr = true;
+            func.ParentLabelLine.AddPrivateVariable(varData);
+            var privateVar = func.ParentLabelLine.GetPrivateVariable(varName);
+            privateVar.ScopeIn();
+            privateVar.SetValue(((StrAsignArgument)func.Argument).Value, [0]);
+        }
+
+        public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
+        {
+            var tokens = line.PopArgumentPrimitive().Substring().Split(' ');
+            var i = tokens[^1].IndexOf(';');
+            if (i != -1)
+            {
+                tokens[^1] = tokens[^1][..i];
+            }
+            var varName = tokens[0];
+            if (tokens.Length == 1)
+            {
+                return new StrAsignArgument(varName);
+            }
+            else
+            {
+                if (tokens[1] != "=")
+                {
+                    throw new Exception();
+                }
+
+                return new StrAsignArgument(varName, string.Join("", tokens[2..]));
+            }
+        }
+    }
+
     #region normalFunction
     private sealed class PRINT_Instruction : AInstruction
     {
