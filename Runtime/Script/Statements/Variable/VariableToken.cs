@@ -2074,7 +2074,6 @@ internal sealed partial class VariableData
         public PrivateInt1DVariableToken(UserDefinedVariableData data)
             : base(VariableCode.VAR, data)
         {
-            int[] sizes = data.Lengths;
             IsStatic = false;
             arrayStack = [];
             defArray = data.DefaultInt;
@@ -2142,7 +2141,6 @@ internal sealed partial class VariableData
         public PrivateInt2DVariableToken(UserDefinedVariableData data)
             : base(VariableCode.VAR2D, data)
         {
-            int[] sizes = data.Lengths;
             IsStatic = false;
             arrayStack = [];
         }
@@ -2207,7 +2205,6 @@ internal sealed partial class VariableData
         public PrivateInt3DVariableToken(UserDefinedVariableData data)
             : base(VariableCode.VAR3D, data)
         {
-            int[] sizes = data.Lengths;
             IsStatic = false;
             arrayStack = [];
         }
@@ -2276,7 +2273,7 @@ internal sealed partial class VariableData
         public PrivateStr1DVariableToken(UserDefinedVariableData data)
             : base(VariableCode.VARS, data)
         {
-            int[] sizes = data.Lengths;
+            sizes = data.Lengths;
             IsStatic = false;
             arrayStack = [];
             defArray = data.DefaultStr;
@@ -2346,7 +2343,6 @@ internal sealed partial class VariableData
         public PrivateStr2DVariableToken(UserDefinedVariableData data)
             : base(VariableCode.VARS2D, data)
         {
-            int[] sizes = data.Lengths;
             IsStatic = false;
             arrayStack = [];
         }
