@@ -508,28 +508,32 @@ internal sealed class SpSetArrayArgument : Argument
 
 internal sealed class IntAsignArgument : Argument
 {
-    public IntAsignArgument(string str)
+    public int[] Lengths;
+    public IntAsignArgument(string str, int[] lengths)
     {
         ConstStr = str;
     }
     public AExpression Exp;
-    public IntAsignArgument(string str, AExpression exp)
+    public IntAsignArgument(string name, int[] lengths, AExpression exp)
     {
-        ConstStr = str;
+        ConstStr = name;
+        Lengths = lengths;
         Exp = exp;
     }
 }
 
 internal sealed class StrAsignArgument : Argument
 {
+    public int[] Lengths;
     public StrAsignArgument(string str)
     {
         ConstStr = str;
     }
     public string Value;
-    public StrAsignArgument(string str, string value)
+    public StrAsignArgument(string str, int[] lengths, string value)
     {
         ConstStr = str;
+        Lengths = lengths;
         Value = value;
     }
 }
