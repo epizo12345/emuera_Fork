@@ -2404,33 +2404,19 @@ internal sealed class VariableEvaluator : IDisposable
         string filepath = getSaveDataPath(dataIndex);
         if (!File.Exists(filepath))
             throw new ExeEE("存在しないパスを呼び出した");
-        EraDataReader reader = null;
-        EraBinaryDataReader bReader = null;
-        FileStream fs = null;
-        try
+
+        using var fs = new FileStream(filepath, FileMode.Open, FileAccess.Read);
+        using var bReader = EraBinaryDataReader.CreateReader(fs);
+        if (bReader != null)
         {
-            fs = new FileStream(filepath, FileMode.Open, FileAccess.Read);
-            bReader = EraBinaryDataReader.CreateReader(fs);
-            if (bReader != null)
-            {
-                LoadFromStreamBinary(bReader);
-            }
-            else
-            {
-                reader = new EraDataReader(fs);
-                LoadFromStream(reader);
-            }
-            varData.LastLoadNo = dataIndex;
+            LoadFromStreamBinary(bReader);
         }
-        finally
+        else
         {
-            if (reader != null)
-                reader.Close();
-            else if (bReader != null)
-                bReader.Close();
-            else if (fs != null)
-                fs.Close();
+            using var reader = new EraDataReader(fs);
+            LoadFromStream(reader);
         }
+        varData.LastLoadNo = dataIndex;
         return true;
     }
 
