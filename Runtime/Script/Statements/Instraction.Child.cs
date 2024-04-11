@@ -23,7 +23,7 @@ internal sealed partial class FunctionIdentifier
 {
 
 
-    private sealed class VAR_Instruction : AInstruction
+    private sealed class VARI_Instruction : AInstruction
     {
         public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
         {
@@ -99,7 +99,7 @@ internal sealed partial class FunctionIdentifier
         public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
         {
             var statementsStr = line.PopArgumentPrimitive().Substring();
-            var commentIndex = statementsStr.IndexOf(';');
+            var commentIndex = statementsStr.IndexOf(';', StringComparison.Ordinal);
             if (commentIndex != -1)
             {
                 statementsStr = statementsStr[..commentIndex];
@@ -125,7 +125,10 @@ internal sealed partial class FunctionIdentifier
                 //初期値がある
                 if (tokens.Length >= 2)
                 {
-                    return new StrAsignArgument(varName, [.. lengths], string.Join("", tokens[1..]));
+                    var right = string.Join("", tokens[1..]).AsSpan();
+                    var literalStart = right.IndexOf("\"", StringComparison.Ordinal);
+                    var literalEnd = right.LastIndexOf("\"", StringComparison.Ordinal);
+                    return new StrAsignArgument(varName, [.. lengths], right[(literalStart + 1)..literalEnd].ToString());
                 }
             }
 

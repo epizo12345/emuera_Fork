@@ -352,6 +352,6 @@ enum FunctionCode
     PRINT_SPACE,
 
     INPUTMOUSEKEY,
-    VAR,
+    VARI,
     VARS
 }
