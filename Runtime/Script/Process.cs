@@ -80,7 +80,7 @@ internal sealed partial class Process(EmueraConsole view)
             {
                 ParserMediator.FlushWarningList();
                 console.PrintSystemLine("リソースフォルダ読み込み中に異常が発見されたため処理を終了します");
-                console.Print(err.Message);
+                console.Print(err.ToString());
                 return false;
             }
             ParserMediator.FlushWarningList();
