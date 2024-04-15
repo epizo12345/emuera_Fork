@@ -10,4 +10,6 @@ sealed class JSONConfigData
 
     [JsonPropertyName("UseNewRandom")]
     public bool UseNewRandom { get; set; }
+
+    public bool UseScopedVariableInstruction { get; set; }
 }
