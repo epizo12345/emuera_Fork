@@ -339,19 +339,21 @@ internal sealed partial class EmueraConsole : IDisposable
     {
         if (string.IsNullOrEmpty(str))
             return;
-        if (str.Contains('\n', StringComparison.Ordinal))
+
+        var lineEndIndex = str.IndexOf('\n', StringComparison.Ordinal);
+        if (lineEndIndex != -1)
         {
-            int newline = str.IndexOf('\n', StringComparison.Ordinal);
-            string upper = str[..newline];
+            string upper = str[..lineEndIndex];
             printBuffer.Append(upper, Style);
             NewLine();
-            if (newline < str.Length - 1)
+            if (lineEndIndex < str.Length - 1)
             {
-                string lower = str[(newline + 1)..];
+                string lower = str[(lineEndIndex + 1)..];
                 Print(lower);
             }
             return;
         }
+
         printBuffer.Append(str, Style, lineEnd: lineEnd);
         return;
     }

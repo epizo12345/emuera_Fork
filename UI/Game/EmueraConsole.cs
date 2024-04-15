@@ -899,8 +899,6 @@ internal sealed partial class EmueraConsole : IDisposable
                         break;
                     RunEmueraProgram("");
                     RefreshStrings(false);
-                    //DoEventを呼ばないと描画処理すらまったく行われない
-                    Application.DoEvents();
                     //EscがマクロストップかつEscがスキップ開始だからEscでスキップを止められても即開始しちゃったりするからあんまり意味ないよね
                     //if (KillMacro)
                     //	goto endMacro;
