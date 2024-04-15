@@ -25,7 +25,7 @@ internal sealed class ConsoleDisplayLine
 {
 
     //public ConsoleDisplayLine(EmueraConsole parentWindow, ConsoleButtonString[] buttons, bool isLogical, bool temporary)
-    public ConsoleDisplayLine(ConsoleButtonString[] buttons, bool isLogical, bool temporary)
+    public ConsoleDisplayLine(ConsoleButtonString[] buttons, bool isLogical, bool temporary, bool lineEnd = true)
     {
         //parent = parentWindow;
         if (buttons == null)
@@ -39,12 +39,14 @@ internal sealed class ConsoleDisplayLine
             button.ParentLine = this;
         IsLogicalLine = isLogical;
         IsTemporary = temporary;
+        IsLineEnd = lineEnd;
     }
     public int LineNo = -1;
 
     ///論理行の最初となる場合だけtrue。表示の都合で改行された2行目以降はfalse
     readonly public bool IsLogicalLine = true;
     readonly public bool IsTemporary;
+    public bool IsLineEnd = true;
     //EmueraConsole parent;
     ConsoleButtonString[] buttons;
     DisplayLineAlignment align;

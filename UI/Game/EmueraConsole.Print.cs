@@ -143,6 +143,14 @@ internal sealed partial class EmueraConsole : IDisposable
         else
             line.SetAlignment(alignment);
         line.LineNo = lineNo;
+        if (displayLineList.Count != 0 &&
+            !displayLineList[^1].IsLineEnd)
+        {
+            var lastline = displayLineList[^1];
+            deleteLine(1);
+            line.ShiftPositionX(lastline.Buttons[^1].PointX + lastline.Buttons[^1].Width);
+            line.ChangeStr([.. lastline.Buttons, .. line.Buttons]);
+        }
         displayLineList.Add(line);
         lineNo++;
         if (line.IsLogicalLine)
@@ -327,7 +335,7 @@ internal sealed partial class EmueraConsole : IDisposable
         RefreshStrings(false);
     }
 
-    public void Print(string str)
+    public void Print(string str, bool lineEnd = true)
     {
         if (string.IsNullOrEmpty(str))
             return;
@@ -344,7 +352,7 @@ internal sealed partial class EmueraConsole : IDisposable
             }
             return;
         }
-        printBuffer.Append(str, Style);
+        printBuffer.Append(str, Style, lineEnd: lineEnd);
         return;
     }
 

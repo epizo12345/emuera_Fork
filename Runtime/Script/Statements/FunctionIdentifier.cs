@@ -81,20 +81,29 @@ internal sealed partial class FunctionIdentifier
         setFunc = new FunctionIdentifier("SET", FunctionCode.SET, new SET_Instruction());//代入文
         #region PRINT or INPUT
         addPrintFunction(FunctionCode.PRINT);
+        addPrintFunction(FunctionCode.PRINTN);
         addPrintFunction(FunctionCode.PRINTL);
         addPrintFunction(FunctionCode.PRINTW);
+
         addPrintFunction(FunctionCode.PRINTV);
         addPrintFunction(FunctionCode.PRINTVL);
         addPrintFunction(FunctionCode.PRINTVW);
+
         addPrintFunction(FunctionCode.PRINTS);
+        addPrintFunction(FunctionCode.PRINTSN);
         addPrintFunction(FunctionCode.PRINTSL);
         addPrintFunction(FunctionCode.PRINTSW);
+
         addPrintFunction(FunctionCode.PRINTFORM);
         addPrintFunction(FunctionCode.PRINTFORML);
         addPrintFunction(FunctionCode.PRINTFORMW);
+        addPrintFunction(FunctionCode.PRINTFORMN);
+
         addPrintFunction(FunctionCode.PRINTFORMS);
         addPrintFunction(FunctionCode.PRINTFORMSL);
         addPrintFunction(FunctionCode.PRINTFORMSW);
+        addPrintFunction(FunctionCode.PRINTFORMSN);
+
         addPrintFunction(FunctionCode.PRINTK);
         addPrintFunction(FunctionCode.PRINTKL);
         addPrintFunction(FunctionCode.PRINTKW);

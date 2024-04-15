@@ -30,6 +30,8 @@ internal sealed class PrintStringBuffer
     StringStyle lastStringStyle;
     List<ConsoleButtonString> m_buttonList = [];
 
+    bool isLastLineEnd = true;
+
     public int BufferStrLength
     {
         get
@@ -56,13 +58,9 @@ internal sealed class PrintStringBuffer
         m_stringList.Add(part);
     }
 
-    public void Append(string str, StringStyle style)
+    public void Append(string str, StringStyle style, bool force_button = false, bool lineEnd = true)
     {
-        Append(str, style, false);
-    }
-
-    public void Append(string str, StringStyle style, bool force_button)
-    {
+        isLastLineEnd = lineEnd;
         if (BufferStrLength > 2000)
             return;
         if (force_button)
@@ -164,6 +162,7 @@ internal sealed class PrintStringBuffer
     {
         fromCssToButton();
         ConsoleDisplayLine[] ret = ButtonsToDisplayLines(m_buttonList, stringMeasure, false, temporary);
+        ret[^1].IsLineEnd = isLastLineEnd;
         clearBuffer();
         return ret;
     }

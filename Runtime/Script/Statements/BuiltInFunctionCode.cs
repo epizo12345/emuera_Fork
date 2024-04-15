@@ -17,22 +17,27 @@ enum FunctionCode
     PRINT,//文字を表示する
     PRINTL,//改行
     PRINTW,//入力待ち(実質改行)
+    PRINTN,//改行をしないで入力待ち
 
     PRINTV,//変数の内容
     PRINTVL,
     PRINTVW,
+    PRINTVN,
 
     PRINTS,//文字列変数の内容
     PRINTSL,
     PRINTSW,
+    PRINTSN,
 
     PRINTFORM,//{数式}、%文字列変数%などの書式が使える。
     PRINTFORML,
     PRINTFORMW,
+    PRINTFORMN,
 
     PRINTFORMS,//文字列変数の内容を変換して表示。
     PRINTFORMSL,
     PRINTFORMSW,
+    PRINTFORMSN,
 
     PRINTC,//??
 
