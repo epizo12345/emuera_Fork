@@ -266,7 +266,7 @@ internal static class HtmlManager
     /// <param name="sm"></param>
     /// <param name="console">実際の表示に使わないならnullにする</param>
     /// <returns></returns>
-    public static ConsoleDisplayLine[] Html2DisplayLine(string str, StringMeasure sm, EmueraConsole console)
+    public static ConsoleDisplayLine[] Html2DisplayLine(string str, StringMeasure sm, EmueraConsole console, bool lineEnd)
     {
         List<AConsoleDisplayPart> cssList = [];
         List<ConsoleButtonString> buttonList = [];
@@ -365,6 +365,8 @@ internal static class HtmlManager
         {
             dl.SetAlignment(state.Alignment);
         }
+        ret[^1].IsLineEnd = lineEnd;
+
         return ret;
     }
 

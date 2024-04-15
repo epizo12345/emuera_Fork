@@ -370,7 +370,7 @@ internal sealed partial class FunctionIdentifier
         public HTML_PRINT_Instruction()
         {
             flag = EXTENDED | METHOD_SAFE;
-            ArgBuilder = ArgumentParser.GetArgumentBuilder(FunctionArgType.STR_EXPRESSION);
+            ArgBuilder = ArgumentParser.GetArgumentBuilder(FunctionArgType.SP_HTML_PRINT);
         }
 
         public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
@@ -381,8 +381,8 @@ internal sealed partial class FunctionIdentifier
             if (func.Argument.IsConst)
                 str = func.Argument.ConstStr;
             else
-                str = ((ExpressionArgument)func.Argument).Term.GetStrValue(exm);
-            exm.Console.PrintHtml(str);
+                str = ((HTML_PRINTArgument)func.Argument).Term.GetStrValue(exm);
+            exm.Console.PrintHtml(str, ((HTML_PRINTArgument)func.Argument).LineEnd.GetIntValue(exm) == 0);
         }
     }
 

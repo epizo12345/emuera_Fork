@@ -368,7 +368,7 @@ internal sealed partial class EmueraConsole : IDisposable
         printBuffer.Append(part);
     }
 
-    public void PrintHtml(string str)
+    public void PrintHtml(string str, bool lineEnd)
     {
         if (string.IsNullOrEmpty(str))
             return;
@@ -379,7 +379,7 @@ internal sealed partial class EmueraConsole : IDisposable
             ConsoleDisplayLine[] dispList = printBuffer.Flush(stringMeasure, force_temporary);
             addRangeDisplayLine(dispList);
         }
-        addRangeDisplayLine(HtmlManager.Html2DisplayLine(str, stringMeasure, this));
+        addRangeDisplayLine(HtmlManager.Html2DisplayLine(str, stringMeasure, this, lineEnd));
         RefreshStrings(false);
     }
 

@@ -71,4 +71,5 @@ enum FunctionArgType
     SP_REF,
     SP_REFBYNAME,
     SP_HTMLSPLIT,
+    SP_HTML_PRINT,
 }

@@ -227,6 +227,7 @@ internal static partial class ArgumentParser
         argb[FunctionArgType.SP_REF] = new SP_REF_ArgumentBuilder(false);
         argb[FunctionArgType.SP_REFBYNAME] = new SP_REF_ArgumentBuilder(true);
         argb[FunctionArgType.SP_HTMLSPLIT] = new SP_HTMLSPLIT_ArgumentBuilder();
+        argb[FunctionArgType.SP_HTML_PRINT] = new HTML_PRINT_ArgumentBuilder();
 
     }
 
@@ -1938,6 +1939,34 @@ internal static partial class ArgumentParser
             if (!checkArgumentType(line, exm, terms))
                 return null;
             return new ExpressionsArgument(argumentTypeArray, terms);
+        }
+    }
+
+    private sealed class HTML_PRINT_ArgumentBuilder : ArgumentBuilder
+    {
+        public HTML_PRINT_ArgumentBuilder()
+        {
+            argumentTypeArray = [typeof(string), typeof(Int64)];
+            minArg = 1;
+        }
+        public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
+        {
+            var terms = popTerms(line);
+            if (!checkArgumentType(line, exm, terms))
+                return null;
+            ExpressionArgument ret;
+            if (terms.Count == 0)
+            {
+                ret = new ExpressionArgument(new SingleStrTerm(""))
+                {
+                    ConstStr = "",
+                    IsConst = true
+                };
+                return ret;
+            }
+            if (terms.Count == 1)
+                terms = [terms[0], new SingleLongTerm(0)];
+            return new HTML_PRINTArgument(terms[0], terms[1]);
         }
     }
 }
