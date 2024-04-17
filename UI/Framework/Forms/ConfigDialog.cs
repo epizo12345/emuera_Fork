@@ -288,6 +288,7 @@ internal sealed partial class ConfigDialog : Form
 
         _useButtonFocusColor.Checked = JSONConfig.Data.UseButtonFocusBackgroundColor;
         _useNewRandom.Checked = JSONConfig.Data.UseNewRandom;
+        _useScopedVariableInstruction.Checked = JSONConfig.Data.UseScopedVariableInstruction;
     }
 
     private void SaveConfig()
@@ -636,5 +637,10 @@ internal sealed partial class ConfigDialog : Form
     private void IgnoreRandmizeSeed_CheckedChanged(object sender, EventArgs e)
     {
         JSONConfig.Data.UseNewRandom = _useNewRandom.Checked;
+    }
+
+    private void _useVAR_CheckedChanged(object sender, EventArgs e)
+    {
+        JSONConfig.Data.UseScopedVariableInstruction = _useScopedVariableInstruction.Checked;
     }
 }

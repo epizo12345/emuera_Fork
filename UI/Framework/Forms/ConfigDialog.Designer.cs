@@ -112,6 +112,7 @@
             checkBox2 = new System.Windows.Forms.CheckBox();
             tabPageSystem2 = new System.Windows.Forms.TabPage();
             _useNewRandom = new System.Windows.Forms.CheckBox();
+            _useScopedVariableInstruction = new System.Windows.Forms.CheckBox();
             checkBox29 = new System.Windows.Forms.CheckBox();
             checkBox26 = new System.Windows.Forms.CheckBox();
             checkBox27 = new System.Windows.Forms.CheckBox();
@@ -717,6 +718,7 @@
             // tabPageSystem2
             // 
             tabPageSystem2.Controls.Add(_useNewRandom);
+            tabPageSystem2.Controls.Add(_useScopedVariableInstruction);
             tabPageSystem2.Controls.Add(checkBox29);
             tabPageSystem2.Controls.Add(checkBox26);
             tabPageSystem2.Controls.Add(checkBox27);
@@ -732,6 +734,13 @@
             _useNewRandom.Name = "_useNewRandom";
             _useNewRandom.UseVisualStyleBackColor = true;
             _useNewRandom.CheckedChanged += IgnoreRandmizeSeed_CheckedChanged;
+            // 
+            // _useVAR
+            // 
+            resources.ApplyResources(_useScopedVariableInstruction, "_useVAR");
+            _useScopedVariableInstruction.Name = "_useVAR";
+            _useScopedVariableInstruction.UseVisualStyleBackColor = true;
+            _useScopedVariableInstruction.CheckedChanged += _useVAR_CheckedChanged;
             // 
             // checkBox29
             // 
@@ -1155,5 +1164,6 @@
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
         private System.Windows.Forms.CheckBox _useButtonFocusColor;
         private System.Windows.Forms.CheckBox _useNewRandom;
+        private System.Windows.Forms.CheckBox _useScopedVariableInstruction;
     }
 }
