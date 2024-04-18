@@ -6,6 +6,7 @@ using MinorShift.Emuera.Runtime.Script.Statements.Variable;
 using MinorShift.Emuera.Runtime.Utils;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace MinorShift.Emuera.Runtime.Script.Statements.Expression;
@@ -49,7 +50,7 @@ internal static class ExpressionParser
     {
         if (wc == null)
             throw new ExeEE("空のストリームを渡された");
-        List<AExpression> terms = [];
+        var terms = new LinkedList<AExpression>();
         TermEndWith termEndWith = TermEndWith.EoL;
         switch (endWith)
         {
@@ -93,11 +94,11 @@ internal static class ExpressionParser
                         throw new CodeEE("構文解析中に予期しない']'を発見しました");
                 }
                 if (!isDefine)
-                    terms.Add(ReduceExpressionTerm(wc, termEndWith));
+                    terms.AddLast(ReduceExpressionTerm(wc, termEndWith));
                 else
                 {
-                    terms.Add(ReduceExpressionTerm(wc, termEndWith_Assignment));
-                    if (terms[terms.Count - 1] == null)
+                    terms.AddLast(ReduceExpressionTerm(wc, termEndWith_Assignment));
+                    if (terms.Last == null)
                         throw new CodeEE("関数定義の引数は省略できません");
                     if (wc.Current is OperatorWord)
                     {//=がある
@@ -105,16 +106,16 @@ internal static class ExpressionParser
                         AExpression term = reduceTerm(wc, false, termEndWith, VariableCode.__NULL__);
                         if (term == null)
                             throw new CodeEE("'='の後に式がありません");
-                        if (term.GetOperandType() != terms[terms.Count - 1].GetOperandType())
+                        if (term.GetOperandType() != terms.Last.Value.GetOperandType())
                             throw new CodeEE("'='の前後で型が一致しません");
-                        terms.Add(term);
+                        terms.AddLast(term);
                     }
                     else
                     {
-                        if (terms[terms.Count - 1].GetOperandType() == typeof(long))
-                            terms.Add(new NullTerm(0));
+                        if (terms.Last.Value.GetOperandType() == typeof(long))
+                            terms.AddLast(new NullTerm(0));
                         else
-                            terms.Add(new NullTerm(""));
+                            terms.AddLast(new NullTerm(""));
                     }
                 }
                 if (wc.Current.Type == ',')
@@ -122,7 +123,7 @@ internal static class ExpressionParser
             }
         }
         local();
-        return terms;
+        return [.. terms];
     }
 
 
