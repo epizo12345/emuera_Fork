@@ -295,7 +295,7 @@ internal sealed partial class Process(EmueraConsole view)
         vEvaluator.RESULTS = s;
     }
 
-    Stopwatch startTime = new();
+    readonly Stopwatch startTime = new();
 
     public void DoScript()
     {
