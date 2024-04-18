@@ -111,13 +111,13 @@
             checkBox10 = new System.Windows.Forms.CheckBox();
             checkBox2 = new System.Windows.Forms.CheckBox();
             tabPageSystem2 = new System.Windows.Forms.TabPage();
-            _useNewRandom = new System.Windows.Forms.CheckBox();
-            _useScopedVariableInstruction = new System.Windows.Forms.CheckBox();
+            label24 = new System.Windows.Forms.Label();
             checkBox29 = new System.Windows.Forms.CheckBox();
             checkBox26 = new System.Windows.Forms.CheckBox();
             checkBox27 = new System.Windows.Forms.CheckBox();
             checkBoxSystemTripleSymbol = new System.Windows.Forms.CheckBox();
-            label24 = new System.Windows.Forms.Label();
+            _useScopedVariableInstruction = new System.Windows.Forms.CheckBox();
+            _useNewRandom = new System.Windows.Forms.CheckBox();
             tabPageCompati = new System.Windows.Forms.TabPage();
             checkBox9 = new System.Windows.Forms.CheckBox();
             checkBoxCompatiSP = new System.Windows.Forms.CheckBox();
@@ -717,30 +717,21 @@
             // 
             // tabPageSystem2
             // 
-            tabPageSystem2.Controls.Add(_useNewRandom);
-            tabPageSystem2.Controls.Add(_useScopedVariableInstruction);
+            tabPageSystem2.Controls.Add(label24);
             tabPageSystem2.Controls.Add(checkBox29);
             tabPageSystem2.Controls.Add(checkBox26);
             tabPageSystem2.Controls.Add(checkBox27);
             tabPageSystem2.Controls.Add(checkBoxSystemTripleSymbol);
-            tabPageSystem2.Controls.Add(label24);
+            tabPageSystem2.Controls.Add(_useScopedVariableInstruction);
+            tabPageSystem2.Controls.Add(_useNewRandom);
             resources.ApplyResources(tabPageSystem2, "tabPageSystem2");
             tabPageSystem2.Name = "tabPageSystem2";
             tabPageSystem2.UseVisualStyleBackColor = true;
             // 
-            // _useNewRandom
+            // label24
             // 
-            resources.ApplyResources(_useNewRandom, "_useNewRandom");
-            _useNewRandom.Name = "_useNewRandom";
-            _useNewRandom.UseVisualStyleBackColor = true;
-            _useNewRandom.CheckedChanged += IgnoreRandmizeSeed_CheckedChanged;
-            // 
-            // _useVAR
-            // 
-            resources.ApplyResources(_useScopedVariableInstruction, "_useVAR");
-            _useScopedVariableInstruction.Name = "_useVAR";
-            _useScopedVariableInstruction.UseVisualStyleBackColor = true;
-            _useScopedVariableInstruction.CheckedChanged += _useVAR_CheckedChanged;
+            resources.ApplyResources(label24, "label24");
+            label24.Name = "label24";
             // 
             // checkBox29
             // 
@@ -759,6 +750,7 @@
             resources.ApplyResources(checkBox27, "checkBox27");
             checkBox27.Name = "checkBox27";
             checkBox27.UseVisualStyleBackColor = true;
+            checkBox27.CheckedChanged += checkBox27_CheckedChanged;
             // 
             // checkBoxSystemTripleSymbol
             // 
@@ -766,10 +758,19 @@
             checkBoxSystemTripleSymbol.Name = "checkBoxSystemTripleSymbol";
             checkBoxSystemTripleSymbol.UseVisualStyleBackColor = true;
             // 
-            // label24
+            // _useScopedVariableInstruction
             // 
-            resources.ApplyResources(label24, "label24");
-            label24.Name = "label24";
+            resources.ApplyResources(_useScopedVariableInstruction, "_useScopedVariableInstruction");
+            _useScopedVariableInstruction.Name = "_useScopedVariableInstruction";
+            _useScopedVariableInstruction.UseVisualStyleBackColor = true;
+            _useScopedVariableInstruction.CheckedChanged += _useVAR_CheckedChanged;
+            // 
+            // _useNewRandom
+            // 
+            resources.ApplyResources(_useNewRandom, "_useNewRandom");
+            _useNewRandom.Name = "_useNewRandom";
+            _useNewRandom.UseVisualStyleBackColor = true;
+            _useNewRandom.CheckedChanged += IgnoreRandmizeSeed_CheckedChanged;
             // 
             // tabPageCompati
             // 

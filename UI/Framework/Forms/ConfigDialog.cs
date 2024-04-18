@@ -643,4 +643,9 @@ internal sealed partial class ConfigDialog : Form
     {
         JSONConfig.Data.UseScopedVariableInstruction = _useScopedVariableInstruction.Checked;
     }
+
+    private void checkBox27_CheckedChanged(object sender, EventArgs e)
+    {
+
+    }
 }
