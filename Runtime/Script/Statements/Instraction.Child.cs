@@ -2111,10 +2111,8 @@ internal sealed partial class FunctionIdentifier
             //	throw new ExeEE("SELECTCASEのCASEリストが適正に作成されていない");
             //if (func.JumpTo == null)
             //	throw new ExeEE("SELECTCASEに対応するENDSELECTが設定されていない");
-            InstructionLine line;
-            for (int i = 0; i < func.IfCaseList.Count; i++)
+            foreach (var line in func.IfCaseList)
             {
-                line = func.IfCaseList[i];
                 if (line.IsError)
                     continue;
                 if (line.FunctionCode == FunctionCode.CASEELSE)

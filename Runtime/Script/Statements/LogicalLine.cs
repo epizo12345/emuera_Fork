@@ -167,7 +167,7 @@ internal sealed class InstructionLine : LogicalLine
     private LogicalLine jumpto;
     private LogicalLine jumptoendcatch;
     //IF文とSELECT文のみが使う。
-    public List<InstructionLine> IfCaseList;
+    public LinkedList<InstructionLine> IfCaseList;
     //PRINTDATA文のみが使う。
     public List<List<InstructionLine>> dataList;
     //TRYCALLLIST系が使う

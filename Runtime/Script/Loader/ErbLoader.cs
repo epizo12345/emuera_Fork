@@ -1003,10 +1003,8 @@ internal sealed class ErbLoader
                     break;
                 case FunctionCode.IF:
                     nestStack.AddLast(func);
-                    func.IfCaseList =
-                    [
-                        func
-                    ];
+                    func.IfCaseList = [];
+                    func.IfCaseList.AddLast(func);
                     break;
                 case FunctionCode.SELECTCASE:
                     nestStack.AddLast(func);
@@ -1087,9 +1085,9 @@ internal sealed class ErbLoader
                             ParserMediator.Warn("IF～ENDIFの外で" + func.Function.Name + "文が使われました", func, 2, true, false);
                             break;
                         }
-                        if (ifLine.IfCaseList[^1].FunctionCode == FunctionCode.ELSE)
+                        if (ifLine.IfCaseList.Last.Value.FunctionCode == FunctionCode.ELSE)
                             ParserMediator.Warn("ELSE文より後で" + func.Function.Name + "文が使われました", func, 1, false, false);
-                        ifLine.IfCaseList.Add(func);
+                        ifLine.IfCaseList.AddLast(func);
                     }
                     break;
                 case FunctionCode.ENDIF:
@@ -1129,9 +1127,9 @@ internal sealed class ErbLoader
                             break;
                         }
                         if (selectLine.IfCaseList.Count > 0 &&
-                            selectLine.IfCaseList[^1].FunctionCode == FunctionCode.CASEELSE)
+                            selectLine.IfCaseList.Last.Value.FunctionCode == FunctionCode.CASEELSE)
                             ParserMediator.Warn("CASEELSE文より後で" + func.Function.Name + "文が使われました", func, 1, false, false);
-                        selectLine.IfCaseList.Add(func);
+                        selectLine.IfCaseList.AddLast(func);
                     }
                     break;
                 case FunctionCode.ENDSELECT:
