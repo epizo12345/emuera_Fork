@@ -771,7 +771,7 @@ internal static partial class LexicalAnalyzer
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public static WordCollection Analyse(CharStream st, LexEndWith endWith, LexAnalyzeFlag flag)
     {
-        WordCollection ret = new(Math.Max(4, (st.RowString.Length - st.CurrentPosition) / 3));
+        var ret = new WordCollection();
         int nestBracketS = 0;
         //int nestBracketM = 0;
         int nestBracketL = 0;
@@ -980,7 +980,7 @@ internal static partial class LexicalAnalyzer
     private static WordCollection expandMacro(WordCollection wc)
     {
         //マクロ展開
-        wc.Pointer = 0;
+        wc.PointerReset();
         int count = 0;
         while (!wc.EOL)
         {
@@ -1009,13 +1009,13 @@ internal static partial class LexicalAnalyzer
             //関数型マクロ
             wc = expandFunctionlikeMacro(macro, wc);
         }
-        wc.Pointer = 0;
+        wc.PointerReset();
         return wc;
     }
 
     private static WordCollection expandFunctionlikeMacro(DefineMacro macro, WordCollection wc)
     {
-        int macroStart = wc.Pointer;
+        var macroStart = wc.Pointer;
         wc.ShiftNext();
         SymbolWord symbol = wc.Current as SymbolWord;
         if (symbol == null || symbol.Type != '(')
@@ -1067,10 +1067,15 @@ internal static partial class LexicalAnalyzer
         symbol = wc.Current as SymbolWord;
         if (symbol == null || symbol.Type != ')')
             throw new CodeEE("関数形式のマクロ" + macro.Keyword + "の用法が正しくありません");
-        int macroLength = wc.Pointer - macroStart + 1;
+
+        var macroEnd = wc.Pointer;
         wc.Pointer = macroStart;
-        for (int j = 0; j < macroLength; j++)
-            wc.Collection.RemoveAt(macroStart);
+        while (macroEnd == wc.Pointer)
+        {
+            wc.Pointer = wc.Pointer.Next;
+            wc.Collection.Remove(wc.Pointer.Previous);
+        }
+
         while (!macroWC.EOL)
         {
             MacroWord w = macroWC.Current as MacroWord;
@@ -1081,7 +1086,10 @@ internal static partial class LexicalAnalyzer
             }
             macroWC.Remove();
             macroWC.InsertRange(args[w.Number]);
-            macroWC.Pointer += args[w.Number].Collection.Count;
+            for (int i = 0; i < args[w.Number].Collection.Count; i++)
+            {
+                macroWC.Pointer = macroWC.Pointer.Next;
+            }
         }
         wc.InsertRange(macroWC);
         wc.Pointer = macroStart;

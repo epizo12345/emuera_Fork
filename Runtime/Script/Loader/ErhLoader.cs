@@ -234,7 +234,7 @@ internal sealed class ErhLoader
                 }
                 destWc.ShiftNext();
             }
-            destWc.Pointer = 0;
+            destWc.PointerReset();
         }
         if (hasArg)//1808a3 関数型マクロの封印
             throw new CodeEE("関数型マクロは宣言できません", position);
@@ -284,7 +284,7 @@ internal sealed class ErhLoader
                     //繰り返すことで解決する見込みがあるならキューの最後に追加
                     if (tryAgain)
                     {
-                        dimline.WC.Pointer = 0;
+                        dimline.WC.PointerReset();
                         dimlines.Enqueue(dimline);
                     }
                     else
