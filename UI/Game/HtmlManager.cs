@@ -359,13 +359,15 @@ internal static class HtmlManager
                 break;
             }
         }
-        ConsoleDisplayLine[] ret = PrintStringBuffer.ButtonsToDisplayLines(buttonList, sm, state.FlagNobr, false);
-
-        foreach (ConsoleDisplayLine dl in ret)
+        var ret = PrintStringBuffer.ButtonsToDisplayLines(buttonList, sm, state.FlagNobr, false);
+        if (ret.Length > 0)
         {
-            dl.SetAlignment(state.Alignment);
+            foreach (ConsoleDisplayLine dl in ret)
+            {
+                dl.SetAlignment(state.Alignment);
+            }
+            ret[^1].IsLineEnd = lineEnd;
         }
-        ret[^1].IsLineEnd = lineEnd;
 
         return ret;
     }
