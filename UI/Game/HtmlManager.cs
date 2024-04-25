@@ -93,6 +93,10 @@ internal static class HtmlManager
         public bool FlagBr;//<br>による強制改行の予約
         public bool FlagButton;//<button></button>によるボタン化の予約
 
+        public bool IsDiv;//divタグの解析中
+        public int PosX;
+        public int PosY;
+
         public StringStyle GetSS()
         {
             Color c = Config.ForeColor;
@@ -297,7 +301,14 @@ internal static class HtmlManager
             else if (found > 0)
             {
                 string txt = Unescape(st.Substring(st.CurrentPosition, found));
-                cssList.Add(new ConsoleStyledString(txt, state.GetSS()));
+                if (state.IsDiv)
+                {
+                    cssList.Add(new ConsoleStyledString(txt, state.GetSS(), state.PosX, state.PosY));
+                }
+                else
+                {
+                    cssList.Add(new ConsoleStyledString(txt, state.GetSS()));
+                }
                 state.LineHead = false;
                 st.CurrentPosition += found;
             }
@@ -640,6 +651,9 @@ internal static class HtmlManager
                         throw new CodeEE("</nonbutton>の前に<nonbutton>がありません");
                     state.CurrentButtonTag = null;
                     state.FlagButton = true;
+                    return null;
+                case "div":
+                    state.IsDiv = true;
                     return null;
                 default:
                     throw new CodeEE("終了タグ</" + tag + ">は解釈できません");
@@ -1011,8 +1025,41 @@ internal static class HtmlManager
                     state.FonttagList.Add(font);
                     return null;
                 }
+            case "div":
+                {
+                    state.IsDiv = true;
+
+                    int xpos = 0;
+                    int ypos = 0;
+                    while (!wc.EOL)
+                    {
+                        var tagName = wc.Current as IdentifierWord;
+                        wc.ShiftNext();
+                        // = 
+                        wc.ShiftNext();
+                        switch (tagName.Code)
+                        {
+                            case "xpos":
+                                {
+                                    var value = (wc.Current as LiteralStringWord).Str;
+                                    xpos = int.Parse(value);
+                                }
+                                break;
+                            case "ypos":
+                                {
+                                    var value = (wc.Current as LiteralStringWord).Str;
+                                    ypos = int.Parse(value);
+                                }
+                                break;
+                        }
+                        wc.ShiftNext();
+                    }
+                    state.PosX = xpos;
+                    state.PosY = ypos;
+                    return null;
+                }
             default:
-                goto error;
+                throw new CodeEE($"html文字列\"{st.RowString}\"のタグ解析中にエラーが発生しました");
         }
 
 

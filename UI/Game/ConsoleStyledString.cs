@@ -12,7 +12,7 @@ namespace MinorShift.Emuera.UI.Game;
 internal sealed class ConsoleStyledString : AConsoleColoredPart
 {
     private ConsoleStyledString() { }
-    public ConsoleStyledString(string str, StringStyle style)
+    public ConsoleStyledString(string str, StringStyle style, int positionX = 0, int positionY = 0)
     {
         //if ((StaticConfig.TextDrawingMode != TextDrawingMode.GRAPHICS) && (str.IndexOf('\t') >= 0))
         //    str = str.Replace("\t", "");
@@ -30,8 +30,14 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
         if (!colorChanged && Color != Config.ForeColor)
             colorChanged = true;
         PointX = -1;
+        _positionX = positionX;
+        _positionY = positionY;
         Width = -1;
     }
+
+    int _positionX;
+    int _positionY;
+
     public Font Font { get; private set; }
     public StringStyle StringStyle { get; private set; }
     public override bool CanDivide
@@ -107,9 +113,11 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
             color = Config.LogColor;
         }
 
+        var point = new Point(PointX + _positionX, pointY + _positionY);
+
         if (mode == TextDrawingMode.GRAPHICS)
         {
-            graph.DrawString(Str, Font, new SolidBrush(color), new Point(PointX, pointY));
+            graph.DrawString(Str, Font, new SolidBrush(color), point);
         }
         else
         {
@@ -121,16 +129,16 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
                     {
                         backcolor = Color.FromArgb(50, 50, 50);
                     }
-                    TextRenderer.DrawText(graph, Str.AsSpan(), Font, new Point(PointX, pointY), color, backColor: backcolor.Value, TextFormatFlags.NoPrefix);
+                    TextRenderer.DrawText(graph, Str.AsSpan(), Font, point, color, backColor: backcolor.Value, TextFormatFlags.NoPrefix);
                 }
                 else
                 {
-                    TextRenderer.DrawText(graph, Str.AsSpan(), Font, new Point(PointX, pointY), color, TextFormatFlags.NoPrefix);
+                    TextRenderer.DrawText(graph, Str.AsSpan(), Font, point, color, TextFormatFlags.NoPrefix);
                 }
             }
             else
             {
-                TextRenderer.DrawText(graph, Str.AsSpan(), Font, new Point(PointX, pointY), color, TextFormatFlags.NoPrefix);
+                TextRenderer.DrawText(graph, Str.AsSpan(), Font, point, color, TextFormatFlags.NoPrefix);
             }
         }
 
