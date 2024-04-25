@@ -215,7 +215,7 @@ namespace MinorShift.Emuera.Forms
             // コンフィグCToolStripMenuItem
             // 
             コンフィグCToolStripMenuItem.Name = "コンフィグCToolStripMenuItem";
-            コンフィグCToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            コンフィグCToolStripMenuItem.Size = new System.Drawing.Size(113, 22);
             コンフィグCToolStripMenuItem.Text = "設定(&C)";
             コンフィグCToolStripMenuItem.Click += コンフィグCToolStripMenuItem_Click;
             // 
@@ -504,6 +504,13 @@ namespace MinorShift.Emuera.Forms
             実行.Size = new System.Drawing.Size(130, 22);
             実行.Text = "実行";
             実行.Click += 実行_Click;
+            // 
+            // toolTipButton
+            // 
+            toolTipButton.BackColor = System.Drawing.Color.White;
+            toolTipButton.OwnerDraw = true;
+            toolTipButton.Draw += toolTipButton_Draw;
+            toolTipButton.Popup += toolTipButton_Popup;
             // 
             // timerKeyMacroChanged
             // 

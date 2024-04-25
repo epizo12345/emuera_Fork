@@ -1328,7 +1328,9 @@ internal sealed partial class EmueraConsole : IDisposable
             if (!string.IsNullOrEmpty(title))
             {
                 if (tooltip_duration == 0)
+                {
                     window.ToolTip.SetToolTip(window.MainPicBox, title);
+                }
                 else
                 {
                     if (window.ToolTip.InitialDelay == 0)

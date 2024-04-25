@@ -1040,4 +1040,18 @@ internal sealed partial class MainWindow : Form
         labelMacroGroupChanged.Visible = true;
     }
 
+    private void toolTipButton_Draw(object sender, DrawToolTipEventArgs e)
+    {
+        e.DrawBackground();
+        e.DrawBorder();
+
+        e.Graphics.DrawString(e.ToolTipText, Config.DefaultFont, SystemBrushes.InfoText, e.Bounds);
+
+    }
+
+    private void toolTipButton_Popup(object sender, PopupEventArgs e)
+    {
+        var toolTip = (ToolTip)sender;
+        e.ToolTipSize = TextRenderer.MeasureText(toolTip.GetToolTip(e.AssociatedControl), Config.DefaultFont);
+    }
 }
