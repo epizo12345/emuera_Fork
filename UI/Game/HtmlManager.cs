@@ -1031,7 +1031,7 @@ internal static class HtmlManager
 
                     int xpos = 0;
                     int ypos = 0;
-                    while (!wc.EOL)
+                    while (wc != null && !wc.EOL)
                     {
                         var tagName = wc.Current as IdentifierWord;
                         wc.ShiftNext();
