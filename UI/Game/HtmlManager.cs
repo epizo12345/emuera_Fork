@@ -1042,13 +1042,27 @@ internal static class HtmlManager
                             case "xpos":
                                 {
                                     var value = (wc.Current as LiteralStringWord).Str;
-                                    xpos = int.Parse(value);
+                                    if (value.EndsWith("px"))
+                                    {
+                                        xpos = int.Parse(value.AsSpan()[..^2]);
+                                    }
+                                    else
+                                    {
+                                        xpos = int.Parse(value) * Config.FontSize / 100;
+                                    }
                                 }
                                 break;
                             case "ypos":
                                 {
                                     var value = (wc.Current as LiteralStringWord).Str;
-                                    ypos = int.Parse(value);
+                                    if (value.EndsWith("px"))
+                                    {
+                                        ypos = int.Parse(value.AsSpan()[..^2]);
+                                    }
+                                    else
+                                    {
+                                        ypos = int.Parse(value) * Config.FontSize / 100;
+                                    }
                                 }
                                 break;
                         }
