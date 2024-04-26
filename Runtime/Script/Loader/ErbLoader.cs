@@ -426,7 +426,9 @@ internal sealed class ErbLoader
                 //        replacedLine = replacedLine.Replace(pair.Key, pair.Value);
                 //    st = new StringStream(replacedLine);
                 //}
-                nextLine = LogicalLineParser.ParseLine(st, position, output);
+                if (lastLabelLine == null)
+                    ParserMediator.Warn("関数が定義されるより前に行があります", position, 1);
+                nextLine = LogicalLineParser.ParseLine(st, position, output, lastLabelLine);
                 if (nextLine == null)
                     continue;
                 if (nextLine is InvalidLine)
@@ -453,9 +455,6 @@ internal sealed class ErbLoader
                     }
                 }
             }
-            if (lastLabelLine == null)
-                ParserMediator.Warn("関数が定義されるより前に行があります", position, 1);
-            nextLine.ParentLabelLine = lastLabelLine;
             lastLine = addLine(nextLine, lastLine);
         }
         addLine(new NullLine(), lastLine);

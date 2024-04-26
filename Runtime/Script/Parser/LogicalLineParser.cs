@@ -375,7 +375,7 @@ internal static class LogicalLineParser
     }
 
 
-    public static LogicalLine ParseLine(CharStream stream, ScriptPosition? position, EmueraConsole console)
+    public static LogicalLine ParseLine(CharStream stream, ScriptPosition? position, EmueraConsole console, FunctionLabelLine parentLine = null)
     {
         //int lineNo = Position.Value.LineNo;
         string errMes;
@@ -397,7 +397,10 @@ internal static class LogicalLineParser
                         errMes = "行が\'+\'から始まっていますが、インクリメントではありません";
                     else
                         errMes = "行が\'-\'から始まっていますが、デクリメントではありません";
-                    return new InvalidLine(position, errMes);
+                    return new InvalidLine(position, errMes)
+                    {
+                        ParentLabelLine = parentLine
+                    };
                 }
                 wc.ShiftNext();
                 //token = EpressionParser.単語一個分取得(wc)
@@ -406,7 +409,10 @@ internal static class LogicalLineParser
                 //token変更不可能
                 //if (wc != EOS)
                 //
-                return new InstructionLine(position, FunctionIdentifier.SETFunction, opWT.Code, wc, null);
+                return new InstructionLine(position, FunctionIdentifier.SETFunction, opWT.Code, wc, null)
+                {
+                    ParentLabelLine = parentLine
+                };
             }
             #endregion
 
@@ -415,10 +421,129 @@ internal static class LogicalLineParser
             {
                 FunctionIdentifier func = GlobalStatic.IdentifierDictionary.GetFunctionIdentifier(idWT.Code);
                 //命令文
+
+
                 if (func != null)//関数文
                 {
+                    if (func.Code == FunctionCode.VARI)
+                    {
+                        var line = new InstructionLine(position, func, stream)
+                        {
+                            ParentLabelLine = parentLine
+                        };
+                        var statementsStr = line.PopArgumentPrimitive().Substring();
+                        var commentIndex = statementsStr.IndexOf(';');
+                        if (commentIndex != -1)
+                        {
+                            statementsStr = statementsStr[..commentIndex];
+                        }
+
+                        var tokens = statementsStr.Split('=');
+                        var left = tokens[0];
+
+                        var leftSplit = left.Split(',');
+                        var varName = leftSplit[0].Trim();
+                        List<int> lengths = [1];
+                        AExpression exp = null;
+                        if (leftSplit.Length > 1)
+                        {
+                            //配列である
+                            lengths.Clear();
+                            for (int i = 1; i < leftSplit.Length; i++)
+                            {
+                                lengths.Add(int.Parse(leftSplit[i].Trim()));
+                            }
+                        }
+                        else
+                        {
+                            //初期値がある
+                            if (tokens.Length >= 2)
+                            {
+                                var wc = LexicalAnalyzer.Analyse(new CharStream(tokens[1]), LexEndWith.EoL, LexAnalyzeFlag.None);
+                                exp = ExpressionParser.ReduceIntegerTerm(wc, TermEndWith.EoL);
+                            }
+                        }
+
+                        var varData = new UserDefinedVariableData
+                        {
+                            Name = varName,
+                            Static = false,
+                            Lengths = [.. lengths],
+                            TypeIsStr = false
+                        };
+                        parentLine.AddPrivateVariable(varData);
+
+                        if (exp != null)
+                        {
+                            line.Argument = new IntAsignArgument(varName, [.. lengths], exp);
+                        }
+                        else
+                        {
+                            line.Argument = new IntAsignArgument(varName, [.. lengths], default);
+                        }
+                        return line;
+                    }
+                    else if (func.Code == FunctionCode.VARS)
+                    {
+                        var line = new InstructionLine(position, func, stream)
+                        {
+                            ParentLabelLine = parentLine
+                        };
+                        var statementsStr = line.PopArgumentPrimitive().Substring();
+                        var commentIndex = statementsStr.IndexOf(';', StringComparison.Ordinal);
+                        if (commentIndex != -1)
+                        {
+                            statementsStr = statementsStr[..commentIndex];
+                        }
+
+                        var tokens = statementsStr.Split('=');
+                        var left = tokens[0];
+
+                        var leftSplit = left.Split(',');
+                        var varName = leftSplit[0].Trim();
+                        List<int> lengths = [1];
+                        string value = default;
+                        if (leftSplit.Length > 1)
+                        {
+                            //配列である
+                            lengths.Clear();
+                            for (int i = 1; i < leftSplit.Length; i++)
+                            {
+                                lengths.Add(int.Parse(leftSplit[i].Trim()));
+                            }
+                        }
+                        else
+                        {
+                            //初期値がある
+                            if (tokens.Length >= 2)
+                            {
+                                var right = string.Join("", tokens[1..]).AsSpan();
+                                var literalStart = right.IndexOf("\"", StringComparison.Ordinal);
+                                var literalEnd = right.LastIndexOf("\"", StringComparison.Ordinal);
+                                value = right[(literalStart + 1)..literalEnd].ToString();
+                            }
+                        }
+
+                        var varData = new UserDefinedVariableData
+                        {
+                            Name = varName,
+                            Static = false,
+                            Lengths = [.. lengths],
+                            TypeIsStr = true
+                        };
+                        parentLine.AddPrivateVariable(varData);
+
+                        line.Argument = new StrAsignArgument(varName, varData.Lengths, value);
+                        return line;
+                    }
+
+
+
                     if (stream.EOS) //引数の無い関数
-                        return new InstructionLine(position, func, stream);
+                        return new InstructionLine(position, func, stream)
+                        {
+                            ParentLabelLine = parentLine
+                        };
                     var current = stream.Current;
                     if (current != ';' && current != ' ' && current != '\t' && (!Config.Config.SystemAllowFullSpace || current != '　'))
                     {
@@ -426,10 +551,16 @@ internal static class LogicalLineParser
                             errMes = "命令で行が始まっていますが、命令の直後に半角スペース・タブ以外の文字が来ています(この警告はシステムオプション「" + Config.Config.GetConfigName(Config.ConfigCode.SystemAllowFullSpace) + "」により無視できます)";
                         else
                             errMes = "命令で行が始まっていますが、命令の直後に半角スペース・タブ以外の文字が来ています";
-                        return new InvalidLine(position, errMes);
+                        return new InvalidLine(position, errMes)
+                        {
+                            ParentLabelLine = parentLine
+                        };
                     }
                     stream.ShiftNext();
-                    return new InstructionLine(position, func, stream);
+                    return new InstructionLine(position, func, stream)
+                    {
+                        ParentLabelLine = parentLine,
+                    };
                 }
             }
             LexicalAnalyzer.SkipWhiteSpace(stream);

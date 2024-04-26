@@ -29,12 +29,7 @@ internal sealed partial class FunctionIdentifier
         {
             var arg = (IntAsignArgument)func.Argument;
             var varName = arg.ConstStr;
-            var varData = new UserDefinedVariableData();
-            varData.Name = varName;
-            varData.Static = false;
-            varData.Lengths = arg.Lengths;
-            varData.TypeIsStr = false;
-            func.ParentLabelLine.AddPrivateVariable(varData);
+
             var privateVar = func.ParentLabelLine.GetPrivateVariable(varName);
             privateVar.ScopeIn();
             privateVar.SetValue(arg.Exp.GetIntValue(exm), [0]);
@@ -42,40 +37,7 @@ internal sealed partial class FunctionIdentifier
 
         public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
         {
-            var statementsStr = line.PopArgumentPrimitive().Substring();
-            var commentIndex = statementsStr.IndexOf(';');
-            if (commentIndex != -1)
-            {
-                statementsStr = statementsStr[..commentIndex];
-            }
-
-            var tokens = statementsStr.Split('=');
-            var left = tokens[0];
-
-            var leftSplit = left.Split(',');
-            var varName = leftSplit[0].Trim();
-            List<int> lengths = [1];
-            if (leftSplit.Length > 1)
-            {
-                //配列である
-                lengths.Clear();
-                for (int i = 1; i < leftSplit.Length; i++)
-                {
-                    lengths.Add(int.Parse(leftSplit[i].Trim()));
-                }
-            }
-            else
-            {
-                //初期値がある
-                if (tokens.Length >= 2)
-                {
-                    var wc = LexicalAnalyzer.Analyse(new CharStream(tokens[1]), LexEndWith.EoL, LexAnalyzeFlag.None);
-                    var exp = ExpressionParser.ReduceIntegerTerm(wc, TermEndWith.EoL);
-                    return new IntAsignArgument(varName, [.. lengths], exp);
-                }
-            }
-
-            return new IntAsignArgument(varName, [.. lengths], new SingleLongTerm(default));
+            return null;
         }
     }
     private sealed class VARS_Instruction : AInstruction
@@ -83,14 +45,8 @@ internal sealed partial class FunctionIdentifier
         public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
         {
             var arg = (StrAsignArgument)func.Argument;
-
             var varName = arg.ConstStr;
-            var varData = new UserDefinedVariableData();
-            varData.Name = varName;
-            varData.Static = false;
-            varData.Lengths = arg.Lengths;
-            varData.TypeIsStr = true;
-            func.ParentLabelLine.AddPrivateVariable(varData);
+
             var privateVar = func.ParentLabelLine.GetPrivateVariable(varName);
             privateVar.ScopeIn();
             privateVar.SetValue(arg.Value, [0]);
@@ -98,41 +54,7 @@ internal sealed partial class FunctionIdentifier
 
         public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
         {
-            var statementsStr = line.PopArgumentPrimitive().Substring();
-            var commentIndex = statementsStr.IndexOf(';', StringComparison.Ordinal);
-            if (commentIndex != -1)
-            {
-                statementsStr = statementsStr[..commentIndex];
-            }
-
-            var tokens = statementsStr.Split('=');
-            var left = tokens[0];
-
-            var leftSplit = left.Split(',');
-            var varName = leftSplit[0].Trim();
-            List<int> lengths = [1];
-            if (leftSplit.Length > 1)
-            {
-                //配列である
-                lengths.Clear();
-                for (int i = 1; i < leftSplit.Length; i++)
-                {
-                    lengths.Add(int.Parse(leftSplit[i].Trim()));
-                }
-            }
-            else
-            {
-                //初期値がある
-                if (tokens.Length >= 2)
-                {
-                    var right = string.Join("", tokens[1..]).AsSpan();
-                    var literalStart = right.IndexOf("\"", StringComparison.Ordinal);
-                    var literalEnd = right.LastIndexOf("\"", StringComparison.Ordinal);
-                    return new StrAsignArgument(varName, [.. lengths], right[(literalStart + 1)..literalEnd].ToString());
-                }
-            }
-
-            return new StrAsignArgument(varName, [.. lengths], "");
+            return null;
         }
     }
 
