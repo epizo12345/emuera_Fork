@@ -470,7 +470,7 @@ internal static class LogicalLineParser
                         }
                         else
                         {
-                            line.Argument = new IntAsignArgument(varName, [.. lengths], default);
+                            line.Argument = new IntAsignArgument(varName, [.. lengths], new SingleLongTerm(default));
                         }
                         return line;
                     }
