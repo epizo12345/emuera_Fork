@@ -96,6 +96,7 @@ internal static class HtmlManager
         public bool IsDiv;//divタグの解析中
         public int PosX;
         public int PosY;
+        public DisplayMode Display;
 
         public StringStyle GetSS()
         {
@@ -303,7 +304,10 @@ internal static class HtmlManager
                 string txt = Unescape(st.Substring(st.CurrentPosition, found));
                 if (state.IsDiv)
                 {
-                    cssList.Add(new ConsoleStyledString(txt, state.GetSS(), state.PosX, state.PosY));
+                    cssList.Add(new ConsoleStyledString(txt, state.GetSS(), state.PosX, state.PosY, state.Display));
+                    state.Display = DisplayMode.Relative;
+                    state.PosX = default;
+                    state.PosY = default;
                 }
                 else
                 {
@@ -1031,6 +1035,8 @@ internal static class HtmlManager
 
                     int xpos = 0;
                     int ypos = 0;
+                    var display = DisplayMode.Relative;
+
                     while (wc != null && !wc.EOL)
                     {
                         var tagName = wc.Current as IdentifierWord;
@@ -1065,11 +1071,25 @@ internal static class HtmlManager
                                     }
                                 }
                                 break;
+                            case "display":
+                                {
+                                    var value = (wc.Current as LiteralStringWord).Str;
+                                    display = value switch
+                                    {
+                                        "relative" => DisplayMode.Relative,
+                                        "absolute" => DisplayMode.Absolute,
+                                        "absolute-lefttop" => DisplayMode.AbsoluteLeftTop,
+                                        _ => throw new Exception("displayの値が解釈できません")
+                                    };
+                                }
+                                break;
                         }
                         wc.ShiftNext();
                     }
+
                     state.PosX = xpos;
                     state.PosY = ypos;
+                    state.Display = display;
                     return null;
                 }
             default:

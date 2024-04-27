@@ -6,13 +6,22 @@ using System.Windows.Forms;
 
 namespace MinorShift.Emuera.UI.Game;
 
+public enum DisplayMode
+{
+    Relative,
+    Absolute,
+    AbsoluteLeftTop
+}
+
 /// <summary>
 /// 装飾付文字列。stringとStringStyleからなる。
 /// </summary>
 internal sealed class ConsoleStyledString : AConsoleColoredPart
 {
+
+
     private ConsoleStyledString() { }
-    public ConsoleStyledString(string str, StringStyle style, int positionX = 0, int positionY = 0)
+    public ConsoleStyledString(string str, StringStyle style, int positionX = 0, int positionY = 0, DisplayMode display = DisplayMode.Relative)
     {
         //if ((StaticConfig.TextDrawingMode != TextDrawingMode.GRAPHICS) && (str.IndexOf('\t') >= 0))
         //    str = str.Replace("\t", "");
@@ -32,11 +41,13 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
         PointX = -1;
         _positionX = positionX;
         _positionY = positionY;
+        _display = display;
         Width = -1;
     }
 
     int _positionX;
     int _positionY;
+    DisplayMode _display;
 
     public Font Font { get; private set; }
     public StringStyle StringStyle { get; private set; }
@@ -113,7 +124,12 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
             color = Config.LogColor;
         }
 
-        var point = new Point(PointX + _positionX, pointY + _positionY);
+        var point = _display switch
+        {
+            DisplayMode.Relative => new Point(PointX + _positionX, pointY + _positionY),
+            DisplayMode.AbsoluteLeftTop => new Point(_positionX, _positionY),
+            _ => throw new NotImplementedException($"{_display}はまだ実装されていません")
+        };
 
         if (mode == TextDrawingMode.GRAPHICS)
         {
