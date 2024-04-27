@@ -97,6 +97,7 @@ internal static class HtmlManager
         public int PosX;
         public int PosY;
         public DisplayMode Display;
+        public Color? BackgroundColor;
 
         public StringStyle GetSS()
         {
@@ -304,10 +305,11 @@ internal static class HtmlManager
                 string txt = Unescape(st.Substring(st.CurrentPosition, found));
                 if (state.IsDiv)
                 {
-                    cssList.Add(new ConsoleStyledString(txt, state.GetSS(), state.PosX, state.PosY, state.Display));
+                    cssList.Add(new ConsoleStyledString(txt, state.GetSS(), state.PosX, state.PosY, state.Display, state.BackgroundColor));
                     state.Display = DisplayMode.Relative;
                     state.PosX = default;
                     state.PosY = default;
+                    state.BackgroundColor = null;
                 }
                 else
                 {
@@ -1036,6 +1038,7 @@ internal static class HtmlManager
                     int xpos = 0;
                     int ypos = 0;
                     var display = DisplayMode.Relative;
+                    Color? backgroundColor = null;
 
                     while (wc != null && !wc.EOL)
                     {
@@ -1083,6 +1086,12 @@ internal static class HtmlManager
                                     };
                                 }
                                 break;
+                            case "background_color":
+                                {
+                                    var value = (wc.Current as LiteralStringWord).Str;
+                                    backgroundColor = ColorTranslator.FromHtml(value);
+                                }
+                                break;
                         }
                         wc.ShiftNext();
                     }
@@ -1090,6 +1099,7 @@ internal static class HtmlManager
                     state.PosX = xpos;
                     state.PosY = ypos;
                     state.Display = display;
+                    state.BackgroundColor = backgroundColor;
                     return null;
                 }
             default:
