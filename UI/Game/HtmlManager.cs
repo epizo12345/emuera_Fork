@@ -760,6 +760,7 @@ internal static class HtmlManager
                     int ypos = 0;
                     bool usePxHeight = false;
                     bool usePxWidth = false;
+                    DisplayMode display = DisplayMode.Relative;
                     while (wc != null && !wc.EOL)
                     {
                         word = wc.Current as IdentifierWord;
@@ -824,12 +825,29 @@ internal static class HtmlManager
                             if (!int.TryParse(attrValue, out ypos))
                                 throw new CodeEE("<" + tag + ">タグのypos属性の属性値が数値として解釈できません");
                         }
+                        else if (word.Code.Equals("xpos", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (ypos != 0)
+                                throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
+                            if (!int.TryParse(attrValue, out ypos))
+                                throw new CodeEE("<" + tag + ">タグのypos属性の属性値が数値として解釈できません");
+                        }
+                        else if (word.Code.Equals("display", StringComparison.OrdinalIgnoreCase))
+                        {
+                            display = attrValue switch
+                            {
+                                "relative" => DisplayMode.Relative,
+                                "absolute" => DisplayMode.Absolute,
+                                "absolute-lefttop" => DisplayMode.AbsoluteLeftTop,
+                                _ => throw new Exception("displayの値が解釈できません")
+                            };
+                        }
                         else
                             throw new CodeEE("<" + tag + ">タグの属性名" + word.Code + "は解釈できません");
                     }
                     if (src == null)
                         throw new CodeEE("<" + tag + ">タグにsrc属性が設定されていません");
-                    return new ConsoleImagePart(src, srcb, height, width, ypos, usePxWidth, usePxHeight);
+                    return new ConsoleImagePart(src, srcb, height, width, ypos, usePxWidth, usePxHeight, display);
                 }
 
             case "shape":

@@ -8,7 +8,7 @@ namespace MinorShift.Emuera.UI.Game;
 sealed class ConsoleImagePart : AConsoleDisplayPart
 {
 
-    public ConsoleImagePart(string resName, string resNameb, int raw_height, int raw_width, int raw_ypos, bool usePxWidth = false, bool usePxHeight = false)
+    public ConsoleImagePart(string resName, string resNameb, int raw_height, int raw_width, int raw_ypos, bool usePxWidth = false, bool usePxHeight = false, DisplayMode display = DisplayMode.Relative)
     {
         top = 0;
         bottom = Config.FontSize;
@@ -109,6 +109,8 @@ sealed class ConsoleImagePart : AConsoleDisplayPart
             //if (cImageB != null && !cImageB.IsCreated)
             //	cImageB = null;
         }
+
+        _display = display;
     }
 
     private readonly ASprite cImage;
@@ -123,6 +125,8 @@ sealed class ConsoleImagePart : AConsoleDisplayPart
     public readonly string ButtonResourceName;
     public override int Top { get { return top; } }
     public override int Bottom { get { return bottom; } }
+
+    DisplayMode _display;
 
     public override bool CanDivide { get { return false; } }
     public override void SetWidth(StringMeasure sm, float subPixel)
@@ -157,16 +161,28 @@ sealed class ConsoleImagePart : AConsoleDisplayPart
         {
             Rectangle rect = destRect;
             //PointX微調整
-            rect.X = destRect.X + PointX + Config.DrawingParam_ShapePositionShift;
-            rect.Y = destRect.Y + pointY;
+            switch (_display)
+            {
+                case DisplayMode.Relative:
+                    rect.X = destRect.X + PointX + Config.DrawingParam_ShapePositionShift;
+                    rect.Y = destRect.Y + pointY;
+                    break;
+                case DisplayMode.AbsoluteLeftTop:
+                    rect.X = destRect.X;
+                    rect.Y = destRect.Y;
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
             img.GraphicsDraw(graph, rect);
         }
         else
         {
+            var point = new Point(PointX, pointY);
             if (mode == TextDrawingMode.GRAPHICS)
-                graph.DrawString(AltText, Config.DefaultFont, new SolidBrush(Config.ForeColor), new Point(PointX, pointY));
+                graph.DrawString(AltText, Config.DefaultFont, new SolidBrush(Config.ForeColor), point);
             else
-                System.Windows.Forms.TextRenderer.DrawText(graph, AltText.AsSpan(), Config.DefaultFont, new Point(PointX, pointY), Config.ForeColor, System.Windows.Forms.TextFormatFlags.NoPrefix);
+                System.Windows.Forms.TextRenderer.DrawText(graph, AltText.AsSpan(), Config.DefaultFont, point, Config.ForeColor, System.Windows.Forms.TextFormatFlags.NoPrefix);
         }
     }
 }
