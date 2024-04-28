@@ -419,110 +419,111 @@ internal static class LogicalLineParser
 
                 if (func != null)//関数文
                 {
-                    if (func.Code == FunctionCode.VARI)
+                    if (func.Code == FunctionCode.VARI || func.Code == FunctionCode.VARS)
                     {
                         var line = new InstructionLine(position, func, stream);
-                        var statementsStr = line.PopArgumentPrimitive().Substring();
-                        var commentIndex = statementsStr.IndexOf(';');
+                        var statementsSpan = line.PopArgumentPrimitive().SubstringROS();
+                        var commentIndex = statementsSpan.IndexOf(';');
                         if (commentIndex != -1)
                         {
-                            statementsStr = statementsStr[..commentIndex];
+                            statementsSpan = statementsSpan[..commentIndex];
                         }
 
-                        var tokens = statementsStr.Split('=');
-                        var left = tokens[0];
+                        var equalsIndex = statementsSpan.IndexOf('=');
+                        string left;
+                        ReadOnlySpan<char> right = "";
+                        if (equalsIndex == -1)
+                        {
+                            left = statementsSpan.ToString();
+                        }
+                        else
+                        {
+                            left = statementsSpan[..equalsIndex].ToString();
+                            right = statementsSpan[(equalsIndex + 1)..];
+                        }
 
                         var leftSplit = left.Split(',');
                         var varName = leftSplit[0].Trim();
                         List<int> lengths = [1];
-                        AExpression exp = null;
-                        if (leftSplit.Length > 1)
+
+                        if (func.Code == FunctionCode.VARI)
                         {
-                            //配列である
-                            lengths.Clear();
-                            for (int i = 1; i < leftSplit.Length; i++)
+                            AExpression exp = null;
+                            if (leftSplit.Length > 1)
                             {
-                                lengths.Add(int.Parse(leftSplit[i].Trim()));
+                                //配列である
+                                lengths.Clear();
+                                for (int i = 1; i < leftSplit.Length; i++)
+                                {
+                                    lengths.Add(int.Parse(leftSplit[i].Trim()));
+                                }
                             }
-                        }
-                        else
-                        {
-                            //初期値がある
-                            if (tokens.Length >= 2)
+                            else
                             {
-                                var wc = LexicalAnalyzer.Analyse(new CharStream(tokens[1]), LexEndWith.EoL, LexAnalyzeFlag.None);
-                                exp = ExpressionParser.ReduceIntegerTerm(wc, TermEndWith.EoL);
+                                //初期値がある
+                                if (!right.IsWhiteSpace())
+                                {
+                                    var wc = LexicalAnalyzer.Analyse(new CharStream(right.ToString()), LexEndWith.EoL, LexAnalyzeFlag.None);
+                                    exp = ExpressionParser.ReduceIntegerTerm(wc, TermEndWith.EoL);
+                                }
                             }
-                        }
 
-                        var varData = new UserDefinedVariableData
-                        {
-                            Name = varName,
-                            Static = false,
-                            Lengths = [.. lengths],
-                            TypeIsStr = false
-                        };
-                        parentLine.AddPrivateVariable(varData);
-
-                        if (exp != null)
-                        {
-                            line.Argument = new IntAsignArgument(varName, [.. lengths], exp);
-                        }
-                        else
-                        {
-                            line.Argument = new IntAsignArgument(varName, [.. lengths], new SingleLongTerm(default));
-                        }
-                        return line;
-                    }
-                    else if (func.Code == FunctionCode.VARS)
-                    {
-                        var line = new InstructionLine(position, func, stream);
-                        var statementsStr = line.PopArgumentPrimitive().Substring();
-                        var commentIndex = statementsStr.IndexOf(';', StringComparison.Ordinal);
-                        if (commentIndex != -1)
-                        {
-                            statementsStr = statementsStr[..commentIndex];
-                        }
-
-                        var tokens = statementsStr.Split('=');
-                        var left = tokens[0];
-
-                        var leftSplit = left.Split(',');
-                        var varName = leftSplit[0].Trim();
-                        List<int> lengths = [1];
-                        string value = default;
-                        if (leftSplit.Length > 1)
-                        {
-                            //配列である
-                            lengths.Clear();
-                            for (int i = 1; i < leftSplit.Length; i++)
+                            var varData = new UserDefinedVariableData
                             {
-                                lengths.Add(int.Parse(leftSplit[i].Trim()));
-                            }
-                        }
-                        else
-                        {
-                            //初期値がある
-                            if (tokens.Length >= 2)
+                                Name = varName,
+                                Static = false,
+                                Lengths = [.. lengths],
+                                Dimension = lengths.Count,
+                                TypeIsStr = false
+                            };
+                            parentLine.AddPrivateVariable(varData);
+
+                            if (exp != null)
                             {
-                                var right = string.Join("", tokens[1..]).AsSpan();
-                                var literalStart = right.IndexOf("\"", StringComparison.Ordinal);
-                                var literalEnd = right.LastIndexOf("\"", StringComparison.Ordinal);
-                                value = right[(literalStart + 1)..literalEnd].ToString();
+                                line.Argument = new IntAsignArgument(varName, [.. lengths], exp);
                             }
+                            else
+                            {
+                                line.Argument = new IntAsignArgument(varName, [.. lengths], new SingleLongTerm(default));
+                            }
+                            return line;
                         }
-
-                        var varData = new UserDefinedVariableData
+                        else if (func.Code == FunctionCode.VARS)
                         {
-                            Name = varName,
-                            Static = false,
-                            Lengths = [.. lengths],
-                            TypeIsStr = true
-                        };
-                        parentLine.AddPrivateVariable(varData);
+                            string value = default;
+                            if (leftSplit.Length > 1)
+                            {
+                                //配列である
+                                lengths.Clear();
+                                for (int i = 1; i < leftSplit.Length; i++)
+                                {
+                                    lengths.Add(int.Parse(leftSplit[i].Trim()));
+                                }
+                            }
+                            else
+                            {
+                                //初期値がある
+                                if (!right.IsWhiteSpace())
+                                {
+                                    var literalStart = right.IndexOf('\"');
+                                    var literalEnd = right.LastIndexOf('\"');
+                                    value = right[(literalStart + 1)..literalEnd].ToString();
+                                }
+                            }
 
-                        line.Argument = new StrAsignArgument(varName, varData.Lengths, value);
-                        return line;
+                            var varData = new UserDefinedVariableData
+                            {
+                                Name = varName,
+                                Static = false,
+                                Lengths = [.. lengths],
+                                Dimension = lengths.Count,
+                                TypeIsStr = true
+                            };
+                            parentLine.AddPrivateVariable(varData);
+
+                            line.Argument = new StrAsignArgument(varName, varData.Lengths, value);
+                            return line;
+                        }
                     }
 
 
