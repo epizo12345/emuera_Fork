@@ -421,7 +421,10 @@ internal static class LogicalLineParser
                 {
                     if (func.Code == FunctionCode.VARI || func.Code == FunctionCode.VARS)
                     {
-                        var line = new InstructionLine(position, func, stream);
+                        var line = new InstructionLine(position, func, stream)
+                        {
+                            ParentLabelLine = parentLine
+                        };
                         var statementsSpan = line.PopArgumentPrimitive().SubstringROS();
                         var commentIndex = statementsSpan.IndexOf(';');
                         if (commentIndex != -1)
@@ -463,6 +466,7 @@ internal static class LogicalLineParser
                                 //初期値がある
                                 if (!right.IsWhiteSpace())
                                 {
+                                    GlobalStatic.Process.scaningLine = line;
                                     var wc = LexicalAnalyzer.Analyse(new CharStream(right.ToString()), LexEndWith.EoL, LexAnalyzeFlag.None);
                                     exp = ExpressionParser.ReduceIntegerTerm(wc, TermEndWith.EoL);
                                 }
