@@ -45,10 +45,10 @@ namespace MinorShift.Emuera.Forms
             デバッグToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             デバッグウインドウを開くToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             デバッグ情報の更新ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            設定ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            EmuVerToolStripTextBox = new System.Windows.Forms.ToolStripTextBox();
             ツールToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             ウィンドウ幅のロック変更ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            設定ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            EmuVerToolStripTextBox = new System.Windows.Forms.ToolStripTextBox();
             openFileDialog = new System.Windows.Forms.OpenFileDialog();
             saveFileDialog = new System.Windows.Forms.SaveFileDialog();
             folderSelectDialog = new System.Windows.Forms.FolderBrowserDialog();
@@ -205,27 +205,6 @@ namespace MinorShift.Emuera.Forms
             デバッグ情報の更新ToolStripMenuItem.Text = "デバッグ情報の更新";
             デバッグ情報の更新ToolStripMenuItem.Click += デバッグ情報の更新ToolStripMenuItem_Click;
             // 
-            // 設定ToolStripMenuItem
-            // 
-            設定ToolStripMenuItem.ForeColor = System.Drawing.SystemColors.MenuText;
-            設定ToolStripMenuItem.Name = "設定ToolStripMenuItem";
-            設定ToolStripMenuItem.Size = new System.Drawing.Size(57, 20);
-            設定ToolStripMenuItem.Text = "設定(&S)";
-            設定ToolStripMenuItem.Click += コンフィグCToolStripMenuItem_Click;
-            // 
-            // EmuVerToolStripTextBox
-            // 
-            EmuVerToolStripTextBox.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
-            EmuVerToolStripTextBox.BackColor = System.Drawing.Color.WhiteSmoke;
-            EmuVerToolStripTextBox.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            EmuVerToolStripTextBox.Enabled = false;
-            EmuVerToolStripTextBox.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
-            EmuVerToolStripTextBox.Name = "EmuVerToolStripTextBox";
-            EmuVerToolStripTextBox.ShortcutsEnabled = false;
-            EmuVerToolStripTextBox.Size = new System.Drawing.Size(160, 20);
-            EmuVerToolStripTextBox.Text = "Emuera Ver. 0.000+v00.0";
-            EmuVerToolStripTextBox.TextBoxTextAlign = System.Windows.Forms.HorizontalAlignment.Right;
-            // 
             // ツールToolStripMenuItem
             // 
             ツールToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { ウィンドウ幅のロック変更ToolStripMenuItem });
@@ -240,6 +219,28 @@ namespace MinorShift.Emuera.Forms
             ウィンドウ幅のロック変更ToolStripMenuItem.Size = new System.Drawing.Size(188, 22);
             ウィンドウ幅のロック変更ToolStripMenuItem.Text = "ウィンドウ幅のロック変更";
             ウィンドウ幅のロック変更ToolStripMenuItem.Click += ウィンドウ幅のロック変更ToolStripMenuItem_Click;
+            // 
+            // 設定ToolStripMenuItem
+            // 
+            設定ToolStripMenuItem.ForeColor = System.Drawing.SystemColors.MenuText;
+            設定ToolStripMenuItem.Name = "設定ToolStripMenuItem";
+            設定ToolStripMenuItem.Size = new System.Drawing.Size(57, 20);
+            設定ToolStripMenuItem.Text = "設定(&S)";
+            設定ToolStripMenuItem.Click += コンフィグCToolStripMenuItem_Click;
+            // 
+            // EmuVerToolStripTextBox
+            // 
+            EmuVerToolStripTextBox.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            EmuVerToolStripTextBox.BackColor = System.Drawing.Color.WhiteSmoke;
+            EmuVerToolStripTextBox.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            EmuVerToolStripTextBox.ForeColor = System.Drawing.SystemColors.GrayText;
+            EmuVerToolStripTextBox.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
+            EmuVerToolStripTextBox.Name = "EmuVerToolStripTextBox";
+            EmuVerToolStripTextBox.ReadOnly = true;
+            EmuVerToolStripTextBox.ShortcutsEnabled = false;
+            EmuVerToolStripTextBox.Size = new System.Drawing.Size(400, 20);
+            EmuVerToolStripTextBox.Text = "Emuera Ver. 0.000+v00.0";
+            EmuVerToolStripTextBox.TextBoxTextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
             // openFileDialog
             // 
