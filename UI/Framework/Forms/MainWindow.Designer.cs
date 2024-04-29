@@ -45,8 +45,7 @@ namespace MinorShift.Emuera.Forms
             デバッグToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             デバッグウインドウを開くToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             デバッグ情報の更新ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            ヘルプHToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            コンフィグCToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            設定ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             EmuVerToolStripTextBox = new System.Windows.Forms.ToolStripTextBox();
             openFileDialog = new System.Windows.Forms.OpenFileDialog();
             saveFileDialog = new System.Windows.Forms.SaveFileDialog();
@@ -108,7 +107,7 @@ namespace MinorShift.Emuera.Forms
             // menuStrip
             // 
             menuStrip.ImageScalingSize = new System.Drawing.Size(20, 20);
-            menuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { fileToolStripMenuItem, デバッグToolStripMenuItem, ヘルプHToolStripMenuItem, EmuVerToolStripTextBox });
+            menuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { fileToolStripMenuItem, デバッグToolStripMenuItem, 設定ToolStripMenuItem, EmuVerToolStripTextBox });
             menuStrip.Location = new System.Drawing.Point(0, 0);
             menuStrip.Name = "menuStrip";
             menuStrip.Size = new System.Drawing.Size(657, 24);
@@ -204,20 +203,13 @@ namespace MinorShift.Emuera.Forms
             デバッグ情報の更新ToolStripMenuItem.Text = "デバッグ情報の更新";
             デバッグ情報の更新ToolStripMenuItem.Click += デバッグ情報の更新ToolStripMenuItem_Click;
             // 
-            // ヘルプHToolStripMenuItem
+            // 設定ToolStripMenuItem
             // 
-            ヘルプHToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { コンフィグCToolStripMenuItem });
-            ヘルプHToolStripMenuItem.ForeColor = System.Drawing.SystemColors.MenuText;
-            ヘルプHToolStripMenuItem.Name = "ヘルプHToolStripMenuItem";
-            ヘルプHToolStripMenuItem.Size = new System.Drawing.Size(57, 20);
-            ヘルプHToolStripMenuItem.Text = "設定(&S)";
-            // 
-            // コンフィグCToolStripMenuItem
-            // 
-            コンフィグCToolStripMenuItem.Name = "コンフィグCToolStripMenuItem";
-            コンフィグCToolStripMenuItem.Size = new System.Drawing.Size(113, 22);
-            コンフィグCToolStripMenuItem.Text = "設定(&C)";
-            コンフィグCToolStripMenuItem.Click += コンフィグCToolStripMenuItem_Click;
+            設定ToolStripMenuItem.ForeColor = System.Drawing.SystemColors.MenuText;
+            設定ToolStripMenuItem.Name = "設定ToolStripMenuItem";
+            設定ToolStripMenuItem.Size = new System.Drawing.Size(57, 20);
+            設定ToolStripMenuItem.Text = "設定(&S)";
+            設定ToolStripMenuItem.Click += コンフィグCToolStripMenuItem_Click;
             // 
             // EmuVerToolStripTextBox
             // 
@@ -579,8 +571,7 @@ namespace MinorShift.Emuera.Forms
         private System.Windows.Forms.ToolStripMenuItem rebootToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
         private System.Windows.Forms.OpenFileDialog openFileDialog;
-        private System.Windows.Forms.ToolStripMenuItem ヘルプHToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem コンフィグCToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem 設定ToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem タイトルへ戻るTToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem コードを読み直すcToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem ログを保存するSToolStripMenuItem;
