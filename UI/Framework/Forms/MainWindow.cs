@@ -1093,6 +1093,7 @@ internal sealed partial class MainWindow : Form
             }
 
             ConfigData.Instance.GetConfigItem(ConfigCode.WindowX).SetValue(mainPicBox.Width);
+            ConfigData.Instance.GetConfigItem(ConfigCode.WindowY).SetValue(mainPicBox.Height + Config.LineHeight);
             ConfigData.Instance.SaveConfig();
         }
     }
