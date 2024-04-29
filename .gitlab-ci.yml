@@ -43,14 +43,14 @@ build_job:
   script:
     - 'dotnet publish'  # build the project
     - ls
-    - ls artifacts\*
-    - ls artifacts\publish\*
-    - ls artifacts\publish\Emuera\*
-    - ls artifacts\publish\Emuera\release\*
+    - ls artifacts/*
+    - ls artifacts/publish/*
+    - ls artifacts/publish/Emuera/*
+    - ls artifacts/publish/Emuera/release/*
   artifacts:
     expire_in: 1 week  # save gitlab server space, we copy the files we need to deploy folder later on
     paths:
-      - artifacts\publish\Emuera\release\*
+      - artifacts/publish/Emuera/release/*
 
 test_job:
   stage: test
