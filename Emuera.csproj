@@ -2,10 +2,11 @@
   <PropertyGroup>
     <TargetFramework>net8.0-windows</TargetFramework>
     <OutputType>WinExe</OutputType>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+
 
     <RootNamespace>MinorShift.Emuera</RootNamespace>
     <Version>0.2.4.9</Version>
-
 
     
 
