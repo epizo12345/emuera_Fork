@@ -6,6 +6,7 @@
     <RootNamespace>MinorShift.Emuera</RootNamespace>
     <Version>0.2.4.9</Version>
 
+
     
 
     <ApplicationIcon>era_v.ico</ApplicationIcon>
@@ -17,6 +18,7 @@
     
     <TieredCompilation>false</TieredCompilation>
 
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
     
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
