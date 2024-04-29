@@ -358,5 +358,6 @@ enum FunctionCode
 
     INPUTMOUSEKEY,
     VARI,
-    VARS
+    VARS,
+    HTML_PRINT_ISLAND,
 }

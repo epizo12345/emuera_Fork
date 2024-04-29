@@ -349,6 +349,27 @@ internal sealed partial class FunctionIdentifier
         }
     }
 
+    private sealed class HTML_PRINT_ISLAND_Instruction : AInstruction
+    {
+        public HTML_PRINT_ISLAND_Instruction()
+        {
+            flag = EXTENDED | METHOD_SAFE;
+            ArgBuilder = ArgumentParser.GetArgumentBuilder(FunctionArgType.SP_HTML_PRINT);
+        }
+
+        public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
+        {
+            if (GlobalStatic.Process.SkipPrint)
+                return;
+            string str;
+            if (func.Argument.IsConst)
+                str = func.Argument.ConstStr;
+            else
+                str = ((HTML_PRINTArgument)func.Argument).Term.GetStrValue(exm);
+            exm.Console.PrintHTMLIsland(str);
+        }
+    }
+
 
     private sealed class PRINT_IMG_Instruction : AInstruction
     {

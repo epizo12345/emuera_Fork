@@ -1243,6 +1243,9 @@ internal sealed partial class EmueraConsole : IDisposable
         });
     }
 
+
+    List<ConsoleDisplayLine> _htmlElementList = new(10);
+
     /// <summary>
     /// 1818以前のRefreshStringsの後半とm_RefreshStringsを融合
     /// 全面Clear法のみにしたのでさっぱりした。ダブルバッファリングはOnPaintが勝手にやるはず
@@ -1250,7 +1253,6 @@ internal sealed partial class EmueraConsole : IDisposable
     /// <param name="graph"></param>
     public void OnPaint(Graphics graph)
     {
-
         //デバッグ用。描画が超重い環境を想定1
         //System.Threading.Thread.Sleep(100);
 
@@ -1305,6 +1307,15 @@ internal sealed partial class EmueraConsole : IDisposable
             }
 
         }
+
+        //真のHTML描画
+        var y = 0;
+        foreach (var element in _htmlElementList)
+        {
+            element.DrawTo(graph, y, false, false, Config.TextDrawingMode);
+            y += Config.LineHeight;
+        }
+
         //ToolTip描画
         if (lastPointingString != pointingString || lastSelectingCBGButtonInt != selectingCBGButtonInt)
         {

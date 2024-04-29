@@ -26,6 +26,7 @@ internal sealed partial class EmueraConsole : IDisposable
     public void ClearDisplay()
     {
         displayLineList.Clear();
+        _htmlElementList.Clear();
         logicalLineCount = 0;
         lineNo = 0;
         lastDrawnLineNo = -1;
@@ -101,6 +102,14 @@ internal sealed partial class EmueraConsole : IDisposable
         RefreshStrings(true);
         _drawStopwatch.Restart();
     }
+
+    //完全に独立したHTML
+    public void PrintHTMLIsland(string html)
+    {
+        _htmlElementList.AddRange(HtmlManager.Html2DisplayLine(html, stringMeasure, this, true));
+    }
+
+
 
     /// <summary>
     /// 最後に描画した時にlineNoの値
