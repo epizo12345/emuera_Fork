@@ -29,6 +29,8 @@
 # You should not add this template to an existing `.gitlab-ci.yml` file by using the `include:` keyword.
 
 # place project specific paths in variables to make the rest of the script more generic
+image: mcr.microsoft.com/dotnet/sdk:latest
+
 variables:
   EXE_RELEASE_FOLDER: 'artifacts\publish\Emuera\release'
 
