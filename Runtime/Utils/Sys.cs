@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Reflection;
 
 namespace MinorShift.Emuera.Runtime.Utils;
 
@@ -11,9 +12,10 @@ public static class AssemblyData
         //エラー出力用
         //1815 .exeが東方板のNGワードに引っかかるそうなので除去
         ExeName = Path.GetFileNameWithoutExtension(ExePath);
-        emueraVer = typeof(AssemblyData).Assembly.GetName().Version;
+        var assembly = Assembly.GetExecutingAssembly();
+        emueraVer = assembly.GetName().Version;
 
-        EmueraVersionText = ".NET Emuera " + emueraVer;
+        EmueraVersionText = ".NET Emuera " + assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion.ToString();
     }
 
     /// <summary>
