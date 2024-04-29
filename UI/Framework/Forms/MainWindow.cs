@@ -181,8 +181,8 @@ internal sealed partial class MainWindow : Form
                     switch (wparam)
                     {
                         case SC_MOVE:
-                            if (WindowState == FormWindowState.Maximized)
-                                return;
+                            // if (WindowState == FormWindowState.Maximized)
+                            //     return;
                             break;
                         case SC_MAXIMIZE:
                             if (Screen.AllScreens.Length == 1)
@@ -1059,5 +1059,41 @@ internal sealed partial class MainWindow : Form
 
         var toolTip = (ToolTip)sender;
         e.ToolTipSize = TextRenderer.MeasureText(toolTip.GetToolTip(e.AssociatedControl), _tooltipFont);
+    }
+
+    bool _isWidthLocked = true;
+    private void ウィンドウ幅のロック変更ToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        if (_isWidthLocked)
+        {
+            _isWidthLocked = false;
+            MinimumSize = new Size(0, 0);
+            MaximumSize = new Size(int.MaxValue,
+                                    int.MaxValue);
+        }
+        else
+        {
+            _isWidthLocked = true;
+
+            if (Config.SizableWindow)
+            {
+                MinimumSize = Size with
+                {
+                    Height = 0
+                };
+                MaximumSize = Size with
+                {
+                    Height = int.MaxValue
+                };
+            }
+            else
+            {
+                MinimumSize = Size;
+                MaximumSize = Size;
+            }
+
+            ConfigData.Instance.GetConfigItem(ConfigCode.WindowX).SetValue(mainPicBox.Width);
+            ConfigData.Instance.SaveConfig();
+        }
     }
 }

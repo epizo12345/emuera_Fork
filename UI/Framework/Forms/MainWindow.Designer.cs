@@ -47,6 +47,8 @@ namespace MinorShift.Emuera.Forms
             デバッグ情報の更新ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             設定ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             EmuVerToolStripTextBox = new System.Windows.Forms.ToolStripTextBox();
+            ツールToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            ウィンドウ幅のロック変更ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             openFileDialog = new System.Windows.Forms.OpenFileDialog();
             saveFileDialog = new System.Windows.Forms.SaveFileDialog();
             folderSelectDialog = new System.Windows.Forms.FolderBrowserDialog();
@@ -107,7 +109,7 @@ namespace MinorShift.Emuera.Forms
             // menuStrip
             // 
             menuStrip.ImageScalingSize = new System.Drawing.Size(20, 20);
-            menuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { fileToolStripMenuItem, デバッグToolStripMenuItem, 設定ToolStripMenuItem, EmuVerToolStripTextBox });
+            menuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { fileToolStripMenuItem, デバッグToolStripMenuItem, ツールToolStripMenuItem, 設定ToolStripMenuItem, EmuVerToolStripTextBox });
             menuStrip.Location = new System.Drawing.Point(0, 0);
             menuStrip.Name = "menuStrip";
             menuStrip.Size = new System.Drawing.Size(657, 24);
@@ -223,6 +225,21 @@ namespace MinorShift.Emuera.Forms
             EmuVerToolStripTextBox.Size = new System.Drawing.Size(160, 20);
             EmuVerToolStripTextBox.Text = "Emuera Ver. 0.000+v00.0";
             EmuVerToolStripTextBox.TextBoxTextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            // 
+            // ツールToolStripMenuItem
+            // 
+            ツールToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { ウィンドウ幅のロック変更ToolStripMenuItem });
+            ツールToolStripMenuItem.ForeColor = System.Drawing.SystemColors.MenuText;
+            ツールToolStripMenuItem.Name = "ツールToolStripMenuItem";
+            ツールToolStripMenuItem.Size = new System.Drawing.Size(46, 20);
+            ツールToolStripMenuItem.Text = "ツール";
+            // 
+            // ウィンドウ幅のロック変更ToolStripMenuItem
+            // 
+            ウィンドウ幅のロック変更ToolStripMenuItem.Name = "ウィンドウ幅のロック変更ToolStripMenuItem";
+            ウィンドウ幅のロック変更ToolStripMenuItem.Size = new System.Drawing.Size(188, 22);
+            ウィンドウ幅のロック変更ToolStripMenuItem.Text = "ウィンドウ幅のロック変更";
+            ウィンドウ幅のロック変更ToolStripMenuItem.Click += ウィンドウ幅のロック変更ToolStripMenuItem_Click;
             // 
             // openFileDialog
             // 
@@ -621,6 +638,8 @@ namespace MinorShift.Emuera.Forms
         private System.Windows.Forms.ToolStripMenuItem グループ8ToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem グループ9ToolStripMenuItem;
         private System.Windows.Forms.ToolStripTextBox EmuVerToolStripTextBox;
+        private System.Windows.Forms.ToolStripMenuItem ツールToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem ウィンドウ幅のロック変更ToolStripMenuItem;
     }
 }
 
