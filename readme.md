@@ -1,8 +1,7 @@
-# .NET Emuera
-著作者：VVII, MinorShift, 妊）|дﾟ)の中の人
-頒布者：VVII
-連絡先：eraMegaten Discordサーバー（https://discord.gg/yQRYkNMuWr） @VVII 宛
-ライセンス：同梱の license.md を参照してください
+# Emuera.NET 
+著作者：VVII, MinorShift, 妊）|дﾟ)の中の人  
+頒布者：VVII  
+連絡先：eraMegaten Discordサーバー（https://discord.gg/yQRYkNMuWr） VVII 宛  
 
 # 動作環境
 .NET 8環境が必要です。
@@ -19,10 +18,10 @@
 
 # 追加機能
 実行ファイルと同じ階層に『patch_versions』というフォルダがある場合、
-フォルダ内のテキストファイルの中身をログ出力時に書き出します。
+フォルダ内のテキストファイルの中身をログ出力時に書き出します。  
 複数ファイルがある場合はファイル名順に書き出します。
 
 # 不具合等連絡先
-eraMegaten Discordサーバー（https://discord.gg/yQRYkNMuWr） にて、@VVII宛にメッセージを送ってください。
+eraMegaten Discordサーバー（https://discord.gg/yQRYkNMuWr） にて、VVII宛にメッセージを送ってください。
 
 ※MinorShift氏、 妊）|дﾟ)の中の人氏は本バージョンの開発には携わっておりません
