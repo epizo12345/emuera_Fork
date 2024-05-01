@@ -45,6 +45,16 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
         Display = display;
         Width = -1;
 
+        if (display != DisplayMode.Relative || (_positionY != 0 && _positionX != 0))
+        {
+            isDiv = true;
+        }
+        else
+        {
+            _top = 0;
+            _bottom = Config.FontSize;
+        }
+
         _backColor = backcolor;
     }
 
@@ -100,6 +110,8 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
     int _bottom;
     public override int Bottom => _bottom;
 
+    bool isDiv;
+
 
     public override void SetWidth(StringMeasure sm, float subPixel)
     {
@@ -145,8 +157,11 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
             _ => throw new NotImplementedException($"{Display}はまだ実装されていません")
         };
 
-        _top = point.Y;
-        _bottom = _top + Config.LineHeight;
+        if (isDiv)
+        {
+            _top = point.Y;
+            _bottom = _top + Config.LineHeight;
+        }
 
 
         if (mode == TextDrawingMode.GRAPHICS)
