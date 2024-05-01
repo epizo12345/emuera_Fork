@@ -758,6 +758,7 @@ internal static class HtmlManager
                     int height = 0;
                     int width = 0;
                     int ypos = 0;
+                    int xpos = 0;
                     bool usePxHeight = false;
                     bool usePxWidth = false;
                     DisplayMode display = DisplayMode.Relative;
@@ -827,26 +828,21 @@ internal static class HtmlManager
                         }
                         else if (word.Code.Equals("xpos", StringComparison.OrdinalIgnoreCase))
                         {
-                            if (ypos != 0)
+                            if (xpos != 0)
                                 throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
-                            if (!int.TryParse(attrValue, out ypos))
-                                throw new CodeEE("<" + tag + ">タグのypos属性の属性値が数値として解釈できません");
+                            if (!int.TryParse(attrValue, out xpos))
+                                throw new CodeEE("<" + tag + ">タグのxpos属性の属性値が数値として解釈できません");
                         }
                         else if (word.Code.Equals("display", StringComparison.OrdinalIgnoreCase))
                         {
-                            display = attrValue switch
-                            {
-                                "relative" => DisplayMode.Relative,
-                                "absolute" => DisplayMode.Absolute,
-                                "absolute-lefttop" => DisplayMode.AbsoluteLeftTop,
-                                _ => throw new Exception("displayの値が解釈できません")
-                            };
+                            display = parseDisplayValue(attrValue);
                         }
                         else
                             throw new CodeEE("<" + tag + ">タグの属性名" + word.Code + "は解釈できません");
                     }
                     if (src == null)
                         throw new CodeEE("<" + tag + ">タグにsrc属性が設定されていません");
+                    //xpos
                     return new ConsoleImagePart(src, srcb, height, width, ypos, usePxWidth, usePxHeight, display);
                 }
 
@@ -1095,13 +1091,7 @@ internal static class HtmlManager
                             case "display":
                                 {
                                     var value = (wc.Current as LiteralStringWord).Str;
-                                    display = value switch
-                                    {
-                                        "relative" => DisplayMode.Relative,
-                                        "absolute" => DisplayMode.Absolute,
-                                        "absolute-lefttop" => DisplayMode.AbsoluteLeftTop,
-                                        _ => throw new Exception("displayの値が解釈できません")
-                                    };
+                                    display = parseDisplayValue(value);
                                 }
                                 break;
                             case "background_color":
@@ -1127,6 +1117,18 @@ internal static class HtmlManager
 
     error:
         throw new CodeEE($"html文字列\"{st.RowString}\"のタグ解析中にエラーが発生しました");
+
+        static DisplayMode parseDisplayValue(string value)
+        {
+            return value switch
+            {
+                "relative" => DisplayMode.Relative,
+                "absolute" => DisplayMode.Absolute,
+                "absolute-lefttop" => DisplayMode.AbsoluteLeftTop,
+                "absolute-leftbottom" => DisplayMode.AbsoluteLeftBottom,
+                _ => throw new Exception("displayの値が解釈できません")
+            };
+        }
     }
 
     private static int stringToColorInt32(string str)

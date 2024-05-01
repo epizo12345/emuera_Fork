@@ -171,6 +171,10 @@ sealed class ConsoleImagePart : AConsoleDisplayPart
                     rect.X = destRect.X;
                     rect.Y = destRect.Y;
                     break;
+                case DisplayMode.AbsoluteLeftBottom:
+                    rect.X = destRect.X;
+                    rect.Y = GlobalStatic.Console.ClientHeight - Config.FontSize + destRect.Y;
+                    break;
                 default:
                     throw new NotImplementedException();
             }
