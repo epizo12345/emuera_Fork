@@ -15,7 +15,7 @@ public static class AssemblyData
         var assembly = Assembly.GetExecutingAssembly();
         emueraVer = assembly.GetName().Version;
 
-        EmueraVersionText = ".NET Emuera " + assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion.ToString();
+        EmueraVersionText = "Emuera.NET " + assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion.ToString();
     }
 
     /// <summary>
