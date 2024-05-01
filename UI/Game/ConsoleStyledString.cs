@@ -44,13 +44,22 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
         _positionY = positionY;
         _display = display;
         Width = -1;
+        Height = Config.LineHeight;
+        if (display != DisplayMode.Relative || !(_positionX == 0 && _positionY == 0))
+        {
+            IsDiv = true;
+        }
 
         _backColor = backcolor;
     }
 
     int _positionX;
     int _positionY;
+    public Point? Point;
+    public int Height;
+
     DisplayMode _display;
+    public bool IsDiv;
     Color? _backColor;
 
     public Font Font { get; private set; }
@@ -130,11 +139,12 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
 
         var point = _display switch
         {
-            DisplayMode.Relative => new Point(PointX + _positionX, pointY + _positionY),
+            DisplayMode.Relative => new Point(PointX, pointY + _positionY),
             DisplayMode.AbsoluteLeftTop => new Point(_positionX, _positionY),
             DisplayMode.AbsoluteLeftBottom => new Point(_positionX, GlobalStatic.Console.ClientHeight - Config.FontSize + _positionY),
             _ => throw new NotImplementedException($"{_display}はまだ実装されていません")
         };
+        Point = point;
 
         if (mode == TextDrawingMode.GRAPHICS)
         {

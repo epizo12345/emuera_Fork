@@ -1677,8 +1677,6 @@ internal sealed partial class EmueraConsole : IDisposable
         //履歴表示中は無視
         //if (window.ScrollBar.Value != window.ScrollBar.Maximum)
         //	goto end;
-        int pointX = point.X;
-        int pointY = point.Y;
         ConsoleDisplayLine curLine;
 
         int bottomLineNo = window.ScrollBar.Value - 1;
@@ -1687,6 +1685,10 @@ internal sealed partial class EmueraConsole : IDisposable
         int topLineNo = bottomLineNo - (window.MainPicBox.Height / Config.LineHeight);
         if (topLineNo < 0)
             topLineNo = 0;
+
+
+        int pointX = point.X;
+        int pointY = point.Y;
         int relPointY = pointY - window.MainPicBox.Height;
         //下から上へ探索し発見次第打ち切り
         for (int i = bottomLineNo; i >= topLineNo; i--)
@@ -1699,18 +1701,31 @@ internal sealed partial class EmueraConsole : IDisposable
                 ConsoleButtonString button = curLine.Buttons[curLine.Buttons.Length - b - 1];
                 if (button == null || button.StrArray == null)
                     continue;
-                if ((button.PointX <= pointX) && (button.PointX + button.Width >= pointX))
+
+
+                //if (relPointY >= 0 && relPointY <= Config.FontSize)
+                //{
+                //	pointing = button;
+                //	if(pointing.IsButton)
+                //		goto breakfor;
+                //}
+                foreach (AConsoleDisplayPart part in button.StrArray)
                 {
-                    //if (relPointY >= 0 && relPointY <= Config.FontSize)
-                    //{
-                    //	pointing = button;
-                    //	if(pointing.IsButton)
-                    //		goto breakfor;
-                    //}
-                    foreach (AConsoleDisplayPart part in button.StrArray)
+                    if (part == null)
+                        continue;
+
+                    if (part is ConsoleStyledString css && css.IsDiv)
                     {
-                        if (part == null)
-                            continue;
+                        if ((css.Point?.X <= pointX) && (css.Point?.X + part.Width >= pointX) &&
+                            (pointY >= css.Point?.Y) && (pointY <= css.Point?.Y + css.Height))
+                        {
+                            pointing = button;
+                            if (pointing.IsButton)
+                                goto breakfor;
+                        }
+                    }
+                    else
+                    {
                         if ((part.PointX <= pointX) && (part.PointX + part.Width >= pointX)
                             && (relPointY >= part.Top) && (relPointY <= part.Bottom))
                         {
