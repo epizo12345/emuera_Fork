@@ -1711,13 +1711,27 @@ internal sealed partial class EmueraConsole : IDisposable
                     {
                         if (part == null)
                             continue;
-                        if ((part.PointX <= pointX) && (part.PointX + part.Width >= pointX)
-                            && (relPointY >= part.Top) && (relPointY <= part.Bottom))
+                        if (part is ConsoleStyledString css && css.Display != DisplayMode.Relative)
                         {
-                            pointing = button;
-                            if (pointing.IsButton)
-                                goto breakfor;
+                            if ((part.PointX <= point.X) && (point.X + part.Width >= pointX) &&
+                                (point.Y >= part.Top) && (point.Y <= part.Bottom))
+                            {
+                                pointing = button;
+                                if (pointing.IsButton)
+                                    goto breakfor;
+                            }
                         }
+                        else
+                        {
+                            if ((part.PointX <= pointX) && (part.PointX + part.Width >= pointX)
+                                && (relPointY >= part.Top) && (relPointY <= part.Bottom))
+                            {
+                                pointing = button;
+                                if (pointing.IsButton)
+                                    goto breakfor;
+                            }
+                        }
+
                     }
                 }
             }
