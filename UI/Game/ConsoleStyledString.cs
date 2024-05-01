@@ -132,7 +132,7 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
         {
             DisplayMode.Relative => new Point(PointX + _positionX, pointY + _positionY),
             DisplayMode.AbsoluteLeftTop => new Point(_positionX, _positionY),
-            DisplayMode.AbsoluteLeftBottom => new Point(_positionX, GlobalStatic.Console.ClientHeight - Config.FontSize - _positionY),
+            DisplayMode.AbsoluteLeftBottom => new Point(_positionX, GlobalStatic.Console.ClientHeight - Config.FontSize + _positionY),
             _ => throw new NotImplementedException($"{_display}はまだ実装されていません")
         };
 
