@@ -42,7 +42,7 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
         PointX = -1;
         _positionX = positionX;
         _positionY = positionY;
-        Display = display;
+        _display = display;
         Width = -1;
 
         _backColor = backcolor;
@@ -50,7 +50,7 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
 
     int _positionX;
     int _positionY;
-    public DisplayMode Display;
+    DisplayMode _display;
     Color? _backColor;
 
     public Font Font { get; private set; }
@@ -92,15 +92,6 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
         return ret;
     }
 
-
-
-    int _top;
-    public override int Top => _top;
-
-    int _bottom;
-    public override int Bottom => _bottom;
-
-
     public override void SetWidth(StringMeasure sm, float subPixel)
     {
         if (Error)
@@ -137,17 +128,13 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
             color = Config.LogColor;
         }
 
-        var point = Display switch
+        var point = _display switch
         {
             DisplayMode.Relative => new Point(PointX + _positionX, pointY + _positionY),
             DisplayMode.AbsoluteLeftTop => new Point(_positionX, _positionY),
             DisplayMode.AbsoluteLeftBottom => new Point(_positionX, GlobalStatic.Console.ClientHeight - Config.FontSize + _positionY),
-            _ => throw new NotImplementedException($"{Display}はまだ実装されていません")
+            _ => throw new NotImplementedException($"{_display}はまだ実装されていません")
         };
-
-        _top = point.Y;
-        _bottom = _top + Config.LineHeight;
-
 
         if (mode == TextDrawingMode.GRAPHICS)
         {
