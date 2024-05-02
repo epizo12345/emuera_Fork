@@ -99,6 +99,10 @@ internal static class HtmlManager
         public DisplayMode Display;
         public Color? BackgroundColor;
 
+        public int Width;
+        public int Height;
+
+
         public StringStyle GetSS()
         {
             Color c = Config.ForeColor;
@@ -305,11 +309,14 @@ internal static class HtmlManager
                 string txt = Unescape(st.Substring(st.CurrentPosition, found));
                 if (state.IsDiv)
                 {
-                    cssList.Add(new ConsoleStyledString(txt, state.GetSS(), state.PosX, state.PosY, state.Display, state.BackgroundColor));
+                    cssList.Add(new ConsoleStyledString(txt, state.GetSS(),
+                                                         state.PosX, state.PosY, state.Display, state.BackgroundColor, state.Width, state.Height));
                     state.Display = DisplayMode.Relative;
                     state.PosX = default;
                     state.PosY = default;
                     state.BackgroundColor = null;
+                    state.Width = 0;
+                    state.Height = 0;
                 }
                 else
                 {
@@ -1049,8 +1056,10 @@ internal static class HtmlManager
                 {
                     state.IsDiv = true;
 
-                    int xpos = 0;
-                    int ypos = 0;
+                    var xpos = 0;
+                    var ypos = 0;
+                    var width = 0;
+                    var height = 0;
                     var display = DisplayMode.Relative;
                     Color? backgroundColor = null;
 
@@ -1100,6 +1109,32 @@ internal static class HtmlManager
                                     backgroundColor = ColorTranslator.FromHtml(value);
                                 }
                                 break;
+                            case "width":
+                                {
+                                    var value = (wc.Current as LiteralStringWord).Str;
+                                    if (value.EndsWith("px"))
+                                    {
+                                        width = int.Parse(value.AsSpan()[..^2]);
+                                    }
+                                    else
+                                    {
+                                        width = int.Parse(value) * Config.FontSize / 100;
+                                    }
+                                }
+                                break;
+                            case "height":
+                                {
+                                    var value = (wc.Current as LiteralStringWord).Str;
+                                    if (value.EndsWith("px"))
+                                    {
+                                        height = int.Parse(value.AsSpan()[..^2]);
+                                    }
+                                    else
+                                    {
+                                        height = int.Parse(value) * Config.FontSize / 100;
+                                    }
+                                }
+                                break;
                         }
                         wc.ShiftNext();
                     }
@@ -1108,6 +1143,8 @@ internal static class HtmlManager
                     state.PosY = ypos;
                     state.Display = display;
                     state.BackgroundColor = backgroundColor;
+                    state.Width = width;
+                    state.Height = height;
                     return null;
                 }
             default:

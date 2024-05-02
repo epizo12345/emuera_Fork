@@ -22,7 +22,9 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
 
 
     private ConsoleStyledString() { }
-    public ConsoleStyledString(string str, StringStyle style, int positionX = 0, int positionY = 0, DisplayMode display = DisplayMode.Relative, Color? backcolor = null)
+    public ConsoleStyledString(string str, StringStyle style,
+                                int positionX = 0, int positionY = 0, DisplayMode display = DisplayMode.Relative, Color? backcolor = null,
+                                int width = 0, int height = 0)
     {
         //if ((StaticConfig.TextDrawingMode != TextDrawingMode.GRAPHICS) && (str.IndexOf('\t') >= 0))
         //    str = str.Replace("\t", "");
@@ -42,9 +44,9 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
         PointX = -1;
         _positionX = positionX;
         _positionY = positionY;
+        Size = new Size(width, height);
         _display = display;
         Width = -1;
-        Height = Config.LineHeight;
         if (display != DisplayMode.Relative || !(_positionX == 0 && _positionY == 0))
         {
             IsDiv = true;
@@ -55,8 +57,8 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
 
     int _positionX;
     int _positionY;
+    public Size Size;
     public Point Point;
-    public int Height;
 
     DisplayMode _display;
     public bool IsDiv;
@@ -153,29 +155,28 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
         {
             if (_backColor.HasValue)
             {
-                TextRenderer.DrawText(graph, Str.AsSpan(), Font, Point, color, backColor: _backColor.Value, TextFormatFlags.NoPrefix);
+                graph.FillRectangle(new SolidBrush(_backColor.Value), new Rectangle(Point, Size));
+                TextRenderer.DrawText(graph, Str.AsSpan(), Font, Point, color, TextFormatFlags.NoPrefix);
             }
-            else
+
+            if (JSONConfig.Data.UseButtonFocusBackgroundColor)
             {
-                if (JSONConfig.Data.UseButtonFocusBackgroundColor)
+                if (isButton && !isBackLog)
                 {
-                    if (isButton && !isBackLog)
+                    if (!backcolor.HasValue)
                     {
-                        if (!backcolor.HasValue)
-                        {
-                            backcolor = Color.FromArgb(50, 50, 50);
-                        }
-                        TextRenderer.DrawText(graph, Str.AsSpan(), Font, Point, color, backColor: backcolor.Value, TextFormatFlags.NoPrefix);
+                        backcolor = Color.FromArgb(50, 50, 50);
                     }
-                    else
-                    {
-                        TextRenderer.DrawText(graph, Str.AsSpan(), Font, Point, color, TextFormatFlags.NoPrefix);
-                    }
+                    TextRenderer.DrawText(graph, Str.AsSpan(), Font, Point, color, backColor: backcolor.Value, TextFormatFlags.NoPrefix);
                 }
                 else
                 {
                     TextRenderer.DrawText(graph, Str.AsSpan(), Font, Point, color, TextFormatFlags.NoPrefix);
                 }
+            }
+            else
+            {
+                TextRenderer.DrawText(graph, Str.AsSpan(), Font, Point, color, TextFormatFlags.NoPrefix);
             }
 
         }
