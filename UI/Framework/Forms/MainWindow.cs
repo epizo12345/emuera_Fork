@@ -1041,7 +1041,7 @@ internal sealed partial class MainWindow : Form
         labelMacroGroupChanged.Visible = true;
     }
 
-    Font _tooltipFont;
+    Font? _tooltipFont;
 
     private void toolTipButton_Draw(object sender, DrawToolTipEventArgs e)
     {
