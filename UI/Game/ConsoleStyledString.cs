@@ -55,7 +55,7 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
 
     int _positionX;
     int _positionY;
-    public Point? Point;
+    public Point Point;
     public int Height;
 
     DisplayMode _display;
@@ -116,7 +116,7 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
     {
         if (Error)
             return;
-        Color color = Color;
+        var color = Color;
         Color? backcolor = null;
         if (isSelecting)
         {
@@ -137,24 +137,23 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
             color = Config.LogColor;
         }
 
-        var point = _display switch
+        Point = _display switch
         {
-            DisplayMode.Relative => new Point(PointX, pointY + _positionY),
+            DisplayMode.Relative => new Point(PointX + _positionX, pointY + _positionY),
             DisplayMode.AbsoluteLeftTop => new Point(_positionX, _positionY),
             DisplayMode.AbsoluteLeftBottom => new Point(_positionX, GlobalStatic.Console.ClientHeight - Config.FontSize + _positionY),
             _ => throw new NotImplementedException($"{_display}はまだ実装されていません")
         };
-        Point = point;
 
         if (mode == TextDrawingMode.GRAPHICS)
         {
-            graph.DrawString(Str, Font, new SolidBrush(color), point);
+            graph.DrawString(Str, Font, new SolidBrush(color), Point);
         }
         else
         {
             if (_backColor.HasValue)
             {
-                TextRenderer.DrawText(graph, Str.AsSpan(), Font, point, color, backColor: _backColor.Value, TextFormatFlags.NoPrefix);
+                TextRenderer.DrawText(graph, Str.AsSpan(), Font, Point, color, backColor: _backColor.Value, TextFormatFlags.NoPrefix);
             }
             else
             {
@@ -166,16 +165,16 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
                         {
                             backcolor = Color.FromArgb(50, 50, 50);
                         }
-                        TextRenderer.DrawText(graph, Str.AsSpan(), Font, point, color, backColor: backcolor.Value, TextFormatFlags.NoPrefix);
+                        TextRenderer.DrawText(graph, Str.AsSpan(), Font, Point, color, backColor: backcolor.Value, TextFormatFlags.NoPrefix);
                     }
                     else
                     {
-                        TextRenderer.DrawText(graph, Str.AsSpan(), Font, point, color, TextFormatFlags.NoPrefix);
+                        TextRenderer.DrawText(graph, Str.AsSpan(), Font, Point, color, TextFormatFlags.NoPrefix);
                     }
                 }
                 else
                 {
-                    TextRenderer.DrawText(graph, Str.AsSpan(), Font, point, color, TextFormatFlags.NoPrefix);
+                    TextRenderer.DrawText(graph, Str.AsSpan(), Font, Point, color, TextFormatFlags.NoPrefix);
                 }
             }
 
