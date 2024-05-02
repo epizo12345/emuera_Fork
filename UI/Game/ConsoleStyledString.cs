@@ -24,7 +24,7 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
     private ConsoleStyledString() { }
     public ConsoleStyledString(string str, StringStyle style,
                                 int positionX = 0, int positionY = 0, DisplayMode display = DisplayMode.Relative, Color? backcolor = null,
-                                int width = 0, int height = 0)
+                                int width = -1, int height = -1)
     {
         //if ((StaticConfig.TextDrawingMode != TextDrawingMode.GRAPHICS) && (str.IndexOf('\t') >= 0))
         //    str = str.Replace("\t", "");
@@ -42,27 +42,47 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
         if (!colorChanged && Color != Config.ForeColor)
             colorChanged = true;
         PointX = -1;
-        _positionX = positionX;
-        _positionY = positionY;
-        Size = new Size(width, height);
-        _display = display;
         Width = -1;
+
         if (display != DisplayMode.Relative || !(_positionX == 0 && _positionY == 0))
         {
             IsDiv = true;
+
+            _display = display;
+
+            Size = new Size(width, height);
+            var autoWidth = Size.Width == -1;
+            var autoHeight = Size.Height == -1;
+
+            if (autoWidth || autoHeight)
+            {
+                var autoSize = TextRenderer.MeasureText(str, FontFactory.GetFont(style.Fontname, style.FontStyle));
+                if (autoWidth)
+                {
+                    Size.Width = autoSize.Width;
+                }
+                if (autoHeight)
+                {
+                    Size.Height = autoSize.Height;
+                }
+            }
+
+            _positionX = positionX;
+            _positionY = positionY;
+
+            _backColor = backcolor;
         }
 
-        _backColor = backcolor;
     }
 
-    int _positionX;
-    int _positionY;
+    readonly int _positionX;
+    readonly int _positionY;
     public Size Size;
     public Point Point;
 
-    DisplayMode _display;
+    readonly DisplayMode _display;
     public bool IsDiv;
-    Color? _backColor;
+    readonly Color? _backColor;
 
     public Font Font { get; private set; }
     public StringStyle StringStyle { get; private set; }

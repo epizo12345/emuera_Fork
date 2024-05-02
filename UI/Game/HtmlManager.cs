@@ -99,8 +99,8 @@ internal static class HtmlManager
         public DisplayMode Display;
         public Color? BackgroundColor;
 
-        public int Width;
-        public int Height;
+        public int Width = -1;
+        public int Height = -1;
 
 
         public StringStyle GetSS()
@@ -315,8 +315,8 @@ internal static class HtmlManager
                     state.PosX = default;
                     state.PosY = default;
                     state.BackgroundColor = null;
-                    state.Width = 0;
-                    state.Height = 0;
+                    state.Width = -1;
+                    state.Height = -1;
                 }
                 else
                 {
@@ -1058,8 +1058,8 @@ internal static class HtmlManager
 
                     var xpos = 0;
                     var ypos = 0;
-                    var width = 0;
-                    var height = 0;
+                    var width = -1;
+                    var height = -1;
                     var display = DisplayMode.Relative;
                     Color? backgroundColor = null;
 
