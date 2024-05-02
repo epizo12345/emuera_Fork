@@ -1898,7 +1898,7 @@ internal sealed partial class VariableData
         public override void SetDefault()
         {
             IfNullInitArray();
-            if (defArray != null)
+            if (defArray == null)
             {
                 Array.Clear(array, 0, totalSize);
             }
