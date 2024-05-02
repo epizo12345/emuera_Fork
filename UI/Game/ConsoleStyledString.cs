@@ -17,14 +17,12 @@ public enum DisplayMode
 /// <summary>
 /// 装飾付文字列。stringとStringStyleからなる。
 /// </summary>
-internal sealed class ConsoleStyledString : AConsoleColoredPart
+internal sealed class ConsoleStyledString : AConsoleColoredNode
 {
 
 
     private ConsoleStyledString() { }
-    public ConsoleStyledString(string str, StringStyle style,
-                                int positionX = 0, int positionY = 0, DisplayMode display = DisplayMode.Relative, Color? backcolor = null,
-                                int width = -1, int height = -1)
+    public ConsoleStyledString(string str, StringStyle style)
     {
         //if ((StaticConfig.TextDrawingMode != TextDrawingMode.GRAPHICS) && (str.IndexOf('\t') >= 0))
         //    str = str.Replace("\t", "");
@@ -44,45 +42,7 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
         PointX = -1;
         Width = -1;
 
-        if (display != DisplayMode.Relative || !(_positionX == 0 && _positionY == 0))
-        {
-            IsDiv = true;
-
-            _display = display;
-
-            Size = new Size(width, height);
-            var autoWidth = Size.Width == -1;
-            var autoHeight = Size.Height == -1;
-
-            if (autoWidth || autoHeight)
-            {
-                var autoSize = TextRenderer.MeasureText(str, FontFactory.GetFont(style.Fontname, style.FontStyle));
-                if (autoWidth)
-                {
-                    Size.Width = autoSize.Width;
-                }
-                if (autoHeight)
-                {
-                    Size.Height = autoSize.Height;
-                }
-            }
-
-            _positionX = positionX;
-            _positionY = positionY;
-
-            _backColor = backcolor;
-        }
-
     }
-
-    readonly int _positionX;
-    readonly int _positionY;
-    public Size Size;
-    public Point Point;
-
-    readonly DisplayMode _display;
-    public bool IsDiv;
-    readonly Color? _backColor;
 
     public Font Font { get; private set; }
     public StringStyle StringStyle { get; private set; }
@@ -138,6 +98,7 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
     {
         if (Error)
             return;
+
         var color = Color;
         Color? backcolor = null;
         if (isSelecting)
@@ -159,26 +120,14 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
             color = Config.LogColor;
         }
 
-        Point = _display switch
-        {
-            DisplayMode.Relative => new Point(PointX + _positionX, pointY + _positionY),
-            DisplayMode.AbsoluteLeftTop => new Point(_positionX, _positionY),
-            DisplayMode.AbsoluteLeftBottom => new Point(_positionX, GlobalStatic.Console.ClientHeight - Config.FontSize + _positionY),
-            _ => throw new NotImplementedException($"{_display}はまだ実装されていません")
-        };
+        var point = new Point(PointX, pointY);
 
         if (mode == TextDrawingMode.GRAPHICS)
         {
-            graph.DrawString(Text, Font, new SolidBrush(color), Point);
+            graph.DrawString(Text, Font, new SolidBrush(color), point);
         }
         else
         {
-            if (_backColor.HasValue)
-            {
-                graph.FillRectangle(new SolidBrush(_backColor.Value), new Rectangle(Point, Size));
-                TextRenderer.DrawText(graph, Text.AsSpan(), Font, Point, color, TextFormatFlags.NoPrefix);
-            }
-
             if (JSONConfig.Data.UseButtonFocusBackgroundColor)
             {
                 if (isButton && !isBackLog)
@@ -187,16 +136,16 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
                     {
                         backcolor = Color.FromArgb(50, 50, 50);
                     }
-                    TextRenderer.DrawText(graph, Text.AsSpan(), Font, Point, color, backColor: backcolor.Value, TextFormatFlags.NoPrefix);
+                    TextRenderer.DrawText(graph, Text.AsSpan(), Font, point, color, backColor: backcolor.Value, TextFormatFlags.NoPrefix);
                 }
                 else
                 {
-                    TextRenderer.DrawText(graph, Text.AsSpan(), Font, Point, color, TextFormatFlags.NoPrefix);
+                    TextRenderer.DrawText(graph, Text.AsSpan(), Font, point, color, TextFormatFlags.NoPrefix);
                 }
             }
             else
             {
-                TextRenderer.DrawText(graph, Text.AsSpan(), Font, Point, color, TextFormatFlags.NoPrefix);
+                TextRenderer.DrawText(graph, Text.AsSpan(), Font, point, color, TextFormatFlags.NoPrefix);
             }
 
         }

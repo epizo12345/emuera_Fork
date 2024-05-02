@@ -309,8 +309,11 @@ internal static class HtmlManager
                 string txt = Unescape(st.Substring(st.CurrentPosition, found));
                 if (state.IsDiv)
                 {
-                    cssList.Add(new ConsoleStyledString(txt, state.GetSS(),
-                                                         state.PosX, state.PosY, state.Display, state.BackgroundColor, state.Width, state.Height));
+                    var stringStyle = state.GetSS();
+                    cssList.Add(new ConsoleDivElement([], txt, stringStyle,
+                                                         state.Display, state.PosX, state.PosY,
+                                                         state.Width, state.Height,
+                                                         state.BackgroundColor));
                     state.Display = DisplayMode.Relative;
                     state.PosX = default;
                     state.PosY = default;

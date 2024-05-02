@@ -5,7 +5,7 @@ using System.Text;
 
 namespace MinorShift.Emuera.UI.Game;
 
-abstract class ConsoleShapePart : AConsoleColoredPart
+abstract class ConsoleShapePart : AConsoleColoredNode
 {
     static public ConsoleShapePart CreateShape(string shapeType, int[] param, Color color, Color bcolor, bool colorchanged)
     {

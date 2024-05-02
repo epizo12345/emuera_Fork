@@ -34,7 +34,7 @@ abstract class AConsoleDisplayNode
 /// <summary>
 /// 色つき
 /// </summary>
-abstract class AConsoleColoredPart : AConsoleDisplayNode
+abstract class AConsoleColoredNode : AConsoleDisplayNode
 {
     protected Color Color { get; set; }
     protected Color ButtonColor { get; set; }

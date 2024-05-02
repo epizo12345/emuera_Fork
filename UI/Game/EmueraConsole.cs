@@ -1714,10 +1714,10 @@ internal sealed partial class EmueraConsole : IDisposable
                     if (part == null)
                         continue;
 
-                    if (part is ConsoleStyledString css && css.IsDiv)
+                    if (part is ConsoleDivElement div)
                     {
-                        if ((css.Point.X <= pointX) && (css.Point.X + css.Size.Width >= pointX) &&
-                            (pointY >= css.Point.Y) && (pointY <= css.Point.Y + css.Size.Height))
+                        if ((div.Point.X <= pointX) && (div.Point.X + div.Size.Width >= pointX) &&
+                            (pointY >= div.Point.Y) && (pointY <= div.Point.Y + div.Size.Height))
                         {
                             pointing = button;
                             if (pointing.IsButton)

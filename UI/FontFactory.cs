@@ -1,4 +1,5 @@
 using MinorShift.Emuera.Runtime.Config;
+using MinorShift.Emuera.UI.Game;
 using System.Collections.Generic;
 using System.Drawing;
 
@@ -8,6 +9,10 @@ static class FontFactory
 {
     static readonly Dictionary<(string fontname, int fontSize, FontStyle fontStyle), Font> fontDic = [];
 
+    public static Font GetFont(StringStyle stringStyle)
+    {
+        return GetFont(stringStyle.Fontname, stringStyle.FontStyle);
+    }
     public static Font GetFont(string requestFontName, FontStyle style)
     {
         string fontname = requestFontName;
