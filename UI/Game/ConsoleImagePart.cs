@@ -5,14 +5,14 @@ using System.Drawing;
 using System.Text;
 namespace MinorShift.Emuera.UI.Game;
 
-sealed class ConsoleImagePart : AConsoleDisplayPart
+sealed class ConsoleImagePart : AConsoleDisplayNode
 {
 
     public ConsoleImagePart(string resName, string resNameb, int raw_height, int raw_width, int raw_ypos, bool usePxWidth = false, bool usePxHeight = false, DisplayMode display = DisplayMode.Relative)
     {
         top = 0;
         bottom = Config.FontSize;
-        Str = "";
+        Text = "";
         ResourceName = resName ?? "";
         ButtonResourceName = resNameb;
         StringBuilder sb = new();
@@ -45,7 +45,7 @@ sealed class ConsoleImagePart : AConsoleDisplayPart
         //	cImage = null;
         if (cImage == null)
         {
-            Str = AltText;
+            Text = AltText;
             return;
         }
         int height;
@@ -138,7 +138,7 @@ sealed class ConsoleImagePart : AConsoleDisplayPart
         }
         if (cImage != null)
             return;
-        Width = sm.GetDisplayLength(Str, Config.DefaultFont);
+        Width = sm.GetDisplayLength(Text, Config.DefaultFont);
         XsubPixel = subPixel;
     }
 

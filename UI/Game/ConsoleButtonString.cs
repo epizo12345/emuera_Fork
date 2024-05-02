@@ -13,7 +13,7 @@ namespace MinorShift.Emuera.UI.Game;
 /// </summary>
 internal sealed class ConsoleButtonString
 {
-    public ConsoleButtonString(EmueraConsole console, AConsoleDisplayPart[] strs)
+    public ConsoleButtonString(EmueraConsole console, AConsoleDisplayNode[] strs)
     {
         parent = console;
         strArray = strs;
@@ -22,7 +22,7 @@ internal sealed class ConsoleButtonString
         Width = -1;
         ErrPos = null;
     }
-    public ConsoleButtonString(EmueraConsole console, AConsoleDisplayPart[] strs, long input)
+    public ConsoleButtonString(EmueraConsole console, AConsoleDisplayNode[] strs, long input)
         : this(console, strs)
     {
         Input = input;
@@ -36,7 +36,7 @@ internal sealed class ConsoleButtonString
         }
         ErrPos = null;
     }
-    public ConsoleButtonString(EmueraConsole console, AConsoleDisplayPart[] strs, string inputs)
+    public ConsoleButtonString(EmueraConsole console, AConsoleDisplayNode[] strs, string inputs)
         : this(console, strs)
     {
         Inputs = inputs;
@@ -50,7 +50,7 @@ internal sealed class ConsoleButtonString
         ErrPos = null;
     }
 
-    public ConsoleButtonString(EmueraConsole console, AConsoleDisplayPart[] strs, long input, string inputs)
+    public ConsoleButtonString(EmueraConsole console, AConsoleDisplayNode[] strs, long input, string inputs)
         : this(console, strs)
     {
         Input = input;
@@ -64,7 +64,7 @@ internal sealed class ConsoleButtonString
         }
         ErrPos = null;
     }
-    public ConsoleButtonString(EmueraConsole console, AConsoleDisplayPart[] strs, string inputs, ScriptPosition? pos)
+    public ConsoleButtonString(EmueraConsole console, AConsoleDisplayNode[] strs, string inputs, ScriptPosition? pos)
         : this(console, strs)
     {
         Inputs = inputs;
@@ -78,8 +78,8 @@ internal sealed class ConsoleButtonString
         ErrPos = pos;
     }
 
-    AConsoleDisplayPart[] strArray;
-    public AConsoleDisplayPart[] StrArray { get { return strArray; } }
+    AConsoleDisplayNode[] strArray;
+    public AConsoleDisplayNode[] StrArray { get { return strArray; } }
     EmueraConsole parent;
 
     public ConsoleDisplayLine ParentLine { get; set; }
@@ -110,8 +110,8 @@ internal sealed class ConsoleButtonString
     {
         if (divIndex <= 0)
             return null;
-        List<AConsoleDisplayPart> cssListA = [];
-        List<AConsoleDisplayPart> cssListB = [];
+        List<AConsoleDisplayNode> cssListA = [];
+        List<AConsoleDisplayNode> cssListB = [];
         int index = 0;
         int cssIndex;
         bool b = false;
@@ -122,7 +122,7 @@ internal sealed class ConsoleButtonString
                 cssListB.Add(strArray[cssIndex]);
                 continue;
             }
-            int length = strArray[cssIndex].Str.Length;
+            int length = strArray[cssIndex].Text.Length;
             if (divIndex < index + length)
             {
                 ConsoleStyledString oldcss = strArray[cssIndex] as ConsoleStyledString;
@@ -146,8 +146,8 @@ internal sealed class ConsoleButtonString
         }
         if (cssIndex >= strArray.Length && cssListB.Count == 0)
             return null;
-        AConsoleDisplayPart[] cssArrayA = new AConsoleDisplayPart[cssListA.Count];
-        AConsoleDisplayPart[] cssArrayB = new AConsoleDisplayPart[cssListB.Count];
+        AConsoleDisplayNode[] cssArrayA = new AConsoleDisplayNode[cssListA.Count];
+        AConsoleDisplayNode[] cssArrayB = new AConsoleDisplayNode[cssListB.Count];
         cssListA.CopyTo(cssArrayA);
         cssListB.CopyTo(cssArrayB);
         strArray = cssArrayA;
@@ -174,7 +174,7 @@ internal sealed class ConsoleButtonString
         if (strArray != null && strArray.Length > 0)
         {
             Width = 0;
-            foreach (AConsoleDisplayPart css in strArray)
+            foreach (AConsoleDisplayNode css in strArray)
             {
                 if (css.Width <= 0)
                     css.SetWidth(sm, subpixel);
@@ -215,14 +215,14 @@ internal sealed class ConsoleButtonString
     internal void ShiftPositionX(int shiftX)
     {
         PointX += shiftX;
-        foreach (AConsoleDisplayPart css in strArray)
+        foreach (AConsoleDisplayNode css in strArray)
             css.PointX += shiftX;
     }
 
     public void DrawTo(Graphics graph, int pointY, bool isBackLog, TextDrawingMode mode)
     {
         bool isSelecting = IsButton && parent.ButtonIsSelected(this);
-        foreach (AConsoleDisplayPart css in strArray)
+        foreach (AConsoleDisplayNode css in strArray)
             css.DrawTo(graph, pointY, isSelecting, isBackLog, mode, IsButton);
     }
 

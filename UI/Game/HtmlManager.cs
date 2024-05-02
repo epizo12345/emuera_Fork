@@ -192,14 +192,14 @@ internal static class HtmlManager
                     }
                     b.Append('>');
                 }
-                AConsoleDisplayPart[] parts = buttons[buttonCounter].StrArray;
+                AConsoleDisplayNode[] parts = buttons[buttonCounter].StrArray;
                 for (int cssCounter = 0; cssCounter < parts.Length; cssCounter++)
                 {
                     if (parts[cssCounter] is ConsoleStyledString)
                     {
                         ConsoleStyledString css = parts[cssCounter] as ConsoleStyledString;
                         b.Append(getStringStyleStartingTag(css.StringStyle));
-                        b.Append(Escape(css.Str));
+                        b.Append(Escape(css.Text));
                         b.Append(getClosingStyleStartingTag(css.StringStyle));
                     }
                     else if (parts[cssCounter] is ConsoleImagePart)
@@ -278,7 +278,7 @@ internal static class HtmlManager
     /// <returns></returns>
     public static ConsoleDisplayLine[] Html2DisplayLine(string str, StringMeasure sm, EmueraConsole console, bool lineEnd)
     {
-        List<AConsoleDisplayPart> cssList = [];
+        List<AConsoleDisplayNode> cssList = [];
         List<ConsoleButtonString> buttonList = [];
         CharStream st = new(str);
         int found;
@@ -343,7 +343,7 @@ internal static class HtmlManager
             else//タグ解析
             {
                 st.ShiftNext();
-                AConsoleDisplayPart part = tagAnalyze(state, st);
+                AConsoleDisplayNode part = tagAnalyze(state, st);
                 if (st.Current != '>')
                     throw new CodeEE("タグ終端'>'が見つかりません");
                 if (part != null)
@@ -505,9 +505,9 @@ internal static class HtmlManager
     /// <param name="state"></param>
     /// <param name="console"></param>
     /// <returns></returns>
-    private static ConsoleButtonString cssToButton(List<AConsoleDisplayPart> cssList, HtmlAnalzeState state, EmueraConsole console)
+    private static ConsoleButtonString cssToButton(List<AConsoleDisplayNode> cssList, HtmlAnalzeState state, EmueraConsole console)
     {
-        AConsoleDisplayPart[] css = new AConsoleDisplayPart[cssList.Count];
+        AConsoleDisplayNode[] css = new AConsoleDisplayNode[cssList.Count];
         cssList.CopyTo(css);
         cssList.Clear();
         ConsoleButtonString ret;
@@ -612,7 +612,7 @@ internal static class HtmlManager
         return b.ToString();
     }
 
-    private static AConsoleDisplayPart tagAnalyze(HtmlAnalzeState state, CharStream st)
+    private static AConsoleDisplayNode tagAnalyze(HtmlAnalzeState state, CharStream st)
     {
         bool endTag = st.Current == '/';
         string tag;

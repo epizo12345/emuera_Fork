@@ -1709,7 +1709,7 @@ internal sealed partial class EmueraConsole : IDisposable
                 //	if(pointing.IsButton)
                 //		goto breakfor;
                 //}
-                foreach (AConsoleDisplayPart part in button.StrArray)
+                foreach (AConsoleDisplayNode part in button.StrArray)
                 {
                     if (part == null)
                         continue;

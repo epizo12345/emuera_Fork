@@ -101,7 +101,7 @@ internal sealed class ConsoleRectangleShapePart : ConsoleShapePart
 {
     public ConsoleRectangleShapePart(RectangleF theRect)
     {
-        Str = "";
+        Text = "";
         originalRectF = theRect;
         WidthF = theRect.X + theRect.Width;
         rect.Y = (int)theRect.Y;
@@ -146,7 +146,7 @@ internal sealed class ConsoleSpacePart : ConsoleShapePart
 {
     public ConsoleSpacePart(RectangleF theRect)
     {
-        Str = "";
+        Text = "";
         WidthF = theRect.Width;
         //Width = width;
     }
@@ -165,16 +165,16 @@ internal sealed class ConsoleErrorShapePart : ConsoleShapePart
 {
     public ConsoleErrorShapePart(string errMes)
     {
-        Str = errMes;
+        Text = errMes;
         AltText = errMes;
     }
 
     public override void DrawTo(Graphics graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
     {
         if (mode == TextDrawingMode.GRAPHICS)
-            graph.DrawString(Str, Config.DefaultFont, new SolidBrush(Config.ForeColor), new Point(PointX, pointY));
+            graph.DrawString(Text, Config.DefaultFont, new SolidBrush(Config.ForeColor), new Point(PointX, pointY));
         else
-            System.Windows.Forms.TextRenderer.DrawText(graph, Str.AsSpan(), Config.DefaultFont, new Point(PointX, pointY), Config.ForeColor, System.Windows.Forms.TextFormatFlags.NoPrefix);
+            System.Windows.Forms.TextRenderer.DrawText(graph, Text.AsSpan(), Config.DefaultFont, new Point(PointX, pointY), Config.ForeColor, System.Windows.Forms.TextFormatFlags.NoPrefix);
     }
     public override void SetWidth(StringMeasure sm, float subPixel)
     {
@@ -183,7 +183,7 @@ internal sealed class ConsoleErrorShapePart : ConsoleShapePart
             Width = 0;
             return;
         }
-        Width = sm.GetDisplayLength(Str, Config.DefaultFont);
+        Width = sm.GetDisplayLength(Text, Config.DefaultFont);
         XsubPixel = subPixel;
     }
 }

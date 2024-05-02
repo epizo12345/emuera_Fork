@@ -129,10 +129,10 @@ internal sealed partial class EmueraConsole : IDisposable
         if (LastLineIsTemporary)
             deleteLine(1);
         //不適正なFontのチェック
-        AConsoleDisplayPart errorStr = null;
+        AConsoleDisplayNode errorStr = null;
         foreach (ConsoleButtonString button in line.Buttons)
         {
-            foreach (AConsoleDisplayPart css in button.StrArray)
+            foreach (AConsoleDisplayNode css in button.StrArray)
             {
                 if (css.Error)
                 {

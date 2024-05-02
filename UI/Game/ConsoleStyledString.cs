@@ -28,7 +28,7 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
     {
         //if ((StaticConfig.TextDrawingMode != TextDrawingMode.GRAPHICS) && (str.IndexOf('\t') >= 0))
         //    str = str.Replace("\t", "");
-        Str = str;
+        Text = str;
         StringStyle = style;
         Font = FontFactory.GetFont(style.Fontname, style.FontStyle);
         if (Font == null)
@@ -106,14 +106,14 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
     }
     public ConsoleStyledString DivideAt(int index)
     {
-        if (index <= 0 || index > Str.Length || Error)
+        if (index <= 0 || index > Text.Length || Error)
             return null;
-        string str = Str[index..];
-        Str = Str[..index];
+        string str = Text[index..];
+        Text = Text[..index];
         ConsoleStyledString ret = new()
         {
             Font = Font,
-            Str = str,
+            Text = str,
             Color = Color,
             ButtonColor = ButtonColor,
             colorChanged = colorChanged,
@@ -130,7 +130,7 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
             Width = 0;
             return;
         }
-        Width = sm.GetDisplayLength(Str, Font);
+        Width = sm.GetDisplayLength(Text, Font);
         XsubPixel = subPixel;
     }
 
@@ -147,7 +147,7 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
                 if (!(Color.Yellow.R == color.R &&
                         Color.Yellow.G == color.G &&
                         Color.Yellow.B == color.B)
-                 && !string.IsNullOrWhiteSpace(Str))
+                 && !string.IsNullOrWhiteSpace(Text))
                 {
                     backcolor = Color.Gray;
                 }
@@ -169,14 +169,14 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
 
         if (mode == TextDrawingMode.GRAPHICS)
         {
-            graph.DrawString(Str, Font, new SolidBrush(color), Point);
+            graph.DrawString(Text, Font, new SolidBrush(color), Point);
         }
         else
         {
             if (_backColor.HasValue)
             {
                 graph.FillRectangle(new SolidBrush(_backColor.Value), new Rectangle(Point, Size));
-                TextRenderer.DrawText(graph, Str.AsSpan(), Font, Point, color, TextFormatFlags.NoPrefix);
+                TextRenderer.DrawText(graph, Text.AsSpan(), Font, Point, color, TextFormatFlags.NoPrefix);
             }
 
             if (JSONConfig.Data.UseButtonFocusBackgroundColor)
@@ -187,16 +187,16 @@ internal sealed class ConsoleStyledString : AConsoleColoredPart
                     {
                         backcolor = Color.FromArgb(50, 50, 50);
                     }
-                    TextRenderer.DrawText(graph, Str.AsSpan(), Font, Point, color, backColor: backcolor.Value, TextFormatFlags.NoPrefix);
+                    TextRenderer.DrawText(graph, Text.AsSpan(), Font, Point, color, backColor: backcolor.Value, TextFormatFlags.NoPrefix);
                 }
                 else
                 {
-                    TextRenderer.DrawText(graph, Str.AsSpan(), Font, Point, color, TextFormatFlags.NoPrefix);
+                    TextRenderer.DrawText(graph, Text.AsSpan(), Font, Point, color, TextFormatFlags.NoPrefix);
                 }
             }
             else
             {
-                TextRenderer.DrawText(graph, Str.AsSpan(), Font, Point, color, TextFormatFlags.NoPrefix);
+                TextRenderer.DrawText(graph, Text.AsSpan(), Font, Point, color, TextFormatFlags.NoPrefix);
             }
 
         }
