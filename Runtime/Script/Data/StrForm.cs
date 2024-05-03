@@ -183,17 +183,18 @@ internal sealed class StrForm
         }
         if (!canRestructure)
             return;
-        List<string> strList = [.. strs];
-        List<AExpression> termList = [.. terms];
-        for (int i = 0; i < termList.Count; i++)
+        LinkedList<string> strList = [];
+        LinkedList<AExpression> termList = [];
+        for (int i = 0; i < terms.Length; i++)
         {
-            if (termList[i] is SingleStrTerm)
+            if (terms[i] is SingleStrTerm)
             {
-                string str = termList[i].GetStrValue(exm);
-                strList[i] = strList[i] + str + strList[i + 1];
-                termList.RemoveAt(i);
-                strList.RemoveAt(i + 1);
-                i--;
+                string str = terms[i].GetStrValue(exm);
+                strList.AddLast($"{strs[i]}{str}{strs[i + 1]}");
+            }
+            else
+            {
+                termList.AddLast(terms[i]);
             }
         }
         strs = [.. strList];
