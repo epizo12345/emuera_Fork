@@ -102,6 +102,10 @@ internal static class HtmlManager
         public int Width = -1;
         public int Height = -1;
 
+        public bool HasBorder = false;
+        public int BorderWidth;
+        public Color BorderColor;
+
 
         public StringStyle GetSS()
         {
@@ -310,16 +314,28 @@ internal static class HtmlManager
                 if (state.IsDiv)
                 {
                     var stringStyle = state.GetSS();
+                    BorderStyle? borderStyle = null;
+                    if (state.HasBorder)
+                    {
+                        borderStyle = new BorderStyle
+                        {
+                            Pen = new Pen(state.BorderColor, state.BorderWidth)
+                        };
+                    }
+
                     cssList.Add(new ConsoleDivElement([], txt, stringStyle,
                                                          state.Display, state.PosX, state.PosY,
                                                          state.Width, state.Height,
-                                                         state.BackgroundColor));
+                                                         state.BackgroundColor,
+                                                         borderStyle));
                     state.Display = DisplayMode.Relative;
                     state.PosX = default;
                     state.PosY = default;
                     state.BackgroundColor = null;
                     state.Width = -1;
                     state.Height = -1;
+                    state.BorderColor = Color.White;
+                    state.BorderWidth = 1;
                 }
                 else
                 {
@@ -1065,6 +1081,9 @@ internal static class HtmlManager
                     var height = -1;
                     var display = DisplayMode.Relative;
                     Color? backgroundColor = null;
+                    Color borderColor = Color.White;
+                    var borderWidth = 1;
+
 
                     while (wc != null && !wc.EOL)
                     {
@@ -1077,27 +1096,13 @@ internal static class HtmlManager
                             case "xpos":
                                 {
                                     var value = (wc.Current as LiteralStringWord).Str;
-                                    if (value.EndsWith("px"))
-                                    {
-                                        xpos = int.Parse(value.AsSpan()[..^2]);
-                                    }
-                                    else
-                                    {
-                                        xpos = int.Parse(value) * Config.FontSize / 100;
-                                    }
+                                    xpos = ParseSizeValue(value);
                                 }
                                 break;
                             case "ypos":
                                 {
                                     var value = (wc.Current as LiteralStringWord).Str;
-                                    if (value.EndsWith("px"))
-                                    {
-                                        ypos = int.Parse(value.AsSpan()[..^2]);
-                                    }
-                                    else
-                                    {
-                                        ypos = int.Parse(value) * Config.FontSize / 100;
-                                    }
+                                    ypos = ParseSizeValue(value);
                                 }
                                 break;
                             case "display":
@@ -1115,27 +1120,27 @@ internal static class HtmlManager
                             case "width":
                                 {
                                     var value = (wc.Current as LiteralStringWord).Str;
-                                    if (value.EndsWith("px"))
-                                    {
-                                        width = int.Parse(value.AsSpan()[..^2]);
-                                    }
-                                    else
-                                    {
-                                        width = int.Parse(value) * Config.FontSize / 100;
-                                    }
+                                    width = ParseSizeValue(value);
                                 }
                                 break;
                             case "height":
                                 {
                                     var value = (wc.Current as LiteralStringWord).Str;
-                                    if (value.EndsWith("px"))
-                                    {
-                                        height = int.Parse(value.AsSpan()[..^2]);
-                                    }
-                                    else
-                                    {
-                                        height = int.Parse(value) * Config.FontSize / 100;
-                                    }
+                                    height = ParseSizeValue(value);
+                                }
+                                break;
+                            case "border_width":
+                                {
+                                    var value = (wc.Current as LiteralStringWord).Str;
+                                    state.HasBorder = true;
+                                    borderWidth = ParseSizeValue(value);
+                                }
+                                break;
+                            case "border_color":
+                                {
+                                    var value = (wc.Current as LiteralStringWord).Str;
+                                    state.HasBorder = true;
+                                    borderColor = ColorTranslator.FromHtml(value);
                                 }
                                 break;
                         }
@@ -1148,6 +1153,11 @@ internal static class HtmlManager
                     state.BackgroundColor = backgroundColor;
                     state.Width = width;
                     state.Height = height;
+                    if (state.HasBorder)
+                    {
+                        state.BorderColor = borderColor;
+                        state.BorderWidth = borderWidth;
+                    }
                     return null;
                 }
             default:
@@ -1168,6 +1178,21 @@ internal static class HtmlManager
                 "absolute-leftbottom" => DisplayMode.AbsoluteLeftBottom,
                 _ => throw new Exception("displayの値が解釈できません")
             };
+        }
+
+        static int ParseSizeValue(string value)
+        {
+            int xpos;
+            if (value.EndsWith("px"))
+            {
+                xpos = int.Parse(value.AsSpan()[..^2]);
+            }
+            else
+            {
+                xpos = int.Parse(value) * Config.FontSize / 100;
+            }
+
+            return xpos;
         }
     }
 

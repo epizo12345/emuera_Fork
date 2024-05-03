@@ -7,6 +7,11 @@ using MinorShift.Emuera.Runtime.Config.JSON;
 using MinorShift.Emuera.UI;
 using MinorShift.Emuera.UI.Game;
 
+struct BorderStyle
+{
+    public Pen Pen;
+}
+
 class ConsoleDivElement : AConsoleDisplayNode
 {
     readonly AConsoleDisplayNode[] _childNodes;
@@ -22,12 +27,17 @@ class ConsoleDivElement : AConsoleDisplayNode
     readonly Font _font;
     readonly Color? _backColor;
 
+    BorderStyle? _borderStyle;
+
+
+
     public ConsoleDivElement(AConsoleDisplayNode[] childNode, string text,
                                 StringStyle stringStyle,
                                 DisplayMode display = DisplayMode.Relative,
                                 int positionX = 0, int positionY = 0,
                                 int width = -1, int height = -1,
-                                Color? backcolor = null)
+                                Color? backcolor = null,
+                                BorderStyle? borderStyle = null)
     {
         _childNodes = childNode;
 
@@ -59,6 +69,8 @@ class ConsoleDivElement : AConsoleDisplayNode
         _positionY = positionY;
 
         _backColor = backcolor;
+
+        _borderStyle = borderStyle;
     }
 
     public override bool CanDivide => false;
@@ -67,29 +79,6 @@ class ConsoleDivElement : AConsoleDisplayNode
     {
         if (Error)
             return;
-        var color = _stringStyle.Color;
-        Color? backcolor = null;
-
-        if (isSelecting)
-        {
-            if (JSONConfig.Data.UseButtonFocusBackgroundColor)
-            {
-                if (!(Color.Yellow.R == color.R &&
-                        Color.Yellow.G == color.G &&
-                        Color.Yellow.B == color.B)
-                 && !string.IsNullOrWhiteSpace(Text))
-                {
-                    backcolor = Color.Gray;
-                }
-            }
-            color = _stringStyle.ButtonColor;
-        }
-
-        if (isBackLog)
-        {
-            color = Config.LogColor;
-        }
-
         Point = _display switch
         {
             DisplayMode.Relative => new Point(PointX + _positionX, pointY + _positionY),
@@ -98,43 +87,68 @@ class ConsoleDivElement : AConsoleDisplayNode
             _ => throw new NotImplementedException($"{_display}はまだ実装されていません")
         };
 
-        if (mode == TextDrawingMode.GRAPHICS)
+
         {
-            graph.DrawString(Text, _font, new SolidBrush(color), Point);
-        }
-        else
-        {
-            if (_backColor.HasValue)
+            var color = _stringStyle.Color;
+            Color? backcolor = null;
+
+            if (isSelecting)
             {
-                graph.FillRectangle(new SolidBrush(_backColor.Value), new Rectangle(Point, Size));
-                TextRenderer.DrawText(graph, Text.AsSpan(), _font, Point, color, TextFormatFlags.NoPrefix);
+                if (JSONConfig.Data.UseButtonFocusBackgroundColor)
+                {
+                    if (!(Color.Yellow.R == color.R &&
+                            Color.Yellow.G == color.G &&
+                            Color.Yellow.B == color.B)
+                     && !string.IsNullOrWhiteSpace(Text))
+                    {
+                        backcolor = Color.Gray;
+                    }
+                }
+                color = _stringStyle.ButtonColor;
             }
 
-            if (JSONConfig.Data.UseButtonFocusBackgroundColor)
+            if (isBackLog)
             {
-                if (isButton && !isBackLog)
+                color = Config.LogColor;
+            }
+
+
+            if (mode == TextDrawingMode.GRAPHICS)
+            {
+                graph.DrawString(Text, _font, new SolidBrush(color), Point);
+            }
+            else
+            {
+                if (_backColor.HasValue)
+                {
+                    graph.FillRectangle(new SolidBrush(_backColor.Value), new Rectangle(Point, Size));
+                    TextRenderer.DrawText(graph, Text.AsSpan(), _font, Point, color, TextFormatFlags.NoPrefix);
+                }
+                else if (JSONConfig.Data.UseButtonFocusBackgroundColor && isButton && !isBackLog)
                 {
                     if (!backcolor.HasValue)
                     {
                         backcolor = Color.FromArgb(50, 50, 50);
                     }
                     TextRenderer.DrawText(graph, Text.AsSpan(), _font, Point, color, backColor: backcolor.Value, TextFormatFlags.NoPrefix);
+
                 }
                 else
                 {
                     TextRenderer.DrawText(graph, Text.AsSpan(), _font, Point, color, TextFormatFlags.NoPrefix);
                 }
-            }
-            else
-            {
-                TextRenderer.DrawText(graph, Text.AsSpan(), _font, Point, color, TextFormatFlags.NoPrefix);
-            }
 
+            }
         }
 
         foreach (var childNode in _childNodes)
         {
             childNode.DrawTo(graph, pointY, isSelecting, isBackLog, mode, isButton);
+        }
+
+        if (_borderStyle.HasValue)
+        {
+            graph.DrawRectangle(_borderStyle.Value.Pen, new Rectangle(Point, Size));
         }
     }
 
