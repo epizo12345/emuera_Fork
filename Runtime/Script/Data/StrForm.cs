@@ -178,17 +178,16 @@ internal sealed class StrForm
             if (terms[i] is SingleTerm)
             {
                 canRestructure = true;
+                break;
             }
         }
         if (!canRestructure)
             return;
-        List<string> strList = [];
-        List<AExpression> termList = [];
-        strList.AddRange(strs);
-        termList.AddRange(terms);
+        List<string> strList = [.. strs];
+        List<AExpression> termList = [.. terms];
         for (int i = 0; i < termList.Count; i++)
         {
-            if (termList[i] is SingleTerm)
+            if (termList[i] is SingleStrTerm)
             {
                 string str = termList[i].GetStrValue(exm);
                 strList[i] = strList[i] + str + strList[i + 1];
@@ -197,18 +196,17 @@ internal sealed class StrForm
                 i--;
             }
         }
-        strs = new string[strList.Count];
-        terms = new AExpression[termList.Count];
-        strList.CopyTo(strs);
-        termList.CopyTo(terms);
+        strs = [.. strList];
+        terms = [.. terms];
         return;
     }
 
+    public readonly StringBuilder builder = new(100);
     public string GetString(ExpressionMediator exm)
     {
         if (strs.Length == 1)
             return strs[0];
-        StringBuilder builder = new(100);
+        builder.Clear();
         for (int i = 0; i < strs.Length - 1; i++)
         {
             builder.Append(strs[i]);
