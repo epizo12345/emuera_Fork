@@ -89,6 +89,7 @@ namespace MinorShift.Emuera.Forms
             timerKeyMacroChanged = new System.Windows.Forms.Timer(components);
             labelMacroGroupChanged = new System.Windows.Forms.Label();
             mainPicBox = new EraPictureBox();
+            デバッグモードで再起動ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             menuStrip.SuspendLayout();
             AutoVerbMenu.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)mainPicBox).BeginInit();
@@ -118,7 +119,7 @@ namespace MinorShift.Emuera.Forms
             // 
             // fileToolStripMenuItem
             // 
-            fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { rebootToolStripMenuItem, ログを保存するSToolStripMenuItem, ログをクリップボードにコピーToolStripMenuItem, タイトルへ戻るTToolStripMenuItem, コードを読み直すcToolStripMenuItem, フォルダを読み直すFToolStripMenuItem, ファイルを読み直すFToolStripMenuItem, exitToolStripMenuItem });
+            fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { rebootToolStripMenuItem, デバッグモードで再起動ToolStripMenuItem, ログを保存するSToolStripMenuItem, ログをクリップボードにコピーToolStripMenuItem, タイトルへ戻るTToolStripMenuItem, コードを読み直すcToolStripMenuItem, フォルダを読み直すFToolStripMenuItem, ファイルを読み直すFToolStripMenuItem, exitToolStripMenuItem });
             fileToolStripMenuItem.ForeColor = System.Drawing.SystemColors.MenuText;
             fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             fileToolStripMenuItem.Size = new System.Drawing.Size(67, 20);
@@ -553,6 +554,13 @@ namespace MinorShift.Emuera.Forms
             mainPicBox.MouseLeave += mainPicBox_MouseLeave;
             mainPicBox.MouseMove += mainPicBox_MouseMove;
             // 
+            // デバッグモードで再起動ToolStripMenuItem
+            // 
+            デバッグモードで再起動ToolStripMenuItem.Name = "デバッグモードで再起動ToolStripMenuItem";
+            デバッグモードで再起動ToolStripMenuItem.Size = new System.Drawing.Size(210, 22);
+            デバッグモードで再起動ToolStripMenuItem.Text = "デバッグモードで再起動";
+            デバッグモードで再起動ToolStripMenuItem.Click += デバッグモードで再起動ToolStripMenuItem_Click;
+            // 
             // MainWindow
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
@@ -641,6 +649,7 @@ namespace MinorShift.Emuera.Forms
         private System.Windows.Forms.ToolStripTextBox EmuVerToolStripTextBox;
         private System.Windows.Forms.ToolStripMenuItem ツールToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem ウィンドウ幅のロック変更ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem デバッグモードで再起動ToolStripMenuItem;
     }
 }
 

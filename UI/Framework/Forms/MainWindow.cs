@@ -24,7 +24,10 @@ internal sealed partial class MainWindow : Form
         this._args = args;
 
         if (Program.DebugMode)
+        {
+            デバッグモードで再起動ToolStripMenuItem.Visible = false;
             デバッグToolStripMenuItem.Visible = true;
+        }
 
         mainPicBox.SetStyle();
         initControlSizeAndLocation();
@@ -1096,5 +1099,15 @@ internal sealed partial class MainWindow : Form
             ConfigData.Instance.GetConfigItem(ConfigCode.WindowY).SetValue(mainPicBox.Height + Config.LineHeight);
             ConfigData.Instance.SaveConfig();
         }
+    }
+
+    private void デバッグモードで再起動ToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        //新たにアプリケーションを起動する
+        Process.Start(Application.ExecutablePath, [.._args,"-Debug"]);
+
+        //現在のアプリケーションを終了する
+        Application.ExitThread();
+
     }
 }
