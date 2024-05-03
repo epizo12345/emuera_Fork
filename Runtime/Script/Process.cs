@@ -48,7 +48,7 @@ internal sealed partial class Process(EmueraConsole view)
     bool initialiing;
     public bool inInitializeing { get { return initialiing; } }
 
-    public async Task<bool> Initialize()
+    public async Task<bool> Initialize(StreamWriter logWriter)
     {
         var stopWatch = new Stopwatch();
         stopWatch.Start();
@@ -58,8 +58,8 @@ internal sealed partial class Process(EmueraConsole view)
         initialiing = true;
         try
         {
-            Debug.WriteLine("Proc:Init:Start " + stopWatch.ElapsedMilliseconds + "ms");
-            Debug.WriteLine("Proc:Init:Parser:Start " + stopWatch.ElapsedMilliseconds + "ms");
+            logWriter.WriteLine($"Proc:Init:Start {stopWatch.ElapsedMilliseconds}ms");
+            logWriter.WriteLine($"Proc:Init:Parser:Start {stopWatch.ElapsedMilliseconds}ms");
             ParserMediator.Initialize(console);
             //コンフィグファイルに関するエラーの処理（コンフィグファイルはこの関数に入る前に読込済み）
             if (ParserMediator.HasWarning)
@@ -71,9 +71,9 @@ internal sealed partial class Process(EmueraConsole view)
                     return false;
                 }
             }
-            Debug.WriteLine("Proc:Init:Parser:End " + stopWatch.ElapsedMilliseconds + "ms");
+            logWriter.WriteLine($"Proc:Init:Parser:End {stopWatch.ElapsedMilliseconds}ms");
 
-            Debug.WriteLine("Proc:Init:Image:Start " + stopWatch.ElapsedMilliseconds + "ms");
+            logWriter.WriteLine($"Proc:Init:Image:Start {stopWatch.ElapsedMilliseconds}ms");
             //リソースフォルダ読み込み
             var err = await Task.Run(AppContents.LoadContents);
             if (err != null)
@@ -84,10 +84,10 @@ internal sealed partial class Process(EmueraConsole view)
                 return false;
             }
             ParserMediator.FlushWarningList();
-            Debug.WriteLine("Proc:Init:Image:End " + stopWatch.ElapsedMilliseconds + "ms");
+            logWriter.WriteLine($"Proc:Init:Image:End {stopWatch.ElapsedMilliseconds}ms");
 
 
-            Debug.WriteLine("Proc:Init:KeyMacro:Start " + stopWatch.ElapsedMilliseconds + "ms");
+            logWriter.WriteLine($"Proc:Init:KeyMacro:Start {stopWatch.ElapsedMilliseconds}ms");
             //キーマクロ読み込み
             if (Config.UseKeyMacro && !Program.AnalysisMode)
             {
@@ -98,9 +98,9 @@ internal sealed partial class Process(EmueraConsole view)
                     KeyMacro.LoadMacroFile(Program.ExeDir + "macro.txt");
                 }
             }
-            Debug.WriteLine("Proc:Init:KeyMacro:End " + stopWatch.ElapsedMilliseconds + "ms");
+            logWriter.WriteLine($"Proc:Init:KeyMacro:End {stopWatch.ElapsedMilliseconds}ms");
 
-            Debug.WriteLine("Proc:Init:Replace:Start " + stopWatch.ElapsedMilliseconds + "ms");
+            logWriter.WriteLine($"Proc:Init:Replace:Start {stopWatch.ElapsedMilliseconds}ms");
             //_replace.csv読み込み
             if (Config.UseReplaceFile && !Program.AnalysisMode)
             {
@@ -120,13 +120,13 @@ internal sealed partial class Process(EmueraConsole view)
                     }
                 }
             }
-            Debug.WriteLine("Proc:Init:Replace:End " + stopWatch.ElapsedMilliseconds + "ms");
+            logWriter.WriteLine($"Proc:Init:Replace:End {stopWatch.ElapsedMilliseconds}ms");
 
             Config.SetReplace(ConfigData.Instance);
             //ここでBARを設定すれば、いいことに気づいた予感
             console.setStBar(Config.DrawLineString);
 
-            Debug.WriteLine("Proc:Init:Rename:Load:Start " + stopWatch.ElapsedMilliseconds + "ms");
+            logWriter.WriteLine($"Proc:Init:Rename:Load:Start {stopWatch.ElapsedMilliseconds}ms");
             //_rename.csv読み込み
             if (Config.UseRenameFile)
             {
@@ -139,7 +139,7 @@ internal sealed partial class Process(EmueraConsole view)
                 else
                     console.PrintError("csv\\_Rename.csvが見つかりません");
             }
-            Debug.WriteLine("Proc:Init:Rename:Load:End " + stopWatch.ElapsedMilliseconds + "ms");
+            logWriter.WriteLine($"Proc:Init:Rename:Load:End {stopWatch.ElapsedMilliseconds}ms");
 
             if (!Config.DisplayReport)
             {
@@ -156,15 +156,15 @@ internal sealed partial class Process(EmueraConsole view)
             }
             console.SetWindowTitle(gamebase.ScriptWindowTitle);
             GlobalStatic.GameBaseData = gamebase;
-            Debug.WriteLine("Proc:Init:MainCSV:End " + stopWatch.ElapsedMilliseconds + "ms");
+            logWriter.WriteLine($"Proc:Init:MainCSV:End {stopWatch.ElapsedMilliseconds}ms");
 
             //前記以外のcsvを全て読み込み
             ConstantData constant = new();
             constant.LoadData(Program.CsvDir, console, Config.DisplayReport);
-            Debug.WriteLine("Proc:Init:EtcCSV:End " + stopWatch.ElapsedMilliseconds + "ms");
+            logWriter.WriteLine($"Proc:Init:EtcCSV:End {stopWatch.ElapsedMilliseconds}ms");
             GlobalStatic.ConstantData = constant;
             TrainName = constant.GetCsvNameList(VariableCode.TRAINNAME);
-            Debug.WriteLine("Proc:Init:EtcCSV:End " + stopWatch.ElapsedMilliseconds + "ms");
+            logWriter.WriteLine($"Proc:Init:EtcCSV:End {stopWatch.ElapsedMilliseconds}ms");
 
 
             vEvaluator = new VariableEvaluator(gamebase, constant);
@@ -179,7 +179,7 @@ internal sealed partial class Process(EmueraConsole view)
             exm = new ExpressionMediator(this, vEvaluator, console);
             GlobalStatic.EMediator = exm;
 
-            Debug.WriteLine("Proc:Init:ERH:Start " + stopWatch.ElapsedMilliseconds + "ms");
+            logWriter.WriteLine($"Proc:Init:ERH:Start {stopWatch.ElapsedMilliseconds}ms");
 
             labelDic = new LabelDictionary();
             GlobalStatic.LabelDictionary = labelDic;
@@ -195,24 +195,24 @@ internal sealed partial class Process(EmueraConsole view)
                 return false;
             }
             LexicalAnalyzer.UseMacro = idDic.UseMacro();
-            Debug.WriteLine("Proc:Init:ERH:End " + stopWatch.ElapsedMilliseconds + "ms");
+            logWriter.WriteLine($"Proc:Init:ERH:End {stopWatch.ElapsedMilliseconds}ms");
 
 
             //TODO:ユーザー定義変数用のcsvの適用
 
             //ERB読込
-            Debug.WriteLine("Proc:Init:ERB:Start " + stopWatch.ElapsedMilliseconds + "ms");
+            logWriter.WriteLine($"Proc:Init:ERB:Start {stopWatch.ElapsedMilliseconds}ms");
             var loader = new ErbLoader(console, exm, this);
             if (Program.AnalysisMode)
                 noError = await loader.LoadErbList(Program.AnalysisFiles, labelDic);
             else
                 noError = await loader.LoadErbDir(Program.ErbDir, Config.DisplayReport, labelDic);
-            Debug.WriteLine("Proc:Init:ERB:End " + stopWatch.ElapsedMilliseconds + "ms");
+            logWriter.WriteLine($"Proc:Init:ERB:End {stopWatch.ElapsedMilliseconds}ms");
 
             initSystemProcess();
             initialiing = false;
 
-            Debug.WriteLine("Proc:Init:End " + stopWatch.ElapsedMilliseconds + "ms");
+            logWriter.WriteLine($"Proc:Init:End {stopWatch.ElapsedMilliseconds}ms");
         }
         catch (Exception e)
         {
