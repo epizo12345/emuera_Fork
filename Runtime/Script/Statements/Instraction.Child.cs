@@ -370,6 +370,20 @@ internal sealed partial class FunctionIdentifier
         }
     }
 
+    private sealed class HTML_PRINT_ISLAND_CLEAR_Instruction : AInstruction
+    {
+        public HTML_PRINT_ISLAND_CLEAR_Instruction()
+        {
+            flag = EXTENDED | METHOD_SAFE;
+            ArgBuilder = ArgumentParser.GetArgumentBuilder(FunctionArgType.VOID);
+        }
+
+        public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
+        {
+            exm.Console.ClearHTMLIsland();
+        }
+    }
+
 
     private sealed class PRINT_IMG_Instruction : AInstruction
     {

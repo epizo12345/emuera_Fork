@@ -406,6 +406,7 @@ internal sealed partial class FunctionIdentifier
             addFunction(FunctionCode.VARS, new VARS_Instruction());
         }
         addFunction(FunctionCode.HTML_PRINT_ISLAND, new HTML_PRINT_ISLAND_Instruction());
+        addFunction(FunctionCode.HTML_PRINT_ISLAND_CLEAR, new HTML_PRINT_ISLAND_CLEAR_Instruction());
 
 
 

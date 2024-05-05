@@ -108,6 +108,10 @@ internal sealed partial class EmueraConsole : IDisposable
     {
         _htmlElementList.AddRange(HtmlManager.Html2DisplayLine(html, stringMeasure, this, true));
     }
+    public void ClearHTMLIsland()
+    {
+        _htmlElementList.Clear();
+    }
 
 
 
