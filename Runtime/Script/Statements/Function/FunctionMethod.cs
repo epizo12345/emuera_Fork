@@ -18,7 +18,7 @@ internal abstract class FunctionMethod
     public virtual string CheckArgumentType(string name, List<AExpression> arguments)
     {
         if (arguments.Count != argumentTypeArray.Length)
-            return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentNum0, name);
+            return $"{name} の引数の型が正しく有りません";
         for (int i = 0; i < argumentTypeArray.Length; i++)
         {
             if (arguments[i] == null)

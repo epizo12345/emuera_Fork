@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace MinorShift.Emuera.UI.Game.Image;
 
@@ -195,7 +196,7 @@ internal sealed class GraphicsImage : AbstractImage
             throw new NullReferenceException();
         if (_points == null)
         {
-            throw new NullReferenceException("DrawPolygonに渡されるPointsが空です");
+            throw new NullReferenceException("FillPolygonに渡されるPointsが空です");
         }
         if (brush != null)
         {
@@ -203,7 +204,7 @@ internal sealed class GraphicsImage : AbstractImage
         }
         else
         {
-            using var b = new SolidBrush(Config.FocusColor);
+            using var b = new SolidBrush(Config.ForeColor);
             g.FillPolygon(b, _points.ToArray());
         }
     }
@@ -222,7 +223,7 @@ internal sealed class GraphicsImage : AbstractImage
             throw new NullReferenceException();
         if (_points == null)
         {
-            _points ??= [];
+            _points = [];
         }
         else
         {
@@ -521,6 +522,7 @@ internal sealed class GraphicsImage : AbstractImage
             pen.Dispose();
         if (font != null)
             font.Dispose();
+        _points = null;
         g = null;
         Bitmap = null;
         brush = null;
