@@ -1,5 +1,6 @@
 ﻿using MinorShift.Emuera.Runtime.Config;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
@@ -166,6 +167,66 @@ internal sealed class GraphicsImage : AbstractImage
         {
             using var b = new SolidBrush(Config.BackColor);
             g.FillRectangle(b, rect);
+        }
+    }
+
+    List<Point> _points;
+    public void GDrawPolygon()
+    {
+        if (g == null)
+            throw new NullReferenceException();
+        if (_points == null)
+        {
+            throw new NullReferenceException("DrawPolygonに渡されるPointsが空です");
+        }
+        if (pen != null)
+        {
+            g.DrawPolygon(pen, _points.ToArray());
+        }
+        else
+        {
+            using var p = new Pen(Config.ForeColor);
+            g.DrawPolygon(p, _points.ToArray());
+        }
+    }
+    public void GFillPolygon()
+    {
+        if (g == null)
+            throw new NullReferenceException();
+        if (_points == null)
+        {
+            throw new NullReferenceException("DrawPolygonに渡されるPointsが空です");
+        }
+        if (brush != null)
+        {
+            g.FillPolygon(brush, _points.ToArray());
+        }
+        else
+        {
+            using var b = new SolidBrush(Config.FocusColor);
+            g.FillPolygon(b, _points.ToArray());
+        }
+    }
+
+    public void GDrawPolygonAddPoint(Point point)
+    {
+        if (g == null)
+            throw new NullReferenceException();
+        _points ??= [];
+        _points.Add(point);
+    }
+
+    public void GDrawPolygonClearPoint()
+    {
+        if (g == null)
+            throw new NullReferenceException();
+        if (_points == null)
+        {
+            _points ??= [];
+        }
+        else
+        {
+            _points.Clear();
         }
     }
 

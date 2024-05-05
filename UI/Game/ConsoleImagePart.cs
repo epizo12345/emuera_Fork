@@ -8,7 +8,8 @@ namespace MinorShift.Emuera.UI.Game;
 sealed class ConsoleImagePart : AConsoleDisplayNode
 {
 
-    public ConsoleImagePart(string resName, string resNameb, int raw_height, int raw_width, int raw_ypos, bool usePxWidth = false, bool usePxHeight = false, DisplayMode display = DisplayMode.Relative)
+    public ConsoleImagePart(string resName, string resNameb, int raw_height, int raw_width, int raw_ypos, int raw_xpos,
+     bool usePxWidth = false, bool usePxHeight = false, DisplayMode display = DisplayMode.Relative)
     {
         top = 0;
         bottom = Config.FontSize;
@@ -111,6 +112,8 @@ sealed class ConsoleImagePart : AConsoleDisplayNode
         }
 
         _display = display;
+        _positionX = raw_xpos;
+        _positionY = raw_ypos;
     }
 
     private readonly ASprite cImage;
@@ -127,6 +130,8 @@ sealed class ConsoleImagePart : AConsoleDisplayNode
     public override int Bottom { get { return bottom; } }
 
     DisplayMode _display;
+    int _positionX;
+    int _positionY;
 
     public override bool CanDivide { get { return false; } }
     public override void SetWidth(StringMeasure sm, float subPixel)
@@ -168,12 +173,12 @@ sealed class ConsoleImagePart : AConsoleDisplayNode
                     rect.Y = destRect.Y + pointY;
                     break;
                 case DisplayMode.AbsoluteLeftTop:
-                    rect.X = destRect.X;
-                    rect.Y = destRect.Y;
+                    rect.X = _positionX;
+                    rect.Y = _positionY;
                     break;
                 case DisplayMode.AbsoluteLeftBottom:
-                    rect.X = destRect.X;
-                    rect.Y = GlobalStatic.Console.ClientHeight - Config.FontSize + destRect.Y;
+                    rect.X = _positionX;
+                    rect.Y = GlobalStatic.Console.ClientHeight - Config.FontSize + _positionY;
                     break;
                 default:
                     throw new NotImplementedException();

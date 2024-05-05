@@ -847,17 +847,11 @@ internal static class HtmlManager
                         }
                         else if (word.Code.Equals("ypos", StringComparison.OrdinalIgnoreCase))
                         {
-                            if (ypos != 0)
-                                throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
-                            if (!int.TryParse(attrValue, out ypos))
-                                throw new CodeEE("<" + tag + ">タグのypos属性の属性値が数値として解釈できません");
+                            ypos = ParseSizeValue(attrValue);
                         }
                         else if (word.Code.Equals("xpos", StringComparison.OrdinalIgnoreCase))
                         {
-                            if (xpos != 0)
-                                throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
-                            if (!int.TryParse(attrValue, out xpos))
-                                throw new CodeEE("<" + tag + ">タグのxpos属性の属性値が数値として解釈できません");
+                            xpos = ParseSizeValue(attrValue);
                         }
                         else if (word.Code.Equals("display", StringComparison.OrdinalIgnoreCase))
                         {
@@ -868,8 +862,7 @@ internal static class HtmlManager
                     }
                     if (src == null)
                         throw new CodeEE("<" + tag + ">タグにsrc属性が設定されていません");
-                    //xpos
-                    return new ConsoleImagePart(src, srcb, height, width, ypos, usePxWidth, usePxHeight, display);
+                    return new ConsoleImagePart(src, srcb, height, width, ypos, xpos, usePxWidth, usePxHeight, display);
                 }
 
             case "shape":

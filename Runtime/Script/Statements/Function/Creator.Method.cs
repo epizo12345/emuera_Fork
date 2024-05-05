@@ -3109,7 +3109,7 @@ internal static partial class FunctionMethodCreator
         public GraphicsSetPenMethod()
         {
             ReturnType = typeof(Int64);
-            argumentTypeArray = [typeof(Int64), typeof(Int64)];
+            argumentTypeArray = [typeof(Int64), typeof(Int64), typeof(Int64)];
             CanRestructure = false;
         }
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
@@ -3461,6 +3461,90 @@ internal static partial class FunctionMethodCreator
                 return 0;
             Rectangle rect = ReadRectangle(Name, exm, arguments, 1);
             g.GFillRectangle(rect);
+            return 1;
+        }
+    }
+
+    public sealed class GraphicsFillPolygonMethod : FunctionMethod
+    {
+        public GraphicsFillPolygonMethod()
+        {
+            ReturnType = typeof(Int64);
+            argumentTypeArray = [typeof(long)];
+            CanRestructure = false;
+        }
+        public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
+        {
+            if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
+                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+            var g = ReadGraphics(Name, exm, arguments, 0);
+            if (!g.IsCreated)
+                return 0;
+
+
+            g.GFillPolygon();
+            return 1;
+        }
+    }
+
+    public sealed class GraphicsDrawPolygonMethod : FunctionMethod
+    {
+        public GraphicsDrawPolygonMethod()
+        {
+            ReturnType = typeof(Int64);
+            argumentTypeArray = [typeof(long)];
+            CanRestructure = false;
+        }
+        public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
+        {
+            if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
+                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+            var g = ReadGraphics(Name, exm, arguments, 0);
+            if (!g.IsCreated)
+                return 0;
+
+
+            g.GDrawPolygon();
+            return 1;
+        }
+    }
+
+    public sealed class GraphicsPolygonPointAddMethod : FunctionMethod
+    {
+        public GraphicsPolygonPointAddMethod()
+        {
+            ReturnType = typeof(Int64);
+            argumentTypeArray = [typeof(long), typeof(long), typeof(long)];
+            CanRestructure = false;
+        }
+        public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
+        {
+            if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
+                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+            var g = ReadGraphics(Name, exm, arguments, 0);
+            if (!g.IsCreated)
+                return 0;
+            g.GDrawPolygonAddPoint(ReadPoint(Name, exm, arguments, 1));
+            return 1;
+        }
+    }
+
+    public sealed class GraphicsPolygonPointClearMethod : FunctionMethod
+    {
+        public GraphicsPolygonPointClearMethod()
+        {
+            ReturnType = typeof(Int64);
+            argumentTypeArray = [typeof(long)];
+            CanRestructure = false;
+        }
+        public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
+        {
+            if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
+                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+            var g = ReadGraphics(Name, exm, arguments, 0);
+            if (!g.IsCreated)
+                return 0;
+            g.GDrawPolygonClearPoint();
             return 1;
         }
     }

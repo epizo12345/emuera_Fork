@@ -377,7 +377,7 @@ internal sealed partial class EmueraConsole : IDisposable
 
     public void PrintImg(string str)
     {
-        printBuffer.Append(new ConsoleImagePart(str, null, 0, 0, 0));
+        printBuffer.Append(new ConsoleImagePart(str, null, 0, 0, 0, 0));
     }
 
     public void PrintShape(string type, int[] param)

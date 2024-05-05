@@ -3,6 +3,7 @@ using MinorShift.Emuera.Runtime.Script.Data;
 using MinorShift.Emuera.Runtime.Script.Statements.Function;
 using MinorShift.Emuera.Runtime.Utils;
 using System.Collections.Generic;
+using System.Drawing;
 
 
 namespace MinorShift.Emuera.GameData.Function;
@@ -178,6 +179,12 @@ internal static partial class FunctionMethodCreator
             ["GDISPOSE"] = new GraphicsDisposeMethod(),
             ["GCLEAR"] = new GraphicsClearMethod(),
             ["GFILLRECTANGLE"] = new GraphicsFillRectangleMethod(),
+
+            ["G_POLYGON_DRAW"] = new GraphicsDrawPolygonMethod(),
+            ["G_POLYGON_FILL"] = new GraphicsFillPolygonMethod(),
+            ["G_POLYGON_POINT_ADD"] = new GraphicsPolygonPointAddMethod(),
+            ["G_POLYGON_POINT_CLEAR"] = new GraphicsPolygonPointClearMethod(),
+
             ["GDRAWSPRITE"] = new GraphicsDrawSpriteMethod(),
             ["GSETCOLOR"] = new GraphicsSetColorMethod(),
             ["GDRAWG"] = new GraphicsDrawGMethod(),
