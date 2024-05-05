@@ -329,15 +329,12 @@ internal sealed class PrintStringBuffer
         }
         List<ButtonPrimitive> bpList = ButtonStringCreator.SplitButton(buf.ToString());
         ConsoleButtonString[] ret = new ConsoleButtonString[bpList.Count];
-        AConsoleDisplayNode[] cssArray;
         if (ret.Length == 1)
         {
-            cssArray = new AConsoleDisplayNode[cssList.Count];
-            cssList.CopyTo(cssArray);
             if (bpList[0].CanSelect)
-                ret[0] = new ConsoleButtonString(parent, cssArray, bpList[0].Input);
+                ret[0] = new ConsoleButtonString(parent, [.. cssList], bpList[0].Input);
             else
-                ret[0] = new ConsoleButtonString(parent, cssArray);
+                ret[0] = new ConsoleButtonString(parent, [.. cssList]);
             return ret;
         }
         int cssStartCharIndex = 0;
@@ -376,12 +373,10 @@ internal sealed class PrintStringBuffer
                 cssStartCharIndex += css.Text.Length;
                 cssIndex++;
             }
-            cssArray = new AConsoleDisplayNode[buttonCssList.Count];
-            buttonCssList.CopyTo(cssArray);
             if (bp.CanSelect)
-                ret[i] = new ConsoleButtonString(parent, cssArray, bp.Input);
+                ret[i] = new ConsoleButtonString(parent, [.. buttonCssList], bp.Input);
             else
-                ret[i] = new ConsoleButtonString(parent, cssArray);
+                ret[i] = new ConsoleButtonString(parent, [.. buttonCssList]);
             buttonCssList.Clear();
         }
         return ret;
