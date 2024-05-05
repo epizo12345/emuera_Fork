@@ -1689,10 +1689,44 @@ internal sealed partial class EmueraConsole : IDisposable
             topLineNo = 0;
 
 
+
         int pointX = point.X;
         int pointY = point.Y;
         int relPointY = pointY - window.MainPicBox.Height;
         //下から上へ探索し発見次第打ち切り
+        //HTML Islandの探索
+        foreach (var elem in _htmlElementList)
+        {
+            foreach (var button in elem.Buttons)
+            {
+                foreach (var part in button.StrArray)
+                {
+                    if (part is ConsoleDivElement div)
+                    {
+                        if ((div.Point.X <= pointX) && (div.Point.X + div.Size.Width >= pointX) &&
+                            (pointY >= div.Point.Y) && (pointY <= div.Point.Y + div.Size.Height))
+                        {
+                            pointing = button;
+                            if (pointing.IsButton)
+                                goto breakfor;
+                        }
+                    }
+                    else
+                    {
+                        if ((part.PointX <= pointX) && (part.PointX + part.Width >= pointX)
+                            && (relPointY >= part.Top) && (relPointY <= part.Bottom))
+                        {
+                            pointing = button;
+                            if (pointing.IsButton)
+                                goto breakfor;
+                        }
+                    }
+                }
+
+            }
+        }
+
+        //通常の描画領域の探索
         for (int i = bottomLineNo; i >= topLineNo; i--)
         {
             relPointY += Config.LineHeight;
