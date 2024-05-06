@@ -100,10 +100,10 @@ namespace MinorShift.Emuera.Forms
             vScrollBar.Dock = System.Windows.Forms.DockStyle.Right;
             vScrollBar.Enabled = false;
             vScrollBar.LargeChange = 1;
-            vScrollBar.Location = new System.Drawing.Point(967, 36);
+            vScrollBar.Location = new System.Drawing.Point(968, 48);
             vScrollBar.Maximum = 0;
             vScrollBar.Name = "vScrollBar";
-            vScrollBar.Size = new System.Drawing.Size(18, 694);
+            vScrollBar.Size = new System.Drawing.Size(18, 708);
             vScrollBar.TabIndex = 1;
             vScrollBar.Scroll += vScrollBar_Scroll;
             // 
@@ -115,7 +115,7 @@ namespace MinorShift.Emuera.Forms
             menuStrip.Location = new System.Drawing.Point(0, 0);
             menuStrip.Name = "menuStrip";
             menuStrip.Padding = new System.Windows.Forms.Padding(12, 2, 0, 2);
-            menuStrip.Size = new System.Drawing.Size(985, 36);
+            menuStrip.Size = new System.Drawing.Size(986, 48);
             menuStrip.TabIndex = 3;
             menuStrip.Text = "menuStrip1";
             // 
@@ -124,7 +124,7 @@ namespace MinorShift.Emuera.Forms
             fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { rebootToolStripMenuItem, デバッグモードで再起動ToolStripMenuItem, ログを保存するSToolStripMenuItem, ログをクリップボードにコピーToolStripMenuItem, タイトルへ戻るTToolStripMenuItem, コードを読み直すcToolStripMenuItem, フォルダを読み直すFToolStripMenuItem, ファイルを読み直すFToolStripMenuItem, exitToolStripMenuItem });
             fileToolStripMenuItem.ForeColor = System.Drawing.SystemColors.MenuText;
             fileToolStripMenuItem.Name = "fileToolStripMenuItem";
-            fileToolStripMenuItem.Size = new System.Drawing.Size(98, 32);
+            fileToolStripMenuItem.Size = new System.Drawing.Size(98, 44);
             fileToolStripMenuItem.Text = "ファイル(&F)";
             // 
             // rebootToolStripMenuItem
@@ -195,7 +195,7 @@ namespace MinorShift.Emuera.Forms
             デバッグToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { デバッグウインドウを開くToolStripMenuItem, デバッグ情報の更新ToolStripMenuItem });
             デバッグToolStripMenuItem.ForeColor = System.Drawing.SystemColors.MenuText;
             デバッグToolStripMenuItem.Name = "デバッグToolStripMenuItem";
-            デバッグToolStripMenuItem.Size = new System.Drawing.Size(106, 32);
+            デバッグToolStripMenuItem.Size = new System.Drawing.Size(106, 44);
             デバッグToolStripMenuItem.Text = "デバッグ(&D)";
             デバッグToolStripMenuItem.Visible = false;
             // 
@@ -220,7 +220,7 @@ namespace MinorShift.Emuera.Forms
             ツールToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { ウィンドウ幅のロック変更ToolStripMenuItem });
             ツールToolStripMenuItem.ForeColor = System.Drawing.SystemColors.MenuText;
             ツールToolStripMenuItem.Name = "ツールToolStripMenuItem";
-            ツールToolStripMenuItem.Size = new System.Drawing.Size(68, 32);
+            ツールToolStripMenuItem.Size = new System.Drawing.Size(68, 44);
             ツールToolStripMenuItem.Text = "ツール";
             // 
             // ウィンドウ幅のロック変更ToolStripMenuItem
@@ -234,7 +234,7 @@ namespace MinorShift.Emuera.Forms
             // 
             設定ToolStripMenuItem.ForeColor = System.Drawing.SystemColors.MenuText;
             設定ToolStripMenuItem.Name = "設定ToolStripMenuItem";
-            設定ToolStripMenuItem.Size = new System.Drawing.Size(84, 32);
+            設定ToolStripMenuItem.Size = new System.Drawing.Size(84, 44);
             設定ToolStripMenuItem.Text = "設定(&S)";
             設定ToolStripMenuItem.Click += コンフィグCToolStripMenuItem_Click;
             // 
@@ -243,13 +243,13 @@ namespace MinorShift.Emuera.Forms
             EmuVerToolStripTextBox.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
             EmuVerToolStripTextBox.BackColor = System.Drawing.Color.WhiteSmoke;
             EmuVerToolStripTextBox.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            EmuVerToolStripTextBox.Font = new System.Drawing.Font("Yu Gothic UI", 10.8F);
+            EmuVerToolStripTextBox.Font = new System.Drawing.Font("Yu Gothic UI", 16.2F);
             EmuVerToolStripTextBox.ForeColor = System.Drawing.SystemColors.GrayText;
             EmuVerToolStripTextBox.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             EmuVerToolStripTextBox.Name = "EmuVerToolStripTextBox";
             EmuVerToolStripTextBox.ReadOnly = true;
             EmuVerToolStripTextBox.ShortcutsEnabled = false;
-            EmuVerToolStripTextBox.Size = new System.Drawing.Size(600, 32);
+            EmuVerToolStripTextBox.Size = new System.Drawing.Size(600, 44);
             EmuVerToolStripTextBox.Text = "Emuera Ver. 0.000+v00.0";
             EmuVerToolStripTextBox.TextBoxTextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
@@ -273,13 +273,13 @@ namespace MinorShift.Emuera.Forms
             richTextBox1.ContextMenuStrip = AutoVerbMenu;
             richTextBox1.DetectUrls = false;
             richTextBox1.Dock = System.Windows.Forms.DockStyle.Bottom;
-            richTextBox1.Font = new System.Drawing.Font("ＭＳ ゴシック", 21.6F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Pixel);
+            richTextBox1.Font = new System.Drawing.Font("ＭＳ ゴシック", 32.4F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Pixel);
             richTextBox1.Location = new System.Drawing.Point(0, 730);
             richTextBox1.Margin = new System.Windows.Forms.Padding(0);
             richTextBox1.MaxLength = 32767;
             richTextBox1.Multiline = false;
             richTextBox1.Name = "richTextBox1";
-            richTextBox1.Size = new System.Drawing.Size(985, 26);
+            richTextBox1.Size = new System.Drawing.Size(968, 26);
             richTextBox1.TabIndex = 4;
             richTextBox1.Text = "";
             richTextBox1.TextChanged += richTextBox1_TextChanged;
@@ -544,7 +544,7 @@ namespace MinorShift.Emuera.Forms
             labelMacroGroupChanged.BackColor = System.Drawing.Color.Black;
             labelMacroGroupChanged.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             labelMacroGroupChanged.Location = new System.Drawing.Point(0, 672);
-            labelMacroGroupChanged.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
+            labelMacroGroupChanged.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             labelMacroGroupChanged.Name = "labelMacroGroupChanged";
             labelMacroGroupChanged.Size = new System.Drawing.Size(61, 27);
             labelMacroGroupChanged.TabIndex = 5;
@@ -555,10 +555,10 @@ namespace MinorShift.Emuera.Forms
             // 
             mainPicBox.BackColor = System.Drawing.Color.Black;
             mainPicBox.Dock = System.Windows.Forms.DockStyle.Fill;
-            mainPicBox.Location = new System.Drawing.Point(0, 36);
+            mainPicBox.Location = new System.Drawing.Point(0, 48);
             mainPicBox.Margin = new System.Windows.Forms.Padding(0);
             mainPicBox.Name = "mainPicBox";
-            mainPicBox.Size = new System.Drawing.Size(985, 694);
+            mainPicBox.Size = new System.Drawing.Size(968, 682);
             mainPicBox.TabIndex = 0;
             mainPicBox.TabStop = false;
             mainPicBox.Paint += mainPicBox_Paint;
@@ -568,20 +568,19 @@ namespace MinorShift.Emuera.Forms
             // 
             // MainWindow
             // 
-            AutoScaleDimensions = new System.Drawing.SizeF(144F, 144F);
-            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
+            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Inherit;
             BackColor = System.Drawing.Color.Black;
-            ClientSize = new System.Drawing.Size(985, 756);
-            Controls.Add(vScrollBar);
+            ClientSize = new System.Drawing.Size(986, 756);
             Controls.Add(labelMacroGroupChanged);
             Controls.Add(mainPicBox);
             Controls.Add(richTextBox1);
+            Controls.Add(vScrollBar);
             Controls.Add(menuStrip);
             DoubleBuffered = true;
             ForeColor = System.Drawing.SystemColors.HighlightText;
             Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
             MainMenuStrip = menuStrip;
-            Margin = new System.Windows.Forms.Padding(5);
+            Margin = new System.Windows.Forms.Padding(4);
             Name = "MainWindow";
             SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
             Text = "Emuera";
