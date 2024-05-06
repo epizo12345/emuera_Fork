@@ -1052,7 +1052,7 @@ internal sealed partial class MainWindow : Form
         e.DrawBackground();
         e.DrawBorder();
 
-        TextRenderer.DrawText(e.Graphics, e.ToolTipText, _tooltipFont, new Point(0, 0), ForeColor);
+        TextRenderer.DrawText(e.Graphics, e.ToolTipText, _tooltipFont, new Point(0, 0), Color.Black);
     }
 
     private void toolTipButton_Popup(object sender, PopupEventArgs e)
