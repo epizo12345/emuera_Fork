@@ -2862,9 +2862,9 @@ internal static partial class FunctionMethodCreator
     {
         Int64 target = arguments[argNo].GetIntValue(exm);
         if (target < 0)//funcname + "関数:GraphicsIDに負の値(" + target.ToString() + ")が指定されました"
-            throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGraphicsID0, Name, target));
+            throw new CodeEE(string.Format("{0}関数:GraphicsIDに負の値({1})が指定されました", Name, target));
         else if (target > int.MaxValue)//funcname + "関数:GraphicsIDの値(" + target.ToString() + ")が大きすぎます"
-            throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGraphicsID1, Name, target));
+            throw new CodeEE(string.Format("{0}関数:GraphicsIDの値({1})が大きすぎます", Name, target));
         return AppContents.GetGraphics((int)target);
     }
 
@@ -2875,7 +2875,7 @@ internal static partial class FunctionMethodCreator
     {
         Int64 c64 = arguments[argNo].GetIntValue(exm);
         if (c64 < 0 || c64 > 0xFFFFFFFF)
-            throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodColorARGB0, Name, c64));
+            throw new CodeEE(string.Format("{0}関数:ColorARGB引数に不適切な値(0x{1:X8})が指定されました", Name, c64));
         return Color.FromArgb((int)(c64 >> 24) & 0xFF, (int)(c64 >> 16) & 0xFF, (int)(c64 >> 8) & 0xFF, (int)c64 & 0xFF);
     }
 
@@ -2886,10 +2886,10 @@ internal static partial class FunctionMethodCreator
     {
         Int64 x64 = arguments[argNo].GetIntValue(exm);
         if (x64 < int.MinValue || x64 > int.MaxValue)
-            throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodDefaultArgumentOutOfRange0, Name, x64, argNo + 1));
+            throw new CodeEE(string.Format("{0}関数:第{2}引数に不適切な値({1})が指定されました", Name, x64, argNo + 1));
         Int64 y64 = arguments[argNo + 1].GetIntValue(exm);
         if (y64 < int.MinValue || y64 > int.MaxValue)
-            throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodDefaultArgumentOutOfRange0, Name, y64, argNo + 1 + 1));
+            throw new CodeEE(string.Format("{0}関数:第{2}引数に不適切な値({1})が指定されました", Name, y64, argNo + 1 + 1));
         return new Point((int)x64, (int)y64);
     }
 
@@ -2900,17 +2900,17 @@ internal static partial class FunctionMethodCreator
     {
         Int64 x64 = arguments[argNo].GetIntValue(exm);
         if (x64 < int.MinValue || x64 > int.MaxValue)
-            throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodDefaultArgumentOutOfRange0, Name, x64, argNo + 1));
+            throw new CodeEE(string.Format("{0}関数:第{2}引数に不適切な値({1})が指定されました", Name, x64, argNo + 1));
         Int64 y64 = arguments[argNo + 1].GetIntValue(exm);
         if (y64 < int.MinValue || y64 > int.MaxValue)
-            throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodDefaultArgumentOutOfRange0, Name, y64, argNo + 1 + 1));
+            throw new CodeEE(string.Format("{0}関数:第{2}引数に不適切な値({1})が指定されました", Name, y64, argNo + 1 + 1));
 
         Int64 w64 = arguments[argNo + 2].GetIntValue(exm);
         if (w64 < int.MinValue || w64 > int.MaxValue || w64 == 0)
-            throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodDefaultArgumentOutOfRange0, Name, w64, argNo + 2 + 1));
+            throw new CodeEE(string.Format("{0}関数:第{2}引数に不適切な値({1})が指定されました", Name, w64, argNo + 2 + 1));
         Int64 h64 = arguments[argNo + 3].GetIntValue(exm);
         if (h64 < int.MinValue || h64 > int.MaxValue || h64 == 0)
-            throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodDefaultArgumentOutOfRange0, Name, h64, argNo + 3 + 1));
+            throw new CodeEE(string.Format("{0}関数:第{2}引数に不適切な値({1})が指定されました", Name, h64, argNo + 3 + 1));
         return new Rectangle((int)x64, (int)y64, (int)w64, (int)h64);
     }
 
@@ -2939,7 +2939,7 @@ internal static partial class FunctionMethodCreator
                 e2 = p.Index2;
             }
             if (e1 < 0 || e2 < 0 || e1 + 5 > array.GetLength(0) || e2 + 5 > array.GetLength(1))
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGColorMatrix0, Name, e1, e2));
+                throw new CodeEE(string.Format("{0}関数:ColorMatrixの指定された要素({1}, {2})が不適切であるか5x5に足りていません", Name, e1, e2));
             for (int x = 0; x < 5; x++)
             {
                 cm[x] = new float[5];
@@ -2964,9 +2964,9 @@ internal static partial class FunctionMethodCreator
                 e3 = p.Index3;
             }
             if (e1 < 0 || e1 >= array.GetLength(0))
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGColorMatrix0, Name, e2, e3));
+                throw new CodeEE(string.Format("{0}関数:ColorMatrixの指定された要素({1}, {2})が不適切であるか5x5に足りていません", Name, e2, e3));
             if (e2 < 0 || e3 < 0 || e2 + 5 > array.GetLength(1) || e3 + 5 > array.GetLength(2))
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGColorMatrix0, Name, e2, e3));
+                throw new CodeEE(string.Format("{0}関数:ColorMatrixの指定された要素({1}, {2})が不適切であるか5x5に足りていません", Name, e2, e3));
             for (int x = 0; x < 5; x++)
             {
                 cm[x] = new float[5];
@@ -2990,7 +2990,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
                 return 0;
@@ -3018,7 +3018,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             //失敗したら負の値を返す。他と戻り値違うけど仕方ないね
             if (!g.IsCreated)
@@ -3043,7 +3043,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
                 return 0;
@@ -3067,7 +3067,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
                 return 0;
@@ -3087,7 +3087,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
                 return 0;
@@ -3115,7 +3115,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
                 return 0;
@@ -3243,7 +3243,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             if (g.IsCreated)
                 return 0;
@@ -3251,13 +3251,13 @@ internal static partial class FunctionMethodCreator
             Point p = ReadPoint(Name, exm, arguments, 1);
             int width = p.X; int height = p.Y;
             if (width <= 0)//{0}関数:GraphicsのWidthに0以下の値({1})が指定されました
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGWidth0, Name, width));
+                throw new CodeEE(string.Format("{0}関数:GraphicsのWidthに0以下の値({1})", Name, width));
             else if (width > AbstractImage.MAX_IMAGESIZE)//{0}関数:GraphicsのWidthに{2}以上の値({1})が指定されました
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGWidth1, Name, width, AbstractImage.MAX_IMAGESIZE));
+                throw new CodeEE(string.Format("{0}関数:GraphicsのWidthに{2}以上の値({1})", Name, width, AbstractImage.MAX_IMAGESIZE));
             if (height <= 0)//{0}関数:GraphicsのHeightに0以下の値({1})が指定されました
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGHeight0, Name, height));
+                throw new CodeEE(string.Format("{0}関数:GraphicsのHeightに0以下の値({1})が指定されました", Name, height));
             else if (height > AbstractImage.MAX_IMAGESIZE)//{0}関数:GraphicsのHeightに{2}以上の値({1})が指定されました
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGHeight1, Name, height, AbstractImage.MAX_IMAGESIZE));
+                throw new CodeEE(string.Format("{0}関数:GraphicsのHeightに{2}以上の値({1})が指定されました", Name, height, AbstractImage.MAX_IMAGESIZE));
 
             g.GCreate(width, height, false);
             return 1;
@@ -3276,7 +3276,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             if (g.IsCreated)
                 return 0;
@@ -3323,7 +3323,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
                 return 0;
@@ -3347,34 +3347,34 @@ internal static partial class FunctionMethodCreator
         {
 
             if (arguments.Count < 2)
-                return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentNum1, name, 2);
+                return string.Format("{0}関数:少なくとも{1}個の引数が必要です", name, 2);
             if (arguments.Count > 6)
-                return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentNum2, name);
+                return string.Format("{0}関数:引数の数が多すぎます", name);
             if (arguments[0] == null)
-                return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentNotNullable0, name, 0 + 1);
+                return string.Format("{0}関数:第{1}引数は省略できません", name, 0 + 1);
             if (arguments[1] == null)
-                return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentNotNullable0, name, 1 + 1);
+                return string.Format("{0}関数:第{1}引数は省略できません", name, 1 + 1);
             if (arguments[0].GetOperandType() != typeof(string))
-                return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentType0, name, 0 + 1);
+                return string.Format("{0}関数:第{1}引数の型が間違っています", name, 0 + 1);
             if (arguments[1].GetOperandType() != typeof(Int64))
-                return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentType0, name, 1 + 1);
+                return string.Format("{0}関数:第{1}引数の型が間違っています", name, 1 + 1);
             if (arguments.Count == 2)
                 return null;
             if (arguments.Count != 6)
-                return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentNum0, name);
+                return string.Format("{0}関数:引数の数が間違っています", name);
             for (int i = 2; i < arguments.Count; i++)
             {
                 if (arguments[i] == null)
-                    return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentNotNullable0, name, i + 1);
+                    return string.Format("{0}関数:第{1}引数は省略できません", name, i + 1);
                 if (arguments[i].GetOperandType() != typeof(Int64))
-                    return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentType0, name, i + 1);
+                    return string.Format("{0}関数:第{1}引数の型が間違っています", name, i + 1);
             }
             return null;
         }
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
             string imgname = arguments[0].GetStrValue(exm);
             if (string.IsNullOrEmpty(imgname))
                 return 0;
@@ -3390,7 +3390,7 @@ internal static partial class FunctionMethodCreator
             {//四角形は正でも負でもよいが親画像の外を指してはいけない
                 rect = ReadRectangle(Name, exm, arguments, 2);
                 if (rect.X + rect.Width < 0 || rect.X + rect.Width > g.Width || rect.Y + rect.Height < 0 || rect.Y + rect.Height > g.Height)
-                    throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodCIMGCreateOutOfRange0, Name));
+                    throw new CodeEE(string.Format("{0}関数:画像の範囲外が指定されています", Name));
             }
             AppContents.CreateSpriteG(imgname, g, rect);
             return 1;
@@ -3431,7 +3431,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             Color c = ReadColor(Name, exm, arguments, 1);
             if (!g.IsCreated)
@@ -3455,7 +3455,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
                 return 0;
@@ -3476,7 +3476,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
             var g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
                 return 0;
@@ -3498,7 +3498,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
             var g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
                 return 0;
@@ -3520,7 +3520,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
             var g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
                 return 0;
@@ -3540,7 +3540,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
             var g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
                 return 0;
@@ -3566,26 +3566,26 @@ internal static partial class FunctionMethodCreator
         public override string CheckArgumentType(string name, List<AExpression> arguments)
         {
             if (arguments.Count < 10)
-                return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentNum1, name, 10);
+                return string.Format("{0}関数:少なくとも{1}個の引数が必要です", name, 10);
             if (arguments.Count > 11)
-                return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentNum2, name);
+                return string.Format("{0}関数:引数の数が多すぎます", name);
             for (int i = 0; i < 10; i++)
             {
                 if (arguments[i] == null)
-                    return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentNotNullable0, name, i + 1);
+                    return string.Format("{0}関数:第{1}引数は省略できません", name, i + 1);
                 if (typeof(Int64) != arguments[i].GetOperandType())
-                    return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentType0, name, i + 1);
+                    return string.Format("{0}関数:第{1}引数の型が間違っています", name, i + 1);
             }
             if (arguments.Count == 10)
                 return null;
             if (!(arguments[10] is VariableTerm varToken) || !varToken.IsInteger || (!varToken.Identifier.IsArray2D && !varToken.Identifier.IsArray3D))
-                return string.Format(Properties.Resources.SyntaxErrMesMethodGraphicsColorMatrix0, name);
+                return string.Format("{0}関数:ColorMatrixに5x5以上の二次元数値型配列変数でない引数が指定されました", name);
             return null;
         }
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
             GraphicsImage dest = ReadGraphics(Name, exm, arguments, 0);
             if (!dest.IsCreated)
                 return 0;
@@ -3636,7 +3636,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
             GraphicsImage dest = ReadGraphics(Name, exm, arguments, 0);
             if (!dest.IsCreated)
                 return 0;
@@ -3677,30 +3677,30 @@ internal static partial class FunctionMethodCreator
         public override string CheckArgumentType(string name, List<AExpression> arguments)
         {
             if (arguments.Count < 2)
-                return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentNum1, name, 2);
+                return string.Format("{0}関数:少なくとも{1}個の引数が必要です", name, 2);
             if (arguments.Count > 7)
-                return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentNum2, name);
+                return string.Format("{0}関数:引数の数が多すぎます", name);
             if (arguments.Count != 2 && arguments.Count != 4 && arguments.Count != 6 && arguments.Count != 7)
-                return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentNum0, name);
+                return string.Format("{0}関数:引数の数が間違っています", name);
 
             for (int i = 0; i < arguments.Count; i++)
             {
                 if (arguments[i] == null)
-                    return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentNotNullable0, name, i + 1);
+                    return string.Format("{0}関数:第{1}引数は省略できません", name, i + 1);
 
                 if (i < argumentTypeArray.Length && argumentTypeArray[i] != arguments[i].GetOperandType())
-                    return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentType0, name, i + 1);
+                    return string.Format("{0}関数:第{1}引数の型が間違っています", name, i + 1);
             }
             if (arguments.Count <= 6)
                 return null;
             if (!(arguments[6] is VariableTerm varToken) || !varToken.IsInteger || (!varToken.Identifier.IsArray2D && !varToken.Identifier.IsArray3D))
-                return string.Format(Properties.Resources.SyntaxErrMesMethodGraphicsColorMatrix0, name);
+                return string.Format("{0}関数:ColorMatrixに5x5以上の二次元数値型配列変数でない引数が指定されました", name);
             return null;
         }
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
             GraphicsImage dest = ReadGraphics(Name, exm, arguments, 0);
             if (!dest.IsCreated)
                 return 0;
@@ -3767,7 +3767,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
             string imgname = arguments[0].GetStrValue(exm);
             if (string.IsNullOrEmpty(imgname))
                 return 0;
@@ -3777,13 +3777,13 @@ internal static partial class FunctionMethodCreator
                 return 0;
             Point pos = ReadPoint(Name, exm, arguments, 1);
             if (pos.X <= 0)//{0}関数:GraphicsのWidthに0以下の値({1})が指定されました
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGWidth0, Name, pos.X));
+                throw new CodeEE(string.Format("{0}関数:GraphicsのWidthに0以下の値({1})が指定されました", Name, pos.X));
             else if (pos.X > AbstractImage.MAX_IMAGESIZE)//{0}関数:GraphicsのWidthに{2}以上の値({1})が指定されました
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGWidth1, Name, pos.X, AbstractImage.MAX_IMAGESIZE));
+                throw new CodeEE(string.Format("{0}関数:GraphicsのWidthに{2}以上の値({1})が指定されました", Name, pos.X, AbstractImage.MAX_IMAGESIZE));
             if (pos.Y <= 0)//{0}関数:GraphicsのHeightに0以下の値({1})が指定されました
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGHeight0, Name, pos.Y));
+                throw new CodeEE(string.Format("{0}関数:GraphicsのHeightに0以下の値({1})が指定されました", Name, pos.Y));
             else if (pos.Y > AbstractImage.MAX_IMAGESIZE)//{0}関数:GraphicsのHeightに{2}以上の値({1})が指定されました
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGHeight1, Name, pos.Y, AbstractImage.MAX_IMAGESIZE));
+                throw new CodeEE(string.Format("{0}関数:GraphicsのHeightに{2}以上の値({1})が指定されました", Name, pos.Y, AbstractImage.MAX_IMAGESIZE));
             AppContents.CreateSpriteAnime(imgname, pos.X, pos.Y);
             return 1;
         }
@@ -3805,7 +3805,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
             string imgname = arguments[0].GetStrValue(exm);
             if (string.IsNullOrEmpty(imgname))
                 return 0;
@@ -3845,7 +3845,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             //if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-            //	throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+            //	throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
             exm.Console.CBG_Clear();
             return 1;
         }
@@ -3888,7 +3888,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             //if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-            //	throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+            //	throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
             exm.Console.CBG_ClearButton();
             return 1;
         }
@@ -3907,7 +3907,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             //if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-            //	throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+            //	throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
             exm.Console.CBG_ClearBMap();
             return 1;
         }
@@ -3926,7 +3926,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
 
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
@@ -3934,7 +3934,7 @@ internal static partial class FunctionMethodCreator
             Point p = ReadPoint(Name, exm, arguments, 1);
             Int64 z64 = arguments[3].GetIntValue(exm);
             if (z64 < int.MinValue || z64 > int.MaxValue || z64 == 0)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodDefaultArgumentOutOfRange0, Name, z64, 3 + 1));
+                throw new CodeEE(string.Format("{0}関数:第{2}引数に不適切な値({1})が指定されました", Name, z64, 3 + 1));
             exm.Console.CBG_SetGraphics(g, p.X, p.Y, (int)z64);
             return 1;
 
@@ -3955,7 +3955,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
 
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
@@ -3980,7 +3980,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             //if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-            //	throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+            //	throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
 
             string imgname = arguments[0].GetStrValue(exm);
             ASprite img = AppContents.GetSprite(imgname);
@@ -3989,7 +3989,7 @@ internal static partial class FunctionMethodCreator
             Point p = ReadPoint(Name, exm, arguments, 1);
             Int64 z64 = arguments[3].GetIntValue(exm);
             if (z64 < int.MinValue || z64 > int.MaxValue || z64 == 0)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodDefaultArgumentOutOfRange0, Name, z64, 3 + 1));
+                throw new CodeEE(string.Format("{0}関数:第{2}引数に不適切な値({1})が指定されました", Name, z64, 3 + 1));
             if (!exm.Console.CBG_SetImage(img, p.X, p.Y, (int)z64))
                 return 0;
             return 1;
@@ -4012,26 +4012,26 @@ internal static partial class FunctionMethodCreator
         {
 
             if (arguments.Count < 6)
-                return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentNum1, name, 6);
+                return string.Format("{0}関数:少なくとも{1}個の引数が必要です", name, 6);
             if (arguments.Count > 7)
-                return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentNum2, name);
+                return string.Format("{0}関数:引数の数が多すぎます", name);
             if (arguments.Count != 6 && arguments.Count != 7)
-                return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentNum0, name);
+                return string.Format("{0}関数:引数の数が間違っています", name);
 
             for (int i = 0; i < arguments.Count; i++)
             {
                 if (arguments[i] == null)
-                    return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentNotNullable0, name, i + 1);
+                    return string.Format("{0}関数:第{1}引数は省略できません", name, i + 1);
 
                 if (i < argumentTypeArray.Length && argumentTypeArray[i] != arguments[i].GetOperandType())
-                    return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentType0, name, i + 1);
+                    return string.Format("{0}関数:第{1}引数の型が間違っています", name, i + 1);
             }
             return null;
         }
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
 
             Int64 b64 = arguments[0].GetIntValue(exm);
             if (b64 < 0 || b64 > 0xFFFFFF)
@@ -4044,7 +4044,7 @@ internal static partial class FunctionMethodCreator
             Point p = ReadPoint(Name, exm, arguments, 3);
             Int64 z64 = arguments[5].GetIntValue(exm);
             if (z64 < int.MinValue || z64 > int.MaxValue || z64 == 0)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodDefaultArgumentOutOfRange0, Name, z64, 5 + 1));
+                throw new CodeEE(string.Format("{0}関数:第{2}引数に不適切な値({1})が指定されました", Name, z64, 5 + 1));
             string tooltip = null;
             if (arguments.Count > 6)
                 tooltip = arguments[6].GetStrValue(exm);
@@ -4130,7 +4130,7 @@ internal static partial class FunctionMethodCreator
         {
             Int64 i64 = arguments[0].GetIntValue(exm);
             if (i64 < int.MinValue || i64 > short.MaxValue)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodDefaultArgumentOutOfRange0, Name, i64, 1));
+                throw new CodeEE(string.Format("{0}関数:第{2}引数に不適切な値({1})が指定されました", Name, i64, 1));
             exm.Console.setRedrawTimer((int)i64);
             return 1;
         }
@@ -4151,16 +4151,16 @@ internal static partial class FunctionMethodCreator
         {
 
             if (arguments.Count < 2)
-                return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentNum1, name, 2);
+                return string.Format("{0}関数:少なくとも{1}個の引数が必要です", name, 2);
             if (arguments.Count > 4)
-                return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentNum2, name);
+                return string.Format("{0}関数:引数の数が多すぎます", name);
             for (int i = 0; i < arguments.Count; i++)
             {
                 if (arguments[i] == null)
-                    return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentNotNullable0, name, i + 1);
+                    return string.Format("{0}関数:第{1}引数は省略できません", name, i + 1);
 
                 if (i < argumentTypeArray.Length && argumentTypeArray[i] != arguments[i].GetOperandType())
-                    return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentType0, name, i + 1);
+                    return string.Format("{0}関数:第{1}引数の型が間違っています", name, i + 1);
             }
             return null;
         }
@@ -4206,15 +4206,15 @@ internal static partial class FunctionMethodCreator
         {
 
             if (arguments.Count < 1)
-                return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentNum1, name, 1);
+                return string.Format("{0}関数:少なくとも{1}個の引数が必要です", name, 1);
             if (arguments.Count > 3)
-                return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentNum2, name);
+                return string.Format("{0}関数:引数の数が多すぎます", name);
             for (int i = 0; i < arguments.Count; i++)
             {
                 if (arguments[i] == null)
-                    return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentNotNullable0, name, i + 1);
+                    return string.Format("{0}関数:第{1}引数は省略できません", name, i + 1);
                 if (i < argumentTypeArray.Length && argumentTypeArray[i] != arguments[i].GetOperandType())
-                    return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentType0, name, i + 1);
+                    return string.Format("{0}関数:第{1}引数の型が間違っています", name, i + 1);
             }
             return null;
         }
@@ -4264,7 +4264,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
                 return 0;
@@ -4300,7 +4300,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format(Properties.Resources.RuntimeErrMesMethodGDIPLUSOnly, Name));
+                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             if (g.IsCreated)
                 return 0;

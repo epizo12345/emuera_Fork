@@ -18,13 +18,15 @@ internal abstract class FunctionMethod
     public virtual string CheckArgumentType(string name, List<AExpression> arguments)
     {
         if (arguments.Count != argumentTypeArray.Length)
-            return $"{name} の引数の型が正しく有りません";
+        {
+            return $"{name}関数の引数の数が間違っています";
+        }
         for (int i = 0; i < argumentTypeArray.Length; i++)
         {
             if (arguments[i] == null)
-                return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentNotNullable0, name, i + 1);
+                return $"{name}関数:第{i + 1}引数は省略できません";
             if (argumentTypeArray[i] != arguments[i].GetOperandType())
-                return string.Format(Properties.Resources.SyntaxErrMesMethodDefaultArgumentType0, name, i + 1);
+                return $"{name}関数:第{i + 1}引数の型が間違っています";
         }
         return null;
     }
