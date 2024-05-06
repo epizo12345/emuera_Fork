@@ -1052,8 +1052,7 @@ internal sealed partial class MainWindow : Form
         e.DrawBackground();
         e.DrawBorder();
 
-        e.Graphics.DrawString(e.ToolTipText, _tooltipFont, SystemBrushes.InfoText, e.Bounds);
-
+        TextRenderer.DrawText(e.Graphics, e.ToolTipText, _tooltipFont, new Point(0, 0), ForeColor);
     }
 
     private void toolTipButton_Popup(object sender, PopupEventArgs e)
@@ -1104,7 +1103,7 @@ internal sealed partial class MainWindow : Form
     private void デバッグモードで再起動ToolStripMenuItem_Click(object sender, EventArgs e)
     {
         //新たにアプリケーションを起動する
-        Process.Start(Application.ExecutablePath, [.._args,"-Debug"]);
+        Process.Start(Application.ExecutablePath, [.. _args, "-Debug"]);
 
         //現在のアプリケーションを終了する
         Application.ExitThread();
