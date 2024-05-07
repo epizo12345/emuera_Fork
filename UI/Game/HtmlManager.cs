@@ -294,7 +294,7 @@ internal static class HtmlManager
         while (!st.EOS)
         {
             found = st.Find('<');
-            if (hasReturn)
+            if (!state.IsDiv && hasReturn)
             {
                 int rFound = st.Find('\n');
                 if (rFound >= 0 && (found > rFound || found < 0))
@@ -357,7 +357,7 @@ internal static class HtmlManager
                 st.CurrentPosition += found + 3;
                 continue;
             }
-            if (hasReturn && st.Current == '\n')//テキスト中の\nは<br>として扱う
+            if (state.IsDiv && hasReturn && st.Current == '\n')//テキスト中の\nは<br>として扱う
             {
                 state.FlagBr = true;
                 st.ShiftNext();
@@ -688,7 +688,7 @@ internal static class HtmlManager
                     state.FlagButton = true;
                     return null;
                 case "div":
-                    state.IsDiv = true;
+                    state.IsDiv = false;
                     return null;
                 default:
                     throw new CodeEE("終了タグ</" + tag + ">は解釈できません");
@@ -1143,13 +1143,7 @@ internal static class HtmlManager
                                 {
                                     var value = (wc.Current as LiteralStringWord).Str;
                                     var all = ParseSizeValue(value);
-                                    state.Padding = new Padding() with
-                                    {
-                                        Top = all,
-                                        Bottom = all,
-                                        Left = all,
-                                        Right = all,
-                                    };
+                                    state.Padding = new Padding(all);
                                 }
                                 break;
                         }
