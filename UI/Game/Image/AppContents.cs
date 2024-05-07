@@ -194,21 +194,15 @@ static class AppContents
             string filepath = parentName;
 
             Bitmap bmp;
-            try
-            {
-                bmp = SkiaSharp.SKBitmap.Decode(filepath).ToBitmap();
-            }
-            catch (FileNotFoundException)
-            {
-                ParserMediator.Warn("指定された画像ファイルが見つかりませんでした:" + arg2, sp, 1);
-                return null;
-            }
-
-            if (bmp == null)
+            var skbitmap = SkiaSharp.SKBitmap.Decode(filepath);
+            if (skbitmap == null)
             {
                 ParserMediator.Warn("指定されたファイルの読み込みに失敗しました:" + arg2, sp, 1);
                 return null;
             }
+
+            bmp = skbitmap.ToBitmap();
+
             if (bmp.Width > AbstractImage.MAX_IMAGESIZE || bmp.Height > AbstractImage.MAX_IMAGESIZE)
             {
                 //1824-2 すでに8192以上の幅を持つ画像を利用したバリアントが存在してしまっていたため、警告しつつ許容するように変更
