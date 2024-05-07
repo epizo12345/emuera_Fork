@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Windows.Forms;
 
 namespace MinorShift.Emuera.UI.Game;
 
@@ -105,6 +106,7 @@ internal static class HtmlManager
         public bool HasBorder = false;
         public int BorderWidth;
         public Color BorderColor;
+        public Padding? Padding;
 
 
         public StringStyle GetSS()
@@ -327,7 +329,8 @@ internal static class HtmlManager
                                                          state.Display, state.PosX, state.PosY,
                                                          state.Width, state.Height,
                                                          state.BackgroundColor,
-                                                         borderStyle));
+                                                         borderStyle,
+                                                         state.Padding));
                     state.Display = DisplayMode.Relative;
                     state.PosX = default;
                     state.PosY = default;
@@ -1134,6 +1137,19 @@ internal static class HtmlManager
                                     var value = (wc.Current as LiteralStringWord).Str;
                                     state.HasBorder = true;
                                     borderColor = ColorTranslator.FromHtml(value);
+                                }
+                                break;
+                            case "padding":
+                                {
+                                    var value = (wc.Current as LiteralStringWord).Str;
+                                    var all = ParseSizeValue(value);
+                                    state.Padding = new Padding() with
+                                    {
+                                        Top = all,
+                                        Bottom = all,
+                                        Left = all,
+                                        Right = all,
+                                    };
                                 }
                                 break;
                         }

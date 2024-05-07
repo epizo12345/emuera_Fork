@@ -25,11 +25,10 @@ class ConsoleDivElement : AConsoleDisplayNode
 
     StringStyle _stringStyle;
     readonly Font _font;
-    readonly Color? _backColor;
+    Color? _backColor;
 
     BorderStyle? _borderStyle;
-
-
+    Padding? _padding;
 
     public ConsoleDivElement(AConsoleDisplayNode[] childNode, string text,
                                 StringStyle stringStyle,
@@ -37,7 +36,8 @@ class ConsoleDivElement : AConsoleDisplayNode
                                 int positionX = 0, int positionY = 0,
                                 int width = -1, int height = -1,
                                 Color? backcolor = null,
-                                BorderStyle? borderStyle = null)
+                                BorderStyle? borderStyle = null,
+                                Padding? padding = null)
     {
         _childNodes = childNode;
 
@@ -71,6 +71,8 @@ class ConsoleDivElement : AConsoleDisplayNode
         _backColor = backcolor;
 
         _borderStyle = borderStyle;
+
+        _padding = padding;
     }
 
     public override bool CanDivide => false;
@@ -119,23 +121,30 @@ class ConsoleDivElement : AConsoleDisplayNode
             }
             else
             {
-                if (_backColor.HasValue)
-                {
-                    graph.FillRectangle(new SolidBrush(_backColor.Value), new Rectangle(Point, Size));
-                    TextRenderer.DrawText(graph, Text.AsSpan(), _font, Point, color, TextFormatFlags.NoPrefix);
-                }
-                else if (JSONConfig.Data.UseButtonFocusBackgroundColor && isButton && !isBackLog)
+                if (JSONConfig.Data.UseButtonFocusBackgroundColor && isButton && !isBackLog)
                 {
                     if (!backcolor.HasValue)
                     {
-                        backcolor = Color.FromArgb(50, 50, 50);
+                        _backColor = Color.FromArgb(50, 50, 50);
                     }
-                    TextRenderer.DrawText(graph, Text.AsSpan(), _font, Point, color, backColor: backcolor.Value, TextFormatFlags.NoPrefix);
 
+                }
+                var paddingPoint = Point;
+                if (_padding.HasValue)
+                {
+                    paddingPoint = new Point(
+                        Point.X + _padding.Value.Left,
+                        Point.Y + _padding.Value.Top
+                        );
+                }
+                if (_backColor.HasValue)
+                {
+                    graph.FillRectangle(new SolidBrush(_backColor.Value), new Rectangle(Point, Size));
+                    TextRenderer.DrawText(graph, Text.AsSpan(), _font, paddingPoint, color, TextFormatFlags.NoPrefix);
                 }
                 else
                 {
-                    TextRenderer.DrawText(graph, Text.AsSpan(), _font, Point, color, TextFormatFlags.NoPrefix);
+                    TextRenderer.DrawText(graph, Text.AsSpan(), _font, paddingPoint, color, TextFormatFlags.NoPrefix);
                 }
 
             }
