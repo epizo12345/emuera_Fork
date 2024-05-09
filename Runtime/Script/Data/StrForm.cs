@@ -7,6 +7,7 @@ using MinorShift.Emuera.Runtime.Script.Statements.Variable;
 using MinorShift.Emuera.Runtime.Utils;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace MinorShift.Emuera.Runtime.Script.Data;
@@ -178,7 +179,6 @@ internal sealed class StrForm
             if (terms[i] is SingleTerm)
             {
                 canRestructure = true;
-                break;
             }
         }
         if (!canRestructure)
@@ -187,7 +187,7 @@ internal sealed class StrForm
         List<AExpression> termList = [.. terms];
         for (int i = 0; i < termList.Count; i++)
         {
-            if (termList[i] is SingleStrTerm)
+            if (termList[i] is SingleTerm)
             {
                 string str = termList[i].GetStrValue(exm);
                 strList[i] = strList[i] + str + strList[i + 1];
@@ -197,23 +197,21 @@ internal sealed class StrForm
             }
         }
         strs = [.. strList];
-        terms = [.. terms];
+        terms = [.. termList];
         return;
     }
-
-    public readonly StringBuilder builder = new(100);
     public string GetString(ExpressionMediator exm)
     {
+        var handler = new DefaultInterpolatedStringHandler(strs.Length + terms.Length, 0);
         if (strs.Length == 1)
             return strs[0];
-        builder.Clear();
         for (int i = 0; i < strs.Length - 1; i++)
         {
-            builder.Append(strs[i]);
-            builder.Append(terms[i].GetStrValue(exm));
+            handler.AppendLiteral(strs[i]);
+            handler.AppendLiteral(terms[i].GetStrValue(exm));
         }
-        builder.Append(strs[^1]);
-        return builder.ToString();
+        handler.AppendLiteral(strs[^1]);
+        return handler.ToString();
     }
 
     #region FormattedStringMethod 書式付文字列の内部
