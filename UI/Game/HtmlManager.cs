@@ -357,7 +357,7 @@ internal static class HtmlManager
                 st.CurrentPosition += found + 3;
                 continue;
             }
-            if (state.IsDiv && hasReturn && st.Current == '\n')//テキスト中の\nは<br>として扱う
+            if (!state.IsDiv && hasReturn && st.Current == '\n')//テキスト中の\nは<br>として扱う
             {
                 state.FlagBr = true;
                 st.ShiftNext();
