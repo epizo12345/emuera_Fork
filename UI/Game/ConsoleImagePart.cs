@@ -87,7 +87,7 @@ sealed class ConsoleImagePart : AConsoleDisplayNode
             }
             XsubPixel = (float)Config.FontSize * raw_width / 100f - Width;
         }
-        top = raw_ypos * Config.FontSize / 100;
+        top = raw_ypos;
         destRect = new Rectangle(0, top, Width, height);
         if (destRect.Width < 0)
         {
