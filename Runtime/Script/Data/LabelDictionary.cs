@@ -23,7 +23,7 @@ internal sealed class LabelDictionary
     Dictionary<string, Dictionary<FunctionLabelLine, GotoLabelLine>> labelDollarList = new(Config.Config.StrComper);
     int count;
 
-    Dictionary<string, int> loadedFileDic = [];
+    HashSet<string> loadedFileSet = [];
     int currentFileCount;
     int totalFileCount;
 
@@ -134,7 +134,7 @@ internal sealed class LabelDictionary
         foreach ((_, var value) in labelDollarList)
             value.Clear();
         labelDollarList.Clear();
-        loadedFileDic.Clear();
+        loadedFileSet.Clear();
         invalidList.Clear();
         currentFileCount = 0;
         totalFileCount = 0;
@@ -143,41 +143,27 @@ internal sealed class LabelDictionary
     //ファイル名に基づき、そのファイルに紐づくラベルを削除する
     public void RemoveLabelWithPath(string fname)
     {
-        List<FunctionLabelLine> labelLines;
-        List<FunctionLabelLine> removeLine = [];
-        List<string> removeKey = [];
-        foreach (KeyValuePair<string, List<FunctionLabelLine>> pair in labelAtDic)
+        List<string> removeFunctions = [];
+        foreach (var (functionName, functions) in labelAtDic)
         {
-            string key = pair.Key;
-            labelLines = pair.Value;
-            foreach (FunctionLabelLine labelLine in labelLines)
-            {
-                if (string.Equals(labelLine.Position.Value.Filename, fname, Config.Config.SCIgnoreCase))
-                    removeLine.Add(labelLine);
-            }
-            foreach (FunctionLabelLine remove in removeLine)
-            {
-                labelLines.Remove(remove);
-                if (labelLines.Count == 0)
-                    removeKey.Add(key);
-            }
-            removeLine.Clear();
+            var removeCount = functions.RemoveAll(line => IsMatch(fname, line));
+
+            count -= removeCount;
+
+            if (functions.Count == 0)
+                removeFunctions.Add(functionName);
         }
-        foreach (string rKey in removeKey)
+
+        foreach (var rKey in removeFunctions)
         {
-            labelAtDic.Remove(rKey, out var value);
-            if (value == null)
-            {
-                throw new Exception($"{value}");
-            }
+            labelAtDic.Remove(rKey);
         }
-        for (int i = 0; i < invalidList.Count; i++)
+
+        invalidList.RemoveAll(line => IsMatch(fname, line));
+
+        static bool IsMatch(string fname, FunctionLabelLine line)
         {
-            if (string.Equals(invalidList[i].Position.Value.Filename, fname, Config.Config.SCIgnoreCase))
-            {
-                invalidList.RemoveAt(i);
-                i--;
-            }
+            return string.Equals(line.Position.Value.Filename, fname, Config.Config.SCIgnoreCase);
         }
     }
 
@@ -187,15 +173,15 @@ internal sealed class LabelDictionary
     /// </summary>
     public void IfFileLoadClearLabelWithPath(string filename)
     {
-        if (loadedFileDic.TryGetValue(filename, out int curCount))
+        if (loadedFileSet.Contains(filename))
         {
-            currentFileCount = curCount;
+            currentFileCount = loadedFileSet.Count;
             RemoveLabelWithPath(filename);
             return;
         }
         totalFileCount++;
         currentFileCount = totalFileCount;
-        loadedFileDic[filename] = totalFileCount;
+        loadedFileSet.Add(filename);
     }
     public void AddLabel(FunctionLabelLine point)
     {
