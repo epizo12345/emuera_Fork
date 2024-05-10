@@ -2,6 +2,7 @@
 using MinorShift.Emuera.UI.Game.Image;
 using System;
 using System.Drawing;
+using System.Runtime.CompilerServices;
 using System.Text;
 namespace MinorShift.Emuera.UI.Game;
 
@@ -16,31 +17,6 @@ sealed class ConsoleImagePart : AConsoleDisplayNode
         Text = "";
         ResourceName = resName ?? "";
         ButtonResourceName = resNameb;
-        StringBuilder sb = new();
-        sb.Append("<img src='");
-        sb.Append(ResourceName);
-        if (ButtonResourceName != null)
-        {
-            sb.Append("' srcb='");
-            sb.Append(ButtonResourceName);
-        }
-        if (raw_height != 0)
-        {
-            sb.Append("' height='");
-            sb.Append(raw_height);
-        }
-        if (raw_width != 0)
-        {
-            sb.Append("' width='");
-            sb.Append(raw_width);
-        }
-        if (raw_ypos != 0)
-        {
-            sb.Append("' ypos='");
-            sb.Append(raw_ypos);
-        }
-        sb.Append("'>");
-        AltText = sb.ToString();
         cImage = AppContents.GetSprite(ResourceName);
         //if (cImage != null && !cImage.IsCreated)
         //	cImage = null;
@@ -115,6 +91,49 @@ sealed class ConsoleImagePart : AConsoleDisplayNode
         _positionX = raw_xpos;
         _positionY = raw_ypos;
     }
+
+    string _altText;
+
+    new string AltText
+    {
+        get
+        {
+            if (_altText == null)
+            {
+                var sb = new DefaultInterpolatedStringHandler();
+                sb.AppendLiteral("<img src='");
+                sb.AppendFormatted(ResourceName);
+                if (ButtonResourceName != null)
+                {
+                    sb.AppendLiteral("' srcb='");
+                    sb.AppendFormatted(ButtonResourceName);
+                }
+                if ((bottom - top) != 0)
+                {
+                    sb.AppendLiteral("' height='");
+                    sb.AppendFormatted(bottom - top);
+                }
+                if (Width != 0)
+                {
+                    sb.AppendLiteral("' width='");
+                    sb.AppendFormatted(Width);
+                }
+                if (_positionY != 0)
+                {
+                    sb.AppendLiteral("' ypos='");
+                    sb.AppendFormatted(_positionY);
+                }
+                sb.AppendLiteral("'>");
+                AltText = sb.ToString();
+            }
+            return _altText;
+        }
+        set
+        {
+            _altText = value;
+        }
+    }
+
 
     private readonly ASprite cImage;
     private readonly ASprite cImageB;
