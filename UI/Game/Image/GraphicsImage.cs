@@ -198,8 +198,17 @@ internal sealed class GraphicsImage : AbstractImage
     {
         if (canvas == null)
             throw new NullReferenceException();
-
-        float[] skiaCM = [.. cm[0], .. cm[1], .. cm[2], .. cm[3]];
+        var rAll = cm[4][0];
+        var gAll = cm[4][1];
+        var bAll = cm[4][2];
+        var aAll = cm[4][3];
+        var wAll = cm[4][4];
+        float[] skiaCM = [
+            cm[0][0],cm[1][0],cm[2][0],cm[3][0],cm[0][4],
+            cm[0][1],cm[1][1],cm[2][1],cm[3][1],cm[1][4],
+            cm[0][2],cm[1][2],cm[2][2],cm[3][2],cm[2][4],
+            cm[0][3],cm[1][3],cm[2][3],cm[3][3],cm[3][4],
+        ];
         var filter = SKColorFilter.CreateColorMatrix(skiaCM);
         img.GraphicsDraw(canvas, destRect, filter);
     }
