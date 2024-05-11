@@ -1,8 +1,11 @@
 ﻿using MinorShift.Emuera.Runtime.Config;
+using SkiaSharp;
+using SkiaSharp.Views.Desktop;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
@@ -19,8 +22,8 @@ internal sealed class GraphicsImage : AbstractImage
     public GraphicsImage(int id)
     {
         ID = id;
-        g = null;
-        Bitmap = null;
+        canvas = null;
+        SKBitmap = null;
         //created = false;
         //locked = false;
     }
@@ -28,7 +31,7 @@ internal sealed class GraphicsImage : AbstractImage
     Size size;
     Brush brush;
     Pen pen;
-    Font font;
+    SKFont font;
     //Bitmap b;
     //Graphics g;
 
@@ -62,21 +65,20 @@ internal sealed class GraphicsImage : AbstractImage
         if (useGDI)
             throw new NotImplementedException();
         GDispose();
-        Bitmap = new Bitmap(x, y, PixelFormat.Format32bppArgb);
+        SKBitmap = new SKBitmap(x, y);
         size = new Size(x, y);
-        g = Graphics.FromImage(Bitmap);
-
+        canvas = new SKCanvas(SKBitmap);
     }
 
-    internal void GCreateFromF(Bitmap bmp, bool useGDI)
+    internal void GCreateFromF(SKBitmap bmp, bool useGDI)
     {
         if (useGDI)
             throw new NotImplementedException();
         GDispose();
-        Bitmap = new Bitmap(bmp.Width, bmp.Height, PixelFormat.Format32bppArgb);
+        SKBitmap = new SKBitmap(bmp.Width, bmp.Height);
         size = new Size(bmp.Width, bmp.Height);
-        g = Graphics.FromImage(Bitmap);
-        g.DrawImage(bmp, 0, 0, bmp.Width, bmp.Height);
+        canvas = new SKCanvas(SKBitmap);
+        canvas.DrawBitmap(bmp, new SKPoint(0, 0));
     }
 
     /// <summary>
@@ -85,71 +87,9 @@ internal sealed class GraphicsImage : AbstractImage
     /// </summary>
     public void GClear(Color c)
     {
-        if (g == null)
+        if (canvas == null)
             throw new NullReferenceException();
-        g.Clear(c);
-    }
-
-    /// <summary>
-    /// GDRAWTEXTGDRAWTEXT int ID, str text, int x, int y
-    /// エラーチェックは呼び出し元でのみ行う
-    /// </summary>
-    public void GDrawString(string text, int x, int y)
-    {
-        if (g == null)
-            throw new NullReferenceException();
-        Font usingFont = font;
-        if (usingFont == null)
-            usingFont = Config.DefaultFont;
-        if (brush != null)
-        {
-            g.DrawString(text, usingFont, brush, x, y);
-        }
-        else
-        {
-            using var b = new SolidBrush(Config.ForeColor);
-            g.DrawString(text, usingFont, b, x, y);
-        }
-    }
-    /// <summary>
-    /// GDRAWTEXTGDRAWTEXT int ID, str text, int x, int y, int width, int height
-    /// エラーチェックは呼び出し元でのみ行う
-    /// </summary>
-    public void GDrawString(string text, int x, int y, int width, int height)
-    {
-        if (g == null)
-            throw new NullReferenceException();
-        Font usingFont = font;
-        if (usingFont == null)
-            usingFont = Config.DefaultFont;
-        if (brush != null)
-        {
-            g.DrawString(text, usingFont, brush, new RectangleF(x, y, width, height));
-        }
-        else
-        {
-            using var b = new SolidBrush(Config.ForeColor);
-            g.DrawString(text, usingFont, b, new RectangleF(x, y, width, height));
-        }
-    }
-
-    /// <summary>
-    /// GDRAWRECTANGLE(int ID, int x, int y, int width, int height)
-    /// エラーチェックは呼び出し元でのみ行う
-    /// </summary>
-    public void GDrawRectangle(Rectangle rect)
-    {
-        if (g == null)
-            throw new NullReferenceException();
-        if (pen != null)
-        {
-            g.DrawRectangle(pen, rect);
-        }
-        else
-        {
-            using var p = new Pen(Config.ForeColor);
-            g.DrawRectangle(p, rect);
-        }
+        canvas.Clear(c.ToSKColor());
     }
 
     /// <summary>
@@ -158,60 +98,68 @@ internal sealed class GraphicsImage : AbstractImage
     /// </summary>
     public void GFillRectangle(Rectangle rect)
     {
-        if (g == null)
+        if (canvas == null)
             throw new NullReferenceException();
         if (brush != null)
         {
-            g.FillRectangle(brush, rect);
+            //canvas.FillRectangle(brush, rect);
+
+            var paint = new SKPaint();
+            canvas.DrawRect(rect.ToSKRect(), paint);
         }
         else
         {
-            using var b = new SolidBrush(Config.BackColor);
-            g.FillRectangle(b, rect);
+            //using var b = new SolidBrush(Config.BackColor);
+            //canvas.FillRectangle(b, rect);
+
+            var paint = new SKPaint();
+            canvas.DrawRect(rect.ToSKRect(), paint);
         }
     }
 
     List<Point> _points;
     public void GDrawPolygon()
     {
-        if (g == null)
+        if (canvas == null)
             throw new NullReferenceException();
         if (_points == null)
         {
             throw new NullReferenceException("DrawPolygonに渡されるPointsが空です");
         }
+        throw new NotImplementedException();
         if (pen != null)
         {
-            g.DrawPolygon(pen, _points.ToArray());
+            //canvas.DrawPolygon(pen, _points.ToArray());
         }
         else
         {
-            using var p = new Pen(Config.ForeColor);
-            g.DrawPolygon(p, _points.ToArray());
+            // using var p = new Pen(Config.ForeColor);
+            // canvas.DrawPolygon(p, _points.ToArray());
         }
     }
     public void GFillPolygon()
     {
-        if (g == null)
+        if (canvas == null)
             throw new NullReferenceException();
         if (_points == null)
         {
             throw new NullReferenceException("FillPolygonに渡されるPointsが空です");
         }
-        if (brush != null)
-        {
-            g.FillPolygon(brush, _points.ToArray());
-        }
-        else
-        {
-            using var b = new SolidBrush(Config.ForeColor);
-            g.FillPolygon(b, _points.ToArray());
-        }
+        throw new NotImplementedException();
+        // if (brush != null)
+        // {
+        //     canvas.FillPolygon(brush, _points.ToArray());
+        // }
+        // else
+        // {
+        //     using var b = new SolidBrush(Config.ForeColor);
+        //     canvas.FillPolygon(b, _points.ToArray());
+        // }
     }
 
     public void GDrawPolygonAddPoint(Point point)
     {
-        if (g == null)
+        if (canvas == null)
             throw new NullReferenceException();
         _points ??= [];
         _points.Add(point);
@@ -219,7 +167,7 @@ internal sealed class GraphicsImage : AbstractImage
 
     public void GDrawPolygonClearPoint()
     {
-        if (g == null)
+        if (canvas == null)
             throw new NullReferenceException();
         if (_points == null)
         {
@@ -237,9 +185,9 @@ internal sealed class GraphicsImage : AbstractImage
     /// </summary>
     public void GDrawCImg(ASprite img, Rectangle destRect)
     {
-        if (g == null)
+        if (canvas == null)
             throw new NullReferenceException();
-        img.GraphicsDraw(g, destRect);
+        img.GraphicsDraw(canvas, destRect);
     }
 
     /// <summary>
@@ -248,13 +196,12 @@ internal sealed class GraphicsImage : AbstractImage
     /// </summary>
     public void GDrawCImg(ASprite img, Rectangle destRect, float[][] cm)
     {
-        if (g == null)
+        if (canvas == null)
             throw new NullReferenceException();
-        ImageAttributes imageAttributes = new();
-        ColorMatrix colorMatrix = new(cm);
-        imageAttributes.SetColorMatrix(colorMatrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
 
-        img.GraphicsDraw(g, destRect, imageAttributes);
+        float[] skiaCM = [.. cm[0], .. cm[1], .. cm[2], .. cm[3]];
+        var filter = SKColorFilter.CreateColorMatrix(skiaCM);
+        img.GraphicsDraw(canvas, destRect, filter);
     }
 
     /// <summary>
@@ -263,10 +210,11 @@ internal sealed class GraphicsImage : AbstractImage
     /// </summary>
     public void GDrawG(GraphicsImage srcGra, Rectangle destRect, Rectangle srcRect)
     {
-        if (g == null)
+        if (canvas == null)
             throw new NullReferenceException();
-        Bitmap src = srcGra.GetBitmap();
-        g.DrawImage(src, destRect, srcRect, GraphicsUnit.Pixel);
+        var src = srcGra.GetBitmap();
+        //canvas.DrawImage(src.ToBitmap(), destRect, srcRect, GraphicsUnit.Pixel);
+        canvas.DrawBitmap(src, new SKPoint(0, 0));
     }
 
 
@@ -276,15 +224,15 @@ internal sealed class GraphicsImage : AbstractImage
     /// </summary>
     public void GDrawG(GraphicsImage srcGra, Rectangle destRect, Rectangle srcRect, float[][] cm)
     {
-        if (g == null)
+        if (canvas == null)
             throw new NullReferenceException();
-        Bitmap src = srcGra.GetBitmap();
+        var src = srcGra.GetBitmap();
         ImageAttributes imageAttributes = new();
         ColorMatrix colorMatrix = new(cm);
         imageAttributes.SetColorMatrix(colorMatrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
         //g.DrawImage(img.Bitmap, destRect, srcRect, GraphicsUnit.Pixel, imageAttributes);なんでこのパターンないのさ
-        g.DrawImage(src, destRect, srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height, GraphicsUnit.Pixel, imageAttributes);
-
+        //canvas.DrawImage(src.ToBitmap(), destRect, srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height, GraphicsUnit.Pixel, imageAttributes);
+        canvas.DrawBitmap(src, new SKPoint(0, 0));
     }
 
 
@@ -294,11 +242,11 @@ internal sealed class GraphicsImage : AbstractImage
     /// </summary>
     public void GDrawGWithMask(GraphicsImage srcGra, GraphicsImage maskGra, Point destPoint)
     {
-        if (g == null)
+        if (canvas == null)
             throw new NullReferenceException();
-        Bitmap destImg = GetBitmap();
-        byte[] srcBytes = BytesFromBitmap(srcGra.GetBitmap());
-        byte[] srcMaskBytes = BytesFromBitmap(maskGra.GetBitmap());
+        var destImg = GetBitmap().ToBitmap();
+        byte[] srcBytes = BytesFromBitmap(srcGra.GetBitmap().ToBitmap());
+        byte[] srcMaskBytes = BytesFromBitmap(maskGra.GetBitmap().ToBitmap());
         //Rectangle destRect = new Rectangle(destPoint.X, destPoint.Y, srcGra.Width, srcGra.Height);
 
         BitmapData bmpData =
@@ -351,7 +299,7 @@ internal sealed class GraphicsImage : AbstractImage
         }
     }
 
-    public void GSetFont(Font r)
+    public void GSetFont(SKFont r)
     {
         if (font != null)
             font.Dispose();
@@ -395,89 +343,17 @@ internal sealed class GraphicsImage : AbstractImage
         }
         return pixels;
     }
-
-    /// <summary>
-    /// GTOARRAY int ID, var array
-    /// エラーチェックは呼び出し元でのみ行う
-    /// <returns></returns>
-    public bool GBitmapToInt64Array(long[,] array, int xstart, int ystart)
-    {
-        if (g == null || Bitmap == null)
-            throw new NullReferenceException();
-        int w = Bitmap.Width;
-        int h = Bitmap.Height;
-        if (xstart + w > array.GetLength(0) || ystart + h > array.GetLength(1))
-            return false;
-        Rectangle rect = new(0, 0, w, h);
-        BitmapData bmpData =
-            Bitmap.LockBits(rect, ImageLockMode.ReadOnly,
-            PixelFormat.Format32bppArgb);
-        nint ptr = bmpData.Scan0;
-        byte[] rgbValues = new byte[w * h * 4];
-        Marshal.Copy(ptr, rgbValues, 0, rgbValues.Length);
-        Bitmap.UnlockBits(bmpData);
-        int i = 0;
-        for (int y = 0; y < h; y++)
-        {
-            for (int x = 0; x < w; x++)
-            {
-                array[x + xstart, y + ystart] =
-                rgbValues[i++] + //B
-                ((long)rgbValues[i++] << 8) + //G
-                ((long)rgbValues[i++] << 16) + //R
-                ((long)rgbValues[i++] << 24);  //A
-            }
-        }
-        return true;
-    }
-
-
-    /// <summary>
-    /// GFROMARRAY int ID, var array
-    /// エラーチェックは呼び出し元でのみ行う
-    /// <returns></returns>
-    public bool GByteArrayToBitmap(long[,] array, int xstart, int ystart)
-    {
-        if (g == null || Bitmap == null)
-            throw new NullReferenceException();
-        int w = Bitmap.Width;
-        int h = Bitmap.Height;
-        if (xstart + w > array.GetLength(0) || ystart + h > array.GetLength(1))
-            return false;
-
-        byte[] rgbValues = new byte[w * h * 4];
-        int i = 0;
-        for (int y = 0; y < h; y++)
-        {
-            for (int x = 0; x < w; x++)
-            {
-                long c = array[x + xstart, y + ystart];
-                rgbValues[i++] = (byte)(c & 0xFF);//B
-                rgbValues[i++] = (byte)(c >> 8 & 0xFF);//G
-                rgbValues[i++] = (byte)(c >> 16 & 0xFF);//R
-                rgbValues[i++] = (byte)(c >> 24 & 0xFF);//A
-            }
-        }
-        Rectangle rect = new(0, 0, w, h);
-        BitmapData bmpData =
-            Bitmap.LockBits(rect, ImageLockMode.WriteOnly,
-            PixelFormat.Format32bppArgb);
-        nint ptr = bmpData.Scan0;
-        Marshal.Copy(rgbValues, 0, ptr, rgbValues.Length);
-        Bitmap.UnlockBits(bmpData);
-        return true;
-    }
     #endregion
     #region Bitmap読み込み・削除
     /// <summary>
     /// 未作成ならエラー
     /// </summary>
-    public Bitmap GetBitmap()
+    public SKBitmap GetBitmap()
     {
-        if (Bitmap == null)
+        if (SKBitmap == null)
             throw new NullReferenceException();
         //UnlockGraphics();
-        return Bitmap;
+        return SKBitmap;
     }
     /// <summary>
     /// GSETCOLOR(int ID, int cARGB, int x, int y)
@@ -485,22 +361,22 @@ internal sealed class GraphicsImage : AbstractImage
     /// </summary>
     public void GSetColor(Color c, int x, int y)
     {
-        if (Bitmap == null)
+        if (SKBitmap == null)
             throw new NullReferenceException();
         //UnlockGraphics();
-        Bitmap.SetPixel(x, y, c);
+        SKBitmap.SetPixel(x, y, c.ToSKColor());
     }
 
     /// <summary>
     /// GGETCOLOR(int ID, int x, int y)
     /// エラーチェックは呼び出し元でのみ行う。特に画像範囲内であるかどうかチェックすること
     /// </summary>
-    public Color GGetColor(int x, int y)
+    public SKColor GGetColor(int x, int y)
     {
-        if (Bitmap == null)
+        if (SKBitmap == null)
             throw new NullReferenceException();
         //UnlockGraphics();
-        return Bitmap.GetPixel(x, y);
+        return SKBitmap.GetPixel(x, y);
     }
 
 
@@ -510,12 +386,12 @@ internal sealed class GraphicsImage : AbstractImage
     public void GDispose()
     {
         size = new Size(0, 0);
-        if (Bitmap == null)
+        if (SKBitmap == null)
             return;
-        if (g != null)
-            g.Dispose();
-        if (Bitmap != null)
-            Bitmap.Dispose();
+        if (canvas != null)
+            canvas.Dispose();
+        if (SKBitmap != null)
+            SKBitmap.Dispose();
         if (brush != null)
             brush.Dispose();
         if (pen != null)
@@ -523,8 +399,8 @@ internal sealed class GraphicsImage : AbstractImage
         if (font != null)
             font.Dispose();
         _points = null;
-        g = null;
-        Bitmap = null;
+        canvas = null;
+        SKBitmap = null;
         brush = null;
         pen = null;
         font = null;
@@ -544,7 +420,7 @@ internal sealed class GraphicsImage : AbstractImage
     #endregion
 
     #region 状態判定（Bitmap読み書きを伴わない）
-    public override bool IsCreated { get { return g != null; } }
+    public override bool IsCreated { get { return canvas != null; } }
     /// <summary>
     /// int GWIDTH(int ID)
     /// </summary>

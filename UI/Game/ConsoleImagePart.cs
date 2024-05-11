@@ -1,5 +1,7 @@
 ﻿using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.UI.Game.Image;
+using SkiaSharp;
+using SkiaSharp.Views.Desktop;
 using System;
 using System.Drawing;
 using System.Runtime.CompilerServices;
@@ -162,7 +164,7 @@ sealed class ConsoleImagePart : AConsoleDisplayNode
         }
         if (cImage != null)
             return;
-        Width = sm.GetDisplayLength(Text, Config.DefaultFont);
+        Width = StringMeasure.GetDisplayLength(Text, Config.DefaultFont);
         XsubPixel = subPixel;
     }
 
@@ -173,7 +175,7 @@ sealed class ConsoleImagePart : AConsoleDisplayNode
         return AltText;
     }
 
-    public override void DrawTo(Graphics graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
+    public override void DrawTo(SKCanvas graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
     {
         if (Error)
             return;
@@ -207,10 +209,11 @@ sealed class ConsoleImagePart : AConsoleDisplayNode
         else
         {
             var point = new Point(PointX, pointY);
-            if (mode == TextDrawingMode.GRAPHICS)
-                graph.DrawString(AltText, Config.DefaultFont, new SolidBrush(Config.ForeColor), point);
-            else
-                System.Windows.Forms.TextRenderer.DrawText(graph, AltText.AsSpan(), Config.DefaultFont, point, Config.ForeColor, System.Windows.Forms.TextFormatFlags.NoPrefix);
+            // if (mode == TextDrawingMode.GRAPHICS)
+            //     graph.DrawString(AltText, Config.DefaultFont, new SolidBrush(Config.ForeColor), point);
+            // else
+            //     System.Windows.Forms.TextRenderer.DrawText(graph, AltText.AsSpan(), Config.DefaultFont, point, Config.ForeColor, System.Windows.Forms.TextFormatFlags.NoPrefix);
+            graph.DrawText(AltText, point.X, point.Y, SKTextAlign.Left, new SKFont(), new SKPaint());
         }
     }
 }

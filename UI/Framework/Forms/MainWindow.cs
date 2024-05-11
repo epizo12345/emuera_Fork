@@ -3,6 +3,8 @@ using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Script;
 using MinorShift.Emuera.Runtime.Utils;
 using MinorShift.Emuera.UI;
+using MinorShift.Emuera.UI.Framework.Forms;
+using SkiaSharp.Views.Desktop;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -29,7 +31,7 @@ internal sealed partial class MainWindow : Form
             デバッグToolStripMenuItem.Visible = true;
         }
 
-        mainPicBox.SetStyle();
+
         initControlSizeAndLocation();
         richTextBox1.ForeColor = Config.ForeColor;
         richTextBox1.BackColor = Config.BackColor;
@@ -37,7 +39,7 @@ internal sealed partial class MainWindow : Form
 
         BackColor = Config.BackColor;
 
-        richTextBox1.Font = Config.DefaultFont;
+        //richTextBox1.Font = Config.DefaultFont;
         richTextBox1.LanguageOption = RichTextBoxLanguageOptions.UIFonts;
         folderSelectDialog.SelectedPath = Program.ErbDir;
         folderSelectDialog.ShowNewFolderButton = false;
@@ -72,7 +74,7 @@ internal sealed partial class MainWindow : Form
         vScrollBar.MouseWheel += new System.Windows.Forms.MouseEventHandler(richTextBox1_MouseWheel);
     }
     private readonly ToolStripMenuItem[] macroMenuItems = new ToolStripMenuItem[KeyMacro.MaxFkey];
-    public PictureBox MainPicBox { get { return mainPicBox; } }
+    public EraPictureBox MainPicBox { get { return mainPicBox; } }
     public VScrollBar ScrollBar { get { return vScrollBar; } }
     public RichTextBox TextBox { get { return richTextBox1; } }
     public ToolTip ToolTip { get { return toolTipButton; } }
@@ -598,11 +600,11 @@ internal sealed partial class MainWindow : Form
 
     }
 
-    private void mainPicBox_Paint(object sender, PaintEventArgs e)
+    private void mainPicBox_Paint(object sender, SKPaintGLSurfaceEventArgs e)
     {
         if (console == null)
             return;
-        console.OnPaint(e.Graphics);
+        console.OnPaint(e.Surface.Canvas);
     }
 
     private void ログを保存するSToolStripMenuItem_Click(object sender, EventArgs e)
@@ -1057,7 +1059,7 @@ internal sealed partial class MainWindow : Form
 
     private void toolTipButton_Popup(object sender, PopupEventArgs e)
     {
-        _tooltipFont ??= new Font(Config.DefaultFont.FontFamily, Config.DefaultFont.Size * 0.6f);
+        _tooltipFont ??= new Font(Config.DefaultFont.Typeface.FamilyName, Config.DefaultFont.Size * 0.6f);
 
         var toolTip = (ToolTip)sender;
         e.ToolTipSize = TextRenderer.MeasureText(toolTip.GetToolTip(e.AssociatedControl), _tooltipFont);

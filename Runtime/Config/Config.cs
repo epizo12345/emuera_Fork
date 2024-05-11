@@ -1,5 +1,6 @@
 ﻿using MinorShift.Emuera.Runtime.Utils;
 using MinorShift.Emuera.UI;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -179,7 +180,7 @@ internal static class Config
     }
 
 
-    public static Font DefaultFont { get { return FontFactory.GetFont("", FontStyle.Regular); } }
+    public static SKFont DefaultFont { get { return FontFactory.GetFont("", FontStyle.Regular); } }
 
     /// <summary>
     /// ディレクトリ作成失敗のExceptionは呼び出し元で処理すること

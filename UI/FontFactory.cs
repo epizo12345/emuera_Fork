@@ -1,5 +1,6 @@
 using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.UI.Game;
+using SkiaSharp;
 using System.Collections.Generic;
 using System.Drawing;
 
@@ -7,27 +8,28 @@ namespace MinorShift.Emuera.UI;
 
 static class FontFactory
 {
-    static readonly Dictionary<(string fontname, int fontSize, FontStyle fontStyle), Font> fontDic = [];
+    static readonly Dictionary<(string fontname, float fontSize, FontStyle fontStyle), SKFont> fontDic = [];
 
-    public static Font GetFont(StringStyle stringStyle)
+    public static SKFont GetFont(StringStyle stringStyle)
     {
         return GetFont(stringStyle.Fontname, stringStyle.FontStyle);
     }
-    public static Font GetFont(string requestFontName, FontStyle style)
+    public static SKFont GetFont(string requestFontName, FontStyle style, float? fontSize = null)
     {
         string fontname = requestFontName;
         if (string.IsNullOrEmpty(requestFontName))
             fontname = Config.FontName;
-        if (!fontDic.ContainsKey((fontname, Config.FontSize, style)))
+        fontSize ??= Config.FontSize;
+        if (!fontDic.ContainsKey((fontname, fontSize.Value, style)))
         {
-            var font = new Font(fontname, Config.FontSize, style, GraphicsUnit.Pixel);
+            var font = new SKFont(SKTypeface.FromFamilyName(fontname), fontSize.Value);
             if (font == null)
             {
                 return null;
             }
 
-            fontDic.Add((fontname, Config.FontSize, style), font);
+            fontDic.Add((fontname, fontSize.Value, style), font);
         }
-        return fontDic[(fontname, Config.FontSize, style)];
+        return fontDic[(fontname, fontSize.Value, style)];
     }
 }

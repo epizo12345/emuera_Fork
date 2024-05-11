@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using SkiaSharp;
 
 namespace MinorShift.Emuera.UI.Game.Image;
 
@@ -12,13 +13,13 @@ internal sealed class ConstImage : AbstractImage
 
     public readonly string Name;
 
-    internal void CreateFrom(Bitmap bmp, bool useGDI)
+    internal void CreateFrom(SKBitmap bmp, bool useGDI)
     {
-        if (Bitmap != null)
+        if (SKBitmap != null)
             throw new Exception();
         try
         {
-            Bitmap = bmp;
+            SKBitmap = bmp;
         }
         catch
         {
@@ -52,17 +53,17 @@ internal sealed class ConstImage : AbstractImage
 
     public override void Dispose()
     {
-        if (Bitmap == null)
+        if (SKBitmap == null)
             return;
-        if (g != null)
+        if (canvas != null)
         {
-            g.Dispose();
-            g = null;
+            canvas.Dispose();
+            canvas = null;
         }
-        if (Bitmap != null)
+        if (SKBitmap != null)
         {
-            Bitmap.Dispose();
-            Bitmap = null;
+            SKBitmap.Dispose();
+            SKBitmap = null;
         }
     }
 
@@ -74,6 +75,6 @@ internal sealed class ConstImage : AbstractImage
 
     public override bool IsCreated
     {
-        get { return Bitmap != null; }
+        get { return SKBitmap != null; }
     }
 }

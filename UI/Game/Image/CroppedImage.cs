@@ -1,5 +1,7 @@
 ﻿using MinorShift.Emuera.Runtime.Utils;
 using MinorShift.Emuera.Sub;
+using SkiaSharp;
+using SkiaSharp.Views.Desktop;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -20,7 +22,7 @@ internal abstract class ASprite : AContentItem, IDisposable
             size.Height = -size.Height;
         DestBaseSize = size;
     }
-    public abstract Color SpriteGetColor(int x, int y);
+    public abstract SKColor SpriteGetColor(int x, int y);
     /// <summary>
     /// 出力される標準のサイズ。正の値のみ。
     /// </summary>
@@ -32,9 +34,9 @@ internal abstract class ASprite : AContentItem, IDisposable
     public Point DestBasePosition;
 
 
-    public abstract void GraphicsDraw(Graphics g, Point offset);
-    public abstract void GraphicsDraw(Graphics g, Rectangle destRect);
-    public abstract void GraphicsDraw(Graphics g, Rectangle destRect, ImageAttributes attr);
+    public abstract void GraphicsDraw(SKCanvas g, Point offset);
+    public abstract void GraphicsDraw(SKCanvas g, Rectangle destRect);
+    public abstract void GraphicsDraw(SKCanvas g, Rectangle destRect, SKColorFilter attr);
     public abstract void Dispose();
     public void Move(Point point) { DestBasePosition.Offset(point); }
 }
@@ -54,12 +56,12 @@ internal abstract class ASpriteSingle : ASprite
     /// ソース画像上の位置を指定する四角形。Width, Heightは負の値をとり得る
     /// </summary>
     public readonly Rectangle SrcRectangle;
-    private Bitmap Bitmap
+    private SKBitmap Bitmap
     {
         get
         {
             if (BaseImage != null && BaseImage.IsCreated)
-                return BaseImage.Bitmap;
+                return BaseImage.SKBitmap;
             return null;
         }
     }
@@ -68,15 +70,15 @@ internal abstract class ASpriteSingle : ASprite
     {
         get { return BaseImage != null && BaseImage.IsCreated; }
     }
-    public override Color SpriteGetColor(int x, int y)
+    public override SKColor SpriteGetColor(int x, int y)
     {
-        Bitmap bmp = Bitmap;
+        var bmp = Bitmap;
         if (bmp == null)
-            return Color.Transparent;
+            return SKColors.Transparent;
         int bmpX = x + SrcRectangle.X;
         int bmpY = y + SrcRectangle.Y;
         if (bmpX < 0 || bmpX >= bmp.Width || bmpY < 0 || bmpY >= bmp.Height)
-            return Color.Transparent;
+            return SKColors.Transparent;
 
         return bmp.GetPixel(bmpX, bmpY);
     }
@@ -85,24 +87,28 @@ internal abstract class ASpriteSingle : ASprite
         BaseImage = null;
     }
 
+    SKPaint _paint = new();
 
-    public override void GraphicsDraw(Graphics g, Point offset)
+    public override void GraphicsDraw(SKCanvas g, Point offset)
     {
         offset.Offset(DestBasePosition);
-        g.DrawImage(Bitmap, new Rectangle(offset, DestBaseSize), SrcRectangle, GraphicsUnit.Pixel);
+        // g.DrawImage(Bitmap.ToBitmap(), new Rectangle(offset, DestBaseSize), SrcRectangle, GraphicsUnit.Pixel);
+        g.DrawBitmap(Bitmap, SrcRectangle.ToSKRect(), SKRect.Create(offset.ToSKPoint(), SrcRectangle.Size.ToSKSize()), _paint);
     }
 
-    public override void GraphicsDraw(Graphics g, Rectangle destRect)
+    public override void GraphicsDraw(SKCanvas g, Rectangle destRect)
     {
         if (!DestBasePosition.IsEmpty)
         {
             destRect.X = destRect.X + DestBasePosition.X * destRect.Width / SrcRectangle.Width;
             destRect.Y = destRect.Y + DestBasePosition.Y * destRect.Height / SrcRectangle.Height;
         }
-        g.DrawImage(Bitmap, destRect, SrcRectangle, GraphicsUnit.Pixel);
+        //g.DrawImage(Bitmap.ToBitmap(), destRect, SrcRectangle, GraphicsUnit.Pixel);
+
+        g.DrawBitmap(Bitmap, SrcRectangle.ToSKRect(), destRect.ToSKRect(), _paint);
     }
 
-    public override void GraphicsDraw(Graphics g, Rectangle destRect, ImageAttributes attr)
+    public override void GraphicsDraw(SKCanvas g, Rectangle destRect, SKColorFilter attr)
     {
         if (!DestBasePosition.IsEmpty)
         {
@@ -110,7 +116,11 @@ internal abstract class ASpriteSingle : ASprite
             destRect.Y = destRect.Y + DestBasePosition.Y * destRect.Height / SrcRectangle.Height;
         }
         //g.DrawImage(Bitmap, destRect, SrcRectangle, GraphicsUnit.Pixel, attr);←このパターンがない
-        g.DrawImage(Bitmap, destRect, SrcRectangle.X, SrcRectangle.Y, SrcRectangle.Width, SrcRectangle.Height, GraphicsUnit.Pixel, attr);
+        //g.DrawImage(Bitmap.ToBitmap(), destRect, SrcRectangle.X, SrcRectangle.Y, SrcRectangle.Width, SrcRectangle.Height, GraphicsUnit.Pixel, attr);
+
+        _paint.ColorFilter = attr;
+        g.DrawBitmap(Bitmap, SrcRectangle.ToSKRect(), destRect.ToSKRect(), _paint);
+        _paint.ColorFilter = null;
     }
 
 }
@@ -263,7 +273,7 @@ internal sealed class SpriteAnime : ASprite
     }
 
 
-    public override Color SpriteGetColor(int x, int y)
+    public override SKColor SpriteGetColor(int x, int y)
     {
         throw new NotSupportedException();
         //Bitmap bmp = this.Bitmap;
@@ -278,7 +288,7 @@ internal sealed class SpriteAnime : ASprite
     }
 
 
-    public override void GraphicsDraw(Graphics g, Point offset)
+    public override void GraphicsDraw(SKCanvas g, Point offset)
     {
         AnimeFrame frame = GetCurrentFrame();
         if (frame == null || frame.BaseImage == null || !frame.BaseImage.IsCreated)
@@ -286,11 +296,13 @@ internal sealed class SpriteAnime : ASprite
         offset.Offset(DestBasePosition);
         offset.Offset(frame.Offset);
         Rectangle destRect = new(offset, frame.SrcRectangle.Size);
-        g.DrawImage(frame.BaseImage.Bitmap, destRect, frame.SrcRectangle, GraphicsUnit.Pixel);
+        //g.DrawImage(frame.BaseImage.SKBitmap.ToBitmap(), destRect, frame.SrcRectangle, GraphicsUnit.Pixel);
+
+        g.DrawBitmap(frame.BaseImage.SKBitmap, new SKPoint(0, 0));
         return;
     }
 
-    public override void GraphicsDraw(Graphics g, Rectangle destRect)
+    public override void GraphicsDraw(SKCanvas g, Rectangle destRect)
     {
         AnimeFrame frame = GetCurrentFrame();
         if (frame == null || frame.BaseImage == null || !frame.BaseImage.IsCreated)
@@ -299,10 +311,12 @@ internal sealed class SpriteAnime : ASprite
         destRect.Y = destRect.Y + (DestBasePosition.Y + frame.Offset.Y) * destRect.Height / DestBaseSize.Height;
         destRect.Width = frame.SrcRectangle.Width * destRect.Width / DestBaseSize.Width;
         destRect.Height = frame.SrcRectangle.Height * destRect.Height / DestBaseSize.Height;
-        g.DrawImage(frame.BaseImage.Bitmap, destRect, frame.SrcRectangle, GraphicsUnit.Pixel);
+        //g.DrawImage(frame.BaseImage.SKBitmap.ToBitmap(), destRect, frame.SrcRectangle, GraphicsUnit.Pixel);
+
+        g.DrawBitmap(frame.BaseImage.SKBitmap, new SKPoint(0, 0));
     }
 
-    public override void GraphicsDraw(Graphics g, Rectangle destRect, ImageAttributes attr)
+    public override void GraphicsDraw(SKCanvas g, Rectangle destRect, SKColorFilter attr)
     {
         AnimeFrame frame = GetCurrentFrame();
         if (frame == null || frame.BaseImage == null || !frame.BaseImage.IsCreated)
@@ -312,7 +326,9 @@ internal sealed class SpriteAnime : ASprite
         destRect.Width = frame.SrcRectangle.Width * destRect.Width / DestBaseSize.Width;
         destRect.Height = frame.SrcRectangle.Height * destRect.Height / DestBaseSize.Height;
         //g.DrawImage(frame.BaseImage.Bitmap, destRect, SrcRectangle, GraphicsUnit.Pixel, attr);←このパターンがない
-        g.DrawImage(frame.BaseImage.Bitmap, destRect, frame.SrcRectangle.X, frame.SrcRectangle.Y, frame.SrcRectangle.Width, frame.SrcRectangle.Height, GraphicsUnit.Pixel, attr);
+        //g.DrawImage(frame.BaseImage.SKBitmap.ToBitmap(), destRect, frame.SrcRectangle.X, frame.SrcRectangle.Y, frame.SrcRectangle.Width, frame.SrcRectangle.Height, GraphicsUnit.Pixel, attr);
+
+        g.DrawBitmap(frame.BaseImage.SKBitmap, new SKPoint(0, 0));
     }
 
 }

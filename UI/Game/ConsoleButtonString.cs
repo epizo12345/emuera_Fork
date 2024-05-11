@@ -1,6 +1,7 @@
 ﻿using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Utils;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -219,7 +220,7 @@ internal sealed class ConsoleButtonString
             css.PointX += shiftX;
     }
 
-    public void DrawTo(Graphics graph, int pointY, bool isBackLog, TextDrawingMode mode)
+    public void DrawTo(SKCanvas graph, int pointY, bool isBackLog, TextDrawingMode mode)
     {
         bool isSelecting = IsButton && parent.ButtonIsSelected(this);
         foreach (AConsoleDisplayNode css in strArray)

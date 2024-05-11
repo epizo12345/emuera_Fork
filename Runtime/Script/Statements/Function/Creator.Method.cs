@@ -6,8 +6,11 @@ using MinorShift.Emuera.Runtime.Script.Statements.Expression;
 using MinorShift.Emuera.Runtime.Script.Statements.Function;
 using MinorShift.Emuera.Runtime.Script.Statements.Variable;
 using MinorShift.Emuera.Runtime.Utils;
+using MinorShift.Emuera.UI;
 using MinorShift.Emuera.UI.Game;
 using MinorShift.Emuera.UI.Game.Image;
+using SkiaSharp;
+using SkiaSharp.Views.Desktop;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -591,7 +594,7 @@ internal static partial class FunctionMethodCreator
         readonly bool defaultColor;
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
-            Color color = defaultColor ? Config.BackColor : GlobalStatic.Console.bgColor;
+            Color color = defaultColor ? Config.BackColor : GlobalStatic.Console.bgColor.ToDrawingColor();
             return color.ToArgb() & 0xFFFFFF;
         }
     }
@@ -3026,7 +3029,7 @@ internal static partial class FunctionMethodCreator
             Point p = ReadPoint(Name, exm, arguments, 1);
             if (p.X < 0 || p.X >= g.Width || p.X < 0 || p.Y >= g.Height)
                 return -1;
-            Color c = g.GGetColor(p.X, p.Y);
+            var c = g.GGetColor(p.X, p.Y).ToDrawingColor();
             //Color.ToArgb()はInt32の負の値をとることがあり、Int64にうまく変換できない?（と思ったが気のせいだった
             return ((Int64)c.ToArgb()) & 0xFFFFFFFFL;
         }
@@ -3094,7 +3097,7 @@ internal static partial class FunctionMethodCreator
             string fontname = arguments[1].GetStrValue(exm);
             Int64 fontsize = arguments[2].GetIntValue(exm);
 
-            var styledFont = new Font(fontname, fontsize, FontStyle.Regular, GraphicsUnit.Pixel);
+            var styledFont = FontFactory.GetFont(fontname, FontStyle.Regular, fontsize);
             if (styledFont == null)
             {
                 return 0;
@@ -3205,9 +3208,9 @@ internal static partial class FunctionMethodCreator
                 return -1;
             if (p.Y < 0 || p.Y >= img.DestBaseSize.Height)
                 return -1;
-            Color c = img.SpriteGetColor(p.X, p.Y);
+            var c = img.SpriteGetColor(p.X, p.Y);
             //Color.ToArgb()はInt32の負の値をとることがあり、Int64にうまく変換できない？（と思ったが気のせいだった
-            return ((Int64)c.A) << 24 + c.R << 16 + c.G << 8 + c.B;
+            return ((Int64)c.Alpha) << 24 + c.Red << 16 + c.Green << 8 + c.Blue;
         }
     }
 
@@ -3282,7 +3285,7 @@ internal static partial class FunctionMethodCreator
                 return 0;
 
             string filename = arguments[1].GetStrValue(exm);
-            Bitmap bmp = null;
+            SKBitmap bmp = null;
             try
             {
                 string filepath = filename;
@@ -3290,7 +3293,7 @@ internal static partial class FunctionMethodCreator
                     filepath = Program.ContentDir + filename;
                 if (!System.IO.File.Exists(filepath))
                     return 0;
-                bmp = new Bitmap(filepath);
+                bmp = SKBitmap.Decode(filepath);
                 if (bmp.Width > AbstractImage.MAX_IMAGESIZE || bmp.Height > AbstractImage.MAX_IMAGESIZE)
                     return 0;
                 g.GCreateFromF(bmp, Config.TextDrawingMode == TextDrawingMode.WINAPI);
@@ -4277,7 +4280,7 @@ internal static partial class FunctionMethodCreator
             try
             {
                 Config.CreateSavDir();
-                g.Bitmap.Save(filepath);
+                g.SKBitmap.ToBitmap().Save(filepath);
             }
             catch
             {
@@ -4310,12 +4313,12 @@ internal static partial class FunctionMethodCreator
                 return 0;
 
             string filepath = GetSaveDataPathGraphics((int)i64);
-            Bitmap bmp = null;
+            SKBitmap bmp = null;
             try
             {
                 if (!System.IO.File.Exists(filepath))
                     return 0;
-                bmp = new Bitmap(filepath);
+                bmp = SKBitmap.Decode(filepath);
                 if (bmp.Width > AbstractImage.MAX_IMAGESIZE || bmp.Height > AbstractImage.MAX_IMAGESIZE)
                     return 0;
                 g.GCreateFromF(bmp, Config.TextDrawingMode == TextDrawingMode.WINAPI);

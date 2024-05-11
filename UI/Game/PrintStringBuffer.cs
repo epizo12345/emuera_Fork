@@ -502,7 +502,7 @@ internal sealed class PrintStringBuffer
             return -1;
         int widthLimit = Config.DrawableWidth - css.PointX;
         string str = css.Text;
-        Font font = css.Font;
+        var font = css.Font;
 
         //最適なサイズを二分探索する
         var window = str.Length / 2;
@@ -513,7 +513,7 @@ internal sealed class PrintStringBuffer
         while (window > 1)
         {
             test = span[..i];
-            if (sm.GetDisplayLength(test, font) <= widthLimit)//サイズ内ならlowLengthを更新。文字数を増やす。
+            if (StringMeasure.GetDisplayLength(test, font) <= widthLimit)//サイズ内ならlowLengthを更新。文字数を増やす。
             {
                 window /= 2;
                 i += window;

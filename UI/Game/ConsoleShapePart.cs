@@ -1,4 +1,6 @@
 ﻿using MinorShift.Emuera.Runtime.Config;
+using SkiaSharp;
+using SkiaSharp.Views.Desktop;
 using System;
 using System.Drawing;
 using System.Text;
@@ -120,7 +122,7 @@ internal sealed class ConsoleRectangleShapePart : ConsoleShapePart
     readonly RectangleF originalRectF;
     bool visible;
     Rectangle rect;
-    public override void DrawTo(Graphics graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
+    public override void DrawTo(SKCanvas graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
     {
         if (!visible)
             return;
@@ -128,7 +130,8 @@ internal sealed class ConsoleRectangleShapePart : ConsoleShapePart
         targetRect.X = targetRect.X + PointX;
         targetRect.Y = targetRect.Y + pointY;
         Color dcolor = isSelecting ? ButtonColor : Color;
-        graph.FillRectangle(new SolidBrush(dcolor), targetRect);
+        //graph.FillRectangle(new SolidBrush(dcolor), targetRect);
+        graph.DrawRect(targetRect.ToSKRect(), new SKPaint());
     }
     public override void SetWidth(StringMeasure sm, float subPixel)
     {
@@ -151,7 +154,7 @@ internal sealed class ConsoleSpacePart : ConsoleShapePart
         //Width = width;
     }
 
-    public override void DrawTo(Graphics graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false) { }
+    public override void DrawTo(SKCanvas graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false) { }
 
     public override void SetWidth(StringMeasure sm, float subPixel)
     {
@@ -169,12 +172,13 @@ internal sealed class ConsoleErrorShapePart : ConsoleShapePart
         AltText = errMes;
     }
 
-    public override void DrawTo(Graphics graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
+    public override void DrawTo(SKCanvas graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
     {
-        if (mode == TextDrawingMode.GRAPHICS)
-            graph.DrawString(Text, Config.DefaultFont, new SolidBrush(Config.ForeColor), new Point(PointX, pointY));
-        else
-            System.Windows.Forms.TextRenderer.DrawText(graph, Text.AsSpan(), Config.DefaultFont, new Point(PointX, pointY), Config.ForeColor, System.Windows.Forms.TextFormatFlags.NoPrefix);
+        // if (mode == TextDrawingMode.GRAPHICS)
+        //     graph.DrawString(Text, Config.DefaultFont, new SolidBrush(Config.ForeColor), new Point(PointX, pointY));
+        // else
+        //     System.Windows.Forms.TextRenderer.DrawText(graph, Text.AsSpan(), Config.DefaultFont, new Point(PointX, pointY), Config.ForeColor, System.Windows.Forms.TextFormatFlags.NoPrefix);
+        graph.DrawText(Text, new SKPoint(0, 0), SKTextAlign.Left, new SKFont(), new SKPaint());
     }
     public override void SetWidth(StringMeasure sm, float subPixel)
     {
@@ -183,7 +187,7 @@ internal sealed class ConsoleErrorShapePart : ConsoleShapePart
             Width = 0;
             return;
         }
-        Width = sm.GetDisplayLength(Text, Config.DefaultFont);
+        Width = StringMeasure.GetDisplayLength(Text, Config.DefaultFont);
         XsubPixel = subPixel;
     }
 }

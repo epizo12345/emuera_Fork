@@ -1,5 +1,7 @@
 ﻿using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Config.JSON;
+using SkiaSharp;
+using SkiaSharp.Views.Desktop;
 using System;
 using System.Drawing;
 using System.Windows.Forms;
@@ -44,7 +46,7 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
 
     }
 
-    public Font Font { get; private set; }
+    public SKFont Font { get; private set; }
     public StringStyle StringStyle { get; private set; }
     public override bool CanDivide
     {
@@ -90,11 +92,11 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
             Width = 0;
             return;
         }
-        Width = sm.GetDisplayLength(Text, Font);
+        Width = StringMeasure.GetDisplayLength(Text, Font);
         XsubPixel = subPixel;
     }
 
-    public override void DrawTo(Graphics graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
+    public override void DrawTo(SKCanvas graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
     {
         if (Error)
             return;
@@ -120,34 +122,51 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
             color = Config.LogColor;
         }
 
-        var point = new Point(PointX, pointY);
+        var point = new SKPoint(PointX, pointY);
 
         if (mode == TextDrawingMode.GRAPHICS)
         {
-            graph.DrawString(Text, Font, new SolidBrush(color), point);
+            //graph.DrawString(Text, Font, new SolidBrush(color), point);
         }
         else
         {
-            if (JSONConfig.Data.UseButtonFocusBackgroundColor)
+            // if (JSONConfig.Data.UseButtonFocusBackgroundColor)
+            // {
+            //     if (isButton && !isBackLog)
+            //     {
+            //         if (!backcolor.HasValue)
+            //         {
+            //             backcolor = Color.FromArgb(50, 50, 50);
+            //         }
+            //         TextRenderer.DrawText(graph, Text.AsSpan(), Font, point, color, backColor: backcolor.Value, TextFormatFlags.NoPrefix);
+            //     }
+            //     else
+            //     {
+            //         TextRenderer.DrawText(graph, Text.AsSpan(), Font, point, color, TextFormatFlags.NoPrefix);
+            //     }
+            // }
+            // else
+            // {
+            //     TextRenderer.DrawText(graph, Text.AsSpan(), Font, point, color, TextFormatFlags.NoPrefix);
+            // }
+
+            var paint = new SKPaint
             {
-                if (isButton && !isBackLog)
-                {
-                    if (!backcolor.HasValue)
-                    {
-                        backcolor = Color.FromArgb(50, 50, 50);
-                    }
-                    TextRenderer.DrawText(graph, Text.AsSpan(), Font, point, color, backColor: backcolor.Value, TextFormatFlags.NoPrefix);
-                }
-                else
-                {
-                    TextRenderer.DrawText(graph, Text.AsSpan(), Font, point, color, TextFormatFlags.NoPrefix);
-                }
-            }
-            else
+                Color = color.ToSKColor(),
+                IsAntialias = true,
+            };
+
+
+
+            if (backcolor.HasValue)
             {
-                TextRenderer.DrawText(graph, Text.AsSpan(), Font, point, color, TextFormatFlags.NoPrefix);
+                var size = new SKSize(Font.Size, Font.Metrics.Descent);
+                graph.DrawRect(SKRect.Create(point, size), new SKPaint() { Color = backcolor.Value.ToSKColor() });
             }
 
+            point.Offset(0, Math.Abs(Font.Metrics.Top));
+
+            graph.DrawText(Text, point, SKTextAlign.Left, Font, paint);
         }
 
     }

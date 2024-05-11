@@ -1,4 +1,5 @@
 ﻿using MinorShift.Emuera.UI.Framework.Forms;
+using SkiaSharp.Views.Desktop;
 namespace MinorShift.Emuera.Forms
 {
     partial class MainWindow
@@ -92,7 +93,6 @@ namespace MinorShift.Emuera.Forms
             mainPicBox = new EraPictureBox();
             menuStrip.SuspendLayout();
             AutoVerbMenu.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)mainPicBox).BeginInit();
             SuspendLayout();
             // 
             // vScrollBar
@@ -558,7 +558,7 @@ namespace MinorShift.Emuera.Forms
             mainPicBox.Size = new System.Drawing.Size(968, 706);
             mainPicBox.TabIndex = 0;
             mainPicBox.TabStop = false;
-            mainPicBox.Paint += mainPicBox_Paint;
+            mainPicBox.PaintSurface += mainPicBox_Paint;
             mainPicBox.MouseDown += mainPicBox_MouseDown;
             mainPicBox.MouseLeave += mainPicBox_MouseLeave;
             mainPicBox.MouseMove += mainPicBox_MouseMove;
@@ -586,7 +586,6 @@ namespace MinorShift.Emuera.Forms
             menuStrip.ResumeLayout(false);
             menuStrip.PerformLayout();
             AutoVerbMenu.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)mainPicBox).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }

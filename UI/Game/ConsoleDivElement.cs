@@ -6,6 +6,8 @@ using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Config.JSON;
 using MinorShift.Emuera.UI;
 using MinorShift.Emuera.UI.Game;
+using SkiaSharp;
+using SkiaSharp.Views.Desktop;
 
 struct BorderStyle
 {
@@ -24,7 +26,7 @@ class ConsoleDivElement : AConsoleDisplayNode
     readonly DisplayMode _display;
 
     StringStyle _stringStyle;
-    readonly Font _font;
+    readonly SKFont _font;
     Color? _backColor;
 
     BorderStyle? _borderStyle;
@@ -54,14 +56,14 @@ class ConsoleDivElement : AConsoleDisplayNode
 
         if (autoWidth || autoHeight)
         {
-            var autoSize = TextRenderer.MeasureText(text, _font);
+            var autoSize = _font.MeasureText(text);
             if (autoWidth)
             {
-                Size.Width = autoSize.Width;
+                Size.Width = (int)autoSize;
             }
             if (autoHeight)
             {
-                Size.Height = autoSize.Height;
+                Size.Height = (int)_font.Metrics.XMax;
             }
         }
 
@@ -77,7 +79,7 @@ class ConsoleDivElement : AConsoleDisplayNode
 
     public override bool CanDivide => false;
 
-    public override void DrawTo(Graphics graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
+    public override void DrawTo(SKCanvas graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
     {
         if (Error)
             return;
@@ -117,7 +119,7 @@ class ConsoleDivElement : AConsoleDisplayNode
 
             if (mode == TextDrawingMode.GRAPHICS)
             {
-                graph.DrawString(Text, _font, new SolidBrush(color), Point);
+                //graph.DrawString(Text, _font, new SolidBrush(color), Point);
             }
             else
             {
@@ -129,23 +131,26 @@ class ConsoleDivElement : AConsoleDisplayNode
                     }
 
                 }
-                var paddingPoint = Point;
+                var paddingPoint = new SKPoint(Point.X, Point.Y);
                 if (_padding.HasValue)
                 {
-                    paddingPoint = new Point(
+                    paddingPoint = new SKPoint(
                         Point.X + _padding.Value.Left,
                         Point.Y + _padding.Value.Top
                         );
                 }
                 if (_backColor.HasValue)
                 {
-                    graph.FillRectangle(new SolidBrush(_backColor.Value), new Rectangle(Point, Size));
-                    TextRenderer.DrawText(graph, Text.AsSpan(), _font, paddingPoint, color, TextFormatFlags.NoPrefix);
+                    //graph.FillRectangle(new SolidBrush(_backColor.Value), new Rectangle(Point, Size));
+                    graph.DrawRect(SKRect.Create(Point.ToSKPoint(), Size.ToSKSize()), new SKPaint());
                 }
-                else
-                {
-                    TextRenderer.DrawText(graph, Text.AsSpan(), _font, paddingPoint, color, TextFormatFlags.NoPrefix);
-                }
+
+                //TextRenderer.DrawText(graph, Text.AsSpan(), _font, paddingPoint, color, TextFormatFlags.NoPrefix);
+
+
+                paddingPoint.Offset(0, Math.Abs(_font.Metrics.Top));
+
+                graph.DrawText(Text, paddingPoint, SKTextAlign.Left, new SKFont(), new SKPaint());
 
             }
         }
@@ -157,7 +162,8 @@ class ConsoleDivElement : AConsoleDisplayNode
 
         if (_borderStyle.HasValue)
         {
-            graph.DrawRectangle(_borderStyle.Value.Pen, new Rectangle(Point, Size));
+            //graph.DrawRectangle(_borderStyle.Value.Pen, new Rectangle(Point, Size));
+            graph.DrawRect(SKRect.Create(Point.ToSKPoint(), Size.ToSKSize()), new SKPaint());
         }
     }
 
@@ -168,7 +174,7 @@ class ConsoleDivElement : AConsoleDisplayNode
             Width = 0;
             return;
         }
-        Width = sm.GetDisplayLength(Text, _font);
+        Width = StringMeasure.GetDisplayLength(Text, _font);
 
         foreach (var childNode in _childNodes)
         {

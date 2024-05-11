@@ -10,6 +10,8 @@ using MinorShift.Emuera.Runtime.Script.Statements.Expression;
 using MinorShift.Emuera.Runtime.Utils;
 using MinorShift.Emuera.UI.Game;
 using MinorShift.Emuera.UI.Game.Image;
+using SkiaSharp;
+using SkiaSharp.Views.Desktop;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -778,7 +780,7 @@ internal sealed partial class EmueraConsole : IDisposable
             mapPoint.Y = clientPoint.Y + cbgButtonMap.Height;
             if (mapPoint.X >= 0 && mapPoint.Y >= 0 && mapPoint.X < cbgButtonMap.Width && mapPoint.Y < cbgButtonMap.Height)
             {
-                Color c = cbgButtonMap.Bitmap.GetPixel(mapPoint.X, mapPoint.Y);
+                Color c = cbgButtonMap.SKBitmap.GetPixel(mapPoint.X, mapPoint.Y).ToDrawingColor();
                 if (c.A == 255)
                 {
                     buttonNum = c.ToArgb() & 0xFFFFFF;
@@ -1219,6 +1221,7 @@ internal sealed partial class EmueraConsole : IDisposable
             if (_frameDeltaTimer.ElapsedMilliseconds < msPerFrame && (state == ConsoleState.Running || state == ConsoleState.Initializing))
                 return;
         }
+
         if (forceTextBoxColor)
         {
             var sec = _genericTimerStopwatch.ElapsedMilliseconds;
@@ -1234,14 +1237,15 @@ internal sealed partial class EmueraConsole : IDisposable
                     Application.DoEvents();
                 }
             }
-            window.TextBox.BackColor = this.bgColor;
+            window.TextBox.BackColor = this.bgColor.ToDrawingColor();
 
             _drawStopwatch.Restart();
         }
         window.Invoke(() =>
         {
             verticalScrollBarUpdate();
-            window.Refresh();//OnPaint発行
+            window.MainPicBox.Invalidate();
+            //window.Refresh();//OnPaint発行
         });
     }
 
@@ -1253,7 +1257,7 @@ internal sealed partial class EmueraConsole : IDisposable
     /// 全面Clear法のみにしたのでさっぱりした。ダブルバッファリングはOnPaintが勝手にやるはず
     /// </summary>
     /// <param name="graph"></param>
-    public void OnPaint(Graphics graph)
+    public void OnPaint(SKCanvas graph)
     {
         //デバッグ用。描画が超重い環境を想定1
         //System.Threading.Thread.Sleep(100);
@@ -1642,7 +1646,7 @@ internal sealed partial class EmueraConsole : IDisposable
             mapPoint.Y = mapPoint.Y + cbgButtonMap.Height;
             if (mapPoint.X >= 0 && mapPoint.Y >= 0 && mapPoint.X < cbgButtonMap.Width && mapPoint.Y < cbgButtonMap.Height)
             {
-                Color c = cbgButtonMap.Bitmap.GetPixel(mapPoint.X, mapPoint.Y);
+                Color c = cbgButtonMap.SKBitmap.GetPixel(mapPoint.X, mapPoint.Y).ToDrawingColor();
                 if (c.A == 255)
                 {
                     buttonNum = c.ToArgb() & 0xFFFFFF;

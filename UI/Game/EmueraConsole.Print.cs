@@ -1,6 +1,8 @@
 ﻿using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Utils;
 using MinorShift.Emuera.UI.Game;
+using SkiaSharp;
+using SkiaSharp.Views.Desktop;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -18,7 +20,7 @@ internal sealed partial class EmueraConsole : IDisposable
 {
     private readonly List<ConsoleDisplayLine> displayLineList;
     public bool noOutputLog;
-    public Color bgColor = Config.BackColor;
+    public SKColor bgColor = Config.BackColor.ToSKColor();
 
     private readonly PrintStringBuffer printBuffer;
     readonly StringMeasure stringMeasure = new();
@@ -31,7 +33,7 @@ internal sealed partial class EmueraConsole : IDisposable
         lineNo = 0;
         lastDrawnLineNo = -1;
         verticalScrollBarUpdate();
-        window.Refresh();//OnPaint発行
+        window.MainPicBox.Invalidate();//OnPaint発行
     }
 
 
@@ -81,7 +83,7 @@ internal sealed partial class EmueraConsole : IDisposable
     bool forceTextBoxColor;
     public void SetBgColor(Color color)
     {
-        this.bgColor = color;
+        this.bgColor = color.ToSKColor();
         forceTextBoxColor = true;
         //REDRAWされない場合はTextBoxの色は変えずにフラグだけ立てる
         //最初の再描画時に現在の背景色に合わせる
@@ -415,14 +417,14 @@ internal sealed partial class EmueraConsole : IDisposable
     private void calcPrintCWidth(StringMeasure stringMeasure)
     {
         string str = new(' ', Config.PrintCLength);
-        Font font = Config.DefaultFont;
-        printCWidth = stringMeasure.GetDisplayLength(str, font);
+        var font = Config.DefaultFont;
+        printCWidth = StringMeasure.GetDisplayLength(str, font);
 
         str += " ";
-        printCWidthL = stringMeasure.GetDisplayLength(str, font);
+        printCWidthL = StringMeasure.GetDisplayLength(str, font);
 
         str += " ";
-        printCWidthL2 = stringMeasure.GetDisplayLength(str, font);
+        printCWidthL2 = StringMeasure.GetDisplayLength(str, font);
     }
 
     private string CreateTypeCString(string str, bool alignmentRight)
@@ -434,7 +436,7 @@ internal sealed partial class EmueraConsole : IDisposable
         if (str != null)
             length = Config.Encode.GetByteCount(str);
         int printcLength = Config.PrintCLength;
-        var font = new Font(Style.Fontname, Config.DefaultFont.Size, Style.FontStyle, GraphicsUnit.Pixel);
+        var font = new SKFont(SKTypeface.FromFamilyName(Style.Fontname), Config.DefaultFont.Size);
         if (font == null)
         {
             return str;
@@ -443,25 +445,25 @@ internal sealed partial class EmueraConsole : IDisposable
         if (alignmentRight && (length < printcLength))
         {
             str = new string(' ', printcLength - length) + str;
-            width = stringMeasure.GetDisplayLength(str, font);
+            width = StringMeasure.GetDisplayLength(str, font);
             while (width > printCWidth)
             {
                 if (str[0] != ' ')
                     break;
                 str = str.Remove(0, 1);
-                width = stringMeasure.GetDisplayLength(str, font);
+                width = StringMeasure.GetDisplayLength(str, font);
             }
         }
         else if ((!alignmentRight) && (length < printcLength + 1))
         {
             str += new string(' ', printcLength + 1 - length);
-            width = stringMeasure.GetDisplayLength(str, font);
+            width = StringMeasure.GetDisplayLength(str, font);
             while (width > printCWidthL)
             {
                 if (str[^1] != ' ')
                     break;
                 str = str.Remove(str.Length - 1, 1);
-                width = stringMeasure.GetDisplayLength(str, font);
+                width = StringMeasure.GetDisplayLength(str, font);
             }
         }
         return str;
@@ -594,16 +596,16 @@ internal sealed partial class EmueraConsole : IDisposable
         var builder = new StringBuilder();
         builder.Append(barStr);
         int width = 0;
-        Font font = Config.DefaultFont;
+        var font = Config.DefaultFont;
         while (width < Config.DrawableWidth)
         {//境界を越えるまで一文字ずつ増やす
             builder.Append(barStr);
-            width = stringMeasure.GetDisplayLength(builder.ToString(), font);
+            width = StringMeasure.GetDisplayLength(builder.ToString(), font);
         }
         while (width > Config.DrawableWidth)
         {//境界を越えたら、今度は超えなくなるまで一文字ずつ減らす（barStrに複数字の文字列がきた場合に対応するため）
             builder.Remove(builder.Length - 1, 1);
-            width = stringMeasure.GetDisplayLength(builder.ToString(), font);
+            width = StringMeasure.GetDisplayLength(builder.ToString(), font);
         }
         return builder.ToString();
     }
