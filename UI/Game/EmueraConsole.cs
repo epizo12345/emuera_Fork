@@ -1244,8 +1244,7 @@ internal sealed partial class EmueraConsole : IDisposable
         window.Invoke(() =>
         {
             verticalScrollBarUpdate();
-            window.MainPicBox.Invalidate();
-            //window.Refresh();//OnPaint発行
+            window.MainPicBox.Refresh();//OnPaint発行
         });
     }
 
