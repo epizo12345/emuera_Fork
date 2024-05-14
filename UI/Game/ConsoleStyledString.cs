@@ -20,13 +20,18 @@ public enum DisplayMode
     AbsoluteLeftTop
 }
 
+public struct TextsWithFont {
+    public string Text;
+    public SKFont Font;
+    public float Width;
+    public float offsetY;
+}
+
 /// <summary>
 /// 装飾付文字列。stringとStringStyleからなる。
 /// </summary>
 internal sealed class ConsoleStyledString : AConsoleColoredNode
 {
-
-
     private ConsoleStyledString() { }
     public ConsoleStyledString(string str, StringStyle style)
     {
@@ -35,7 +40,6 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
         Text = str;
         StringStyle = style;
         Font = FontFactory.GetFont(style.Fontname, style.FontStyle);
-        Font.Subpixel = true;
         if (Font == null)
         {
             Error = true;
@@ -52,8 +56,9 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
                 if ((!isFallbackFont && Font.ContainsGlyph(@char)) ||
                     (isFallbackFont && !Font.ContainsGlyph(@char)))
                 {
-                    _texts.Add(builder.ToString());
+                    _texts.Add(CreateTextWithFont(isFallbackFont, builder.ToString()));
                     builder.Clear();
+
                     isFallbackFont = !isFallbackFont;
                 }
 
@@ -61,7 +66,7 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
             }
             if (builder.Length > 0)
             {
-                _texts.Add(builder.ToString());
+                _texts.Add(CreateTextWithFont(isFallbackFont, builder.ToString()));
             }
         }
         Color = style.Color;
@@ -72,11 +77,28 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
         PointX = -1;
         Width = -1;
 
+        TextsWithFont CreateTextWithFont(bool isFallbackFont, string t)
+        {
+            var textsWithFont = new TextsWithFont()
+            {
+                Text = t
+            };
+            if (isFallbackFont)
+            {
+                textsWithFont.Font = Font;
+            }
+            else
+            {
+                textsWithFont.Font = _fallbackFont;
+            }
+            textsWithFont.Width = textsWithFont.Font.GetGlyphWidths(textsWithFont.Text).Sum();
+            return textsWithFont;
+        }
     }
 
     public SKFont Font { get; private set; }
     SKFont _fallbackFont;
-    List<string> _texts;//フォントフォールバック用
+    List<TextsWithFont> _texts;//フォントフォールバック用
     public StringStyle StringStyle { get; private set; }
     public override bool CanDivide
     {
@@ -124,25 +146,14 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
         }
         if (_texts == null)
         {
-
             Width = StringMeasure.GetDisplayLength(Text, Font);
         }
         else
         {
-            var isFallbackFont = false;
             var offsetX = 0.0f;
             foreach (var text in _texts)
             {
-                if (isFallbackFont)
-                {
-                    offsetX += _fallbackFont.GetGlyphWidths(text).Sum();
-                    isFallbackFont = false;
-                }
-                else
-                {
-                    offsetX += _fallbackFont.GetGlyphWidths(text).Sum();
-                    isFallbackFont = true;
-                }
+                offsetX += text.Width;
             }
             Width = (int)offsetX;
         }
@@ -155,7 +166,7 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
             return;
 
         var color = Color;
-        Color? backcolor = null;
+        SKColor? backcolor = null;
         if (isSelecting)
         {
             if (JSONConfig.Data.UseButtonFocusBackgroundColor)
@@ -165,7 +176,7 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
                         Color.Yellow.B == color.B)
                  && !string.IsNullOrWhiteSpace(Text))
                 {
-                    backcolor = Color.Gray;
+                    backcolor = SKColors.Gray;
                 }
             }
             color = ButtonColor;
@@ -173,84 +184,39 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
         else if (isBackLog && !colorChanged)
         {
             color = Config.LogColor;
+        } 
+
+        var paint = new SKPaint
+        {
+            Color = color.ToSKColor(),
+            IsAntialias = false,
+        };
+
+        var point = new SKPoint(PointX, pointY);
+
+
+        if (backcolor.HasValue)
+        {
+            var size = new SKSize(Width, Font.Size);
+            graph.DrawRect(SKRect.Create(point, size), new SKPaint() { Color = backcolor.Value });
         }
 
 
-        if (mode == TextDrawingMode.GRAPHICS)
+        if (_texts == null)
         {
-            //graph.DrawString(Text, Font, new SolidBrush(color), point);
+            point.Offset(0, Math.Abs(Font.Metrics.Top));
+            graph.DrawText(Text, point, SKTextAlign.Left, Font, paint);
         }
         else
         {
-            // if (JSONConfig.Data.UseButtonFocusBackgroundColor)
-            // {
-            //     if (isButton && !isBackLog)
-            //     {
-            //         if (!backcolor.HasValue)
-            //         {
-            //             backcolor = Color.FromArgb(50, 50, 50);
-            //         }
-            //         TextRenderer.DrawText(graph, Text.AsSpan(), Font, point, color, backColor: backcolor.Value, TextFormatFlags.NoPrefix);
-            //     }
-            //     else
-            //     {
-            //         TextRenderer.DrawText(graph, Text.AsSpan(), Font, point, color, TextFormatFlags.NoPrefix);
-            //     }
-            // }
-            // else
-            // {
-            //     TextRenderer.DrawText(graph, Text.AsSpan(), Font, point, color, TextFormatFlags.NoPrefix);
-            // }
-
-            var paint = new SKPaint
+            foreach (var text in _texts)
             {
-                Color = color.ToSKColor(),
-                IsAntialias = false,
-            };
+                var offsetPoint = point with {Y = point.Y + Math.Abs(text.Font.Metrics.Top)};
+                graph.DrawText(text.Text, offsetPoint, SKTextAlign.Left, text.Font, paint);
 
-            var point = new SKPoint(PointX, pointY);
-
-
-            if (backcolor.HasValue)
-            {
-                var size = new SKSize(Font.Size, Font.Metrics.Descent);
-                graph.DrawRect(SKRect.Create(point, size), new SKPaint() { Color = backcolor.Value.ToSKColor() });
-            }
-
-
-            if (_texts == null)
-            {
-                point.Offset(0, Math.Abs(Font.Metrics.Top));
-                graph.DrawText(Text, point, SKTextAlign.Left, Font, paint);
-            }
-            else
-            {
-                var isFallbackFont = false;
-                var offsetX = 0.0f;
-                var fallbackOffsetPoint = point;
-                fallbackOffsetPoint.Offset(0, Math.Abs(_fallbackFont.Metrics.Top));
-                var normalOffsetPoint = point;
-                normalOffsetPoint.Offset(0, Math.Abs(Font.Metrics.Top));
-                foreach (var text in _texts)
-                {
-                    if (isFallbackFont)
-                    {
-
-                        graph.DrawText(text, fallbackOffsetPoint with { X = fallbackOffsetPoint.X + offsetX }, SKTextAlign.Left, _fallbackFont, paint);
-                        offsetX += _fallbackFont.GetGlyphWidths(text, paint).Sum();
-                        isFallbackFont = false;
-                    }
-                    else
-                    {
-
-                        graph.DrawText(text, normalOffsetPoint with { X = normalOffsetPoint.X + offsetX }, SKTextAlign.Left, Font, paint);
-                        offsetX += Font.GetGlyphWidths(text, paint).Sum();
-                        isFallbackFont = true;
-                    }
-                }
+                point.Offset(text.Width,0);
             }
         }
 
     }
-
 }

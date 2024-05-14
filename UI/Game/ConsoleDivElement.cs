@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
+using System.Text;
 using System.Windows.Forms;
 using MinorShift.Emuera;
 using MinorShift.Emuera.Runtime.Config;
@@ -16,7 +19,7 @@ struct BorderStyle
 
 class ConsoleDivElement : AConsoleDisplayNode
 {
-    readonly AConsoleDisplayNode[] _childNodes;
+    readonly List<AConsoleDisplayNode> _childNodes;
 
     readonly int _positionX;
     readonly int _positionY;
@@ -27,12 +30,16 @@ class ConsoleDivElement : AConsoleDisplayNode
 
     StringStyle _stringStyle;
     readonly SKFont _font;
+
+    readonly SKFont _fallbackFont;
+    readonly List<TextsWithFont> _texts;
+
     Color? _backColor;
 
     BorderStyle? _borderStyle;
     Padding? _padding;
 
-    public ConsoleDivElement(AConsoleDisplayNode[] childNode, string text,
+    public ConsoleDivElement(List<AConsoleDisplayNode> childNode, string text,
                                 StringStyle stringStyle,
                                 DisplayMode display = DisplayMode.Relative,
                                 int positionX = 0, int positionY = 0,
@@ -44,8 +51,70 @@ class ConsoleDivElement : AConsoleDisplayNode
         _childNodes = childNode;
 
         Text = text;
+
+
         _stringStyle = stringStyle;
         _font = FontFactory.GetFont(stringStyle);
+        _fallbackFont = FontFactory.GetFont(Config.DefaultFont.Typeface.FamilyName, stringStyle.FontStyle);
+
+        if (text.Contains('\n'))
+        {
+            var lines = text.Split('\n');
+            var offsetY = 0;
+            foreach (var line in lines)
+            {
+                _childNodes.Add(new ConsoleDivElement([], line, stringStyle, display, positionX, positionY + offsetY, width, height, backcolor, borderStyle, padding));
+                offsetY += (int)_font.Size;
+            }
+            Text = "";
+        }
+
+        if (!_font.ContainsGlyphs(Text))
+        {
+            _texts = [];
+            var useFallbackFont = true;
+            var builder = new StringBuilder();
+            var f = _fallbackFont;
+            foreach (var c in Text)
+            {
+                if ((useFallbackFont && _font.ContainsGlyph(c)) ||
+                    (!useFallbackFont && !_font.ContainsGlyph(c)))
+                {
+                    var paragrah = builder.ToString();
+                    builder.Clear();
+                    _texts.Add(new TextsWithFont
+                    {
+                        Font = f,
+                        Text = paragrah,
+                        Width = f.MeasureText(paragrah),
+                    });
+                    if (useFallbackFont)
+                    {
+                        f = _font;
+                        useFallbackFont = false;
+                    }
+                    else
+                    {
+                        f = _fallbackFont;
+                        useFallbackFont = true;
+                    }
+                }
+
+                builder.Append(c);
+            }
+            if (builder.Length > 0)
+            {
+                var paragrah = builder.ToString();
+                _texts.Add(new TextsWithFont
+                {
+                    Font = f,
+                    Text = paragrah,
+                    Width = f.MeasureText(paragrah),
+                });
+            }
+
+        }
+
 
         _display = display;
         _positionX = positionX;
@@ -56,14 +125,14 @@ class ConsoleDivElement : AConsoleDisplayNode
 
         if (autoWidth || autoHeight)
         {
-            var autoSize = _font.MeasureText(text);
+            var autoSize = _font.MeasureText(Text);
             if (autoWidth)
             {
                 Size.Width = (int)autoSize;
             }
             if (autoHeight)
             {
-                Size.Height = (int)_font.Metrics.XMax;
+                Size.Height = (int)_font.Size;
             }
         }
 
@@ -131,6 +200,7 @@ class ConsoleDivElement : AConsoleDisplayNode
                     }
 
                 }
+
                 var paddingPoint = new SKPoint(Point.X, Point.Y);
                 if (_padding.HasValue)
                 {
@@ -139,18 +209,36 @@ class ConsoleDivElement : AConsoleDisplayNode
                         Point.Y + _padding.Value.Top
                         );
                 }
+
+                var paint = new SKPaint()
+                {
+                    Color = color.ToSKColor()
+                };
+
                 if (_backColor.HasValue)
                 {
-                    //graph.FillRectangle(new SolidBrush(_backColor.Value), new Rectangle(Point, Size));
-                    graph.DrawRect(SKRect.Create(Point.ToSKPoint(), Size.ToSKSize()), new SKPaint());
+                    graph.DrawRect(SKRect.Create(Point.ToSKPoint(), Size.ToSKSize()), paint);
                 }
 
-                //TextRenderer.DrawText(graph, Text.AsSpan(), _font, paddingPoint, color, TextFormatFlags.NoPrefix);
 
 
-                paddingPoint.Offset(0, Math.Abs(_font.Metrics.Top));
 
-                graph.DrawText(Text, paddingPoint, SKTextAlign.Left, new SKFont(), new SKPaint());
+                if (_texts == null)
+                {
+                    paddingPoint.Offset(0, Math.Abs(_font.Metrics.Top));
+                    graph.DrawText(Text, paddingPoint, SKTextAlign.Left, _font, paint);
+                }
+                else
+                {
+                    foreach (var text in _texts)
+                    {
+                        var offsetPoint = paddingPoint;
+                        offsetPoint.Offset(0, Math.Abs(text.Font.Metrics.Top) + text.offsetY);
+                        graph.DrawText(text.Text, offsetPoint, SKTextAlign.Left, text.Font, paint);
+
+                        paddingPoint.Offset(text.Width, 0);
+                    }
+                }
 
             }
         }

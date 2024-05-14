@@ -71,6 +71,22 @@ internal static class HtmlManager
         public bool PointXisLocked;
     }
 
+    class DivState {
+        public bool IsDiv;//divタグの解析中
+        public int PosX;
+        public int PosY;
+        public DisplayMode Display;
+        public Color? BackgroundColor;
+
+        public int Width = -1;
+        public int Height = -1;
+
+        public bool HasBorder = false;
+        public int BorderWidth;
+        public Color BorderColor;
+        public Padding? Padding;
+    }
+
     private sealed class HtmlAnalzeState
     {
         public bool LineHead = true;//行頭フラグ。一度もテキストが出てきてない状態
@@ -94,20 +110,7 @@ internal static class HtmlManager
         public bool FlagBr;//<br>による強制改行の予約
         public bool FlagButton;//<button></button>によるボタン化の予約
 
-        public bool IsDiv;//divタグの解析中
-        public int PosX;
-        public int PosY;
-        public DisplayMode Display;
-        public Color? BackgroundColor;
-
-        public int Width = -1;
-        public int Height = -1;
-
-        public bool HasBorder = false;
-        public int BorderWidth;
-        public Color BorderColor;
-        public Padding? Padding;
-
+        public DivState DivState;
 
         public StringStyle GetSS()
         {
@@ -294,7 +297,7 @@ internal static class HtmlManager
         while (!st.EOS)
         {
             found = st.Find('<');
-            if (!state.IsDiv && hasReturn)
+            if (state.DivState == null && hasReturn)
             {
                 int rFound = st.Find('\n');
                 if (rFound >= 0 && (found > rFound || found < 0))
@@ -313,32 +316,25 @@ internal static class HtmlManager
             else if (found > 0)
             {
                 string txt = Unescape(st.Substring(st.CurrentPosition, found));
-                if (state.IsDiv)
+                if (state.DivState != null)
                 {
                     var stringStyle = state.GetSS();
                     BorderStyle? borderStyle = null;
-                    if (state.HasBorder)
+                    if (state.DivState.HasBorder)
                     {
                         borderStyle = new BorderStyle
                         {
-                            Pen = new Pen(state.BorderColor, state.BorderWidth)
+                            Pen = new Pen(state.DivState.BorderColor, state.DivState.BorderWidth)
                         };
                     }
 
                     cssList.Add(new ConsoleDivElement([], txt, stringStyle,
-                                                         state.Display, state.PosX, state.PosY,
-                                                         state.Width, state.Height,
-                                                         state.BackgroundColor,
+                                                         state.DivState.Display, state.DivState.PosX, state.DivState.PosY,
+                                                         state.DivState.Width, state.DivState.Height,
+                                                         state.DivState.BackgroundColor,
                                                          borderStyle,
-                                                         state.Padding));
-                    state.Display = DisplayMode.Relative;
-                    state.PosX = default;
-                    state.PosY = default;
-                    state.BackgroundColor = null;
-                    state.Width = -1;
-                    state.Height = -1;
-                    state.BorderColor = Color.White;
-                    state.BorderWidth = 1;
+                                                         state.DivState.Padding));
+                    state.DivState = null;
                 }
                 else
                 {
@@ -357,7 +353,7 @@ internal static class HtmlManager
                 st.CurrentPosition += found + 3;
                 continue;
             }
-            if (!state.IsDiv && hasReturn && st.Current == '\n')//テキスト中の\nは<br>として扱う
+            if (hasReturn && st.Current == '\n')//テキスト中の\nは<br>として扱う
             {
                 state.FlagBr = true;
                 st.ShiftNext();
@@ -373,7 +369,7 @@ internal static class HtmlManager
                 st.ShiftNext();
             }
 
-            if (state.FlagBr)
+            if (state.DivState == null && state.FlagBr)
             {
                 state.LastButtonTag = state.CurrentButtonTag;
                 if (cssList.Count > 0)
@@ -688,7 +684,7 @@ internal static class HtmlManager
                     state.FlagButton = true;
                     return null;
                 case "div":
-                    state.IsDiv = false;
+                    state.DivState.IsDiv = false;
                     return null;
                 default:
                     throw new CodeEE("終了タグ</" + tag + ">は解釈できません");
@@ -1069,7 +1065,10 @@ internal static class HtmlManager
                 }
             case "div":
                 {
-                    state.IsDiv = true;
+                    state.DivState = new()
+                    {
+                        IsDiv = true
+                    };
 
                     var xpos = 0;
                     var ypos = 0;
@@ -1128,14 +1127,14 @@ internal static class HtmlManager
                             case "border_width":
                                 {
                                     var value = (wc.Current as LiteralStringWord).Str;
-                                    state.HasBorder = true;
+                                    state.DivState.HasBorder = true;
                                     borderWidth = ParseSizeValue(value);
                                 }
                                 break;
                             case "border_color":
                                 {
                                     var value = (wc.Current as LiteralStringWord).Str;
-                                    state.HasBorder = true;
+                                    state.DivState.HasBorder = true;
                                     borderColor = ColorTranslator.FromHtml(value);
                                 }
                                 break;
@@ -1143,23 +1142,23 @@ internal static class HtmlManager
                                 {
                                     var value = (wc.Current as LiteralStringWord).Str;
                                     var all = ParseSizeValue(value);
-                                    state.Padding = new Padding(all);
+                                    state.DivState.Padding = new Padding(all);
                                 }
                                 break;
                         }
                         wc.ShiftNext();
                     }
 
-                    state.PosX = xpos;
-                    state.PosY = ypos;
-                    state.Display = display;
-                    state.BackgroundColor = backgroundColor;
-                    state.Width = width;
-                    state.Height = height;
-                    if (state.HasBorder)
+                    state.DivState.PosX = xpos;
+                    state.DivState.PosY = ypos;
+                    state.DivState.Display = display;
+                    state.DivState.BackgroundColor = backgroundColor;
+                    state.DivState.Width = width;
+                    state.DivState.Height = height;
+                    if (state.DivState.HasBorder)
                     {
-                        state.BorderColor = borderColor;
-                        state.BorderWidth = borderWidth;
+                        state.DivState.BorderColor = borderColor;
+                        state.DivState.BorderWidth = borderWidth;
                     }
                     return null;
                 }
