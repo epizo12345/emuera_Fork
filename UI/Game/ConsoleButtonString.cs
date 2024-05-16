@@ -220,11 +220,11 @@ internal sealed class ConsoleButtonString
             css.PointX += shiftX;
     }
 
-    public void DrawTo(SKCanvas graph, int pointY, bool isBackLog, TextDrawingMode mode)
+    public void DrawTo(SKCanvas graph, SKPoint point, bool isBackLog, TextDrawingMode mode)
     {
         bool isSelecting = IsButton && parent.ButtonIsSelected(this);
         foreach (AConsoleDisplayNode css in strArray)
-            css.DrawTo(graph, pointY, isSelecting, isBackLog, mode, IsButton);
+            css.DrawTo(graph, point, isSelecting, isBackLog, mode, IsButton);
     }
 
     readonly static StringBuilder builder = new();

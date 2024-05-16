@@ -3,6 +3,8 @@ using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Script.Parser;
 using MinorShift.Emuera.Runtime.Script.Statements.Expression;
 using MinorShift.Emuera.Runtime.Utils;
+using SkiaSharp;
+using SkiaSharp.Views.Desktop;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -71,7 +73,8 @@ internal static class HtmlManager
         public bool PointXisLocked;
     }
 
-    class DivState {
+    class DivState
+    {
         public bool IsDiv;//divタグの解析中
         public int PosX;
         public int PosY;
@@ -316,30 +319,8 @@ internal static class HtmlManager
             else if (found > 0)
             {
                 string txt = Unescape(st.Substring(st.CurrentPosition, found));
-                if (state.DivState != null)
-                {
-                    var stringStyle = state.GetSS();
-                    BorderStyle? borderStyle = null;
-                    if (state.DivState.HasBorder)
-                    {
-                        borderStyle = new BorderStyle
-                        {
-                            Pen = new Pen(state.DivState.BorderColor, state.DivState.BorderWidth)
-                        };
-                    }
+                cssList.Add(new ConsoleStyledString(txt, state.GetSS()));
 
-                    cssList.Add(new ConsoleDivElement([], txt, stringStyle,
-                                                         state.DivState.Display, state.DivState.PosX, state.DivState.PosY,
-                                                         state.DivState.Width, state.DivState.Height,
-                                                         state.DivState.BackgroundColor,
-                                                         borderStyle,
-                                                         state.DivState.Padding));
-                    state.DivState = null;
-                }
-                else
-                {
-                    cssList.Add(new ConsoleStyledString(txt, state.GetSS()));
-                }
                 state.LineHead = false;
                 st.CurrentPosition += found;
             }
@@ -369,7 +350,7 @@ internal static class HtmlManager
                 st.ShiftNext();
             }
 
-            if (state.DivState == null && state.FlagBr)
+            if (state.FlagBr)
             {
                 state.LastButtonTag = state.CurrentButtonTag;
                 if (cssList.Count > 0)
@@ -389,6 +370,34 @@ internal static class HtmlManager
             throw new CodeEE("閉じられていないタグがあります");
         if (cssList.Count > 0)
             buttonList.Add(cssToButton(cssList, state, console));
+
+        if (state.DivState != null)
+        {
+            var borderStyle = new BorderStyle()
+            {
+                Paint = new SKPaint()
+                {
+                    Color = state.DivState.BorderColor.ToSKColor(),
+                    StrokeWidth = state.DivState.BorderWidth,
+                    IsStroke = true
+                }
+            };
+            var div = new ConsoleButtonString(console, [
+                new ConsoleDivElement(
+                    buttonList,
+                    state.DivState.Display,
+                    state.DivState.PosX,
+                    state.DivState.PosY,
+                    state.DivState.Width,
+                    state.DivState.Height,
+                    state.DivState.BackgroundColor,
+                    borderStyle,
+                    state.DivState.Padding
+                )
+            ]);
+            buttonList = [div];
+            state.DivState = null;
+        }
 
         foreach (ConsoleButtonString button in buttonList)
         {

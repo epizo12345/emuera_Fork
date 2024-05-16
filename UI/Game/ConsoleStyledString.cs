@@ -20,7 +20,8 @@ public enum DisplayMode
     AbsoluteLeftTop
 }
 
-public struct TextsWithFont {
+public struct TextsWithFont
+{
     public string Text;
     public SKFont Font;
     public float Width;
@@ -158,9 +159,10 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
             Width = (int)offsetX;
         }
         XsubPixel = subPixel;
+        Size = new SKSize(Width, Config.LineHeight);
     }
 
-    public override void DrawTo(SKCanvas graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
+    public override void DrawTo(SKCanvas graph, SKPoint origin, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
     {
         if (Error)
             return;
@@ -184,7 +186,7 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
         else if (isBackLog && !colorChanged)
         {
             color = Config.LogColor;
-        } 
+        }
 
         var paint = new SKPaint
         {
@@ -192,8 +194,12 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
             IsAntialias = false,
         };
 
-        var point = new SKPoint(PointX, pointY);
-
+        var point = new SKPoint(origin.X, origin.Y);
+        if (origin.X == -1)//旧来の位置決め方式
+        {
+            point.X = PointX;
+        }
+        Point = point;
 
         if (backcolor.HasValue)
         {
@@ -211,10 +217,10 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
         {
             foreach (var text in _texts)
             {
-                var offsetPoint = point with {Y = point.Y + Math.Abs(text.Font.Metrics.Top)};
+                var offsetPoint = point with { Y = point.Y + Math.Abs(text.Font.Metrics.Top) };
                 graph.DrawText(text.Text, offsetPoint, SKTextAlign.Left, text.Font, paint);
 
-                point.Offset(text.Width,0);
+                point.Offset(text.Width, 0);
             }
         }
 

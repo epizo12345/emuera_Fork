@@ -1697,6 +1697,43 @@ internal sealed partial class EmueraConsole : IDisposable
         int pointY = point.Y;
         int relPointY = pointY - window.MainPicBox.Height;
         //下から上へ探索し発見次第打ち切り
+        static ConsoleButtonString findButtom(int pointX, int pointY, int relPointY, ConsoleButtonString button)
+        {
+            foreach (var part in button.StrArray)
+            {
+                if (part == null)
+                    continue;
+
+                if (part.Size != null && part.Point != null)
+                {
+                    if ((part.Point?.X <= pointX) && (part.Point?.X + part.Size?.Width >= pointX) &&
+                        (pointY >= part.Point?.Y) && (pointY <= part.Point?.Y + part.Size?.Height))
+                    {
+                        if (button.IsButton)
+                            return button;
+                    }
+
+                    if (part is ConsoleDivElement div)
+                    {
+                        foreach (var node in div._childNodes)
+                        {
+                            var f = findButtom(pointX, pointY, relPointY, node);
+                            if (f != null) return f;
+                        }
+                    }
+                }
+                else
+                {
+                    if ((part.PointX <= pointX) && (part.PointX + part.Width >= pointX)
+                        && (relPointY >= part.Top) && (relPointY <= part.Bottom))
+                    {
+                        if (button.IsButton)
+                            return button;
+                    }
+                }
+            }
+            return null;
+        }
         //HTML Islandの探索
         foreach (var elem in _htmlElementList)
         {
@@ -1704,25 +1741,10 @@ internal sealed partial class EmueraConsole : IDisposable
             {
                 foreach (var part in button.StrArray)
                 {
-                    if (part is ConsoleDivElement div)
+                    pointing = findButtom(pointX, pointY, relPointY, button);
+                    if (pointing != null)
                     {
-                        if ((div.Point.X <= pointX) && (div.Point.X + div.Size.Width >= pointX) &&
-                            (pointY >= div.Point.Y) && (pointY <= div.Point.Y + div.Size.Height))
-                        {
-                            pointing = button;
-                            if (pointing.IsButton)
-                                goto breakfor;
-                        }
-                    }
-                    else
-                    {
-                        if ((part.PointX <= pointX) && (part.PointX + part.Width >= pointX)
-                            && (relPointY >= part.Top) && (relPointY <= part.Bottom))
-                        {
-                            pointing = button;
-                            if (pointing.IsButton)
-                                goto breakfor;
-                        }
+                        goto breakfor;
                     }
                 }
 
@@ -1737,42 +1759,14 @@ internal sealed partial class EmueraConsole : IDisposable
 
             for (int b = 0; b < curLine.Buttons.Length; b++)
             {
-                ConsoleButtonString button = curLine.Buttons[curLine.Buttons.Length - b - 1];
+                var button = curLine.Buttons[curLine.Buttons.Length - b - 1];
                 if (button == null || button.StrArray == null)
                     continue;
 
-
-                //if (relPointY >= 0 && relPointY <= Config.FontSize)
-                //{
-                //	pointing = button;
-                //	if(pointing.IsButton)
-                //		goto breakfor;
-                //}
-                foreach (AConsoleDisplayNode part in button.StrArray)
+                pointing = findButtom(pointX, pointY, relPointY, button);
+                if (pointing != null)
                 {
-                    if (part == null)
-                        continue;
-
-                    if (part is ConsoleDivElement div)
-                    {
-                        if ((div.Point.X <= pointX) && (div.Point.X + div.Size.Width >= pointX) &&
-                            (pointY >= div.Point.Y) && (pointY <= div.Point.Y + div.Size.Height))
-                        {
-                            pointing = button;
-                            if (pointing.IsButton)
-                                goto breakfor;
-                        }
-                    }
-                    else
-                    {
-                        if ((part.PointX <= pointX) && (part.PointX + part.Width >= pointX)
-                            && (relPointY >= part.Top) && (relPointY <= part.Bottom))
-                        {
-                            pointing = button;
-                            if (pointing.IsButton)
-                                goto breakfor;
-                        }
-                    }
+                    goto breakfor;
                 }
             }
         }
@@ -1805,6 +1799,7 @@ internal sealed partial class EmueraConsole : IDisposable
         pointingString = pointing;
         selectingButton = select;
         return needRefresh;
+
     }
 
 

@@ -175,7 +175,7 @@ sealed class ConsoleImagePart : AConsoleDisplayNode
         return AltText;
     }
 
-    public override void DrawTo(SKCanvas graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
+    public override void DrawTo(SKCanvas graph, SKPoint point, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
     {
         if (Error)
             return;
@@ -191,7 +191,7 @@ sealed class ConsoleImagePart : AConsoleDisplayNode
             {
                 case DisplayMode.Relative:
                     rect.X = destRect.X + PointX + Config.DrawingParam_ShapePositionShift;
-                    rect.Y = destRect.Y + pointY;
+                    rect.Y = destRect.Y + (int)point.Y;
                     break;
                 case DisplayMode.AbsoluteLeftTop:
                     rect.X = _positionX;
@@ -208,12 +208,7 @@ sealed class ConsoleImagePart : AConsoleDisplayNode
         }
         else
         {
-            var point = new Point(PointX, pointY);
-            // if (mode == TextDrawingMode.GRAPHICS)
-            //     graph.DrawString(AltText, Config.DefaultFont, new SolidBrush(Config.ForeColor), point);
-            // else
-            //     System.Windows.Forms.TextRenderer.DrawText(graph, AltText.AsSpan(), Config.DefaultFont, point, Config.ForeColor, System.Windows.Forms.TextFormatFlags.NoPrefix);
-            graph.DrawText(AltText, point.X, point.Y, SKTextAlign.Left, new SKFont(), new SKPaint());
+            graph.DrawText(AltText, PointX, point.Y, SKTextAlign.Left, new SKFont(), new SKPaint());
         }
     }
 }

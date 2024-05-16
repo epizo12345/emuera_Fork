@@ -122,13 +122,13 @@ internal sealed class ConsoleRectangleShapePart : ConsoleShapePart
     readonly RectangleF originalRectF;
     bool visible;
     Rectangle rect;
-    public override void DrawTo(SKCanvas graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
+    public override void DrawTo(SKCanvas graph, SKPoint point, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
     {
         if (!visible)
             return;
         Rectangle targetRect = rect;
         targetRect.X = targetRect.X + PointX;
-        targetRect.Y = targetRect.Y + pointY;
+        targetRect.Y = targetRect.Y + (int)point.Y;
         Color dcolor = isSelecting ? ButtonColor : Color;
         //graph.FillRectangle(new SolidBrush(dcolor), targetRect);
         graph.DrawRect(targetRect.ToSKRect(), new SKPaint());
@@ -154,7 +154,7 @@ internal sealed class ConsoleSpacePart : ConsoleShapePart
         //Width = width;
     }
 
-    public override void DrawTo(SKCanvas graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false) { }
+    public override void DrawTo(SKCanvas graph, SKPoint point, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false) { }
 
     public override void SetWidth(StringMeasure sm, float subPixel)
     {
@@ -172,7 +172,7 @@ internal sealed class ConsoleErrorShapePart : ConsoleShapePart
         AltText = errMes;
     }
 
-    public override void DrawTo(SKCanvas graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
+    public override void DrawTo(SKCanvas graph, SKPoint point, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
     {
         // if (mode == TextDrawingMode.GRAPHICS)
         //     graph.DrawString(Text, Config.DefaultFont, new SolidBrush(Config.ForeColor), new Point(PointX, pointY));

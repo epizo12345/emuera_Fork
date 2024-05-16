@@ -14,17 +14,15 @@ using SkiaSharp.Views.Desktop;
 
 struct BorderStyle
 {
-    public Pen Pen;
+    public SKPaint Paint;
 }
 
 class ConsoleDivElement : AConsoleDisplayNode
 {
-    readonly List<AConsoleDisplayNode> _childNodes;
+    public readonly List<ConsoleButtonString> _childNodes;
 
     readonly int _positionX;
     readonly int _positionY;
-    public Size Size;
-    public Point Point;
 
     readonly DisplayMode _display;
 
@@ -39,8 +37,7 @@ class ConsoleDivElement : AConsoleDisplayNode
     BorderStyle? _borderStyle;
     Padding? _padding;
 
-    public ConsoleDivElement(List<AConsoleDisplayNode> childNode, string text,
-                                StringStyle stringStyle,
+    public ConsoleDivElement(List<ConsoleButtonString> childNode,
                                 DisplayMode display = DisplayMode.Relative,
                                 int positionX = 0, int positionY = 0,
                                 int width = -1, int height = -1,
@@ -50,91 +47,20 @@ class ConsoleDivElement : AConsoleDisplayNode
     {
         _childNodes = childNode;
 
-        Text = text;
-
-
-        _stringStyle = stringStyle;
-        _font = FontFactory.GetFont(stringStyle);
-        _fallbackFont = FontFactory.GetFont(Config.DefaultFont.Typeface.FamilyName, stringStyle.FontStyle);
-
-        if (text.Contains('\n'))
+        foreach (var node in childNode)
         {
-            var lines = text.Split('\n');
-            var offsetY = 0;
-            foreach (var line in lines)
+            foreach (var child in node.StrArray)
             {
-                _childNodes.Add(new ConsoleDivElement([], line, stringStyle, display, positionX, positionY + offsetY, width, height, backcolor, borderStyle, padding));
-                offsetY += (int)_font.Size;
+                child.Point = Point;
+                child.Size = new SKSize();
             }
-            Text = "";
-        }
-
-        if (!_font.ContainsGlyphs(Text))
-        {
-            _texts = [];
-            var useFallbackFont = true;
-            var builder = new StringBuilder();
-            var f = _fallbackFont;
-            foreach (var c in Text)
-            {
-                if ((useFallbackFont && _font.ContainsGlyph(c)) ||
-                    (!useFallbackFont && !_font.ContainsGlyph(c)))
-                {
-                    var paragrah = builder.ToString();
-                    builder.Clear();
-                    _texts.Add(new TextsWithFont
-                    {
-                        Font = f,
-                        Text = paragrah,
-                        Width = f.MeasureText(paragrah),
-                    });
-                    if (useFallbackFont)
-                    {
-                        f = _font;
-                        useFallbackFont = false;
-                    }
-                    else
-                    {
-                        f = _fallbackFont;
-                        useFallbackFont = true;
-                    }
-                }
-
-                builder.Append(c);
-            }
-            if (builder.Length > 0)
-            {
-                var paragrah = builder.ToString();
-                _texts.Add(new TextsWithFont
-                {
-                    Font = f,
-                    Text = paragrah,
-                    Width = f.MeasureText(paragrah),
-                });
-            }
-
         }
 
 
         _display = display;
         _positionX = positionX;
         _positionY = positionY;
-        Size = new Size(width, height);
-        var autoWidth = Size.Width == -1;
-        var autoHeight = Size.Height == -1;
-
-        if (autoWidth || autoHeight)
-        {
-            var autoSize = _font.MeasureText(Text);
-            if (autoWidth)
-            {
-                Size.Width = (int)autoSize;
-            }
-            if (autoHeight)
-            {
-                Size.Height = (int)_font.Size;
-            }
-        }
+        Size = new SKSize(width, width);
 
         _positionX = positionX;
         _positionY = positionY;
@@ -148,18 +74,43 @@ class ConsoleDivElement : AConsoleDisplayNode
 
     public override bool CanDivide => false;
 
-    public override void DrawTo(SKCanvas graph, int pointY, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
+    public override void DrawTo(SKCanvas graph, SKPoint origin, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
     {
         if (Error)
             return;
         Point = _display switch
         {
-            DisplayMode.Relative => new Point(PointX + _positionX, pointY + _positionY),
-            DisplayMode.AbsoluteLeftTop => new Point(_positionX, _positionY),
-            DisplayMode.AbsoluteLeftBottom => new Point(_positionX, GlobalStatic.Console.ClientHeight - Config.FontSize + _positionY),
+            DisplayMode.Relative => new SKPoint(PointX + _positionX, (int)origin.Y + _positionY),
+            DisplayMode.AbsoluteLeftTop => new SKPoint(_positionX, _positionY),
+            DisplayMode.AbsoluteLeftBottom => new SKPoint(_positionX, GlobalStatic.Console.ClientHeight - Config.FontSize + _positionY),
             _ => throw new NotImplementedException($"{_display}はまだ実装されていません")
         };
 
+        var autoWidth = Size?.Width == -1;
+        var autoHeight = Size?.Height == -1;
+
+        if (autoWidth || autoHeight)
+        {
+            var width = 0.0f;
+            foreach (var node in _childNodes)
+            {
+                width += node.Width;
+            }
+            if (autoWidth)
+            {
+                Size = Size.Value with
+                {
+                    Width = width,
+                };
+            }
+            if (autoHeight)
+            {
+                Size = Size.Value with
+                {
+                    Height = Config.LineHeight
+                };
+            }
+        }
 
         {
             var color = _stringStyle.Color;
@@ -185,73 +136,48 @@ class ConsoleDivElement : AConsoleDisplayNode
                 color = Config.LogColor;
             }
 
-
-            if (mode == TextDrawingMode.GRAPHICS)
+            if (JSONConfig.Data.UseButtonFocusBackgroundColor && isButton && !isBackLog)
             {
-                //graph.DrawString(Text, _font, new SolidBrush(color), Point);
+                if (!backcolor.HasValue)
+                {
+                    _backColor = Color.FromArgb(50, 50, 50);
+                }
+
             }
-            else
+
+
+
+
+            if (_backColor.HasValue)
             {
-                if (JSONConfig.Data.UseButtonFocusBackgroundColor && isButton && !isBackLog)
-                {
-                    if (!backcolor.HasValue)
-                    {
-                        _backColor = Color.FromArgb(50, 50, 50);
-                    }
-
-                }
-
-                var paddingPoint = new SKPoint(Point.X, Point.Y);
-                if (_padding.HasValue)
-                {
-                    paddingPoint = new SKPoint(
-                        Point.X + _padding.Value.Left,
-                        Point.Y + _padding.Value.Top
-                        );
-                }
-
                 var paint = new SKPaint()
                 {
-                    Color = color.ToSKColor()
+                    Color = _backColor.Value.ToSKColor(),
                 };
-
-                if (_backColor.HasValue)
-                {
-                    graph.DrawRect(SKRect.Create(Point.ToSKPoint(), Size.ToSKSize()), paint);
-                }
-
-
-
-
-                if (_texts == null)
-                {
-                    paddingPoint.Offset(0, Math.Abs(_font.Metrics.Top));
-                    graph.DrawText(Text, paddingPoint, SKTextAlign.Left, _font, paint);
-                }
-                else
-                {
-                    foreach (var text in _texts)
-                    {
-                        var offsetPoint = paddingPoint;
-                        offsetPoint.Offset(0, Math.Abs(text.Font.Metrics.Top) + text.offsetY);
-                        graph.DrawText(text.Text, offsetPoint, SKTextAlign.Left, text.Font, paint);
-
-                        paddingPoint.Offset(text.Width, 0);
-                    }
-                }
-
+                graph.DrawRect(SKRect.Create(Point.Value, Size.Value), paint);
             }
+
+        }
+
+        var paddingPoint = Point ?? new SKPoint();
+        if (_padding.HasValue)
+        {
+            paddingPoint = new SKPoint(
+                Point.Value.X + _padding.Value.Left,
+                Point.Value.Y + _padding.Value.Top
+                );
         }
 
         foreach (var childNode in _childNodes)
         {
-            childNode.DrawTo(graph, pointY, isSelecting, isBackLog, mode, isButton);
+            childNode.DrawTo(graph, paddingPoint, isBackLog, mode);
+            paddingPoint.Offset(childNode.Width, 0);
         }
 
         if (_borderStyle.HasValue)
         {
             //graph.DrawRectangle(_borderStyle.Value.Pen, new Rectangle(Point, Size));
-            graph.DrawRect(SKRect.Create(Point.ToSKPoint(), Size.ToSKSize()), new SKPaint());
+            graph.DrawRect(SKRect.Create(Point.Value, Size.Value), _borderStyle?.Paint);
         }
     }
 
@@ -262,11 +188,10 @@ class ConsoleDivElement : AConsoleDisplayNode
             Width = 0;
             return;
         }
-        Width = StringMeasure.GetDisplayLength(Text, _font);
 
         foreach (var childNode in _childNodes)
         {
-            childNode.SetWidth(sm, subPixel);
+            childNode.CalcWidth(sm, subPixel);
         }
     }
 }

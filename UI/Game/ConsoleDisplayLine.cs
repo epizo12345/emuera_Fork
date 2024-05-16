@@ -130,7 +130,7 @@ internal sealed class ConsoleDisplayLine
     public void DrawTo(SKCanvas graph, int pointY, bool isBackLog, bool force, TextDrawingMode mode)
     {
         foreach (ConsoleButtonString button in buttons)
-            button.DrawTo(graph, pointY, isBackLog, mode);
+            button.DrawTo(graph, new SKPoint(-1, pointY), isBackLog, mode);
     }
 
     readonly static StringBuilder builder = new();
