@@ -223,8 +223,15 @@ internal sealed class ConsoleButtonString
     public void DrawTo(SKCanvas graph, SKPoint point, bool isBackLog, TextDrawingMode mode)
     {
         bool isSelecting = IsButton && parent.ButtonIsSelected(this);
-        foreach (AConsoleDisplayNode css in strArray)
+
+        foreach (var css in strArray)
+        {
             css.DrawTo(graph, point, isSelecting, isBackLog, mode, IsButton);
+            if (point.X != -1)
+            {
+                point.Offset(css.Width, 0);
+            }
+        }
     }
 
     readonly static StringBuilder builder = new();
