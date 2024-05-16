@@ -332,6 +332,8 @@ internal sealed partial class MainWindow : Form
     bool changeTextbyMouse;
     private void mainPicBox_MouseDown(object sender, MouseEventArgs e)
     {
+        richTextBox1.Focus();//画面をクリックしてもテキストボックスからフォーカスが外れないようにする
+
         if (!Config.UseMouse)
             return;
         if (console == null || console.IsInProcess)
