@@ -7,7 +7,8 @@ namespace MinorShift.Emuera.UI.Game.Image;
 internal abstract class AbstractImage : IDisposable
 {
     public const int MAX_IMAGESIZE = 8192;
-    public SKBitmap SKBitmap;
+    public SKImage Image;
+    public virtual SKBitmap SKBitmap { get; set; }
     public nint GDIhDC { get; protected set; }
     protected SKCanvas canvas;
 

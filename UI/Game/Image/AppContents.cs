@@ -192,17 +192,14 @@ static class AppContents
         {
             string filepath = parentName;
 
-            SKBitmap bmp;
-            var skbitmap = SKBitmap.Decode(filepath);
-            if (skbitmap == null)
+            var skImage = SKImage.FromEncodedData(filepath);
+            if (skImage == null)
             {
                 ParserMediator.Warn("指定されたファイルの読み込みに失敗しました:" + arg2, sp, 1);
                 return null;
             }
 
-            bmp = skbitmap;
-
-            if (bmp.Width > AbstractImage.MAX_IMAGESIZE || bmp.Height > AbstractImage.MAX_IMAGESIZE)
+            if (skImage.Width > AbstractImage.MAX_IMAGESIZE || skImage.Height > AbstractImage.MAX_IMAGESIZE)
             {
                 //1824-2 すでに8192以上の幅を持つ画像を利用したバリアントが存在してしまっていたため、警告しつつ許容するように変更
                 //	bmp.Dispose();
@@ -210,7 +207,7 @@ static class AppContents
                 //return null;
             }
             ConstImage img = new(parentName);
-            img.CreateFrom(bmp, Config.TextDrawingMode == TextDrawingMode.WINAPI);
+            img.CreateFrom(skImage);
             if (!img.IsCreated)
             {
                 ParserMediator.Warn("画像リソースの作成に失敗しました:" + arg2, sp, 1);
@@ -225,7 +222,7 @@ static class AppContents
             ParserMediator.Warn("作成に失敗したリソースを元にスプライトを作成しようとしました:" + arg2, sp, 1);
             return null;
         }
-        var rect = new Rectangle(new Point(0, 0), new Size(parentImage.SKBitmap.Width, parentImage.SKBitmap.Height));
+        var rect = new Rectangle(new Point(0, 0), new Size(parentImage.Image.Width, parentImage.Image.Height));
         Point pos = new();
         int delay = 1000;
         //name,parentname, x,y,w,h ,offset_x,offset_y, delayTime
@@ -243,7 +240,7 @@ static class AppContents
                     ParserMediator.Warn("スプライトの高さ又は幅には正の値のみ指定できます:" + name, sp, 1);
                     return null;
                 }
-                if (!rect.IntersectsWith(new Rectangle(0, 0, parentImage.SKBitmap.Width, parentImage.SKBitmap.Height)))
+                if (!rect.IntersectsWith(new Rectangle(0, 0, parentImage.Image.Width, parentImage.Image.Height)))
                 {
                     ParserMediator.Warn("親画像の範囲外を参照しています:" + name, sp, 1);
                     return null;
