@@ -130,8 +130,13 @@ internal sealed class ConsoleRectangleShapePart : ConsoleShapePart
         targetRect.X = targetRect.X + PointX;
         targetRect.Y = targetRect.Y + (int)point.Y;
         Color dcolor = isSelecting ? ButtonColor : Color;
-        //graph.FillRectangle(new SolidBrush(dcolor), targetRect);
-        graph.DrawRect(targetRect.ToSKRect(), new SKPaint());
+
+        var paint = new SKPaint
+        {
+            Style = SKPaintStyle.Fill,
+            Color = dcolor.ToSKColor()
+        };
+        graph.DrawRect(targetRect.ToSKRect(), paint);
     }
     public override void SetWidth(StringMeasure sm, float subPixel)
     {
@@ -174,11 +179,7 @@ internal sealed class ConsoleErrorShapePart : ConsoleShapePart
 
     public override void DrawTo(SKCanvas graph, SKPoint point, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
     {
-        // if (mode == TextDrawingMode.GRAPHICS)
-        //     graph.DrawString(Text, Config.DefaultFont, new SolidBrush(Config.ForeColor), new Point(PointX, pointY));
-        // else
-        //     System.Windows.Forms.TextRenderer.DrawText(graph, Text.AsSpan(), Config.DefaultFont, new Point(PointX, pointY), Config.ForeColor, System.Windows.Forms.TextFormatFlags.NoPrefix);
-        graph.DrawText(Text, new SKPoint(0, 0), SKTextAlign.Left, new SKFont(), new SKPaint());
+        graph.DrawText(Text, new SKPoint(0, 0), SKTextAlign.Left, Config.DefaultFont, new SKPaint() { Color = Config.ForeColor.ToSKColor() });
     }
     public override void SetWidth(StringMeasure sm, float subPixel)
     {
