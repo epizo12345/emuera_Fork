@@ -198,11 +198,7 @@ internal sealed class GraphicsImage : AbstractImage
     {
         if (canvas == null)
             throw new NullReferenceException();
-        var rAll = cm[4][0];
-        var gAll = cm[4][1];
-        var bAll = cm[4][2];
-        var aAll = cm[4][3];
-        var wAll = cm[4][4];
+        //挙動がよくわからないので4行目は単に無視する
         float[] skiaCM = [
             cm[0][0],cm[1][0],cm[2][0],cm[3][0],cm[0][4],
             cm[0][1],cm[1][1],cm[2][1],cm[3][1],cm[1][4],
