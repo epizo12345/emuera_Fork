@@ -3074,8 +3074,8 @@ internal static partial class FunctionMethodCreator
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
                 return 0;
-            Color c = ReadColor(Name, exm, arguments, 1);
-            g.GSetBrush(new SolidBrush(c));
+            var c = ReadColor(Name, exm, arguments, 1);
+            g.GSetBrush(new SKPaint() { Color = c.ToSKColor() });
             return 1;
         }
     }
@@ -3122,9 +3122,9 @@ internal static partial class FunctionMethodCreator
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
                 return 0;
-            Color c = ReadColor(Name, exm, arguments, 1);
-            Int64 width = arguments[2].GetIntValue(exm);
-            g.GSetPen(new Pen(c, width));
+            var c = ReadColor(Name, exm, arguments, 1);
+            var width = arguments[2].GetIntValue(exm);
+            g.GSetPen(new SKPaint() { Color = c.ToSKColor(), StrokeWidth = width, IsStroke = true });
             return 1;
         }
     }
@@ -3527,7 +3527,7 @@ internal static partial class FunctionMethodCreator
             var g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
                 return 0;
-            g.GDrawPolygonAddPoint(ReadPoint(Name, exm, arguments, 1));
+            g.GDrawPolygonAddPoint(ReadPoint(Name, exm, arguments, 1).ToSKPoint());
             return 1;
         }
     }

@@ -29,8 +29,8 @@ internal sealed class GraphicsImage : AbstractImage
     }
     public readonly int ID;
     Size size;
-    Brush brush;
-    Pen pen;
+    SKPaint _brush;
+    SKPaint _pen;
     SKFont font;
     //Bitmap b;
     //Graphics g;
@@ -100,12 +100,11 @@ internal sealed class GraphicsImage : AbstractImage
     {
         if (canvas == null)
             throw new NullReferenceException();
-        if (brush != null)
+        if (_brush != null)
         {
             //canvas.FillRectangle(brush, rect);
 
-            var paint = new SKPaint();
-            canvas.DrawRect(rect.ToSKRect(), paint);
+            canvas.DrawRect(rect.ToSKRect(), _brush);
         }
         else
         {
@@ -117,7 +116,7 @@ internal sealed class GraphicsImage : AbstractImage
         }
     }
 
-    List<Point> _points;
+    List<SKPoint> _points;
     public void GDrawPolygon()
     {
         if (canvas == null)
@@ -126,16 +125,10 @@ internal sealed class GraphicsImage : AbstractImage
         {
             throw new NullReferenceException("DrawPolygonに渡されるPointsが空です");
         }
-        throw new NotImplementedException();
-        if (pen != null)
-        {
-            //canvas.DrawPolygon(pen, _points.ToArray());
-        }
-        else
-        {
-            // using var p = new Pen(Config.ForeColor);
-            // canvas.DrawPolygon(p, _points.ToArray());
-        }
+        var paint = _pen ?? new SKPaint();
+        paint.Style = SKPaintStyle.Stroke;
+
+        canvas.DrawPoints(SKPointMode.Polygon, [.. _points, _points[0]], paint);
     }
     public void GFillPolygon()
     {
@@ -145,19 +138,19 @@ internal sealed class GraphicsImage : AbstractImage
         {
             throw new NullReferenceException("FillPolygonに渡されるPointsが空です");
         }
-        throw new NotImplementedException();
-        // if (brush != null)
-        // {
-        //     canvas.FillPolygon(brush, _points.ToArray());
-        // }
-        // else
-        // {
-        //     using var b = new SolidBrush(Config.ForeColor);
-        //     canvas.FillPolygon(b, _points.ToArray());
-        // }
+        var paint = _brush ?? new SKPaint();
+        paint.Style = SKPaintStyle.Fill;
+
+        var path = new SKPath();
+        foreach (var p in _points)
+        {
+            path.LineTo(p);
+        }
+        path.LineTo(_points[0]);
+        canvas.DrawPath(path, paint);
     }
 
-    public void GDrawPolygonAddPoint(Point point)
+    public void GDrawPolygonAddPoint(SKPoint point)
     {
         if (canvas == null)
             throw new NullReferenceException();
@@ -218,8 +211,7 @@ internal sealed class GraphicsImage : AbstractImage
         if (canvas == null)
             throw new NullReferenceException();
         var src = srcGra.GetBitmap();
-        //canvas.DrawImage(src.ToBitmap(), destRect, srcRect, GraphicsUnit.Pixel);
-        canvas.DrawBitmap(src, new SKPoint(0, 0));
+        canvas.DrawBitmap(src, srcRect.ToSKRect(), destRect.ToSKRect());
     }
 
 
@@ -237,7 +229,14 @@ internal sealed class GraphicsImage : AbstractImage
         imageAttributes.SetColorMatrix(colorMatrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
         //g.DrawImage(img.Bitmap, destRect, srcRect, GraphicsUnit.Pixel, imageAttributes);なんでこのパターンないのさ
         //canvas.DrawImage(src.ToBitmap(), destRect, srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height, GraphicsUnit.Pixel, imageAttributes);
-        canvas.DrawBitmap(src, new SKPoint(0, 0));
+        float[] skiaCM = [
+            cm[0][0],cm[1][0],cm[2][0],cm[3][0],cm[0][4],
+            cm[0][1],cm[1][1],cm[2][1],cm[3][1],cm[1][4],
+            cm[0][2],cm[1][2],cm[2][2],cm[3][2],cm[2][4],
+            cm[0][3],cm[1][3],cm[2][3],cm[3][3],cm[3][4],
+        ];
+        var filter = SKColorFilter.CreateColorMatrix(skiaCM);
+        canvas.DrawBitmap(src, srcRect.ToSKRect(), destRect.ToSKRect(), new SKPaint() { ColorFilter = filter });
     }
 
 
@@ -310,17 +309,17 @@ internal sealed class GraphicsImage : AbstractImage
             font.Dispose();
         font = r;
     }
-    public void GSetBrush(Brush r)
+    public void GSetBrush(SKPaint r)
     {
-        if (brush != null)
-            brush.Dispose();
-        brush = r;
+        if (_brush != null)
+            _brush.Dispose();
+        _brush = r;
     }
-    public void GSetPen(Pen r)
+    public void GSetPen(SKPaint r)
     {
-        if (pen != null)
-            pen.Dispose();
-        pen = r;
+        if (_pen != null)
+            _pen.Dispose();
+        _pen = r;
     }
 
 
@@ -397,17 +396,17 @@ internal sealed class GraphicsImage : AbstractImage
             canvas.Dispose();
         if (SKBitmap != null)
             SKBitmap.Dispose();
-        if (brush != null)
-            brush.Dispose();
-        if (pen != null)
-            pen.Dispose();
+        if (_brush != null)
+            _brush.Dispose();
+        if (_pen != null)
+            _pen.Dispose();
         if (font != null)
             font.Dispose();
         _points = null;
         canvas = null;
         SKBitmap = null;
-        brush = null;
-        pen = null;
+        _brush = null;
+        _pen = null;
         font = null;
     }
 
