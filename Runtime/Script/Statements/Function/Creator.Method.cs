@@ -4280,7 +4280,7 @@ internal static partial class FunctionMethodCreator
             try
             {
                 Config.CreateSavDir();
-                g.SKBitmap.ToBitmap().Save(filepath);
+                g.Bitmap.ToBitmap().Save(filepath);
             }
             catch
             {

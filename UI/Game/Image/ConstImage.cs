@@ -28,29 +28,29 @@ internal sealed class ConstImage : AbstractImage
         return;
     }
 
-    public override SKBitmap SKBitmap
+    public override SKBitmap Bitmap
     {
         get
         {
-            base.SKBitmap ??= SKBitmap.FromImage(this.Image);
-            return base.SKBitmap;
+            base.Bitmap ??= SKBitmap.FromImage(this.Image);
+            return base.Bitmap;
         }
-        set => base.SKBitmap = value;
+        set => base.Bitmap = value;
     }
 
     public override void Dispose()
     {
-        if (SKBitmap == null)
+        if (Bitmap == null)
             return;
         if (canvas != null)
         {
             canvas.Dispose();
             canvas = null;
         }
-        if (SKBitmap != null)
+        if (Bitmap != null)
         {
-            SKBitmap.Dispose();
-            SKBitmap = null;
+            Bitmap.Dispose();
+            Bitmap = null;
         }
         Image?.Dispose();
     }

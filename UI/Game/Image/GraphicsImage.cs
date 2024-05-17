@@ -23,7 +23,7 @@ internal sealed class GraphicsImage : AbstractImage
     {
         ID = id;
         canvas = null;
-        SKBitmap = null;
+        Bitmap = null;
         //created = false;
         //locked = false;
     }
@@ -65,9 +65,9 @@ internal sealed class GraphicsImage : AbstractImage
         if (useGDI)
             throw new NotImplementedException();
         GDispose();
-        SKBitmap = new SKBitmap(x, y);
+        Bitmap = new SKBitmap(x, y);
         size = new Size(x, y);
-        canvas = new SKCanvas(SKBitmap);
+        canvas = new SKCanvas(Bitmap);
     }
 
     internal void GCreateFromF(SKBitmap bmp, bool useGDI)
@@ -75,9 +75,9 @@ internal sealed class GraphicsImage : AbstractImage
         if (useGDI)
             throw new NotImplementedException();
         GDispose();
-        SKBitmap = new SKBitmap(bmp.Width, bmp.Height);
+        Bitmap = new SKBitmap(bmp.Width, bmp.Height);
         size = new Size(bmp.Width, bmp.Height);
-        canvas = new SKCanvas(SKBitmap);
+        canvas = new SKCanvas(Bitmap);
         canvas.DrawBitmap(bmp, new SKPoint(0, 0));
     }
 
@@ -354,10 +354,10 @@ internal sealed class GraphicsImage : AbstractImage
     /// </summary>
     public SKBitmap GetBitmap()
     {
-        if (SKBitmap == null)
+        if (Bitmap == null)
             throw new NullReferenceException();
         //UnlockGraphics();
-        return SKBitmap;
+        return Bitmap;
     }
     /// <summary>
     /// GSETCOLOR(int ID, int cARGB, int x, int y)
@@ -365,10 +365,10 @@ internal sealed class GraphicsImage : AbstractImage
     /// </summary>
     public void GSetColor(Color c, int x, int y)
     {
-        if (SKBitmap == null)
+        if (Bitmap == null)
             throw new NullReferenceException();
         //UnlockGraphics();
-        SKBitmap.SetPixel(x, y, c.ToSKColor());
+        Bitmap.SetPixel(x, y, c.ToSKColor());
     }
 
     /// <summary>
@@ -377,10 +377,10 @@ internal sealed class GraphicsImage : AbstractImage
     /// </summary>
     public SKColor GGetColor(int x, int y)
     {
-        if (SKBitmap == null)
+        if (Bitmap == null)
             throw new NullReferenceException();
         //UnlockGraphics();
-        return SKBitmap.GetPixel(x, y);
+        return Bitmap.GetPixel(x, y);
     }
 
 
@@ -390,12 +390,12 @@ internal sealed class GraphicsImage : AbstractImage
     public void GDispose()
     {
         size = new Size(0, 0);
-        if (SKBitmap == null)
+        if (Bitmap == null)
             return;
         if (canvas != null)
             canvas.Dispose();
-        if (SKBitmap != null)
-            SKBitmap.Dispose();
+        if (Bitmap != null)
+            Bitmap.Dispose();
         if (_brush != null)
             _brush.Dispose();
         if (_pen != null)
@@ -404,7 +404,7 @@ internal sealed class GraphicsImage : AbstractImage
             font.Dispose();
         _points = null;
         canvas = null;
-        SKBitmap = null;
+        Bitmap = null;
         _brush = null;
         _pen = null;
         font = null;
