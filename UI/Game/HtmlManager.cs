@@ -4,13 +4,11 @@ using MinorShift.Emuera.Runtime.Script.Parser;
 using MinorShift.Emuera.Runtime.Script.Statements.Expression;
 using MinorShift.Emuera.Runtime.Utils;
 using SkiaSharp;
-using SkiaSharp.Views.Desktop;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Windows.Forms;
 
 namespace MinorShift.Emuera.UI.Game;
 
@@ -87,7 +85,7 @@ internal static class HtmlManager
         public bool HasBorder = false;
         public int BorderWidth;
         public SKColor BorderColor;
-        public Padding? Padding;
+        public SKRect? Padding;
     }
 
     private sealed class HtmlAnalzeState
@@ -1164,7 +1162,7 @@ internal static class HtmlManager
                                 {
                                     var value = (wc.Current as LiteralStringWord).Str;
                                     var all = ParseSizeValue(value);
-                                    state.DivState.Padding = new Padding(all);
+                                    state.DivState.Padding = new SKRect(all, all, all, all);
                                 }
                                 break;
                         }

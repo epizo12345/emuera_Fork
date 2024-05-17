@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Windows.Forms;
 using MinorShift.Emuera;
 using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Config.JSON;
@@ -26,7 +24,7 @@ class ConsoleDivElement : AConsoleDisplayNode
     SKColor? _backColor;
 
     BorderStyle? _borderStyle;
-    Padding? _padding;
+    SKRect? _padding;
 
     public ConsoleDivElement(List<ConsoleButtonString> childNode,
                                 DisplayMode display = DisplayMode.Relative,
@@ -34,7 +32,7 @@ class ConsoleDivElement : AConsoleDisplayNode
                                 int width = -1, int height = -1,
                                 SKColor? backcolor = null,
                                 BorderStyle? borderStyle = null,
-                                Padding? padding = null)
+                                SKRect? padding = null)
     {
         _childNodes = childNode;
 
@@ -104,18 +102,25 @@ class ConsoleDivElement : AConsoleDisplayNode
             }
             maxWidth = MathF.Max(maxWidth, width);
 
+            var paddingSize = new SKSize();
+            if (_padding.HasValue)
+            {
+                paddingSize.Width = _padding.Value.Left + _padding.Value.Right;
+                paddingSize.Height = _padding.Value.Top + _padding.Value.Bottom;
+            }
+
             if (autoWidth)
             {
                 Size = Size.Value with
                 {
-                    Width = maxWidth,
+                    Width = maxWidth + paddingSize.Width,
                 };
             }
             if (autoHeight)
             {
                 Size = Size.Value with
                 {
-                    Height = Config.LineHeight * lineCount
+                    Height = Config.LineHeight * lineCount + paddingSize.Height,
                 };
             }
         }
