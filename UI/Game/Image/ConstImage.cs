@@ -52,6 +52,7 @@ internal sealed class ConstImage : AbstractImage
             SKBitmap.Dispose();
             SKBitmap = null;
         }
+        Image?.Dispose();
     }
 
     ~ConstImage()
