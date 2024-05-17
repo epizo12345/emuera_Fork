@@ -71,7 +71,7 @@ class ConsoleDivElement : AConsoleDisplayNode
 
     public override bool CanDivide => false;
 
-    public override void DrawTo(SKCanvas graph, SKPoint origin, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
+    public override void DrawTo(SKCanvas canvas, SKPoint origin, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
     {
         if (Error)
             return;
@@ -165,7 +165,7 @@ class ConsoleDivElement : AConsoleDisplayNode
                 {
                     Color = _backColor.Value.ToSKColor(),
                 };
-                graph.DrawRect(SKRect.Create(Point.Value, Size.Value), paint);
+                canvas.DrawRect(SKRect.Create(Point.Value, Size.Value), paint);
             }
 
         }
@@ -184,7 +184,7 @@ class ConsoleDivElement : AConsoleDisplayNode
         {
             if (childNode != null)
             {
-                childNode.DrawTo(graph, drawPoint, isBackLog, mode);
+                childNode.DrawTo(canvas, drawPoint, isBackLog, mode);
                 drawPoint.Offset(childNode.Width, 0);
             }
             else
@@ -200,7 +200,7 @@ class ConsoleDivElement : AConsoleDisplayNode
         if (_borderStyle.HasValue)
         {
             //graph.DrawRectangle(_borderStyle.Value.Pen, new Rectangle(Point, Size));
-            graph.DrawRect(SKRect.Create(Point.Value, Size.Value), _borderStyle?.Paint);
+            canvas.DrawRect(SKRect.Create(Point.Value, Size.Value), _borderStyle?.Paint);
         }
     }
 
