@@ -32,7 +32,7 @@ class ConsoleDivElement : AConsoleDisplayNode
                                 DisplayMode display = DisplayMode.Relative,
                                 int positionX = 0, int positionY = 0,
                                 int width = -1, int height = -1,
-                                Color? backcolor = null,
+                                SKColor? backcolor = null,
                                 BorderStyle? borderStyle = null,
                                 Padding? padding = null)
     {

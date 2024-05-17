@@ -79,14 +79,14 @@ internal static class HtmlManager
         public int PosX;
         public int PosY;
         public DisplayMode Display;
-        public Color? BackgroundColor;
+        public SKColor? BackgroundColor;
 
         public int Width = -1;
         public int Height = -1;
 
         public bool HasBorder = false;
         public int BorderWidth;
-        public Color BorderColor;
+        public SKColor BorderColor;
         public Padding? Padding;
     }
 
@@ -375,7 +375,7 @@ internal static class HtmlManager
                 {
                     Paint = new SKPaint()
                     {
-                        Color = state.DivState.BorderColor.ToSKColor(),
+                        Color = state.DivState.BorderColor,
                         StrokeWidth = state.DivState.BorderWidth,
                         IsStroke = true
                     }
@@ -1097,8 +1097,8 @@ internal static class HtmlManager
                     var width = -1;
                     var height = -1;
                     var display = DisplayMode.Relative;
-                    Color? backgroundColor = null;
-                    Color borderColor = Color.White;
+                    SKColor? backgroundColor = null;
+                    SKColor borderColor = SKColors.White;
                     var borderWidth = 1;
 
 
@@ -1131,7 +1131,7 @@ internal static class HtmlManager
                             case "background_color":
                                 {
                                     var value = (wc.Current as LiteralStringWord).Str;
-                                    backgroundColor = ColorTranslator.FromHtml(value);
+                                    backgroundColor = SKColor.Parse(value);
                                 }
                                 break;
                             case "width":
@@ -1157,7 +1157,7 @@ internal static class HtmlManager
                                 {
                                     var value = (wc.Current as LiteralStringWord).Str;
                                     state.DivState.HasBorder = true;
-                                    borderColor = ColorTranslator.FromHtml(value);
+                                    borderColor = SKColor.Parse(value);
                                 }
                                 break;
                             case "padding":
