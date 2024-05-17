@@ -1,17 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 using MinorShift.Emuera;
 using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Config.JSON;
-using MinorShift.Emuera.UI;
 using MinorShift.Emuera.UI.Game;
 using SkiaSharp;
 using SkiaSharp.Views.Desktop;
 
+#nullable enable
 struct BorderStyle
 {
     public SKPaint Paint;
@@ -27,10 +25,6 @@ class ConsoleDivElement : AConsoleDisplayNode
     readonly DisplayMode _display;
 
     StringStyle _stringStyle;
-    readonly SKFont _font;
-
-    readonly SKFont _fallbackFont;
-    readonly List<TextsWithFont> _texts;
 
     Color? _backColor;
 
@@ -49,10 +43,13 @@ class ConsoleDivElement : AConsoleDisplayNode
 
         foreach (var node in childNode)
         {
-            foreach (var child in node.StrArray)
+            if (node != null)
             {
-                child.Point = Point;
-                child.Size = new SKSize();
+                foreach (var child in node.StrArray)
+                {
+                    child.Point = Point;
+                    child.Size = new SKSize();
+                }
             }
         }
 
@@ -92,22 +89,36 @@ class ConsoleDivElement : AConsoleDisplayNode
         if (autoWidth || autoHeight)
         {
             var width = 0.0f;
+            var maxWidth = 0.0f;
+            var lineCount = 1;
             foreach (var node in _childNodes)
             {
-                width += node.Width;
+                if (node != null)
+                {
+                    width += node.Width;
+                }
+                else
+                {
+                    maxWidth = MathF.Max(maxWidth, width);
+                    width = 0.0f;
+
+                    lineCount++;
+                }
             }
+            maxWidth = MathF.Max(maxWidth, width);
+
             if (autoWidth)
             {
                 Size = Size.Value with
                 {
-                    Width = width,
+                    Width = maxWidth,
                 };
             }
             if (autoHeight)
             {
                 Size = Size.Value with
                 {
-                    Height = Config.LineHeight
+                    Height = Config.LineHeight * lineCount
                 };
             }
         }
@@ -159,19 +170,31 @@ class ConsoleDivElement : AConsoleDisplayNode
 
         }
 
-        var paddingPoint = Point ?? new SKPoint();
+        var paddingOrigin = Point ?? new SKPoint();
         if (_padding.HasValue)
         {
-            paddingPoint = new SKPoint(
+            paddingOrigin = new SKPoint(
                 Point.Value.X + _padding.Value.Left,
                 Point.Value.Y + _padding.Value.Top
                 );
         }
 
+        var drawPoint = paddingOrigin;
         foreach (var childNode in _childNodes)
         {
-            childNode.DrawTo(graph, paddingPoint, isBackLog, mode);
-            paddingPoint.Offset(childNode.Width, 0);
+            if (childNode != null)
+            {
+                childNode.DrawTo(graph, drawPoint, isBackLog, mode);
+                drawPoint.Offset(childNode.Width, 0);
+            }
+            else
+            {
+                drawPoint = drawPoint with
+                {
+                    X = paddingOrigin.X,
+                    Y = drawPoint.Y + Config.LineHeight
+                };
+            }
         }
 
         if (_borderStyle.HasValue)
@@ -191,7 +214,7 @@ class ConsoleDivElement : AConsoleDisplayNode
 
         foreach (var childNode in _childNodes)
         {
-            childNode.CalcWidth(sm, subPixel);
+            childNode?.CalcWidth(sm, subPixel);
         }
     }
 }

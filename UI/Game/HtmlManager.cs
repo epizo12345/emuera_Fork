@@ -300,7 +300,7 @@ internal static class HtmlManager
         while (!st.EOS)
         {
             found = st.Find('<');
-            if (state.DivState == null && hasReturn)
+            if (hasReturn)
             {
                 int rFound = st.Find('\n');
                 if (rFound >= 0 && (found > rFound || found < 0))

@@ -1699,6 +1699,8 @@ internal sealed partial class EmueraConsole : IDisposable
         //下から上へ探索し発見次第打ち切り
         static ConsoleButtonString findButtom(int pointX, int pointY, int relPointY, ConsoleButtonString button)
         {
+            if (button == null) return null;
+
             foreach (var part in button.StrArray)
             {
                 if (part == null)
