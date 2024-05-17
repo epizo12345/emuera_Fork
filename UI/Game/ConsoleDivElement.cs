@@ -7,7 +7,6 @@ using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Config.JSON;
 using MinorShift.Emuera.UI.Game;
 using SkiaSharp;
-using SkiaSharp.Views.Desktop;
 
 #nullable enable
 struct BorderStyle
@@ -24,9 +23,7 @@ class ConsoleDivElement : AConsoleDisplayNode
 
     readonly DisplayMode _display;
 
-    StringStyle _stringStyle;
-
-    Color? _backColor;
+    SKColor? _backColor;
 
     BorderStyle? _borderStyle;
     Padding? _padding;
@@ -57,7 +54,7 @@ class ConsoleDivElement : AConsoleDisplayNode
         _display = display;
         _positionX = positionX;
         _positionY = positionY;
-        Size = new SKSize(width, width);
+        Size = new SKSize(width, height);
 
         _positionX = positionX;
         _positionY = positionY;
@@ -124,46 +121,17 @@ class ConsoleDivElement : AConsoleDisplayNode
         }
 
         {
-            var color = _stringStyle.Color;
-            Color? backcolor = null;
-
-            if (isSelecting)
-            {
-                if (JSONConfig.Data.UseButtonFocusBackgroundColor)
-                {
-                    if (!(Color.Yellow.R == color.R &&
-                            Color.Yellow.G == color.G &&
-                            Color.Yellow.B == color.B)
-                     && !string.IsNullOrWhiteSpace(Text))
-                    {
-                        backcolor = Color.Gray;
-                    }
-                }
-                color = _stringStyle.ButtonColor;
-            }
-
-            if (isBackLog)
-            {
-                color = Config.LogColor;
-            }
 
             if (JSONConfig.Data.UseButtonFocusBackgroundColor && isButton && !isBackLog)
             {
-                if (!backcolor.HasValue)
-                {
-                    _backColor = Color.FromArgb(50, 50, 50);
-                }
-
+                _backColor = new SKColor(50, 50, 50);
             }
-
-
-
 
             if (_backColor.HasValue)
             {
                 var paint = new SKPaint()
                 {
-                    Color = _backColor.Value.ToSKColor(),
+                    Color = _backColor.Value,
                 };
                 canvas.DrawRect(SKRect.Create(Point.Value, Size.Value), paint);
             }
