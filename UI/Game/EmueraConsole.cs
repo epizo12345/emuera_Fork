@@ -348,10 +348,10 @@ internal sealed partial class EmueraConsole : IDisposable
         using var fs = new FileStream(Program.ExeDir + "time.log", FileMode.OpenOrCreate);
         using var logWriter = new StreamWriter(fs);
         logWriter.WriteLine("Init:Start");
-        logWriter.WriteLine("File:Preload:Start");
-        //必要なソースファイルを事前にメモリに一気に読み込む
         _genericTimerStopwatch.Restart();
 
+        //必要なソースファイルを事前にメモリに一気に読み込む
+        logWriter.WriteLine("File:Preload:Start");
         Preload.Clear();
         await Preload.Load(Program.ErbDir);
         await Preload.Load(Program.CsvDir);
