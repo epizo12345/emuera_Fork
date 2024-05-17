@@ -114,6 +114,7 @@ internal static class HtmlManager
         public bool FlagButton;//<button></button>によるボタン化の予約
 
         public DivState DivState;
+        public bool CloseDiv;
 
         public StringStyle GetSS()
         {
@@ -292,6 +293,8 @@ internal static class HtmlManager
     {
         List<AConsoleDisplayNode> cssList = [];
         List<ConsoleButtonString> buttonList = [];
+        var divList = new List<ConsoleButtonString>();
+
         CharStream st = new(str);
         int found;
         bool hasComment = str.Contains("<!--", StringComparison.Ordinal);
@@ -361,29 +364,24 @@ internal static class HtmlManager
             {
                 buttonList.Add(cssToButton(cssList, state, console));
             }
-            state.FlagBr = false;
-            state.FlagButton = false;
-            state.LastButtonTag = state.CurrentButtonTag;
-        }
-        //</nobr></p>は省略許可
-        if (state.CurrentButtonTag != null || state.FontStyle != FontStyle.Regular || state.FonttagList.Count > 0)
-            throw new CodeEE("閉じられていないタグがあります");
-        if (cssList.Count > 0)
-            buttonList.Add(cssToButton(cssList, state, console));
-
-        if (state.DivState != null)
-        {
-            var borderStyle = new BorderStyle()
+            if (state.CloseDiv)
             {
-                Paint = new SKPaint()
+                if (cssList.Count > 0)
                 {
-                    Color = state.DivState.BorderColor.ToSKColor(),
-                    StrokeWidth = state.DivState.BorderWidth,
-                    IsStroke = true
+                    buttonList.Add(cssToButton(cssList, state, console));
                 }
-            };
-            var div = new ConsoleButtonString(console, [
-                new ConsoleDivElement(
+
+                var borderStyle = new BorderStyle()
+                {
+                    Paint = new SKPaint()
+                    {
+                        Color = state.DivState.BorderColor.ToSKColor(),
+                        StrokeWidth = state.DivState.BorderWidth,
+                        IsStroke = true
+                    }
+                };
+                var div = new ConsoleButtonString(console, [
+                    new ConsoleDivElement(
                     buttonList,
                     state.DivState.Display,
                     state.DivState.PosX,
@@ -394,10 +392,24 @@ internal static class HtmlManager
                     borderStyle,
                     state.DivState.Padding
                 )
-            ]);
-            buttonList = [div];
-            state.DivState = null;
+                ]);
+                divList.Add(div);
+                buttonList = [];
+                state.DivState = null;
+                state.CloseDiv = false;
+            }
+
+            state.FlagBr = false;
+            state.FlagButton = false;
+            state.LastButtonTag = state.CurrentButtonTag;
         }
+        //</nobr></p>は省略許可
+        if (state.CurrentButtonTag != null || state.FontStyle != FontStyle.Regular || state.FonttagList.Count > 0)
+            throw new CodeEE("閉じられていないタグがあります");
+        if (cssList.Count > 0)
+            buttonList.Add(cssToButton(cssList, state, console));
+
+        buttonList = [.. divList, .. buttonList];
 
         foreach (ConsoleButtonString button in buttonList)
         {
@@ -694,6 +706,7 @@ internal static class HtmlManager
                     return null;
                 case "div":
                     state.DivState.IsDiv = false;
+                    state.CloseDiv = true;
                     return null;
                 default:
                     throw new CodeEE("終了タグ</" + tag + ">は解釈できません");
