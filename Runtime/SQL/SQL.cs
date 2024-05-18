@@ -22,6 +22,17 @@ static class SQL
         _connection.Open();
     }
 
+    static public void CleanUpTempDB()
+    {
+        if (Directory.Exists(tempDir))
+        {
+            _connection?.Close();
+            SqliteConnection.ClearAllPools();
+
+            Directory.Delete(tempDir, true);
+            Directory.CreateDirectory(tempDir);
+        }
+    }
     static public void Save(string destDirPath)
     {
 
@@ -41,14 +52,7 @@ static class SQL
 
     static public void Load(string srcDirPath)
     {
-        if (Directory.Exists(tempDir))
-        {
-            _connection?.Close();
-            SqliteConnection.ClearAllPools();
-
-            Directory.Delete(tempDir, true);
-            Directory.CreateDirectory(tempDir);
-        }
+        CleanUpTempDB();
 
         if (Directory.Exists(srcDirPath))
         {
@@ -61,6 +65,8 @@ static class SQL
                 dbFile.CopyTo(destPath);
             }
         }
+
+
     }
 
     static public void ExecuteReader(long readerID, string sql)

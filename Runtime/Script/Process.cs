@@ -10,6 +10,7 @@ using MinorShift.Emuera.Runtime.Script.Statements.Function;
 using MinorShift.Emuera.Runtime.Script.Statements.Variable;
 using MinorShift.Emuera.Runtime.Utils;
 using MinorShift.Emuera.UI.Game.Image;
+using Runtime.SQL;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -208,6 +209,8 @@ internal sealed partial class Process(EmueraConsole view)
             else
                 noError = await loader.LoadErbDir(Program.ErbDir, Config.DisplayReport, labelDic);
             logWriter.WriteLine($"Proc:Init:ERB:End {stopWatch.ElapsedMilliseconds}ms");
+
+            SQL.CleanUpTempDB();
 
             initSystemProcess();
             initialiing = false;
