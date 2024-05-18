@@ -32,7 +32,12 @@ internal sealed class ConstImage : AbstractImage
     {
         get
         {
-            base.Bitmap ??= SKBitmap.FromImage(this.Image);
+            if (base.Bitmap != null) return base.Bitmap;
+            if (Image == null) return null;
+
+            base.Bitmap = SKBitmap.FromImage(this.Image);
+            Image.Dispose();
+            Image = null;
             return base.Bitmap;
         }
         set => base.Bitmap = value;
@@ -53,6 +58,7 @@ internal sealed class ConstImage : AbstractImage
             Bitmap = null;
         }
         Image?.Dispose();
+        Image = null;
     }
 
     ~ConstImage()
@@ -63,6 +69,6 @@ internal sealed class ConstImage : AbstractImage
 
     public override bool IsCreated
     {
-        get { return Image != null; }
+        get { return Image != null || Bitmap != null; }
     }
 }
