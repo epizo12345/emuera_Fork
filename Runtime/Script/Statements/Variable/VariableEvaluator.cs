@@ -6,6 +6,7 @@ using MinorShift.Emuera.Runtime.Script.Data;
 using MinorShift.Emuera.Runtime.Script.Statements;
 using MinorShift.Emuera.Runtime.Script.Statements.Expression;
 using MinorShift.Emuera.Runtime.Utils;
+using Runtime.SQL;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -2365,7 +2366,14 @@ internal sealed class VariableEvaluator : IDisposable
 
     public bool SaveTo(int saveIndex, string saveText)
     {
-        string filepath = getSaveDataPath(saveIndex);
+        var filepath = getSaveDataPath(saveIndex);
+
+        {
+            var fileInfo = new FileInfo(filepath);
+            var dbFileDir = fileInfo.Directory;
+            SQL.Save(Path.Combine(dbFileDir.FullName, Path.GetFileNameWithoutExtension(fileInfo.Name)));
+        }
+
         FileStream fs = null;
         EraDataWriter writer = null;
         EraBinaryDataWriter bWriter = null;
@@ -2403,6 +2411,13 @@ internal sealed class VariableEvaluator : IDisposable
     public bool LoadFrom(int dataIndex)
     {
         string filepath = getSaveDataPath(dataIndex);
+
+        {
+            var fileInfo = new FileInfo(filepath);
+            var dbFileDir = fileInfo.Directory;
+            SQL.Load(Path.Combine(dbFileDir.FullName, Path.GetFileNameWithoutExtension(fileInfo.Name)));
+        }
+
         if (!File.Exists(filepath))
             throw new ExeEE("存在しないパスを呼び出した");
 
