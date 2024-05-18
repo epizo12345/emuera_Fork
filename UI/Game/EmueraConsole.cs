@@ -1258,13 +1258,17 @@ internal sealed partial class EmueraConsole : IDisposable
     /// <param name="graph"></param>
     public void OnPaint(SKCanvas graph)
     {
-        //デバッグ用。描画が超重い環境を想定1
-        //System.Threading.Thread.Sleep(100);
-
         //描画中にEmueraが閉じられると廃棄されたPictureBoxにアクセスしてしまったりするので
         //OnPaintからgraphをもらった直後だから大丈夫だとは思うけど一応
         if (!this.Enabled)
             return;
+
+        //描画が重いと入力が処理できないので、描画毎に入力を捌く
+        Application.DoEvents();
+
+        //デバッグ用。描画が超重い環境を想定1
+        //Task.Delay(100).Wait();
+
         //1824 アニメスプライト用・現在フレームの時間を決定
         _frameDeltaTimer.Restart();
 
@@ -1277,40 +1281,34 @@ internal sealed partial class EmueraConsole : IDisposable
         if (topLineNo < 0)
             topLineNo = 0;
         pointY -= (bottomLineNo - topLineNo) * Config.LineHeight;
-        if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-        {
-        }
-        else
-        {
-            graph.Clear(this.bgColor);
-            //1823 cbg追加
-            for (int j = 0; j < cbgList.Count; j++)
-            {
-                if (cbgList[j].zdepth == 0)
-                {
-                    //1823以前の文字列描画
-                    for (int i = topLineNo;
-                    i <= bottomLineNo &&
-                    i < displayLineList.Count;//何処かで非同期にDisplayLineListを触ってるやつがいる気がする...
-                    i++)
-                    {
-                        displayLineList[i].DrawTo(graph, pointY, isBackLog, true, Config.TextDrawingMode);
-                        pointY += Config.LineHeight;
-                    }
-                    continue;
-                }
-                ASprite img = cbgList[j].Img;
-                if (cbgList[j].isButton && cbgList[j].buttonValue == selectingCBGButtonInt)
-                    img = cbgList[j].ImgB;
-                if (img == null || !img.IsCreated)
-                    continue;
-                img.GraphicsDraw(graph, new Point(cbgList[j].x, cbgList[j].y + window.MainPicBox.Height - img.DestBaseSize.Height));
-                //Bitmap bmp = img.Bitmap;
-                //graph.DrawImage(bmp,
-                //	new Rectangle(cbgList[j].x + img.DestBasePosition.X, window.MainPicBox.Height - img.SrcRectangle.Height + cbgList[j].y + img.DestBasePosition.Y, img.SrcRectangle.Width, img.SrcRectangle.Height),
-                //	img.SrcRectangle, GraphicsUnit.Pixel);
-            }
 
+        graph.Clear(this.bgColor);
+        //1823 cbg追加
+        for (int j = 0; j < cbgList.Count; j++)
+        {
+            if (cbgList[j].zdepth == 0)
+            {
+                //1823以前の文字列描画
+                for (int i = topLineNo;
+                i <= bottomLineNo &&
+                i < displayLineList.Count;//何処かで非同期にDisplayLineListを触ってるやつがいる気がする...
+                i++)
+                {
+                    displayLineList[i].DrawTo(graph, pointY, isBackLog, true, Config.TextDrawingMode);
+                    pointY += Config.LineHeight;
+                }
+                continue;
+            }
+            ASprite img = cbgList[j].Img;
+            if (cbgList[j].isButton && cbgList[j].buttonValue == selectingCBGButtonInt)
+                img = cbgList[j].ImgB;
+            if (img == null || !img.IsCreated)
+                continue;
+            img.GraphicsDraw(graph, new Point(cbgList[j].x, cbgList[j].y + window.MainPicBox.Height - img.DestBaseSize.Height));
+            //Bitmap bmp = img.Bitmap;
+            //graph.DrawImage(bmp,
+            //	new Rectangle(cbgList[j].x + img.DestBasePosition.X, window.MainPicBox.Height - img.SrcRectangle.Height + cbgList[j].y + img.DestBasePosition.Y, img.SrcRectangle.Width, img.SrcRectangle.Height),
+            //	img.SrcRectangle, GraphicsUnit.Pixel);
         }
 
         //真のHTML描画
