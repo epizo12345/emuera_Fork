@@ -1057,12 +1057,12 @@ internal sealed partial class MainWindow : Form
         e.DrawBackground();
         e.DrawBorder();
 
-        TextRenderer.DrawText(e.Graphics, e.ToolTipText, _tooltipFont, e.Bounds, Color.Black, TextFormatFlags.VerticalCenter | TextFormatFlags.HorizontalCenter);
+        TextRenderer.DrawText(e.Graphics, e.ToolTipText, _tooltipFont, new Point(2, 2), Color.Black);
     }
 
     private void toolTipButton_Popup(object sender, PopupEventArgs e)
     {
-        _tooltipFont ??= new Font(Config.DefaultFont.Typeface.FamilyName, Config.DefaultFont.Size * 0.6f);
+        _tooltipFont ??= new Font(Config.DefaultFont.Typeface.FamilyName, (int)Math.Max(13, Config.DefaultFont.Size * 0.6));
 
         var toolTip = (ToolTip)sender;
         var size = TextRenderer.MeasureText(toolTip.GetToolTip(e.AssociatedControl), _tooltipFont);
