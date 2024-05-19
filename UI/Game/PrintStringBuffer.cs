@@ -1,6 +1,7 @@
 ﻿using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Utils;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -497,34 +498,14 @@ internal sealed class PrintStringBuffer
     {
         if (!part.CanDivide)
             return -1;
-        ConsoleStyledString css = part as ConsoleStyledString;
+        var css = part as ConsoleStyledString;
         if (part == null)
             return -1;
         int widthLimit = Config.DrawableWidth - css.PointX;
         string str = css.Text;
         var font = css.Font;
 
-        //最適なサイズを二分探索する
-        var window = str.Length / 2;
-        int i = window;
-
-        var span = str.AsSpan();
-        ReadOnlySpan<char> test;
-        while (window > 1)
-        {
-            test = span[..i];
-            if (StringMeasure.GetDisplayLength(test, font) <= widthLimit)//サイズ内ならlowLengthを更新。文字数を増やす。
-            {
-                window /= 2;
-                i += window;
-            }
-            else//サイズ外ならhighLengthを更新。文字数を減らす。
-            {
-                window /= 2;
-                i -= window;
-            }
-        }
-        return i;
+        return font.BreakText(str, widthLimit);
     }
     #endregion
 
