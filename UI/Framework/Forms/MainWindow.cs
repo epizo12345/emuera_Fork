@@ -301,6 +301,7 @@ internal sealed partial class MainWindow : Form
         mainPicBox.Location = new Point(0, menuHeight);
         mainPicBox.Size = new Size(Config.WindowX, winHeight - menuHeight - Config.LineHeight);
 
+        richTextBox1.Font = new Font(Config.FontName, Config.FontSize, GraphicsUnit.Pixel);
         richTextBox1.Location = new Point(0, winHeight - Config.LineHeight);
         richTextBox1.Size = new Size(Config.WindowX, Config.LineHeight);
         vScrollBar.Location = new Point(winWidth - vScrollBar.Size.Width, menuHeight);

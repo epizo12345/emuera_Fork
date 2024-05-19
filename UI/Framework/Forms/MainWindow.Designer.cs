@@ -558,6 +558,7 @@ namespace MinorShift.Emuera.Forms
             mainPicBox.Size = new System.Drawing.Size(968, 706);
             mainPicBox.TabIndex = 0;
             mainPicBox.TabStop = false;
+            mainPicBox.VSync = true;
             mainPicBox.PaintSurface += mainPicBox_Paint;
             mainPicBox.MouseDown += mainPicBox_MouseDown;
             mainPicBox.MouseLeave += mainPicBox_MouseLeave;
