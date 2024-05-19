@@ -4,6 +4,7 @@ using MinorShift.Emuera.Runtime.Script;
 using MinorShift.Emuera.Runtime.Utils;
 using MinorShift.Emuera.UI;
 using MinorShift.Emuera.UI.Framework.Forms;
+using SkiaSharp;
 using SkiaSharp.Views.Desktop;
 using System;
 using System.Collections.Generic;
@@ -1052,11 +1053,10 @@ internal sealed partial class MainWindow : Form
 
     private void toolTipButton_Draw(object sender, DrawToolTipEventArgs e)
     {
-
         e.DrawBackground();
         e.DrawBorder();
 
-        TextRenderer.DrawText(e.Graphics, e.ToolTipText, _tooltipFont, new Point(0, 0), Color.Black);
+        TextRenderer.DrawText(e.Graphics, e.ToolTipText, _tooltipFont, e.Bounds, Color.Black, TextFormatFlags.VerticalCenter | TextFormatFlags.HorizontalCenter);
     }
 
     private void toolTipButton_Popup(object sender, PopupEventArgs e)
@@ -1064,7 +1064,9 @@ internal sealed partial class MainWindow : Form
         _tooltipFont ??= new Font(Config.DefaultFont.Typeface.FamilyName, Config.DefaultFont.Size * 0.6f);
 
         var toolTip = (ToolTip)sender;
-        e.ToolTipSize = TextRenderer.MeasureText(toolTip.GetToolTip(e.AssociatedControl), _tooltipFont);
+        var size = TextRenderer.MeasureText(toolTip.GetToolTip(e.AssociatedControl), _tooltipFont);
+
+        e.ToolTipSize = Size.Add(size, new Size(4, 4));
     }
 
     bool _isWidthLocked = true;
