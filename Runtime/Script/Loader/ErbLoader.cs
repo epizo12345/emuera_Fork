@@ -118,21 +118,23 @@ internal sealed class ErbLoader
         labelDic = labelDictionary;
         labelDic.Initialized = false;
 
-        await Task.Run(() =>
+
+        foreach (var fpath in paths)
         {
-            foreach (var fpath in paths)
+            if (fpath.StartsWith(Program.ErbDir, Config.Config.SCIgnoreCase) && !Program.AnalysisMode)
+                fname = Path.GetRelativePath(Program.ErbDir, fpath);
+            else
+                fname = fpath;
+            if (Program.AnalysisMode)
             {
-                if (fpath.StartsWith(Program.ErbDir, Config.Config.SCIgnoreCase) && !Program.AnalysisMode)
-                    fname = Path.GetRelativePath(Program.ErbDir, fpath);
-                else
-                    fname = fpath;
-                if (Program.AnalysisMode)
-                {
-                    output.PrintSystemLine(fname + "読み込み中・・・");
-                }
+                output.PrintSystemLine(fname + "読み込み中・・・");
+            }
+            await Task.Run(() =>
+            {
                 loadErb(fpath, fname, isOnlyEvent);
-            };
-        });
+            });
+        };
+
         if (Program.AnalysisMode)
             output.NewLine();
         ParserMediator.FlushWarningList();

@@ -1885,7 +1885,7 @@ internal sealed partial class EmueraConsole : IDisposable
         state = ConsoleState.Initializing;
         PrintSingleLine("ERB再読み込み中……", true);
         force_temporary = true;
-        await process.ReloadErb();
+        await process.ReloadErbAll();
         force_temporary = false;
         PrintSingleLine("再読み込み完了", true);
         RefreshStrings(true);
@@ -1963,16 +1963,6 @@ internal sealed partial class EmueraConsole : IDisposable
             genericTimer.Enabled = false;
             timer_suspended = true;
         }
-        List<string> paths = [];
-        SearchOption op = SearchOption.AllDirectories;
-        if (!Config.SearchSubdirectory)
-            op = SearchOption.TopDirectoryOnly;
-        var fnames = Directory.EnumerateFiles(erbPath, "*.ERB", op);
-        foreach (var fname in fnames)
-        {
-            if (Ascii.EqualsIgnoreCase(Path.GetExtension(fname), ".ERB"))
-                paths.Add(fname);
-        }
         bool notRedraw = false;
         if (redraw == ConsoleRedraw.None)
         {
@@ -1984,7 +1974,7 @@ internal sealed partial class EmueraConsole : IDisposable
         state = ConsoleState.Initializing;
         PrintSingleLine("ERB再読み込み中……", true);
         force_temporary = true;
-        await process.ReloadPartialErb(paths);
+        await process.ReloadErbFolder(erbPath);
         force_temporary = false;
         PrintSingleLine("再読み込み完了", true);
         RefreshStrings(true);

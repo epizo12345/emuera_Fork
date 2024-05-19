@@ -231,7 +231,7 @@ internal sealed partial class Process(EmueraConsole view)
         return true;
     }
 
-    public async Task ReloadErb()
+    public async Task ReloadErbAll()
     {
         await Preload.Load(Program.ErbDir);
         await Preload.Load(Program.CsvDir);
@@ -249,6 +249,16 @@ internal sealed partial class Process(EmueraConsole view)
         await Preload.Load(paths);
         var loader = new ErbLoader(console, exm, this);
         await loader.LoadErbList(paths, labelDic);
+        console.ReadAnyKey();
+    }
+
+    public async Task ReloadErbFolder(string dirPath)
+    {
+        saveCurrentState(false);
+        state.SystemState = SystemStateCode.System_Reloaderb;
+        await Preload.Load(dirPath);
+        var loader = new ErbLoader(console, exm, this);
+        await loader.LoadErbDir(dirPath, false, labelDic);
         console.ReadAnyKey();
     }
 
