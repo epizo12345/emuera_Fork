@@ -210,7 +210,7 @@ internal sealed partial class Process(EmueraConsole view)
                 noError = await loader.LoadErbDir(Program.ErbDir, Config.DisplayReport, labelDic);
             logWriter.WriteLine($"Proc:Init:ERB:End {stopWatch.ElapsedMilliseconds}ms");
 
-            SQL.CleanUpTempDB();
+            SQL.SetUpTempDB();
 
             initSystemProcess();
             initialiing = false;

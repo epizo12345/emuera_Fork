@@ -22,7 +22,7 @@ static class SQL
         _connection.Open();
     }
 
-    static public void CleanUpTempDB()
+    static public void SetUpTempDB()
     {
         if (Directory.Exists(tempDir))
         {
@@ -52,7 +52,7 @@ static class SQL
 
     static public void Load(string srcDirPath)
     {
-        CleanUpTempDB();
+        SetUpTempDB();
 
         if (Directory.Exists(srcDirPath))
         {
