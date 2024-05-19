@@ -207,7 +207,11 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
             graph.DrawRect(SKRect.Create(point, size), new SKPaint() { Color = backcolor.Value });
         }
 
-        point.Offset(4, 0);
+        if (point.X == 0)
+        {
+            point.X = 3;
+        }
+
         if (_texts == null)
         {
             point.Offset(0, Math.Abs(Font.Metrics.Top));

@@ -179,7 +179,7 @@ internal sealed class ConsoleErrorShapePart : ConsoleShapePart
 
     public override void DrawTo(SKCanvas graph, SKPoint point, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
     {
-        graph.DrawText(Text, new SKPoint(4, 0), SKTextAlign.Left, Config.DefaultFont, new SKPaint() { Color = Config.ForeColor.ToSKColor() });
+        graph.DrawText(Text, new SKPoint(3, 0), SKTextAlign.Left, Config.DefaultFont, new SKPaint() { Color = Config.ForeColor.ToSKColor() });
     }
     public override void SetWidth(StringMeasure sm, float subPixel)
     {
