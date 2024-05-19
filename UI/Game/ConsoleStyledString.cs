@@ -38,7 +38,7 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
     {
         //if ((StaticConfig.TextDrawingMode != TextDrawingMode.GRAPHICS) && (str.IndexOf('\t') >= 0))
         //    str = str.Replace("\t", "");
-        Text = str;
+        Text = str.Replace("\t", "", StringComparison.Ordinal);
         StringStyle = style;
         Font = FontFactory.GetFont(style.Fontname, style.FontStyle);
         if (Font == null)
@@ -207,7 +207,7 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
             graph.DrawRect(SKRect.Create(point, size), new SKPaint() { Color = backcolor.Value });
         }
 
-
+        point.Offset(4, 0);
         if (_texts == null)
         {
             point.Offset(0, Math.Abs(Font.Metrics.Top));
