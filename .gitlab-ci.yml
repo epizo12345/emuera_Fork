@@ -40,17 +40,15 @@ build_job:
   stage: build
   only:
     - master
+    - SkiaSharp
   script:
     - 'dotnet publish'  # build the project
-    - ls
-    - ls artifacts/*
-    - ls artifacts/publish/*
-    - ls artifacts/publish/Emuera/*
-    - ls artifacts/publish/Emuera/release_win-x64/*
+    - mkdir build
+    - cp artifacts/publish/Emuera/release_win-x64/* build/*
   artifacts:
     expire_in: 1 week  # save gitlab server space, we copy the files we need to deploy folder later on
     paths:
-      - artifacts/publish/Emuera/release_win-x64/*
+      - build
 
 test_job:
   stage: test
