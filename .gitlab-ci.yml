@@ -44,7 +44,7 @@ build_job:
   script:
     - 'dotnet publish'  # build the project
     - mkdir build
-    - cp artifacts/publish/Emuera/release_win-x64/* build/*
+    - cp artifacts/publish/Emuera/release_win-x64/* build/
   artifacts:
     expire_in: 1 week  # save gitlab server space, we copy the files we need to deploy folder later on
     paths:
