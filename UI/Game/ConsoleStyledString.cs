@@ -94,10 +94,13 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
 
         TextsWithFont CreateTextWithFont(SKTypeface typeface, string t)
         {
+            var font = new SKFont(typeface, Font.Size);
+            font.Size *= Font.Metrics.XMax / font.Metrics.XMax;
+
             var textsWithFont = new TextsWithFont()
             {
                 Text = t,
-                Font = new SKFont(typeface, Font.Size)
+                Font = font
             };
 
             textsWithFont.Width = textsWithFont.Font.GetGlyphWidths(textsWithFont.Text).Sum();
