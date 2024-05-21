@@ -405,17 +405,20 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             string str = arguments[0].GetStrValue(exm);
-            using System.Drawing.Text.InstalledFontCollection ifc = new();
-            Int64 isInstalled = 0;
-            foreach (System.Drawing.FontFamily ff in ifc.Families)
+
+            if (FontFactory.CheckExternalFont(str))
             {
-                if (ff.Name == str)
+                return 1;
+            }
+
+            foreach (var familyName in SKFontManager.Default.FontFamilies)
+            {
+                if (familyName == str)
                 {
-                    isInstalled = 1;
-                    break;
+                    return 1;
                 }
             }
-            return isInstalled;
+            return 0;
         }
 
     }

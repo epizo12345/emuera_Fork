@@ -21,6 +21,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using MinorShift.Emuera.UI.Framework;
+using MinorShift.Emuera.UI;
 
 namespace MinorShift.Emuera.GameView;
 
@@ -358,6 +359,8 @@ internal sealed partial class EmueraConsole : IDisposable
         await Preload.Load(Program.CsvDir);
 
         logWriter.WriteLine("File:Preload:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
+
+        FontFactory.LoadFontFolder();
 
         GlobalStatic.Console = this;
         // GlobalStatic.MainWindow = window;

@@ -12,6 +12,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using MinorShift.Emuera.UI.Framework;
+using MinorShift.Emuera.UI;
 
 namespace MinorShift.Emuera.GameView;
 
@@ -64,7 +65,10 @@ internal sealed partial class EmueraConsole : IDisposable
     public StringStyle StringStyle { get { return userStyle; } }
     public void SetStringStyle(FontStyle fs) { userStyle.FontStyle = fs; }
     public void SetStringStyle(Color color) { userStyle.Color = color; userStyle.ColorChanged = color != Config.ForeColor; }
-    public void SetFont(string fontname) { if (!string.IsNullOrEmpty(fontname)) userStyle.Fontname = fontname; else userStyle.Fontname = Config.FontName; }
+    public void SetFont(string fontname)
+    {
+        if (!string.IsNullOrEmpty(fontname)) userStyle.Fontname = fontname; else userStyle.Fontname = Config.FontName;
+    }
     private DisplayLineAlignment alignment = DisplayLineAlignment.LEFT;
     public DisplayLineAlignment Alignment { get { return alignment; } set { alignment = value; } }
     public void ResetStyle()
@@ -437,7 +441,7 @@ internal sealed partial class EmueraConsole : IDisposable
         if (str != null)
             length = Config.Encode.GetByteCount(str);
         int printcLength = Config.PrintCLength;
-        var font = new SKFont(SKTypeface.FromFamilyName(Style.Fontname), Config.DefaultFont.Size);
+        var font = FontFactory.GetFont(Style.Fontname, FontStyle.Regular, Config.DefaultFont.Size);
         if (font == null)
         {
             return str;
