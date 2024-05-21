@@ -4,6 +4,7 @@ using System;
 using System.Drawing;
 using System.Drawing.Text;
 using System.Windows.Forms;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.Forms;
 
@@ -43,7 +44,7 @@ internal sealed partial class ConfigDialog : Form
         numericUpDown11.Maximum = 80;
         numericUpDownPosX.Maximum = 10000;//WindowPosX
         numericUpDownPosY.Maximum = 10000;
-
+        Localize();
     }
 
     private void shown(object sender, EventArgs e)
@@ -565,7 +566,7 @@ internal sealed partial class ConfigDialog : Form
         disenabled |= setCheckBoxChecked(checkBox25, false) < 0;
         disenabled |= setCheckBoxChecked(checkBox9, true) < 0;
         if (disenabled)
-            Dialog.Show("設定変更不可", "いくつかの設定は_fixed.configにより変更を許可されていないために変更できませんでした");
+            Dialog.Show(LocalizationManager.MsgBox.NotAllowChangeSetting, LocalizationManager.MsgBox.UnableChangeSetting);
     }
 
     private void button8_Click(object sender, EventArgs e)
@@ -582,7 +583,7 @@ internal sealed partial class ConfigDialog : Form
         disenabled |= setCheckBoxChecked(checkBoxCompatiSP, false) < 0;
         disenabled |= setCheckBoxChecked(checkBox9, false) < 0;
         if (disenabled)
-            Dialog.Show("設定変更不可", "いくつかの設定は_fixed.configにより変更を許可されていないために変更できませんでした");
+            Dialog.Show(LocalizationManager.MsgBox.NotAllowChangeSetting, LocalizationManager.MsgBox.UnableChangeSetting);
     }
 
     //互換性チェックはいじらないように変更
@@ -597,7 +598,7 @@ internal sealed partial class ConfigDialog : Form
         disenabled |= setComboBoxChanged(comboBox3, 0) < 0;
         disenabled |= setComboBoxChanged(comboBox4, 0) < 0;
         if (disenabled)
-            Dialog.Show("設定変更不可", "いくつかの設定は_fixed.configにより変更を許可されていないために変更できませんでした");
+            Dialog.Show(LocalizationManager.MsgBox.NotAllowChangeSetting, LocalizationManager.MsgBox.UnableChangeSetting);
     }
 
     private void button6_Click(object sender, EventArgs e)
@@ -611,7 +612,7 @@ internal sealed partial class ConfigDialog : Form
         disenabled |= setComboBoxChanged(comboBox3, 0) < 0;
         disenabled |= setComboBoxChanged(comboBox4, 0) < 0;
         if (disenabled)
-            Dialog.Show("設定変更不可", "いくつかの設定は_fixed.configにより変更を許可されていないために変更できませんでした");
+            Dialog.Show(LocalizationManager.MsgBox.NotAllowChangeSetting, LocalizationManager.MsgBox.UnableChangeSetting);
     }
 
     private void comboBox6_SelectedIndexChanged(object sender, EventArgs e)
@@ -648,4 +649,176 @@ internal sealed partial class ConfigDialog : Form
     {
 
     }
+    
+    internal void Localize()
+    {
+        Text = LocalizationManager.ConfigDialog.Title;
+
+		tabEnvironment.Text = LocalizationManager.ConfigDialog.Environment;
+		checkBox3.Text = LocalizationManager.ConfigDialog.Environment_UseMouse;
+		checkBox4.Text = LocalizationManager.ConfigDialog.Environment_UseMenu;
+		checkBox5.Text = LocalizationManager.ConfigDialog.Environment_UseDebugCommand;
+		checkBox6.Text = LocalizationManager.ConfigDialog.Environment_AllowMultipleInstances;
+		checkBox18.Text = LocalizationManager.ConfigDialog.Environment_UseKeyMacro;
+		checkBox7.Text = LocalizationManager.ConfigDialog.Environment_AutoSave;
+		checkBox24.Text = LocalizationManager.ConfigDialog.Environment_UseSaveFolder;
+		//checkBox33.Text = LocalizationManager.ConfigDialog.Environment_EnglishConfigOutput;
+		label6.Text = LocalizationManager.ConfigDialog.Environment_MaxLog;
+		label17.Text = LocalizationManager.ConfigDialog.Environment_InfiniteLoopAlertTime;
+		label20.Text = LocalizationManager.ConfigDialog.Environment_SaveDataPerPage;
+		label22.Text = LocalizationManager.ConfigDialog.Environment_TextEditor;
+		button4.Text = LocalizationManager.ConfigDialog.Environment_Browse;
+		label23.Text = LocalizationManager.ConfigDialog.Environment_TextEditorCommandline;
+		comboBox6.Items[3] = LocalizationManager.ConfigDialog.Environment_TextEditorCommandline_UserSetting;
+
+		tabPageView.Text = LocalizationManager.ConfigDialog.Display;
+		label18.Text = LocalizationManager.ConfigDialog.Display_TextDrawingMode;
+		label9.Text = LocalizationManager.ConfigDialog.Display_FPS;
+		label5.Text = LocalizationManager.ConfigDialog.Display_PrintCPerLine;
+		label1.Text = LocalizationManager.ConfigDialog.Display_PrintCLength;
+		checkBox14.Text = LocalizationManager.ConfigDialog.Display_ButtonWrap;
+        _useButtonFocusColor.Text = LocalizationManager.ConfigDialog.Display_UseButtonFocusColor;
+        //label26.Text = LocalizationManager.ConfigDialog.Display_EmueraLang;
+
+		tabPageWindow.Text = LocalizationManager.ConfigDialog.Window;
+		label2.Text = LocalizationManager.ConfigDialog.Window_WindowWidth;
+		label3.Text = LocalizationManager.ConfigDialog.Window_WindowHeight;
+		button1.Text = LocalizationManager.ConfigDialog.Window_GetWindowSize;
+		checkBox8.Text = LocalizationManager.ConfigDialog.Window_ChangeableWindowHeight;
+		checkBox21.Text = LocalizationManager.ConfigDialog.Window_WindowMaximixed;
+		checkBox17.Text = LocalizationManager.ConfigDialog.Window_SetWindowPos;
+		label19.Text = LocalizationManager.ConfigDialog.Window_WindowX;
+		label10.Text = LocalizationManager.ConfigDialog.Window_WindowY;
+		button3.Text = LocalizationManager.ConfigDialog.Window_GetWindowPos;
+		ScrollRange.Text = LocalizationManager.ConfigDialog.Window_LinesPerScroll;
+
+        tabPageFont.Text = LocalizationManager.ConfigDialog.Font;
+		colorBoxBG.LabelText = LocalizationManager.ConfigDialog.Font_BackgroundColor;
+		colorBoxFG.LabelText = LocalizationManager.ConfigDialog.Font_TextColor;
+		colorBoxSelecting.LabelText = LocalizationManager.ConfigDialog.Font_HighlightColor;
+		colorBoxBacklog.LabelText = LocalizationManager.ConfigDialog.Font_LogHistoryColor;
+		label4.Text = LocalizationManager.ConfigDialog.Font_FontName;
+		label8.Text = LocalizationManager.ConfigDialog.Font_FontSize;
+		label7.Text = LocalizationManager.ConfigDialog.Font_LineHeight;
+
+		tabPageSystem.Text = LocalizationManager.ConfigDialog.System;
+		label21.Text = LocalizationManager.ConfigDialog.System_Warning;
+		checkBox1.Text = LocalizationManager.ConfigDialog.System_IgnoreCase;
+		checkBox2.Text = LocalizationManager.ConfigDialog.System_UseRename;
+		checkBox10.Text = LocalizationManager.ConfigDialog.System_UseReplace;
+		checkBox15.Text = LocalizationManager.ConfigDialog.System_SearchSubfolder;
+		checkBox16.Text = LocalizationManager.ConfigDialog.System_SortFileNames;
+		checkBox20.Text = LocalizationManager.ConfigDialog.System_SystemFuncOverride;
+		checkBox19.Text = LocalizationManager.ConfigDialog.System_SystemFuncOverrideWarn;
+		checkBox22.Text = LocalizationManager.ConfigDialog.System_DuplicateFuncWarn;
+		checkBoxSystemFullSpace.Text = LocalizationManager.ConfigDialog.System_WSIncludesFullWidth;
+		label11.Text = LocalizationManager.ConfigDialog.System_ANSI;
+
+		tabPageSystem2.Text = LocalizationManager.ConfigDialog.System2;
+		label24.Text = LocalizationManager.ConfigDialog.System_Warning;
+		checkBoxSystemTripleSymbol.Text = LocalizationManager.ConfigDialog.System2_IgnoreTripleSymbol;
+		checkBox26.Text = LocalizationManager.ConfigDialog.System2_SaveInBinary;
+        checkBox27.Text = LocalizationManager.ConfigDialog.System2_SaveInUTF8;
+		//checkBox32.Text = LocalizationManager.ConfigDialog.System2_CompressSave;
+		checkBox29.Text = LocalizationManager.ConfigDialog.System2_NoAutoCompleteCVar;
+        _useNewRandom.Text = LocalizationManager.ConfigDialog.System2_UseNewRandom;
+        _useScopedVariableInstruction.Text = LocalizationManager.ConfigDialog.System2_UseScopedVariableInstruction;
+		// checkBox30.Text = LocalizationManager.ConfigDialog.System2_DisallowUpdateCheck;
+		// checkBox31.Text = LocalizationManager.ConfigDialog.System2_UseERD;
+		// checkBox34.Text = LocalizationManager.ConfigDialog.System2_VarsizeDimConfig;
+		// label25.Text = LocalizationManager.ConfigDialog.System2_SaveLoadExt;
+
+		tabPageCompati.Text = LocalizationManager.ConfigDialog.Compatibility;
+		label30.Text = LocalizationManager.ConfigDialog.Compatibility_Warning;
+		checkBoxCompatiErrorLine.Text = LocalizationManager.ConfigDialog.Compatibility_ExecuteErrorLine;
+		checkBoxCompatiCALLNAME.Text = LocalizationManager.ConfigDialog.Compatibility_NameForCallname;
+		checkBoxCompatiRAND.Text = LocalizationManager.ConfigDialog.Compatibility_EramakerRAND;
+		checkBox9.Text = LocalizationManager.ConfigDialog.Compatibility_EramakerTIMES;
+		checkBoxFuncNoIgnoreCase.Text = LocalizationManager.ConfigDialog.Compatibility_NoIgnoreCase;
+		checkBox28.Text = LocalizationManager.ConfigDialog.Compatibility_CallEvent;
+		checkBoxCompatiSP.Text = LocalizationManager.ConfigDialog.Compatibility_UseSPCharacters;
+		checkBoxCompatiLinefeedAs1739.Text = LocalizationManager.ConfigDialog.Compatibility_ButtonWarp;
+		checkBox12.Text = LocalizationManager.ConfigDialog.Compatibility_OmitArgs;
+		checkBox25.Text = LocalizationManager.ConfigDialog.Compatibility_AutoTOSTR;
+		button7.Text = LocalizationManager.ConfigDialog.Compatibility_EramakerStandard;
+		button8.Text = LocalizationManager.ConfigDialog.Compatibility_EmueraStandard;
+
+		tabPageDebug.Text = LocalizationManager.ConfigDialog.Debug;
+		checkBox23.Text = LocalizationManager.ConfigDialog.Debug_CompatibilityWarn;
+		checkBox13.Text = LocalizationManager.ConfigDialog.Debug_LoadingReport;
+		//checkBox35.Text = LocalizationManager.ConfigDialog.Debug_CheckDuplicateIdentifier;
+		label12.Text = LocalizationManager.ConfigDialog.Debug_ReduceArgs;
+		comboBoxReduceArgumentOnLoad.Items[0] = LocalizationManager.ConfigDialog.Debug_ReduceArgs_Never;
+		comboBoxReduceArgumentOnLoad.Items[1] = LocalizationManager.ConfigDialog.Debug_ReduceArgs_OnUpdate;
+		comboBoxReduceArgumentOnLoad.Items[2] = LocalizationManager.ConfigDialog.Debug_ReduceArgs_Always;
+		label15.Text = LocalizationManager.ConfigDialog.Debug_WarnLevel;
+		comboBox5.Items[0] = LocalizationManager.ConfigDialog.Debug_WarnLevel_Level0;
+		comboBox5.Items[1] = LocalizationManager.ConfigDialog.Debug_WarnLevel_Level1;
+		comboBox5.Items[2] = LocalizationManager.ConfigDialog.Debug_WarnLevel_Level2;
+		comboBox5.Items[3] = LocalizationManager.ConfigDialog.Debug_WarnLevel_Level3;
+		checkBox11.Text = LocalizationManager.ConfigDialog.Debug_IgnoreUnusedFuncs;
+		label13.Text = LocalizationManager.ConfigDialog.Debug_FuncNotFoundWarn;
+		comboBox3.Items[0] = LocalizationManager.ConfigDialog.Debug_WarnSetting_Ignore;
+		comboBox3.Items[1] = LocalizationManager.ConfigDialog.Debug_WarnSetting_TotalNumber;
+		comboBox3.Items[2] = LocalizationManager.ConfigDialog.Debug_WarnSetting_OncePerFile;
+		comboBox3.Items[3] = LocalizationManager.ConfigDialog.Debug_WarnSetting_Always;
+		label14.Text = LocalizationManager.ConfigDialog.Debug_UnusedFuncWarn;
+		comboBox4.Items[0] = LocalizationManager.ConfigDialog.Debug_WarnSetting_Ignore;
+		comboBox4.Items[1] = LocalizationManager.ConfigDialog.Debug_WarnSetting_TotalNumber;
+		comboBox4.Items[2] = LocalizationManager.ConfigDialog.Debug_WarnSetting_OncePerFile;
+		comboBox4.Items[3] = LocalizationManager.ConfigDialog.Debug_WarnSetting_Always;
+		button5.Text = LocalizationManager.ConfigDialog.Debug_PlayerStandard;
+		button6.Text = LocalizationManager.ConfigDialog.Debug_DeveloperStandard;
+
+		// tabPageClipboard.Text = LocalizationManager.ConfigDialog.Clipboard;
+		// checkBoxCBuseCB.Text = LocalizationManager.ConfigDialog.Clipboard_CopyToClipboard;
+		// checkBoxCBIgnoreTags.Text = LocalizationManager.ConfigDialog.Clipboard_IgnoreTags;
+		// label29.Text = LocalizationManager.ConfigDialog.Clipboard_ReplaceTags;
+		// checkBoxCBNewLinesOnly.Text = LocalizationManager.ConfigDialog.Clipboard_NewLineOnly;
+		// checkBoxCBClearBuffer.Text = LocalizationManager.ConfigDialog.Clipboard_ClearClipboard;
+		// label27.Text = LocalizationManager.ConfigDialog.Clipboard_TriggerToUse;
+		// checkBoxCBTriggerLeftClick.Text = LocalizationManager.ConfigDialog.Clipboard_LClick;
+		// checkBoxCBTriggerMiddleClick.Text = LocalizationManager.ConfigDialog.Clipboard_MClick;
+		// checkBoxCBTriggerDoubleLeftClick.Text = LocalizationManager.ConfigDialog.Clipboard_DoubleClick;
+		// checkBoxCBTriggerAnyKeyWait.Text = LocalizationManager.ConfigDialog.Clipboard_AnyKeyWait;
+		// checkBoxCBTriggerInputWait.Text = LocalizationManager.ConfigDialog.Clipboard_InputWait;
+		// label28.Text = LocalizationManager.ConfigDialog.Clipboard_LinesToClipboard;
+		// label31.Text = LocalizationManager.ConfigDialog.Clipboard_TotalBuffer;
+		// label32.Text = LocalizationManager.ConfigDialog.Clipboard_LinesToScroll;
+		// label33.Text = LocalizationManager.ConfigDialog.Clipboard_UpdateTime;
+		// label34.Text = LocalizationManager.ConfigDialog.Clipboard_ScrollThrough;
+		//
+		// tabPageRikai.Text = LocalizationManager.ConfigDialog.Rikai;
+		// rikaiCheckBoxEnable.Text = LocalizationManager.ConfigDialog.Rikai_RikaiEnable;
+		// rikaiDictFilenameLabel.Text = LocalizationManager.ConfigDialog.Rikai_RikaiFilename;
+		// rikaiColorBoxBG.Text = LocalizationManager.ConfigDialog.Font_BackgroundColor;
+		// rikaiColorBoxText.Text = LocalizationManager.ConfigDialog.Font_TextColor;
+		// rikaiCheckBoxSeparateBoxes.Text = LocalizationManager.ConfigDialog.Rikai_RikaiSeparateBox;
+		// rikaiNote1.Text = LocalizationManager.ConfigDialog.Rikai_RikaiLink;
+		// rikaiNote3.Text = LocalizationManager.ConfigDialog.Rikai_OtherEDICT1;
+
+
+		buttonSave.Text = LocalizationManager.ConfigDialog.Save;
+		buttonReboot.Text = LocalizationManager.ConfigDialog.SaveAndRestart;
+		buttonCancel.Text = LocalizationManager.ConfigDialog.Cancel;
+		label16.Text = LocalizationManager.ConfigDialog.ChangeWontTakeEffectUntilRestart;
+
+		// var diff = tabControl_Size - tabControl.DisplayRectangle.Size + ((Size)tabControl.Padding);
+		// var size = new Size(0, 0);
+		// foreach (var page in pages)
+		// {
+		// 	if (page.Size.Width + page.Margin.Size.Width > size.Width) size.Width = page.Size.Width + page.Margin.Size.Width;
+		// 	if (page.Size.Height + page.Margin.Size.Height > size.Height) size.Height = page.Size.Height + page.Margin.Size.Height;
+		// }
+		// tabControl.Size = new Size(size.Width + diff.Width, tabControl.Size.Height);
+		// diff = tabControl.Size - tabControl.DisplayRectangle.Size + ((Size)tabControl.Padding);
+		// tabControl.Size = size + diff;
+		//
+		// foreach (var page in pages)
+		// {
+		// 	diff = tabControl.DisplayRectangle.Size - page.Size;
+		// 	page.Location = new Point(diff.Width / 2, diff.Height / 2);
+		// }
+
+	}
 }

@@ -17,6 +17,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.GameProc;
 
@@ -66,7 +67,7 @@ internal sealed partial class Process(EmueraConsole view)
             if (ParserMediator.HasWarning)
             {
                 ParserMediator.FlushWarningList();
-                if (Dialog.ShowPrompt("コンフィグエラー", "コンフィグファイルに異常があります\nEmueraを終了しますか"))
+                if (Dialog.ShowPrompt(LocalizationManager.MsgBox.ConfigError, LocalizationManager.MsgBox.ConfigFileError))
                 {
                     console.PrintSystemLine("コンフィグファイルに異常があり、終了が選択されたため処理を終了しました");
                     return false;
@@ -113,7 +114,7 @@ internal sealed partial class Process(EmueraConsole view)
                     if (ParserMediator.HasWarning)
                     {
                         ParserMediator.FlushWarningList();
-                        if (Dialog.ShowPrompt("_Replace.csvエラー", "_Replace.csvに異常があります\nEmueraを終了しますか"))
+                        if (Dialog.ShowPrompt(LocalizationManager.MsgBox.ReplaceError, LocalizationManager.MsgBox.ReplaceFileError))
                         {
                             console.PrintSystemLine("_Replace.csvに異常があり、終了が選択されたため処理を終了しました");
                             return false;
@@ -375,8 +376,10 @@ internal sealed partial class Process(EmueraConsole view)
             return;//現在の行が特殊な状態ならスルー
         if (!console.Enabled)
             return;//クローズしてるとMessageBox.Showができないので。
-        var text = $"現在、{currentLine.Position.Value.Filename}の{currentLine.Position.Value.LineNo}行目を実行中です。\n最後の入力から{elapsedTime}ミリ秒経過し{state.lineCount}行が実行されました。\n処理を中断し強制終了しますか？";
-        if (Dialog.ShowPrompt("無限ループの可能性があります", text))
+        var text = string.Format(
+            LocalizationManager.MsgBox.TooLongLoop,
+            currentLine.Position.Value.Filename, currentLine.Position.Value.LineNo, state.lineCount, elapsedTime);
+        if (Dialog.ShowPrompt(LocalizationManager.MsgBox.InfiniteLoop, text))
         {
             throw new CodeEE("無限ループの疑いにより強制終了が選択されました");
         }

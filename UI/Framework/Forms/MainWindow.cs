@@ -13,6 +13,7 @@ using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using MinorShift.Emuera.UI.Framework;
 
 #nullable enable
 
@@ -73,6 +74,7 @@ internal sealed partial class MainWindow : Form
         richTextBox1.MouseWheel += new System.Windows.Forms.MouseEventHandler(richTextBox1_MouseWheel);
         mainPicBox.MouseWheel += new System.Windows.Forms.MouseEventHandler(richTextBox1_MouseWheel);
         vScrollBar.MouseWheel += new System.Windows.Forms.MouseEventHandler(richTextBox1_MouseWheel);
+        Localize();
     }
     private readonly ToolStripMenuItem[] macroMenuItems = new ToolStripMenuItem[KeyMacro.MaxFkey];
     public EraPictureBox MainPicBox { get { return mainPicBox; } }
@@ -488,7 +490,7 @@ internal sealed partial class MainWindow : Form
 
     private void exitToolStripMenuItem_Click(object sender, EventArgs e)
     {
-        var result = MessageBox.Show("ゲームを終了します", "終了", MessageBoxButtons.OKCancel);
+        var result = MessageBox.Show(LocalizationManager.MsgBox.ExitAsk, LocalizationManager.MsgBox.Exit, MessageBoxButtons.OKCancel);
         if (result != DialogResult.OK)
             return;
         Close();
@@ -497,7 +499,7 @@ internal sealed partial class MainWindow : Form
 
     private void rebootToolStripMenuItem_Click(object sender, EventArgs e)
     {
-        var result = MessageBox.Show("ゲームを再起動します", "再起動", MessageBoxButtons.OKCancel);
+        var result = MessageBox.Show(LocalizationManager.MsgBox.RestartAsk, LocalizationManager.MsgBox.Restart, MessageBoxButtons.OKCancel);
         if (result != DialogResult.OK)
             return;
         Reboot();
@@ -571,18 +573,18 @@ internal sealed partial class MainWindow : Form
             return;
         if (console.IsInProcess)
         {
-            MessageBox.Show("スクリプト動作中には使用できません");
+            MessageBox.Show(LocalizationManager.MsgBox.NotAvailableDuringScript);
             return;
         }
         if (console.notToTitle)
         {
             if (console.byError)
-                MessageBox.Show("コード解析でエラーが発見されたため、タイトルへは飛べません");
+                MessageBox.Show(LocalizationManager.MsgBox.ErrorInAnalysisMode);
             else
-                MessageBox.Show("解析モードのためタイトルへは飛べません");
+                MessageBox.Show(LocalizationManager.MsgBox.CanNotReturnToTitle);
             return;
         }
-        var result = MessageBox.Show("タイトル画面へ戻ります", "タイトル画面に戻る", MessageBoxButtons.OKCancel);
+        var result = MessageBox.Show(LocalizationManager.MsgBox.ReturnToTitleAsk, LocalizationManager.MsgBox.ReturnToTitle, MessageBoxButtons.OKCancel);
         if (result != DialogResult.OK)
             return;
         GotoTitle();
@@ -594,10 +596,10 @@ internal sealed partial class MainWindow : Form
             return;
         if (console.IsInProcess)
         {
-            MessageBox.Show("スクリプト動作中には使用できません");
+            MessageBox.Show(LocalizationManager.MsgBox.NotAvailableDuringScript);
             return;
         }
-        var result = MessageBox.Show("ERBファイルを読み直します", "ERBファイル読み直し", MessageBoxButtons.OKCancel);
+        var result = MessageBox.Show(LocalizationManager.MsgBox.ReloadErbAsk, LocalizationManager.MsgBox.ReloadErb, MessageBoxButtons.OKCancel);
         if (result != DialogResult.OK)
             return;
         await ReloadErb();
@@ -637,7 +639,7 @@ internal sealed partial class MainWindow : Form
         }
         catch (Exception)
         {
-            MessageBox.Show("予期せぬエラーが発生したためクリップボードを開けません");
+            MessageBox.Show(LocalizationManager.MsgBox.CanNotOpenClipboard);
             return;
         }
     }
@@ -648,7 +650,7 @@ internal sealed partial class MainWindow : Form
             return;
         if (console.IsInProcess)
         {
-            MessageBox.Show("スクリプト動作中には使用できません");
+            MessageBox.Show(LocalizationManager.MsgBox.NotAvailableDuringScript);
             return;
         }
         DialogResult result = openFileDialog.ShowDialog();
@@ -659,12 +661,12 @@ internal sealed partial class MainWindow : Form
             {
                 if (!File.Exists(fname))
                 {
-                    MessageBox.Show("ファイルがありません", "File Not Found");
+                    MessageBox.Show(LocalizationManager.MsgBox.FileNotFound, "File Not Found");
                     return;
                 }
                 if (!Path.GetExtension(fname).Equals(".ERB", StringComparison.OrdinalIgnoreCase))
                 {
-                    MessageBox.Show("ERBファイル以外は読み込めません", "ファイル形式エラー");
+                    MessageBox.Show(LocalizationManager.MsgBox.IsNotErb, LocalizationManager.MsgBox.FileFormatError);
                     return;
                 }
                 if (fname.StartsWith(Program.ErbDir, StringComparison.OrdinalIgnoreCase))
@@ -695,7 +697,7 @@ internal sealed partial class MainWindow : Form
             return;
         if (console.IsInProcess)
         {
-            MessageBox.Show("スクリプト動作中には使用できません");
+            MessageBox.Show(LocalizationManager.MsgBox.NotAvailableDuringScript);
             return;
         }
         //List<KeyValuePair<string, string>> filepath = new List<KeyValuePair<string, string>>();
@@ -1107,6 +1109,46 @@ internal sealed partial class MainWindow : Form
         }
     }
 
+
+    private void Localize()
+	{
+		fileToolStripMenuItem.Text = LocalizationManager.MainWindow.File;
+		rebootToolStripMenuItem.Text = LocalizationManager.MainWindow.Restart;
+        デバッグモードで再起動ToolStripMenuItem.Text = LocalizationManager.MainWindow.RestartDebugMode;
+        ログを保存するSToolStripMenuItem.Text = LocalizationManager.MainWindow.SaveLog;
+		ログをクリップボードにコピーToolStripMenuItem.Text = LocalizationManager.MainWindow.CopyLogToClipboard;
+		タイトルへ戻るTToolStripMenuItem.Text = LocalizationManager.MainWindow.BackToTitle;
+		コードを読み直すcToolStripMenuItem.Text = LocalizationManager.MainWindow.ReloadAllScripts;
+		フォルダを読み直すFToolStripMenuItem.Text = LocalizationManager.MainWindow.ReloadFolder;
+		ファイルを読み直すFToolStripMenuItem.Text = LocalizationManager.MainWindow.ReloadScriptFile;
+		exitToolStripMenuItem.Text = LocalizationManager.MainWindow.Exit;
+		openFileDialog.Filter = LocalizationManager.MainWindow.FileFilter + " (*.erb)|*.erb";
+
+		デバッグToolStripMenuItem.Text = LocalizationManager.MainWindow.Debug;
+		デバッグウインドウを開くToolStripMenuItem.Text = LocalizationManager.MainWindow.OpenDebugWindow;
+		デバッグ情報の更新ToolStripMenuItem.Text = LocalizationManager.MainWindow.UpdateDebugInfo;
+        
+        ツールToolStripMenuItem.Text = LocalizationManager.MainWindow.Tools;
+        ウィンドウ幅のロック変更ToolStripMenuItem.Text = LocalizationManager.MainWindow.ToggleWidthLock;
+        
+        設定ToolStripMenuItem.Text = LocalizationManager.MainWindow.Settings;
+
+        toolStripMenuItem1.Text = LocalizationManager.MainWindow.Language;
+
+        this.マクロToolStripMenuItem.Text = LocalizationManager.MainWindow.ContextMenu_KeyMacro;
+        for (int i = 0; i < this.マクロToolStripMenuItem.DropDownItems.Count; i++)
+        	this.マクロToolStripMenuItem.DropDownItems[i].Text = LocalizationManager.MainWindow.ContextMenu_KeyMacro + i.ToString("D2");
+        this.マクログループToolStripMenuItem.Text = LocalizationManager.MainWindow.ContextMenu_KeyMacroGroup;
+        for (int i = 0; i < this.マクログループToolStripMenuItem.DropDownItems.Count; i++)
+        	this.マクログループToolStripMenuItem.DropDownItems[i].Text = LocalizationManager.MainWindow.ContextMenu_KeyMacroGroup_Group + i;
+        
+        this.切り取り.Text = LocalizationManager.MainWindow.ContextMenu_Cut;
+        this.コピー.Text = LocalizationManager.MainWindow.ContextMenu_Copy;
+        this.貼り付け.Text = LocalizationManager.MainWindow.ContextMenu_Paste;
+        this.削除.Text = LocalizationManager.MainWindow.ContextMenu_Delete;
+        this.実行.Text = LocalizationManager.MainWindow.ContextMenu_Execute;
+    }
+
     private void デバッグモードで再起動ToolStripMenuItem_Click(object sender, EventArgs e)
     {
         //新たにアプリケーションを起動する
@@ -1114,6 +1156,29 @@ internal sealed partial class MainWindow : Form
 
         //現在のアプリケーションを終了する
         Application.ExitThread();
+    }
+    
+    private void englishToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        LocalizationManager.SetLanguage("en");
+        Localize();
+    }
 
+    private void japaneseToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        LocalizationManager.SetLanguage("ja-jp");
+        Localize();
+    }
+
+    private void chineseToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        LocalizationManager.SetLanguage("zh-hans");
+        Localize();
+    }
+
+    private void koreanToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        LocalizationManager.SetLanguage("kr");
+        Localize();
     }
 }

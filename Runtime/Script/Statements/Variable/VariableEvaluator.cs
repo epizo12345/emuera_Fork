@@ -13,6 +13,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.Runtime.Script.Statements.Variable;
 
@@ -1782,7 +1783,7 @@ internal sealed class VariableEvaluator : IDisposable
         }
         catch
         {
-            Dialog.Show("フォルダ作成失敗", "datフォルダーの作成に失敗しました");
+            Dialog.Show(LocalizationManager.MsgBox.FolderCreationFailure, LocalizationManager.MsgBox.FailedCreateDataFolder);
             throw new CodeEE("datフォルダーの作成に失敗しました");
         }
     }

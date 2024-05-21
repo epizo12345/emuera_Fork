@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.Forms;
 
@@ -31,6 +32,7 @@ public partial class DebugDialog : Form
         updateSize();
         checkBoxTopMost.Checked = this.TopMost;
         loadWatchList();
+        Localize();
     }
     private Process emuera;
     private EmueraConsole mainConsole;
@@ -224,7 +226,7 @@ public partial class DebugDialog : Form
         }
         catch
         {
-            MessageBox.Show("コンソールログの保存に失敗しました", "デバッグウインドウ");
+            MessageBox.Show(LocalizationManager.MsgBox.FailedOutputLogError, LocalizationManager.MsgBox.FailedOutputLog);
             return;
         }
         finally
@@ -439,6 +441,30 @@ public partial class DebugDialog : Form
         dialog.SetConfig(this);
         dialog.ShowDialog();
         this.TopMost = tempTopMost;
+    }
+
+    private void Localize()
+    {
+        this.Text = LocalizationManager.DebugDialog.Title;
+
+        this.toolStripMenuItem1.Text = LocalizationManager.MainWindow.File;
+        this.ウォッチリストの保存ToolStripMenuItem.Text = LocalizationManager.DebugDialog.File_SaveWatchList;
+        this.ウォッチリストの読込ToolStripMenuItem.Text = LocalizationManager.DebugDialog.File_LoadWatchList;
+        this.閉じるToolStripMenuItem.Text = LocalizationManager.DebugDialog.Close;
+
+        this.設定ToolStripMenuItem.Text = LocalizationManager.DebugDialog.Setting;
+        this.設定ToolStripMenuItem1.Text = LocalizationManager.DebugDialog.Setting_Config;
+
+        this.tabPageWatch.Text = LocalizationManager.DebugDialog.VariableWatch;
+        this.columnHeader1.Text = LocalizationManager.DebugDialog.VariableWatch_Object;
+        this.columnHeader3.Text = LocalizationManager.DebugDialog.VariableWatch_Value;
+
+        this.tabPageTrace.Text = LocalizationManager.DebugDialog.StackTrace;
+        this.tabPageConsole.Text = LocalizationManager.DebugDialog.Console;
+
+        this.checkBoxTopMost.Text = LocalizationManager.DebugDialog.StayOnTop;
+        this.button2.Text = LocalizationManager.DebugDialog.UpdateData;
+        this.button1.Text = LocalizationManager.DebugDialog.Close;
     }
 
 }
