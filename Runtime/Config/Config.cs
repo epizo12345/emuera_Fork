@@ -167,9 +167,7 @@ internal static class Config
             TextDrawingMode = TextDrawingMode.TEXTRENDERER;
         }
 
-        DrawingParam_ShapePositionShift = 0;
-        if (TextDrawingMode != TextDrawingMode.WINAPI)
-            DrawingParam_ShapePositionShift = Math.Max(2, FontSize / 6);
+        DrawingParam_ShapePositionShift = 4;
         DrawableWidth = WindowX - DrawingParam_ShapePositionShift;
         ForceSavDir = Program.ExeDir + "sav" + Path.DirectorySeparatorChar;
         if (UseSaveFolder)

@@ -204,7 +204,7 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
         var point = new SKPoint(origin.X, origin.Y);
         if (origin.X == -1)//旧来の位置決め方式
         {
-            point.X = PointX;
+            point.X = PointX + Config.DrawingParam_ShapePositionShift;
         }
         Point = point;
 
@@ -212,11 +212,6 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
         {
             var size = new SKSize(Width, Font.Size);
             graph.DrawRect(SKRect.Create(point, size), new SKPaint() { Color = backcolor.Value });
-        }
-
-        if (point.X == 0)
-        {
-            point.X = 3;
         }
 
         if (_texts == null)
