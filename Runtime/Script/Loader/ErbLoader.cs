@@ -48,7 +48,9 @@ internal sealed class ErbLoader
         var erbFiles = Config.Config.GetFiles(erbDir, "*.ERB");
         List<string> isOnlyEvent = [];
         noError = true;
-        var starttime = DateTime.Now;
+#if DEBUG
+        var starttime = System.Diagnostics.Stopwatch.StartNew();
+#endif
         try
         {
             labelDic.RemoveAll();
@@ -58,16 +60,16 @@ internal sealed class ErbLoader
                 string file = erb.Value;
 #if DEBUG
                 if (displayReport)
-                    output.PrintSystemLine("経過時間:" + (DateTime.Now - starttime).TotalMilliseconds + "ms:" + filename + "読み込み中・・・");
+                    output.PrintSystemLine("経過時間:" + starttime.ElapsedMilliseconds + "ms:" + filename + "読み込み中・・・");
 #else
-					if (displayReport)
-						output.PrintSystemLine(filename + "読み込み中・・・");
+                if (displayReport)
+                    output.PrintSystemLine(filename + "読み込み中・・・");
 #endif
                 await Task.Run(() => loadErb(file, filename, isOnlyEvent));
             };
             ParserMediator.FlushWarningList();
 #if DEBUG
-            output.PrintSystemLine("経過時間:" + (DateTime.Now - starttime).TotalMilliseconds + "ms:");
+            output.PrintSystemLine("経過時間:" + starttime.ElapsedMilliseconds + "ms:");
 #endif
             if (displayReport)
                 output.PrintSystemLine("ユーザー定義関数のリストを構築中・・・");
@@ -75,7 +77,7 @@ internal sealed class ErbLoader
             ParserMediator.FlushWarningList();
             labelDic.Initialized = true;
 #if DEBUG
-            output.PrintSystemLine("経過時間:" + (DateTime.Now - starttime).TotalMilliseconds + "ms:");
+            output.PrintSystemLine("経過時間:" + starttime.ElapsedMilliseconds + "ms:");
 #endif
             if (displayReport)
                 output.PrintSystemLine("スクリプトの構文チェック中・・・");
@@ -85,7 +87,7 @@ internal sealed class ErbLoader
             ParserMediator.FlushWarningList();
 
 #if DEBUG
-            output.PrintSystemLine("経過時間:" + (DateTime.Now - starttime).TotalMilliseconds + "ms:");
+            output.PrintSystemLine("経過時間:" + starttime.ElapsedMilliseconds + "ms:");
 #endif
             if (displayReport)
                 output.PrintSystemLine("ロード完了");
@@ -110,7 +112,7 @@ internal sealed class ErbLoader
     /// 指定されたファイルを読み込む
     /// </summary>
     /// <param name="filename"></param>
-    public async Task<bool> LoadErbList(List<string> paths, LabelDictionary labelDictionary)
+    public async Task<bool> LoadErbList(IEnumerable<string> paths, LabelDictionary labelDictionary)
     {
         string fname;
         List<string> isOnlyEvent = [];
@@ -311,7 +313,7 @@ internal sealed class ErbLoader
     private void loadErb(string filepath, string filename, List<string> isOnlyEvent)
     {
         //一部ファイルの再読み込み時の処理用
-        labelDic.IfFileLoadClearLabelWithPath(filename);
+        labelDic.RemoveDuplicationFileData(filename);
         using var eReader = new EraStreamReader(Config.Config.UseRenameFile && ParserMediator.RenameDic != null);
 
         if (!eReader.OpenOnCache(filepath, filename))

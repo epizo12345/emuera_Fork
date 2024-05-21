@@ -171,7 +171,7 @@ internal sealed class LabelDictionary
     /// <summary>
     /// ファイルの重複をチェックし、重複していたらすでにあるそのファイルに関連するラベルを消去する
     /// </summary>
-    public void IfFileLoadClearLabelWithPath(string filename)
+    public void RemoveDuplicationFileData(string filename)
     {
         if (loadedFileSet.Contains(filename))
         {

@@ -259,7 +259,14 @@ internal sealed partial class Process(EmueraConsole view)
         state.SystemState = SystemStateCode.System_Reloaderb;
         await Preload.Load(dirPath);
         var loader = new ErbLoader(console, exm, this);
-        await loader.LoadErbDir(dirPath, false, labelDic);
+
+        var serachOption = SearchOption.TopDirectoryOnly;
+        if (Config.SearchSubdirectory)
+        {
+            serachOption = SearchOption.AllDirectories;
+        }
+
+        await loader.LoadErbList(Directory.EnumerateFiles(dirPath, "", serachOption), labelDic);
         console.ReadAnyKey();
     }
 
