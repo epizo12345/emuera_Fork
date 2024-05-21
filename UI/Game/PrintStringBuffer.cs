@@ -168,7 +168,9 @@ internal sealed class PrintStringBuffer
 
     private static ConsoleDisplayLine m_buttonsToDisplayLine(List<ConsoleButtonString> lineButtonList, bool firstLine, bool temporary)
     {
-        return new ConsoleDisplayLine([.. lineButtonList], firstLine, temporary);
+        var ret = lineButtonList.ToArray();
+        lineButtonList.Clear();
+        return new ConsoleDisplayLine(ret, firstLine, temporary);
     }
 
     public static ConsoleDisplayLine[] ButtonsToDisplayLines(List<ConsoleButtonString> buttonList, StringMeasure stringMeasure, bool nobr, bool temporary)
