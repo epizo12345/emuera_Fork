@@ -46,30 +46,44 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
             Error = true;
             return;
         }
+
         if (!Font.ContainsGlyphs(Text))
         {
-            _fallbackFont = FontFactory.GetFont(Config.DefaultFont.Typeface.FamilyName, style.FontStyle);
-            var isFallbackFont = true;
+            var fontManager = SKFontManager.Default;
             var builder = new StringBuilder();
+            SKTypeface nowTypeFace = null;
             _texts = [];
-            foreach (var @char in Text)
+            foreach (var rune in Text.EnumerateRunes())
             {
-                if ((!isFallbackFont && Font.ContainsGlyph(@char)) ||
-                    (isFallbackFont && !Font.ContainsGlyph(@char)))
-                {
-                    _texts.Add(CreateTextWithFont(isFallbackFont, builder.ToString()));
-                    builder.Clear();
+                builder.Append(rune);
 
-                    isFallbackFont = !isFallbackFont;
+                SKTypeface typeface;
+                if (Font.ContainsGlyph(rune.Value))
+                {
+                    typeface = Font.Typeface;
+                }
+                else if (Config.DefaultFont.ContainsGlyph(rune.Value))
+                {
+                    typeface = Config.DefaultFont.Typeface;
+                }
+                else
+                {
+                    typeface = fontManager.MatchCharacter(rune.Value);
                 }
 
-                builder.Append(@char);
+                if (typeface != nowTypeFace)
+                {
+                    _texts.Add(CreateTextWithFont(typeface, builder.ToString()));
+                    builder.Clear();
+                }
             }
+
             if (builder.Length > 0)
             {
-                _texts.Add(CreateTextWithFont(isFallbackFont, builder.ToString()));
+                _texts.Add(CreateTextWithFont(nowTypeFace, builder.ToString()));
             }
         }
+
         Color = style.Color;
         ButtonColor = style.ButtonColor;
         colorChanged = style.ColorChanged;
@@ -78,27 +92,20 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
         PointX = -1;
         Width = -1;
 
-        TextsWithFont CreateTextWithFont(bool isFallbackFont, string t)
+        TextsWithFont CreateTextWithFont(SKTypeface typeface, string t)
         {
             var textsWithFont = new TextsWithFont()
             {
-                Text = t
+                Text = t,
+                Font = new SKFont(typeface, Font.Size)
             };
-            if (isFallbackFont)
-            {
-                textsWithFont.Font = Font;
-            }
-            else
-            {
-                textsWithFont.Font = _fallbackFont;
-            }
+
             textsWithFont.Width = textsWithFont.Font.GetGlyphWidths(textsWithFont.Text).Sum();
             return textsWithFont;
         }
     }
 
     public SKFont Font { get; private set; }
-    SKFont _fallbackFont;
     List<TextsWithFont> _texts;//フォントフォールバック用
     public StringStyle StringStyle { get; private set; }
     public override bool CanDivide
