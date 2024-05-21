@@ -1,0 +1,660 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+	<xsd:schema
+			xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+			xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" id="root"
+			xmlns="">
+		<xsd:element name="root" msdata:IsDataSet="true"></xsd:element>
+	</xsd:schema>
+	<resheader name="resmimetype">
+		<value>text/microsoft-resx</value>
+	</resheader>
+	<resheader name="version">
+		<value>1.3</value>
+	</resheader>
+	<resheader name="reader">
+		<value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral,
+			PublicKeyToken=b77a5c561934e089
+		</value>
+	</resheader>
+	<resheader name="writer">
+		<value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral,
+			PublicKeyToken=b77a5c561934e089
+		</value>
+	</resheader>
+	<!-- Parameters -->
+	<data name="Parameters_HelpExeDir" xml:space="preserve">
+		<value>Start Era in the given folder</value>
+	</data>
+	<data name="Parameters_HelpDebug" xml:space="preserve">
+		<value>Run Emuera in Debug Mode</value>
+	</data>
+	<data name="Parameters_HelpFilesArg" xml:space="preserve">
+		<value>Files to be analyzed</value>
+	</data>
+	<!-- MAIN WINDOW -->
+	<data name="MainWindow_FileFilter" xml:space="preserve">
+		<value>ERB file</value>
+	</data>
+	<data name="MainWindow_File" xml:space="preserve">
+		<value>File(&amp;F)</value>
+	</data>
+	<data name="MainWindow_Restart" xml:space="preserve">
+		<value>Restart(&amp;R)</value>
+	</data>
+	<data name="RestartDebugMode" xml:space="preserve">
+		<value>Restart in Debug Mode</value>
+	</data>
+	<data name="MainWindow_SaveLog" xml:space="preserve">
+		<value>Save log...(&amp;S)</value>
+	</data>
+	<data name="CopyLogToClipboard" xml:space="preserve">
+		<value>Open Clipboard(&amp;C)</value>
+	</data>
+	<data name="MainWindow_BackToTitle" xml:space="preserve">
+		<value>Return to Title Screen(&amp;T)</value>
+	</data>
+	<data name="MainWindow_ReloadAllScripts" xml:space="preserve">
+		<value>Reload Code(&amp;C)</value>
+	</data>
+	<data name="MainWindow_ReloadFolder" xml:space="preserve">
+		<value>Reload Folder(&amp;F)</value>
+	</data>
+	<data name="MainWindow_ReloadScriptFile" xml:space="preserve">
+		<value>Reload File(&amp;A)</value>
+	</data>
+	<data name="MainWindow_Exit" xml:space="preserve">
+		<value>Close(&amp;X)</value>
+	</data>
+	<data name="MainWindow_Tools" xml:space="preserve">
+		<value>Tools</value>
+	</data>
+	<data name="MainWindow_Debug" xml:space="preserve">
+		<value>Debug(&amp;D)</value>
+	</data>
+	<data name="MainWindow_OpenDebugWindow" xml:space="preserve">
+		<value>Open Debug widow</value>
+	</data>
+	<data name="UpdateDebugInfo" xml:space="preserve">
+		<value>Update Debug Info</value>
+	</data>
+	<data name="MainWindow_ToggleWidthLock" xml:space="preserve">
+		<value>Toggle Window Width Lock</value>
+	</data>
+	<data name="MainWindow_Settings" xml:space="preserve">
+		<value>Settings(&amp;C)</value>
+	</data>
+	<data name="MainWindow_Language" xml:space="preserve">
+		<value>Language(&amp;L)</value>
+	</data>
+	<data name="ContextMenu_KeyMacro" xml:space="preserve">
+		<value>Macro</value>
+	</data>
+	<data name="ContextMenu_Cut" xml:space="preserve">
+		<value>Cut</value>
+	</data>
+	<data name="ContextMenu_Copy" xml:space="preserve">
+		<value>Copy</value>
+	</data>
+	<data name="ContextMenu_Paste" xml:space="preserve">
+		<value>Paste</value>
+	</data>
+	<data name="ContextMenu_Delete" xml:space="preserve">
+		<value>Delete</value>
+	</data>
+	<data name="ContextMenu_Execute" xml:space="preserve">
+		<value>Execute</value>
+	</data>
+	<data name="ContextMenu_KeyMacroGroup" xml:space="preserve">
+		<value>Macro Group</value>
+	</data>
+	<data name="ContextMenu_KeyMacroGroup_Group" xml:space="preserve">
+		<value>Group</value>
+	</data>
+	<!-- Message Box -->
+	<data name="MsgBox_InstanceExists" xml:space="preserve">
+		<value>Another instance has been detected</value>
+	</data>
+	<data name="MsgBox_MultiInstanceInfo" xml:space="preserve">
+		<value>Enable "Allow Multiple Instances" config setting if you want to launch multiple instances at once</value>
+	</data>
+	<data name="MsgBox_FolderNotFound" xml:space="preserve">
+		<value>No Folder</value>
+	</data>
+	<data name="MsgBox_NoCsvFolder" xml:space="preserve">
+		<value>CSV folder is not found</value>
+	</data>
+	<data name="MsgBox_NoErbFolder" xml:space="preserve">
+		<value>ERB folder is not found</value>
+	</data>
+	<data name="MsgBox_FailedCreateDebugFolder" xml:space="preserve">
+		<value>Failed to create Debug folder</value>
+	</data>
+	<data name="MsgBox_InvalidArg" xml:space="preserve">
+		<value>Only .ERB files can be dragged and dropped</value>
+	</data>
+	<data name="MessageBox_ConfigError" xml:space="preserve">
+		<value>Config Error</value>
+	</data>
+	<data name="MessageBox_TooSmallFontSize" xml:space="preserve">
+		<value>Font size is too small (Less than 8).</value>
+	</data>
+	<data name="MessageBox_LineHeightLessThanFontSize" xml:space="preserve">
+		<value>The line height will be interpreted the same as the font size due to it being smaller.</value>
+	</data>
+	<data name="MessageBox_TooSmallDisplaySaveData" xml:space="preserve">
+		<value>Amount of save data to display is too small (Less than 20).</value>
+	</data>
+	<data name="MessageBox_TooLargeDisplaySaveData" xml:space="preserve">
+		<value>Amount of save data to display exceeds the limit (More than 80).</value>
+	</data>
+	<data name="MessageBox_TooSmallLogSize" xml:space="preserve">
+		<value>Log size is too small (Less than 500).</value>
+	</data>
+	<data name="MessageBox_FolderCreationFailure" xml:space="preserve">
+		<value>Folder Creation Failure</value>
+	</data>
+	<data name="MessageBox_FailedCreateSavFolder" xml:space="preserve">
+		<value>Failed to create sav folder</value>
+	</data>
+	<data name="MessageBox_SavFolderCreated" xml:space="preserve">
+		<value>sav folder has been created.
+Would you like to move the save data there?</value>
+	</data>
+	<data name="MessageBox_DataTransfer" xml:space="preserve">
+		<value>Data Transfer</value>
+	</data>
+	<data name="MessageBox_MissingSavFolder" xml:space="preserve">
+		<value>sav folder exists but couldn't be found.
+Was it deleted?</value>
+	</data>
+	<data name="MessageBox_DataTransferFailure" xml:space="preserve">
+		<value>Data Transfer Failure</value>
+	</data>
+	<data name="MessageBox_FailedMoveSavFiles" xml:space="preserve">
+		<value>Failed to move sav files</value>
+	</data>
+	<data name="MessageBox_ConfigFileError" xml:space="preserve">
+		<value>There is a problem with the config file.
+Quit Emuera?</value>
+	</data>
+	<data name="MessageBox_ReplaceFileError" xml:space="preserve">
+		<value>There is a problem with _Replace.csv file.
+Quit Emuera?</value>
+	</data>
+	<data name="MessageBox_ReplaceError" xml:space="preserve">
+		<value>_Replace.csv Error</value>
+	</data>
+	<data name="MessageBox_FailedCreateDataFolder" xml:space="preserve">
+		<value>Failed to create dat folder</value>
+	</data>
+	<data name="MessageBox_CanNotUseWhenError" xml:space="preserve">
+		<value>This function cannot be used when an error occurs</value>
+	</data>
+	<data name="MessageBox_CanNotUseWhenInitialize" xml:space="preserve">
+		<value>This function cannot be used during initialization</value>
+	</data>
+	<data name="MessageBox_InfiniteLoop" xml:space="preserve">
+		<value>There is a possibility of an infinite loop</value>
+	</data>
+	<data name="MessageBox_TooLongLoop" xml:space="preserve">
+		<value>Currently {1} line at {0} is being executed.
+Since the last input {3} milliseconds has passed and the line was executed {2} times.
+Would you like to forcibly terminate processing?</value>
+	</data>
+	<data name="MessageBox_IllegalFontError" xml:space="preserve">
+		<value>An illegal font was detected during the Emuera display processing.
+The drawing process cannot continue and will be terminated.</value>
+	</data>
+	<data name="MessageBox_IllegalFont" xml:space="preserve">
+		<value>Illegal Font</value>
+	</data>
+	<data name="MessageBox_FailedOutputLogError" xml:space="preserve">
+		<value>Log output has been failed</value>
+	</data>
+	<data name="MessageBox_FailedOutputLog" xml:space="preserve">
+		<value>Log output failed</value>
+	</data>
+	<data name="MessageBox_CanOnlyOutputToSubDirectory" xml:space="preserve">
+		<value>The log file can be saved only in the directory below the executable file</value>
+	</data>
+	<data name="MessageBox_NotAvailableDuringScript" xml:space="preserve">
+		<value>Not available during script operation</value>
+	</data>
+	<data name="MessageBox_FileNotFound" xml:space="preserve">
+		<value>File Not Found</value>
+	</data>
+	<data name="MessageBox_IsNotErb" xml:space="preserve">
+		<value>Cannot read files that aren't .ERB</value>
+	</data>
+	<data name="MessageBox_FileFormatError" xml:space="preserve">
+		<value>File Format Error</value>
+	</data>
+	<data name="MessageBox_ErrorInAnalysisMode" xml:space="preserve">
+		<value>Cannot return to the title due to an error found in Analysis mode</value>
+	</data>
+	<data name="MessageBox_CanNotReturnToTitle" xml:space="preserve">
+		<value>Cannot return to title during Analysis</value>
+	</data>
+	<data name="MessageBox_ReturnToTitleAsk" xml:space="preserve">
+		<value>Return to Title Screen?</value>
+	</data>
+	<data name="MessageBox_ReturnToTitle" xml:space="preserve">
+		<value>Return to Title</value>
+	</data>
+	<data name="MessageBox_RestartAsk" xml:space="preserve">
+		<value>Restart the Game?</value>
+	</data>
+	<data name="MessageBox_Restart" xml:space="preserve">
+		<value>Restart</value>
+	</data>
+	<data name="MessageBox_ExitAsk" xml:space="preserve">
+		<value>Exit the Game?</value>
+	</data>
+	<data name="MessageBox_Exit" xml:space="preserve">
+		<value>Exit</value>
+	</data>
+	<data name="MessageBox_ReloadErbAsk" xml:space="preserve">
+		<value>Try to Load the ERB Files?</value>
+	</data>
+	<data name="MessageBox_ReloadErb" xml:space="preserve">
+		<value>Load Files</value>
+	</data>
+	<data name="MessageBox_CanNotOpenClipboard" xml:space="preserve">
+		<value>Unable to open the clipboard because of an unexpected error</value>
+	</data>
+	<data name="MessageBox_NotAllowChangeSetting" xml:space="preserve">
+		<value>Some settings couldn't be changed due to them being fixed by _fixed.config</value>
+	</data>
+	<data name="MessageBox_UnableChangeSetting" xml:space="preserve">
+		<value>Unable To Change Setting</value>
+	</data>
+	<!-- Set Macro-->
+	<data name="KeyMacro_SetMacroGroup" xml:space="preserve">
+		<value>Set to macro group {0}</value>
+	</data>
+	<data name="KeyMacro_MacroKeyF" xml:space="preserve">
+		<value>Macro Key F{0}:</value>
+	</data>
+	<data name="KeyMacro_GMacroKeyF" xml:space="preserve">
+		<value>G{0}:Macro Key F{1}:</value>
+	</data>
+	<!-- ConfigDialog -->
+	<data name="ConfigDialog_ChangeWontTakeEffectUntilRestart" xml:space="preserve">
+		<value>※Changes won't take effect until restart</value>
+	</data>
+	<data name="ConfigDialog_Save" xml:space="preserve">
+		<value>Save</value>
+	</data>
+	<data name="ConfigDialog_SaveAndRestart" xml:space="preserve">
+		<value>Save and Restart</value>
+	</data>
+	<data name="ConfigDialog_Cancel" xml:space="preserve">
+		<value>Cancel</value>
+	</data>
+	<data name="ConfigDialog_Environment" xml:space="preserve">
+		<value>Environment</value>
+	</data>
+	<data name="ConfigDialog_Environment_UseMouse" xml:space="preserve">
+		<value>Use mouse</value>
+	</data>
+	<data name="ConfigDialog_Environment_UseMenu" xml:space="preserve">
+		<value>Show menu</value>
+	</data>
+	<data name="ConfigDialog_Environment_UseDebugCommand" xml:space="preserve">
+		<value>Allow debug commands</value>
+	</data>
+	<data name="ConfigDialog_Environment_AllowMultipleInstances" xml:space="preserve">
+		<value>Allow multiple instances</value>
+	</data>
+	<data name="ConfigDialog_Environment_UseKeyMacro" xml:space="preserve">
+		<value>Use keyboard macros</value>
+	</data>
+	<data name="ConfigDialog_Environment_AutoSave" xml:space="preserve">
+		<value>Make autosave</value>
+	</data>
+	<data name="ConfigDialog_Environment_UseSaveFolder" xml:space="preserve">
+		<value>Use sav folder for save data</value>
+	</data>
+	<data name="ConfigDialog_Environment_MaxLog" xml:space="preserve">
+		<value>Lines in history log</value>
+	</data>
+	<data name="ConfigDialog_Environment_InfiniteLoopAlertTime" xml:space="preserve">
+		<value>Milliseconds for infinite loop warn</value>
+	</data>
+	<data name="ConfigDialog_Environment_SaveDataPerPage" xml:space="preserve">
+		<value>Number of used save slots</value>
+	</data>
+	<data name="ConfigDialog_Environment_TextEditor" xml:space="preserve">
+		<value>Associated text editor</value>
+	</data>
+	<data name="ConfigDialog_Environment_Browse" xml:space="preserve">
+		<value>Choose</value>
+	</data>
+	<data name="ConfigDialog_Environment_TextEditorCommandline" xml:space="preserve">
+		<value>Command line suffix</value>
+	</data>
+	<data name="ConfigDialog_Environment_TextEditorCommandline_UserSetting" xml:space="preserve">
+		<value>User Setting</value>
+	</data>
+	<data name="ConfigDialog_Display" xml:space="preserve">
+		<value>Display</value>
+	</data>
+	<data name="ConfigDialog_Display_TextDrawingMode" xml:space="preserve">
+		<value>Drawing Interface</value>
+	</data>
+	<data name="ConfigDialog_Display_FPS" xml:space="preserve">
+		<value>Frames per second</value>
+	</data>
+	<data name="ConfigDialog_Display_PrintCPerLine" xml:space="preserve">
+		<value>Number of PRINTC per column</value>
+	</data>
+	<data name="ConfigDialog_Display_PrintCLength" xml:space="preserve">
+		<value>Number of characters in PRINTC</value>
+	</data>
+	<data name="ConfigDialog_Display_ButtonWrap" xml:space="preserve">
+		<value>Don't break lines in the middle buttons</value>
+	</data>
+	<data name="ConfigDialog_Window" xml:space="preserve">
+		<value>Window</value>
+	</data>
+	<data name="ConfigDialog_Window_WindowWidth" xml:space="preserve">
+		<value>Window Width</value>
+	</data>
+	<data name="ConfigDialog_Window_WindowHeight" xml:space="preserve">
+		<value>Last checked Window Height</value>
+	</data>
+	<data name="ConfigDialog_Window_GetWindowSize" xml:space="preserve">
+		<value>Update Window Size</value>
+	</data>
+	<data name="ConfigDialog_Window_ChangeableWindowHeight" xml:space="preserve">
+		<value>Changeable Window Height</value>
+	</data>
+	<data name="ConfigDialog_Window_WindowMaximixed" xml:space="preserve">
+		<value>Maximize window at start</value>
+	</data>
+	<data name="ConfigDialog_Window_SetWindowPos" xml:space="preserve">
+		<value>Fix starting position</value>
+	</data>
+	<data name="ConfigDialog_Window_WindowX" xml:space="preserve">
+		<value>Fixed Window Position X</value>
+	</data>
+	<data name="ConfigDialog_Window_WindowY" xml:space="preserve">
+		<value>Fixed Window Position Y</value>
+	</data>
+	<data name="ConfigDialog_Window_GetWindowPos" xml:space="preserve">
+		<value>Get present Window Position</value>
+	</data>
+	<data name="ConfigDialog_Window_LinesPerScroll" xml:space="preserve">
+		<value>Lines per Scroll</value>
+	</data>
+	<data name="ConfigDialog_Font" xml:space="preserve">
+		<value>Font</value>
+	</data>
+	<data name="ConfigDialog_Font_BackgroundColor" xml:space="preserve">
+		<value>Background Color</value>
+	</data>
+	<data name="ConfigDialog_Font_TextColor" xml:space="preserve">
+		<value>Letter Color</value>
+	</data>
+	<data name="ConfigDialog_Font_HighlightColor" xml:space="preserve">
+		<value>Selected letters</value>
+	</data>
+	<data name="ConfigDialog_Font_LogHistoryColor" xml:space="preserve">
+		<value>History Letter</value>
+	</data>
+	<data name="ConfigDialog_Font_FontName" xml:space="preserve">
+		<value>Font Name</value>
+	</data>
+	<data name="ConfigDialog_Font_FontSize" xml:space="preserve">
+		<value>Font size</value>
+	</data>
+	<data name="ConfigDialog_Font_LineHeight" xml:space="preserve">
+		<value>Distance between lines</value>
+	</data>
+	<data name="ConfigDialog_System" xml:space="preserve">
+		<value>System</value>
+	</data>
+	<data name="ConfigDialog_System_Warning" xml:space="preserve">
+		<value>※If you change system settings,
+ERB scripts may not work properly.</value>
+	</data>
+	<data name="ConfigDialog_System_IgnoreCase" xml:space="preserve">
+		<value>Ignore capitalization</value>
+	</data>
+	<data name="ConfigDialog_System_UseRename" xml:space="preserve">
+		<value>Use _Rename.csv file</value>
+	</data>
+	<data name="ConfigDialog_System_UseReplace" xml:space="preserve">
+		<value>Use _Replace.csv file</value>
+	</data>
+	<data name="ConfigDialog_System_SearchSubfolder" xml:space="preserve">
+		<value>Search files in subfolders</value>
+	</data>
+	<data name="ConfigDialog_System_SortFileNames" xml:space="preserve">
+		<value>Load files in name-order</value>
+	</data>
+	<data name="ConfigDialog_System_SystemFuncOverride" xml:space="preserve">
+		<value>Allow to override system functions</value>
+	</data>
+	<data name="ConfigDialog_System_SystemFuncOverrideWarn" xml:space="preserve">
+		<value>Warn about overridden functions</value>
+	</data>
+	<data name="ConfigDialog_System_DuplicateFuncWarn" xml:space="preserve">
+		<value>Warn when multiple non-event functions use same name</value>
+	</data>
+	<data name="ConfigDialog_System_WSIncludesFullWidth" xml:space="preserve">
+		<value>Include full-width space in whitespace</value>
+	</data>
+	<data name="ConfigDialog_System_ANSI" xml:space="preserve">
+		<value>Internal language used</value>
+	</data>
+	<data name="ConfigDialog_System2" xml:space="preserve">
+		<value>System2</value>
+	</data>
+	<data name="ConfigDialog_System2_IgnoreTripleSymbol" xml:space="preserve">
+		<value>Don't process triple symbols inside FORM</value>
+	</data>
+	<data name="ConfigDialog_System2_SaveInBinary" xml:space="preserve">
+		<value>Use binary format for save data</value>
+	</data>
+	<data name="ConfigDialog_System2_SaveInUTF8" xml:space="preserve">
+		<value>Use UTF-8 format for save data (only in non-binary)</value>
+	</data>
+	<data name="ConfigDialog_System2_NoAutoCompleteCVar" xml:space="preserve">
+		<value>Don't autocomplete arguments in character variables</value>
+	</data>
+	<data name="ConfigDialog_Compatibility" xml:space="preserve">
+		<value>Compatibility</value>
+	</data>
+	<data name="ConfigDialog_Compatibility_Warning" xml:space="preserve">
+		<value>※Many things work differently between Emuera and eramaker,
+As well as between older and newer Emuera versions,
+These options should solve compatibility problems.
+Please don't change anything if there's no issues.</value>
+	</data>
+	<data name="ConfigDialog_Compatibility_ExecuteErrorLine" xml:space="preserve">
+		<value>Execute even if lines cannot be interpreted</value>
+	</data>
+	<data name="ConfigDialog_Compatibility_NameForCallname" xml:space="preserve">
+		<value>Use NAME if CALLNAME is empty</value>
+	</data>
+	<data name="ConfigDialog_Compatibility_EramakerRAND" xml:space="preserve">
+		<value>Imitate behavior of pseudo-variable RAND from eramaker</value>
+	</data>
+	<data name="ConfigDialog_Compatibility_EramakerTIMES" xml:space="preserve">
+		<value>Calculate TIMES like in eramaker</value>
+	</data>
+	<data name="ConfigDialog_Compatibility_NoIgnoreCase" xml:space="preserve">
+		<value>Don't ignore case for functions and attributes</value>
+	</data>
+	<data name="ConfigDialog_Compatibility_CallEvent" xml:space="preserve">
+		<value>Allow CALL on event functions</value>
+	</data>
+	<data name="ConfigDialog_Compatibility_UseSPCharacters" xml:space="preserve">
+		<value>Allow SP characters</value>
+	</data>
+	<data name="ConfigDialog_Compatibility_ButtonWarp" xml:space="preserve">
+		<value>Reproduce non-button wrapping like in pre ver1739</value>
+	</data>
+	<data name="ConfigDialog_Compatibility_OmitArgs" xml:space="preserve">
+		<value>Allow omission of all arguments when calling user functions</value>
+	</data>
+	<data name="ConfigDialog_Compatibility_AutoTOSTR" xml:space="preserve">
+		<value>Add TOSTR automatically for user function arguments</value>
+	</data>
+	<data name="ConfigDialog_Compatibility_EramakerStandard" xml:space="preserve">
+		<value>Set to eramaker default</value>
+	</data>
+	<data name="ConfigDialog_Compatibility_EmueraStandard" xml:space="preserve">
+		<value>Set to Emuera default</value>
+	</data>
+	<data name="ConfigDialog_Debug" xml:space="preserve">
+		<value>Debug</value>
+	</data>
+	<data name="ConfigDialog_Debug_CompatibilityWarn" xml:space="preserve">
+		<value>Display eramaker compatibility warning</value>
+	</data>
+	<data name="ConfigDialog_Debug_LoadingReport" xml:space="preserve">
+		<value>Display files that are being loaded at start</value>
+	</data>
+	<data name="ConfigDialog_Debug_IgnoreUnusedFuncs" xml:space="preserve">
+		<value>Ignore functions that were not called</value>
+	</data>
+	<data name="ConfigDialog_Debug_FuncNotFoundWarn" xml:space="preserve">
+		<value>How to deal with calling non-existing functions</value>
+	</data>
+	<data name="ConfigDialog_Debug_UnusedFuncWarn" xml:space="preserve">
+		<value>How to deal with never called functions</value>
+	</data>
+	<data name="ConfigDialog_Debug_PlayerStandard" xml:space="preserve">
+		<value>Set for users</value>
+	</data>
+	<data name="ConfigDialog_Debug_DeveloperStandard" xml:space="preserve">
+		<value>Set for developers</value>
+	</data>
+	<data name="ConfigDialog_Debug_ReduceArgs" xml:space="preserve">
+		<value>Parse arguments when debug</value>
+	</data>
+	<data name="ConfigDialog_Debug_ReduceArgs_Never" xml:space="preserve">
+		<value>Never</value>
+	</data>
+	<data name="ConfigDialog_Debug_ReduceArgs_OnUpdate" xml:space="preserve">
+		<value>When updated</value>
+	</data>
+	<data name="ConfigDialog_Debug_ReduceArgs_Always" xml:space="preserve">
+		<value>Always</value>
+	</data>
+	<data name="ConfigDialog_Debug_WarnLevel" xml:space="preserve">
+		<value>Minimum warning level display</value>
+	</data>
+	<data name="ConfigDialog_Debug_WarnLevel_Level0" xml:space="preserve">
+		<value>0:Non-standard grammar</value>
+	</data>
+	<data name="ConfigDialog_Debug_WarnLevel_Level1" xml:space="preserve">
+		<value>1:Possible to ignore errors</value>
+	</data>
+	<data name="ConfigDialog_Debug_WarnLevel_Level2" xml:space="preserve">
+		<value>2:Critical errors</value>
+	</data>
+	<data name="ConfigDialog_Debug_WarnLevel_Level3" xml:space="preserve">
+		<value>3:Fatal error</value>
+	</data>
+	<data name="ConfigDialog_Debug_WarnSetting_Ignore" xml:space="preserve">
+		<value>Ignore them</value>
+	</data>
+	<data name="ConfigDialog_Debug_WarnSetting_TotalNumber" xml:space="preserve">
+		<value>Show only total number of them</value>
+	</data>
+	<data name="ConfigDialog_Debug_WarnSetting_OncePerFile" xml:space="preserve">
+		<value>Show only one per file</value>
+	</data>
+	<data name="ConfigDialog_Debug_WarnSetting_Always" xml:space="preserve">
+		<value>Show all</value>
+	</data>
+	<data name="ConfigDialog_System2_UseScopedVariableInstruction" xml:space="preserve">
+		<value>Enable VAR-based instructions</value>
+	</data>
+	<data name="ConfigDialog_System2_UseNewRandom" xml:space="preserve">
+		<value>Use new fast random number algorithm</value>
+	</data>
+	<data name="ConfigDialog_Title" xml:space="preserve">
+		<value>Settings</value>
+	</data>
+	<data name="ConfigDialog_Display_UseButtonFocusColor" xml:space="preserve">
+		<value>Change the background color of buttons when hovering over it</value>
+	</data>
+	<data name="MessageBox_WINAPINotSupported" xml:space="preserve">
+		<value>WINAPI mode is not supported</value>
+	</data>
+	<data name="DebugDialog_Title" xml:space="preserve">
+		<value>Emuera - DebugDialog</value>
+	</data>
+	<data name="DebugDialog_StackTrace" xml:space="preserve">
+		<value>Stack Trace</value>
+	</data>
+	<data name="DebugDialog_Console" xml:space="preserve">
+		<value>Console</value>
+	</data>
+	<data name="DebugDialog_StayOnTop" xml:space="preserve">
+		<value>Stay On Top</value>
+	</data>
+	<data name="DebugDialog_UpdateData" xml:space="preserve">
+		<value>Update data</value>
+	</data>
+	<data name="DebugDialog_Close" xml:space="preserve">
+		<value>Close</value>
+	</data>
+	<data name="DebugDialog_File_SaveWatchList" xml:space="preserve">
+		<value>Save watch list</value>
+	</data>
+	<data name="DebugDialog_File_LoadWatchList" xml:space="preserve">
+		<value>Load watch list</value>
+	</data>
+	<data name="DebugDialog_Setting" xml:space="preserve">
+		<value>Settings(&amp;C)</value>
+	</data>
+	<data name="DebugDialog_Setting_Config" xml:space="preserve">
+		<value>Config(&amp;C)</value>
+	</data>
+	<data name="DebugDialog_VariableWatch" xml:space="preserve">
+		<value>Variable Watch</value>
+	</data>
+	<data name="DebugDialog_VariableWatch_Object" xml:space="preserve">
+		<value>Object</value>
+	</data>
+	<data name="DebugDialog_VariableWatch_Value" xml:space="preserve">
+		<value>Value</value>
+	</data>
+	<data name="DebugConfigDialog_Title" xml:space="preserve">
+		<value>ConfigDialog</value>
+	</data>
+	<data name="DebugConfigDialog_Name" xml:space="preserve">
+		<value>Debug</value>
+	</data>
+	<data name="DebugConfigDialog_Warning" xml:space="preserve">
+		<value>※These options are related to debug window
+Settings apply only at start</value>
+	</data>
+	<data name="DebugConfigDialog_OpenDebugWindowOnStartup" xml:space="preserve">
+		<value>Show debug window on start</value>
+	</data>
+	<data name="DebugConfigDialog_AlwaysOnTop" xml:space="preserve">
+		<value>Always show debug window on the foreground</value>
+	</data>
+	<data name="DebugConfigDialog_WindowWidth" xml:space="preserve">
+		<value>Window width</value>
+	</data>
+	<data name="DebugConfigDialog_WindowHeight" xml:space="preserve">
+		<value>Window height</value>
+	</data>
+	<data name="DebugConfigDialog_SetWindowPos" xml:space="preserve">
+		<value>Use current window size</value>
+	</data>
+	<data name="DebugConfigDialog_WindowX" xml:space="preserve">
+		<value>Position in X</value>
+	</data>
+	<data name="DebugConfigDialog_WindowY" xml:space="preserve">
+		<value>Position in Y</value>
+	</data>
+</root>

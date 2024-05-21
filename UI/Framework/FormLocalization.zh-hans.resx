@@ -1,0 +1,634 @@
+<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="MainWindow_FileFilter" xml:space="preserve">
+		<value>ERB 文件</value>
+	</data>
+    <data name="MainWindow_File" xml:space="preserve">
+		<value>文件(&amp;F)</value>
+	</data>
+    <data name="MainWindow_Restart" xml:space="preserve">
+		<value>重启(&amp;R)</value>
+	</data>
+    <data name="MainWindow_SaveLog" xml:space="preserve">
+		<value>保存日志...(&amp;S)</value>
+	</data>
+    <data name="CopyLogToClipboard" xml:space="preserve">
+		<value>将日志复制到剪贴板(&amp;C)</value>
+	</data>
+    <data name="MainWindow_BackToTitle" xml:space="preserve">
+		<value>返回标题画面(&amp;T)</value>
+	</data>
+    <data name="MainWindow_ReloadAllScripts" xml:space="preserve">
+		<value>重新载入所有脚本(&amp;C)</value>
+	</data>
+    <data name="MainWindow_ReloadFolder" xml:space="preserve">
+		<value>重新载入文件夹(&amp;F)</value>
+	</data>
+    <data name="MainWindow_ReloadScriptFile" xml:space="preserve">
+		<value>重新载入脚本文件(&amp;A)</value>
+	</data>
+    <data name="MainWindow_Exit" xml:space="preserve">
+		<value>退出(&amp;X)</value>
+	</data>
+    <data name="MainWindow_Debug" xml:space="preserve">
+		<value>调试(&amp;D)</value>
+	</data>
+    <data name="MainWindow_OpenDebugWindow" xml:space="preserve">
+		<value>打开调试窗口</value>
+	</data>
+    <data name="UpdateDebugInfo" xml:space="preserve">
+		<value>更新调试信息</value>
+	</data>
+    <data name="ContextMenu_KeyMacro" xml:space="preserve">
+		<value>按键宏</value>
+	</data>
+    <data name="ContextMenu_Cut" xml:space="preserve">
+		<value>剪切</value>
+	</data>
+    <data name="ContextMenu_Copy" xml:space="preserve">
+		<value>复制</value>
+	</data>
+    <data name="ContextMenu_Paste" xml:space="preserve">
+		<value>粘贴</value>
+	</data>
+    <data name="ContextMenu_Delete" xml:space="preserve">
+		<value>删除</value>
+	</data>
+    <data name="ContextMenu_Execute" xml:space="preserve">
+		<value>运行</value>
+	</data>
+    <data name="ContextMenu_KeyMacroGroup" xml:space="preserve">
+		<value>按键宏组</value>
+	</data>
+    <data name="ContextMenu_KeyMacroGroup_Group" xml:space="preserve">
+		<value>组</value>
+	</data>
+    <data name="MsgBox_InstanceExists" xml:space="preserve">
+		<value>已经启动</value>
+	</data>
+    <data name="MsgBox_MultiInstanceInfo" xml:space="preserve">
+		<value>要允许同时开启多个窗口实例，请在emuera.config设置相关选项。</value>
+	</data>
+    <data name="MsgBox_FolderNotFound" xml:space="preserve">
+		<value>找不到文件夹</value>
+	</data>
+    <data name="MsgBox_NoCsvFolder" xml:space="preserve">
+		<value>找不到csv文件夹。</value>
+	</data>
+    <data name="MsgBox_NoErbFolder" xml:space="preserve">
+		<value>找不到erb文件夹。</value>
+	</data>
+    <data name="MsgBox_FailedCreateDebugFolder" xml:space="preserve">
+		<value>创建debug文件夹失败。</value>
+	</data>
+	<data name="MsgBox_InvalidArg" xml:space="preserve">
+		<value>只能对ERB文件进行拖放操作</value>
+	</data>
+    <data name="ConfigDialog_Title" xml:space="preserve">
+		<value>设置窗口</value>
+	</data>
+    <data name="ConfigDialog_ChangeWontTakeEffectUntilRestart" xml:space="preserve">
+		<value>※更改需要重启才能生效</value>
+	</data>
+    <data name="ConfigDialog_Save" xml:space="preserve">
+		<value>保存</value>
+	</data>
+    <data name="ConfigDialog_SaveAndRestart" xml:space="preserve">
+		<value>保存并重启</value>
+	</data>
+    <data name="ConfigDialog_Cancel" xml:space="preserve">
+		<value>取消</value>
+	</data>
+    <data name="ConfigDialog_Environment" xml:space="preserve">
+		<value>环境</value>
+	</data>
+    <data name="ConfigDialog_Environment_UseMouse" xml:space="preserve">
+		<value>使用鼠标</value>
+	</data>
+    <data name="ConfigDialog_Environment_UseMenu" xml:space="preserve">
+		<value>使用菜单</value>
+	</data>
+    <data name="ConfigDialog_Environment_UseDebugCommand" xml:space="preserve">
+		<value>使用调试命令</value>
+	</data>
+    <data name="ConfigDialog_Environment_AllowMultipleInstances" xml:space="preserve">
+		<value>允许运行多个窗口实例</value>
+	</data>
+    <data name="ConfigDialog_Environment_UseKeyMacro" xml:space="preserve">
+		<value>使用按键宏</value>
+	</data>
+    <data name="ConfigDialog_Environment_AutoSave" xml:space="preserve">
+		<value>开启自动保存</value>
+	</data>
+    <data name="ConfigDialog_Environment_UseSaveFolder" xml:space="preserve">
+		<value>将存档保存到sav文件夹</value>
+	</data>
+	<data name="ConfigDialog_Environment_MaxLog" xml:space="preserve">
+		<value>历史日志行数</value>
+	</data>
+    <data name="ConfigDialog_Environment_InfiniteLoopAlertTime" xml:space="preserve">
+		<value>无限循环警告超时毫秒数</value>
+	</data>
+    <data name="ConfigDialog_Environment_SaveDataPerPage" xml:space="preserve">
+		<value>每页显示的存档数</value>
+	</data>
+    <data name="ConfigDialog_Environment_TextEditor" xml:space="preserve">
+		<value>关联的文本编辑器</value>
+	</data>
+    <data name="ConfigDialog_Environment_Browse" xml:space="preserve">
+		<value>浏览</value>
+	</data>
+    <data name="ConfigDialog_Environment_TextEditorCommandline" xml:space="preserve">
+		<value>命令行参数</value>
+	</data>
+    <data name="ConfigDialog_Environment_TextEditorCommandline_UserSetting" xml:space="preserve">
+		<value>用户设置</value>
+	</data>
+    <data name="ConfigDialog_Display" xml:space="preserve">
+		<value>显示</value>
+	</data>
+    <data name="ConfigDialog_Display_TextDrawingMode" xml:space="preserve">
+		<value>渲染API</value>
+	</data>
+    <data name="ConfigDialog_Display_FPS" xml:space="preserve">
+		<value>FPS</value>
+	</data>
+    <data name="ConfigDialog_Display_PrintCPerLine" xml:space="preserve">
+		<value>PRINTC的每行项目数</value>
+	</data>
+    <data name="ConfigDialog_Display_PrintCLength" xml:space="preserve">
+		<value>PRINTC项目的文字长度</value>
+	</data>
+    <data name="ConfigDialog_Display_ButtonWrap" xml:space="preserve">
+		<value>按钮文本不产生换行</value>
+	</data>
+	<data name="ConfigDialog_Window" xml:space="preserve">
+		<value>窗口</value>
+	</data>
+    <data name="ConfigDialog_Window_WindowWidth" xml:space="preserve">
+		<value>窗口宽度</value>
+	</data>
+    <data name="ConfigDialog_Window_WindowHeight" xml:space="preserve">
+		<value>窗口高度</value>
+	</data>
+    <data name="ConfigDialog_Window_GetWindowSize" xml:space="preserve">
+		<value>获取当前窗口大小</value>
+	</data>
+    <data name="ConfigDialog_Window_ChangeableWindowHeight" xml:space="preserve">
+		<value>窗口高度可变</value>
+	</data>
+    <data name="ConfigDialog_Window_WindowMaximixed" xml:space="preserve">
+		<value>启动时窗口最大化</value>
+	</data>
+    <data name="ConfigDialog_Window_SetWindowPos" xml:space="preserve">
+		<value>固定启动时的窗口位置</value>
+	</data>
+    <data name="ConfigDialog_Window_WindowX" xml:space="preserve">
+		<value>窗口位置X</value>
+	</data>
+    <data name="ConfigDialog_Window_WindowY" xml:space="preserve">
+		<value>窗口位置Y</value>
+	</data>
+    <data name="ConfigDialog_Window_GetWindowPos" xml:space="preserve">
+		<value>获取当前窗口位置</value>
+	</data>
+    <data name="ConfigDialog_Window_LinesPerScroll" xml:space="preserve">
+		<value>滚动行数</value>
+	</data>
+    <data name="ConfigDialog_Font" xml:space="preserve">
+		<value>字体</value>
+	</data>
+    <data name="ConfigDialog_Font_BackgroundColor" xml:space="preserve">
+		<value>背景颜色</value>
+	</data>
+    <data name="ConfigDialog_Font_TextColor" xml:space="preserve">
+		<value>文本颜色</value>
+	</data>
+    <data name="ConfigDialog_Font_HighlightColor" xml:space="preserve">
+		<value>选中文本颜色</value>
+	</data>
+    <data name="ConfigDialog_Font_LogHistoryColor" xml:space="preserve">
+		<value>历史日志颜色</value>
+	</data>
+    <data name="ConfigDialog_Font_FontName" xml:space="preserve">
+		<value>字体名称</value>
+	</data>
+	<data name="ConfigDialog_Font_FontSize" xml:space="preserve">
+		<value>字体大小</value>
+	</data>
+    <data name="ConfigDialog_Font_LineHeight" xml:space="preserve">
+		<value>一行的高度</value>
+	</data>
+    <data name="ConfigDialog_System" xml:space="preserve">
+		<value>系统</value>
+	</data>
+    <data name="ConfigDialog_System_Warning" xml:space="preserve">
+		<value>※若更改系统标签页的设置项目，
+可能导致ERB脚本无法正常运行</value>
+	</data>
+    <data name="ConfigDialog_System_IgnoreCase" xml:space="preserve">
+		<value>无视文字的大小写</value>
+	</data>
+    <data name="ConfigDialog_System_UseRename" xml:space="preserve">
+		<value>使用_Rename.csv</value>
+	</data>
+    <data name="ConfigDialog_System_UseReplace" xml:space="preserve">
+		<value>使用_Replace.csv</value>
+	</data>
+    <data name="ConfigDialog_System_SearchSubfolder" xml:space="preserve">
+		<value>检索子文件夹</value>
+	</data>
+    <data name="ConfigDialog_System_SortFileNames" xml:space="preserve">
+		<value>读取顺序以文件名排序</value>
+	</data>
+    <data name="ConfigDialog_System_SystemFuncOverride" xml:space="preserve">
+		<value>允许覆盖系统函数</value>
+	</data>
+    <data name="ConfigDialog_System_SystemFuncOverrideWarn" xml:space="preserve">
+		<value>系统函数被覆盖时发出警告</value>
+	</data>
+    <data name="ConfigDialog_System_DuplicateFuncWarn" xml:space="preserve">
+		<value>定义了多个同名的非事件函数时发出警告</value>
+	</data>
+    <data name="ConfigDialog_System_WSIncludesFullWidth" xml:space="preserve">
+		<value>全角空格视为普通空格</value>
+	</data>
+    <data name="ConfigDialog_System_ANSI" xml:space="preserve">
+		<value>程序的非Unicode的言</value>
+	</data>
+    <data name="ConfigDialog_System2" xml:space="preserve">
+		<value>系统2</value>
+	</data>
+    <data name="ConfigDialog_System2_IgnoreTripleSymbol" xml:space="preserve">
+		<value>不展开FORM中的三联符号</value>
+	</data>
+    <data name="ConfigDialog_System2_SaveInBinary" xml:space="preserve">
+		<value>存档以二进制的形式保存</value>
+	</data>
+    <data name="ConfigDialog_System2_SaveInUTF8" xml:space="preserve">
+		<value>存档以UTF-8的形式保存(仅非二进制时)</value>
+	</data>
+	<data name="ConfigDialog_System2_NoAutoCompleteCVar" xml:space="preserve">
+		<value>不自动补完角色变量的参数</value>
+	</data>
+	<data name="ConfigDialog_Compatibility" xml:space="preserve">
+		<value>兼容性</value>
+	</data>
+    <data name="ConfigDialog_Compatibility_Warning" xml:space="preserve">
+		<value>※本页面是为了解决eramaker与Emuera的运行表现不同、
+Emuera的历史版本有效的内容变得无效等等现象而设置的。
+若默认设置运行时没有问题请不要更改这里的设置。</value>
+	</data>
+    <data name="ConfigDialog_Compatibility_ExecuteErrorLine" xml:space="preserve">
+		<value>执行无法解析的行</value>
+	</data>
+    <data name="ConfigDialog_Compatibility_NameForCallname" xml:space="preserve">
+		<value>CALLNAME为空时以NAME的值代入</value>
+	</data>
+    <data name="ConfigDialog_Compatibility_EramakerRAND" xml:space="preserve">
+		<value>使虚拟变量RAND的表现与eramaker一致</value>
+	</data>
+    <data name="ConfigDialog_Compatibility_EramakerTIMES" xml:space="preserve">
+		<value>使TIMES的计算与eramaker一致</value>
+	</data>
+    <data name="ConfigDialog_Compatibility_NoIgnoreCase" xml:space="preserve">
+		<value>函数以及参数的大小写敏感</value>
+	</data>
+    <data name="ConfigDialog_Compatibility_CallEvent" xml:space="preserve">
+		<value>允许调用事件函数</value>
+	</data>
+    <data name="ConfigDialog_Compatibility_UseSPCharacters" xml:space="preserve">
+		<value>使用SP角色</value>
+	</data>
+    <data name="ConfigDialog_Compatibility_ButtonWarp" xml:space="preserve">
+		<value>回调至ver1739以前版本的非按钮换行规则</value>
+	</data>
+    <data name="ConfigDialog_Compatibility_OmitArgs" xml:space="preserve">
+		<value>允许省略用户定义函数的所有参数</value>
+	</data>
+    <data name="ConfigDialog_Compatibility_AutoTOSTR" xml:space="preserve">
+		<value>对用户定义函数的参数自动补充TOSTR命令</value>
+	</data>
+    <data name="ConfigDialog_Compatibility_EramakerStandard" xml:space="preserve">
+		<value>更换为eramaker的特性</value>
+	</data>
+    <data name="ConfigDialog_Compatibility_EmueraStandard" xml:space="preserve">
+		<value>更换为Emuera标准特性</value>
+	</data>
+    <data name="ConfigDialog_Debug" xml:space="preserve">
+		<value>解析调试</value>
+	</data>
+    <data name="ConfigDialog_Debug_CompatibilityWarn" xml:space="preserve">
+		<value>与eramaker不兼容时发出警告</value>
+	</data>
+    <data name="ConfigDialog_Debug_LoadingReport" xml:space="preserve">
+		<value>读取脚本时显示报告</value>
+	</data>
+    <data name="ConfigDialog_Debug_IgnoreUnusedFuncs" xml:space="preserve">
+		<value>忽略没有被调用的函数</value>
+	</data>
+    <data name="ConfigDialog_Debug_FuncNotFoundWarn" xml:space="preserve">
+		<value>找不到函数时的警告处理</value>
+	</data>
+    <data name="ConfigDialog_Debug_UnusedFuncWarn" xml:space="preserve">
+		<value>函数没有被调用时的警告处理</value>
+	</data>
+    <data name="ConfigDialog_Debug_PlayerStandard" xml:space="preserve">
+		<value>面向游玩者的标准设置</value>
+	</data>
+    <data name="ConfigDialog_Debug_DeveloperStandard" xml:space="preserve">
+		<value>面向开发者的标准设置</value>
+	</data>
+    <data name="ConfigDialog_Debug_ReduceArgs" xml:space="preserve">
+		<value>读取时解析参数</value>
+	</data>
+    <data name="ConfigDialog_Debug_ReduceArgs_Never" xml:space="preserve">
+		<value>从不</value>
+	</data>
+    <data name="ConfigDialog_Debug_ReduceArgs_OnUpdate" xml:space="preserve">
+		<value>仅更新时进行</value>
+	</data>
+    <data name="ConfigDialog_Debug_ReduceArgs_Always" xml:space="preserve">
+		<value>总是进行</value>
+	</data>
+    <data name="ConfigDialog_Debug_WarnLevel" xml:space="preserve">
+		<value>显示的最低警告等级</value>
+	</data>
+    <data name="ConfigDialog_Debug_WarnLevel_Level0" xml:space="preserve">
+		<value>0:非标准的语法</value>
+	</data>
+    <data name="ConfigDialog_Debug_WarnLevel_Level1" xml:space="preserve">
+		<value>1:可以无视的错误</value>
+	</data>
+    <data name="ConfigDialog_Debug_WarnLevel_Level2" xml:space="preserve">
+		<value>2:无法执行的错误</value>
+	</data>
+    <data name="ConfigDialog_Debug_WarnLevel_Level3" xml:space="preserve">
+		<value>3:致命错误</value>
+	</data>
+    <data name="ConfigDialog_Debug_WarnSetting_Ignore" xml:space="preserve">
+		<value>无视</value>
+	</data>
+    <data name="ConfigDialog_Debug_WarnSetting_TotalNumber" xml:space="preserve">
+		<value>只显示总数</value>
+	</data>
+    <data name="ConfigDialog_Debug_WarnSetting_OncePerFile" xml:space="preserve">
+		<value>每个文件仅显示一次</value>
+	</data>
+    <data name="ConfigDialog_Debug_WarnSetting_Always" xml:space="preserve">
+		<value>总是显示</value>
+	</data>
+    <data name="DebugConfigDialog_Title" xml:space="preserve">
+		<value>调试设置窗口</value>
+	</data>
+    <data name="DebugConfigDialog_Name" xml:space="preserve">
+		<value>调试</value>
+	</data>
+    <data name="DebugConfigDialog_Warning" xml:space="preserve">
+		<value>※调试相关选项仅在命令行参数加入-Debug
+时有效</value>
+	</data>
+    <data name="DebugConfigDialog_OpenDebugWindowOnStartup" xml:space="preserve">
+		<value>启动时打开调试窗口</value>
+	</data>
+    <data name="DebugConfigDialog_AlwaysOnTop" xml:space="preserve">
+		<value>调试时窗口总是在最前面</value>
+	</data>
+    <data name="DebugConfigDialog_WindowWidth" xml:space="preserve">
+		<value>调试窗口宽度</value>
+	</data>
+    <data name="DebugConfigDialog_WindowHeight" xml:space="preserve">
+		<value>调试窗口高度</value>
+	</data>
+    <data name="DebugConfigDialog_SetWindowPos" xml:space="preserve">
+		<value>调试窗口在固定位置开启</value>
+	</data>
+    <data name="DebugConfigDialog_WindowX" xml:space="preserve">
+		<value>调试窗口位置X</value>
+	</data>
+    <data name="DebugConfigDialog_WindowY" xml:space="preserve">
+		<value>调试窗口位置Y</value>
+	</data>
+    <data name="DebugDialog_Title" xml:space="preserve">
+		<value>Emuera - 调试窗口</value>
+	</data>
+    <data name="DebugDialog_StackTrace" xml:space="preserve">
+		<value>调用栈跟踪</value>
+	</data>
+    <data name="DebugDialog_Console" xml:space="preserve">
+		<value>控制台</value>
+	</data>
+    <data name="DebugDialog_StayOnTop" xml:space="preserve">
+		<value>总在最前面</value>
+	</data>
+    <data name="DebugDialog_UpdateData" xml:space="preserve">
+		<value>更新数据</value>
+	</data>
+    <data name="DebugDialog_Close" xml:space="preserve">
+		<value>关闭</value>
+	</data>
+    <data name="DebugDialog_File_SaveWatchList" xml:space="preserve">
+		<value>保存监视列表</value>
+	</data>
+    <data name="DebugDialog_File_LoadWatchList" xml:space="preserve">
+		<value>读取监视列表</value>
+	</data>
+    <data name="DebugDialog_Setting" xml:space="preserve">
+		<value>选项(&amp;C)</value>
+	</data>
+    <data name="DebugDialog_Setting_Config" xml:space="preserve">
+		<value>设置(&amp;C)</value>
+	</data>
+    <data name="DebugDialog_VariableWatch" xml:space="preserve">
+		<value>变量监视</value>
+	</data>
+    <data name="DebugDialog_VariableWatch_Object" xml:space="preserve">
+		<value>对象</value>
+	</data>
+    <data name="DebugDialog_VariableWatch_Value" xml:space="preserve">
+		<value>值</value>
+	</data>
+    <data name="MessageBox_ConfigError" xml:space="preserve">
+		<value>设定错误</value>
+	</data>
+    <data name="MessageBox_TooSmallFontSize" xml:space="preserve">
+		<value>字体大小过小(下限为8)</value>
+	</data>
+    <data name="MessageBox_LineHeightLessThanFontSize" xml:space="preserve">
+		<value>由于行高小于字体大小，将其视为与字体大小等同</value>
+	</data>
+    <data name="MessageBox_TooSmallDisplaySaveData" xml:space="preserve">
+		<value>显示的存档数据数量过小(下限为20)</value>
+	</data>
+    <data name="MessageBox_TooLargeDisplaySaveData" xml:space="preserve">
+		<value>显示的存档数据数量过大(上限为80)</value>
+	</data>
+    <data name="MessageBox_TooSmallLogSize" xml:space="preserve">
+		<value>日志显示行数过少(下限为500)</value>
+	</data>
+    <data name="MessageBox_FolderCreationFailure" xml:space="preserve">
+		<value>创建文件夹失败</value>
+	</data>
+    <data name="MessageBox_FailedCreateSavFolder" xml:space="preserve">
+		<value>创建sav文件夹失败</value>
+	</data>
+    <data name="MessageBox_SavFolderCreated" xml:space="preserve">
+		<value>已创建sav文件夹
+讲现在的数据移动到sav文件夹中吗？</value>
+	</data>
+    <data name="MessageBox_DataTransfer" xml:space="preserve">
+		<value>数据移动</value>
+	</data>
+    <data name="MessageBox_MissingSavFolder" xml:space="preserve">
+		<value>创建了sav文件夹但没有找到
+将其删除吗？</value>
+	</data>
+    <data name="MessageBox_DataTransferFailure" xml:space="preserve">
+		<value>数据移动失败</value>
+	</data>
+    <data name="MessageBox_FailedMoveSavFiles" xml:space="preserve">
+		<value>sav文件移动失败</value>
+	</data>
+	<data name="MessageBox_ConfigFileError" xml:space="preserve">
+		<value>配置文件异常
+终止Emuera吗？</value>
+	</data>
+    <data name="MessageBox_ReplaceFileError" xml:space="preserve">
+		<value>_Replace.csv异常
+终止Emuera吗？</value>
+	</data>
+    <data name="MessageBox_ReplaceError" xml:space="preserve">
+		<value>_Replace.csv错误</value>
+	</data>
+    <data name="MessageBox_InfiniteLoop" xml:space="preserve">
+		<value>可能发生了无限循环</value>
+	</data>
+    <data name="MessageBox_TooLongLoop" xml:space="preserve">
+		<value>目前正在执行{0}的第{1}行。
+距离最后的输入经过了{3}毫秒并执行了{2}行。
+中断处理并强制结束吗？</value>
+	</data>
+	<data name="MessageBox_IllegalFontError" xml:space="preserve">
+		<value>Emuera的显示处理时发现不合适的字体
+无法继续进行渲染处理而强制终止</value>
+	</data>
+    <data name="MessageBox_IllegalFont" xml:space="preserve">
+		<value>字体错误</value>
+	</data>
+    <data name="MessageBox_FailedOutputLogError" xml:space="preserve">
+		<value>日志输出失败</value>
+	</data>
+    <data name="MessageBox_FailedOutputLog" xml:space="preserve">
+		<value>日志输出失败</value>
+	</data>
+	<data name="MessageBox_CanOnlyOutputToSubDirectory" xml:space="preserve">
+		<value>日志文件只能保存在应用程序文件的同级或子级文件夹</value>
+	</data>
+    <data name="MessageBox_NotAvailableDuringScript" xml:space="preserve">
+		<value>无法在脚本运行时使用</value>
+	</data>
+    <data name="MessageBox_FileNotFound" xml:space="preserve">
+		<value>找不到文件</value>
+	</data>
+    <data name="MessageBox_IsNotErb" xml:space="preserve">
+		<value>不能读取ERB文件以外的文件</value>
+	</data>
+    <data name="MessageBox_FileFormatError" xml:space="preserve">
+		<value>文件格式错误</value>
+	</data>
+    <data name="MessageBox_ErrorInAnalysisMode" xml:space="preserve">
+		<value>由于发生脚本解析错误，不能返回标题画面</value>
+	</data>
+    <data name="MessageBox_CanNotReturnToTitle" xml:space="preserve">
+		<value>脚本解析模式中不能返回标题画面</value>
+	</data>
+    <data name="MessageBox_ReturnToTitleAsk" xml:space="preserve">
+		<value>返回标题画面吗？</value>
+	</data>
+    <data name="MessageBox_ReturnToTitle" xml:space="preserve">
+		<value>返回标题画面</value>
+	</data>
+    <data name="MessageBox_RestartAsk" xml:space="preserve">
+		<value>重启程序吗</value>
+	</data>
+    <data name="MessageBox_Restart" xml:space="preserve">
+		<value>重启</value>
+	</data>
+    <data name="MessageBox_ExitAsk" xml:space="preserve">
+		<value>退出游戏吗</value>
+	</data>
+    <data name="MessageBox_Exit" xml:space="preserve">
+		<value>退出</value>
+	</data>
+    <data name="MessageBox_ReloadErbAsk" xml:space="preserve">
+		<value>重新读取ERB文件吗</value>
+	</data>
+    <data name="MessageBox_ReloadErb" xml:space="preserve">
+		<value>重新读取ERB文件</value>
+	</data>
+    <data name="MessageBox_CanNotOpenClipboard" xml:space="preserve">
+		<value>由于发生了意料之外的错误，无法打开剪贴板窗口</value>
+	</data>
+    <data name="MessageBox_NotAllowChangeSetting" xml:space="preserve">
+		<value>一些设定由于_fixed.config的更改限制而不能更改</value>
+	</data>
+    <data name="MessageBox_UnableChangeSetting" xml:space="preserve">
+		<value>无法更改设定</value>
+	</data>
+    <data name="ConfigDialog_System2_UseNewRandom" xml:space="preserve">
+		<value>使用新的快速随机数算法</value>
+	</data>
+    <data name="ConfigDialog_System2_UseScopedVariableInstruction" xml:space="preserve">
+		<value>提供基于 VAR 的说明</value>
+	</data>
+    <data name="MessageBox_WINAPINotSupported" xml:space="preserve">
+		<value>不支持 WINAPI 模式</value>
+	</data>
+    <data name="MessageBox_FailedCreateDataFolder" xml:space="preserve">
+		<value>创建dat文件夹失败</value>
+	</data>
+    <data name="MessageBox_CanNotUseWhenError" xml:space="preserve">
+		<value>发生错误时不能使用此功能</value>
+	</data>
+    <data name="MessageBox_CanNotUseWhenInitialize" xml:space="preserve">
+		<value>初始化时不能使用此功能</value>
+	</data>
+    <data name="MainWindow_Tools" xml:space="preserve">
+		<value>工具</value>
+	</data>
+    <data name="MainWindow_ToggleWidthLock" xml:space="preserve">
+		<value>更改窗口宽度锁</value>
+	</data>
+    <data name="MainWindow_Settings" xml:space="preserve">
+		<value>设置 (&amp;C)</value>
+	</data>
+    <data name="KeyMacro_GMacroKeyF" xml:space="preserve">
+		<value>G{0}:宏快捷键F{1}:</value>
+	</data>
+    <data name="KeyMacro_MacroKeyF" xml:space="preserve">
+		<value>宏快捷键F{0}:</value>
+	</data>
+    <data name="KeyMacro_SetMacroGroup" xml:space="preserve">
+		<value>设置为按键宏组{0}</value>
+	</data>
+    <data name="MainWindow_Language" xml:space="preserve">
+		<value>语言 (&amp;L)</value>
+	</data>
+	<data name="RestartDebugMode" xml:space="preserve">
+		<value>在调试模式下重新启动。</value>
+	</data>
+	<data name="ConfigDialog_Display_UseButtonFocusColor" xml:space="preserve">
+		<value>当光标在按钮上时，更改按钮的背景颜色。</value>
+	</data>
+</root>

@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.GameView;
 
@@ -149,7 +150,7 @@ internal sealed partial class EmueraConsole : IDisposable
         }
         if (errorStr != null)
         {
-            Dialog.Show("フォント不適正", "Emueraの表示処理中に不適正なフォントを検出しました\n描画処理を続行できないため強制終了します");
+            Dialog.Show(LocalizationManager.MsgBox.IllegalFont, LocalizationManager.MsgBox.IllegalFontError);
             this.Quit();
             return;
         }
@@ -626,7 +627,7 @@ internal sealed partial class EmueraConsole : IDisposable
         }
         catch (Exception)
         {
-            Dialog.Show("ログ出力失敗", "ログの出力に失敗しました");
+            Dialog.Show(LocalizationManager.MsgBox.FailedOutputLog, LocalizationManager.MsgBox.FailedOutputLogError);
             return false;
         }
         return true;
@@ -640,7 +641,7 @@ internal sealed partial class EmueraConsole : IDisposable
 
         if (!filename.StartsWith(Program.ExeDir, StringComparison.OrdinalIgnoreCase))
         {
-            Dialog.Show("ログ出力失敗", "ログファイルは実行ファイル以下のディレクトリにのみ保存できます");
+            Dialog.Show(LocalizationManager.MsgBox.FailedOutputLog, LocalizationManager.MsgBox.CanOnlyOutputToSubDirectory);
             return false;
         }
 

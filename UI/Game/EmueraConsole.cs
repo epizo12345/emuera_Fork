@@ -20,6 +20,7 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.GameView;
 
@@ -1861,12 +1862,12 @@ internal sealed partial class EmueraConsole : IDisposable
     {
         if (state == ConsoleState.Error)
         {
-            Dialog.Show("エラー発生時はこの機能は使えません");
+            Dialog.Show(LocalizationManager.MsgBox.CanNotUseWhenError);
             return;
         }
         if (state == ConsoleState.Initializing)
         {
-            Dialog.Show("初期化中はこの機能は使えません");
+            Dialog.Show(LocalizationManager.MsgBox.CanNotUseWhenInitialize);
             return;
         }
         bool notRedraw = false;
@@ -1912,12 +1913,12 @@ internal sealed partial class EmueraConsole : IDisposable
     {
         if (state == ConsoleState.Error)
         {
-            Dialog.Show("エラー発生時はこの機能は使えません");
+            Dialog.Show(LocalizationManager.MsgBox.CanNotUseWhenError);
             return;
         }
         if (state == ConsoleState.Initializing)
         {
-            Dialog.Show("初期化中はこの機能は使えません");
+            Dialog.Show(LocalizationManager.MsgBox.CanNotUseWhenInitialize);
             return;
         }
         bool notRedraw = false;
@@ -1950,12 +1951,12 @@ internal sealed partial class EmueraConsole : IDisposable
     {
         if (state == ConsoleState.Error)
         {
-            Dialog.Show("エラー発生時はこの機能は使えません");
+            Dialog.Show(LocalizationManager.MsgBox.CanNotUseWhenError);
             return;
         }
         if (state == ConsoleState.Initializing)
         {
-            Dialog.Show("初期化中はこの機能は使えません");
+            Dialog.Show(LocalizationManager.MsgBox.CanNotUseWhenInitialize);
             return;
         }
         if (genericTimer.Enabled)

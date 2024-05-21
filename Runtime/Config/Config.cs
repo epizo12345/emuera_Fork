@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Text;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.Runtime.Config;
 
@@ -137,32 +138,32 @@ internal static class Config
 
         if (FontSize < 8)
         {
-            Dialog.Show("設定のエラー", "フォントサイズが小さすぎます(8が下限)");
+            Dialog.Show(LocalizationManager.MsgBox.ConfigError, LocalizationManager.MsgBox.TooSmallFontSize);
             FontSize = 8;
         }
         if (LineHeight < FontSize)
         {
-            Dialog.Show("設定のエラー", "行の高さがフォントサイズより小さいため、フォントサイズと同じ高さと解釈されます");
+            Dialog.Show(LocalizationManager.MsgBox.ConfigError, LocalizationManager.MsgBox.LineHeightLessThanFontSize);
             LineHeight = FontSize;
         }
         if (SaveDataNos < 20)
         {
-            Dialog.Show("設定のエラー", "表示するセーブデータ数が少なすぎます(20が下限)");
+            Dialog.Show(LocalizationManager.MsgBox.ConfigError, LocalizationManager.MsgBox.TooSmallDisplaySaveData);
             SaveDataNos = 20;
         }
         if (SaveDataNos > 80)
         {
-            Dialog.Show("設定のエラー", "表示するセーブデータ数が多すぎます(80が上限)");
+            Dialog.Show(LocalizationManager.MsgBox.ConfigError, LocalizationManager.MsgBox.TooLargeDisplaySaveData);
             SaveDataNos = 80;
         }
         if (MaxLog < 500)
         {
-            Dialog.Show("設定のエラー", "ログ表示行数が少なすぎます(500が下限)");
+            Dialog.Show(LocalizationManager.MsgBox.ConfigError, LocalizationManager.MsgBox.TooSmallLogSize);
             MaxLog = 500;
         }
         if (TextDrawingMode == TextDrawingMode.WINAPI)
         {
-            Dialog.Show("設定のエラー", "WINAPIモードはサポートされていません");
+            Dialog.Show(LocalizationManager.MsgBox.ConfigError, LocalizationManager.MsgBox.WINAPINotSupported);
             TextDrawingMode = TextDrawingMode.TEXTRENDERER;
         }
 
@@ -213,20 +214,20 @@ internal static class Config
         catch
         {
 
-            Dialog.Show("フォルダ作成失敗", "savフォルダの作成に失敗しました");
+            Dialog.Show(LocalizationManager.MsgBox.FolderCreationFailure, LocalizationManager.MsgBox.FailedCreateSavFolder);
             return;
         }
         bool existGlobal = File.Exists(Program.ExeDir + "global.sav");
         string[] savFiles = Directory.GetFiles(Program.ExeDir, "save*.sav", SearchOption.TopDirectoryOnly);
         if (!existGlobal && savFiles.Length == 0)
             return;
-        var result = Dialog.ShowPrompt("データ移動", "savフォルダを作成しました\n現在のデータをsavフォルダ内に移動しますか？");
+        var result = Dialog.ShowPrompt(LocalizationManager.MsgBox.DataTransfer, LocalizationManager.MsgBox.SavFolderCreated);
         if (result == false)
             return;
         //ダイアログが開いている間にフォルダを消してしまうような邪悪なユーザーがいるかもしれない
         if (!Directory.Exists(SavDir))
         {
-            Dialog.Show("フォルダ作成失敗", "作成したsavフォルダが見当たりません");
+            Dialog.Show(LocalizationManager.MsgBox.DataTransferFailure, LocalizationManager.MsgBox.MissingSavFolder);
             return;
         }
         //ダイアログが開いている間にファイルを変更するような邪悪なユーザーがいるかもしれない
@@ -240,7 +241,7 @@ internal static class Config
         }
         catch
         {
-            Dialog.Show("移動失敗", "savファイルの移動に失敗しました");
+            Dialog.Show(LocalizationManager.MsgBox.DataTransferFailure, LocalizationManager.MsgBox.FailedMoveSavFiles);
         }
     }
     //先にSetConfigを呼ぶこと

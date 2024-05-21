@@ -1,6 +1,7 @@
 ﻿using MinorShift.Emuera.Runtime.Config;
 using System;
 using System.Windows.Forms;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.Forms;
 
@@ -15,6 +16,7 @@ internal sealed partial class DebugConfigDialog : Form
         numericUpDownDWH.Maximum = 10000;
         numericUpDownDWX.Maximum = 10000;
         numericUpDownDWY.Maximum = 10000;
+        Localize();
     }
 
     private void buttonSave_Click(object sender, EventArgs e)
@@ -117,6 +119,25 @@ internal sealed partial class DebugConfigDialog : Form
                 numericUpDownDWY.Minimum = dd.Location.Y;
             numericUpDownDWY.Value = dd.Location.Y;
         }
+    }
+
+    private void Localize()
+    {
+        this.Text = LocalizationManager.DebugConfigDialog.Title;
+        this.tabPageDebug3.Text = LocalizationManager.DebugConfigDialog.Name;
+        this.label29.Text = LocalizationManager.DebugConfigDialog.Warning;
+        this.checkBoxShowDW.Text = LocalizationManager.DebugConfigDialog.OpenDebugWindowOnStartup;
+        this.checkBoxDWTM.Text = LocalizationManager.DebugConfigDialog.AlwaysOnTop;
+        this.label28.Text = LocalizationManager.DebugConfigDialog.WindowWidth;
+        this.label27.Text = LocalizationManager.DebugConfigDialog.WindowHeight;
+        this.button6.Text = LocalizationManager.ConfigDialog.Window_GetWindowSize;
+        this.checkBoxSetDWPos.Text = LocalizationManager.DebugConfigDialog.SetWindowPos;
+        this.label26.Text = LocalizationManager.DebugConfigDialog.WindowX;
+        this.label25.Text = LocalizationManager.DebugConfigDialog.WindowY;
+        this.button5.Text = LocalizationManager.ConfigDialog.Window_GetWindowPos;
+        this.label16.Text = LocalizationManager.ConfigDialog.ChangeWontTakeEffectUntilRestart;
+        this.buttonSave.Text = LocalizationManager.ConfigDialog.Save;
+        this.buttonCancel.Text = LocalizationManager.ConfigDialog.Cancel;
     }
 
 

@@ -9,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime;
 using System.Windows.Forms;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera;
 #nullable enable
@@ -51,20 +52,20 @@ static partial class Program
 
         var exeDirOption = new Option<string>(
             name: "--ExeDir",
-            description: "与えられたフォルダのEraを起動します"
+            description: LocalizationManager.Parameters.HelpExeDir
         );
         rootCommand.AddOption(exeDirOption);
 
         var debugModeOption = new Option<bool>(
             name: "-Debug",
-            description: "デバッグモード"
+            description: LocalizationManager.Parameters.HelpDebug
         );
         debugModeOption.AddAlias("-debug");
         debugModeOption.AddAlias("-DEBUG");
         rootCommand.AddOption(debugModeOption);
 
         var filesArg = new Argument<string[]>(
-            "解析するファイル"
+            LocalizationManager.Parameters.HelpfilesArg
         )
         { Arity = ArgumentArity.ZeroOrMore };
         rootCommand.AddArgument(filesArg);
@@ -99,17 +100,17 @@ static partial class Program
         //二重起動の禁止かつ二重起動
         if ((!Config.AllowMultipleInstances) && AssemblyData.PrevInstance())
         {
-            Dialog.Show("既に起動しています", "多重起動を許可する場合、emuera.configを書き換えて下さい");
+            Dialog.Show(LocalizationManager.MsgBox.InstanceExists, LocalizationManager.MsgBox.MultiInstanceInfo);
             return;
         }
         if (!Directory.Exists(CsvDir))
         {
-            Dialog.Show("csvフォルダが見つかりません", CsvDir);
+            Dialog.Show(LocalizationManager.MsgBox.NoCsvFolder, CsvDir);
             return;
         }
         if (!Directory.Exists(ErbDir))
         {
-            Dialog.Show("erbフォルダが見つかりません", ErbDir);
+            Dialog.Show(LocalizationManager.MsgBox.NoErbFolder, ErbDir);
             return;
         }
 
@@ -126,7 +127,7 @@ static partial class Program
                 }
                 catch
                 {
-                    Dialog.Show("debugフォルダの作成に失敗しました", DebugDir);
+                    Dialog.Show(LocalizationManager.MsgBox.FailedCreateDebugFolder, DebugDir);
                     return;
                 }
             }
@@ -137,7 +138,7 @@ static partial class Program
             {
                 if (!Path.Exists(path))
                 {
-                    Dialog.Show("与えられたファイル・フォルダは存在しません");
+                    Dialog.Show(LocalizationManager.MsgBox.FolderNotFound);
                     return;
                 }
                 if (File.GetAttributes(path).HasFlag(FileAttributes.Directory))
@@ -151,7 +152,7 @@ static partial class Program
                 {
                     if (!Path.GetExtension(path).Equals(".ERB", StringComparison.OrdinalIgnoreCase))
                     {
-                        Dialog.Show("ドロップ可能なファイルはERBファイルのみです");
+                        Dialog.Show(LocalizationManager.MsgBox.InvalidArg);
                         return;
                     }
                     AnalysisFiles.Add(path);
