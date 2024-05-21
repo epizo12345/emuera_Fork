@@ -38,7 +38,7 @@ namespace MinorShift.Emuera.UI.Game;
 /// <summary>
 /// EmueraConsoleのなんちゃってHtml解決用クラス
 /// </summary>
-internal static class HtmlManager
+internal static partial class HtmlManager
 {
     static HtmlManager()
     {
@@ -112,6 +112,7 @@ internal static class HtmlManager
         public bool FlagButton;//<button></button>によるボタン化の予約
 
         public DivState DivState;
+        public bool OpenDiv;
         public bool CloseDiv;
 
         public StringStyle GetSS()
@@ -289,15 +290,15 @@ internal static class HtmlManager
     /// <returns></returns>
     public static ConsoleDisplayLine[] Html2DisplayLine(string str, StringMeasure sm, EmueraConsole console, bool lineEnd)
     {
-        List<AConsoleDisplayNode> cssList = [];
-        List<ConsoleButtonString> buttonList = [];
-        var divList = new List<ConsoleButtonString>();
+        var cssList = new List<AConsoleDisplayNode>();
+        var buttonList = new List<ConsoleButtonString>();
+        var returnButtonList = new List<ConsoleButtonString>();
 
-        CharStream st = new(str);
+        var st = new CharStream(str);
         int found;
-        bool hasComment = str.Contains("<!--", StringComparison.Ordinal);
-        bool hasReturn = str.Contains('\n', StringComparison.Ordinal);
-        HtmlAnalzeState state = new();
+        var hasComment = str.Contains("<!--", StringComparison.Ordinal);
+        var hasReturn = str.Contains('\n', StringComparison.Ordinal);
+        var state = new HtmlAnalzeState();
         while (!st.EOS)
         {
             found = st.Find('<');
@@ -362,6 +363,21 @@ internal static class HtmlManager
             {
                 buttonList.Add(cssToButton(cssList, state, console));
             }
+
+            if (state.OpenDiv)
+            {
+                state.OpenDiv = false;
+
+                returnButtonList.AddRange(buttonList);
+
+                if (cssList.Count > 0)
+                {
+                    returnButtonList.Add(cssToButton(cssList, state, console));
+                }
+
+                buttonList.Clear();
+            }
+
             if (state.CloseDiv)
             {
                 if (cssList.Count > 0)
@@ -380,18 +396,21 @@ internal static class HtmlManager
                 };
                 var div = new ConsoleButtonString(console, [
                     new ConsoleDivElement(
-                    buttonList,
-                    state.DivState.Display,
-                    state.DivState.PosX,
-                    state.DivState.PosY,
-                    state.DivState.Width,
-                    state.DivState.Height,
-                    state.DivState.BackgroundColor,
-                    borderStyle,
-                    state.DivState.Padding
-                )
-                ]);
-                divList.Add(div);
+                        buttonList,
+                        state.DivState.Display,
+                        state.DivState.PosX,
+                        state.DivState.PosY,
+                        state.DivState.Width,
+                        state.DivState.Height,
+                        state.DivState.BackgroundColor,
+                        borderStyle,
+                        state.DivState.Padding
+                    )
+                ])
+                {
+                    IsDiv = true
+                };
+                returnButtonList.Add(div);
                 buttonList = [];
                 state.DivState = null;
                 state.CloseDiv = false;
@@ -407,9 +426,9 @@ internal static class HtmlManager
         if (cssList.Count > 0)
             buttonList.Add(cssToButton(cssList, state, console));
 
-        buttonList = [.. divList, .. buttonList];
+        returnButtonList.AddRange(buttonList);
 
-        foreach (ConsoleButtonString button in buttonList)
+        foreach (var button in returnButtonList)
         {
             if (button != null && button.PointXisLocked)
             {
@@ -420,7 +439,7 @@ internal static class HtmlManager
                 break;
             }
         }
-        var ret = PrintStringBuffer.ButtonsToDisplayLines(buttonList, sm, state.FlagNobr, false);
+        var ret = PrintStringBuffer.ButtonsToDisplayLines(returnButtonList, sm, state.FlagNobr, false);
         if (ret.Length > 0)
         {
             foreach (ConsoleDisplayLine dl in ret)
@@ -435,7 +454,7 @@ internal static class HtmlManager
 
     public static string Html2PlainText(string str)
     {
-        string ret = Regex.Replace(str, "\\<[^<]*\\>", "");
+        string ret = HtmlTagRegex().Replace(str, "");
         return Unescape(ret);
     }
 
@@ -1085,6 +1104,8 @@ internal static class HtmlManager
                 }
             case "div":
                 {
+                    state.OpenDiv = true;
+
                     state.DivState = new()
                     {
                         IsDiv = true
@@ -1260,4 +1281,6 @@ internal static class HtmlManager
         return i;
     }
 
+    [GeneratedRegex("\\<[^<]*\\>")]
+    private static partial Regex HtmlTagRegex();
 }

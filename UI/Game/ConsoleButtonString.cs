@@ -96,6 +96,8 @@ internal sealed class ConsoleButtonString
     public ScriptPosition? ErrPos { get; set; }
     public string Title { get; set; }
 
+    public bool IsDiv;
+
 
     public int RelativePointX { get; private set; }
     public void LockPointX(int rel_px)

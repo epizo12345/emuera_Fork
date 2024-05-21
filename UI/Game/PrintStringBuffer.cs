@@ -168,10 +168,7 @@ internal sealed class PrintStringBuffer
 
     private static ConsoleDisplayLine m_buttonsToDisplayLine(List<ConsoleButtonString> lineButtonList, bool firstLine, bool temporary)
     {
-        ConsoleButtonString[] dispLineButtonArray = new ConsoleButtonString[lineButtonList.Count];
-        lineButtonList.CopyTo(dispLineButtonArray);
-        lineButtonList.Clear();
-        return new ConsoleDisplayLine(dispLineButtonArray, firstLine, temporary);
+        return new ConsoleDisplayLine([.. lineButtonList], firstLine, temporary);
     }
 
     public static ConsoleDisplayLine[] ButtonsToDisplayLines(List<ConsoleButtonString> buttonList, StringMeasure stringMeasure, bool nobr, bool temporary)
@@ -193,7 +190,7 @@ internal sealed class PrintStringBuffer
                 i--;
                 continue;
             }
-            if (nobr || buttonList[i].PointX + buttonList[i].Width <= windowWidth)
+            if (nobr || buttonList[i].IsDiv || buttonList[i].PointX + buttonList[i].Width <= windowWidth)
             {//改行不要モードであるか表示可能領域に収まるならそのままでよい
                 lineButtonList.Add(buttonList[i]);
                 continue;
@@ -242,9 +239,7 @@ internal sealed class PrintStringBuffer
         {
             lineList.Add(m_buttonsToDisplayLine(lineButtonList, firstLine, temporary));
         }
-        ConsoleDisplayLine[] ret = new ConsoleDisplayLine[lineList.Count];
-        lineList.CopyTo(ret);
-        return ret;
+        return [.. lineList];
     }
 
     /// <summary>
