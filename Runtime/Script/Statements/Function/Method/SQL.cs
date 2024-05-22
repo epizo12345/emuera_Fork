@@ -40,6 +40,35 @@ internal static partial class FunctionMethodCreator
         }
     }
 
+    public sealed class SQLExecuteScalerLong : FunctionMethod
+    {
+        public SQLExecuteScalerLong()
+        {
+            ReturnType = typeof(long);
+            argumentTypeArray = [typeof(string)];
+            CanRestructure = false;
+        }
+        public override long GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
+        {
+            var sql = arguments[0].GetStrValue(exm);
+            return SQL.ExecuteScaler<long>(sql);
+        }
+    }
+    public sealed class SQLExecuteScalerStr : FunctionMethod
+    {
+        public SQLExecuteScalerStr()
+        {
+            ReturnType = typeof(string);
+            argumentTypeArray = [typeof(string)];
+            CanRestructure = false;
+        }
+        public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
+        {
+            var sql = arguments[0].GetStrValue(exm);
+            return SQL.ExecuteScaler<string>(sql);
+        }
+    }
+
     public sealed class SQLReaderRead : FunctionMethod
     {
         public SQLReaderRead()
