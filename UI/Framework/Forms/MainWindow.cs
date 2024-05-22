@@ -303,7 +303,9 @@ internal sealed partial class MainWindow : Form
         mainPicBox.Location = new Point(0, menuHeight);
         mainPicBox.Size = new Size(Config.WindowX, winHeight - menuHeight - Config.LineHeight);
 
-        richTextBox1.Font = new Font(Config.FontName, Config.FontSize, GraphicsUnit.Pixel);
+        var font = new Font(Config.FontName, Config.FontSize, GraphicsUnit.Pixel);
+        var size = Config.FontSize * (Config.FontSize / (float)font.Height);
+        richTextBox1.Font = new Font(Config.FontName, size, GraphicsUnit.Pixel);
         richTextBox1.Location = new Point(0, winHeight - Config.LineHeight);
         richTextBox1.Size = new Size(Config.WindowX, Config.LineHeight);
         vScrollBar.Location = new Point(winWidth - vScrollBar.Size.Width, menuHeight);
@@ -1111,37 +1113,37 @@ internal sealed partial class MainWindow : Form
 
 
     private void Localize()
-	{
-		fileToolStripMenuItem.Text = LocalizationManager.MainWindow.File;
-		rebootToolStripMenuItem.Text = LocalizationManager.MainWindow.Restart;
+    {
+        fileToolStripMenuItem.Text = LocalizationManager.MainWindow.File;
+        rebootToolStripMenuItem.Text = LocalizationManager.MainWindow.Restart;
         デバッグモードで再起動ToolStripMenuItem.Text = LocalizationManager.MainWindow.RestartDebugMode;
         ログを保存するSToolStripMenuItem.Text = LocalizationManager.MainWindow.SaveLog;
-		ログをクリップボードにコピーToolStripMenuItem.Text = LocalizationManager.MainWindow.CopyLogToClipboard;
-		タイトルへ戻るTToolStripMenuItem.Text = LocalizationManager.MainWindow.BackToTitle;
-		コードを読み直すcToolStripMenuItem.Text = LocalizationManager.MainWindow.ReloadAllScripts;
-		フォルダを読み直すFToolStripMenuItem.Text = LocalizationManager.MainWindow.ReloadFolder;
-		ファイルを読み直すFToolStripMenuItem.Text = LocalizationManager.MainWindow.ReloadScriptFile;
-		exitToolStripMenuItem.Text = LocalizationManager.MainWindow.Exit;
-		openFileDialog.Filter = LocalizationManager.MainWindow.FileFilter + " (*.erb)|*.erb";
+        ログをクリップボードにコピーToolStripMenuItem.Text = LocalizationManager.MainWindow.CopyLogToClipboard;
+        タイトルへ戻るTToolStripMenuItem.Text = LocalizationManager.MainWindow.BackToTitle;
+        コードを読み直すcToolStripMenuItem.Text = LocalizationManager.MainWindow.ReloadAllScripts;
+        フォルダを読み直すFToolStripMenuItem.Text = LocalizationManager.MainWindow.ReloadFolder;
+        ファイルを読み直すFToolStripMenuItem.Text = LocalizationManager.MainWindow.ReloadScriptFile;
+        exitToolStripMenuItem.Text = LocalizationManager.MainWindow.Exit;
+        openFileDialog.Filter = LocalizationManager.MainWindow.FileFilter + " (*.erb)|*.erb";
 
-		デバッグToolStripMenuItem.Text = LocalizationManager.MainWindow.Debug;
-		デバッグウインドウを開くToolStripMenuItem.Text = LocalizationManager.MainWindow.OpenDebugWindow;
-		デバッグ情報の更新ToolStripMenuItem.Text = LocalizationManager.MainWindow.UpdateDebugInfo;
-        
+        デバッグToolStripMenuItem.Text = LocalizationManager.MainWindow.Debug;
+        デバッグウインドウを開くToolStripMenuItem.Text = LocalizationManager.MainWindow.OpenDebugWindow;
+        デバッグ情報の更新ToolStripMenuItem.Text = LocalizationManager.MainWindow.UpdateDebugInfo;
+
         ツールToolStripMenuItem.Text = LocalizationManager.MainWindow.Tools;
         ウィンドウ幅のロック変更ToolStripMenuItem.Text = LocalizationManager.MainWindow.ToggleWidthLock;
-        
+
         設定ToolStripMenuItem.Text = LocalizationManager.MainWindow.Settings;
 
         toolStripMenuItem1.Text = LocalizationManager.MainWindow.Language;
 
         this.マクロToolStripMenuItem.Text = LocalizationManager.MainWindow.ContextMenu_KeyMacro;
         for (int i = 0; i < this.マクロToolStripMenuItem.DropDownItems.Count; i++)
-        	this.マクロToolStripMenuItem.DropDownItems[i].Text = LocalizationManager.MainWindow.ContextMenu_KeyMacro + i.ToString("D2");
+            this.マクロToolStripMenuItem.DropDownItems[i].Text = LocalizationManager.MainWindow.ContextMenu_KeyMacro + i.ToString("D2");
         this.マクログループToolStripMenuItem.Text = LocalizationManager.MainWindow.ContextMenu_KeyMacroGroup;
         for (int i = 0; i < this.マクログループToolStripMenuItem.DropDownItems.Count; i++)
-        	this.マクログループToolStripMenuItem.DropDownItems[i].Text = LocalizationManager.MainWindow.ContextMenu_KeyMacroGroup_Group + i;
-        
+            this.マクログループToolStripMenuItem.DropDownItems[i].Text = LocalizationManager.MainWindow.ContextMenu_KeyMacroGroup_Group + i;
+
         this.切り取り.Text = LocalizationManager.MainWindow.ContextMenu_Cut;
         this.コピー.Text = LocalizationManager.MainWindow.ContextMenu_Copy;
         this.貼り付け.Text = LocalizationManager.MainWindow.ContextMenu_Paste;
@@ -1157,7 +1159,7 @@ internal sealed partial class MainWindow : Form
         //現在のアプリケーションを終了する
         Application.ExitThread();
     }
-    
+
     private void englishToolStripMenuItem_Click(object sender, EventArgs e)
     {
         LocalizationManager.SetLanguage("en");

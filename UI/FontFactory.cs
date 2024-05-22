@@ -19,7 +19,10 @@ static class FontFactory
             foreach (var fontFile in fontFolder.EnumerateFiles("", SearchOption.AllDirectories))
             {
                 var typeface = SKTypeface.FromFile(fontFile.FullName);
-                _typefaces[typeface.FamilyName] = typeface;
+                if (typeface != null)
+                {
+                    _typefaces[typeface.FamilyName] = typeface;
+                }
             }
         }
     }
@@ -48,6 +51,7 @@ static class FontFactory
             }
 
             var font = new SKFont(typeface, fontSize.Value);
+            font.Size *= fontSize.Value / font.Spacing;
             if (font == null)
             {
                 return null;
