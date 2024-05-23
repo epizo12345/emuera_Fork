@@ -187,7 +187,7 @@ sealed class ConsoleImagePart : AConsoleDisplayNode
         {
             if (point.X == float.NegativeInfinity)
             {
-                point.X = PointX;
+                point.X = PointX + Config.DrawingParam_ShapePositionShift;
             }
             Point = point;
 
