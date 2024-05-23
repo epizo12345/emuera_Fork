@@ -126,7 +126,7 @@ internal sealed class ConsoleRectangleShapePart : ConsoleShapePart
     {
         if (!visible)
             return;
-        if (point.X == -1)
+        if (point.X == float.NegativeInfinity)
         {
             point.X = PointX;
         }

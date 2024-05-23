@@ -185,7 +185,7 @@ sealed class ConsoleImagePart : AConsoleDisplayNode
 
         if (img != null && img.IsCreated)
         {
-            if (point.X == -1)
+            if (point.X == float.NegativeInfinity)
             {
                 point.X = PointX;
             }

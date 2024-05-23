@@ -200,12 +200,11 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
 
         var paint = new SKPaint
         {
-            Color = color.ToSKColor(),
-            IsAntialias = false,
+            Color = color.ToSKColor()
         };
 
         var point = new SKPoint(origin.X, origin.Y);
-        if (origin.X == -1)//旧来の位置決め方式
+        if (origin.X == float.NegativeInfinity)//旧来の位置決め方式
         {
             point.X = PointX + Config.DrawingParam_ShapePositionShift;
         }
