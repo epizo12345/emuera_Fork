@@ -185,12 +185,18 @@ sealed class ConsoleImagePart : AConsoleDisplayNode
 
         if (img != null && img.IsCreated)
         {
-            Rectangle rect = destRect;
+            if (point.X == -1)
+            {
+                point.X = PointX;
+            }
+            Point = point;
+
+            var rect = destRect;
             //PointX微調整
             switch (_display)
             {
                 case DisplayMode.Relative:
-                    rect.X = destRect.X + PointX + Config.DrawingParam_ShapePositionShift;
+                    rect.X = destRect.X + (int)point.X;
                     rect.Y = destRect.Y + (int)point.Y;
                     break;
                 case DisplayMode.AbsoluteLeftTop:

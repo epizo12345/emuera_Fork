@@ -126,9 +126,13 @@ internal sealed class ConsoleRectangleShapePart : ConsoleShapePart
     {
         if (!visible)
             return;
-        Rectangle targetRect = rect;
-        targetRect.X = targetRect.X + PointX;
-        targetRect.Y = targetRect.Y + (int)point.Y;
+        if (point.X == -1)
+        {
+            point.X = PointX;
+        }
+        var targetRect = rect.ToSKRect();
+        targetRect.Offset((int)point.X - Config.DrawingParam_ShapePositionShift, (int)point.Y);
+
         Color dcolor = isSelecting ? ButtonColor : Color;
 
         var paint = new SKPaint
@@ -136,7 +140,7 @@ internal sealed class ConsoleRectangleShapePart : ConsoleShapePart
             Style = SKPaintStyle.Fill,
             Color = dcolor.ToSKColor()
         };
-        graph.DrawRect(targetRect.ToSKRect(), paint);
+        graph.DrawRect(targetRect, paint);
     }
     public override void SetWidth(StringMeasure sm, float subPixel)
     {
