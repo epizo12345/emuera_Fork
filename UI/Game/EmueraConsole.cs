@@ -799,7 +799,10 @@ internal sealed partial class EmueraConsole : IDisposable
     internal void PressPrimitiveKey(Keys keycode, Keys keydata, Keys keymod)
     {
         if (IsWaitingPrimitive)
+        {
             InputMouseKey(3, (int)keycode, (int)keydata, 0, 0);
+            window.TextBox.Clear();
+        }
     }
 
     //1823 Key入力を捕まえる
