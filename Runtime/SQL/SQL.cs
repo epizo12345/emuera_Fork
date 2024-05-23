@@ -44,7 +44,7 @@ static class SQL
             foreach (var dbFile in dbFiles)
             {
                 var destPath = Path.Combine(destDirPath, dbFile.Name);
-                dbFile.CopyTo(destPath);
+                dbFile.CopyTo(destPath, true);
             }
         }
 
