@@ -76,11 +76,11 @@ static class SQL
         _readers[readerID] = command.ExecuteReader();
     }
 
-    static public T ExecuteScaler<T>(string sql)
+    static public T? ExecuteScaler<T>(string sql)
     {
         var command = _connection.CreateCommand();
         command.CommandText = sql;
-        return (T)command.ExecuteScalar();
+        return (T?)command.ExecuteScalar();
     }
     static public void ExecuteNonQuery(string sql)
     {
