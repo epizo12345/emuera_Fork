@@ -51,7 +51,7 @@ static class FontFactory
             }
 
             var font = new SKFont(typeface, fontSize.Value);
-            font.Size *= fontSize.Value / font.Spacing;
+            //font.Size *= fontSize.Value / font.Spacing;
             if (font == null)
             {
                 return null;
