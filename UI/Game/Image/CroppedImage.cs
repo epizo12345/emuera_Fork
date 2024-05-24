@@ -1,4 +1,5 @@
-﻿using MinorShift.Emuera.Runtime.Utils;
+﻿using MinorShift.Emuera.Runtime.Config.JSON;
+using MinorShift.Emuera.Runtime.Utils;
 using MinorShift.Emuera.Sub;
 using SkiaSharp;
 using SkiaSharp.Views.Desktop;
@@ -56,12 +57,25 @@ internal abstract class ASpriteSingle : ASprite
     /// ソース画像上の位置を指定する四角形。Width, Heightは負の値をとり得る
     /// </summary>
     public readonly Rectangle SrcRectangle;
-    private SKBitmap Bitmap
+
+    SKImage _image;
+    SKImage Image
     {
         get
         {
             if (BaseImage != null && BaseImage.IsCreated)
-                return BaseImage.Bitmap;
+            {
+                if (BaseImage.Image != null)
+                {
+                    return BaseImage.Image;
+                }
+                else
+                {
+                    _image?.Dispose();
+                    _image = SKImage.FromBitmap(BaseImage.Bitmap);
+                    return _image;
+                }
+            }
             return null;
         }
     }
@@ -72,15 +86,15 @@ internal abstract class ASpriteSingle : ASprite
     }
     public override SKColor SpriteGetColor(int x, int y)
     {
-        var bmp = Bitmap;
-        if (bmp == null)
+        if (Image == null)
             return SKColors.Transparent;
         int bmpX = x + SrcRectangle.X;
         int bmpY = y + SrcRectangle.Y;
-        if (bmpX < 0 || bmpX >= bmp.Width || bmpY < 0 || bmpY >= bmp.Height)
+        if (bmpX < 0 || bmpX >= Image.Width || bmpY < 0 || bmpY >= Image.Height)
             return SKColors.Transparent;
 
-        return bmp.GetPixel(bmpX, bmpY);
+        var pixMap = Image.PeekPixels();
+        return pixMap.GetPixelColor(bmpX, bmpY);
     }
     public override void Dispose()
     {
@@ -93,7 +107,8 @@ internal abstract class ASpriteSingle : ASprite
     {
         offset.Offset(DestBasePosition);
         // g.DrawImage(Bitmap.ToBitmap(), new Rectangle(offset, DestBaseSize), SrcRectangle, GraphicsUnit.Pixel);
-        g.DrawBitmap(Bitmap, SrcRectangle.ToSKRect(), SKRect.Create(offset.ToSKPoint(), SrcRectangle.Size.ToSKSize()), _paint);
+        //g.DrawBitmap(Bitmap, SrcRectangle.ToSKRect(), SKRect.Create(offset.ToSKPoint(), SrcRectangle.Size.ToSKSize()), _paint);
+        g.DrawImage(Image, SrcRectangle.ToSKRect(), SKRect.Create(offset.ToSKPoint(), SrcRectangle.Size.ToSKSize()), JSONConfig.SamplingOptions, _paint);
     }
 
 
@@ -114,7 +129,9 @@ internal abstract class ASpriteSingle : ASprite
             using var canvas = new SKCanvas(flipedBitmap);
 
             canvas.Scale(sx, sy, flipedBitmap.Width / 2, flipedBitmap.Height / 2);
-            canvas.DrawBitmap(Bitmap, SrcRectangle.ToSKRect(), SKRect.Create(new SKPoint(), flipedBitmap.Info.Size));
+            canvas.DrawImage(Image, SrcRectangle.ToSKRect(), SKRect.Create(new SKPoint(), flipedBitmap.Info.Size), JSONConfig.SamplingOptions);
+            //canvas.DrawBitmap(Bitmap, SrcRectangle.ToSKRect(), SKRect.Create(new SKPoint(), flipedBitmap.Info.Size), _paint);
+
             var point = destRect.Location.ToSKPoint();
             if (sx < 0)
             {
@@ -129,7 +146,8 @@ internal abstract class ASpriteSingle : ASprite
         }
         else
         {
-            g.DrawBitmap(Bitmap, SrcRectangle.ToSKRect(), destRect.ToSKRect(), _paint);
+            g.DrawImage(Image, SrcRectangle.ToSKRect(), destRect.ToSKRect(), JSONConfig.SamplingOptions, _paint);
+            //g.DrawBitmap(Bitmap, SrcRectangle.ToSKRect(), destRect.ToSKRect(), _paint);
         }
     }
 
@@ -151,7 +169,7 @@ internal abstract class ASpriteSingle : ASprite
             using var canvas = new SKCanvas(flipedBitmap);
 
             canvas.Scale(sx, sy, flipedBitmap.Width / 2, flipedBitmap.Height / 2);
-            canvas.DrawBitmap(Bitmap, SrcRectangle.ToSKRect(), SKRect.Create(new SKPoint(), flipedBitmap.Info.Size));
+            canvas.DrawImage(Image, SrcRectangle.ToSKRect(), SKRect.Create(new SKPoint(), flipedBitmap.Info.Size));
             var point = destRect.Location.ToSKPoint();
             if (sx < 0)
             {
@@ -169,7 +187,7 @@ internal abstract class ASpriteSingle : ASprite
         else
         {
             _paint.ColorFilter = attr;
-            g.DrawBitmap(Bitmap, SrcRectangle.ToSKRect(), destRect.ToSKRect(), _paint);
+            g.DrawImage(Image, SrcRectangle.ToSKRect(), destRect.ToSKRect(), _paint);
             _paint.ColorFilter = null;
         }
 

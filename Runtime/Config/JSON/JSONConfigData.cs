@@ -2,6 +2,13 @@ using System.Text.Json.Serialization;
 
 namespace MinorShift.Emuera.Runtime.Config.JSON;
 //JSONの定義
+enum Resampler
+{
+    NearnestNeighber,
+    Cubic,
+    Linear
+}
+
 sealed class JSONConfigData
 {
     //ボタンにカーソルを合わせたときに背景色を変更するか
@@ -12,4 +19,6 @@ sealed class JSONConfigData
     public bool UseNewRandom { get; set; }
 
     public bool UseScopedVariableInstruction { get; set; }
+
+    public Resampler ImageSamplingOption { get; set; }
 }
