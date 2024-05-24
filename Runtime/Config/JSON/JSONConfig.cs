@@ -17,7 +17,7 @@ static class JSONConfig
     public static SKSamplingOptions SamplingOptions { get; private set; }
     public static void SetSamplingOptions()
     {
-        SamplingOptions = Data.SamplingOption switch
+        SamplingOptions = Data.ImageSamplingOption switch
         {
             Resampler.NearnestNeighber => new SKSamplingOptions(SKFilterMode.Nearest),
             Resampler.Linear => new SKSamplingOptions(SKFilterMode.Linear),
