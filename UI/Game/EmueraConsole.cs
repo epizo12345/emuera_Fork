@@ -383,6 +383,8 @@ internal sealed partial class EmueraConsole : IDisposable
         RunEmueraProgram("");
         RefreshStrings(true);
 
+        Preload.Clear();
+
         logWriter.WriteLine("Init:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
     }
 
