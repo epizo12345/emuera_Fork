@@ -224,6 +224,7 @@ internal static class ExpressionParser
     /// <param name="idStr">識別子文字列</param>
     /// <param name="varCode">変数の引数の場合はその変数のCode。連想配列的につかう</param>
     /// <returns></returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private static AExpression reduceIdentifier(WordCollection wc, string idStr, VariableCode varCode)
     {
         wc.ShiftNext();
@@ -332,6 +333,7 @@ internal static class ExpressionParser
     /// <param name="allowKeywordTo">TOキーワードが見つかっても良いか</param>
     /// <param name="endWith">終端記号</param>
     /// <returns></returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private static AExpression reduceTerm(WordCollection wc, bool allowKeywordTo, TermEndWith endWith, VariableCode varCode)
     {
         TermStack stack = new();
