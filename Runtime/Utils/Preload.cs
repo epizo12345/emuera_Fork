@@ -45,7 +45,7 @@ static partial class Preload
                         file.Close();
                         if (!bom.SequenceEqual<byte>([0xEF, 0xBB, 0xBF]))
                         {
-                            ParserMediator.ConfigWarn("ファイルが UTF-8 with BOM ではありません", new ScriptPosition(Path.GetRelativePath(Program.ExeDir, childPath), 0), 0, "");
+                            ParserMediator.ConfigWarn("ファイルが UTF-8 with BOM ではありません", new ScriptPosition(childPath, 0), 0, "");
                         }
                     }
 
