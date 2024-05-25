@@ -26,7 +26,15 @@ static partial class Preload
         {
             await Task.Run(() =>
             {
-                Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories).AsParallel().ForAll((childPath) =>
+                Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories)
+                .Where(x =>
+                {
+                    var ext = Path.GetExtension(x);
+                    return ext.Equals(".csv", StringComparison.OrdinalIgnoreCase) ||
+                            ext.Equals(".erb", StringComparison.OrdinalIgnoreCase) ||
+                            ext.Equals(".erh", StringComparison.OrdinalIgnoreCase);
+                })
+                .AsParallel().ForAll((childPath) =>
                 {
                     var key = childPath;
                     if (JSONConfig.Data.CheckUTF8withBOM)
