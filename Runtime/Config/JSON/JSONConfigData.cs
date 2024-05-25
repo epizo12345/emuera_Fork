@@ -21,4 +21,6 @@ sealed class JSONConfigData
     public bool UseScopedVariableInstruction { get; set; }
 
     public Resampler ImageSamplingOption { get; set; }
+
+    public bool CheckUTF8withBOM { get; set; } = true;
 }

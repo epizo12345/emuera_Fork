@@ -1,4 +1,5 @@
 using MinorShift.Emuera.Runtime.Config;
+using MinorShift.Emuera.Runtime.Config.JSON;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -28,15 +29,15 @@ static partial class Preload
                 Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories).AsParallel().ForAll((childPath) =>
                 {
                     var key = childPath;
-                    if (false)
+                    if (JSONConfig.Data.CheckUTF8withBOM)
                     {
-                        using var file = File.Open(childPath, FileMode.Open);
+                        using var file = File.OpenRead(childPath);
                         Span<byte> bom = stackalloc byte[3];
                         _ = file.Read(bom);
                         file.Close();
                         if (!bom.SequenceEqual<byte>([0xEF, 0xBB, 0xBF]))
                         {
-
+                            ParserMediator.ConfigWarn("ファイルが UTF-8 with BOM ではありません", new ScriptPosition(Path.GetRelativePath(Program.ExeDir, childPath), 0), 0, "");
                         }
                     }
 
