@@ -1,5 +1,4 @@
 ﻿using AngleSharp.Dom;
-using AngleSharp.Html.Parser;
 using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Script.Parser;
@@ -338,7 +337,7 @@ internal static partial class HtmlManager
                             }
                         case "BR":
                             {
-                                nodeList.Add(null);
+                                nodeList.Add(new BrNode());
                             }
                             break;
                         case "BUTTON":
@@ -349,11 +348,15 @@ internal static partial class HtmlManager
 
                                 var isButton = true;
 
-                                var value = -1;
-                                var valueStr = elem.GetAttribute("value");
-                                if (valueStr != null)
+                                string inputStr = null;
+                                var inputInt = -1;
+                                var valueText = elem.GetAttribute("value");
+                                if (valueText != null)
                                 {
-                                    value = int.Parse(valueStr);
+                                    if (!int.TryParse(valueText, out inputInt))
+                                    {
+                                        inputStr = valueText;
+                                    }
                                 }
                                 else
                                 {
@@ -375,9 +378,18 @@ internal static partial class HtmlManager
 
                                 if (isButton)
                                 {
-                                    button = new ConsoleButtonString(console, [
-                                        ..c
-                                    ], value);
+                                    if (inputStr == null)
+                                    {
+                                        button = new ConsoleButtonString(console, [
+                                            ..c
+                                        ], inputInt);
+                                    }
+                                    else
+                                    {
+                                        button = new ConsoleButtonString(console, [
+                                            ..c
+                                        ], inputStr);
+                                    }
                                 }
                                 else
                                 {
@@ -454,7 +466,7 @@ internal static partial class HtmlManager
 
                                 var src = elem.GetAttribute("src");
                                 var srcb = elem.GetAttribute("srcb");
-                                var height = ParseSizeValue(elem.GetAttribute("height"), 100);
+                                var height = ParseSizeValue(elem.GetAttribute("height"), Config.FontSize);
                                 var width = ParseSizeValue(elem.GetAttribute("width"), 0);
                                 var ypos = ParseSizeValue(elem.GetAttribute("ypos"), 0);
                                 var xpos = ParseSizeValue(elem.GetAttribute("xpos"), 0);
@@ -506,13 +518,6 @@ internal static partial class HtmlManager
 
                                 nodeList.Add(ConsoleShapePart.CreateShape(type, param, color.ToDrawingColor(), bcolor.ToDrawingColor(), colorStr != null));
 
-                                //勝手にタグを閉じて中に平文を取り込むことがある
-                                if (node.ChildNodes.Length > 0)
-                                {
-                                    nodeList.AddRange(
-                                        ParseNode(node.ChildNodes, stringStyle, divState, align)
-                                    );
-                                }
                             }
                             break;
                         case "DIV":

@@ -43,3 +43,22 @@ abstract class AConsoleColoredNode : AConsoleDisplayNode
     protected Color ButtonColor { get; set; }
     protected bool colorChanged;
 }
+
+
+
+class BrNode : AConsoleDisplayNode
+{
+    public BrNode()
+    {
+        Text = "";
+    }
+    public override bool CanDivide => false;
+
+    public override void DrawTo(SKCanvas graph, SKPoint point, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
+    {
+    }
+
+    public override void SetWidth(StringMeasure sm, float subPixel)
+    {
+    }
+}
