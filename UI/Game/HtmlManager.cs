@@ -1,4 +1,5 @@
 ﻿using AngleSharp.Dom;
+using AngleSharp.Html.Parser;
 using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Script.Parser;
@@ -505,6 +506,13 @@ internal static partial class HtmlManager
 
                                 nodeList.Add(ConsoleShapePart.CreateShape(type, param, color.ToDrawingColor(), bcolor.ToDrawingColor(), colorStr != null));
 
+                                //勝手にタグを閉じて中に平文を取り込むことがある
+                                if (node.ChildNodes.Length > 0)
+                                {
+                                    nodeList.AddRange(
+                                        ParseNode(node.ChildNodes, stringStyle, divState, align)
+                                    );
+                                }
                             }
                             break;
                         case "DIV":
