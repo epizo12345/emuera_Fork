@@ -12,7 +12,7 @@ namespace MinorShift.Emuera.UI.Game;
 /// <summary>
 /// ボタン。1つ以上の装飾付文字列（ConsoleStyledString）からなる。
 /// </summary>
-internal sealed class ConsoleButtonString
+internal sealed class ConsoleButtonString : AConsoleDisplayNode
 {
     public ConsoleButtonString(EmueraConsole console, AConsoleDisplayNode[] strs)
     {
@@ -88,10 +88,7 @@ internal sealed class ConsoleButtonString
     public bool IsInteger { get; private set; }
     public long Input { get; private set; }
     public string Inputs { get; private set; }
-    public int PointX { get; set; }
     public bool PointXisLocked { get; set; }
-    public int Width { get; set; }
-    public float XsubPixel { get; set; }
     public long Generation { get; private set; }
     public ScriptPosition? ErrPos { get; set; }
     public string Title { get; set; }
@@ -100,6 +97,9 @@ internal sealed class ConsoleButtonString
 
 
     public int RelativePointX { get; private set; }
+
+    public override bool CanDivide => throw new NotImplementedException();
+
     public void LockPointX(int rel_px)
     {
         PointX = rel_px * Config.FontSize / 100;
@@ -247,4 +247,13 @@ internal sealed class ConsoleButtonString
         return builder.ToString();
     }
 
+    public override void DrawTo(SKCanvas graph, SKPoint point, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
+    {
+        DrawTo(graph, point, isBackLog, mode);
+    }
+
+    public override void SetWidth(StringMeasure sm, float subPixel)
+    {
+        CalcWidth(sm, subPixel);
+    }
 }

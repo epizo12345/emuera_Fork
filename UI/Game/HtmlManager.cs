@@ -1,12 +1,15 @@
-﻿using MinorShift.Emuera.GameView;
+﻿using AngleSharp.Dom;
+using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Script.Parser;
 using MinorShift.Emuera.Runtime.Script.Statements.Expression;
 using MinorShift.Emuera.Runtime.Utils;
 using SkiaSharp;
+using SkiaSharp.Views.Desktop;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -77,7 +80,7 @@ internal static partial class HtmlManager
         public int PosX;
         public int PosY;
         public DisplayMode Display;
-        public SKColor? BackgroundColor;
+        public SKColor BackgroundColor;
 
         public int Width = -1;
         public int Height = -1;
@@ -288,168 +291,416 @@ internal static partial class HtmlManager
     /// <param name="sm"></param>
     /// <param name="console">実際の表示に使わないならnullにする</param>
     /// <returns></returns>
+    /// 
+    static AngleSharp.Html.Parser.HtmlParser parser = new();
     public static ConsoleDisplayLine[] Html2DisplayLine(string str, StringMeasure sm, EmueraConsole console, bool lineEnd)
     {
-        var cssList = new List<AConsoleDisplayNode>();
-        var buttonList = new List<ConsoleButtonString>();
-        var returnButtonList = new List<ConsoleButtonString>();
 
-        var st = new CharStream(str);
-        int found;
-        var hasComment = str.Contains("<!--", StringComparison.Ordinal);
-        var hasReturn = str.Contains('\n', StringComparison.Ordinal);
-        var state = new HtmlAnalzeState();
-        while (!st.EOS)
         {
-            found = st.Find('<');
-            if (hasReturn)
-            {
-                int rFound = st.Find('\n');
-                if (rFound >= 0 && (found > rFound || found < 0))
-                    found = rFound;
-            }
-            if (found < 0)
-            {
-                string txt = Unescape(st.Substring());
-                cssList.Add(new ConsoleStyledString(txt, state.GetSS()));
-                if (state.FlagPClosed)
-                    throw new CodeEE("</p>の後にテキストがあります");
-                if (state.FlagNobrClosed)
-                    throw new CodeEE("</nobr>の後にテキストがあります");
-                break;
-            }
-            else if (found > 0)
-            {
-                string txt = Unescape(st.Substring(st.CurrentPosition, found));
-                cssList.Add(new ConsoleStyledString(txt, state.GetSS()));
+            var doc = parser.ParseDocument($"<body>{str.Replace("\n", "<br>", StringComparison.Ordinal)}</body>");
+            var body = doc.Body;
+            var nodes = body.ChildNodes;
+            var noBR = false;
+            var align = console.Alignment;
+            var list = ParseNode(nodes, new StringStyle(Config.ForeColor, FontStyle.Regular, Config.FontName), new DivState(), align);
 
-                state.LineHead = false;
-                st.CurrentPosition += found;
-            }
-            //コメントタグのみ特別扱い
-            if (hasComment && st.CurrentEqualTo("<!--"))
+            List<AConsoleDisplayNode> ParseNode(INodeList nodes, StringStyle stringStyle, DivState divState, DisplayLineAlignment alignment)
             {
-                st.CurrentPosition += 4;
-                found = st.Find("-->");
-                if (found < 0)
-                    throw new CodeEE("コメンdト終了タグ\"-->\"がみつかりません");
-                st.CurrentPosition += found + 3;
-                continue;
-            }
-            if (hasReturn && st.Current == '\n')//テキスト中の\nは<br>として扱う
-            {
-                state.FlagBr = true;
-                st.ShiftNext();
-            }
-            else//タグ解析
-            {
-                st.ShiftNext();
-                AConsoleDisplayNode part = tagAnalyze(state, st);
-                if (st.Current != '>')
-                    throw new CodeEE("タグ終端'>'が見つかりません");
-                if (part != null)
-                    cssList.Add(part);
-                st.ShiftNext();
-            }
-
-            if (state.FlagBr)
-            {
-                state.LastButtonTag = state.CurrentButtonTag;
-                if (cssList.Count > 0)
-                    buttonList.Add(cssToButton(cssList, state, console));
-                buttonList.Add(null);
-            }
-            if (state.FlagButton && cssList.Count > 0)
-            {
-                buttonList.Add(cssToButton(cssList, state, console));
-            }
-
-            if (state.OpenDiv)
-            {
-                state.OpenDiv = false;
-
-                returnButtonList.AddRange(buttonList);
-
-                if (cssList.Count > 0)
+                if (nodes == null)
                 {
-                    returnButtonList.Add(cssToButton(cssList, state, console));
+                    return null;
                 }
-
-                buttonList.Clear();
-            }
-
-            if (state.CloseDiv)
-            {
-                if (cssList.Count > 0)
+                var nodeList = new List<AConsoleDisplayNode>();
+                var buttonList = new List<ConsoleButtonString>();
+                foreach (var node in nodes)
                 {
-                    buttonList.Add(cssToButton(cssList, state, console));
-                }
-
-                var borderStyle = new BorderStyle()
-                {
-                    Paint = new SKPaint()
+                    switch (node.NodeName)
                     {
-                        Color = state.DivState.BorderColor,
-                        StrokeWidth = state.DivState.BorderWidth,
-                        IsStroke = true
+                        case "P":
+                            {
+                                var elem = node as Element;
+
+                                var alignStr = elem.GetAttribute("align");
+                                align = alignStr.ToLower() switch
+                                {
+                                    "left" => DisplayLineAlignment.LEFT,
+                                    "center" => DisplayLineAlignment.CENTER,
+                                    "right" => DisplayLineAlignment.RIGHT,
+                                    _ => throw new CodeEE($"ALIGNMENTのキーワード\"{str}\"は未定義です")
+                                };
+                                return ParseNode(node.ChildNodes, stringStyle, divState, align);
+                            }
+                        case "NOBR":
+                            {
+                                noBR = true;
+                                return ParseNode(node.ChildNodes, stringStyle, divState, align);
+                            }
+                        case "BR":
+                            {
+                                nodeList.Add(null);
+                            }
+                            break;
+                        case "BUTTON":
+                            {
+                                var elem = node as Element;
+
+                                ConsoleButtonString button;
+
+                                var isButton = true;
+
+                                var value = -1;
+                                var valueStr = elem.GetAttribute("value");
+                                if (valueStr != null)
+                                {
+                                    value = int.Parse(valueStr);
+                                }
+                                else
+                                {
+                                    isButton = false;
+                                }
+
+                                var xpos = 0;
+                                var lockXpos = false;
+
+                                var xposStr = elem.GetAttribute("xpos");
+                                if (!string.IsNullOrEmpty(xposStr))
+                                {
+                                    xpos = int.Parse(xposStr);
+                                }
+
+                                var title = elem.GetAttribute("title");
+
+                                var c = ParseNode(node.ChildNodes, stringStyle, divState, align);
+
+                                if (isButton)
+                                {
+                                    button = new ConsoleButtonString(console, [
+                                        ..c
+                                    ], value);
+                                }
+                                else
+                                {
+                                    button = new ConsoleButtonString(console, [
+                                        ..c
+                                    ]);
+                                }
+
+                                button.Title = title;
+                                if (lockXpos)
+                                {
+                                    button.LockPointX(xpos);
+                                }
+
+
+                                nodeList.Add(button);
+                            }
+                            break;
+                        case "NONBUTTON":
+                            {
+                                var elem = node as Element;
+
+                                ConsoleButtonString button;
+
+                                var xpos = 0;
+                                var lockXpos = false;
+
+                                var xposStr = elem.GetAttribute("xpos");
+                                if (!string.IsNullOrEmpty(xposStr))
+                                {
+                                    xpos = int.Parse(xposStr);
+                                }
+
+                                var title = elem.GetAttribute("title");
+
+                                var c = ParseNode(node.ChildNodes, stringStyle, divState, align);
+
+                                button = new ConsoleButtonString(console, [
+                                    ..c
+                                ])
+                                {
+                                    Title = title
+                                };
+
+                                if (lockXpos)
+                                {
+                                    button.LockPointX(xpos);
+                                }
+
+
+                                nodeList.Add(button);
+                            }
+                            break;
+                        case "FONT":
+                            {
+                                var elem = node as Element;
+
+                                var style = stringStyle;
+                                var face = elem.GetAttribute("face");
+                                var color = ParseColor(elem.GetAttribute("color"), style.Color.ToSKColor());
+                                var bcolor = ParseColor(elem.GetAttribute("bcolor"), style.ButtonColor.ToSKColor());
+                                style.Fontname = face;
+                                style.Color = color.ToDrawingColor();
+                                style.ButtonColor = bcolor.ToDrawingColor();
+
+                                var c = ParseNode(node.ChildNodes, style, divState, align);
+
+                                nodeList.AddRange(c);
+                            }
+                            break;
+                        case "IMG":
+                            {
+                                var elem = node as Element;
+
+                                var src = elem.GetAttribute("src");
+                                var srcb = elem.GetAttribute("srcb");
+                                var height = ParseSizeValue(elem.GetAttribute("height"), 100);
+                                var width = ParseSizeValue(elem.GetAttribute("width"), 0);
+                                var ypos = ParseSizeValue(elem.GetAttribute("ypos"), 0);
+                                var xpos = ParseSizeValue(elem.GetAttribute("xpos"), 0);
+
+                                var display = DisplayMode.Relative;
+                                {
+                                    var diplayStr = elem.GetAttribute("display");
+                                    if (!string.IsNullOrEmpty(diplayStr))
+                                    {
+                                        display = ParseDisplayValue(diplayStr);
+                                    }
+                                }
+
+                                nodeList.Add(new ConsoleImagePart(src, srcb, height, width, ypos, xpos, display: display));
+                            }
+                            break;
+                        case "SHAPE":
+                            {
+                                var elem = node as Element;
+
+                                var type = elem.GetAttribute("type");
+
+                                int[] param = null;
+                                var paramStr = elem.GetAttribute("param");
+                                if (!string.IsNullOrEmpty(paramStr))
+                                {
+                                    var values = paramStr.Split(',');
+                                    param = new int[values.Length];
+                                    for (int i = 0; i < values.Length; i++)
+                                    {
+                                        if (!int.TryParse(values[i], out param[i]))
+                                            throw new CodeEE("<" + node.NodeName + ">タグの param 属性の属性値が数値として解釈できません");
+                                    }
+                                }
+
+                                var color = Config.ForeColor.ToSKColor();
+                                var colorStr = elem.GetAttribute("color");
+                                if (colorStr != null)
+                                {
+                                    color = ParseColor(colorStr);
+                                }
+
+                                var bcolor = Config.FocusColor.ToSKColor();
+                                var bcolorStr = elem.GetAttribute("bcolor");
+                                if (bcolorStr != null)
+                                {
+                                    bcolor = ParseColor(bcolorStr);
+                                }
+
+                                nodeList.Add(ConsoleShapePart.CreateShape(type, param, color.ToDrawingColor(), bcolor.ToDrawingColor(), colorStr != null));
+
+                            }
+                            break;
+                        case "DIV":
+                            {
+                                var style = divState;
+
+                                var elem = node as Element;
+
+                                BorderStyle? borderStyle = null;
+                                {
+                                    var hasBorder = false;
+                                    var borderWidth = elem.GetAttribute("border_width");
+                                    if (!string.IsNullOrEmpty(borderWidth))
+                                    {
+                                        hasBorder = true;
+                                        style.BorderWidth = ParseSizeValue(borderWidth);
+                                    }
+                                    var borderColor = ParseColor(elem.GetAttribute("border_color"), SKColors.White);
+
+                                    if (hasBorder)
+                                    {
+                                        borderStyle = new BorderStyle()
+                                        {
+                                            Paint = new SKPaint()
+                                            {
+                                                Color = borderColor,
+                                                StrokeWidth = style.BorderWidth,
+                                                IsStroke = true
+                                            }
+                                        };
+                                    }
+                                }
+
+                                var display = DisplayMode.Relative;
+                                {
+                                    var diplayStr = elem.GetAttribute("display");
+                                    if (!string.IsNullOrEmpty(diplayStr))
+                                    {
+                                        display = ParseDisplayValue(diplayStr);
+                                    }
+                                }
+
+                                var position = SKPoint.Empty;
+                                {
+                                    position.X = ParseSizeValue(elem.GetAttribute("xpos"), 0);
+                                    position.Y = ParseSizeValue(elem.GetAttribute("ypos"), 0);
+                                }
+
+                                var size = new SKSize();
+                                {
+                                    size.Width = ParseSizeValue(elem.GetAttribute("width"), -1);
+                                    size.Height = ParseSizeValue(elem.GetAttribute("height"), -1);
+                                }
+
+                                var padding = SKRect.Empty;
+                                {
+                                    var allStr = elem.GetAttribute("padding");
+                                    if (!string.IsNullOrEmpty(allStr))
+                                    {
+                                        var all = ParseSizeValue(allStr);
+                                        padding.Top = all;
+                                        padding.Bottom = all;
+                                        padding.Left = all;
+                                        padding.Right = all;
+                                    }
+                                }
+
+                                var backcolor = SKColor.Empty;
+                                {
+                                    var backcolorStr = elem.GetAttribute("background_color");
+                                    if (!string.IsNullOrEmpty(backcolorStr))
+                                    {
+                                        backcolor = ParseColor(backcolorStr, divState.BackgroundColor);
+                                    }
+                                }
+
+
+                                var c = ParseNode(node.ChildNodes, stringStyle, style, align);
+
+                                nodeList.Add(new ConsoleDivElement(
+                                    [.. c],
+                                    display: display,
+                                    borderStyle: borderStyle,
+                                    position: position,
+                                    size: size,
+                                    padding: padding,
+                                    backcolor: backcolor
+                                ));
+                            }
+                            break;
+                        case "#text":
+                            {
+                                var text = node.Text();
+                                nodeList.Add(
+                                    new ConsoleStyledString(text, stringStyle)
+                                );
+                            }
+                            break;
+                        default:
+                            {
+                                throw new Exception($"タグ名 {node.NodeName} は解釈出来ません");
+                            }
                     }
-                };
-                var div = new ConsoleButtonString(console, [
-                    new ConsoleDivElement(
-                        buttonList,
-                        state.DivState.Display,
-                        state.DivState.PosX,
-                        state.DivState.PosY,
-                        state.DivState.Width,
-                        state.DivState.Height,
-                        state.DivState.BackgroundColor,
-                        borderStyle,
-                        state.DivState.Padding
-                    )
-                ])
+                }
+
+                return nodeList;
+            }
+            var buttonList = new List<ConsoleButtonString>();
+            var nonButtonList = new List<AConsoleDisplayNode>();
+            foreach (var node in list)
+            {
+                if (node is not ConsoleButtonString cbs)
                 {
-                    IsDiv = true
-                };
-                returnButtonList.Add(div);
-                buttonList = [];
-                state.DivState = null;
-                state.CloseDiv = false;
+                    nonButtonList.Add(node);
+                }
+                else
+                {
+                    if (nonButtonList.Count > 0)
+                    {
+                        buttonList.Add(new ConsoleButtonString(console, [.. nonButtonList]));
+                        nonButtonList.Clear();
+                    }
+                    buttonList.Add(cbs);
+                }
             }
 
-            state.FlagBr = false;
-            state.FlagButton = false;
-            state.LastButtonTag = state.CurrentButtonTag;
-        }
-        //</nobr></p>は省略許可
-        if (state.CurrentButtonTag != null || state.FontStyle != FontStyle.Regular || state.FonttagList.Count > 0)
-            throw new CodeEE("閉じられていないタグがあります");
-        if (cssList.Count > 0)
-            buttonList.Add(cssToButton(cssList, state, console));
-
-        returnButtonList.AddRange(buttonList);
-
-        foreach (var button in returnButtonList)
-        {
-            if (button != null && button.PointXisLocked)
+            if (nonButtonList.Count > 0)
             {
-                if (!state.FlagNobr)
-                    throw new CodeEE("<nobr>が設定されていない行ではpos属性は使用できません");
-                if (state.Alignment != DisplayLineAlignment.LEFT)
-                    throw new CodeEE("alignがleftでない行ではpos属性は使用できません");
-                break;
+                buttonList.Add(new ConsoleButtonString(console, [.. nonButtonList]));
+                nonButtonList.Clear();
             }
-        }
-        var ret = PrintStringBuffer.ButtonsToDisplayLines(returnButtonList, sm, state.FlagNobr, false);
-        if (ret.Length > 0)
-        {
-            foreach (ConsoleDisplayLine dl in ret)
+
+
+            var ret = PrintStringBuffer.ButtonsToDisplayLines(buttonList, sm, noBR, false);
+            if (ret.Length > 0)
             {
-                dl.SetAlignment(state.Alignment);
+                ret[^1].IsLineEnd = lineEnd;
             }
-            ret[^1].IsLineEnd = lineEnd;
+
+            foreach (var line in ret)
+            {
+                line.SetAlignment(align);
+            }
+
+            return ret;
+        }
+    }
+
+    private static SKColor ParseColor(string colorStr, SKColor def)
+    {
+        SKColor color;
+        if (string.IsNullOrEmpty(colorStr))
+        {
+            color = def;
+        }
+        else
+        {
+            color = ParseColor(colorStr);
         }
 
-        return ret;
+        return color;
+    }
+
+    private static SKColor ParseColor(string colorStr)
+    {
+        SKColor color;
+        color = new SKColor((uint)stringToColorInt32(colorStr));
+        color = color.WithAlpha(byte.MaxValue);
+
+        return color;
+    }
+
+    static int ParseSizeValue(string value, int def)
+    {
+        int xpos = def;
+        if (!string.IsNullOrEmpty(value))
+        {
+            xpos = ParseSizeValue(value);
+        }
+
+        return xpos;
+    }
+
+    private static int ParseSizeValue(string value)
+    {
+        int xpos;
+        if (value.EndsWith("px"))
+        {
+            xpos = int.Parse(value.AsSpan()[..^2]);
+        }
+        else
+        {
+            xpos = int.Parse(value) * Config.FontSize / 100;
+        }
+
+        return xpos;
     }
 
     public static string Html2PlainText(string str)
@@ -667,576 +918,16 @@ internal static partial class HtmlManager
             b.Append("</font>");
         return b.ToString();
     }
-
-    private static AConsoleDisplayNode tagAnalyze(HtmlAnalzeState state, CharStream st)
+    static DisplayMode ParseDisplayValue(string value)
     {
-        bool endTag = st.Current == '/';
-        string tag;
-        if (endTag)
+        return value switch
         {
-            st.ShiftNext();
-            int found = st.Find('>');
-            if (found < 0)
-            {
-                st.CurrentPosition = st.RowString.Length;
-                return null;//戻り先でエラーを出す
-            }
-            tag = st.Substring(st.CurrentPosition, found).Trim();
-            st.CurrentPosition += found;
-            FontStyle endStyle = FontStyle.Strikeout;
-            switch (tag.ToLower())
-            {
-                case "b": endStyle = FontStyle.Bold; goto case "s";
-                case "i": endStyle = FontStyle.Italic; goto case "s";
-                case "u": endStyle = FontStyle.Underline; goto case "s";
-                case "s":
-                    if ((state.FontStyle & endStyle) == FontStyle.Regular)
-                        throw new CodeEE("</" + tag + ">の前に<" + tag + ">がありません");
-                    state.FontStyle ^= endStyle;
-                    return null;
-                case "p":
-                    if (!state.FlagP || state.FlagPClosed)
-                        throw new CodeEE("</p>の前に<p>がありません");
-                    state.FlagPClosed = true;
-                    return null;
-                case "nobr":
-                    if (!state.FlagNobr || state.FlagNobrClosed)
-                        throw new CodeEE("</nobr>の前に<nobr>がありません");
-                    state.FlagNobrClosed = true;
-                    return null;
-                case "font":
-                    if (state.FonttagList.Count == 0)
-                        throw new CodeEE("</font>の前に<font>がありません");
-                    state.FonttagList.RemoveAt(state.FonttagList.Count - 1);
-                    return null;
-                case "button":
-                    if (state.CurrentButtonTag == null || !state.CurrentButtonTag.IsButtonTag)
-                        throw new CodeEE("</button>の前に<button>がありません");
-                    state.CurrentButtonTag = null;
-                    state.FlagButton = true;
-                    return null;
-                case "nonbutton":
-                    if (state.CurrentButtonTag == null || state.CurrentButtonTag.IsButtonTag)
-                        throw new CodeEE("</nonbutton>の前に<nonbutton>がありません");
-                    state.CurrentButtonTag = null;
-                    state.FlagButton = true;
-                    return null;
-                case "div":
-                    state.DivState.IsDiv = false;
-                    state.CloseDiv = true;
-                    return null;
-                default:
-                    throw new CodeEE("終了タグ</" + tag + ">は解釈できません");
-            }
-            //goto error;
-        }
-        //以降は開始タグ
-
-        bool tempUseMacro = LexicalAnalyzer.UseMacro;
-        WordCollection wc = null;
-        try
-        {
-            LexicalAnalyzer.UseMacro = false;//一時的にマクロ展開をやめる
-            tag = LexicalAnalyzer.ReadSingleIdentifier(st);
-            LexicalAnalyzer.SkipWhiteSpace(st);
-            if (st.Current != '>')
-                wc = LexicalAnalyzer.Analyse(st, LexEndWith.GreaterThan, LexAnalyzeFlag.AllowAssignment | LexAnalyzeFlag.AllowSingleQuotationStr);
-        }
-        finally
-        {
-            LexicalAnalyzer.UseMacro = tempUseMacro;
-        }
-        if (string.IsNullOrEmpty(tag))
-            goto error;
-        IdentifierWord word;
-        FontStyle newStyle = FontStyle.Strikeout;
-        switch (tag.ToLower())
-        {
-            case "b": newStyle = FontStyle.Bold; goto case "s";
-            case "i": newStyle = FontStyle.Italic; goto case "s";
-            case "u": newStyle = FontStyle.Underline; goto case "s";
-            case "s":
-                if (wc != null)
-                    throw new CodeEE("<" + tag + ">タグにに属性が設定されています");
-                if ((state.FontStyle & newStyle) != FontStyle.Regular)
-                    throw new CodeEE("<" + tag + ">が二重に使われています");
-                state.FontStyle |= newStyle;
-                return null;
-            case "br":
-                if (wc != null)
-                    throw new CodeEE("<" + tag + ">タグにに属性が設定されています");
-                state.FlagBr = true;
-                return null;
-            case "nobr":
-                if (wc != null)
-                    throw new CodeEE("<" + tag + ">タグに属性が設定されています");
-                if (!state.LineHead)
-                    throw new CodeEE("<nobr>が行頭以外で使われています");
-                if (state.FlagNobr)
-                    throw new CodeEE("<nobr>が2度以上使われています");
-                state.FlagNobr = true;
-                return null;
-            case "p":
-                {
-                    if (wc == null)
-                        throw new CodeEE("<" + tag + ">タグに属性が設定されていません");
-                    if (!state.LineHead)
-                        throw new CodeEE("<p>が行頭以外で使われています");
-                    if (state.FlagNobr)
-                        throw new CodeEE("<p>が2度以上使われています");
-                    word = wc.Current as IdentifierWord;
-                    wc.ShiftNext();
-                    OperatorWord op = wc.Current as OperatorWord;
-                    wc.ShiftNext();
-                    LiteralStringWord attr = wc.Current as LiteralStringWord;
-                    wc.ShiftNext();
-                    if (!wc.EOL || word == null || op == null || op.Code != OperatorCode.Assignment || attr == null)
-                        goto error;
-                    if (!word.Code.Equals("align", StringComparison.OrdinalIgnoreCase))
-                        throw new CodeEE("<p>タグの属性名" + word.Code + "は解釈できません");
-                    string attrValue = Unescape(attr.Str);
-                    switch (attrValue.ToLower())
-                    {
-                        case "left":
-                            state.Alignment = DisplayLineAlignment.LEFT;
-                            break;
-                        case "center":
-                            state.Alignment = DisplayLineAlignment.CENTER;
-                            break;
-                        case "right":
-                            state.Alignment = DisplayLineAlignment.RIGHT;
-                            break;
-                        default:
-                            throw new CodeEE("属性値" + attr.Str + "は解釈できません");
-                    }
-                    state.FlagP = true;
-                    return null;
-                }
-            case "img":
-                {
-                    if (wc == null)
-                        throw new CodeEE("<" + tag + ">タグに属性が設定されていません");
-                    string attrValue;
-                    string src = null;
-                    string srcb = null;
-                    int height = 0;
-                    int width = 0;
-                    int ypos = 0;
-                    int xpos = 0;
-                    bool usePxHeight = false;
-                    bool usePxWidth = false;
-                    DisplayMode display = DisplayMode.Relative;
-                    while (wc != null && !wc.EOL)
-                    {
-                        word = wc.Current as IdentifierWord;
-                        wc.ShiftNext();
-                        OperatorWord op = wc.Current as OperatorWord;
-                        wc.ShiftNext();
-                        LiteralStringWord attr = wc.Current as LiteralStringWord;
-                        wc.ShiftNext();
-                        if (word == null || op == null || op.Code != OperatorCode.Assignment || attr == null)
-                            goto error;
-                        attrValue = Unescape(attr.Str);
-                        if (word.Code.Equals("src", StringComparison.OrdinalIgnoreCase))
-                        {
-                            if (src != null)
-                                throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
-                            src = attrValue;
-                        }
-                        else if (word.Code.Equals("srcb", StringComparison.OrdinalIgnoreCase))
-                        {
-                            if (srcb != null)
-                                throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
-                            srcb = attrValue;
-                        }
-                        else if (word.Code.Equals("height", StringComparison.OrdinalIgnoreCase))
-                        {
-                            if (height != 0)
-                                throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
-                            var trimedAttr = attrValue.AsSpan().Trim();
-                            if (trimedAttr.EndsWith("px"))
-                            {
-                                usePxHeight = true;
-                                if (!int.TryParse(trimedAttr[..^2], out height))
-                                    throw new CodeEE("<" + tag + ">タグのheight属性の属性値が数値として解釈できません");
-                            }
-                            else
-                            {
-                                if (!int.TryParse(trimedAttr, out height))
-                                    throw new CodeEE("<" + tag + ">タグのheight属性の属性値が数値として解釈できません");
-                            }
-                        }
-                        else if (word.Code.Equals("width", StringComparison.OrdinalIgnoreCase))
-                        {
-                            if (width != 0)
-                                throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
-                            var trimedAttr = attrValue.AsSpan().Trim();
-                            if (trimedAttr.EndsWith("px"))
-                            {
-                                usePxWidth = true;
-                                if (!int.TryParse(trimedAttr[..^2], out width))
-                                    throw new CodeEE("<" + tag + ">タグのwidth属性の属性値が数値として解釈できません");
-                            }
-                            else
-                            {
-                                if (!int.TryParse(trimedAttr, out width))
-                                    throw new CodeEE("<" + tag + ">タグのwidth属性の属性値が数値として解釈できません");
-                            }
-                        }
-                        else if (word.Code.Equals("ypos", StringComparison.OrdinalIgnoreCase))
-                        {
-                            ypos = ParseSizeValue(attrValue);
-                        }
-                        else if (word.Code.Equals("xpos", StringComparison.OrdinalIgnoreCase))
-                        {
-                            xpos = ParseSizeValue(attrValue);
-                        }
-                        else if (word.Code.Equals("display", StringComparison.OrdinalIgnoreCase))
-                        {
-                            display = parseDisplayValue(attrValue);
-                        }
-                        else
-                            throw new CodeEE("<" + tag + ">タグの属性名" + word.Code + "は解釈できません");
-                    }
-                    if (src == null)
-                        throw new CodeEE("<" + tag + ">タグにsrc属性が設定されていません");
-                    return new ConsoleImagePart(src, srcb, height, width, ypos, xpos, usePxWidth, usePxHeight, display);
-                }
-
-            case "shape":
-                {
-                    if (wc == null)
-                        throw new CodeEE("<" + tag + ">タグに属性が設定されていません");
-                    int[] param = null;
-                    string type = null;
-                    int color = -1;
-                    int bcolor = -1;
-                    while (!wc.EOL)
-                    {
-                        word = wc.Current as IdentifierWord;
-                        wc.ShiftNext();
-                        OperatorWord op = wc.Current as OperatorWord;
-                        wc.ShiftNext();
-                        LiteralStringWord attr = wc.Current as LiteralStringWord;
-                        wc.ShiftNext();
-                        if (word == null || op == null || op.Code != OperatorCode.Assignment || attr == null)
-                            goto error;
-                        string attrValue = Unescape(attr.Str);
-                        switch (word.Code)
-                        {
-                            case "color":
-                            case "COLOR":
-                                if (color >= 0)
-                                    throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
-                                color = stringToColorInt32(attrValue);
-                                break;
-                            case "bcolor":
-                            case "BCOLOR":
-                                if (bcolor >= 0)
-                                    throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
-                                bcolor = stringToColorInt32(attrValue);
-                                break;
-                            case "type":
-                            case "TYPE":
-                                if (type != null)
-                                    throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
-                                type = attrValue;
-                                break;
-                            case "param":
-                            case "PARAM":
-                                if (param != null)
-                                    throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
-                                {
-                                    string[] tokens = attrValue.Split(',');
-                                    param = new int[tokens.Length];
-                                    for (int i = 0; i < tokens.Length; i++)
-                                    {
-                                        if (!int.TryParse(tokens[i], out param[i]))
-                                            throw new CodeEE("<" + tag + ">タグの" + word.Code + "属性の属性値が数値として解釈できません");
-                                    }
-                                    break;
-                                }
-                            default:
-                                throw new CodeEE("<" + tag + ">タグの属性名" + word.Code + "は解釈できません");
-                        }
-                    }
-                    if (param == null)
-                        throw new CodeEE("<" + tag + ">タグにparam属性が設定されていません");
-                    if (type == null)
-                        throw new CodeEE("<" + tag + ">タグにtype属性が設定されていません");
-                    Color c = Config.ForeColor;
-                    Color b = Config.FocusColor;
-                    if (color >= 0)
-                    {
-                        c = Color.FromArgb(color >> 16, color >> 8 & 0xFF, color & 0xFF);
-                    }
-                    if (bcolor >= 0)
-                    {
-                        b = Color.FromArgb(bcolor >> 16, bcolor >> 8 & 0xFF, bcolor & 0xFF);
-                    }
-                    return ConsoleShapePart.CreateShape(type, param, c, b, color >= 0);
-                }
-            case "button":
-            case "nonbutton":
-                {
-                    if (state.CurrentButtonTag != null)
-                        throw new CodeEE("<button>又は<nonbutton>が入れ子にされています");
-                    HtmlAnalzeStateButtonTag buttonTag = new();
-                    bool isButton = tag.Equals("button", StringComparison.OrdinalIgnoreCase);
-                    string attrValue;
-                    string value = null;
-                    //if (wc == null)
-                    //	throw new CodeEE("<" + tag + ">タグに属性が設定されていません");
-                    while (wc != null && !wc.EOL)
-                    {
-                        word = wc.Current as IdentifierWord;
-                        wc.ShiftNext();
-                        OperatorWord op = wc.Current as OperatorWord;
-                        wc.ShiftNext();
-                        LiteralStringWord attr = wc.Current as LiteralStringWord;
-                        wc.ShiftNext();
-                        if (word == null || op == null || op.Code != OperatorCode.Assignment || attr == null)
-                            goto error;
-                        attrValue = Unescape(attr.Str);
-                        if (word.Code.Equals("value", StringComparison.OrdinalIgnoreCase))
-                        {
-                            if (!isButton)
-                                throw new CodeEE("<" + tag + ">タグにvalue属性が設定されています");
-                            if (value != null)
-                                throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
-                            value = attrValue;
-                        }
-                        else if (word.Code.Equals("title", StringComparison.OrdinalIgnoreCase))
-                        {
-                            if (buttonTag.ButtonTitle != null)
-                                throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
-                            buttonTag.ButtonTitle = attrValue;
-                        }
-                        else if (word.Code.Equals("pos", StringComparison.OrdinalIgnoreCase))
-                        {
-                            //throw new NotImplCodeEE();
-                            if (buttonTag.PointXisLocked)
-                                throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
-                            if (!int.TryParse(attrValue, out int pos))
-                                throw new CodeEE("<" + tag + ">タグのpos属性の属性値が数値として解釈できません");
-                            buttonTag.PointX = pos;
-                            buttonTag.PointXisLocked = true;
-                        }
-                        else
-                            throw new CodeEE("<" + tag + ">タグの属性名" + word.Code + "は解釈できません");
-                    }
-                    if (isButton)
-                    {
-                        //if (value == null)
-                        //	throw new CodeEE("<" + tag + ">タグにvalue属性が設定されていません");
-                        buttonTag.ButtonIsInteger = long.TryParse(value, out long intValue);
-                        buttonTag.ButtonValueInt = intValue;
-                        buttonTag.ButtonValueStr = value;
-                    }
-                    buttonTag.IsButton = value != null;
-                    buttonTag.IsButtonTag = isButton;
-                    state.CurrentButtonTag = buttonTag;
-                    state.FlagButton = true;
-                    return null;
-                }
-            case "font":
-                {
-                    if (wc == null)
-                        throw new CodeEE("<" + tag + ">タグに属性が設定されていません");
-                    HtmlAnalzeStateFontTag font = new();
-                    while (!wc.EOL)
-                    {
-                        word = wc.Current as IdentifierWord;
-                        wc.ShiftNext();
-                        OperatorWord op = wc.Current as OperatorWord;
-                        wc.ShiftNext();
-                        LiteralStringWord attr = wc.Current as LiteralStringWord;
-                        wc.ShiftNext();
-                        if (word == null || op == null || op.Code != OperatorCode.Assignment || attr == null)
-                            goto error;
-                        string attrValue = Unescape(attr.Str);
-                        switch (word.Code.ToLower())
-                        {
-                            case "color":
-                                if (font.Color >= 0)
-                                    throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
-                                font.Color = stringToColorInt32(attrValue);
-                                break;
-                            case "bcolor":
-                                if (font.BColor >= 0)
-                                    throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
-                                font.BColor = stringToColorInt32(attrValue);
-                                break;
-                            case "face":
-                                if (font.FontName != null)
-                                    throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
-                                font.FontName = attrValue;
-                                break;
-                            //case "pos":
-                            //	{
-                            //		//throw new NotImplCodeEE();
-                            //		if (font.PointXisLocked)
-                            //			throw new CodeEE("<" + tag + ">タグに" + word.Code + "属性が2度以上指定されています");
-                            //		int pos = 0;
-                            //		if (!int.TryParse(attrValue, out pos))
-                            //			throw new CodeEE("<font>タグのpos属性の属性値が数値として解釈できません");
-                            //		font.PointX = pos;
-                            //		font.PointXisLocked = true;
-                            //		break;
-                            //	}
-                            default:
-                                throw new CodeEE("<" + tag + ">タグの属性名" + word.Code + "は解釈できません");
-                        }
-                    }
-                    //他のfontタグの内側であるなら未設定項目については外側のfontタグの設定を受け継ぐ(posは除く)
-                    if (state.FonttagList.Count > 0)
-                    {
-                        HtmlAnalzeStateFontTag oldFont = state.FonttagList[^1];
-                        if (font.Color < 0)
-                            font.Color = oldFont.Color;
-                        if (font.BColor < 0)
-                            font.BColor = oldFont.BColor;
-                        if (font.FontName == null)
-                            font.FontName = oldFont.FontName;
-                    }
-                    state.FonttagList.Add(font);
-                    return null;
-                }
-            case "div":
-                {
-                    state.OpenDiv = true;
-
-                    state.DivState = new()
-                    {
-                        IsDiv = true
-                    };
-
-                    var xpos = 0;
-                    var ypos = 0;
-                    var width = -1;
-                    var height = -1;
-                    var display = DisplayMode.Relative;
-                    SKColor? backgroundColor = null;
-                    SKColor borderColor = SKColors.White;
-                    var borderWidth = 1;
-
-
-                    while (wc != null && !wc.EOL)
-                    {
-                        var tagName = wc.Current as IdentifierWord;
-                        wc.ShiftNext();
-                        // = 
-                        wc.ShiftNext();
-                        switch (tagName.Code)
-                        {
-                            case "xpos":
-                                {
-                                    var value = (wc.Current as LiteralStringWord).Str;
-                                    xpos = ParseSizeValue(value);
-                                }
-                                break;
-                            case "ypos":
-                                {
-                                    var value = (wc.Current as LiteralStringWord).Str;
-                                    ypos = ParseSizeValue(value);
-                                }
-                                break;
-                            case "display":
-                                {
-                                    var value = (wc.Current as LiteralStringWord).Str;
-                                    display = parseDisplayValue(value);
-                                }
-                                break;
-                            case "background_color":
-                                {
-                                    var value = (wc.Current as LiteralStringWord).Str;
-                                    backgroundColor = SKColor.Parse(value);
-                                }
-                                break;
-                            case "width":
-                                {
-                                    var value = (wc.Current as LiteralStringWord).Str;
-                                    width = ParseSizeValue(value);
-                                }
-                                break;
-                            case "height":
-                                {
-                                    var value = (wc.Current as LiteralStringWord).Str;
-                                    height = ParseSizeValue(value);
-                                }
-                                break;
-                            case "border_width":
-                                {
-                                    var value = (wc.Current as LiteralStringWord).Str;
-                                    state.DivState.HasBorder = true;
-                                    borderWidth = ParseSizeValue(value);
-                                }
-                                break;
-                            case "border_color":
-                                {
-                                    var value = (wc.Current as LiteralStringWord).Str;
-                                    state.DivState.HasBorder = true;
-                                    borderColor = SKColor.Parse(value);
-                                }
-                                break;
-                            case "padding":
-                                {
-                                    var value = (wc.Current as LiteralStringWord).Str;
-                                    var all = ParseSizeValue(value);
-                                    state.DivState.Padding = new SKRect(all, all, all, all);
-                                }
-                                break;
-                        }
-                        wc.ShiftNext();
-                    }
-
-                    state.DivState.PosX = xpos;
-                    state.DivState.PosY = ypos;
-                    state.DivState.Display = display;
-                    state.DivState.BackgroundColor = backgroundColor;
-                    state.DivState.Width = width;
-                    state.DivState.Height = height;
-                    if (state.DivState.HasBorder)
-                    {
-                        state.DivState.BorderColor = borderColor;
-                        state.DivState.BorderWidth = borderWidth;
-                    }
-                    return null;
-                }
-            default:
-                throw new CodeEE($"html文字列\"{st.RowString}\"のタグ解析中にエラーが発生しました");
-        }
-
-
-    error:
-        throw new CodeEE($"html文字列\"{st.RowString}\"のタグ解析中にエラーが発生しました");
-
-        static DisplayMode parseDisplayValue(string value)
-        {
-            return value switch
-            {
-                "relative" => DisplayMode.Relative,
-                "absolute" => DisplayMode.Absolute,
-                "absolute-lefttop" => DisplayMode.AbsoluteLeftTop,
-                "absolute-leftbottom" => DisplayMode.AbsoluteLeftBottom,
-                _ => throw new Exception("displayの値が解釈できません")
-            };
-        }
-
-        static int ParseSizeValue(string value)
-        {
-            int xpos;
-            if (value.EndsWith("px"))
-            {
-                xpos = int.Parse(value.AsSpan()[..^2]);
-            }
-            else
-            {
-                xpos = int.Parse(value) * Config.FontSize / 100;
-            }
-
-            return xpos;
-        }
+            "relative" => DisplayMode.Relative,
+            "absolute" => DisplayMode.Absolute,
+            "absolute-lefttop" => DisplayMode.AbsoluteLeftTop,
+            "absolute-leftbottom" => DisplayMode.AbsoluteLeftBottom,
+            _ => throw new Exception("displayの値が解釈できません")
+        };
     }
 
     private static int stringToColorInt32(string str)

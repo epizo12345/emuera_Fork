@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using AngleSharp.Dom;
 using MinorShift.Emuera;
 using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Config.JSON;
@@ -14,10 +15,9 @@ struct BorderStyle
 
 class ConsoleDivElement : AConsoleDisplayNode
 {
-    public readonly List<ConsoleButtonString> _childNodes;
+    public readonly List<AConsoleDisplayNode> _childNodes;
 
-    readonly int _positionX;
-    readonly int _positionY;
+    readonly SKPoint _position;
 
     readonly DisplayMode _display;
 
@@ -26,36 +26,36 @@ class ConsoleDivElement : AConsoleDisplayNode
     BorderStyle? _borderStyle;
     SKRect? _padding;
 
-    public ConsoleDivElement(List<ConsoleButtonString> childNode,
+    public ConsoleDivElement(List<AConsoleDisplayNode> childNode,
                                 DisplayMode display = DisplayMode.Relative,
-                                int positionX = 0, int positionY = 0,
-                                int width = -1, int height = -1,
+                                SKPoint position = default,
+                                SKSize size = default,
                                 SKColor? backcolor = null,
                                 BorderStyle? borderStyle = null,
                                 SKRect? padding = null)
     {
         _childNodes = childNode;
-
         foreach (var node in childNode)
         {
             if (node != null)
             {
-                foreach (var child in node.StrArray)
+                node.Point = Point;
+                if (node is ConsoleButtonString cbs)
                 {
-                    child.Point = Point;
-                    child.Size = new SKSize();
+                    foreach (var child in cbs.StrArray)
+                    {
+                        child.Point = Point;
+                        child.Size = new SKSize();
+                    }
                 }
+
             }
         }
 
 
         _display = display;
-        _positionX = positionX;
-        _positionY = positionY;
-        Size = new SKSize(width, height);
-
-        _positionX = positionX;
-        _positionY = positionY;
+        _position = position;
+        Size = size;
 
         _backColor = backcolor;
 
@@ -72,14 +72,14 @@ class ConsoleDivElement : AConsoleDisplayNode
             return;
         Point = _display switch
         {
-            DisplayMode.Relative => new SKPoint(PointX + _positionX, (int)origin.Y + _positionY),
-            DisplayMode.AbsoluteLeftTop => new SKPoint(_positionX, _positionY),
-            DisplayMode.AbsoluteLeftBottom => new SKPoint(_positionX, GlobalStatic.Console.ClientHeight - Config.FontSize + _positionY),
+            DisplayMode.Relative => new SKPoint(PointX + _position.X, (int)origin.Y + _position.Y),
+            DisplayMode.AbsoluteLeftTop => _position,
+            DisplayMode.AbsoluteLeftBottom => new SKPoint(_position.X, GlobalStatic.Console.ClientHeight - Config.FontSize + _position.Y),
             _ => throw new NotImplementedException($"{_display}はまだ実装されていません")
         };
 
-        var autoWidth = Size?.Width == -1;
-        var autoHeight = Size?.Height == -1;
+        var autoWidth = Size.Width == -1;
+        var autoHeight = Size.Height == -1;
 
         if (autoWidth || autoHeight)
         {
@@ -111,17 +111,11 @@ class ConsoleDivElement : AConsoleDisplayNode
 
             if (autoWidth)
             {
-                Size = Size.Value with
-                {
-                    Width = maxWidth + paddingSize.Width,
-                };
+                Size.Width = maxWidth + paddingSize.Width;
             }
             if (autoHeight)
             {
-                Size = Size.Value with
-                {
-                    Height = Config.LineHeight * lineCount + paddingSize.Height,
-                };
+                Size.Height = Config.LineHeight * lineCount + paddingSize.Height;
             }
         }
 
@@ -138,18 +132,15 @@ class ConsoleDivElement : AConsoleDisplayNode
                 {
                     Color = _backColor.Value,
                 };
-                canvas.DrawRect(SKRect.Create(Point.Value, Size.Value), paint);
+                canvas.DrawRect(SKRect.Create(Point, Size), paint);
             }
 
         }
 
-        var paddingOrigin = Point ?? new SKPoint();
+        var paddingOrigin = Point;
         if (_padding.HasValue)
         {
-            paddingOrigin = new SKPoint(
-                Point.Value.X + _padding.Value.Left,
-                Point.Value.Y + _padding.Value.Top
-                );
+            paddingOrigin.Offset(_padding.Value.Left, _padding.Value.Top);
         }
 
         var drawPoint = paddingOrigin;
@@ -157,7 +148,7 @@ class ConsoleDivElement : AConsoleDisplayNode
         {
             if (childNode != null)
             {
-                childNode.DrawTo(canvas, drawPoint, isBackLog, mode);
+                childNode.DrawTo(canvas, drawPoint, false, isBackLog, mode);
                 drawPoint.Offset(childNode.Width, 0);
             }
             else
@@ -173,7 +164,7 @@ class ConsoleDivElement : AConsoleDisplayNode
         if (_borderStyle.HasValue)
         {
             //graph.DrawRectangle(_borderStyle.Value.Pen, new Rectangle(Point, Size));
-            canvas.DrawRect(SKRect.Create(Point.Value, Size.Value), _borderStyle?.Paint);
+            canvas.DrawRect(SKRect.Create(Point, Size), _borderStyle?.Paint);
         }
     }
 
@@ -187,7 +178,14 @@ class ConsoleDivElement : AConsoleDisplayNode
 
         foreach (var childNode in _childNodes)
         {
-            childNode?.CalcWidth(sm, subPixel);
+            if (childNode is ConsoleButtonString cbs)
+            {
+                cbs.CalcWidth(sm, subPixel);
+            }
+            else
+            {
+                childNode?.SetWidth(sm, subPixel);
+            }
         }
     }
 }

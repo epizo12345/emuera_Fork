@@ -11,8 +11,7 @@ namespace MinorShift.Emuera.UI.Game;
 sealed class ConsoleImagePart : AConsoleDisplayNode
 {
 
-    public ConsoleImagePart(string resName, string resNameb, int raw_height, int raw_width, int raw_ypos, int raw_xpos,
-     bool usePxWidth = false, bool usePxHeight = false, DisplayMode display = DisplayMode.Relative)
+    public ConsoleImagePart(string resName, string resNameb, int raw_height, int raw_width, int raw_ypos, int raw_xpos, DisplayMode display = DisplayMode.Relative)
     {
         top = 0;
         bottom = Config.FontSize;
@@ -36,15 +35,7 @@ sealed class ConsoleImagePart : AConsoleDisplayNode
         }
         else
         {
-            if (usePxHeight)
-            {
-                height = raw_height;
-            }
-            else
-            {
-                //HTMLで高さが指定された場合、フォントサイズの100分率と解釈する。
-                height = Config.FontSize * raw_height / 100;
-            }
+            height = raw_height;
         }
         //幅が指定されていない又は0が指定された場合、元画像の縦横比を維持するように幅(px単位)を設定する。1未満は端数としてXsubpixelに記録。
         //負の値が指定される可能性があるが、最終的なWidthは正の値になるようにあとで調整する。
@@ -55,14 +46,7 @@ sealed class ConsoleImagePart : AConsoleDisplayNode
         }
         else
         {
-            if (usePxWidth)
-            {
-                Width = raw_width;
-            }
-            else
-            {
-                Width = Config.FontSize * raw_width / 100;
-            }
+            Width = raw_width;
             XsubPixel = (float)Config.FontSize * raw_width / 100f - Width;
         }
         top = raw_ypos;

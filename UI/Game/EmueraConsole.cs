@@ -1713,10 +1713,10 @@ internal sealed partial class EmueraConsole : IDisposable
                 if (part == null)
                     continue;
 
-                if (part.Size != null && part.Point != null)
+                if (!part.Size.IsEmpty && !part.Point.IsEmpty)
                 {
-                    if ((part.Point?.X <= pointX) && (part.Point?.X + part.Size?.Width >= pointX) &&
-                        (pointY >= part.Point?.Y) && (pointY <= part.Point?.Y + part.Size?.Height))
+                    if ((part.Point.X <= pointX) && (part.Point.X + part.Size.Width >= pointX) &&
+                        (pointY >= part.Point.Y) && (pointY <= part.Point.Y + part.Size.Height))
                     {
                         if (button.IsButton)
                             return button;
@@ -1726,8 +1726,11 @@ internal sealed partial class EmueraConsole : IDisposable
                     {
                         foreach (var node in div._childNodes)
                         {
-                            var f = findButtom(pointX, pointY, relPointY, node);
-                            if (f != null) return f;
+                            if (node is ConsoleButtonString cbs)
+                            {
+                                var f = findButtom(pointX, pointY, relPointY, cbs);
+                                if (f != null) return f;
+                            }
                         }
                     }
                 }
