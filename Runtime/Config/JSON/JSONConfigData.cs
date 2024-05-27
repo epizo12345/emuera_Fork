@@ -20,7 +20,7 @@ sealed class JSONConfigData
 
     public bool UseScopedVariableInstruction { get; set; }
 
-    public Resampler ImageSamplingOption { get; set; }
+    public Resampler ImageSamplingOption { get; set; } = Resampler.Linear;
 
     public bool CheckUTF8withBOM { get; set; } = true;
 }
