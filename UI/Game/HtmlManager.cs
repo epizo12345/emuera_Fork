@@ -632,7 +632,16 @@ internal static partial class HtmlManager
             var innerList = new List<AConsoleDisplayNode>();
             foreach (var node in list)
             {
-                if (node is ConsoleButtonString cbs)
+                if (node is BrNode)
+                {
+                    if (innerList.Count > 0)
+                    {
+                        buttonList.Add(new ConsoleButtonString(console, [.. innerList]));
+                        innerList.Clear();
+                    }
+                    buttonList.Add(null);
+                }
+                else if (node is ConsoleButtonString cbs)
                 {
                     if (innerList.Count > 0)
                     {

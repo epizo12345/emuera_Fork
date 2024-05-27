@@ -18,6 +18,15 @@ internal sealed class ConsoleButtonString : AConsoleDisplayNode
     {
         parent = console;
         strArray = strs;
+        var lineCount = 1;
+        foreach (var node in strArray)
+        {
+            if (node is BrNode)
+            {
+                lineCount++;
+            }
+        }
+        LineCount = lineCount;
         IsButton = false;
         PointX = -1;
         Width = -1;
@@ -231,7 +240,7 @@ internal sealed class ConsoleButtonString : AConsoleDisplayNode
         {
             if (css is BrNode)
             {
-                point.X = origin.X;
+                point.X = PointX;
                 point.Offset(0, Config.LineHeight);
             }
             else

@@ -241,6 +241,22 @@ internal sealed class PrintStringBuffer
         {
             lineList.Add(m_buttonsToDisplayLine(lineButtonList, firstLine, temporary));
         }
+
+
+        var LineCount = 1;
+        for (int i = 0; i < lineList.Count; i++)
+        {
+            foreach (var item in lineList[i].Buttons)
+            {
+                LineCount = Math.Max(LineCount, item.LineCount);
+            }
+        }
+
+        for (int j = 1; j < LineCount; j++)
+        {
+            lineList.Add(new ConsoleDisplayLine([], true, false));
+        }
+
         return [.. lineList];
     }
 
