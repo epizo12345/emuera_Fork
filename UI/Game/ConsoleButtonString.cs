@@ -93,7 +93,7 @@ internal sealed class ConsoleButtonString : AConsoleDisplayNode
     public ScriptPosition? ErrPos { get; set; }
     public string Title { get; set; }
 
-    public bool IsDiv;
+    public int LineCount { get; set; } = 1;
 
 
     public int RelativePointX { get; private set; }
@@ -226,13 +226,23 @@ internal sealed class ConsoleButtonString : AConsoleDisplayNode
     {
         bool isSelecting = IsButton && parent.ButtonIsSelected(this);
 
+        var origin = point;
         foreach (var css in strArray)
         {
-            css.DrawTo(graph, point, isSelecting, isBackLog, mode, IsButton);
-            if (point.X != -1)
+            if (css is BrNode)
             {
-                point.Offset(css.Width, 0);
+                point.X = origin.X;
+                point.Offset(0, Config.LineHeight);
             }
+            else
+            {
+                css.DrawTo(graph, point, isSelecting, isBackLog, mode, IsButton);
+                if (point.X != float.NegativeInfinity)
+                {
+                    point.Offset(css.Width, 0);
+                }
+            }
+
         }
     }
 

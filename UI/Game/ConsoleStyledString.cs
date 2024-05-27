@@ -204,10 +204,13 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
         };
 
         var point = new SKPoint(origin.X, origin.Y);
+
         if (origin.X == float.NegativeInfinity)//旧来の位置決め方式
         {
-            point.X = PointX + Config.DrawingParam_ShapePositionShift;
+            point.X = PointX;
         }
+        point.X += Config.DrawingParam_ShapePositionShift;
+
         Point = point;
 
         if (backcolor.HasValue)

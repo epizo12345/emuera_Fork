@@ -146,18 +146,18 @@ class ConsoleDivElement : AConsoleDisplayNode
         var drawPoint = paddingOrigin;
         foreach (var childNode in _childNodes)
         {
-            if (childNode != null)
-            {
-                childNode.DrawTo(canvas, drawPoint, false, isBackLog, mode);
-                drawPoint.Offset(childNode.Width, 0);
-            }
-            else
+            if (childNode is BrNode)
             {
                 drawPoint = drawPoint with
                 {
                     X = paddingOrigin.X,
                     Y = drawPoint.Y + Config.LineHeight
                 };
+            }
+            else
+            {
+                childNode.DrawTo(canvas, drawPoint, isSelecting, isBackLog, mode);
+                drawPoint.Offset(childNode.Width, 0);
             }
         }
 

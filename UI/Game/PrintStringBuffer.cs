@@ -192,7 +192,7 @@ internal sealed class PrintStringBuffer
                 i--;
                 continue;
             }
-            if (nobr || buttonList[i].IsDiv || buttonList[i].PointX + buttonList[i].Width <= windowWidth)
+            if (nobr || buttonList[i].PointX + buttonList[i].Width <= windowWidth)
             {//改行不要モードであるか表示可能領域に収まるならそのままでよい
                 lineButtonList.Add(buttonList[i]);
                 continue;

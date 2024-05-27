@@ -366,10 +366,11 @@ internal static partial class HtmlManager
                                 var xpos = 0;
                                 var lockXpos = false;
 
-                                var xposStr = elem.GetAttribute("xpos");
+                                var xposStr = elem.GetAttribute("pos");
                                 if (!string.IsNullOrEmpty(xposStr))
                                 {
                                     xpos = int.Parse(xposStr);
+                                    lockXpos = true;
                                 }
 
                                 var title = elem.GetAttribute("title");
@@ -417,10 +418,11 @@ internal static partial class HtmlManager
                                 var xpos = 0;
                                 var lockXpos = false;
 
-                                var xposStr = elem.GetAttribute("xpos");
+                                var xposStr = elem.GetAttribute("pos");
                                 if (!string.IsNullOrEmpty(xposStr))
                                 {
                                     xpos = int.Parse(xposStr);
+                                    lockXpos = true;
                                 }
 
                                 var title = elem.GetAttribute("title");
@@ -625,33 +627,34 @@ internal static partial class HtmlManager
 
                 return nodeList;
             }
+
             var buttonList = new List<ConsoleButtonString>();
-            var nonButtonList = new List<AConsoleDisplayNode>();
+            var innerList = new List<AConsoleDisplayNode>();
             foreach (var node in list)
             {
-                if (node is not ConsoleButtonString cbs)
+                if (node is ConsoleButtonString cbs)
                 {
-                    nonButtonList.Add(node);
-                }
-                else
-                {
-                    if (nonButtonList.Count > 0)
+                    if (innerList.Count > 0)
                     {
-                        buttonList.Add(new ConsoleButtonString(console, [.. nonButtonList]));
-                        nonButtonList.Clear();
+                        buttonList.Add(new ConsoleButtonString(console, [.. innerList]));
+                        innerList.Clear();
                     }
                     buttonList.Add(cbs);
                 }
+                else
+                {
+                    innerList.Add(node);
+                }
             }
 
-            if (nonButtonList.Count > 0)
+            if (innerList.Count > 0)
             {
-                buttonList.Add(new ConsoleButtonString(console, [.. nonButtonList]));
-                nonButtonList.Clear();
+                buttonList.Add(new ConsoleButtonString(console, [.. innerList]));
+                innerList.Clear();
             }
-
 
             var ret = PrintStringBuffer.ButtonsToDisplayLines(buttonList, sm, noBR, false);
+
             if (ret.Length > 0)
             {
                 ret[^1].IsLineEnd = lineEnd;
