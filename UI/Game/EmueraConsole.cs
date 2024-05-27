@@ -1718,7 +1718,7 @@ internal sealed partial class EmueraConsole : IDisposable
                     if ((part.Point.X <= pointX) && (part.Point.X + part.Size.Width >= pointX) &&
                         (pointY >= part.Point.Y) && (pointY <= part.Point.Y + part.Size.Height))
                     {
-                        if (button.IsButton)
+                        if (button.IsButton || !string.IsNullOrEmpty(button.Title))
                             return button;
                     }
 
@@ -1739,7 +1739,7 @@ internal sealed partial class EmueraConsole : IDisposable
                     if ((part.PointX <= pointX) && (part.PointX + part.Width >= pointX)
                         && (relPointY >= part.Top) && (relPointY <= part.Bottom))
                     {
-                        if (button.IsButton)
+                        if (button.IsButton || !string.IsNullOrEmpty(button.Title))
                             return button;
                     }
                 }
