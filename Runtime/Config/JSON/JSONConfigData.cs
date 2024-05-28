@@ -5,8 +5,8 @@ namespace MinorShift.Emuera.Runtime.Config.JSON;
 enum Resampler
 {
     NearnestNeighber,
+    Linear,
     Cubic,
-    Linear
 }
 
 sealed class JSONConfigData
