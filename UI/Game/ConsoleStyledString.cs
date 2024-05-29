@@ -96,6 +96,10 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
         {
             var font = new SKFont(typeface, Font.Size);
             font.Size *= Font.Size / font.Spacing;
+            if (StringStyle.FontStyle.HasFlag(FontStyle.Italic))
+            {
+                font.SkewX = -0.3f;
+            }
 
             var textsWithFont = new TextsWithFont()
             {
@@ -233,6 +237,29 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
 
                 point.Offset(text.Width, 0);
             }
+        }
+
+
+        if (StringStyle.HasUnderline)
+        {
+            var underlinePosition = Point;
+            underlinePosition.Offset(0, -Font.Metrics.Top + (Font.Metrics.UnderlinePosition ?? 0));
+
+            var width = paint.StrokeWidth;
+            paint.StrokeWidth = Font.Metrics.UnderlineThickness ?? 1;
+            graph.DrawLine(underlinePosition, underlinePosition + new SKPoint(Width, 0), paint);
+            paint.StrokeWidth = width;
+        }
+
+        if (StringStyle.HasStrikeout)
+        {
+            var strikeoutPosition = Point;
+            strikeoutPosition.Offset(0, -Font.Metrics.Top + (Font.Metrics.StrikeoutPosition ?? 0));
+
+            var width = paint.StrokeWidth;
+            paint.StrokeWidth = Font.Metrics.StrikeoutThickness ?? 1;
+            graph.DrawLine(strikeoutPosition, strikeoutPosition + new SKPoint(Width, 0), paint);
+            paint.StrokeWidth = width;
         }
 
     }

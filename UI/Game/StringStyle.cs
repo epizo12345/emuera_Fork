@@ -14,7 +14,17 @@ internal struct StringStyle
         Color = color;
         ButtonColor = Config.FocusColor;
         ColorChanged = false;//こっちのパターンでは色変更を後で検知
+
         FontStyle = fontStyle;
+        if (FontStyle.HasFlag(FontStyle.Underline))
+        {
+            HasUnderline = true;
+        }
+        if (FontStyle.HasFlag(FontStyle.Strikeout))
+        {
+            HasStrikeout = true;
+        }
+
         if (string.IsNullOrEmpty(fontname))
             Fontname = Config.FontName;
         else
@@ -29,7 +39,17 @@ internal struct StringStyle
         Color = color;
         ButtonColor = buttonColor;
         ColorChanged = colorChanged;
+
         FontStyle = fontStyle;
+        if (FontStyle.HasFlag(FontStyle.Underline))
+        {
+            HasUnderline = true;
+        }
+        if (FontStyle.HasFlag(FontStyle.Strikeout))
+        {
+            HasStrikeout = true;
+        }
+
         if (string.IsNullOrEmpty(fontname))
             Fontname = Config.FontName;
         else
@@ -40,6 +60,8 @@ internal struct StringStyle
     public Color ButtonColor;
     public bool ColorChanged;
     public FontStyle FontStyle;
+    public bool HasStrikeout;
+    public bool HasUnderline;
     public string Fontname;
     public override bool Equals(object? obj)
     {

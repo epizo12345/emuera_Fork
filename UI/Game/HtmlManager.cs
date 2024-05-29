@@ -618,6 +618,45 @@ internal static partial class HtmlManager
                                 );
                             }
                             break;
+                        case "B":
+                            {
+                                var style = stringStyle;
+                                style.FontStyle = FontStyle.Bold;
+
+                                var c = ParseNode(node.ChildNodes, style, divState, align);
+                                nodeList.AddRange(c);
+                            }
+                            break;
+                        case "I":
+                            {
+                                var style = stringStyle;
+                                style.FontStyle = FontStyle.Italic;
+
+                                var c = ParseNode(node.ChildNodes, style, divState, align);
+                                nodeList.AddRange(c);
+
+                            }
+                            break;
+                        case "U":
+                            {
+                                var style = stringStyle;
+                                style.HasUnderline = true;
+
+                                var c = ParseNode(node.ChildNodes, style, divState, align);
+                                nodeList.AddRange(c);
+
+                            }
+                            break;
+                        case "S":
+                            {
+                                var style = stringStyle;
+                                style.HasStrikeout = true;
+
+                                var c = ParseNode(node.ChildNodes, style, divState, align);
+                                nodeList.AddRange(c);
+
+                            }
+                            break;
                         default:
                             {
                                 throw new Exception($"タグ名 {node.NodeName} は解釈出来ません");

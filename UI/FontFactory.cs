@@ -47,10 +47,20 @@ static class FontFactory
         {
             if (!_typefaces.TryGetValue(familyName, out SKTypeface typeface))
             {
-                typeface = SKTypeface.FromFamilyName(familyName);
+                var fontStyle = SKFontStyle.Normal;
+                if (style.HasFlag(FontStyle.Bold))
+                {
+                    fontStyle = SKFontStyle.Bold;
+                }
+
+                typeface = SKTypeface.FromFamilyName(familyName, fontStyle);
             }
 
             var font = new SKFont(typeface, fontSize.Value);
+            if (style.HasFlag(FontStyle.Italic))
+            {
+                font.SkewX = -0.3f;
+            }
             //font.Size *= fontSize.Value / font.Spacing;
             if (font == null)
             {
