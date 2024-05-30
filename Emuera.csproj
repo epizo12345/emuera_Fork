@@ -8,11 +8,12 @@
     <RootNamespace>MinorShift.Emuera</RootNamespace>
     <Version>0.2.5.0</Version>
 
-    
-
     <ApplicationIcon>era_v.ico</ApplicationIcon>
+
+
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>false</SelfContained>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
 
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisMode>Minimum</AnalysisMode>
