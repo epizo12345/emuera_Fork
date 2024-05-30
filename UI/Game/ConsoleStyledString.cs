@@ -37,7 +37,7 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
     public ConsoleStyledString(string str, StringStyle style)
     {
         //if ((StaticConfig.TextDrawingMode != TextDrawingMode.GRAPHICS) && (str.IndexOf('\t') >= 0))
-        //    str = str.Replace("\t", "");
+        str = str.Replace("\t", "", StringComparison.Ordinal);
         Text = str;
         StringStyle = style;
         Font = FontFactory.GetFont(style.Fontname, style.FontStyle);
