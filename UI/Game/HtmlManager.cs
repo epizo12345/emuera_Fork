@@ -301,7 +301,7 @@ internal static partial class HtmlManager
             var body = doc.Body;
             var nodes = body.ChildNodes;
             var noBR = false;
-            var align = console.Alignment;
+            var align = DisplayLineAlignment.LEFT;
             var list = ParseNode(nodes, new StringStyle(Config.ForeColor, FontStyle.Regular, Config.FontName), new DivState(), align);
 
             List<AConsoleDisplayNode> ParseNode(INodeList nodes, StringStyle stringStyle, DivState divState, DisplayLineAlignment alignment)
