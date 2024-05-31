@@ -88,16 +88,16 @@ class ConsoleDivElement : AConsoleDisplayNode
             var lineCount = 1;
             foreach (var node in _childNodes)
             {
-                if (node != null)
-                {
-                    width += node.Width;
-                }
-                else
+                if (node is BrNode)
                 {
                     maxWidth = MathF.Max(maxWidth, width);
                     width = 0.0f;
 
                     lineCount++;
+                }
+                else
+                {
+                    width += node.Width;
                 }
             }
             maxWidth = MathF.Max(maxWidth, width);
