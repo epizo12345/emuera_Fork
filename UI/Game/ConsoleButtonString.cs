@@ -240,7 +240,14 @@ internal sealed class ConsoleButtonString : AConsoleDisplayNode
         {
             if (css is BrNode)
             {
-                point.X = PointX;
+                if (PointX == 0)
+                {
+                    point.X = Config.DrawingParam_ShapePositionShift;
+                }
+                else
+                {
+                    point.X = PointX;
+                }
                 point.Offset(0, Config.LineHeight);
             }
             else

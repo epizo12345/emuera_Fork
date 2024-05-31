@@ -211,9 +211,8 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
 
         if (origin.X == float.NegativeInfinity)//旧来の位置決め方式
         {
-            point.X = PointX;
+            point.X = PointX + Config.DrawingParam_ShapePositionShift;
         }
-        point.X += Config.DrawingParam_ShapePositionShift;
 
         Point = point;
 
