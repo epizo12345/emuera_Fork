@@ -266,7 +266,9 @@ internal sealed partial class Process(EmueraConsole view)
             serachOption = SearchOption.AllDirectories;
         }
 
-        await loader.LoadErbList(Directory.EnumerateFiles(dirPath, "", serachOption), labelDic);
+        var erbFiles = Directory.EnumerateFiles(dirPath, "", serachOption)
+                        .Where(x => Path.GetExtension(x).Equals(".erb", StringComparison.OrdinalIgnoreCase));
+        await loader.LoadErbList(erbFiles, labelDic);
         console.ReadAnyKey();
     }
 
