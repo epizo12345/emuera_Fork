@@ -492,8 +492,13 @@ internal sealed class ConfigData
                         //解析モード時はここを上書きして十分な長さを確保する
                         value = "10000";
                     }
-                    if (fix && item.TryParse(value.ToString()))
-                        item.Fixed = true;
+                    if (item.TryParse(value.ToString()))
+                    {
+                        if (fix)
+                        {
+                            item.Fixed = true;
+                        }
+                    }
                 }
             }
         }
