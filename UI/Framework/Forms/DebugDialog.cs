@@ -10,6 +10,8 @@ using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
 using MinorShift.Emuera.UI.Framework;
+using System.ComponentModel;
+using MinorShift.Emuera.Runtime.Config.JSON;
 
 namespace MinorShift.Emuera.Forms;
 
@@ -18,21 +20,36 @@ public partial class DebugDialog : Form
     public DebugDialog()
     {
         InitializeComponent();
-        listViewWatch.AfterLabelEdit += new LabelEditEventHandler(listViewWatch_AfterLabelEdit);
 
         this.TopMost = Config.DebugWindowTopMost;
         int width = Math.Max(this.MinimumSize.Width, Config.DebugWindowWidth);
         int height = Math.Max(this.MinimumSize.Height, Config.DebugWindowHeight);
+
         this.Size = new Size(width, height);
         if (Config.DebugSetWindowPos)
         {
             this.StartPosition = FormStartPosition.Manual;
             this.Location = new Point(Config.DebugWindowPosX, Config.DebugWindowPosY);
         }
+
         updateSize();
         checkBoxTopMost.Checked = this.TopMost;
         loadWatchList();
         Localize();
+
+
+
+        this.Disposed += (_, a) =>
+        {
+            var config = ConfigData.Instance;
+            config.GetDebugItem(ConfigCode.DebugWindowWidth).SetValue(Width);
+            Config.DebugWindowWidth = Width;
+            config.GetDebugItem(ConfigCode.DebugWindowHeight).SetValue(Height);
+            Config.DebugWindowHeight = Height;
+            config.SaveDebugConfig();
+
+            JSONConfig.Save();
+        };
     }
     private Process emuera;
     private EmueraConsole mainConsole;
@@ -97,23 +114,10 @@ public partial class DebugDialog : Form
     private void updateVarWatch()
     {
         GlobalStatic.Process.saveCurrentState(false);
-        for (int i = 0; i < listViewWatch.Items.Count - 1; i++)
-        {//無名のアイテムを削除
-            if (listViewWatch.Items[i].Text.Length == 0)
-            {
-                listViewWatch.Items.RemoveAt(i);
-                i--;
-            }
-        }
-        if ((listViewWatch.Items.Count == 0) || (!string.IsNullOrEmpty(listViewWatch.Items[^1].Text)))
+
+        for (int i = 0; i < watchView.RowCount - 1; i++)
         {
-            ListViewItem newLVI = new("");
-            newLVI.SubItems.Add(new ListViewItem.ListViewSubItem(newLVI, ""));
-            listViewWatch.Items.Add(newLVI);
-        }
-        foreach (ListViewItem lvi in listViewWatch.Items)
-        {
-            lvi.SubItems[1].Text = getValueString(lvi.Text);
+            watchView[1, i].Value = getValueString((string)watchView[0, i].Value);
         }
         GlobalStatic.Process.clearMethodStack();
         GlobalStatic.Process.loadPrevState();
@@ -147,24 +151,6 @@ public partial class DebugDialog : Form
             mainConsole.RunERBFromMemory = false;
         }
 
-    }
-    private void listViewWatch_AfterLabelEdit(object sender, LabelEditEventArgs e)
-    {
-        if (string.IsNullOrEmpty(e.Label))
-        {
-            //	if (e.Item != listViewWatch.Items.Count - 1)
-            //		listViewWatch.Items.RemoveAt(e.Item);
-        }
-        else
-        {
-            listViewWatch.Items[e.Item].SubItems[1].Text = getValueString(e.Label);
-            if (e.Item == listViewWatch.Items.Count - 1)
-            {
-                ListViewItem newLVI = new("");
-                newLVI.SubItems.Add(new ListViewItem.ListViewSubItem(newLVI, ""));
-                listViewWatch.Items.Add(newLVI);
-            }
-        }
     }
 
     private void checkBoxTopMost_CheckedChanged(object sender, EventArgs e)
@@ -242,9 +228,9 @@ public partial class DebugDialog : Form
         try
         {
             writer = new StreamWriter(watchFilepath, false, Config.Encode);
-            foreach (ListViewItem lvi in listViewWatch.Items)
-                if (!string.IsNullOrEmpty(lvi.Text))
-                    writer.WriteLine(lvi.Text);
+            foreach (DataGridViewRow lvi in watchView.Rows)
+                if (!string.IsNullOrEmpty((string)lvi.Cells[0].Value))
+                    writer.WriteLine((string)(lvi.Cells[0].Value));
         }
         catch
         {
@@ -284,16 +270,20 @@ public partial class DebugDialog : Form
                 reader.Close();
         }
 
-        listViewWatch.Items.Clear();
-        foreach (string str in saveStrList)
+        watchView.Rows.Clear();
+        foreach (var str in saveStrList)
         {
             if (!string.IsNullOrEmpty(str))
             {
-                ListViewItem newLVI = new(str);
-                newLVI.SubItems.Add(new ListViewItem.ListViewSubItem(newLVI, ""));
-                listViewWatch.Items.Add(newLVI);
+                watchView.Rows.Add([str, ""]);
             }
         }
+        watchView.Columns[0].Width = JSONConfig.Data.WatchListWidth[0];
+        watchView.Columns[1].Width = JSONConfig.Data.WatchListWidth[1];
+        watchView.ColumnWidthChanged += (_, a) =>
+        {
+            JSONConfig.Data.WatchListWidth[a.Column.Index] = a.Column.Width;
+        };
     }
 
     private void DebugDialog_Activated(object sender, EventArgs e)
@@ -321,33 +311,12 @@ public partial class DebugDialog : Form
         //環境依存かもしれない。誰かに指摘されたら考えよう。
         tabControlMain.Height = this.Size.Height - 103;
         updateSize();
-
     }
 
-    private void listViewWatch_KeyUp(object sender, KeyEventArgs e)
-    {
-        //F2キーで名前の変更。
-        if (e.KeyCode == Keys.F2 && listViewWatch.FocusedItem != null)
-        {
-            listViewWatch.FocusedItem.BeginEdit();
-        }
-    }
 
     private void DebugDialog_FormClosing(object sender, FormClosingEventArgs e)
     {
         saveData();
-    }
-
-
-    private void listViewWatch_MouseUp(object sender, MouseEventArgs e)
-    {
-        ListViewItem item = listViewWatch.GetItemAt(e.X, e.Y);
-        if (item != null)
-        {
-            item.Selected = true;
-            item.BeginEdit();
-        }
-
     }
 
     private void button2_Click(object sender, EventArgs e)
@@ -456,8 +425,8 @@ public partial class DebugDialog : Form
         this.設定ToolStripMenuItem1.Text = LocalizationManager.DebugDialog.Setting_Config;
 
         this.tabPageWatch.Text = LocalizationManager.DebugDialog.VariableWatch;
-        this.columnHeader1.Text = LocalizationManager.DebugDialog.VariableWatch_Object;
-        this.columnHeader3.Text = LocalizationManager.DebugDialog.VariableWatch_Value;
+        this.watchView.Columns[0].HeaderText = LocalizationManager.DebugDialog.VariableWatch_Object;
+        this.watchView.Columns[1].HeaderText = LocalizationManager.DebugDialog.VariableWatch_Value;
 
         this.tabPageTrace.Text = LocalizationManager.DebugDialog.StackTrace;
         this.tabPageConsole.Text = LocalizationManager.DebugDialog.Console;
@@ -466,5 +435,21 @@ public partial class DebugDialog : Form
         this.button2.Text = LocalizationManager.DebugDialog.UpdateData;
         this.button1.Text = LocalizationManager.DebugDialog.Close;
     }
+    private void watchView_CellValueChanged(object sender, DataGridViewCellEventArgs e)
+    {
+        if (e.RowIndex >= 0 && e.ColumnIndex == 0)
+        {
+            var watch = (string)watchView[0, e.RowIndex].Value;
+            if (string.IsNullOrEmpty(watch))
+            {
+                if ((e.RowIndex + 1) != watchView.Rows.Count)
+                    watchView.Rows.RemoveAt(e.RowIndex);
+            }
+            else
+            {
+                watchView[1, e.RowIndex].Value = getValueString(watch);
+            }
+        }
 
+    }
 }

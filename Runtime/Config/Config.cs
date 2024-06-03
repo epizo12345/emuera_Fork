@@ -462,8 +462,8 @@ internal static class Config
     }
     public static bool DebugShowWindow { get; private set; }
     public static bool DebugWindowTopMost { get; private set; }
-    public static int DebugWindowWidth { get; private set; }
-    public static int DebugWindowHeight { get; private set; }
+    public static int DebugWindowWidth { get; set; }
+    public static int DebugWindowHeight { get; set; }
     public static bool DebugSetWindowPos { get; private set; }
     public static int DebugWindowPosX { get; private set; }
     public static int DebugWindowPosY { get; private set; }

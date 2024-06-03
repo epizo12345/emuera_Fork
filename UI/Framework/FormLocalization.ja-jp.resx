@@ -633,7 +633,7 @@ Emueraを終了しますか？</value>
 		<value>変数ウォッチ</value>
 	</data>
     <data name="DebugDialog_VariableWatch_Object" xml:space="preserve">
-		<value>対象</value>
+		<value>式</value>
 	</data>
     <data name="DebugDialog_VariableWatch_Value" xml:space="preserve">
 		<value>値</value>

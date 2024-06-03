@@ -621,7 +621,7 @@ Please don't change anything if there's no issues.</value>
 		<value>Variable Watch</value>
 	</data>
 	<data name="DebugDialog_VariableWatch_Object" xml:space="preserve">
-		<value>Object</value>
+		<value>Expression</value>
 	</data>
 	<data name="DebugDialog_VariableWatch_Value" xml:space="preserve">
 		<value>Value</value>

@@ -23,4 +23,6 @@ sealed class JSONConfigData
     public Resampler ImageSamplingOption { get; set; } = Resampler.Linear;
 
     public bool CheckUTF8withBOM { get; set; } = true;
+
+    public int[] WatchListWidth { get; set; } = [-2, -2];
 }
