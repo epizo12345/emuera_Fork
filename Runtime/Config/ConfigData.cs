@@ -453,10 +453,18 @@ internal sealed class ConfigData
                 if (line[0] == ';')
                     continue;
                 pos = new ScriptPosition(eReader.Filename, eReader.LineNo);
-                string[] tokens = line.Split([':']);
-                if (tokens.Length < 2)
+
+                var index = line.IndexOf(':');
+                if (index == -1)
+                {
                     continue;
-                AConfigItem item = GetConfigItem(tokens[0].Trim());
+                }
+
+                var span = line.AsSpan();
+                var key = span[0..index].Trim();
+                var value = span[(index + 1)..];
+
+                var item = GetConfigItem(key.ToString());
                 if (item != null)
                 {
                     //1806beta001 CompatiDRAWLINEの廃止、CompatiLinefeedAs1739へ移行
@@ -473,34 +481,18 @@ internal sealed class ConfigData
                     //        item.Fixed = false;
                     //}
 
-                    if (item.Code == ConfigCode.TextEditor)
-                    {
-                        //パスの関係上tokens[2]は使わないといけない
-                        if (tokens.Length > 2)
-                        {
-                            if (tokens[2].StartsWith('\\'))
-                                tokens[1] += ":" + tokens[2];
-                            if (tokens.Length > 3)
-                            {
-                                for (int i = 3; i < tokens.Length; i++)
-                                {
-                                    tokens[1] += ":" + tokens[i];
-                                }
-                            }
-                        }
-                    }
                     if (item.Code == ConfigCode.EditorArgument)
                     {
                         //半角スペースを要求する引数が必要なエディタがあるので別処理で
-                        ((ConfigItem<string>)item).Value = tokens[1];
+                        ((ConfigItem<string>)item).Value = value.ToString();
                         continue;
                     }
                     if (item.Code == ConfigCode.MaxLog && Program.AnalysisMode)
                     {
                         //解析モード時はここを上書きして十分な長さを確保する
-                        tokens[1] = "10000";
+                        value = "10000";
                     }
-                    if (item.TryParse(tokens[1]) && fix)
+                    if (fix && item.TryParse(value.ToString()))
                         item.Fixed = true;
                 }
             }
