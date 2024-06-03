@@ -1,6 +1,7 @@
 using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Config.JSON;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -10,7 +11,7 @@ using System.Threading.Tasks;
 namespace MinorShift.Emuera.Runtime.Utils;
 static partial class Preload
 {
-    static Dictionary<string, string[]> files = new(StringComparer.OrdinalIgnoreCase);
+    static ConcurrentDictionary<string, string[]> files = new(StringComparer.OrdinalIgnoreCase);
 
     public static string[] GetFileLines(string path)
     {
@@ -22,39 +23,36 @@ static partial class Preload
         var startTime = DateTime.Now;
         Debug.WriteLine($"Load: {path} : Start");
 
-        if (Directory.Exists(path))
+        var dir = new DirectoryInfo(path);
+        if (dir.Exists)
         {
             await Task.Run(() =>
             {
-                Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories)
+                dir.EnumerateFiles("*", SearchOption.AllDirectories)
+                .AsParallel()
                 .Where(x =>
                 {
-                    var ext = Path.GetExtension(x);
+                    var ext = x.Extension;
                     return ext.Equals(".csv", StringComparison.OrdinalIgnoreCase) ||
                             ext.Equals(".erb", StringComparison.OrdinalIgnoreCase) ||
                             ext.Equals(".erh", StringComparison.OrdinalIgnoreCase);
-                })
-                .AsParallel().ForAll((childPath) =>
+                }).ForAll((childPath) =>
                 {
-                    var key = childPath;
                     if (JSONConfig.Data.CheckUTF8withBOM)
                     {
-                        using var file = File.OpenRead(childPath);
+                        using var file = File.OpenRead(childPath.FullName);
                         Span<byte> bom = stackalloc byte[3];
                         _ = file.Read(bom);
                         file.Close();
                         if (!bom.SequenceEqual<byte>([0xEF, 0xBB, 0xBF]))
                         {
-                            ParserMediator.ConfigWarn("ファイルが UTF-8 with BOM ではありません", new ScriptPosition(childPath, 0), 0, "");
+                            ParserMediator.ConfigWarn("ファイルが UTF-8 with BOM ではありません", new ScriptPosition(childPath.FullName, 0), 0, "");
                         }
                     }
 
 
-                    var value = File.ReadAllLines(childPath, Config.Config.Encode);
-                    lock (files)
-                    {
-                        files[key] = value;
-                    }
+                    var value = File.ReadAllLines(childPath.FullName, Config.Config.Encode);
+                    files[childPath.FullName] = value;
                 });
             });
         }
