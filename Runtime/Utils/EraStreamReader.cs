@@ -79,10 +79,6 @@ internal sealed partial class EraStreamReader : IDisposable
         return ret;
     }
 
-
-    [GeneratedRegex(@"\[\[.*?\]\]")]
-    private static partial Regex regexRenameIdentifer();
-
     /// <summary>
     /// 次の有効な行を読む。LexicalAnalyzer経由でConfigを参照するのでConfig完成までつかわないこと。
     /// </summary>
@@ -100,17 +96,7 @@ internal sealed partial class EraStreamReader : IDisposable
 
             if (useRename)
             {
-                var match = regexRenameIdentifer().Match(line);
-                while (match.Success)
-                {
-                    //この段階でマッチしないパターンもある
-                    if (ParserMediator.RenameDic.TryGetValue(match.Value, out var targetStr))
-                    {
-                        line = line.Replace(match.Value, targetStr);
-                    }
-
-                    match = match.NextMatch();
-                }
+                line = Rename.RenameString(line);
             }
             st = new CharStream(line);
             LexicalAnalyzer.SkipWhiteSpace(st);
@@ -142,17 +128,7 @@ internal sealed partial class EraStreamReader : IDisposable
 
             if (useRename)
             {
-                //この段階でマッチしないパターンもある
-                var match = regexRenameIdentifer().Match(line);
-                while (match.Success)
-                {
-                    if (ParserMediator.RenameDic.TryGetValue(match.Value, out var targetStr))
-                    {
-                        line = line.Replace(match.Value, targetStr);
-                    }
-
-                    match = match.NextMatch();
-                }
+                line = Rename.RenameString(line);
             }
             var test = line.AsSpan().TrimStart();
             if (test.Length > 0)

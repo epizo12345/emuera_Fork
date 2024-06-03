@@ -132,6 +132,10 @@ public partial class DebugDialog : Form
         mainConsole.RunERBFromMemory = true;
         try
         {
+            if (Config.UseRenameFile)
+            {
+                str = Rename.RenameString(str);
+            }
             CharStream st = new(str);
             WordCollection wc = LexicalAnalyzer.Analyse(st, LexEndWith.EoL, LexAnalyzeFlag.None);
             AExpression term = ExpressionParser.ReduceExpressionTerm(wc, TermEndWith.EoL);

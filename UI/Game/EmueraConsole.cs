@@ -1537,7 +1537,13 @@ internal sealed partial class EmueraConsole : IDisposable
         {
             LogicalLine line = null;
             if (!com.StartsWith('@') && !com.StartsWith('"') && !com.StartsWith('\\'))
+            {
+                if (Config.UseRenameFile)
+                {
+                    com = Rename.RenameString(com);
+                }
                 line = LogicalLineParser.ParseLine(com, null);
+            }
             if (line == null || (line is InvalidLine))
             {
                 WordCollection wc = LexicalAnalyzer.Analyse(new CharStream(com), LexEndWith.EoL, LexAnalyzeFlag.None);
