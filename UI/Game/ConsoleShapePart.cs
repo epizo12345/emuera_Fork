@@ -144,9 +144,10 @@ internal sealed class ConsoleRectangleShapePart : ConsoleShapePart
     }
     public override void SetWidth(StringMeasure sm, float subPixel)
     {
-        Width = (int)WidthF;
-        XsubPixel = WidthF - Width;
-        rect.X = (int)originalRectF.X;
+        float widF = subPixel + WidthF;
+        Width = (int)widF;
+        XsubPixel = widF - Width;
+        rect.X = (int)(subPixel + originalRectF.X);
         rect.Width = Width - rect.X;
         rect.X += Config.DrawingParam_ShapePositionShift;
         visible = rect.X >= 0 && rect.Width > 0;// && rect.Y >= 0 && (rect.Y + rect.Height) <= Config.FontSize);
