@@ -182,7 +182,7 @@ internal sealed class ConsoleButtonString : AConsoleDisplayNode
 
     public void CalcWidth(StringMeasure sm, float subpixel)
     {
-        Width = -1;
+        Width = 0;
         if (strArray != null && strArray.Length > 0)
         {
             Width = 0;
@@ -235,28 +235,25 @@ internal sealed class ConsoleButtonString : AConsoleDisplayNode
     {
         bool isSelecting = IsButton && parent.ButtonIsSelected(this);
 
-        var origin = point;
+        if (point.X == float.NegativeInfinity)
+        {
+            point.X = PointX;
+        }
+
+        var offset = point;
         foreach (var css in strArray)
         {
             if (css is BrNode)
             {
-                if (PointX == 0)
-                {
-                    point.X = Config.DrawingParam_ShapePositionShift;
-                }
-                else
-                {
-                    point.X = PointX;
-                }
+                point.X = offset.X + Config.DrawingParam_ShapePositionShift;
                 point.Offset(0, Config.LineHeight);
             }
             else
             {
                 css.DrawTo(graph, point, isSelecting, isBackLog, mode, IsButton);
-                if (point.X != float.NegativeInfinity)
-                {
-                    point.Offset(css.Width, 0);
-                }
+
+                point.Offset(css.Width, 0);
+                offset = point;
             }
 
         }
