@@ -144,6 +144,7 @@ class ConsoleDivElement : AConsoleDisplayNode
         }
 
         var drawPoint = paddingOrigin;
+        drawPoint.Offset(-Config.DrawingParam_ShapePositionShift, 0);
         foreach (var childNode in _childNodes)
         {
             if (childNode is BrNode)
