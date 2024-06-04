@@ -297,7 +297,7 @@ internal static partial class HtmlManager
     {
 
         {
-            var doc = parser.ParseDocument($"<body>{str.Replace("\n", "<br>", StringComparison.Ordinal)}</body>");
+            var doc = parser.ParseDocument($"<body>{str.ReplaceLineEndings("<br>")}</body>");
             var body = doc.Body;
             var nodes = body.ChildNodes;
             var noBR = false;
