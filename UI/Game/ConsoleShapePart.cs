@@ -126,12 +126,8 @@ internal sealed class ConsoleRectangleShapePart : ConsoleShapePart
     {
         if (!visible)
             return;
-        if (point.X == float.NegativeInfinity)
-        {
-            point.X = PointX;
-        }
         var targetRect = rect.ToSKRect();
-        targetRect.Offset((int)point.X - Config.DrawingParam_ShapePositionShift, (int)point.Y);
+        targetRect.Offset((int)point.X, (int)point.Y);
 
         Color dcolor = isSelecting ? ButtonColor : Color;
 
@@ -149,7 +145,6 @@ internal sealed class ConsoleRectangleShapePart : ConsoleShapePart
         XsubPixel = widF - Width;
         rect.X = (int)(subPixel + originalRectF.X);
         rect.Width = Width - rect.X;
-        rect.X += Config.DrawingParam_ShapePositionShift;
         visible = rect.X >= 0 && rect.Width > 0;// && rect.Y >= 0 && (rect.Y + rect.Height) <= Config.FontSize);
     }
 }
@@ -183,10 +178,6 @@ internal sealed class ConsoleErrorShapePart : ConsoleShapePart
 
     public override void DrawTo(SKCanvas graph, SKPoint point, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
     {
-        if (point.X == float.NegativeInfinity)
-        {
-            point.X = PointX;
-        }
         point.Offset(0, -Config.DefaultFont.Metrics.Top);
         graph.DrawText(Text, point, SKTextAlign.Left, Config.DefaultFont, new SKPaint() { Color = Config.ForeColor.ToSKColor() });
     }

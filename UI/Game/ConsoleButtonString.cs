@@ -4,7 +4,6 @@ using MinorShift.Emuera.Runtime.Utils;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Text;
 
 namespace MinorShift.Emuera.UI.Game;
@@ -237,22 +236,24 @@ internal sealed class ConsoleButtonString : AConsoleDisplayNode
 
         if (point.X == float.NegativeInfinity)
         {
-            point.X = PointX;
+            point.X = PointX + Config.DrawingParam_ShapePositionShift;
         }
 
         var offset = point;
+        var prevHeight = 0.0f;
         foreach (var css in strArray)
         {
             if (css is BrNode)
             {
-                point.X = offset.X + Config.DrawingParam_ShapePositionShift;
-                point.Offset(0, Config.LineHeight);
+                point.X = offset.X;
+                point.Offset(0, prevHeight);
             }
             else
             {
                 css.DrawTo(graph, point, isSelecting, isBackLog, mode, IsButton);
 
                 point.Offset(css.Width, 0);
+                prevHeight = css.Size.Height;
                 offset = point;
             }
 

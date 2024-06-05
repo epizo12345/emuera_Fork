@@ -354,7 +354,7 @@ internal static class Config
     public const StringComparison SCExpression = StringComparison.Ordinal;
 
     /// <summary>
-    /// GDI+利用時に発生する文字列と図形・画像間の位置ずれ補正
+    /// 従来の描画位置に合わせるための横へのシフト値
     /// </summary>
     public static int DrawingParam_ShapePositionShift { get; private set; }
 
