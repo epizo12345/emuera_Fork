@@ -72,7 +72,7 @@ class ConsoleDivElement : AConsoleDisplayNode
             return;
         Point = _display switch
         {
-            DisplayMode.Relative => new SKPoint(PointX + _position.X, (int)origin.Y + _position.Y),
+            DisplayMode.Relative => new SKPoint(origin.X + _position.X, (int)origin.Y + _position.Y),
             DisplayMode.AbsoluteLeftTop => _position,
             DisplayMode.AbsoluteLeftBottom => new SKPoint(_position.X, GlobalStatic.Console.ClientHeight - Config.FontSize + _position.Y),
             _ => throw new NotImplementedException($"{_display}はまだ実装されていません")
@@ -144,7 +144,6 @@ class ConsoleDivElement : AConsoleDisplayNode
         }
 
         var drawPoint = paddingOrigin;
-        drawPoint.Offset(-Config.DrawingParam_ShapePositionShift, 0);
         foreach (var childNode in _childNodes)
         {
             if (childNode is BrNode)

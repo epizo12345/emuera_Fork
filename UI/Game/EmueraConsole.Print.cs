@@ -30,7 +30,7 @@ internal sealed partial class EmueraConsole : IDisposable
     public void ClearDisplay()
     {
         displayLineList.Clear();
-        _htmlElementList.Clear();
+        _htmlElementListDict.Clear();
         logicalLineCount = 0;
         lineNo = 0;
         lastDrawnLineNo = -1;
@@ -111,13 +111,26 @@ internal sealed partial class EmueraConsole : IDisposable
     }
 
     //完全に独立したHTML
-    public void PrintHTMLIsland(string html)
+    public void PrintHTMLIsland(string html, int depth = 0)
     {
-        _htmlElementList.AddRange(HtmlManager.Html2DisplayLine(html, stringMeasure, this, true));
+        if (_htmlElementListDict.TryGetValue(depth, out var htmlElementList))
+        {
+
+        }
+        else
+        {
+            htmlElementList = [];
+            _htmlElementListDict[depth] = htmlElementList;
+        }
+        htmlElementList.AddRange(HtmlManager.Html2DisplayLine(html, stringMeasure, this, true));
     }
     public void ClearHTMLIsland()
     {
-        _htmlElementList.Clear();
+        _htmlElementListDict.Clear();
+    }
+    public void ClearHTMLIsland(int depth = 0)
+    {
+        _htmlElementListDict[depth].Clear();
     }
 
 

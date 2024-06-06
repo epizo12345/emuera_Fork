@@ -228,6 +228,8 @@ internal static partial class ArgumentParser
         argb[FunctionArgType.SP_REFBYNAME] = new SP_REF_ArgumentBuilder(true);
         argb[FunctionArgType.SP_HTMLSPLIT] = new SP_HTMLSPLIT_ArgumentBuilder();
         argb[FunctionArgType.SP_HTML_PRINT] = new HTML_PRINT_ArgumentBuilder();
+        argb[FunctionArgType.SP_HTML_PRINT_ISLAND] = new HTML_PRINT_ISLAND_ArgumentBuilder();
+        argb[FunctionArgType.SP_HTML_PRINT_ISLAND_CLEAR] = new HTML_PRINT_ISLAND_CLEAR_ArgumentBuilder();
 
     }
 
@@ -1968,5 +1970,62 @@ internal static partial class ArgumentParser
                 terms = [terms[0], new SingleLongTerm(0)];
             return new HTML_PRINTArgument(terms[0], terms[1]);
         }
+    }
+
+
+    private sealed class HTML_PRINT_ISLAND_ArgumentBuilder : ArgumentBuilder
+    {
+        public HTML_PRINT_ISLAND_ArgumentBuilder()
+        {
+            argumentTypeArray = [typeof(string), typeof(long), typeof(long)];
+            minArg = 1;
+        }
+        public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
+        {
+            var terms = popTerms(line);
+            if (!checkArgumentType(line, exm, terms))
+                return null;
+            ExpressionArgument ret;
+            if (terms.Count == 0)
+            {
+                ret = new ExpressionArgument(new SingleStrTerm(""))
+                {
+                    ConstStr = "",
+                    IsConst = true
+                };
+                return ret;
+            }
+            if (terms.Count == 1)
+                terms = [terms[0], new SingleLongTerm(0)];
+
+            return new HTML_PRINT_ISLANDArgument(terms[0], terms[1]);
+        }
+    }
+}
+
+internal class HTML_PRINT_ISLAND_CLEAR_ArgumentBuilder : ArgumentBuilder
+{
+    public HTML_PRINT_ISLAND_CLEAR_ArgumentBuilder()
+    {
+        argumentTypeArray = [typeof(long)];
+        minArg = 0;
+    }
+    public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
+    {
+        var terms = popTerms(line);
+        if (!checkArgumentType(line, exm, terms))
+            return null;
+        HTML_PRINT_ISLAND_CLEARArgument ret;
+        if (terms.Count == 0)
+        {
+            ret = new HTML_PRINT_ISLAND_CLEARArgument(new NullTerm(0))
+            {
+                ConstStr = null,
+                IsConst = false
+            };
+            return ret;
+        }
+
+        return new HTML_PRINT_ISLAND_CLEARArgument(terms[0]);
     }
 }

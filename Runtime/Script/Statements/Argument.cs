@@ -548,3 +548,24 @@ internal sealed class HTML_PRINTArgument : Argument
     readonly public AExpression LineEnd;
     readonly public AExpression Term;
 }
+
+internal sealed class HTML_PRINT_ISLANDArgument : Argument
+{
+    public HTML_PRINT_ISLANDArgument(AExpression termSrc, AExpression layer)
+    {
+        Term = termSrc;
+        Layer = layer;
+    }
+    readonly public AExpression Layer;
+    readonly public AExpression Term;
+}
+
+internal sealed class HTML_PRINT_ISLAND_CLEARArgument : Argument
+{
+    public HTML_PRINT_ISLAND_CLEARArgument(AExpression layer)
+    {
+        TargetLayer = layer;
+    }
+    readonly public AExpression TargetLayer;
+    readonly public AExpression Term;
+}

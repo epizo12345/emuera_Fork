@@ -239,6 +239,8 @@ internal sealed class ConsoleButtonString : AConsoleDisplayNode
             point.X = PointX + Config.DrawingParam_ShapePositionShift;
         }
 
+        Point = point;
+
         var offset = point;
         var prevHeight = 0.0f;
         foreach (var css in strArray)

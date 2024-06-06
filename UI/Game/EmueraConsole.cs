@@ -22,6 +22,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using MinorShift.Emuera.UI.Framework;
 using MinorShift.Emuera.UI;
+using System.Linq;
 
 namespace MinorShift.Emuera.GameView;
 
@@ -1258,7 +1259,7 @@ internal sealed partial class EmueraConsole : IDisposable
     }
 
 
-    List<ConsoleDisplayLine> _htmlElementList = new(10);
+    SortedDictionary<int, List<ConsoleDisplayLine>> _htmlElementListDict = new();
 
     /// <summary>
     /// 1818以前のRefreshStringsの後半とm_RefreshStringsを融合
@@ -1321,11 +1322,15 @@ internal sealed partial class EmueraConsole : IDisposable
         }
 
         //真のHTML描画
-        var y = 0;
-        foreach (var element in _htmlElementList)
+        foreach (var (_, list) in _htmlElementListDict)
         {
-            element.DrawTo(graph, y, false, false, Config.TextDrawingMode);
-            y += Config.LineHeight;
+            var y = 0;
+            foreach (var elem in list)
+            {
+                elem.DrawTo(graph, y, false, false, Config.TextDrawingMode);
+                y += Config.LineHeight;
+
+            }
         }
 
         //ToolTip描画
@@ -1719,54 +1724,51 @@ internal sealed partial class EmueraConsole : IDisposable
                 if (part == null)
                     continue;
 
-                if (!part.Size.IsEmpty && !part.Point.IsEmpty)
+                if ((part.Point.X <= pointX) && (part.Point.X + part.Size.Width >= pointX) &&
+                    (pointY >= part.Point.Y) && (pointY <= part.Point.Y + part.Size.Height))
                 {
-                    if ((part.Point.X <= pointX) && (part.Point.X + part.Size.Width >= pointX) &&
-                        (pointY >= part.Point.Y) && (pointY <= part.Point.Y + part.Size.Height))
-                    {
-                        if (button.IsButton || !string.IsNullOrEmpty(button.Title))
-                            return button;
-                    }
-
-                    if (part is ConsoleDivElement div)
-                    {
-                        foreach (var node in div._childNodes)
-                        {
-                            if (node is ConsoleButtonString cbs)
-                            {
-                                var f = findButtom(pointX, pointY, relPointY, cbs);
-                                if (f != null) return f;
-                            }
-                        }
-                    }
+                    if (button.IsButton || !string.IsNullOrEmpty(button.Title))
+                        return button;
                 }
-                else
+
+                if (part is ConsoleButtonString cbs)
                 {
-                    if ((part.PointX <= pointX) && (part.PointX + part.Width >= pointX)
-                        && (relPointY >= part.Top) && (relPointY <= part.Bottom))
+                    var f = findButtom(pointX, pointY, relPointY, cbs);
+                    if (f != null) return f;
+                }
+                else if (part is ConsoleDivElement div)
+                {
+                    foreach (var node in div._childNodes)
                     {
-                        if (button.IsButton || !string.IsNullOrEmpty(button.Title))
-                            return button;
+                        if (node is ConsoleButtonString childCbs)
+                        {
+                            var f = findButtom(pointX, pointY, relPointY, childCbs);
+                            if (f != null) return f;
+                        }
                     }
                 }
             }
             return null;
         }
         //HTML Islandの探索
-        foreach (var elem in _htmlElementList)
+        foreach (var (_, list) in _htmlElementListDict.Reverse())
         {
-            foreach (var button in elem.Buttons)
+            foreach (var elem in list)
             {
-                foreach (var part in button.StrArray)
+                foreach (var button in elem.Buttons)
                 {
-                    pointing = findButtom(pointX, pointY, relPointY, button);
-                    if (pointing != null)
+                    foreach (var part in button.StrArray)
                     {
-                        goto breakfor;
+                        pointing = findButtom(pointX, pointY, relPointY, button);
+                        if (pointing != null)
+                        {
+                            goto breakfor;
+                        }
                     }
-                }
 
+                }
             }
+
         }
 
         //通常の描画領域の探索

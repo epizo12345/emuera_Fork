@@ -354,7 +354,7 @@ internal sealed partial class FunctionIdentifier
         public HTML_PRINT_ISLAND_Instruction()
         {
             flag = EXTENDED | METHOD_SAFE;
-            ArgBuilder = ArgumentParser.GetArgumentBuilder(FunctionArgType.SP_HTML_PRINT);
+            ArgBuilder = ArgumentParser.GetArgumentBuilder(FunctionArgType.SP_HTML_PRINT_ISLAND);
         }
 
         public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
@@ -362,11 +362,18 @@ internal sealed partial class FunctionIdentifier
             if (GlobalStatic.Process.SkipPrint)
                 return;
             string str;
+            var depth = 0;
+            var args = (HTML_PRINT_ISLANDArgument)func.Argument;
             if (func.Argument.IsConst)
-                str = func.Argument.ConstStr;
+            {
+                str = args.ConstStr;
+            }
             else
-                str = ((HTML_PRINTArgument)func.Argument).Term.GetStrValue(exm);
-            exm.Console.PrintHTMLIsland(str);
+            {
+                str = args.Term.GetStrValue(exm);
+                depth = (int)args.Layer.GetIntValue(exm);
+            }
+            exm.Console.PrintHTMLIsland(str, depth);
         }
     }
 
@@ -375,12 +382,20 @@ internal sealed partial class FunctionIdentifier
         public HTML_PRINT_ISLAND_CLEAR_Instruction()
         {
             flag = EXTENDED | METHOD_SAFE;
-            ArgBuilder = ArgumentParser.GetArgumentBuilder(FunctionArgType.VOID);
+            ArgBuilder = ArgumentParser.GetArgumentBuilder(FunctionArgType.SP_HTML_PRINT_ISLAND_CLEAR);
         }
 
         public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
         {
-            exm.Console.ClearHTMLIsland();
+            var args = (HTML_PRINT_ISLAND_CLEARArgument)func.Argument;
+            if (args.TargetLayer is NullTerm)
+            {
+                exm.Console.ClearHTMLIsland();
+            }
+            else
+            {
+                exm.Console.ClearHTMLIsland((int)args.TargetLayer.GetIntValue(exm));
+            }
         }
     }
 
