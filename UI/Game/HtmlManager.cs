@@ -373,7 +373,8 @@ internal static partial class HtmlManager
                                     lockXpos = true;
                                 }
 
-                                var title = elem.GetAttribute("title");
+                                var title = elem.GetAttribute("title")?.Replace("<br>", "\n");
+
 
                                 var c = ParseNode(node.ChildNodes, stringStyle, divState, align);
 
@@ -425,7 +426,7 @@ internal static partial class HtmlManager
                                     lockXpos = true;
                                 }
 
-                                var title = elem.GetAttribute("title");
+                                var title = elem.GetAttribute("title")?.Replace("<br>", "\n"); ;
 
                                 var c = ParseNode(node.ChildNodes, stringStyle, divState, align);
 
