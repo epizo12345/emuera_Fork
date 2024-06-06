@@ -1715,39 +1715,32 @@ internal sealed partial class EmueraConsole : IDisposable
         int pointY = point.Y;
         int relPointY = pointY - window.MainPicBox.Height;
         //下から上へ探索し発見次第打ち切り
-        static ConsoleButtonString findButtom(int pointX, int pointY, int relPointY, ConsoleButtonString button)
+        static ConsoleButtonString findButton(int pointX, int pointY, int relPointY, AConsoleDisplayNode parent)
         {
-            if (button == null) return null;
+            if (parent == null) return null;
 
-            foreach (var part in button.StrArray)
+            if (parent is ConsoleButtonString cbs)
             {
-                if (part == null)
-                    continue;
-
-                if ((part.Point.X <= pointX) && (part.Point.X + part.Size.Width >= pointX) &&
-                    (pointY >= part.Point.Y) && (pointY <= part.Point.Y + part.Size.Height))
+                foreach (var node in cbs.StrArray)
                 {
-                    if (button.IsButton || !string.IsNullOrEmpty(button.Title))
-                        return button;
-                }
-
-                if (part is ConsoleButtonString cbs)
-                {
-                    var f = findButtom(pointX, pointY, relPointY, cbs);
-                    if (f != null) return f;
-                }
-                else if (part is ConsoleDivElement div)
-                {
-                    foreach (var node in div._childNodes)
+                    if ((node.Point.X <= pointX) && (node.Point.X + node.Size.Width >= pointX) &&
+                        (pointY >= node.Point.Y) && (pointY <= node.Point.Y + node.Size.Height))
                     {
-                        if (node is ConsoleButtonString childCbs)
-                        {
-                            var f = findButtom(pointX, pointY, relPointY, childCbs);
-                            if (f != null) return f;
-                        }
+                        if (cbs.IsButton || !string.IsNullOrEmpty(cbs.Title))
+                            return cbs;
                     }
+
+                    return findButton(pointX, pointY, relPointY, node);
                 }
             }
+            else if (parent is ConsoleDivElement div)
+            {
+                foreach (var node in div._childNodes)
+                {
+                    return findButton(pointX, pointY, relPointY, node);
+                }
+            }
+
             return null;
         }
         //HTML Islandの探索
@@ -1759,7 +1752,7 @@ internal sealed partial class EmueraConsole : IDisposable
                 {
                     foreach (var part in button.StrArray)
                     {
-                        pointing = findButtom(pointX, pointY, relPointY, button);
+                        pointing = findButton(pointX, pointY, relPointY, button);
                         if (pointing != null)
                         {
                             goto breakfor;
@@ -1783,7 +1776,7 @@ internal sealed partial class EmueraConsole : IDisposable
                 if (button == null || button.StrArray == null)
                     continue;
 
-                pointing = findButtom(pointX, pointY, relPointY, button);
+                pointing = findButton(pointX, pointY, relPointY, button);
                 if (pointing != null)
                 {
                     goto breakfor;
