@@ -143,6 +143,11 @@ class ConsoleDivElement : AConsoleDisplayNode
             paddingOrigin.Offset(_padding.Value.Left, _padding.Value.Top);
         }
 
+        if (_borderStyle.HasValue)
+        {
+            canvas.DrawRect(SKRect.Create(Point, Size), _borderStyle?.Paint);
+        }
+
         var drawPoint = paddingOrigin;
         foreach (var childNode in _childNodes)
         {
@@ -159,12 +164,6 @@ class ConsoleDivElement : AConsoleDisplayNode
                 childNode.DrawTo(canvas, drawPoint, isSelecting, isBackLog, mode);
                 drawPoint.Offset(childNode.Width, 0);
             }
-        }
-
-        if (_borderStyle.HasValue)
-        {
-            //graph.DrawRectangle(_borderStyle.Value.Pen, new Rectangle(Point, Size));
-            canvas.DrawRect(SKRect.Create(Point, Size), _borderStyle?.Paint);
         }
     }
 
