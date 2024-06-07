@@ -1730,14 +1730,22 @@ internal sealed partial class EmueraConsole : IDisposable
                             return cbs;
                     }
 
-                    return findButton(pointX, pointY, relPointY, node);
+                    var r = findButton(pointX, pointY, relPointY, node);
+                    if (r != null)
+                    {
+                        return r;
+                    }
                 }
             }
             else if (parent is ConsoleDivElement div)
             {
                 foreach (var node in div._childNodes)
                 {
-                    return findButton(pointX, pointY, relPointY, node);
+                    var r = findButton(pointX, pointY, relPointY, node);
+                    if (r != null)
+                    {
+                        return r;
+                    }
                 }
             }
 
