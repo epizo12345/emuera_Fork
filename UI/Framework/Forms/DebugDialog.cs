@@ -12,6 +12,7 @@ using System.Windows.Forms;
 using MinorShift.Emuera.UI.Framework;
 using System.ComponentModel;
 using MinorShift.Emuera.Runtime.Config.JSON;
+using System.Text.Json;
 
 namespace MinorShift.Emuera.Forms;
 
@@ -35,6 +36,18 @@ public partial class DebugDialog : Form
         updateSize();
         checkBoxTopMost.Checked = this.TopMost;
         loadWatchList();
+
+        var consoleHistoryFilePath = Program.ExeDir + "consoleHistory.json";
+        if (File.Exists(consoleHistoryFilePath))
+        {
+            history = JsonSerializer.Deserialize<List<string>>(File.OpenRead(consoleHistoryFilePath));
+            selectedIndex = history.Count;
+        }
+        else
+        {
+            history = [];
+        }
+
         Localize();
 
 
@@ -48,6 +61,8 @@ public partial class DebugDialog : Form
             Config.DebugWindowHeight = Height;
             config.SaveDebugConfig();
 
+            var historyJson = JsonSerializer.Serialize(history);
+            File.WriteAllText(consoleHistoryFilePath, historyJson);
             JSONConfig.Save();
         };
     }
@@ -366,7 +381,7 @@ public partial class DebugDialog : Form
             return;
         }
     }
-    List<string> history = [];
+    readonly List<string> history;
     int selectedIndex;
     void updateInputs()
     {
