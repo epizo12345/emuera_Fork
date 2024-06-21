@@ -375,7 +375,7 @@ public partial class DebugDialog : Form
             return;
 
         history.Add(input);
-        selectedIndex++;
+        selectedIndex = history.Count;
         textBoxCommand.Text = "";
     }
     void movePrev(int move)
