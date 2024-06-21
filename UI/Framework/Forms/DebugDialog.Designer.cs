@@ -308,7 +308,6 @@
             MinimumSize = new System.Drawing.Size(340, 303);
             Name = "DebugDialog";
             ShowIcon = false;
-            ShowInTaskbar = false;
             Text = "Emuera - デバッグウインドウ";
             Activated += DebugDialog_Activated;
             FormClosing += DebugDialog_FormClosing;
