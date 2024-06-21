@@ -526,7 +526,7 @@ internal sealed partial class MainWindow : Form
         Process.Start(Application.ExecutablePath, _args);
 
         //現在のアプリケーションを終了する
-        Application.ExitThread();
+        Close();
     }
 
     public void GotoTitle()
