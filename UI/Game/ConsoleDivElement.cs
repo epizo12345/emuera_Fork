@@ -121,7 +121,7 @@ class ConsoleDivElement : AConsoleDisplayNode
 
         {
 
-            if (JSONConfig.Data.UseButtonFocusBackgroundColor && isButton && !isBackLog)
+            if (JSONConfig.Game.UseButtonFocusBackgroundColor && isButton && !isBackLog)
             {
                 _backColor = new SKColor(50, 50, 50);
             }

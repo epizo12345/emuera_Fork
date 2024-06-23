@@ -53,7 +53,7 @@ internal sealed class VariableEvaluator : IDisposable
     }
     public long GetNextRand(long max)
     {
-        if (JSONConfig.Data.UseNewRandom)
+        if (JSONConfig.Game.UseNewRandom)
         {
             return _newRand.NextInt64(max);
         }

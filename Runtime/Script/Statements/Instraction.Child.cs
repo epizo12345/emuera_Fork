@@ -1402,7 +1402,7 @@ internal sealed partial class FunctionIdentifier
             else
                 iValue = ((ExpressionArgument)func.Argument).Term.GetIntValue(exm);
 
-            if (JSONConfig.Data.UseNewRandom)
+            if (JSONConfig.Game.UseNewRandom)
             {
                 ParserMediator.Warn("新しい乱数アルゴリズムではRANDOMIZEは無視されます", null, 1);
                 ParserMediator.FlushWarningList();
@@ -1423,7 +1423,7 @@ internal sealed partial class FunctionIdentifier
 
         public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
         {
-            if (JSONConfig.Data.UseNewRandom)
+            if (JSONConfig.Game.UseNewRandom)
             {
                 ParserMediator.Warn("新しい乱数アルゴリズムではINITRANDは機能しません", null, 1);
                 ParserMediator.FlushWarningList();
@@ -1445,7 +1445,7 @@ internal sealed partial class FunctionIdentifier
 
         public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
         {
-            if (JSONConfig.Data.UseNewRandom)
+            if (JSONConfig.Game.UseNewRandom)
             {
                 ParserMediator.Warn("新しい乱数アルゴリズムではDUMPRANDは機能しません", null, 1);
                 ParserMediator.FlushWarningList();

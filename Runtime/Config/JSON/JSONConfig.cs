@@ -9,15 +9,18 @@ using System.Text.Json;
 namespace MinorShift.Emuera.Runtime.Config.JSON;
 static class JSONConfig
 {
-    public static JSONConfigData Data;
+    public static JSONGameConfigData Game;
+    public static JSONUserConfigData User;
 
-    const string _configFileName = "setting.json";
-    static string _configFilePath = Program.ExeDir + _configFileName;
+    const string _gameConfigFileName = "setting.json";
+    static string _gameConfigFilePath = Program.ExeDir + _gameConfigFileName;
+    const string _userConfigFileName = "setting_user.json";
+    static string _userConfigFilePath = Program.ExeDir + _userConfigFileName;
 
     public static SKSamplingOptions SamplingOptions { get; private set; }
     public static void SetSamplingOptions()
     {
-        SamplingOptions = Data.ImageSamplingOption switch
+        SamplingOptions = Game.ImageSamplingOption switch
         {
             Resampler.NearnestNeighber => new SKSamplingOptions(SKFilterMode.Nearest),
             Resampler.Linear => new SKSamplingOptions(SKFilterMode.Linear),
@@ -28,23 +31,48 @@ static class JSONConfig
 
     public static void Load()
     {
-        if (!File.Exists(_configFilePath))
         {
-            var defaultData = new JSONConfigData();
-            var defaultJson = JsonSerializer.Serialize(defaultData);
-            File.WriteAllText(_configFilePath, defaultJson);
+            if (!File.Exists(_gameConfigFilePath))
+            {
+                var defaultData = new JSONGameConfigData();
+                var defaultJson = JsonSerializer.Serialize(defaultData);
+                File.WriteAllText(_gameConfigFilePath, defaultJson);
+            }
+
+            {
+                var json = File.ReadAllText(_gameConfigFilePath);
+
+                Game = JsonSerializer.Deserialize<JSONGameConfigData>(json);
+            }
         }
 
-        var json = File.ReadAllText(_configFilePath);
+        {
+            if (!File.Exists(_userConfigFilePath))
+            {
+                var defaultData = new JSONUserConfigData();
+                var defaultJson = JsonSerializer.Serialize(defaultData);
+                File.WriteAllText(_userConfigFilePath, defaultJson);
+            }
 
-        Data = JsonSerializer.Deserialize<JSONConfigData>(json);
+            {
+                var json = File.ReadAllText(_gameConfigFilePath);
+
+                User = JsonSerializer.Deserialize<JSONUserConfigData>(json);
+            }
+        }
 
         SetSamplingOptions();
     }
 
     public static void Save()
     {
-        var json = JsonSerializer.Serialize(Data);
-        File.WriteAllText(_configFilePath, json);
+        {
+            var json = JsonSerializer.Serialize(Game);
+            File.WriteAllText(_gameConfigFilePath, json);
+        }
+        {
+            var json = JsonSerializer.Serialize(User);
+            File.WriteAllText(_userConfigFilePath, json);
+        }
     }
 }

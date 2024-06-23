@@ -9,7 +9,7 @@ enum Resampler
     Cubic,
 }
 
-sealed class JSONConfigData
+sealed class JSONGameConfigData
 {
     //ボタンにカーソルを合わせたときに背景色を変更するか
     [JsonPropertyName("UseButtonFocusBackgroundColor")]
@@ -19,10 +19,12 @@ sealed class JSONConfigData
     public bool UseNewRandom { get; set; }
 
     public bool UseScopedVariableInstruction { get; set; }
-
     public Resampler ImageSamplingOption { get; set; } = Resampler.Linear;
 
     public bool CheckUTF8withBOM { get; set; } = true;
+}
 
+sealed class JSONUserConfigData
+{
     public int[] WatchListWidth { get; set; } = [-2, -2];
 }

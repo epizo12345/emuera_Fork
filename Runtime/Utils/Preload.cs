@@ -38,7 +38,7 @@ static partial class Preload
                             ext.Equals(".erh", StringComparison.OrdinalIgnoreCase);
                 }).ForAll((childPath) =>
                 {
-                    if (JSONConfig.Data.CheckUTF8withBOM)
+                    if (JSONConfig.Game.CheckUTF8withBOM)
                     {
                         using var file = File.OpenRead(childPath.FullName);
                         Span<byte> bom = stackalloc byte[3];

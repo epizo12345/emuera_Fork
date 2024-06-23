@@ -643,7 +643,7 @@ internal sealed partial class IdentifierDictionary
 
             }
         }
-        if (!JSONConfig.Data.UseScopedVariableInstruction &&
+        if (!JSONConfig.Game.UseScopedVariableInstruction &&
             (idStr == "VARS" || idStr == "VARI"))
         {
             throw new CodeEE($"{idStr}命令は現在の設定では使用できません");

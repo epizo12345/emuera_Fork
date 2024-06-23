@@ -440,7 +440,7 @@ internal sealed class ErbLoader
                     noError = false;
                     ParserMediator.Warn(nextLine.ErrMes, position, 2);
                 }
-                else if (JSONConfig.Data.UseNewRandom &&
+                else if (JSONConfig.Game.UseNewRandom &&
                     nextLine is InstructionLine instruction)
                 {
                     switch (instruction.FunctionCode)

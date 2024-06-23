@@ -185,7 +185,7 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
         SKColor? backcolor = null;
         if (isSelecting)
         {
-            if (JSONConfig.Data.UseButtonFocusBackgroundColor)
+            if (JSONConfig.Game.UseButtonFocusBackgroundColor)
             {
                 if (!(Color.Yellow.R == color.R &&
                         Color.Yellow.G == color.G &&

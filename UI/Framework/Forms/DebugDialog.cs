@@ -297,11 +297,11 @@ public partial class DebugDialog : Form
                 watchView.Rows.Add([str, ""]);
             }
         }
-        watchView.Columns[0].Width = JSONConfig.Data.WatchListWidth[0];
-        watchView.Columns[1].Width = JSONConfig.Data.WatchListWidth[1];
+        watchView.Columns[0].Width = JSONConfig.User.WatchListWidth[0];
+        watchView.Columns[1].Width = JSONConfig.User.WatchListWidth[1];
         watchView.ColumnWidthChanged += (_, a) =>
         {
-            JSONConfig.Data.WatchListWidth[a.Column.Index] = a.Column.Width;
+            JSONConfig.User.WatchListWidth[a.Column.Index] = a.Column.Width;
         };
     }
 
