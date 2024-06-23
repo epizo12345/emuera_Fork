@@ -37,7 +37,7 @@ public partial class DebugDialog : Form
         checkBoxTopMost.Checked = this.TopMost;
         loadWatchList();
 
-        var consoleHistoryFilePath = Program.ExeDir + "consoleHistory.json";
+        var consoleHistoryFilePath = Program.ExeDir + "console_history.json";
         if (File.Exists(consoleHistoryFilePath))
         {
             history = JsonSerializer.Deserialize<List<string>>(File.OpenRead(consoleHistoryFilePath));
