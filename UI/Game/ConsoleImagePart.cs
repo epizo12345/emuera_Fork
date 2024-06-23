@@ -76,6 +76,7 @@ sealed class ConsoleImagePart : AConsoleDisplayNode
         _display = display;
         _positionX = raw_xpos;
         _positionY = raw_ypos;
+        Size = new SKSize(Width, height);
     }
 
     string _altText;
