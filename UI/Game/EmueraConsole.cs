@@ -1714,8 +1714,8 @@ internal sealed partial class EmueraConsole : IDisposable
         int pointX = point.X;
         int pointY = point.Y;
         int relPointY = pointY - window.MainPicBox.Height;
-        //下から上へ探索し発見次第打ち切り
-        static ConsoleButtonString findButton(int pointX, int pointY, int relPointY, AConsoleDisplayNode parent)
+        //子を再帰的に探索する
+        static ConsoleButtonString findButton(int pointX, int pointY, int relPointY, AConsoleDisplayNode parent, ConsoleButtonString selectableButton)
         {
             if (parent == null) return null;
 
@@ -1723,14 +1723,10 @@ internal sealed partial class EmueraConsole : IDisposable
             {
                 foreach (var node in cbs.StrArray)
                 {
-                    if ((node.Point.X <= pointX) && (node.Point.X + node.Size.Width >= pointX) &&
-                        (pointY >= node.Point.Y) && (pointY <= node.Point.Y + node.Size.Height))
-                    {
-                        if (cbs.IsButton || !string.IsNullOrEmpty(cbs.Title))
-                            return cbs;
-                    }
+                    if (cbs.IsButton || !string.IsNullOrEmpty(cbs.Title))
+                        selectableButton = cbs;
 
-                    var r = findButton(pointX, pointY, relPointY, node);
+                    var r = findButton(pointX, pointY, relPointY, node, selectableButton);
                     if (r != null)
                     {
                         return r;
@@ -1741,11 +1737,20 @@ internal sealed partial class EmueraConsole : IDisposable
             {
                 foreach (var node in div._childNodes)
                 {
-                    var r = findButton(pointX, pointY, relPointY, node);
+                    var r = findButton(pointX, pointY, relPointY, node, selectableButton);
                     if (r != null)
                     {
                         return r;
                     }
+                }
+            }
+            else
+            {
+                if ((parent.Point.X <= pointX) && (parent.Point.X + parent.Size.Width >= pointX) &&
+                    (pointY >= parent.Point.Y) && (pointY <= parent.Point.Y + parent.Size.Height))
+                {
+                    if (selectableButton != null)
+                        return selectableButton;
                 }
             }
 
@@ -1760,7 +1765,7 @@ internal sealed partial class EmueraConsole : IDisposable
                 {
                     foreach (var part in button.StrArray)
                     {
-                        pointing = findButton(pointX, pointY, relPointY, button);
+                        pointing = findButton(pointX, pointY, relPointY, button, null);
                         if (pointing != null)
                         {
                             goto breakfor;
@@ -1784,7 +1789,7 @@ internal sealed partial class EmueraConsole : IDisposable
                 if (button == null || button.StrArray == null)
                     continue;
 
-                pointing = findButton(pointX, pointY, relPointY, button);
+                pointing = findButton(pointX, pointY, relPointY, button, null);
                 if (pointing != null)
                 {
                     goto breakfor;
