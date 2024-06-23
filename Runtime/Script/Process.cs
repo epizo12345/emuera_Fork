@@ -69,7 +69,7 @@ internal sealed partial class Process(EmueraConsole view)
                 ParserMediator.FlushWarningList();
                 if (Dialog.ShowPrompt(LocalizationManager.MsgBox.ConfigError, LocalizationManager.MsgBox.ConfigFileError))
                 {
-                    console.PrintSystemLine("コンフィグファイルに異常があり、終了が選択されたため処理を終了しました");
+                    console.PrintSystemLine(LocalizationManager.SystemLine.SelectExitConfigMB);
                     return false;
                 }
             }
@@ -81,7 +81,7 @@ internal sealed partial class Process(EmueraConsole view)
             if (err != null)
             {
                 ParserMediator.FlushWarningList();
-                console.PrintSystemLine("リソースフォルダ読み込み中に異常が発見されたため処理を終了します");
+                console.PrintSystemLine(LocalizationManager.SystemLine.ResourceReadError);
                 console.Print(err.ToString());
                 return false;
             }
@@ -96,7 +96,7 @@ internal sealed partial class Process(EmueraConsole view)
                 if (File.Exists(Program.ExeDir + "macro.txt"))
                 {
                     if (Config.DisplayReport)
-                        console.PrintSystemLine("macro.txt読み込み中・・・");
+                        console.PrintSystemLine(LocalizationManager.SystemLine.LoadingMacro);
                     KeyMacro.LoadMacroFile(Program.ExeDir + "macro.txt");
                 }
             }
@@ -109,14 +109,14 @@ internal sealed partial class Process(EmueraConsole view)
                 if (File.Exists(Program.CsvDir + "_Replace.csv"))
                 {
                     if (Config.DisplayReport)
-                        console.PrintSystemLine("_Replace.csv読み込み中・・・");
+                        console.PrintSystemLine(LocalizationManager.SystemLine.LoadingReplace);
                     ConfigData.Instance.LoadReplaceFile(Program.CsvDir + "_Replace.csv");
                     if (ParserMediator.HasWarning)
                     {
                         ParserMediator.FlushWarningList();
                         if (Dialog.ShowPrompt(LocalizationManager.MsgBox.ReplaceError, LocalizationManager.MsgBox.ReplaceFileError))
                         {
-                            console.PrintSystemLine("_Replace.csvに異常があり、終了が選択されたため処理を終了しました");
+                            console.PrintSystemLine(LocalizationManager.SystemLine.SelectExitReplaceMB);
                             return false;
                         }
                     }
@@ -135,7 +135,7 @@ internal sealed partial class Process(EmueraConsole view)
                 if (File.Exists(Program.CsvDir + "_Rename.csv"))
                 {
                     if (Config.DisplayReport || Program.AnalysisMode)
-                        console.PrintSystemLine("_Rename.csv読み込み中・・・");
+                        console.PrintSystemLine(LocalizationManager.SystemLine.LoadingRename);
                     ParserMediator.LoadEraExRenameFile(Program.CsvDir + "_Rename.csv");
                 }
                 else
@@ -153,7 +153,7 @@ internal sealed partial class Process(EmueraConsole view)
             if (!await Task.Run(() => gamebase.LoadGameBaseCsv(Program.CsvDir + "GAMEBASE.CSV")))
             {
                 ParserMediator.FlushWarningList();
-                console.PrintSystemLine("GAMEBASE.CSVの読み込み中に問題が発生したため処理を終了しました");
+                console.PrintSystemLine(LocalizationManager.SystemLine.GamebaseError);
                 return false;
             }
             console.SetWindowTitle(gamebase.ScriptWindowTitle);
@@ -193,7 +193,7 @@ internal sealed partial class Process(EmueraConsole view)
             if (!await Task.Run(() => hLoader.LoadHeaderFiles(Program.ErbDir, Config.DisplayReport)))
             {
                 ParserMediator.FlushWarningList();
-                console.PrintSystemLine("ERHの読み込み中にエラーが発生したため処理を終了しました");
+                console.PrintSystemLine(LocalizationManager.SystemLine.ErhLoadingError);
                 return false;
             }
             LexicalAnalyzer.UseMacro = idDic.UseMacro();
@@ -279,7 +279,7 @@ internal sealed partial class Process(EmueraConsole view)
         Int64[] selectcom = vEvaluator.SELECTCOM_ARRAY;
         if (count >= selectcom.Length)
         {
-            throw new CodeEE("CALLTRAIN命令の引数の値がSELECTCOMの要素数を超えています");
+            throw new CodeEE(LocalizationManager.Error.CalltrainArgMoreThanSelectcom);
         }
         for (int i = 0; i < (int)count; i++)
         {
@@ -390,7 +390,7 @@ internal sealed partial class Process(EmueraConsole view)
             currentLine.Position.Value.Filename, currentLine.Position.Value.LineNo, state.lineCount, elapsedTime);
         if (Dialog.ShowPrompt(LocalizationManager.MsgBox.InfiniteLoop, text))
         {
-            throw new CodeEE("無限ループの疑いにより強制終了が選択されました");
+            throw new CodeEE(LocalizationManager.Error.SelectExitInfiniteLoopMB);
         }
         else
         {
@@ -407,7 +407,7 @@ internal sealed partial class Process(EmueraConsole view)
         {
             //StackOverflowExceptionはcatchできない上に再現性がないので発生前に一定数で打ち切る。
             //環境によっては100以前にStackOverflowExceptionがでるかも？
-            throw new CodeEE("関数の呼び出しスタックが溢れました(無限に再帰呼び出しされていませんか？)");
+            throw new CodeEE(LocalizationManager.Error.OverflowFuncStack);
         }
         SingleTerm ret = null;
         int temp_current = state.currentMin;
@@ -529,7 +529,7 @@ internal sealed partial class Process(EmueraConsole view)
                     console.PrintError("エラー内容：" + exc.Message);
                 }
                 console.PrintError("現在の関数：@" + current.ParentLabelLine.LabelName + "（" + current.ParentLabelLine.Position.Value.Filename + "の" + current.ParentLabelLine.Position.Value.LineNo.ToString() + "行目）");
-                console.PrintError("関数呼び出しスタック：");
+                console.PrintError(LocalizationManager.Error.FuncCallStack);
                 LogicalLine parent;
                 int depth = 0;
                 while ((parent = state.GetReturnAddressSequensial(depth++)) != null)

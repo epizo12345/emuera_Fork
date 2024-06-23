@@ -1018,7 +1018,7 @@ namespace MinorShift.Emuera.UI.Framework {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Group.
+        ///   Looks up a localized string similar to Group {0}.
         /// </summary>
         internal static string ContextMenu_KeyMacroGroup_Group {
             get {
@@ -1433,7 +1433,7 @@ namespace MinorShift.Emuera.UI.Framework {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to This function cannot be used when an error occurs.
+        ///   Looks up a localized string similar to エラー発生時はこの機能は使えません.
         /// </summary>
         internal static string MessageBox_CanNotUseWhenError {
             get {
@@ -1442,7 +1442,7 @@ namespace MinorShift.Emuera.UI.Framework {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to This function cannot be used during initialization.
+        ///   Looks up a localized string similar to 初期化中はこの機能は使えません.
         /// </summary>
         internal static string MessageBox_CanNotUseWhenInitialize {
             get {
@@ -1524,7 +1524,7 @@ namespace MinorShift.Emuera.UI.Framework {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Failed to create dat folder.
+        ///   Looks up a localized string similar to datフォルダーの作成に失敗しました.
         /// </summary>
         internal static string MessageBox_FailedCreateDataFolder {
             get {

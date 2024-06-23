@@ -10,6 +10,7 @@ using MinorShift.Emuera.Runtime.Utils;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.GameProc.Function;
 
@@ -27,7 +28,7 @@ internal abstract class ArgumentBuilder
     }
     protected static void warn(string mes, InstructionLine line, int level, bool isBackComp)
     {
-        mes = line.Function.Name + "命令:" + mes;
+        mes = line.Function.Name + LocalizationManager.Error.Instruction + mes;
         bool isError = level >= 2;
         if (isError)
         {
@@ -58,13 +59,13 @@ internal abstract class ArgumentBuilder
         if (arguments.Count < minArg ||
             ((arguments.Count < argumentTypeArray.Length) && (minArg < 0)))
         {
-            warn("引数が足りません", line, 2, false);
+            warn(LocalizationManager.Error.NotEnoughArguments, line, 2, false);
             return false;
         }
         int length = arguments.Count;
         if ((arguments.Count > argumentTypeArray.Length) && (!argAny))
         {
-            warn("引数が多すぎます", line, 1, false);
+            warn(LocalizationManager.Error.TooManyArg, line, 1, false);
             length = argumentTypeArray.Length;
         }
         for (int i = 0; i < length; i++)
@@ -165,7 +166,7 @@ internal static partial class ArgumentParser
             else if (argstr[i] == 'S')
                 types[i] = typeof(string);
             else
-                throw new ExeEE("異常な指定");
+                throw new ExeEE(LocalizationManager.Error.AbnormalSpecification);
         }
         ArgumentBuilder newarg = new Expressions_ArgumentBuilder(types, minArg);
         nargb.Add(key, newarg);
@@ -259,7 +260,7 @@ internal static partial class ArgumentParser
             WordCollection wc = LexicalAnalyzer.Analyse(st, LexEndWith.Comma, LexAnalyzeFlag.None);
             st.ShiftNext();
             if (st.EOS)
-            { warn("引数が足りません", line, 2, false); return null; }
+            { warn(LocalizationManager.Error.NotEnoughArguments, line, 2, false); return null; }
             double d;
             try
             {
@@ -267,7 +268,7 @@ internal static partial class ArgumentParser
                 d = LexicalAnalyzer.ReadDouble(st);
                 LexicalAnalyzer.SkipWhiteSpace(st);
                 if (!st.EOS)
-                    warn("引数が多すぎます", line, 1, false);
+                    warn(LocalizationManager.Error.TooManyArg, line, 1, false);
             }
             catch
             {
@@ -276,7 +277,7 @@ internal static partial class ArgumentParser
             }
             AExpression term = ExpressionParser.ReduceExpressionTerm(wc, TermEndWith.EoL);
             if (term == null)
-            { warn("書式が間違っています", line, 2, false); return null; }
+            { warn(LocalizationManager.Error.WrongFormat, line, 2, false); return null; }
             if (!(term.Restructure(exm) is VariableTerm varTerm))
             { warn("第１引数に変数以外を指定することはできません", line, 2, false); return null; }
             else if (varTerm.IsString)
@@ -307,7 +308,7 @@ internal static partial class ArgumentParser
                     };
                     return ret;
                 }
-                warn("引数が設定されていません", line, 2, false);
+                warn(LocalizationManager.Error.MissingArg, line, 2, false);
                 return null;
             }
             while (true)
@@ -337,7 +338,7 @@ internal static partial class ArgumentParser
             CharStream st = line.PopArgumentPrimitive();
             LexicalAnalyzer.SkipWhiteSpace(st);
             if (!st.EOS)
-                warn("引数は不要です", line, 1, false);
+                warn(LocalizationManager.Error.ArgIsNotRequired, line, 1, false);
             return new VoidArgument();
         }
     }
@@ -358,7 +359,7 @@ internal static partial class ArgumentParser
             {
                 if (!nullable)
                 {
-                    warn("引数が設定されていません", line, 2, false);
+                    warn(LocalizationManager.Error.MissingArg, line, 2, false);
                     return null;
                 }
                 rowStr = "";
@@ -374,7 +375,7 @@ internal static partial class ArgumentParser
                 if (c.A == 0)
                 {
                     if (rowStr.Equals("transparent", StringComparison.OrdinalIgnoreCase))
-                        throw new CodeEE("無色透明(Transparent)は色として指定できません");
+                        throw new CodeEE(LocalizationManager.Error.TransparentUnsupported);
                     throw new CodeEE("指定された色名\"" + rowStr + "\"は無効な色名です");
                 }
 
@@ -405,7 +406,7 @@ internal static partial class ArgumentParser
             {
                 if (!nullable)
                 {
-                    warn("引数が設定されていません", line, 2, false);
+                    warn(LocalizationManager.Error.MissingArg, line, 2, false);
                     return null;
                 }
                 //if (line.FunctionCode == FunctionCode.PRINTFORML)
@@ -447,7 +448,7 @@ internal static partial class ArgumentParser
             LexicalAnalyzer.SkipWhiteSpace(st);
             if (!st.EOS)
             {
-                warn("引数の後に余分な文字があります", line, 1, false);
+                warn(LocalizationManager.Error.ExtraCharacterAfterArg, line, 1, false);
             }
             return new SpVarsizeArgument(id);
         }
@@ -472,13 +473,13 @@ internal static partial class ArgumentParser
                     order = SortOrder.DESENDING;
                 wc.ShiftNext();
                 if (!wc.EOL)
-                    warn("引数が多すぎます", line, 1, false);
+                    warn(LocalizationManager.Error.TooManyArg, line, 1, false);
             }
             else
             {
                 AExpression term = ExpressionParser.ReduceExpressionTerm(wc, TermEndWith.Comma);
                 if (term == null)
-                { warn("書式が間違っています", line, 2, false); return null; }
+                { warn(LocalizationManager.Error.WrongFormat, line, 2, false); return null; }
                 varTerm = term.Restructure(exm) as VariableTerm;
                 if (varTerm == null)
                 { warn("第１引数に変数以外を指定することはできません", line, 2, false); return null; }
@@ -495,10 +496,10 @@ internal static partial class ArgumentParser
                             order = SortOrder.DESENDING;
                         wc.ShiftNext();
                         if (!wc.EOL)
-                            warn("引数が多すぎます", line, 1, false);
+                            warn(LocalizationManager.Error.TooManyArg, line, 1, false);
                     }
                     else
-                    { warn("書式が間違っています", line, 2, false); return null; }
+                    { warn(LocalizationManager.Error.WrongFormat, line, 2, false); return null; }
                 }
             }
             return new SpSortcharaArgument(varTerm, order);
@@ -516,13 +517,13 @@ internal static partial class ArgumentParser
 
             if (wc.EOL)
             {
-                warn("書式が間違っています", line, 2, false); return null;
+                warn(LocalizationManager.Error.WrongFormat, line, 2, false); return null;
             }
 
             VariableTerm varTerm;
             AExpression term = ExpressionParser.ReduceExpressionTerm(wc, TermEndWith.Comma);
             if (term == null)
-            { warn("書式が間違っています", line, 2, false); return null; }
+            { warn(LocalizationManager.Error.WrongFormat, line, 2, false); return null; }
             varTerm = term.Restructure(exm) as VariableTerm;
             if (varTerm == null)
             { warn("第１引数に変数以外を指定することはできません", line, 2, false); return null; }
@@ -563,7 +564,7 @@ internal static partial class ArgumentParser
                         { warn("第４引数が数値ではありません", line, 2, false); return null; }
                         wc.ShiftNext();
                         if (!wc.EOL)
-                            warn("引数が多すぎます", line, 1, false);
+                            warn(LocalizationManager.Error.TooManyArg, line, 1, false);
                     }
                 }
             }
@@ -620,7 +621,7 @@ internal static partial class ArgumentParser
                 else
                     args = ExpressionParser.ReduceArguments(wc, ArgsEndWith.EoL, false);
                 if (!wc.EOL)
-                { warn("書式が間違っています", line, 2, false); return null; }
+                { warn(LocalizationManager.Error.WrongFormat, line, 2, false); return null; }
             }
             if (subNames == null)
                 subNames = [];
@@ -643,7 +644,7 @@ internal static partial class ArgumentParser
                 ret.ConstStr = funcname.GetStrValue(null);
                 if (string.IsNullOrEmpty(ret.ConstStr))
                 {
-                    warn("関数名が指定されていません", line, 2, false);
+                    warn(LocalizationManager.Error.NotSpecifiedFuncName, line, 2, false);
                     return null;
                 }
             }
@@ -658,7 +659,7 @@ internal static partial class ArgumentParser
             WordCollection wc = popWords(line);
             CaseExpression[] args = ExpressionParser.ReduceCaseExpressions(wc);
             if ((!wc.EOL) || (args.Length == 0))
-            { warn("書式が間違っています", line, 2, false); return null; }
+            { warn(LocalizationManager.Error.WrongFormat, line, 2, false); return null; }
             for (int i = 0; i < args.Length; i++)
                 args[i].Reduce(exm);
             return new CaseArgument(args);
@@ -673,17 +674,17 @@ internal static partial class ArgumentParser
             var destTerms = ExpressionParser.ReduceArguments(destWc, ArgsEndWith.EoL, false);
             SpSetArgument ret;
             if ((destTerms.Count == 0) || (destTerms[0] == null))
-            { assignwarn("代入文の左辺の読み取りに失敗しました", line, 2, false); return null; }
+            { assignwarn(LocalizationManager.Error.CanNotReadLeft, line, 2, false); return null; }
             if (destTerms.Count != 1)
-            { assignwarn("代入文の左辺に余分な','があります", line, 2, false); return null; }
+            { assignwarn(LocalizationManager.Error.LeftHasExtraComma, line, 2, false); return null; }
             if (!(destTerms[0] is VariableTerm varTerm))
             {//
-                assignwarn("代入文の左辺に変数以外を指定することはできません", line, 2, false);
+                assignwarn(LocalizationManager.Error.LeftIsNotVar, line, 2, false);
                 return null;
             }
             else if (varTerm.Identifier.IsConst)
             {
-                assignwarn("代入文の左辺に変更できない変数を指定することはできません", line, 2, false);
+                assignwarn(LocalizationManager.Error.LeftIsConst, line, 2, false);
                 return null;
             }
             varTerm.Restructure(exm);
@@ -702,9 +703,9 @@ internal static partial class ArgumentParser
                     if (!st.EOS)
                     {
                         if (op == OperatorCode.Increment)
-                        { assignwarn("インクリメント行でインクリメント以外の処理が定義されています", line, 2, false); return null; }
+                        { assignwarn(LocalizationManager.Error.InvalidOpWithIncrement, line, 2, false); return null; }
                         else
-                        { assignwarn("デクリメント行でデクリメント以外の処理が定義されています", line, 2, false); return null; }
+                        { assignwarn(LocalizationManager.Error.InvalidOpWithDecrement, line, 2, false); return null; }
                     }
                     ret = new SpSetArgument(varTerm, null)
                     {
@@ -718,19 +719,19 @@ internal static partial class ArgumentParser
                 var srcTerms = ExpressionParser.ReduceArguments(srcWc, ArgsEndWith.EoL, false);
 
                 if ((srcTerms.Count == 0) || (srcTerms[0] == null))
-                { assignwarn("代入文の右辺の読み取りに失敗しました", line, 2, false); return null; }
+                { assignwarn(LocalizationManager.Error.CanNotReadRight, line, 2, false); return null; }
                 if (srcTerms.Count != 1)
                 {
                     if (op != OperatorCode.Assignment)
-                    { assignwarn("複合代入演算では右辺に複数の値を含めることはできません", line, 2, false); return null; }
+                    { assignwarn(LocalizationManager.Error.CanNotContainMultipleValue, line, 2, false); return null; }
                     bool allConst = true;
                     Int64[] constValues = new Int64[srcTerms.Count];
                     for (int i = 0; i < srcTerms.Count; i++)
                     {
                         if (srcTerms[i] == null)
-                        { assignwarn("代入式の右辺の値は省略できません", line, 2, false); return null; }
+                        { assignwarn(LocalizationManager.Error.CanNotOmitRight, line, 2, false); return null; }
                         if (!srcTerms[i].IsInteger)
-                        { assignwarn("数値型変数に文字列は代入できません", line, 2, false); return null; }
+                        { assignwarn(LocalizationManager.Error.CanNotAssignStrToInt, line, 2, false); return null; }
                         srcTerms[i] = srcTerms[i].Restructure(exm);
                         if (allConst && (srcTerms[i] is SingleTerm))
                             constValues[i] = srcTerms[i].GetIntValue(null);
@@ -744,7 +745,7 @@ internal static partial class ArgumentParser
                     return arrayarg;
                 }
                 if (!srcTerms[0].IsInteger)
-                { assignwarn("数値型変数に文字列は代入できません", line, 2, false); return null; }
+                { assignwarn(LocalizationManager.Error.CanNotAssignStrToInt, line, 2, false); return null; }
                 src = srcTerms[0].Restructure(exm);
                 if (op == OperatorCode.Assignment)
                 {
@@ -779,7 +780,7 @@ internal static partial class ArgumentParser
                 if (op == OperatorCode.Assignment)
                 {
                     if (Config.SystemIgnoreStringSet)
-                    { assignwarn("文字列代入は禁止されています（'=を用いるかコンフィグオプションを変えてください)", line, 2, false); return null; }
+                    { assignwarn(LocalizationManager.Error.StrAssignIsPrihibited, line, 2, false); return null; }
                     LexicalAnalyzer.SkipHalfSpace(st);//文字列の代入なら半角スペースだけを読み飛ばす
                                                       //eramakerは代入文では妙なTrim()をする。半端にしか再現できないがとりあえずtrim = true
                     StrFormWord sfwt = LexicalAnalyzer.AnalyseFormattedString(st, FormStrEndWith.EoL, true);
@@ -800,13 +801,13 @@ internal static partial class ArgumentParser
                     var srcTerms = ExpressionParser.ReduceArguments(srcWc, ArgsEndWith.EoL, false);
 
                     if ((srcTerms.Count == 0) || (srcTerms[0] == null))
-                    { assignwarn("代入文の右辺の読み取りに失敗しました", line, 2, false); return null; }
+                    { assignwarn(LocalizationManager.Error.CanNotReadRight, line, 2, false); return null; }
                     if (op == OperatorCode.AssignmentStr)
                     {
                         if (srcTerms.Count == 1)
                         {
                             if (srcTerms[0].IsInteger)
-                            { assignwarn("文字列変数に数値型は代入できません", line, 2, false); return null; }
+                            { assignwarn(LocalizationManager.Error.CanNotAssignIntToStr, line, 2, false); return null; }
                             src = srcTerms[0].Restructure(exm);
                             ret = new SpSetArgument(varTerm, src);
                             if (src is SingleTerm)
@@ -822,9 +823,9 @@ internal static partial class ArgumentParser
                         for (int i = 0; i < srcTerms.Count; i++)
                         {
                             if (srcTerms[i] == null)
-                            { assignwarn("代入式の右辺の値は省略できません", line, 2, false); return null; }
+                            { assignwarn(LocalizationManager.Error.CanNotOmitRight, line, 2, false); return null; }
                             if (srcTerms[i].IsInteger)
-                            { assignwarn("文字列変数に数値型は代入できません", line, 2, false); return null; }
+                            { assignwarn(LocalizationManager.Error.CanNotAssignIntToStr, line, 2, false); return null; }
                             srcTerms[i] = srcTerms[i].Restructure(exm);
                             if (allConst && (srcTerms[i] is SingleTerm))
                                 constValues[i] = srcTerms[i].GetStrValue(null);
@@ -838,13 +839,13 @@ internal static partial class ArgumentParser
                         return arrayarg;
                     }
                     if (srcTerms.Count != 1)
-                    { assignwarn("代入文の右辺に余分な','があります", line, 2, false); return null; }
+                    { assignwarn(LocalizationManager.Error.RightHasExtraComma, line, 2, false); return null; }
 
                     src = srcTerms[0].Restructure(exm);
                     src = OperatorMethodManager.ReduceBinaryTerm(op, varTerm, src);
                     return new SpSetArgument(varTerm, src);
                 }
-                assignwarn("代入式に使用できない演算子が使われました", line, 2, false);
+                assignwarn(LocalizationManager.Error.InvalidAssignmentOp, line, 2, false);
                 return null;
             }
         }
@@ -883,7 +884,7 @@ internal static partial class ArgumentParser
             StrFormWord sfwt = LexicalAnalyzer.AnalyseFormattedString(st, FormStrEndWith.EoL, false);
             if (!st.EOS)
             {
-                warn("引数が多すぎます", line, 1, false);
+                warn(LocalizationManager.Error.TooManyArg, line, 1, false);
             }
             AExpression term = ExpressionParser.ToStrFormTerm(sfwt);
             term = term.Restructure(exm);
@@ -936,9 +937,9 @@ internal static partial class ArgumentParser
                 if (!nullable)
                 {
                     if (line.Function.IsExtended())
-                        warn("省略できない引数が省略されています。Emueraは0を補います", line, 1, false);
+                        warn(LocalizationManager.Error.OmittedArg1, line, 1, false);
                     else
-                        warn("省略できない引数が省略されています。Emueraは0を補いますがeramakerの動作は不定です", line, 1, false);
+                        warn(LocalizationManager.Error.OmittedArg2, line, 1, false);
                 }
             }
             else
@@ -950,7 +951,7 @@ internal static partial class ArgumentParser
             {
                 if ((term is SingleTerm) && (term.GetIntValue(null) <= 0L))
                 {
-                    warn("0回以下のREPEATです。(eramakerではエラーになります)", line, 0, true);
+                    warn(LocalizationManager.Error.RepeatCountLessthan0, line, 0, true);
                 }
                 VariableToken count = GlobalStatic.VariableData.GetSystemVariableToken("COUNT");
                 VariableTerm repCount = new(count, [new SingleLongTerm(0)]);
@@ -966,12 +967,12 @@ internal static partial class ArgumentParser
                 if (line.FunctionCode == FunctionCode.CLEARLINE)
                 {
                     if (i <= 0L)
-                        warn("引数に0以下の値が渡されています(この行は何もしません)", line, 1, false);
+                        warn(LocalizationManager.Error.ArgLessThan0, line, 1, false);
                 }
                 else if (line.FunctionCode == FunctionCode.FONTSTYLE)
                 {
                     if (i < 0L)
-                        warn("引数に負の値が渡されています(結果は不定です)", line, 1, false);
+                        warn(LocalizationManager.Error.ArgIsNegativeValue, line, 1, false);
                 }
             }
             return ret;
@@ -1003,7 +1004,7 @@ internal static partial class ArgumentParser
                     ret.ConstInt = 0;
                     return ret;
                 }
-                warn("引数が設定されていません", line, 2, false);
+                warn(LocalizationManager.Error.MissingArg, line, 2, false);
                 return null;
             }
             else if (terms.Count == 1)
@@ -1018,9 +1019,9 @@ internal static partial class ArgumentParser
                 {
                     //定数式は定数化してしまうので現行システムでは見つけられない
                     if (terms[0] is VariableTerm)
-                        warn("RETURNの引数に変数が渡されています(eramaker：常に0を返します)", line, 0, true);
+                        warn(LocalizationManager.Error.ReturnArgIsVar, line, 0, true);
                     else
-                        warn("RETURNの引数に数式が渡されています(eramaker：Emueraとは異なる値を返します)", line, 0, true);
+                        warn(LocalizationManager.Error.ReturnArgIsFormula, line, 0, true);
                 }
             }
             else
@@ -1389,7 +1390,7 @@ internal static partial class ArgumentParser
             if (terms.Count > 3)
                 term4 = terms[3];
             if (terms.Count >= 3 && !varTerm.Identifier.IsArray1D)
-                warn("第３引数以降は1次元配列以外では無視されます", line, 1, false);
+                warn(LocalizationManager.Error.IgnoreThirdLaterArg, line, 1, false);
             if (term.GetOperandType() != varTerm.GetOperandType())
             {
                 warn("２つの引数の型が一致していません", line, 2, false);
@@ -1419,7 +1420,7 @@ internal static partial class ArgumentParser
             { warn("第１引数にキャラクタ変数以外の変数を指定することはできません", line, 2, false); return null; }
             //1803beta004 暫定CDFLAGを弾く
             if (varTerm.Identifier.IsArray2D)
-            { warn("第１引数に二次元配列の変数を指定することはできません", line, 2, false); return null; }
+            { warn(LocalizationManager.Error.ArgIs2DVar, line, 2, false); return null; }
             AExpression index, term, term4 = null, term5 = null;
             if (terms.Count > 1)
                 index = terms[1];
@@ -1444,7 +1445,7 @@ internal static partial class ArgumentParser
                 { warn("文字列" + index.GetStrValue(null) + "は変数" + varTerm.Identifier.Name + "の要素ではありません", line, 2, false); return null; }
             }
             if (terms.Count > 3 && !varTerm.Identifier.IsArray1D)
-                warn("第４引数以降は1次元配列以外では無視されます", line, 1, false);
+                warn(LocalizationManager.Error.IgnoreFourthLaterArg, line, 1, false);
             if (term.GetOperandType() != varTerm.GetOperandType())
             {
                 warn("２つの引数の型が一致していません", line, 2, false);
@@ -1483,7 +1484,7 @@ internal static partial class ArgumentParser
             if (!checkArgumentType(line, exm, terms))
                 return null;
             if (terms.Count == 2)
-            { warn("SETCOLORの引数の数が不正です(SETCOLORの引数は1個もしくは3個です)", line, 2, false); return null; }
+            { warn(LocalizationManager.Error.InvalidSetcolorArgCount, line, 2, false); return null; }
             SpColorArgument arg;
             if (terms.Count == 1)
             {
@@ -1627,7 +1628,7 @@ internal static partial class ArgumentParser
             if (line.FunctionCode == FunctionCode.ARRAYSHIFT)
             {
                 if (terms[0].GetOperandType() != terms[2].GetOperandType())
-                { warn("第１引数と第３引数の型が違います", line, 2, false); return null; }
+                { warn(LocalizationManager.Error.NotMatchFirstAndThirdVar, line, 2, false); return null; }
             }
             AExpression term4 = terms.Count >= 4 ? terms[3] : new SingleLongTerm(0);
             AExpression term5 = terms.Count >= 5 ? terms[4] : null;
@@ -1664,11 +1665,11 @@ internal static partial class ArgumentParser
                 if (vToken.IsLocal)
                 { warn("ローカル変数" + vToken.Name + "はセーブできません", line, 2, false); return null; }
                 if (vToken.IsConst)
-                { warn("値を変更できない変数はセーブできません", line, 2, false); return null; }
+                { warn(LocalizationManager.Error.CanNotSaveConstVar, line, 2, false); return null; }
                 if (vToken.IsCalc)
-                { warn("疑似変数はセーブできません", line, 2, false); return null; }
+                { warn(LocalizationManager.Error.CanNotSavePseudoVar, line, 2, false); return null; }
                 if (vToken.IsReference)
-                { warn("参照型変数はセーブできません", line, 2, false); return null; }
+                { warn(LocalizationManager.Error.CanNotSaveRefVar, line, 2, false); return null; }
                 varTokens.Add(vToken);
             }
             for (int i = 0; i < varTokens.Count; i++)
@@ -1709,9 +1710,9 @@ internal static partial class ArgumentParser
                     continue;
                 Int64 iValue = termList[i].GetIntValue(null);
                 if (iValue < 0)
-                { warn("キャラ登録番号は正の値でなければなりません", line, 2, false); return null; }
+                { warn(LocalizationManager.Error.NotPositiveCharaNo, line, 2, false); return null; }
                 if (iValue > Int32.MaxValue)
-                { warn("キャラ登録番号が32bit符号付整数の上限を超えています", line, 2, false); return null; }
+                { warn(LocalizationManager.Error.CharaNoOverInt32, line, 2, false); return null; }
                 for (int j = i + 1; j < termList.Count; j++)
                 {
                     if (!(termList[j] is SingleTerm))
@@ -1743,7 +1744,7 @@ internal static partial class ArgumentParser
             WordCollection wc = popWords(line);
             wc.ShiftNext();
             if (!(wc.Current is IdentifierWord id) || wc.Current.Type != ',')
-            { warn("書式が間違っています", line, 2, false); return null; }
+            { warn(LocalizationManager.Error.WrongFormat, line, 2, false); return null; }
             wc.ShiftNext();
             AExpression name = null;
             string srcCode = null;
@@ -1751,7 +1752,7 @@ internal static partial class ArgumentParser
             {
                 name = ExpressionParser.ReduceExpressionTerm(wc, TermEndWith.EoL);
                 if (name == null || name.IsInteger || !wc.EOL)
-                { warn("書式が間違っています", line, 2, false); return null; }
+                { warn(LocalizationManager.Error.WrongFormat, line, 2, false); return null; }
                 name = name.Restructure(exm);
                 if (name is SingleTerm)
                     srcCode = name.GetStrValue(exm);
@@ -1760,7 +1761,7 @@ internal static partial class ArgumentParser
             {
                 wc.ShiftNext();
                 if (!(wc.Current is IdentifierWord id2) || !wc.EOL)
-                { warn("書式が間違っています", line, 2, false); return null; }
+                { warn(LocalizationManager.Error.WrongFormat, line, 2, false); return null; }
                 srcCode = id2.Code;
             }
             UserDefinedRefMethod refm = GlobalStatic.IdentifierDictionary.GetRefMethod(id.Code);
@@ -1910,12 +1911,12 @@ internal static partial class ArgumentParser
             {
                 if ((vars[0].IsArray1D && !vars[1].IsArray1D) || (vars[0].IsArray2D && !vars[1].IsArray2D) || (vars[0].IsArray3D && !vars[1].IsArray3D))
                 {
-                    warn("ARRAYCOPY命令の2つの引数の次元が異なります", line, 2, false);
+                    warn(LocalizationManager.Error.DifferentArraycopyArgsDim, line, 2, false);
                     return null;
                 }
                 if ((vars[0].IsInteger && vars[1].IsString) || (vars[0].IsString && vars[1].IsInteger))
                 {
-                    warn("ARRAYCOPY命令の２つの配列変数の型が一致していません", line, 2, false);
+                    warn(LocalizationManager.Error.DifferentArraycopyArgsType, line, 2, false);
                     return null;
                 }
             }

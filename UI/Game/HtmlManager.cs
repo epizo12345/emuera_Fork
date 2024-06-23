@@ -12,6 +12,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.UI.Game;
 
@@ -829,8 +830,8 @@ internal static partial class HtmlManager
             if (found <= index + 1)
             {
                 if (found < 0)
-                    throw new CodeEE("'&'に対応する';'がみつかりません");
-                throw new CodeEE("'&'と';'が連続しています");
+                    throw new CodeEE(LocalizationManager.Error.MissingSemicolon);
+                throw new CodeEE(LocalizationManager.Error.ContinuouslyAndSemicolon);
             }
             string escWordRow = str.Substring(index + 1, found - index - 1);
             index = found + 1;
@@ -1005,7 +1006,7 @@ internal static partial class HtmlManager
     private static int stringToColorInt32(string str)
     {
         if (str.Length == 0)
-            throw new CodeEE("色を表す単語又は#RRGGBB値が必要です");
+            throw new CodeEE(LocalizationManager.Error.RequireColorCode);
         int i;
         if (str[0] == '#')
         {
@@ -1027,7 +1028,7 @@ internal static partial class HtmlManager
             if (color.A == 0)//色名として解釈失敗 エラー確定
             {
                 if (str.Equals("transparent", StringComparison.OrdinalIgnoreCase))
-                    throw new CodeEE("無色透明(Transparent)は色として指定できません");
+                    throw new CodeEE(LocalizationManager.Error.TransparentUnsupported);
                 try
                 {
                     i = Convert.ToInt32(str, 16);

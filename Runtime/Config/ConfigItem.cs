@@ -3,6 +3,7 @@ using MinorShift.Emuera.Sub;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.Runtime.Config;
 
@@ -127,7 +128,7 @@ internal sealed class ConfigItem<T> : AConfigItem
             if (ret)
                 ((ConfigItem<Color>)(AConfigItem)this).Value = c;
             else
-                throw new CodeEE("値をColor指定子として認識できません");
+                throw new CodeEE(LocalizationManager.Error.NotExistColorSpecifier);
         }
         else if (this is ConfigItem<char>)
         {
@@ -141,7 +142,7 @@ internal sealed class ConfigItem<T> : AConfigItem
             if (ret)
                 ((ConfigItem<int>)(AConfigItem)this).Value = i;
             else
-                throw new CodeEE("数字でない文字が含まれています");
+                throw new CodeEE(LocalizationManager.Error.ContainsNonNumericCharacters);
         }
         else if (this is ConfigItem<long>)
         {
@@ -149,7 +150,7 @@ internal sealed class ConfigItem<T> : AConfigItem
             if (ret)
                 ((ConfigItem<long>)(AConfigItem)this).Value = i;
             else
-                throw new CodeEE("数字でない文字が含まれています");
+                throw new CodeEE(LocalizationManager.Error.ContainsNonNumericCharacters);
         }
         else if (this is ConfigItem<List<long>>)
         {
@@ -162,7 +163,7 @@ internal sealed class ConfigItem<T> : AConfigItem
                     ((ConfigItem<List<long>>)(AConfigItem)this).Value.Add(i);
                 else
                 {
-                    throw new CodeEE("数字でない文字が含まれています");
+                    throw new CodeEE(LocalizationManager.Error.ContainsNonNumericCharacters);
                 }
             }
         }
@@ -183,7 +184,7 @@ internal sealed class ConfigItem<T> : AConfigItem
                 ((ConfigItem<TextDrawingMode>)(AConfigItem)this).Value = result;
             }
             else
-                throw new CodeEE("不正な指定です");
+                throw new CodeEE(LocalizationManager.Error.InvalidSpecification);
         }
         else if (this is ConfigItem<ReduceArgumentOnLoadFlag>)
         {
@@ -192,7 +193,7 @@ internal sealed class ConfigItem<T> : AConfigItem
                 ((ConfigItem<ReduceArgumentOnLoadFlag>)(AConfigItem)this).Value = result;
             }
             else
-                throw new CodeEE("不正な指定です");
+                throw new CodeEE(LocalizationManager.Error.InvalidSpecification);
         }
         else if (this is ConfigItem<DisplayWarningFlag>)
         {
@@ -201,7 +202,7 @@ internal sealed class ConfigItem<T> : AConfigItem
                 ((ConfigItem<DisplayWarningFlag>)(AConfigItem)this).Value = result;
             }
             else
-                throw new CodeEE("不正な指定です");
+                throw new CodeEE(LocalizationManager.Error.InvalidSpecification);
         }
         else if (this is ConfigItem<UseLanguage>)
         {
@@ -210,7 +211,7 @@ internal sealed class ConfigItem<T> : AConfigItem
                 ((ConfigItem<UseLanguage>)(AConfigItem)this).Value = result;
             }
             else
-                throw new CodeEE("不正な指定です");
+                throw new CodeEE(LocalizationManager.Error.InvalidSpecification);
         }
         else if (this is ConfigItem<TextEditorType>)
         {
@@ -219,7 +220,7 @@ internal sealed class ConfigItem<T> : AConfigItem
                 ((ConfigItem<TextEditorType>)(AConfigItem)this).Value = result;
             }
             else
-                throw new CodeEE("不正な指定です");
+                throw new CodeEE(LocalizationManager.Error.InvalidSpecification);
         }
         //else
         //    throw new ExeEE("型不明なコンフィグ");
@@ -252,7 +253,7 @@ internal sealed class ConfigItem<T> : AConfigItem
             p = true;
             return true;
         }
-        throw new CodeEE("不正な指定です");
+        throw new CodeEE(LocalizationManager.Error.InvalidSpecification);
     }
 
     private static bool tryStringsToColor(string str, out Color c)

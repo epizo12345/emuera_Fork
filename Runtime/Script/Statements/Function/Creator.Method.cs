@@ -17,6 +17,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.GameData.Function;
 
@@ -86,7 +87,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (!Config.CompatiSPChara)
-                throw new CodeEE("SPキャラ関係の機能は標準では使用できません(互換性オプション「SPキャラを使用する」をONにしてください)");
+                throw new CodeEE(LocalizationManager.Error.SPCharaConfigIsOff);
             Int64 integer = arguments[0].GetIntValue(exm);
             return exm.VEvaluator.GetChara_UseSp(integer, true);
         }
@@ -130,7 +131,7 @@ internal static partial class FunctionMethodCreator
             long x = arguments[0].GetIntValue(exm);
             long y = (arguments.Count > 1 && arguments[1] != null) ? arguments[1].GetIntValue(exm) : 0;
             if (!Config.CompatiSPChara && y != 0)
-                throw new CodeEE("SPキャラ関係の機能は標準では使用できません(互換性オプション「SPキャラを使用する」をONにしてください)");
+                throw new CodeEE(LocalizationManager.Error.SPCharaConfigIsOff);
             return exm.VEvaluator.GetCharacterStrfromCSVData(x, charaStr, y != 0, 0);
         }
     }
@@ -169,7 +170,7 @@ internal static partial class FunctionMethodCreator
             long y = arguments[1].GetIntValue(exm);
             long z = (arguments.Count == 3 && arguments[2] != null) ? arguments[2].GetIntValue(exm) : 0;
             if (!Config.CompatiSPChara && z != 0)
-                throw new CodeEE("SPキャラ関係の機能は標準では使用できません(互換性オプション「SPキャラを使用する」をONにしてください)");
+                throw new CodeEE(LocalizationManager.Error.SPCharaConfigIsOff);
             return exm.VEvaluator.GetCharacterStrfromCSVData(x, CharacterStrData.CSTR, z != 0, y);
         }
     }
@@ -217,7 +218,7 @@ internal static partial class FunctionMethodCreator
             long y = arguments[1].GetIntValue(exm);
             long z = (arguments.Count == 3 && arguments[2] != null) ? arguments[2].GetIntValue(exm) : 0;
             if (!Config.CompatiSPChara && z != 0)
-                throw new CodeEE("SPキャラ関係の機能は標準では使用できません(互換性オプション「SPキャラを使用する」をONにしてください)");
+                throw new CodeEE(LocalizationManager.Error.SPCharaConfigIsOff);
             return exm.VEvaluator.GetCharacterIntfromCSVData(x, charaInt, z != 0, y);
         }
     }
@@ -326,7 +327,7 @@ internal static partial class FunctionMethodCreator
             Int64 no = arguments[0].GetIntValue(exm);
             bool isSp = (arguments.Count == 2 && arguments[1] != null) ? (arguments[1].GetIntValue(exm) != 0) : false;
             if (!Config.CompatiSPChara && isSp)
-                throw new CodeEE("SPキャラ関係の機能は標準では使用できません(互換性オプション「SPキャラを使用する」をONにしてください)");
+                throw new CodeEE(LocalizationManager.Error.SPCharaConfigIsOff);
 
             return exm.VEvaluator.ExistCsv(no, isSp);
         }
@@ -709,7 +710,7 @@ internal static partial class FunctionMethodCreator
             else
             {
                 if (colorName.Equals("transparent", StringComparison.OrdinalIgnoreCase))
-                    throw new CodeEE("無色透明(Transparent)は色として指定できません");
+                    throw new CodeEE(LocalizationManager.Error.TransparentUnsupported);
                 //throw new CodeEE("指定された色名\"" + colorName + "\"は無効な色名です");
                 i = -1;
             }
@@ -1032,9 +1033,9 @@ internal static partial class FunctionMethodCreator
             Int64 y = arguments[1].GetIntValue(exm);
             double pow = Math.Pow(x, y);
             if (double.IsNaN(pow))
-                throw new CodeEE("累乗結果が非数値です");
+                throw new CodeEE(LocalizationManager.Error.PowerResultNonNumeric);
             else if (double.IsInfinity(pow))
-                throw new CodeEE("累乗結果が無限大です");
+                throw new CodeEE(LocalizationManager.Error.PowerResultInfinite);
             else if ((pow >= Int64.MaxValue) || (pow <= Int64.MinValue))
                 throw new CodeEE("累乗結果(" + pow.ToString() + ")が64ビット符号付き整数の範囲外です");
             return (long)pow;
@@ -2019,7 +2020,7 @@ internal static partial class FunctionMethodCreator
                                     array[i, x, y] = clone[sortedArray[i], x, y];
                     }
                 }
-                else { throw new ExeEE("異常な配列"); }
+                else { throw new ExeEE(LocalizationManager.Error.AbnormalArray); }
             }
             return 1;
         }
@@ -2431,9 +2432,12 @@ internal static partial class FunctionMethodCreator
             {
                 //コード実行中の場合
                 if (GlobalStatic.Process.getCurrentLine != null)
-                    GlobalStatic.Console.PrintSystemLine("注意:" + GlobalStatic.Process.getCurrentLine.Position.Value.Filename + "の" + GlobalStatic.Process.getCurrentLine.Position.Value.LineNo.ToString() + "行目でUNICODE関数に制御文字に対応する値(0x" + String.Format("{0:X}", i) + ")が渡されました");
+                    GlobalStatic.Console.PrintSystemLine(string.Format(LocalizationManager.Error.WarnPrefix,
+                        GlobalStatic.Process.getCurrentLine.Position.Value.Filename,
+                        GlobalStatic.Process.getCurrentLine.Position.Value.LineNo,
+                        string.Format(LocalizationManager.Error.InvalidUnicode, Name, i)));
                 else
-                    ParserMediator.Warn("UNICODE関数に制御文字に対応する値(0x" + String.Format("{0:X}", i) + ")が渡されました", GlobalStatic.Process.scaningLine, 1, false, false, null);
+                    ParserMediator.Warn(string.Format(LocalizationManager.Error.InvalidUnicode, Name, i), GlobalStatic.Process.scaningLine, 1, false, false, null);
 
                 return "";
             }
@@ -2906,19 +2910,19 @@ internal static partial class FunctionMethodCreator
     {
         Int64 x64 = arguments[argNo].GetIntValue(exm);
         if (x64 < int.MinValue || x64 > int.MaxValue)
-            throw new CodeEE(string.Format("{0}関数:第{2}引数に不適切な値({1})が指定されました", Name, x64, argNo + 1));
+            throw new CodeEE(string.Format(LocalizationManager.Error.ArgIsOutOfRange, Name, x64, argNo + 1, int.MinValue, int.MaxValue));
         Int64 y64 = arguments[argNo + 1].GetIntValue(exm);
         if (y64 < int.MinValue || y64 > int.MaxValue)
-            throw new CodeEE(string.Format("{0}関数:第{2}引数に不適切な値({1})が指定されました", Name, y64, argNo + 1 + 1));
+            throw new CodeEE(string.Format(LocalizationManager.Error.ArgIsOutOfRange, Name, y64, argNo + 1 + 1, int.MinValue, int.MaxValue));
 
         Int64 w64 = arguments[argNo + 2].GetIntValue(exm);
         if (w64 < int.MinValue || w64 > int.MaxValue || w64 == 0)
-            throw new CodeEE(string.Format("{0}関数:第{2}引数に不適切な値({1})が指定されました", Name, w64, argNo + 2 + 1));
+            throw new CodeEE(string.Format(LocalizationManager.Error.ArgIsOutOfRangeExcept, Name, w64, argNo + 2 + 1, int.MinValue, int.MaxValue, 0));
         Int64 h64 = arguments[argNo + 3].GetIntValue(exm);
         if (h64 < int.MinValue || h64 > int.MaxValue || h64 == 0)
-            throw new CodeEE(string.Format("{0}関数:第{2}引数に不適切な値({1})が指定されました", Name, h64, argNo + 3 + 1));
+            throw new CodeEE(string.Format(LocalizationManager.Error.ArgIsOutOfRangeExcept, Name, h64, argNo + 3 + 1, int.MinValue, int.MaxValue, 0));
         return new Rectangle((int)x64, (int)y64, (int)w64, (int)h64);
-    }
+    }   
 
     /// <summary>
     /// argNo番目の引数を5x5のカラーマトリクス配列変数として読み取り、 5x5のfloat[][]形式にして返す。
@@ -2945,7 +2949,7 @@ internal static partial class FunctionMethodCreator
                 e2 = p.Index2;
             }
             if (e1 < 0 || e2 < 0 || e1 + 5 > array.GetLength(0) || e2 + 5 > array.GetLength(1))
-                throw new CodeEE(string.Format("{0}関数:ColorMatrixの指定された要素({1}, {2})が不適切であるか5x5に足りていません", Name, e1, e2));
+                throw new CodeEE(string.Format(LocalizationManager.Error.InvalidColorMatrix, Name, e1, e2));
             for (int x = 0; x < 5; x++)
             {
                 cm[x] = new float[5];
@@ -2970,9 +2974,9 @@ internal static partial class FunctionMethodCreator
                 e3 = p.Index3;
             }
             if (e1 < 0 || e1 >= array.GetLength(0))
-                throw new CodeEE(string.Format("{0}関数:ColorMatrixの指定された要素({1}, {2})が不適切であるか5x5に足りていません", Name, e2, e3));
+                throw new CodeEE(string.Format(LocalizationManager.Error.InvalidColorMatrix, Name, e2, e3));
             if (e2 < 0 || e3 < 0 || e2 + 5 > array.GetLength(1) || e3 + 5 > array.GetLength(2))
-                throw new CodeEE(string.Format("{0}関数:ColorMatrixの指定された要素({1}, {2})が不適切であるか5x5に足りていません", Name, e2, e3));
+                throw new CodeEE(string.Format(LocalizationManager.Error.InvalidColorMatrix, Name, e2, e3));
             for (int x = 0; x < 5; x++)
             {
                 cm[x] = new float[5];
@@ -2996,7 +3000,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
+                throw new CodeEE(string.Format(LocalizationManager.Error.GDIPlusOnly, Name));
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
                 return 0;
@@ -3024,7 +3028,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
+                throw new CodeEE(string.Format(LocalizationManager.Error.GDIPlusOnly, Name));
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             //失敗したら負の値を返す。他と戻り値違うけど仕方ないね
             if (!g.IsCreated)
@@ -3049,7 +3053,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
+                throw new CodeEE(string.Format(LocalizationManager.Error.GDIPlusOnly, Name));
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
                 return 0;
@@ -3073,7 +3077,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
+                throw new CodeEE(string.Format(LocalizationManager.Error.GDIPlusOnly, Name));
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
                 return 0;
@@ -3093,7 +3097,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
+                throw new CodeEE(string.Format(LocalizationManager.Error.GDIPlusOnly, Name));
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
                 return 0;
@@ -3121,7 +3125,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
+                throw new CodeEE(string.Format(LocalizationManager.Error.GDIPlusOnly, Name));
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
                 return 0;
@@ -3249,7 +3253,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
+                throw new CodeEE(string.Format(LocalizationManager.Error.GDIPlusOnly, Name));
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             if (g.IsCreated)
                 return 0;
@@ -3282,7 +3286,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
+                throw new CodeEE(string.Format(LocalizationManager.Error.GDIPlusOnly, Name));
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             if (g.IsCreated)
                 return 0;
@@ -3329,7 +3333,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
+                throw new CodeEE(string.Format(LocalizationManager.Error.GDIPlusOnly, Name));
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
                 return 0;
@@ -3380,7 +3384,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
+                throw new CodeEE(string.Format(LocalizationManager.Error.GDIPlusOnly, Name));
             string imgname = arguments[0].GetStrValue(exm);
             if (string.IsNullOrEmpty(imgname))
                 return 0;
@@ -3396,7 +3400,7 @@ internal static partial class FunctionMethodCreator
             {//四角形は正でも負でもよいが親画像の外を指してはいけない
                 rect = ReadRectangle(Name, exm, arguments, 2);
                 if (rect.X + rect.Width < 0 || rect.X + rect.Width > g.Width || rect.Y + rect.Height < 0 || rect.Y + rect.Height > g.Height)
-                    throw new CodeEE(string.Format("{0}関数:画像の範囲外が指定されています", Name));
+                    throw new CodeEE(string.Format(LocalizationManager.Error.ImgRefOutOfRange, Name));
             }
             AppContents.CreateSpriteG(imgname, g, rect);
             return 1;
@@ -3437,7 +3441,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
+                throw new CodeEE(string.Format(LocalizationManager.Error.GDIPlusOnly, Name));
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             Color c = ReadColor(Name, exm, arguments, 1);
             if (!g.IsCreated)
@@ -3461,7 +3465,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
+                throw new CodeEE(string.Format(LocalizationManager.Error.GDIPlusOnly, Name));
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
                 return 0;
@@ -3482,7 +3486,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
+                throw new CodeEE(string.Format(LocalizationManager.Error.GDIPlusOnly, Name));
             var g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
                 return 0;
@@ -3504,7 +3508,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
+                throw new CodeEE(string.Format(LocalizationManager.Error.GDIPlusOnly, Name));
             var g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
                 return 0;
@@ -3526,7 +3530,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
+                throw new CodeEE(string.Format(LocalizationManager.Error.GDIPlusOnly, Name));
             var g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
                 return 0;
@@ -3546,7 +3550,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
+                throw new CodeEE(string.Format(LocalizationManager.Error.GDIPlusOnly, Name));
             var g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
                 return 0;
@@ -3591,7 +3595,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
+                throw new CodeEE(string.Format(LocalizationManager.Error.GDIPlusOnly, Name));
             GraphicsImage dest = ReadGraphics(Name, exm, arguments, 0);
             if (!dest.IsCreated)
                 return 0;
@@ -3642,7 +3646,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
+                throw new CodeEE(string.Format(LocalizationManager.Error.GDIPlusOnly, Name));
             GraphicsImage dest = ReadGraphics(Name, exm, arguments, 0);
             if (!dest.IsCreated)
                 return 0;
@@ -3706,7 +3710,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
+                throw new CodeEE(string.Format(LocalizationManager.Error.GDIPlusOnly, Name));
             GraphicsImage dest = ReadGraphics(Name, exm, arguments, 0);
             if (!dest.IsCreated)
                 return 0;
@@ -3773,7 +3777,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
+                throw new CodeEE(string.Format(LocalizationManager.Error.GDIPlusOnly, Name));
             string imgname = arguments[0].GetStrValue(exm);
             if (string.IsNullOrEmpty(imgname))
                 return 0;
@@ -3811,7 +3815,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
+                throw new CodeEE(string.Format(LocalizationManager.Error.GDIPlusOnly, Name));
             string imgname = arguments[0].GetStrValue(exm);
             if (string.IsNullOrEmpty(imgname))
                 return 0;
@@ -3932,7 +3936,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
+                throw new CodeEE(string.Format(LocalizationManager.Error.GDIPlusOnly, Name));
 
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
@@ -3961,7 +3965,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
+                throw new CodeEE(string.Format(LocalizationManager.Error.GDIPlusOnly, Name));
 
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
@@ -4037,7 +4041,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
+                throw new CodeEE(string.Format(LocalizationManager.Error.GDIPlusOnly, Name));
 
             Int64 b64 = arguments[0].GetIntValue(exm);
             if (b64 < 0 || b64 > 0xFFFFFF)
@@ -4270,7 +4274,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
+                throw new CodeEE(string.Format(LocalizationManager.Error.GDIPlusOnly, Name));
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             if (!g.IsCreated)
                 return 0;
@@ -4306,7 +4310,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             if (Config.TextDrawingMode == TextDrawingMode.WINAPI)
-                throw new CodeEE(string.Format("{0}関数:描画オプションがWINAPIの時には使用できません", Name));
+                throw new CodeEE(string.Format(LocalizationManager.Error.GDIPlusOnly, Name));
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 0);
             if (g.IsCreated)
                 return 0;

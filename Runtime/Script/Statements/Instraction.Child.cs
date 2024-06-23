@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.GameProc.Function;
 
@@ -162,7 +163,7 @@ internal sealed partial class FunctionIdentifier
                 flag |= METHOD_SAFE;
             }
             if ((ArgBuilder == null) || (!st.EOS))
-                throw new ExeEE("PRINT異常");
+                throw new ExeEE(LocalizationManager.Error.AbnormalPrint);
         }
 
         readonly bool isPrintV;
@@ -249,7 +250,7 @@ internal sealed partial class FunctionIdentifier
                 flag |= METHOD_SAFE;
             }
             if ((ArgBuilder == null) || (!st.EOS))
-                throw new ExeEE("PRINTDATA異常");
+                throw new ExeEE(LocalizationManager.Error.AbnormalPrintdata);
         }
 
         public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
@@ -477,7 +478,7 @@ internal sealed partial class FunctionIdentifier
             CharStream st = line.PopArgumentPrimitive();
             string rowStr;
             if (st.EOS)
-                throw new CodeEE("引数が設定されていません");
+                throw new CodeEE(LocalizationManager.Error.MissingArg);
             else
                 rowStr = st.Substring();
             rowStr = GlobalStatic.Console.getStBar(rowStr);
@@ -1101,7 +1102,7 @@ internal sealed partial class FunctionIdentifier
         public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
         {
             if (!Config.CompatiSPChara && isSp)
-                throw new CodeEE("SPキャラ関係の機能は標準では使用できません(互換性オプション「SPキャラを使用する」をONにしてください)");
+                throw new CodeEE(LocalizationManager.Error.SPCharaConfigIsOff);
             ExpressionArrayArgument intExpArg = (ExpressionArrayArgument)func.Argument;
             Int64 integer;
             Int64[] charaNoList = new Int64[intExpArg.TermList.Length];
@@ -1777,7 +1778,7 @@ internal sealed partial class FunctionIdentifier
             else
                 delay = arg.Term.GetIntValue(exm);
             if (delay < 0 || delay > int.MaxValue)
-                throw new CodeEE("引数の値が適切な範囲外です");
+                throw new CodeEE(LocalizationManager.Error.ArgIsOoR);
             exm.Console.SetToolTipDelay((int)delay);
             return;
         }
@@ -1799,7 +1800,7 @@ internal sealed partial class FunctionIdentifier
             else
                 duration = arg.Term.GetIntValue(exm);
             if (duration < 0 || duration > int.MaxValue)
-                throw new CodeEE("引数の値が適切な範囲外です");
+                throw new CodeEE(LocalizationManager.Error.ArgIsOoR);
             if (duration > short.MaxValue)
                 duration = short.MaxValue;
             exm.Console.SetToolTipDuration((int)duration);
@@ -1964,7 +1965,7 @@ internal sealed partial class FunctionIdentifier
             if ((jumpto == null) || (jumpto.NextLine == null) ||
                 (jumpto is FunctionLabelLine) || (jumpto is NullLine))
             {
-                ParserMediator.Warn("SIF文の次の行がありません", func, 2, true, false);
+                ParserMediator.Warn(LocalizationManager.Error.NothingAfterSif, func, 2, true, false);
                 return;
             }
             else if (jumpto is InstructionLine)
@@ -1976,12 +1977,12 @@ internal sealed partial class FunctionIdentifier
                     func.JumpTo = func.NextLine.NextLine;
             }
             else if (jumpto is GotoLabelLine)
-                ParserMediator.Warn("SIF文の次の行をラベル行にすることはできません", func, 2, true, false);
+                ParserMediator.Warn(LocalizationManager.Error.LabelCanNotAfterSif, func, 2, true, false);
             else
                 func.JumpTo = func.NextLine.NextLine;
 
             if ((func.JumpTo != null) && (func.Position.Value.LineNo + 1 != func.NextLine.Position.Value.LineNo))
-                ParserMediator.Warn("SIF文の次の行が空行またはコメント行です(eramaker:SIF文は意味を失います)", func, 0, false, true);
+                ParserMediator.Warn(LocalizationManager.Error.EmptyAfterSif, func, 0, false, true);
         }
 
         public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
@@ -2321,7 +2322,7 @@ internal sealed partial class FunctionIdentifier
                     state.JumpTo(tFunc);//LOOP
                 return;
             }
-            throw new ExeEE("異常なCONTINUE");
+            throw new ExeEE(LocalizationManager.Error.AbnormalContinue);
         }
     }
 
@@ -2407,9 +2408,9 @@ internal sealed partial class FunctionIdentifier
                     if (label.MethodType != term.GetOperandType())
                     {
                         if (label.MethodType == typeof(Int64))
-                            ParserMediator.Warn("#FUNCTIONで始まる関数の戻り値に文字列型が指定されました", func, 2, true, false);
+                            ParserMediator.Warn(LocalizationManager.Error.ReturnfStrInIntFunc, func, 2, true, false);
                         else if (label.MethodType == typeof(string))
-                            ParserMediator.Warn("#FUCNTIONSで始まる関数の戻り値に数値型が指定されました", func, 2, true, false);
+                            ParserMediator.Warn(LocalizationManager.Error.ReturnfIntInStrFunc, func, 2, true, false);
                     }
                 }
             }
@@ -2534,7 +2535,7 @@ internal sealed partial class FunctionIdentifier
             FunctionLabelLine label = func.ParentLabelLine;
             if (label.IsEvent)
             {
-                ParserMediator.Warn("EVENT関数中にCALLEVENT命令は使用できません", func, 2, true, false);
+                ParserMediator.Warn(LocalizationManager.Error.CanNotUseCallevent, func, 2, true, false);
             }
         }
 

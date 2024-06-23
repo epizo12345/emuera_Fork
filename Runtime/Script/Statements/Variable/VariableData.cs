@@ -4,6 +4,7 @@ using MinorShift.Emuera.Runtime.Script.Statements.Variable;
 using MinorShift.Emuera.Runtime.Utils;
 using System;
 using System.Collections.Generic;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.GameData.Variable;
 
@@ -369,14 +370,14 @@ internal sealed partial class VariableData : IDisposable
                 {
                     case 1: ret = new UserDefinedCharaStr1DVariableToken(data, this, index); break;
                     case 2: ret = new UserDefinedCharaStr2DVariableToken(data, this, index); break;
-                    default: throw new ExeEE("異常な変数宣言");
+                    default: throw new ExeEE(LocalizationManager.Error.AbnormalVarDeclaration);
                 }
             else
                 switch (data.Dimension)
                 {
                     case 1: ret = new UserDefinedCharaInt1DVariableToken(data, this, index); break;
                     case 2: ret = new UserDefinedCharaInt2DVariableToken(data, this, index); break;
-                    default: throw new ExeEE("異常な変数宣言");
+                    default: throw new ExeEE(LocalizationManager.Error.AbnormalVarDeclaration);
                 }
         }
         UserDefinedCharaVarList.Add(ret);
@@ -391,7 +392,7 @@ internal sealed partial class VariableData : IDisposable
                 case 1: ret = new StaticStr1DVariableToken(data); break;
                 case 2: ret = new StaticStr2DVariableToken(data); break;
                 case 3: ret = new StaticStr3DVariableToken(data); break;
-                default: throw new ExeEE("異常な変数宣言");
+                default: throw new ExeEE(LocalizationManager.Error.AbnormalVarDeclaration);
             }
         else
             switch (data.Dimension)
@@ -399,7 +400,7 @@ internal sealed partial class VariableData : IDisposable
                 case 1: ret = new StaticInt1DVariableToken(data); break;
                 case 2: ret = new StaticInt2DVariableToken(data); break;
                 case 3: ret = new StaticInt3DVariableToken(data); break;
-                default: throw new ExeEE("異常な変数宣言");
+                default: throw new ExeEE(LocalizationManager.Error.AbnormalVarDeclaration);
             }
         if (ret.IsGlobal)
             userDefinedGlobalVarList.Add(ret);
@@ -430,7 +431,7 @@ internal sealed partial class VariableData : IDisposable
                     case 1: ret = new ReferenceStr1DToken(data); break;
                     case 2: ret = new ReferenceStr2DToken(data); break;
                     case 3: ret = new ReferenceStr3DToken(data); break;
-                    default: throw new ExeEE("異常な変数宣言");
+                    default: throw new ExeEE(LocalizationManager.Error.AbnormalVarDeclaration);
                 }
             }
             else
@@ -440,7 +441,7 @@ internal sealed partial class VariableData : IDisposable
                     case 1: ret = new ReferenceInt1DToken(data); break;
                     case 2: ret = new ReferenceInt2DToken(data); break;
                     case 3: ret = new ReferenceInt3DToken(data); break;
-                    default: throw new ExeEE("異常な変数宣言");
+                    default: throw new ExeEE(LocalizationManager.Error.AbnormalVarDeclaration);
                 }
             }
         }
@@ -453,7 +454,7 @@ internal sealed partial class VariableData : IDisposable
                     case 1: ret = new StaticStr1DVariableToken(data); break;
                     case 2: ret = new StaticStr2DVariableToken(data); break;
                     case 3: ret = new StaticStr3DVariableToken(data); break;
-                    default: throw new ExeEE("異常な変数宣言");
+                    default: throw new ExeEE(LocalizationManager.Error.AbnormalVarDeclaration);
                 }
             }
             else
@@ -463,7 +464,7 @@ internal sealed partial class VariableData : IDisposable
                     case 1: ret = new StaticInt1DVariableToken(data); break;
                     case 2: ret = new StaticInt2DVariableToken(data); break;
                     case 3: ret = new StaticInt3DVariableToken(data); break;
-                    default: throw new ExeEE("異常な変数宣言");
+                    default: throw new ExeEE(LocalizationManager.Error.AbnormalVarDeclaration);
                 }
             }
             userDefinedStaticVarList.Add(ret);
@@ -477,7 +478,7 @@ internal sealed partial class VariableData : IDisposable
                     case 1: ret = new PrivateStr1DVariableToken(data); break;
                     case 2: ret = new PrivateStr2DVariableToken(data); break;
                     case 3: ret = new PrivateStr3DVariableToken(data); break;
-                    default: throw new ExeEE("異常な変数宣言");
+                    default: throw new ExeEE(LocalizationManager.Error.AbnormalVarDeclaration);
                 }
             }
             else
@@ -487,7 +488,7 @@ internal sealed partial class VariableData : IDisposable
                     case 1: ret = new PrivateInt1DVariableToken(data); break;
                     case 2: ret = new PrivateInt2DVariableToken(data); break;
                     case 3: ret = new PrivateInt3DVariableToken(data); break;
-                    default: throw new ExeEE("異常な変数宣言");
+                    default: throw new ExeEE(LocalizationManager.Error.AbnormalVarDeclaration);
                 }
             }
         }
@@ -1078,7 +1079,7 @@ internal sealed partial class VariableData : IDisposable
                     reader.ReadStrArray3D((string[,,])vToken.GetArray(), true);
                 break;
             default:
-                throw new FileEE("データ異常");
+                throw new FileEE(LocalizationManager.Error.AbnormalData);
         }
         return true;
     }

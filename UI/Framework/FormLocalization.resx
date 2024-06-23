@@ -109,7 +109,7 @@
 		<value>Macro Group</value>
 	</data>
 	<data name="ContextMenu_KeyMacroGroup_Group" xml:space="preserve">
-		<value>Group</value>
+		<value>Group {0}</value>
 	</data>
 	<!-- Message Box -->
 	<data name="MsgBox_InstanceExists" xml:space="preserve">

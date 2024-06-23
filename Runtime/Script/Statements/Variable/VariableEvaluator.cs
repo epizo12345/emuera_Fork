@@ -911,7 +911,7 @@ internal sealed class VariableEvaluator : IDisposable
     {
         StringBuilder builder = new(100);
         if (target < 0 || target >= varData.CharacterList.Count)
-            throw new CodeEE("存在しない登録キャラクタを参照しようとしました");
+            throw new CodeEE(LocalizationManager.Error.OoRCharaNum);
         CharacterData chara = varData.CharacterList[(int)target];
         long[] array;
         string[] arrayName;
@@ -995,7 +995,7 @@ internal sealed class VariableEvaluator : IDisposable
     public string GetCharacterParamString(long target, int paramCode)
     {
         if (target < 0 || target >= varData.CharacterList.Count)
-            throw new CodeEE("存在しない登録キャラクタを参照しようとしました");
+            throw new CodeEE(LocalizationManager.Error.OoRCharaNum);
         //そもそも呼び出し元がint i = 0; i < 100; i++)でこの条件が満たされる可能性0
         //if ((paramCode < 0) || (paramCode >= constant.ParamName.Length))
         //    throw new ExeEE("存在しない名称を取得しようとした");
@@ -1049,7 +1049,7 @@ internal sealed class VariableEvaluator : IDisposable
     {
         CharacterTemplate tmpl = constant.GetCharacterTemplate(charaTmplNo);
         if (tmpl == null)
-            throw new CodeEE("定義していないキャラクタを作成しようとしました");
+            throw new CodeEE(LocalizationManager.Error.AddedUndefinedChara);
         CharacterData chara = new(constant, tmpl, varData);
         varData.CharacterList.Add(chara);
     }
@@ -1058,7 +1058,7 @@ internal sealed class VariableEvaluator : IDisposable
     {
         CharacterTemplate tmpl = constant.GetCharacterTemplate_UseSp(charaTmplNo, isSp);
         if (tmpl == null)
-            throw new CodeEE("定義していないキャラクタを作成しようとしました");
+            throw new CodeEE(LocalizationManager.Error.AddedUndefinedChara);
         CharacterData chara = new(constant, tmpl, varData);
         varData.CharacterList.Add(chara);
     }
@@ -1170,16 +1170,16 @@ internal sealed class VariableEvaluator : IDisposable
     public void CopyChara(long x, long y)
     {
         if (x < 0 || x >= varData.CharacterList.Count)
-            throw new CodeEE("コピー元のキャラクタが存在しません");
+            throw new CodeEE(LocalizationManager.Error.NotExistFromCopyChara);
         if (y < 0 || y >= varData.CharacterList.Count)
-            throw new CodeEE("コピー先のキャラクタが存在しません");
+            throw new CodeEE(LocalizationManager.Error.NotExistToCopyChara);
         varData.CharacterList[(int)x].CopyTo(varData.CharacterList[(int)y], varData);
     }
 
     public void AddCopyChara(long x)
     {
         if (x < 0 || x >= varData.CharacterList.Count)
-            throw new CodeEE("コピー元のキャラクタが存在しません");
+            throw new CodeEE(LocalizationManager.Error.NotExistFromCopyChara);
         AddPseudoCharacter();
         varData.CharacterList[(int)x].CopyTo(varData.CharacterList[^1], varData);
     }
@@ -1187,7 +1187,7 @@ internal sealed class VariableEvaluator : IDisposable
     public void SwapChara(long x, long y)
     {
         if (x < 0 || x >= varData.CharacterList.Count || y < 0 || y >= varData.CharacterList.Count)
-            throw new CodeEE("存在しない登録キャラクタを入れ替えようとしました");
+            throw new CodeEE(LocalizationManager.Error.OoRSwapChara);
         if (x == y)
             return;
         (varData.CharacterList[(int)x], varData.CharacterList[(int)y]) = (varData.CharacterList[(int)y], varData.CharacterList[(int)x]);
@@ -1358,7 +1358,7 @@ internal sealed class VariableEvaluator : IDisposable
         //SPキャラ廃止に伴う問題は呼び出し元で処理
         CharacterTemplate tmpl = constant.GetCharacterTemplate_UseSp(charaTmplNo, isSp);
         if (tmpl == null)
-            throw new CodeEE("定義していないキャラクタを参照しようとしました");
+            throw new CodeEE(LocalizationManager.Error.RefUndefinedChara);
         int arg2 = (int)arg2Long;
         switch (type)
         {
@@ -1386,7 +1386,7 @@ internal sealed class VariableEvaluator : IDisposable
                 if (tmpl.CStr != null)
                 {
                     if (arg2 >= tmpl.ArrayStrLength(CharacterStrData.CSTR) || arg2 < 0)
-                        throw new CodeEE("CSTRの参照可能範囲外を参照しました");
+                        throw new CodeEE(LocalizationManager.Error.OoRCstr);
                     if (tmpl.CStr.TryGetValue(arg2, out string ret))
                         return ret;
                     else
@@ -1395,7 +1395,7 @@ internal sealed class VariableEvaluator : IDisposable
                 else
                     return "";
             default:
-                throw new CodeEE("存在しないデータを参照しようとしました");
+                throw new CodeEE(LocalizationManager.Error.RefDoesNotExistData);
         }
     }
 
@@ -1404,9 +1404,9 @@ internal sealed class VariableEvaluator : IDisposable
         //SPキャラ廃止に伴う問題は呼び出し元で処理
         CharacterTemplate tmpl = constant.GetCharacterTemplate_UseSp(charaTmplNo, isSp);
         if (tmpl == null)
-            throw new CodeEE("定義していないキャラクタを参照しようとしました");
+            throw new CodeEE(LocalizationManager.Error.RefUndefinedChara);
         if (arg2Long >= tmpl.ArrayLength(type) || arg2Long < 0)
-            throw new CodeEE("参照可能範囲外を参照しました");
+            throw new CodeEE(LocalizationManager.Error.RefOoR);
         int arg2 = (int)arg2Long;
         Dictionary<int, long> intDic;
         switch (type)
@@ -1430,7 +1430,7 @@ internal sealed class VariableEvaluator : IDisposable
             case CharacterIntData.JUEL:
                 intDic = tmpl.Juel; break;
             default:
-                throw new CodeEE("存在しないデータを参照しようとしました");
+                throw new CodeEE(LocalizationManager.Error.RefDoesNotExistData);
         }
         if (intDic.TryGetValue(arg2, out long ret))
             return ret;
@@ -1784,7 +1784,7 @@ internal sealed class VariableEvaluator : IDisposable
         catch
         {
             Dialog.Show(LocalizationManager.MsgBox.FolderCreationFailure, LocalizationManager.MsgBox.FailedCreateDataFolder);
-            throw new CodeEE("datフォルダーの作成に失敗しました");
+            throw new CodeEE(LocalizationManager.Error.FailedCreateDataFolder);
         }
     }
 
@@ -1821,9 +1821,9 @@ internal sealed class VariableEvaluator : IDisposable
     public static string CheckDatFilename(string datfilename)
     {
         if (string.IsNullOrEmpty(datfilename))
-            return "ファイル名が指定されていません";
+            return LocalizationManager.Error.NothingFileName;
         if (datfilename.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
-            return "ファイル名に不正な文字が含まれています";
+            return LocalizationManager.Error.InvalidFileName;
         return null;
     }
 
@@ -1884,14 +1884,14 @@ internal sealed class VariableEvaluator : IDisposable
                 if (!gamebase.UniqueCodeEqualTo(reader.ReadInt64()))
                 {
                     result.State = EraDataState.GAME_ERROR;
-                    result.DataMes = "異なるゲームのセーブデータです";
+                    result.DataMes = LocalizationManager.Error.DifferentGame;
                     return result;
                 }
                 version = reader.ReadInt64();
                 if (!gamebase.CheckVersion(version))
                 {
                     result.State = EraDataState.VIRSION_ERROR;
-                    result.DataMes = "セーブデータのバーションが異なります";
+                    result.DataMes = LocalizationManager.Error.DifferentVersion;
                     return result;
                 }
                 result.State = EraDataState.OK;
@@ -1905,20 +1905,20 @@ internal sealed class VariableEvaluator : IDisposable
             if (type != fileType)
             {
                 result.State = EraDataState.ETC_ERROR;
-                result.DataMes = "セーブデータが壊れています";
+                result.DataMes = LocalizationManager.Error.CorruptedSaveData;
                 return result;
             }
             if (!gamebase.UniqueCodeEqualTo(bReader.ReadInt64()))
             {
                 result.State = EraDataState.GAME_ERROR;
-                result.DataMes = "異なるゲームのセーブデータです";
+                result.DataMes = LocalizationManager.Error.DifferentGame;
                 return result;
             }
             version = bReader.ReadInt64();
             if (!gamebase.CheckVersion(version))
             {
                 result.State = EraDataState.VIRSION_ERROR;
-                result.DataMes = "セーブデータのバーションが異なります";
+                result.DataMes = LocalizationManager.Error.DifferentVersion;
                 return result;
             }
             result.State = EraDataState.OK;
@@ -1933,7 +1933,7 @@ internal sealed class VariableEvaluator : IDisposable
         catch (Exception)
         {
             result.State = EraDataState.ETC_ERROR;
-            result.DataMes = "読み込み中にエラーが発生しました";
+            result.DataMes = LocalizationManager.Error.LoadError;
         }
         finally
         {
@@ -2183,10 +2183,10 @@ internal sealed class VariableEvaluator : IDisposable
     public void LoadFromStream(EraDataReader reader)
     {
         if (!gamebase.UniqueCodeEqualTo(reader.ReadInt64()))
-            throw new FileEE("異なるゲームのセーブデータです");
+            throw new FileEE(LocalizationManager.Error.DifferentGame);
         long version = reader.ReadInt64();
         if (!gamebase.CheckVersion(version))
-            throw new FileEE("セーブデータのバーションが異なります");
+            throw new FileEE(LocalizationManager.Error.DifferentVersion);
         string text = reader.ReadString();//PUTFORM
         varData.SetDefaultValue(constant);
         varData.SetDefaultLocalValue();
@@ -2248,7 +2248,7 @@ internal sealed class VariableEvaluator : IDisposable
         }
         catch (SystemException)
         {
-            throw new CodeEE("グローバルデータの保存中にエラーが発生しました");
+            throw new CodeEE(LocalizationManager.Error.ErrorSavingGlobalData);
             //console.PrintError(
             //console.NewLine();
             //return false;
@@ -2341,12 +2341,12 @@ internal sealed class VariableEvaluator : IDisposable
     {
         EraSaveFileType fileType = bReader.ReadFileType();
         if (fileType != EraSaveFileType.Normal)
-            throw new FileEE("セーブデータが壊れています");
+            throw new FileEE(LocalizationManager.Error.CorruptedSaveData);
         if (!gamebase.UniqueCodeEqualTo(bReader.ReadInt64()))
-            throw new FileEE("異なるゲームのセーブデータです");
+            throw new FileEE(LocalizationManager.Error.DifferentGame);
         long version = bReader.ReadInt64();
         if (!gamebase.CheckVersion(version))
-            throw new FileEE("セーブデータのバーションが異なります");
+            throw new FileEE(LocalizationManager.Error.DifferentVersion);
         string text = bReader.ReadString();//PUTFORM
         varData.SetDefaultValue(constant);
         varData.SetDefaultLocalValue();

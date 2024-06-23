@@ -1,5 +1,6 @@
 ﻿using MinorShift.Emuera.Runtime.Utils;
 using MinorShift.Emuera.Sub;
+using MinorShift.Emuera.UI.Framework;
 using System;
 using System.Collections.Generic;
 
@@ -277,8 +278,8 @@ internal sealed class VariableIdentifier
             if (localvarNameDic.TryGetValue(key, out ret))
                 return new VariableIdentifier(ret, subStr);
             if (nameDic.ContainsKey(key))
-                throw new CodeEE("ローカル変数でない変数" + key + "に対して@が使われました");
-            throw new CodeEE("@の使い方が不正です");
+                throw new CodeEE(string.Format(LocalizationManager.Error.UsedAtForGlobalVar, key));
+            throw new CodeEE(LocalizationManager.Error.InvalidAt);
         }
         if (nameDic.TryGetValue(key, out ret))
             return new VariableIdentifier(ret);

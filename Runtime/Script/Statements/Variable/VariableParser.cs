@@ -3,6 +3,7 @@ using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Script.Parser;
 using MinorShift.Emuera.Runtime.Script.Statements.Expression;
 using MinorShift.Emuera.Runtime.Utils;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.Runtime.Script.Statements.Variable;
 
@@ -157,13 +158,13 @@ internal static class VariableParser
                 op1 = ZeroTerm;
                 if (!Config.Config.CompatiRAND && id.Code == VariableCode.RAND)
                 {
-                    throw new CodeEE("RANDの引数が省略されています");
+                    throw new CodeEE(LocalizationManager.Error.OmittedRandArg);
                 }
             }
             if (!Config.Config.CompatiRAND && op1 is SingleTerm op1SingleTerm && id.Code == VariableCode.RAND)
             {
                 if (((SingleLongTerm)op1SingleTerm).Int == 0)
-                    throw new CodeEE("RANDの引数に0が与えられています");
+                    throw new CodeEE(LocalizationManager.Error.RandArgIsZero);
             }
             terms = [op1];
         }

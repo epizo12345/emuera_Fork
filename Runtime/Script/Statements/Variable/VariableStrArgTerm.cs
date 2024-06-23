@@ -1,6 +1,7 @@
 ﻿using MinorShift.Emuera.Runtime.Script.Statements.Expression;
 using MinorShift.Emuera.Runtime.Utils;
 using MinorShift.Emuera.Sub;
+using MinorShift.Emuera.UI.Framework;
 using System;
 using System.Collections.Generic;
 
@@ -29,7 +30,7 @@ internal sealed class VariableStrArgTerm : AExpression
             dic = exm.VEvaluator.Constant.GetKeywordDictionary(out errPos, parentCode, index);
         string key = strTerm.GetStrValue(exm);
         if (string.IsNullOrEmpty(key))
-            throw new CodeEE("キーワードを空には出来ません");
+            throw new CodeEE(LocalizationManager.Error.KeywordsCannotBeEmpty);
         if (!dic.TryGetValue(key, out int i))
         {
             if (errPos == null)

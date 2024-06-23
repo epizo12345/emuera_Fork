@@ -5,6 +5,7 @@ using MinorShift.Emuera.Runtime.Utils;
 using MinorShift.Emuera.UI.Game;
 using System;
 using System.Collections.Generic;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.GameProc;
 
@@ -145,22 +146,22 @@ internal sealed partial class Process
         deleteAllPrevState();
         if (Program.AnalysisMode)
         {
-            console.PrintSystemLine("ファイル解析終了：Analysis.logに出力します");
+            console.PrintSystemLine(LocalizationManager.SystemLine.AnalysisCompleted);
             console.OutputLog(Program.ExeDir + "Analysis.log");
             console.noOutputLog = true;
-            console.PrintSystemLine("エンターキーもしくはクリックで終了します");
+            console.PrintSystemLine(LocalizationManager.SystemLine.PressEnterOrClick);
             System.Media.SystemSounds.Asterisk.Play();
             console.ThrowTitleError(false);
             return;
         }
         if ((!noError) && (!Config.CompatiErrorLine))
         {
-            console.PrintErrorButton("ERBコードに解釈不可能な行があるためEmueraを終了します", null, 3);
+            console.PrintErrorButton(LocalizationManager.SystemLine.ExitBecauseCanNotInterpreted1, null, 3);
             console.PrintSystemLine("※互換性オプション「" + Config.GetConfigName(ConfigCode.CompatiErrorLine) + "」により強制的に動作させることができます");
-            console.PrintSystemLine("emuera.logにログを出力します");
+            console.PrintSystemLine(LocalizationManager.SystemLine.ExitBecauseCanNotInterpreted3);
             console.OutputLog(Program.ExeDir + "emuera.log");
             console.noOutputLog = true;
-            console.PrintSystemLine("エンターキーもしくはクリックで終了します");
+            console.PrintSystemLine(LocalizationManager.SystemLine.PressEnterOrClick);
             System.Media.SystemSounds.Asterisk.Play();
             console.ThrowTitleError(true);
             return;
@@ -226,7 +227,7 @@ internal sealed partial class Process
         else//入力が正しくないならもう一回選択肢を書き直し、正しい選択を要求する。
         {//RESUELASTLINEと同様の処理を行うように変更
             console.deleteLine(1);
-            console.PrintTemporaryLine("無効な値です");
+            console.PrintTemporaryLine(LocalizationManager.Error.InvalidValue);
             console.updatedGeneration = true;
             openingInput();
             //beginTitle();
@@ -411,7 +412,7 @@ internal sealed partial class Process
                 if (comAble[i] == systemResult)
                     selectCom = (int)systemResult;
             }
-            console.PrintSingleLine(string.Format("＜コマンド連続実行：{0}/{1}＞", count, coms.Count));
+            console.PrintSingleLine(string.Format(LocalizationManager.Error.ExecutedCom, count, coms.Count));
         }
         //TrainNameが定義されていて使用可能(COMABLEが非0を返した)である
         if (selectCom >= 0)
@@ -422,7 +423,7 @@ internal sealed partial class Process
         else
         {//されていない。
             if (isCTrain)
-                console.PrintSingleLine("コマンドを実行できませんでした");
+                console.PrintSingleLine(LocalizationManager.Error.CouldNotExecuteCom);
             vEvaluator.RESULT = systemResult;
             state.SystemState = SystemStateCode.Train_CallEventComEnd;
             callFunction("USERCOM", true, false);
@@ -493,7 +494,7 @@ internal sealed partial class Process
             if (console.LastLineIsEmpty)
             {
                 console.deleteLine(2);
-                console.PrintTemporaryLine("無効な値です");
+                console.PrintTemporaryLine(LocalizationManager.Error.InvalidValue);
             }
             console.updatedGeneration = true;
             endCallShowUserCom();
@@ -574,7 +575,7 @@ internal sealed partial class Process
             {
                 //見つからなければ終了
                 console.deleteLine(1);
-                console.PrintTemporaryLine("無効な値です");
+                console.PrintTemporaryLine(LocalizationManager.Error.InvalidValue);
                 console.updatedGeneration = true;
                 endCallShowAblupSelect();
             }
@@ -594,7 +595,7 @@ internal sealed partial class Process
             if (console.LastLineIsEmpty)
             {
                 console.deleteLine(2);
-                console.PrintTemporaryLine("無効な値です");
+                console.PrintTemporaryLine(LocalizationManager.Error.InvalidValue);
             }
             console.updatedGeneration = true;
             endCallShowAblupSelect();
@@ -663,8 +664,8 @@ internal sealed partial class Process
         {
             if (!vEvaluator.SaveTo(saveTarget, vEvaluator.SAVEDATA_TEXT))
             {
-                console.PrintError("オートセーブ中に予期しないエラーが発生しました");
-                console.PrintError("オートセーブをスキップします");
+                console.PrintError(LocalizationManager.Error.AutoSaveError1);
+                console.PrintError(LocalizationManager.Error.AutoSaveError2);
                 console.ReadAnyKey();
             }
         }
@@ -711,7 +712,7 @@ internal sealed partial class Process
                     //console.Print("お金が足りません。");
                     //console.NewLine();
                     console.deleteLine(1);
-                    console.PrintTemporaryLine("お金が足りません。");
+                    console.PrintTemporaryLine(LocalizationManager.Error.NotEnoughMoney);
                 }
             }
             else
@@ -719,7 +720,7 @@ internal sealed partial class Process
                 //console.Print("売っていません。");
                 //console.NewLine();
                 console.deleteLine(1);
-                console.PrintTemporaryLine("売っていません。");
+                console.PrintTemporaryLine(LocalizationManager.Error.OutOfStock);
             }
             //購入に失敗した場合、endCallEventShop()に戻す。
             //endCallEventShop();
@@ -745,7 +746,7 @@ internal sealed partial class Process
             if (console.LastLineIsEmpty)
             {
                 console.deleteLine(2);
-                console.PrintTemporaryLine("無効な値です");
+                console.PrintTemporaryLine(LocalizationManager.Error.InvalidValue);
             }
             console.updatedGeneration = true;
             endCallShowShop();
@@ -785,21 +786,21 @@ internal sealed partial class Process
 
     void beginSaveGame()
     {
-        console.PrintSingleLine("何番にセーブしますか？");
+        console.PrintSingleLine(LocalizationManager.SystemLine.SaveQuestion);
         state.SystemState = SystemStateCode.SaveGame_Begin;
         printSaveDataText();
     }
 
     void beginLoadGame()
     {
-        console.PrintSingleLine("何番をロードしますか？");
+        console.PrintSingleLine(LocalizationManager.SystemLine.LoadQuestion);
         state.SystemState = SystemStateCode.LoadGame_Begin;
         printSaveDataText();
     }
 
     void beginLoadGameOpening()
     {
-        console.PrintSingleLine("何番をロードしますか？");
+        console.PrintSingleLine(LocalizationManager.SystemLine.LoadQuestion);
         state.SystemState = SystemStateCode.LoadGameOpenning_Begin;
         printSaveDataText();
     }
@@ -819,7 +820,7 @@ internal sealed partial class Process
         for (int i = 0; i < page; i++)
         {
             console.PrintFlush(false);
-            console.Print(string.Format("[{0, 2}] セーブデータ{0, 2}～{1, 2}を表示", i * 20, i * 20 + 19));
+            console.Print(string.Format(LocalizationManager.SystemLine.DisplaySaveSlot, i * 20, i * 20 + 19));
         }
         for (int i = 0; i < 20; i++)
         {
@@ -836,7 +837,7 @@ internal sealed partial class Process
         for (int i = page; i < ((dataIsAvailable.Length - 2) / 20); i++)
         {
             console.PrintFlush(false);
-            console.Print(string.Format("[{0, 2}] セーブデータ{0, 2}～{1, 2}を表示", (i + 1) * 20, (i + 1) * 20 + 19));
+            console.Print(string.Format(LocalizationManager.SystemLine.DisplaySaveSlot, (i + 1) * 20, (i + 1) * 20 + 19));
         }
         //オートセーブの処理は別途切り出し（表示処理の都合上）
         dataIsAvailable[^1] = false;
@@ -885,7 +886,7 @@ internal sealed partial class Process
         else
         {//入力しなおし
             console.deleteLine(1);
-            console.PrintTemporaryLine("無効な値です");
+            console.PrintTemporaryLine(LocalizationManager.Error.InvalidValue);
             console.updatedGeneration = true;
             setWaitInput();
             return;
@@ -894,9 +895,9 @@ internal sealed partial class Process
         //既存データがあるなら選択肢を表示してSaveGame_WaitInputOverwriteへ移行。
         if (available)
         {
-            console.PrintSingleLine("既にデータが存在します。上書きしますか？");
-            console.PrintC("[0] はい", false);
-            console.PrintC("[1] いいえ", false);
+            console.PrintSingleLine(LocalizationManager.SystemLine.DoYouOverwrite);
+            console.PrintC(LocalizationManager.SystemLine.Yes, false);
+            console.PrintC(LocalizationManager.SystemLine.No, false);
             setWaitInput();
             state.SystemState = SystemStateCode.SaveGame_WaitInputOverwrite;
             return;
@@ -916,7 +917,7 @@ internal sealed partial class Process
         else if (systemResult != 0)//「はい」でもない
         {//入力しなおし
             console.deleteLine(1);
-            console.PrintTemporaryLine("無効な値です");
+            console.PrintTemporaryLine(LocalizationManager.Error.InvalidValue);
             console.updatedGeneration = true;
             setWaitInput();
             return;
@@ -931,7 +932,7 @@ internal sealed partial class Process
     {
         if (!vEvaluator.SaveTo(saveTarget, vEvaluator.SAVEDATA_TEXT))
         {
-            console.PrintError("セーブ中に予期しないエラーが発生しました");
+            console.PrintError(LocalizationManager.Error.UnexpectedSaveError);
             console.ReadAnyKey();
         }
         loadPrevState();
@@ -969,7 +970,7 @@ internal sealed partial class Process
         else
         {//入力しなおし
             console.deleteLine(1);
-            console.PrintTemporaryLine("無効な値です");
+            console.PrintTemporaryLine(LocalizationManager.Error.InvalidValue);
             console.updatedGeneration = true;
             setWaitInput();
             return;
@@ -977,7 +978,7 @@ internal sealed partial class Process
         if (!available)
         {
             console.PrintSingleLine(systemResult.ToString());
-            console.PrintError("データがありません");
+            console.PrintError(LocalizationManager.Error.NoData);
             if (state.SystemState == SystemStateCode.LoadGameOpenning_WaitInput)
             {
                 beginLoadGameOpening();
@@ -988,7 +989,7 @@ internal sealed partial class Process
         }
 
         if (!vEvaluator.LoadFrom((int)systemResult))
-            throw new ExeEE("ファイルのロード中に予期しないエラーが発生しました");
+            throw new ExeEE(LocalizationManager.Error.UnexpectedErrorInLoaddata);
         deletePrevState();
         beginDataLoaded();
     }
@@ -996,7 +997,7 @@ internal sealed partial class Process
 
     void endNormal()
     {
-        throw new CodeEE("予期しないスクリプト終端です");
+        throw new CodeEE(LocalizationManager.Error.UnexpectedScriptEnd);
     }
 
     void endReloaderb()

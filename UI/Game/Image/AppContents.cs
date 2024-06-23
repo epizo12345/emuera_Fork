@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.UI.Game.Image;
 
@@ -160,7 +161,7 @@ static class AppContents
         {
             if (tokens.Length < 4)
             {
-                ParserMediator.Warn("アニメーションスプライトのサイズが宣言されていません", sp, 1);
+                ParserMediator.Warn(LocalizationManager.Error.NotDeclaredAnimationSpriteSize, sp, 1);
                 return null;
             }
             //w,h
@@ -170,7 +171,7 @@ static class AppContents
                 sccs &= int.TryParse(tokens[i + 2], out sizeValue[i]);
             if (!sccs || sizeValue[0] <= 0 || sizeValue[1] <= 0 || sizeValue[0] > AbstractImage.MAX_IMAGESIZE || sizeValue[1] > AbstractImage.MAX_IMAGESIZE)
             {
-                ParserMediator.Warn("アニメーションスプライトのサイズの指定が適切ではありません", sp, 1);
+                ParserMediator.Warn(LocalizationManager.Error.InvalidAnimationSpriteSize, sp, 1);
                 return null;
             }
             SpriteAnime anime = new(name, new Size(sizeValue[0], sizeValue[1]));

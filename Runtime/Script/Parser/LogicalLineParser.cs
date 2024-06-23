@@ -6,6 +6,7 @@ using MinorShift.Emuera.Runtime.Script.Statements.Expression;
 using MinorShift.Emuera.Runtime.Utils;
 using System;
 using System.Collections.Generic;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.Runtime.Script.Parser;
 
@@ -18,7 +19,7 @@ internal static class LogicalLineParser
                                                              //#行として不正な行でもAnalyzeに行って引っかかることがあるので、先に存在しない#～は弾いてしまう
         if (string.IsNullOrEmpty(token))
         {
-            ParserMediator.Warn("解釈できない#行です", position, 1);
+            ParserMediator.Warn(LocalizationManager.Error.CanNotInterpretSharpLine, position, 1);
             return false;
         }
         try
@@ -28,22 +29,22 @@ internal static class LogicalLineParser
                 case var s when s.Equals("SINGLE", Config.Config.StringComparison):
                     if (label.IsMethod)
                     {
-                        ParserMediator.Warn("式中関数では#SINGLEは機能しません", position, 1);
+                        ParserMediator.Warn(LocalizationManager.Error.UseSingleUserFunc, position, 1);
                         break;
                     }
                     else if (!label.IsEvent)
                     {
-                        ParserMediator.Warn("イベント関数以外では#SINGLEは機能しません", position, 1);
+                        ParserMediator.Warn(LocalizationManager.Error.UsableSingleEventFunc, position, 1);
                         break;
                     }
                     else if (label.IsSingle)
                     {
-                        ParserMediator.Warn("#SINGLEが重複して使われています", position, 1);
+                        ParserMediator.Warn(LocalizationManager.Error.DuplicateSingle, position, 1);
                         break;
                     }
                     else if (label.IsOnly)
                     {
-                        ParserMediator.Warn("#ONLYが指定されたイベント関数では#SINGLEは機能しません", position, 1);
+                        ParserMediator.Warn(LocalizationManager.Error.OnlyWithSingle, position, 1);
                         break;
                     }
                     label.IsSingle = true;
@@ -51,67 +52,67 @@ internal static class LogicalLineParser
                 case var s when s.Equals("LATER", Config.Config.StringComparison):
                     if (label.IsMethod)
                     {
-                        ParserMediator.Warn("式中関数では#LATERは機能しません", position, 1);
+                        ParserMediator.Warn(LocalizationManager.Error.UseLaterUserFunc, position, 1);
                         break;
                     }
                     else if (!label.IsEvent)
                     {
-                        ParserMediator.Warn("イベント関数以外では#LATERは機能しません", position, 1);
+                        ParserMediator.Warn(LocalizationManager.Error.UsableLaterEventFunc, position, 1);
                         break;
                     }
                     else if (label.IsLater)
                     {
-                        ParserMediator.Warn("#LATERが重複して使われています", position, 1);
+                        ParserMediator.Warn(LocalizationManager.Error.DuplicateLater, position, 1);
                         break;
                     }
                     else if (label.IsOnly)
                     {
-                        ParserMediator.Warn("#ONLYが指定されたイベント関数では#LATERは機能しません", position, 1);
+                        ParserMediator.Warn(LocalizationManager.Error.OnlyWithLater, position, 1);
                         break;
                     }
                     else if (label.IsPri)
-                        ParserMediator.Warn("#PRIと#LATERが重複して使われています(この関数は2度呼ばれます)", position, 1);
+                        ParserMediator.Warn(LocalizationManager.Error.PriWithLater, position, 1);
                     label.IsLater = true;
                     break;
                 case var s when s.Equals("PRI", Config.Config.StringComparison):
                     if (label.IsMethod)
                     {
-                        ParserMediator.Warn("式中関数では#PRIは機能しません", position, 1);
+                        ParserMediator.Warn(LocalizationManager.Error.UsePriUserFunc, position, 1);
                         break;
                     }
                     else if (!label.IsEvent)
                     {
-                        ParserMediator.Warn("イベント関数以外では#PRIは機能しません", position, 1);
+                        ParserMediator.Warn(LocalizationManager.Error.UsablePriEventFunc, position, 1);
                         break;
                     }
                     else if (label.IsPri)
                     {
-                        ParserMediator.Warn("#PRIが重複して使われています", position, 1);
+                        ParserMediator.Warn(LocalizationManager.Error.DuplicatePri, position, 1);
                         break;
                     }
                     else if (label.IsOnly)
                     {
-                        ParserMediator.Warn("#ONLYが指定されたイベント関数では#PRIは機能しません", position, 1);
+                        ParserMediator.Warn(LocalizationManager.Error.OnlyWithPri, position, 1);
                         break;
                     }
                     else if (label.IsLater)
-                        ParserMediator.Warn("#PRIと#LATERが重複して使われています(この関数は2度呼ばれます)", position, 1);
+                        ParserMediator.Warn(LocalizationManager.Error.PriWithLater, position, 1);
                     label.IsPri = true;
                     break;
                 case var s when s.Equals("ONLY", Config.Config.StringComparison):
                     if (label.IsMethod)
                     {
-                        ParserMediator.Warn("式中関数では#ONLYは機能しません", position, 1);
+                        ParserMediator.Warn(LocalizationManager.Error.UseOnlyUserFunc, position, 1);
                         break;
                     }
                     else if (!label.IsEvent)
                     {
-                        ParserMediator.Warn("イベント関数以外では#ONLYは機能しません", position, 1);
+                        ParserMediator.Warn(LocalizationManager.Error.UsableOnlyEventFunc, position, 1);
                         break;
                     }
                     else if (label.IsOnly)
                     {
-                        ParserMediator.Warn("#ONLYが重複して使われています", position, 1);
+                        ParserMediator.Warn(LocalizationManager.Error.DuplicateOnly, position, 1);
                         break;
                     }
                     else if (OnlyLabel.Contains(label.LabelName))
@@ -120,17 +121,17 @@ internal static class LogicalLineParser
                     label.IsOnly = true;
                     if (label.IsPri)
                     {
-                        ParserMediator.Warn("このイベント関数には#PRIが宣言されていますが無視されます", position, 1);
+                        ParserMediator.Warn(LocalizationManager.Error.BeIgnorePri, position, 1);
                         label.IsPri = false;
                     }
                     if (label.IsLater)
                     {
-                        ParserMediator.Warn("このイベント関数には#LATERが宣言されていますが無視されます", position, 1);
+                        ParserMediator.Warn(LocalizationManager.Error.BeIgnoreLater, position, 1);
                         label.IsLater = false;
                     }
                     if (label.IsSingle)
                     {
-                        ParserMediator.Warn("このイベント関数には#SINGLEが宣言されていますが無視されます", position, 1);
+                        ParserMediator.Warn(LocalizationManager.Error.BeIgnoreSingle, position, 1);
                         label.IsSingle = false;
                     }
                     break;
@@ -140,7 +141,7 @@ internal static class LogicalLineParser
                     {
                         ParserMediator.Warn($"#{token}属性は関数名が数字で始まる関数には指定できません", position, 1);
                         label.IsError = true;
-                        label.ErrMes = "関数名が数字で始まっています";
+                        label.ErrMes = LocalizationManager.Error.FuncNameBeginNumber;
                         break;
                     }
                     if (label.IsMethod)
@@ -169,22 +170,22 @@ internal static class LogicalLineParser
                         label.MethodType = typeof(long);
                     if (label.IsPri)
                     {
-                        ParserMediator.Warn("式中関数では#PRIは機能しません", position, 1);
+                        ParserMediator.Warn(LocalizationManager.Error.UsePriUserFunc, position, 1);
                         label.IsPri = false;
                     }
                     if (label.IsLater)
                     {
-                        ParserMediator.Warn("式中関数では#LATERは機能しません", position, 1);
+                        ParserMediator.Warn(LocalizationManager.Error.UseLaterUserFunc, position, 1);
                         label.IsLater = false;
                     }
                     if (label.IsSingle)
                     {
-                        ParserMediator.Warn("式中関数では#SINGLEは機能しません", position, 1);
+                        ParserMediator.Warn(LocalizationManager.Error.UseSingleUserFunc, position, 1);
                         label.IsSingle = false;
                     }
                     if (label.IsOnly)
                     {
-                        ParserMediator.Warn("式中関数では#ONLYは機能しません", position, 1);
+                        ParserMediator.Warn(LocalizationManager.Error.UseOnlyUserFunc, position, 1);
                         label.IsOnly = false;
                     }
                     break;
@@ -228,7 +229,7 @@ internal static class LogicalLineParser
                                 break;
                             }
                             if (label.LocalLength > 0)
-                                ParserMediator.Warn("この関数にはすでに#LOCALSIZEが定義されています。（以前の定義は無視されます）", position, 1);
+                                ParserMediator.Warn(LocalizationManager.Error.DuplicateLocalsize, position, 1);
                             label.LocalLength = size;
                         }
                         else
@@ -239,7 +240,7 @@ internal static class LogicalLineParser
                                 break;
                             }
                             if (label.LocalsLength > 0)
-                                ParserMediator.Warn("この関数にはすでに#LOCALSSIZEが定義されています。（以前の定義は無視されます）", position, 1);
+                                ParserMediator.Warn(LocalizationManager.Error.DuplicateLocalssize, position, 1);
                             label.LocalsLength = size;
                         }
                     }
@@ -258,7 +259,7 @@ internal static class LogicalLineParser
                         break;
                     }
                 default:
-                    ParserMediator.Warn("#の識別子の後に余分な文字があります", position, 1);
+                    ParserMediator.Warn(LocalizationManager.Error.ExtraCharacterAfterSharp, position, 1);
                     break;
             }
         }
@@ -290,7 +291,7 @@ internal static class LogicalLineParser
             var wc = LexicalAnalyzer.Analyse(stream, LexEndWith.EoL, LexAnalyzeFlag.AllowAssignment);
             if (wc.EOL || wc.Current is not IdentifierWord iw)
             {
-                return err(position, isFunction, ref labelName, "関数名が不正であるか存在しません");
+                return err(position, isFunction, ref labelName, LocalizationManager.Error.InvalidFunc);
             }
             labelName = iw.Code;
             wc.ShiftNext();
@@ -304,7 +305,7 @@ internal static class LogicalLineParser
             if (!isFunction)//$ならこの時点で終了
             {
                 if (!wc.EOL)
-                    ParserMediator.Warn("$で始まるラベルに引数が設定されています", position, 1);
+                    ParserMediator.Warn(LocalizationManager.Error.LabelHasArg, position, 1);
                 return new GotoLabelLine(position, labelName);
             }
 
@@ -540,7 +541,7 @@ internal static class LogicalLineParser
                         if (current == '　')
                             errMes = "命令で行が始まっていますが、命令の直後に半角スペース・タブ以外の文字が来ています(この警告はシステムオプション「" + Config.Config.GetConfigName(Config.ConfigCode.SystemAllowFullSpace) + "」により無視できます)";
                         else
-                            errMes = "命令で行が始まっていますが、命令の直後に半角スペース・タブ以外の文字が来ています";
+                            errMes = LocalizationManager.Error.InvalidCharacterAfterInstruction2;
                         return new InvalidLine(position, errMes)
                         {
                             ParentLabelLine = parentLine
@@ -553,7 +554,7 @@ internal static class LogicalLineParser
             LexicalAnalyzer.SkipWhiteSpace(stream);
             if (stream.EOS)
             {
-                errMes = "解釈できない行です";
+                errMes = LocalizationManager.Error.CanNotInterpretedLine;
                 return new InvalidLine(position, errMes);
             }
             //命令行ではない→代入行のはず
@@ -568,7 +569,7 @@ internal static class LogicalLineParser
             }
             catch (CodeEE)
             {
-                errMes = "解釈できない行です";
+                errMes = LocalizationManager.Error.CanNotInterpretedLine;
                 return new InvalidLine(position, errMes);
             }
             //eramaker互換警告

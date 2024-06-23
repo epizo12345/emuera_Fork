@@ -593,7 +593,7 @@ internal sealed partial class EmueraConsole : IDisposable
         if (inputReq.DisplayTime)
         {
             var remainingMs = inputReq.Timelimit - _genericTimerStopwatch.ElapsedMilliseconds;
-            PrintSingleLine($"残り {remainingMs} ms");
+            PrintSingleLine($"{LocalizationManager.SystemLine.Remaining} {remainingMs} ms");
         }
     }
     private void setTimer()
@@ -705,7 +705,7 @@ internal sealed partial class EmueraConsole : IDisposable
         if (state == ConsoleState.Running)
         {//RunningならProcessは処理を継続するべき
             state = ConsoleState.Error;
-            PrintError("emueraのエラー：プログラムの状態を特定できません");
+            PrintError(LocalizationManager.Error.ProgramStatusError);
         }
         if (state == ConsoleState.Error && !noOutputLog)
             OutputLog(Program.ExeDir + "emuera.log");
@@ -1001,7 +1001,7 @@ internal sealed partial class EmueraConsole : IDisposable
         catch (System.ComponentModel.Win32Exception)
         {
             System.Media.SystemSounds.Hand.Play();
-            PrintError("エディタを開くことができませんでした");
+            PrintError(LocalizationManager.Error.FailedOpenEditor);
             forceUpdateGeneration();
         }
         return;
@@ -1093,14 +1093,14 @@ internal sealed partial class EmueraConsole : IDisposable
     {
         if (genericTimer.Enabled)
         {
-            PrintError("タイマー系命令の待ち時間中はコマンドを入力できません");
+            PrintError(LocalizationManager.Error.CanNotInputTimerWait);
             PrintError("");//タイマー表示処理に消されちゃうかもしれないので
             RefreshStrings(true);
             return;
         }
         if (IsInProcess)
         {
-            PrintError("スクリプト実行中はコマンドを入力できません");
+            PrintError(LocalizationManager.Error.CanNotInputScriptRunning);
             RefreshStrings(true);
             return;
         }
@@ -1135,7 +1135,7 @@ internal sealed partial class EmueraConsole : IDisposable
         {
             if (!Program.DebugMode)
             {
-                PrintError("デバッグウインドウは-Debug引数付きで起動したときのみ使えます");
+                PrintError(LocalizationManager.Error.CanNotUseDebugWindow);
                 RefreshStrings(true);
                 return;
             }
@@ -1145,7 +1145,7 @@ internal sealed partial class EmueraConsole : IDisposable
         {
             if (!Config.UseDebugCommand)
             {
-                PrintError("デバッグコマンドを使用できない設定になっています");
+                PrintError(LocalizationManager.Error.CanNotUseDebugCommand);
                 RefreshStrings(true);
                 return;
             }
@@ -1449,11 +1449,11 @@ internal sealed partial class EmueraConsole : IDisposable
         //	return null;
         StringBuilder builder = new("");
         LogicalLine line = process.GetScaningLine();
-        builder.AppendLine("*実行中の行");
+        builder.AppendLine(LocalizationManager.SystemLine.Processing);
         if ((line == null) || (line.Position == null))
         {
-            builder.AppendLine("ファイル名:なし");
-            builder.AppendLine("行番号:なし 関数名:なし");
+            builder.AppendLine(LocalizationManager.SystemLine.FileNone);
+            builder.AppendLine(LocalizationManager.SystemLine.LineFuncNone);
             builder.AppendLine("");
         }
         else
@@ -1462,7 +1462,7 @@ internal sealed partial class EmueraConsole : IDisposable
             builder.AppendLine("行番号:" + line.Position.Value.LineNo.ToString() + " 関数名:" + line.ParentLabelLine.LabelName);
             builder.AppendLine("");
         }
-        builder.AppendLine("*スタックトレース");
+        builder.AppendLine(LocalizationManager.SystemLine.FuncCallStack);
         for (int i = dTraceLogList.Count - 1; i >= 0; i--)
         {
             builder.AppendLine(dTraceLogList[i]);
@@ -1576,10 +1576,10 @@ internal sealed partial class EmueraConsole : IDisposable
             if (line is InvalidLine)
                 throw new CodeEE(line.ErrMes);
             if (!(line is InstructionLine))
-                throw new CodeEE("デバッグコマンドで使用できるのは代入文か命令文だけです");
+                throw new CodeEE(LocalizationManager.Error.InvalidDebugCommand);
             InstructionLine func = (InstructionLine)line;
             if (func.Function.IsFlowContorol())
-                throw new CodeEE("フロー制御命令は使用できません");
+                throw new CodeEE(LocalizationManager.Error.CanNotUseFlowInstruction);
             //__METHOD_SAFE__をみるならいらないかも
             if (func.Function.IsWaitInput())
                 throw new CodeEE(func.Function.Name + "命令は使用できません");
@@ -1909,11 +1909,11 @@ internal sealed partial class EmueraConsole : IDisposable
         prevState = state;
         prevReq = inputReq;
         state = ConsoleState.Initializing;
-        PrintSingleLine("ERB再読み込み中……", true);
+        PrintSingleLine(LocalizationManager.SystemLine.ReloadingErb, true);
         force_temporary = true;
         await process.ReloadErbAll();
         force_temporary = false;
-        PrintSingleLine("再読み込み完了", true);
+        PrintSingleLine(LocalizationManager.SystemLine.ReloadCompleted, true);
         RefreshStrings(true);
         //強制的にボタン世代が切り替わるのを防ぐ
         updatedGeneration = true;
@@ -1960,11 +1960,11 @@ internal sealed partial class EmueraConsole : IDisposable
         prevState = state;
         prevReq = inputReq;
         state = ConsoleState.Initializing;
-        PrintSingleLine("ERB再読み込み中……", true);
+        PrintSingleLine(LocalizationManager.SystemLine.ReloadingErb, true);
         force_temporary = true;
         await process.ReloadPartialErb(path);
         force_temporary = false;
-        PrintSingleLine("再読み込み完了", true);
+        PrintSingleLine(LocalizationManager.SystemLine.ReloadCompleted, true);
         RefreshStrings(true);
         //強制的にボタン世代が切り替わるのを防ぐ
         updatedGeneration = true;
@@ -1998,11 +1998,11 @@ internal sealed partial class EmueraConsole : IDisposable
         prevState = state;
         prevReq = inputReq;
         state = ConsoleState.Initializing;
-        PrintSingleLine("ERB再読み込み中……", true);
+        PrintSingleLine(LocalizationManager.SystemLine.ReloadingErb, true);
         force_temporary = true;
         await process.ReloadErbFolder(erbPath);
         force_temporary = false;
-        PrintSingleLine("再読み込み完了", true);
+        PrintSingleLine(LocalizationManager.SystemLine.ReloadCompleted, true);
         RefreshStrings(true);
         //強制的にボタン世代が切り替わるのを防ぐ
         updatedGeneration = true;

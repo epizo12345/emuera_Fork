@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Text;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.UI.Game;
 
@@ -71,7 +72,7 @@ internal sealed class PrintStringBuffer
             if (builder.Length > 2000)
                 return;
             if (builder.Length + str.Length > 2000)
-                str = str[..(2000 - builder.Length)] + "※※※バッファーの文字数が2000字(全角1000字)を超えています。これ以降は表示できません※※※";
+                str = str[..(2000 - builder.Length)] + LocalizationManager.Error.BufferOverFlow;
             builder.Append(str);
             lastStringStyle = style;
         }

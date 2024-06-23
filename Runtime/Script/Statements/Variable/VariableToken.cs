@@ -6,6 +6,7 @@ using MinorShift.Emuera.Runtime.Script.Statements.Expression;
 using MinorShift.Emuera.Runtime.Script.Statements.Variable;
 using MinorShift.Emuera.Runtime.Utils;
 using MinorShift.Emuera.Sub;
+using MinorShift.Emuera.UI.Framework;
 using System;
 using System.Collections.Generic;
 
@@ -516,26 +517,26 @@ internal abstract class ReferenceToken : UserDefinedVariableToken
     {
         errMes = "";
         if (rother == null)
-        { errMes = "参照先変数は省略できません"; return false; }
+        { errMes = LocalizationManager.Error.CanNotOmitRefToVar; return false; }
         if (rother.IsCalc)
-        { errMes = "疑似変数は参照できません"; return false; }
+        { errMes = LocalizationManager.Error.CanNotRefPseudoVar; return false; }
         //TODO constの参照
         //if (rother.IsConst != this.isConst)
         if (rother.IsConst)
-        { errMes = "定数は参照できません"; return false; }
+        { errMes = LocalizationManager.Error.CanNotRefConstVar; return false; }
         //1812 ローカル参照の条件変更
         //ローカルかつDYNAMICなREFはローカル参照できる
         if ((!this.IsPrivate) && (rother.IsPrivate || rother.IsLocal))
-        { errMes = "広域の参照変数はローカル変数を参照できません"; return false; }
+        { errMes = LocalizationManager.Error.CanNotGlobalRefLocalVar; return false; }
         ////1810beta002 ローカル参照禁止
         //if ((!rother.IsReference) && (rother.IsPrivate || rother.IsLocal))
         //{ errMes = "ローカル変数は参照できません"; return false; }
         if (rother.IsCharacterData && !allowChara)
-        { errMes = "キャラ変数は参照できません"; return false; }
+        { errMes = LocalizationManager.Error.CanNotRefCharaVar; return false; }
         if (this.IsInteger != rother.IsInteger)
-        { errMes = "型が異なる変数は参照できません"; return false; }
+        { errMes = LocalizationManager.Error.CanNotRefDifferentType; return false; }
         if (this.Dimension != rother.Dimension)
-        { errMes = "次元数が異なる変数は参照できません"; return false; }
+        { errMes = LocalizationManager.Error.CanNotRefDifferentDim; return false; }
         return true;
     }
 }
