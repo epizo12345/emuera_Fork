@@ -1,4 +1,5 @@
 ﻿using System;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.Runtime.Utils;
 
@@ -73,11 +74,11 @@ internal sealed class IdentifierNotFoundCodeEE : CodeEE
 internal sealed class NotImplCodeEE : CodeEE
 {
     public NotImplCodeEE(ScriptPosition position)
-        : base("この機能は現バージョンでは使えません", position)
+        : base(LocalizationManager.Error.CanNotUseFuncCurrentVer, position)
     {
     }
     public NotImplCodeEE()
-        : base("この機能は現バージョンでは使えません")
+        : base(LocalizationManager.Error.CanNotUseFuncCurrentVer)
     {
     }
 }

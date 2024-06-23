@@ -4,6 +4,7 @@ using MinorShift.Emuera.Runtime.Script.Data;
 using MinorShift.Emuera.Runtime.Utils;
 using System;
 using System.Collections.Generic;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.Runtime.Script.Statements.Variable;
 
@@ -578,7 +579,7 @@ internal sealed class CharacterData : IDisposable
                 //        reader.ReadStrArray3D(dataStringArray3D[codeInt], true);
                 //    break;
                 default:
-                    throw new FileEE("データ異常");
+                    throw new FileEE(LocalizationManager.Error.AbnormalData);
             }
         }
     whilebreak:
@@ -710,7 +711,7 @@ internal sealed class CharacterData : IDisposable
                 int elem1 = (int)(elem64 >> 32);
                 int elem2 = (int)(elem64 & 0x7FFFFFFF);
                 if (elem1 < 0 || elem1 >= array.GetLength(0) || elem2 < 0 || elem2 >= array.GetLength(1))
-                    throw new CodeEE("ソートキーが配列外を参照しています");
+                    throw new CodeEE(LocalizationManager.Error.OoRSortKey);
                 temp_SortKey = array[elem1, elem2];
             }
             else if (sortkey.IsArray1D)
@@ -719,7 +720,7 @@ internal sealed class CharacterData : IDisposable
                     ? (string[])UserDefCVarDataList[token.ArrayIndex]
                     : dataStringArray[sortkey.CodeInt];
                 if (elem64 < 0 || elem64 >= array.Length)
-                    throw new CodeEE("ソートキーが配列外を参照しています");
+                    throw new CodeEE(LocalizationManager.Error.OoRSortKey);
                 if (array[(int)elem64] != null)
                     temp_SortKey = array[(int)elem64];
                 else
@@ -744,7 +745,7 @@ internal sealed class CharacterData : IDisposable
                 int elem1 = (int)(elem64 >> 32);
                 int elem2 = (int)(elem64 & 0x7FFFFFFF);
                 if (elem1 < 0 || elem1 >= array.GetLength(0) || elem2 < 0 || elem2 >= array.GetLength(1))
-                    throw new CodeEE("ソートキーが配列外を参照しています");
+                    throw new CodeEE(LocalizationManager.Error.OoRSortKey);
                 temp_SortKey = array[elem1, elem2];
             }
             else if (sortkey.IsArray1D)
@@ -753,7 +754,7 @@ internal sealed class CharacterData : IDisposable
                     ? (long[])UserDefCVarDataList[token.ArrayIndex]
                     : dataIntegerArray[sortkey.CodeInt];
                 if (elem64 < 0 || elem64 >= array.Length)
-                    throw new CodeEE("ソートキーが配列外を参照しています");
+                    throw new CodeEE(LocalizationManager.Error.OoRSortKey);
                 temp_SortKey = array[(int)elem64];
             }
             else

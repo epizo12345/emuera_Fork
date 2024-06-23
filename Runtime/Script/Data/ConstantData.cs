@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.Runtime.Script.Data;
 
@@ -207,9 +208,9 @@ internal sealed class ConstantData
         {
             System.Media.SystemSounds.Hand.Play();
             if (position != null)
-                ParserMediator.Warn("予期しないエラーが発生しました", position, 3);
+                ParserMediator.Warn(LocalizationManager.Error.UnexpectedError, position, 3);
             else
-                output.PrintError("予期しないエラーが発生しました");
+                output.PrintError(LocalizationManager.Error.UnexpectedError);
             return;
         }
         finally
@@ -257,12 +258,12 @@ internal sealed class ConstantData
         {
             if (length == 0)
             {
-                ParserMediator.Warn("配列長に0は指定できません（変数を使用禁止にするには配列長に負の値を指定してください）", position, 2);
+                ParserMediator.Warn(LocalizationManager.Error.ArrayLengthIs0, position, 2);
                 return;
             }
             if (!id.CanForbid)
             {
-                ParserMediator.Warn("使用禁止にできない変数に対して負の配列長が指定されています", position, 2);
+                ParserMediator.Warn(LocalizationManager.Error.CanNotDisableVarArrayLengthIsNegative, position, 2);
                 return;
             }
             if (tokens.Length > 2 && tokens[2].Length > 0 && tokens[2].Trim().Length > 0 && char.IsDigit(tokens[2].Trim()[0]))
@@ -280,17 +281,17 @@ internal sealed class ConstantData
             }
             if (id.IsLocal && length < 1)
             {
-                ParserMediator.Warn("ローカル変数のサイズを1未満にはできません", position, 1);
+                ParserMediator.Warn(LocalizationManager.Error.LocalVarSizeCanNotLessThan1, position, 1);
                 return;
             }
             if (!id.IsLocal && length < 100)
             {
-                ParserMediator.Warn("ローカル変数でない一次元配列のサイズを100未満にはできません", position, 1);
+                ParserMediator.Warn(LocalizationManager.Error.InternalVarSizeCanNotLessThan100, position, 1);
                 return;
             }
             if (length > 1000000)
             {
-                ParserMediator.Warn("一次元配列のサイズを1000000より大きくすることはできません", position, 1);
+                ParserMediator.Warn(LocalizationManager.Error.OneDVarSizeCanNotGreaterThan1M, position, 1);
                 return;
             }
         }
@@ -312,12 +313,12 @@ internal sealed class ConstantData
             }
             if (length < 1 || length2 < 1)
             {
-                ParserMediator.Warn("配列サイズを1未満にはできません", position, 1);
+                ParserMediator.Warn(LocalizationManager.Error.VarSizeCanNotLessThan1, position, 1);
                 return;
             }
             if (length > 1000000 || length2 > 1000000)
             {
-                ParserMediator.Warn("配列サイズを1000000より大きくすることはできません", position, 1);
+                ParserMediator.Warn(LocalizationManager.Error.VarSizeCanNotGreaterThan1M, position, 1);
                 return;
             }
             if (length * length2 > 1000000)
@@ -349,13 +350,13 @@ internal sealed class ConstantData
             }
             if (length < 1 || length2 < 1 || length3 < 1)
             {
-                ParserMediator.Warn("配列サイズを1未満にはできません", position, 1);
+                ParserMediator.Warn(LocalizationManager.Error.VarSizeCanNotLessThan1, position, 1);
                 return;
             }
             //1802 サイズ保存の都合上、2^20超えるとバグる
             if (length > 1000000 || length2 > 1000000 || length3 > 1000000)
             {
-                ParserMediator.Warn("配列サイズを1000000より大きくすることはできません", position, 1);
+                ParserMediator.Warn(LocalizationManager.Error.VarSizeCanNotGreaterThan1M, position, 1);
                 return;
             }
             if (length * length2 * length3 > 10000000)
@@ -522,7 +523,7 @@ internal sealed class ConstantData
                     if (CharacterIntArrayLength[(int)(VariableCode.__LOWERCASE__ & VariableCode.JUEL)] == palamJuelMax)
                         CharacterIntArrayLength[(int)(VariableCode.__LOWERCASE__ & VariableCode.JUEL)] = i;
                     //1803beta004 不適切な指定として警告Lv1の対象にする
-                    ParserMediator.Warn("PALAMとJUELとPALAMNAMEの要素数が不適切です", position, 1);
+                    ParserMediator.Warn(LocalizationManager.Error.InappropriatePalamJuelPalamname, position, 1);
                 }
             }
             else//PALAMNAMEの指定がないなら大きい方にPALAMNAMEをあわせる
@@ -536,7 +537,7 @@ internal sealed class ConstantData
             //指定のPALAMNAMEがJUELより小さければ警告出してJUELにあわせる
             if (MaxDataList[paramIndex] < CharacterIntArrayLength[(int)(VariableCode.__LOWERCASE__ & VariableCode.JUEL)])
             {
-                ParserMediator.Warn("PALAMNAMEの要素数がJUELより少なくなっています（JUELに合わせます）", position, 1);
+                ParserMediator.Warn(LocalizationManager.Error.PalamnameSizeLessThanJuelSize, position, 1);
                 MaxDataList[paramIndex] = CharacterIntArrayLength[(int)(VariableCode.__LOWERCASE__ & VariableCode.JUEL)];
             }
         }
@@ -551,7 +552,7 @@ internal sealed class ConstantData
         {
             //調整が面倒なので投げる
             if (length1 != MaxDataList[cdflag1Index] || length2 != MaxDataList[cdflag2Index])
-                throw new CodeEE("CDFLAGの要素数とCDFLAGNAME1及びCDFLAGNAME2の要素数が一致していません", position);
+                throw new CodeEE(LocalizationManager.Error.DoesNotMatchCdflagElements, position);
         }
         else if (cdflagNameLengthChanged && !changedCode.Contains(VariableCode.CDFLAG))
         {
@@ -560,7 +561,7 @@ internal sealed class ConstantData
             if (length1 * length2 > 1000000)
             {
                 //調整が面倒なので投げる
-                throw new CodeEE("CDFLAGの要素数が多すぎます（CDFLAGNAME1とCDFLAGNAME2の要素数の積が100万を超えています）", position);
+                throw new CodeEE(LocalizationManager.Error.TooManyCdflagElements, position);
             }
             CharacterIntArray2DLength[mainLengthIndex] = ((long)length1 << 32) + length2;
         }
@@ -682,7 +683,7 @@ internal sealed class ConstantData
     public int KeywordToInteger(VariableCode code, string key, int index)
     {
         if (string.IsNullOrEmpty(key))
-            throw new CodeEE("キーワードを空には出来ません");
+            throw new CodeEE(LocalizationManager.Error.KeywordsCannotBeEmpty);
         Dictionary<string, int> dic = GetKeywordDictionary(out string errPos, code, index);
         if (dic.TryGetValue(key, out int ret))
             return ret;
@@ -838,7 +839,7 @@ internal sealed class ConstantData
                     else if (index >= 0)
                         throw new CodeEE("配列変数" + code.ToString() + "の" + (index + 1).ToString() + "番目の要素を文字列で指定することはできません");
                     else
-                        throw new CodeEE("CDFLAGの要素の取得にはCDFLAGNAME1又はCDFLAGNAME2を使用します");
+                        throw new CodeEE(LocalizationManager.Error.UseCdflagname);
                     return ret;
                 }
             case VariableCode.STR:
@@ -1010,7 +1011,7 @@ internal sealed class ConstantData
                 {
                     if (tmpl != null)
                     {
-                        ParserMediator.Warn("番号が二重に定義されました", position, 1);
+                        ParserMediator.Warn(LocalizationManager.Error.CharaNoDefinedTwice, position, 1);
                         continue;
                     }
                     if (!long.TryParse(tokens[1].TrimEnd(), out index))
@@ -1039,7 +1040,7 @@ internal sealed class ConstantData
 
                 if (tmpl == null)
                 {
-                    ParserMediator.Warn("番号が定義される前に他のデータが始まりました", position, 1);
+                    ParserMediator.Warn(LocalizationManager.Error.StartedDataBeforeCharaNo, position, 1);
                     continue;
                 }
                 toCharacterTemplate(position, tmpl, tokens);
@@ -1051,9 +1052,9 @@ internal sealed class ConstantData
         {
             System.Media.SystemSounds.Hand.Play();
             if (position != null)
-                ParserMediator.Warn("予期しないエラーが発生しました", position, 3);
+                ParserMediator.Warn(LocalizationManager.Error.UnexpectedError, position, 3);
             else
-                output.PrintError("予期しないエラーが発生しました");
+                output.PrintError(LocalizationManager.Error.UnexpectedError);
             return;
         }
         finally
@@ -1214,7 +1215,7 @@ internal sealed class ConstantData
         }
         if (length < 0)
         {
-            ParserMediator.Warn("プログラムミス", position, 3);
+            ParserMediator.Warn(LocalizationManager.Error.ProgramError, position, 3);
             return;
         }
         if (length == 0)
@@ -1249,7 +1250,7 @@ internal sealed class ConstantData
             if (p1isNumeric)
                 ParserMediator.Warn(index.ToString() + "は配列の範囲外です", position, 1);
             else if (tokens[1].Length == 0)
-                ParserMediator.Warn("二つ目の識別子がありません", position, 1);
+                ParserMediator.Warn(LocalizationManager.Error.MissingSecondIdentifier, position, 1);
             else
                 ParserMediator.Warn("\"" + tokens[1] + "\"は解釈できない識別子です", position, 1);
             return;
@@ -1257,7 +1258,7 @@ internal sealed class ConstantData
         if (strArray != null)
         {
             if (tokens.Length < 3)
-                ParserMediator.Warn("三つ目の識別子がありません", position, 1);
+                ParserMediator.Warn(LocalizationManager.Error.MissingThirdIdentifier, position, 1);
             if (strArray.ContainsKey(index))
                 ParserMediator.Warn(varname + "の" + index.ToString() + "番目の要素は既に定義されています(上書きします)", position, 1);
             strArray[index] = tokens[2];
@@ -1306,12 +1307,12 @@ internal sealed class ConstantData
                 }
                 if (!int.TryParse(ros[dest[0]], out int index))
                 {
-                    ParserMediator.Warn("一つ目の値を整数値に変換できません", position, 1);
+                    ParserMediator.Warn(LocalizationManager.Error.FirstValueCanNotConvertToInt, position, 1);
                     continue;
                 }
                 if (target.Length == 0)
                 {
-                    ParserMediator.Warn("禁止設定された名前配列です", position, 2);
+                    ParserMediator.Warn(LocalizationManager.Error.ProhibitedArrayName, position, 2);
                     break;
                 }
                 if (index < 0 || target.Length <= index)
@@ -1327,7 +1328,7 @@ internal sealed class ConstantData
 
                     if (!long.TryParse(ros[dest[2]].TrimEnd(), out long price))
                     {
-                        ParserMediator.Warn("金額が読み取れません", position, 1);
+                        ParserMediator.Warn(LocalizationManager.Error.CanNotReadAmountOfMoney, position, 1);
                         continue;
                     }
 
@@ -1339,9 +1340,9 @@ internal sealed class ConstantData
         {
             System.Media.SystemSounds.Hand.Play();
             if (position != null)
-                ParserMediator.Warn("予期しないエラーが発生しました", position, 3);
+                ParserMediator.Warn(LocalizationManager.Error.UnexpectedError, position, 3);
             else
-                output.PrintError("予期しないエラーが発生しました");
+                output.PrintError(LocalizationManager.Error.UnexpectedError);
             return;
         }
         finally
@@ -1389,7 +1390,7 @@ internal sealed class CharacterTemplate
             case CharacterStrData.CSTR:
                 return cstrSize;
             default:
-                throw new CodeEE("存在しないキーを参照しました");
+                throw new CodeEE(LocalizationManager.Error.NotExistKey);
         }
     }
 
@@ -1420,7 +1421,7 @@ internal sealed class CharacterTemplate
             case CharacterIntData.JUEL:
                 return arraySize[(int)(VariableCode.__LOWERCASE__ & VariableCode.JUEL)];
             default:
-                throw new CodeEE("存在しないキーを参照しました");
+                throw new CodeEE(LocalizationManager.Error.NotExistKey);
         }
     }
 

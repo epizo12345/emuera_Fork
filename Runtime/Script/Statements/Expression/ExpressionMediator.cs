@@ -7,6 +7,7 @@ using MinorShift.Emuera.Runtime.Script.Statements.Variable;
 using MinorShift.Emuera.Runtime.Utils;
 using System;
 using System.Text;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.Runtime.Script.Statements.Expression;
 
@@ -34,7 +35,7 @@ internal sealed class ExpressionMediator
     public void ForceKana(long flag)
     {
         if (flag < 0 || flag > 3)
-            throw new CodeEE("命令FORCEKANAの引数が指定可能な範囲(0～3)を超えています");
+            throw new CodeEE(LocalizationManager.Error.OoRForcekanaArg);
         forceKatakana = flag == 1;
         forceHiragana = flag > 1;
         halftoFull = flag == 3;
@@ -119,11 +120,11 @@ internal sealed class ExpressionMediator
     public static string CreateBar(long var, long max, long length)
     {
         if (max <= 0)
-            throw new CodeEE("BARの最大値が正の値ではありません");
+            throw new CodeEE(LocalizationManager.Error.MaxBarNotPositive);
         if (length <= 0)
-            throw new CodeEE("BARの長さが正の値ではありません");
+            throw new CodeEE(LocalizationManager.Error.BarNotPositive);
         if (length >= 100)//暴走を防ぐため。
-            throw new CodeEE("BARが長すぎます");
+            throw new CodeEE(LocalizationManager.Error.TooLongBar);
         StringBuilder builder = new();
         builder.Append('[');
         int count;

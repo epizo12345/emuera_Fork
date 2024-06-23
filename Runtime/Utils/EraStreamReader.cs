@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.Sub;
 
@@ -106,11 +107,11 @@ internal sealed partial class EraStreamReader : IDisposable
             if (!disabled)
             {
                 if (st.Current == '}')
-                    throw new CodeEE("予期しない行連結終端記号'}'が見つかりました", new ScriptPosition(filename, curNo));
+                    throw new CodeEE(LocalizationManager.Error.UnexpectedContinuationEnd, new ScriptPosition(filename, curNo));
                 if (st.Current == '{')
                 {
                     if (line.Trim() != "{")
-                        throw new CodeEE("行連結始端記号'{'の行に'{'以外の文字を含めることはできません", new ScriptPosition(filename, curNo));
+                        throw new CodeEE(LocalizationManager.Error.CharacterAfterContinuation, new ScriptPosition(filename, curNo));
                     break;
                 }
             }
@@ -123,7 +124,7 @@ internal sealed partial class EraStreamReader : IDisposable
             line = ReadLine();
             if (line == null)
             {
-                throw new CodeEE("行連結始端記号'{'が使われましたが終端記号'}'が見つかりません", new ScriptPosition(filename, curNo));
+                throw new CodeEE(LocalizationManager.Error.NotCloseLineContinuation, new ScriptPosition(filename, curNo));
             }
 
             if (useRename)
@@ -136,7 +137,7 @@ internal sealed partial class EraStreamReader : IDisposable
                 if (test[0] == '}')
                 {
                     if (!test.TrimEnd().SequenceEqual("}"))
-                        throw new CodeEE("行連結終端記号'}'の行に'}'以外の文字を含めることはできません", new ScriptPosition(filename, curNo));
+                        throw new CodeEE(LocalizationManager.Error.CharacterAfterContinuationEnd, new ScriptPosition(filename, curNo));
                     break;
                 }
                 //行連結文字なら1字でないとおかしい、というか、こうしないとFORMの数値変数処理が誤爆する。
@@ -144,7 +145,7 @@ internal sealed partial class EraStreamReader : IDisposable
                 //A}
                 //みたいなどうしようもないコードは知ったこっちゃない
                 if (test.SequenceEqual("{"))
-                    throw new CodeEE("予期しない行連結始端記号'{'が見つかりました", new ScriptPosition(filename, curNo));
+                    throw new CodeEE(LocalizationManager.Error.UnexpectedContinuation, new ScriptPosition(filename, curNo));
             }
             b.Append(line);
             b.Append(' ');

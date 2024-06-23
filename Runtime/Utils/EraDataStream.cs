@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.Runtime.Utils;
 
@@ -53,22 +54,22 @@ internal sealed class EraDataReader : IDisposable
     public string ReadString()
     {
         if (reader == null)
-            throw new FileEE("無効なストリームです");
+            throw new FileEE(LocalizationManager.Error.InvalidStream);
         string str = reader.ReadLine();
         if (str == null)
-            throw new FileEE("読み取るべき文字列がありません");
+            throw new FileEE(LocalizationManager.Error.NoStrToRead);
         return str;
     }
 
     public long ReadInt64()
     {
         if (reader == null)
-            throw new FileEE("無効なストリームです");
+            throw new FileEE(LocalizationManager.Error.InvalidStream);
         string str = reader.ReadLine();
         if (str == null)
-            throw new FileEE("読み取るべき数値がありません");
+            throw new FileEE(LocalizationManager.Error.NoNumToRead);
         if (!long.TryParse(str, out long ret))
-            throw new FileEE("数値として認識できません");
+            throw new FileEE(LocalizationManager.Error.CanNotInterpretNum);
         return ret;
     }
 
@@ -76,9 +77,9 @@ internal sealed class EraDataReader : IDisposable
     public void ReadInt64Array(long[] array)
     {
         if (reader == null)
-            throw new FileEE("無効なストリームです");
+            throw new FileEE(LocalizationManager.Error.InvalidStream);
         if (array == null)
-            throw new FileEE("無効な配列が渡されました");
+            throw new FileEE(LocalizationManager.Error.InvalidArray);
         int i = -1;
         string str;
         while (true)
@@ -86,13 +87,13 @@ internal sealed class EraDataReader : IDisposable
             i++;
             str = reader.ReadLine();
             if (str == null)
-                throw new FileEE("予期しないセーブデータの終端です");
+                throw new FileEE(LocalizationManager.Error.UnexpectedSaveDataEnd);
             if (str.Equals(FINISHER, StringComparison.Ordinal))
                 break;
             if (i >= array.Length)//配列を超えて保存されていても動じないで読み飛ばす。
                 continue;
             if (!long.TryParse(str, out long integer))
-                throw new FileEE("数値として認識できません");
+                throw new FileEE(LocalizationManager.Error.CanNotInterpretNum);
             array[i] = integer;
         }
         for (; i < array.Length; i++)//保存されている値が無いなら0に初期化
@@ -102,9 +103,9 @@ internal sealed class EraDataReader : IDisposable
     public void ReadStringArray(string[] array)
     {
         if (reader == null)
-            throw new FileEE("無効なストリームです");
+            throw new FileEE(LocalizationManager.Error.InvalidStream);
         if (array == null)
-            throw new FileEE("無効な配列が渡されました");
+            throw new FileEE(LocalizationManager.Error.InvalidArray);
         int i = -1;
         string str;
         while (true)
@@ -112,7 +113,7 @@ internal sealed class EraDataReader : IDisposable
             i++;
             str = reader.ReadLine();
             if (str == null)
-                throw new FileEE("予期しないセーブデータの終端です");
+                throw new FileEE(LocalizationManager.Error.UnexpectedSaveDataEnd);
             if (str.Equals(FINISHER, StringComparison.Ordinal))
                 break;
             if (i >= array.Length)//配列を超えて保存されていても動じないで読み飛ばす。
@@ -130,7 +131,7 @@ internal sealed class EraDataReader : IDisposable
     {
 
         if (reader == null)
-            throw new FileEE("無効なストリームです");
+            throw new FileEE(LocalizationManager.Error.InvalidStream);
         if (reader.EndOfStream)
             return false;
         while (true)
@@ -169,21 +170,21 @@ internal sealed class EraDataReader : IDisposable
     public Dictionary<string, string> ReadStringExtended()
     {
         if (reader == null)
-            throw new FileEE("無効なストリームです");
+            throw new FileEE(LocalizationManager.Error.InvalidStream);
         Dictionary<string, string> strList = [];
         string str;
         while (true)
         {
             str = reader.ReadLine();
             if (str == null)
-                throw new FileEE("予期しないセーブデータの終端です");
+                throw new FileEE(LocalizationManager.Error.UnexpectedSaveDataEnd);
             if (str.Equals(FINISHER, StringComparison.Ordinal))
-                throw new FileEE("セーブデータの形式が不正です");
+                throw new FileEE(LocalizationManager.Error.InvalidSaveDataFormat);
             if (str.Equals(EMU_SEPARATOR, StringComparison.Ordinal))
                 break;
             int index = str.IndexOf(':');
             if (index < 0)
-                throw new FileEE("セーブデータの形式が不正です");
+                throw new FileEE(LocalizationManager.Error.InvalidSaveDataFormat);
             string key = str[..index];
             string value = str.Substring(index + 1, str.Length - index - 1);
             strList.TryAdd(key, value);
@@ -193,25 +194,25 @@ internal sealed class EraDataReader : IDisposable
     public Dictionary<string, long> ReadInt64Extended()
     {
         if (reader == null)
-            throw new FileEE("無効なストリームです");
+            throw new FileEE(LocalizationManager.Error.InvalidStream);
         Dictionary<string, long> intList = [];
         string str;
         while (true)
         {
             str = reader.ReadLine();
             if (str == null)
-                throw new FileEE("予期しないセーブデータの終端です");
+                throw new FileEE(LocalizationManager.Error.UnexpectedSaveDataEnd);
             if (str.Equals(FINISHER, StringComparison.Ordinal))
-                throw new FileEE("セーブデータの形式が不正です");
+                throw new FileEE(LocalizationManager.Error.InvalidSaveDataFormat);
             if (str.Equals(EMU_SEPARATOR, StringComparison.Ordinal))
                 break;
             int index = str.IndexOf(':');
             if (index < 0)
-                throw new FileEE("セーブデータの形式が不正です");
+                throw new FileEE(LocalizationManager.Error.InvalidSaveDataFormat);
             string key = str[..index];
             string valueStr = str.Substring(index + 1, str.Length - index - 1);
             if (!long.TryParse(valueStr, out long value))
-                throw new FileEE("数値として認識できません");
+                throw new FileEE(LocalizationManager.Error.CanNotInterpretNum);
             intList.TryAdd(key, value);
         }
         return intList;
@@ -220,16 +221,16 @@ internal sealed class EraDataReader : IDisposable
     public Dictionary<string, List<long>> ReadInt64ArrayExtended()
     {
         if (reader == null)
-            throw new FileEE("無効なストリームです");
+            throw new FileEE(LocalizationManager.Error.InvalidStream);
         Dictionary<string, List<long>> ret = [];
         string str;
         while (true)
         {
             str = reader.ReadLine();
             if (str == null)
-                throw new FileEE("予期しないセーブデータの終端です");
+                throw new FileEE(LocalizationManager.Error.UnexpectedSaveDataEnd);
             if (str.Equals(FINISHER, StringComparison.Ordinal))
-                throw new FileEE("セーブデータの形式が不正です");
+                throw new FileEE(LocalizationManager.Error.InvalidSaveDataFormat);
             if (str.Equals(EMU_SEPARATOR, StringComparison.Ordinal))
                 break;
             string key = str;
@@ -238,13 +239,13 @@ internal sealed class EraDataReader : IDisposable
             {
                 str = reader.ReadLine();
                 if (str == null)
-                    throw new FileEE("予期しないセーブデータの終端です");
+                    throw new FileEE(LocalizationManager.Error.UnexpectedSaveDataEnd);
                 if (str.Equals(EMU_SEPARATOR, StringComparison.Ordinal))
-                    throw new FileEE("セーブデータの形式が不正です");
+                    throw new FileEE(LocalizationManager.Error.InvalidSaveDataFormat);
                 if (str.Equals(FINISHER, StringComparison.Ordinal))
                     break;
                 if (!long.TryParse(str, out long value))
-                    throw new FileEE("数値として認識できません");
+                    throw new FileEE(LocalizationManager.Error.CanNotInterpretNum);
                 valueList.Add(value);
             }
             ret.TryAdd(key, valueList);
@@ -255,16 +256,16 @@ internal sealed class EraDataReader : IDisposable
     public Dictionary<string, List<string>> ReadStringArrayExtended()
     {
         if (reader == null)
-            throw new FileEE("無効なストリームです");
+            throw new FileEE(LocalizationManager.Error.InvalidStream);
         Dictionary<string, List<string>> ret = [];
         string str;
         while (true)
         {
             str = reader.ReadLine();
             if (str == null)
-                throw new FileEE("予期しないセーブデータの終端です");
+                throw new FileEE(LocalizationManager.Error.UnexpectedSaveDataEnd);
             if (str.Equals(FINISHER, StringComparison.Ordinal))
-                throw new FileEE("セーブデータの形式が不正です");
+                throw new FileEE(LocalizationManager.Error.InvalidSaveDataFormat);
             if (str.Equals(EMU_SEPARATOR, StringComparison.Ordinal))
                 break;
             string key = str;
@@ -273,9 +274,9 @@ internal sealed class EraDataReader : IDisposable
             {
                 str = reader.ReadLine();
                 if (str == null)
-                    throw new FileEE("予期しないセーブデータの終端です");
+                    throw new FileEE(LocalizationManager.Error.UnexpectedSaveDataEnd);
                 if (str.Equals(EMU_SEPARATOR, StringComparison.Ordinal))
-                    throw new FileEE("セーブデータの形式が不正です");
+                    throw new FileEE(LocalizationManager.Error.InvalidSaveDataFormat);
                 if (str.Equals(FINISHER, StringComparison.Ordinal))
                     break;
                 valueList.Add(str);
@@ -288,7 +289,7 @@ internal sealed class EraDataReader : IDisposable
     public Dictionary<string, List<long[]>> ReadInt64Array2DExtended()
     {
         if (reader == null)
-            throw new FileEE("無効なストリームです");
+            throw new FileEE(LocalizationManager.Error.InvalidStream);
         Dictionary<string, List<long[]>> ret = [];
         if (emu_version < 1708)
             return ret;
@@ -297,9 +298,9 @@ internal sealed class EraDataReader : IDisposable
         {
             str = reader.ReadLine();
             if (str == null)
-                throw new FileEE("予期しないセーブデータの終端です");
+                throw new FileEE(LocalizationManager.Error.UnexpectedSaveDataEnd);
             if (str.Equals(FINISHER, StringComparison.Ordinal))
-                throw new FileEE("セーブデータの形式が不正です");
+                throw new FileEE(LocalizationManager.Error.InvalidSaveDataFormat);
             if (str.Equals(EMU_SEPARATOR, StringComparison.Ordinal))
                 break;
             string key = str;
@@ -308,9 +309,9 @@ internal sealed class EraDataReader : IDisposable
             {
                 str = reader.ReadLine();
                 if (str == null)
-                    throw new FileEE("予期しないセーブデータの終端です");
+                    throw new FileEE(LocalizationManager.Error.UnexpectedSaveDataEnd);
                 if (str.Equals(EMU_SEPARATOR, StringComparison.Ordinal))
-                    throw new FileEE("セーブデータの形式が不正です");
+                    throw new FileEE(LocalizationManager.Error.InvalidSaveDataFormat);
                 if (str.Equals(FINISHER, StringComparison.Ordinal))
                     break;
                 if (str.Length == 0)
@@ -334,7 +335,7 @@ internal sealed class EraDataReader : IDisposable
     public Dictionary<string, List<string[]>> ReadStringArray2DExtended()
     {
         if (reader == null)
-            throw new FileEE("無効なストリームです");
+            throw new FileEE(LocalizationManager.Error.InvalidStream);
         Dictionary<string, List<string[]>> ret = [];
         if (emu_version < 1708)
             return ret;
@@ -343,12 +344,12 @@ internal sealed class EraDataReader : IDisposable
         {
             str = reader.ReadLine();
             if (str == null)
-                throw new FileEE("予期しないセーブデータの終端です");
+                throw new FileEE(LocalizationManager.Error.UnexpectedSaveDataEnd);
             if (str.Equals(FINISHER, StringComparison.Ordinal))
-                throw new FileEE("セーブデータの形式が不正です");
+                throw new FileEE(LocalizationManager.Error.InvalidSaveDataFormat);
             if (str.Equals(EMU_SEPARATOR, StringComparison.Ordinal))
                 break;
-            throw new FileEE("StringArray2Dのロードには対応していません");
+            throw new FileEE(LocalizationManager.Error.NotSupportStringArray2D);
         }
         return ret;
     }
@@ -356,7 +357,7 @@ internal sealed class EraDataReader : IDisposable
     public Dictionary<string, List<List<long[]>>> ReadInt64Array3DExtended()
     {
         if (reader == null)
-            throw new FileEE("無効なストリームです");
+            throw new FileEE(LocalizationManager.Error.InvalidStream);
         Dictionary<string, List<List<long[]>>> ret = [];
         if (emu_version < 1729)
             return ret;
@@ -365,9 +366,9 @@ internal sealed class EraDataReader : IDisposable
         {
             str = reader.ReadLine();
             if (str == null)
-                throw new FileEE("予期しないセーブデータの終端です");
+                throw new FileEE(LocalizationManager.Error.UnexpectedSaveDataEnd);
             if (str.Equals(FINISHER, StringComparison.Ordinal))
-                throw new FileEE("セーブデータの形式が不正です");
+                throw new FileEE(LocalizationManager.Error.InvalidSaveDataFormat);
             if (str.Equals(EMU_SEPARATOR, StringComparison.Ordinal))
                 break;
             string key = str;
@@ -376,9 +377,9 @@ internal sealed class EraDataReader : IDisposable
             {
                 str = reader.ReadLine();
                 if (str == null)
-                    throw new FileEE("予期しないセーブデータの終端です");
+                    throw new FileEE(LocalizationManager.Error.UnexpectedSaveDataEnd);
                 if (str.Equals(EMU_SEPARATOR, StringComparison.Ordinal))
-                    throw new FileEE("セーブデータの形式が不正です");
+                    throw new FileEE(LocalizationManager.Error.InvalidSaveDataFormat);
                 if (str.Equals(FINISHER, StringComparison.Ordinal))
                     break;
                 if (str.Contains('{'))
@@ -413,7 +414,7 @@ internal sealed class EraDataReader : IDisposable
     public Dictionary<string, List<List<string[]>>> ReadStringArray3DExtended()
     {
         if (reader == null)
-            throw new FileEE("無効なストリームです");
+            throw new FileEE(LocalizationManager.Error.InvalidStream);
         Dictionary<string, List<List<string[]>>> ret = [];
         if (emu_version < 1729)
             return ret;
@@ -422,12 +423,12 @@ internal sealed class EraDataReader : IDisposable
         {
             str = reader.ReadLine();
             if (str == null)
-                throw new FileEE("予期しないセーブデータの終端です");
+                throw new FileEE(LocalizationManager.Error.UnexpectedSaveDataEnd);
             if (str.Equals(FINISHER, StringComparison.Ordinal))
-                throw new FileEE("セーブデータの形式が不正です");
+                throw new FileEE(LocalizationManager.Error.InvalidSaveDataFormat);
             if (str.Equals(EMU_SEPARATOR, StringComparison.Ordinal))
                 break;
-            throw new FileEE("StringArray2Dのロードには対応していません");
+            throw new FileEE(LocalizationManager.Error.NotSupportStringArray2D);
         }
         return ret;
     }
@@ -479,7 +480,7 @@ internal sealed class EraDataWriter : IDisposable
     public void Write(long integer)
     {
         if (writer == null)
-            throw new FileEE("無効なストリームです");
+            throw new FileEE(LocalizationManager.Error.InvalidStream);
         writer.WriteLine(integer.ToString());
     }
 
@@ -487,7 +488,7 @@ internal sealed class EraDataWriter : IDisposable
     public void Write(string str)
     {
         if (writer == null)
-            throw new FileEE("無効なストリームです");
+            throw new FileEE(LocalizationManager.Error.InvalidStream);
         if (str == null)
             writer.WriteLine("");
         else
@@ -497,9 +498,9 @@ internal sealed class EraDataWriter : IDisposable
     public void Write(long[] array)
     {
         if (writer == null)
-            throw new FileEE("無効なストリームです");
+            throw new FileEE(LocalizationManager.Error.InvalidStream);
         if (array == null)
-            throw new FileEE("無効な配列が渡されました");
+            throw new FileEE(LocalizationManager.Error.InvalidArray);
         int count = -1;
         for (int i = 0; i < array.Length; i++)
             if (array[i] != 0)
@@ -512,9 +513,9 @@ internal sealed class EraDataWriter : IDisposable
     public void Write(string[] array)
     {
         if (writer == null)
-            throw new FileEE("無効なストリームです");
+            throw new FileEE(LocalizationManager.Error.InvalidStream);
         if (array == null)
-            throw new FileEE("無効な配列が渡されました");
+            throw new FileEE(LocalizationManager.Error.InvalidArray);
         int count = -1;
         for (int i = 0; i < array.Length; i++)
             if (!string.IsNullOrEmpty(array[i]))
@@ -535,20 +536,20 @@ internal sealed class EraDataWriter : IDisposable
     public void EmuStart()
     {
         if (writer == null)
-            throw new FileEE("無効なストリームです");
+            throw new FileEE(LocalizationManager.Error.InvalidStream);
         writer.WriteLine(EMU_START);
     }
     public void EmuSeparete()
     {
         if (writer == null)
-            throw new FileEE("無効なストリームです");
+            throw new FileEE(LocalizationManager.Error.InvalidStream);
         writer.WriteLine(EMU_SEPARATOR);
     }
 
     public void WriteExtended(string key, long value)
     {
         if (writer == null)
-            throw new FileEE("無効なストリームです");
+            throw new FileEE(LocalizationManager.Error.InvalidStream);
         if (value == 0)
             return;
         writer.WriteLine(string.Format("{0}:{1}", key, value));
@@ -557,7 +558,7 @@ internal sealed class EraDataWriter : IDisposable
     public void WriteExtended(string key, string value)
     {
         if (writer == null)
-            throw new FileEE("無効なストリームです");
+            throw new FileEE(LocalizationManager.Error.InvalidStream);
         if (string.IsNullOrEmpty(value))
             return;
         writer.WriteLine(string.Format("{0}:{1}", key, value));
@@ -567,9 +568,9 @@ internal sealed class EraDataWriter : IDisposable
     public void WriteExtended(string key, long[] array)
     {
         if (writer == null)
-            throw new FileEE("無効なストリームです");
+            throw new FileEE(LocalizationManager.Error.InvalidStream);
         if (array == null)
-            throw new FileEE("無効な配列が渡されました");
+            throw new FileEE(LocalizationManager.Error.InvalidArray);
         int count = -1;
         for (int i = 0; i < array.Length; i++)
             if (array[i] != 0)
@@ -585,9 +586,9 @@ internal sealed class EraDataWriter : IDisposable
     public void WriteExtended(string key, string[] array)
     {
         if (writer == null)
-            throw new FileEE("無効なストリームです");
+            throw new FileEE(LocalizationManager.Error.InvalidStream);
         if (array == null)
-            throw new FileEE("無効な配列が渡されました");
+            throw new FileEE(LocalizationManager.Error.InvalidArray);
         int count = -1;
         for (int i = 0; i < array.Length; i++)
             if (!string.IsNullOrEmpty(array[i]))
@@ -609,9 +610,9 @@ internal sealed class EraDataWriter : IDisposable
     public void WriteExtended(string key, long[,] array2D)
     {
         if (writer == null)
-            throw new FileEE("無効なストリームです");
+            throw new FileEE(LocalizationManager.Error.InvalidStream);
         if (array2D == null)
-            throw new FileEE("無効な配列が渡されました");
+            throw new FileEE(LocalizationManager.Error.InvalidArray);
         int countX = 0;
         int length0 = array2D.GetLength(0);
         int length1 = array2D.GetLength(1);
@@ -657,9 +658,9 @@ internal sealed class EraDataWriter : IDisposable
     public void WriteExtended(string key, long[,,] array3D)
     {
         if (writer == null)
-            throw new FileEE("無効なストリームです");
+            throw new FileEE(LocalizationManager.Error.InvalidStream);
         if (array3D == null)
-            throw new FileEE("無効な配列が渡されました");
+            throw new FileEE(LocalizationManager.Error.InvalidArray);
         int countX = 0;
         int length0 = array3D.GetLength(0);
         int length1 = array3D.GetLength(1);

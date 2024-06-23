@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.Runtime.Script.Data;
 
@@ -114,7 +115,7 @@ internal sealed class StrForm
                 if (SWT is CurlyBraceSubWord)
                     throw new CodeEE("{}の中に式が存在しません");
                 else
-                    throw new CodeEE("%%の中に式が存在しません");
+                    throw new CodeEE(LocalizationManager.Error.EmptyPer);
             }
             AExpression second = null;
             SingleTerm third = null;
@@ -127,15 +128,15 @@ internal sealed class StrForm
                 if (!wc.EOL)
                 {
                     if (wc.Current is not IdentifierWord id)
-                        throw new CodeEE("','の後にRIGHT又はLEFTがありません");
+                        throw new CodeEE(LocalizationManager.Error.NotSpecifiedLR);
                     if (string.Equals(id.Code, "LEFT", Config.Config.StringComparison))//標準RIGHT
                         third = new SingleLongTerm(1);
                     else if (!string.Equals(id.Code, "RIGHT", Config.Config.StringComparison))
-                        throw new CodeEE("','の後にRIGHT又はLEFT以外の単語があります");
+                        throw new CodeEE(LocalizationManager.Error.OtherThanLR);
                     wc.ShiftNext();
                 }
                 if (!wc.EOL)
-                    throw new CodeEE("RIGHT又はLEFTの後に余分な文字があります");
+                    throw new CodeEE(LocalizationManager.Error.ExtraCharacterLR);
             }
             if (SWT is CurlyBraceSubWord)
             {
@@ -145,7 +146,7 @@ internal sealed class StrForm
                 continue;
             }
             if (operand.GetOperandType() != typeof(string))
-                throw new CodeEE("%%の中の式が文字列式ではありません");
+                throw new CodeEE(LocalizationManager.Error.IsNotStringPer);
             termArray[i] = new FunctionMethodTerm(formatPercent, [operand, second, third]);
         }
         ret.terms = termArray;

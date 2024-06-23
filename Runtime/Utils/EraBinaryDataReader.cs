@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.Runtime.Utils;
 
@@ -159,7 +160,7 @@ internal abstract class EraBinaryDataReader : IDisposable
             byte type = reader.ReadByte();
             if (type >= 0 && type <= 3)
                 return (EraSaveFileType)type;
-            throw new FileEE("ファイルデータ型異常");
+            throw new FileEE(LocalizationManager.Error.AbnormalFileData);
         }
 
         private long m_ReadInt()
@@ -173,7 +174,7 @@ internal abstract class EraBinaryDataReader : IDisposable
                 return reader.ReadInt32();
             if (b == Ebdb.Int64)
                 return reader.ReadInt64();
-            throw new FileEE("バイナリデータの異常");
+            throw new FileEE(LocalizationManager.Error.AbnormalBinaryData);
         }
 
         public override long ReadInt64()
@@ -245,7 +246,7 @@ internal abstract class EraBinaryDataReader : IDisposable
                 else if (b == Ebdb.Int64)
                     refArray[x] = reader.ReadInt64();
                 else
-                    throw new FileEE("バイナリデータの異常");
+                    throw new FileEE(LocalizationManager.Error.AbnormalBinaryData);
                 x++;
             }
             if (needInit)
@@ -325,7 +326,7 @@ internal abstract class EraBinaryDataReader : IDisposable
                 else if (b == Ebdb.Int64)
                     refArray[x, y] = reader.ReadInt64();
                 else
-                    throw new FileEE("バイナリデータの異常");
+                    throw new FileEE(LocalizationManager.Error.AbnormalBinaryData);
                 y++;
             }
             if (needInit)
@@ -451,7 +452,7 @@ internal abstract class EraBinaryDataReader : IDisposable
                 else if (b == Ebdb.Int64)
                     refArray[x, y, z] = reader.ReadInt64();
                 else
-                    throw new FileEE("バイナリデータの異常");
+                    throw new FileEE(LocalizationManager.Error.AbnormalBinaryData);
                 z++;
             }
             if (needInit)
@@ -514,7 +515,7 @@ internal abstract class EraBinaryDataReader : IDisposable
                 if (b == Ebdb.String)
                     refArray[x] = ReadString();
                 else
-                    throw new FileEE("バイナリデータの異常");
+                    throw new FileEE(LocalizationManager.Error.AbnormalBinaryData);
                 x++;
             }
             if (needInit)
@@ -588,7 +589,7 @@ internal abstract class EraBinaryDataReader : IDisposable
                 if (b == Ebdb.String)
                     refArray[x, y] = ReadString();
                 else
-                    throw new FileEE("バイナリデータの異常");
+                    throw new FileEE(LocalizationManager.Error.AbnormalBinaryData);
                 y++;
             }
             if (needInit)
@@ -703,7 +704,7 @@ internal abstract class EraBinaryDataReader : IDisposable
                 if (b == Ebdb.String)
                     refArray[x, y, z] = ReadString();
                 else
-                    throw new FileEE("バイナリデータの異常");
+                    throw new FileEE(LocalizationManager.Error.AbnormalBinaryData);
                 z++;
             }
             if (needInit)

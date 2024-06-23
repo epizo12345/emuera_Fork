@@ -6,6 +6,7 @@ using MinorShift.Emuera.Runtime.Utils;
 using MinorShift.Emuera.Sub;
 using System;
 using System.Collections.Generic;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.Runtime.Script;
 
@@ -439,7 +440,7 @@ internal sealed class ProcessState
             foreach (CalledFunction called in functionList)
             {
                 if (called.IsEvent)
-                    throw new CodeEE("EVENT関数の解決前にCALLEVENT命令が行われました");
+                    throw new CodeEE(LocalizationManager.Error.CalleventBeforeFinishEvent);
             }
         }
         if (Program.DebugMode)

@@ -10,6 +10,7 @@ using MinorShift.Emuera.UI.Game;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.GameProc;
 
@@ -46,9 +47,9 @@ internal sealed partial class Process
                 {
                     if (userDefinedSkip && func.Function.IsInput())
                     {
-                        console.PrintError("表示スキップ中にデフォルト値を持たないINPUTに遭遇しました");
-                        console.PrintError("INPUTに必要な処理をNOSKIP～ENDNOSKIPで囲むか、SKIPDISP 0～SKIPDISP 1で囲ってください");
-                        throw new CodeEE("無限ループに入る可能性が高いため実行を終了します");
+                        console.PrintError(LocalizationManager.Error.SkipdispInputError1);
+                        console.PrintError(LocalizationManager.Error.SkipdispInputError2);
+                        throw new CodeEE(LocalizationManager.Error.SkipdispInputError3);
                     }
                     continue;
                 }
@@ -76,7 +77,7 @@ internal sealed partial class Process
             else if (line is InvalidLine)
             {
                 if (string.IsNullOrEmpty(line.ErrMes))
-                    throw new CodeEE("読込に失敗した行が実行されました。エラーの詳細は読込時の警告を参照してください。");
+                    throw new CodeEE(LocalizationManager.Error.DoFailedLine);
                 else
                     throw new CodeEE(line.ErrMes);
             }
@@ -279,7 +280,7 @@ internal sealed partial class Process
                 {
                     //デバッグコマンドなら通す
                     if ((func.ParentLabelLine != null) && (func.ParentLabelLine.LabelName != "SYSTEM_TITLE"))
-                        throw new CodeEE("@SYSTEM_TITLE以外でこの命令を使うことはできません");
+                        throw new CodeEE(LocalizationManager.Error.CanNotUseOutsideSystemtitle);
                     vEvaluator.AddCharacterFromCsvNo(0);
                     if (GlobalStatic.GameBaseData.DefaultCharacter > 0)
                         vEvaluator.AddCharacterFromCsvNo(GlobalStatic.GameBaseData.DefaultCharacter);
@@ -316,10 +317,10 @@ internal sealed partial class Process
                         throw new CodeEE("SAVEDATAの引数(" + target.ToString() + ")が大きすぎます");
                     string savemes = spSavedataArg.StrExpression.GetStrValue(exm);
                     if (savemes.Contains('\n'))
-                        throw new CodeEE("SAVEDATAのセーブテキストに改行文字が与えられました（セーブデータが破損するため改行文字は使えません）");
+                        throw new CodeEE(LocalizationManager.Error.SavetextContainNewLineCharacter);
                     if (!vEvaluator.SaveTo((int)target, savemes))
                     {
-                        console.PrintError("SAVEDATA命令によるセーブ中に予期しないエラーが発生しました");
+                        console.PrintError(LocalizationManager.Error.UnexpectedErrorInSavedata);
                     }
                 }
                 break;
@@ -331,9 +332,9 @@ internal sealed partial class Process
                     double y = powerArg.Y.GetIntValue(exm);
                     double pow = Math.Pow(x, y);
                     if (double.IsNaN(pow))
-                        throw new CodeEE("累乗結果が非数値です");
+                        throw new CodeEE(LocalizationManager.Error.PowerResultNonNumeric);
                     else if (double.IsInfinity(pow))
-                        throw new CodeEE("累乗結果が無限大です");
+                        throw new CodeEE(LocalizationManager.Error.PowerResultInfinite);
                     else if ((pow >= Int64.MaxValue) || (pow <= Int64.MinValue))
                         throw new CodeEE("累乗結果(" + pow.ToString() + ")が64ビット符号付き整数の範囲外です");
                     powerArg.VariableDest.SetValue((long)pow, exm);
@@ -347,7 +348,7 @@ internal sealed partial class Process
                     FixedVariableTerm vTerm1 = arg.var1.GetFixedVariableTerm(exm);
                     FixedVariableTerm vTerm2 = arg.var2.GetFixedVariableTerm(exm);
                     if (vTerm1.GetOperandType() != vTerm2.GetOperandType())
-                        throw new CodeEE("入れ替える変数の型が異なります");
+                        throw new CodeEE(LocalizationManager.Error.VarsTypeDifferent);
                     if (vTerm1.GetOperandType() == typeof(Int64))
                     {
                         Int64 temp = vTerm1.GetIntValue(exm);
@@ -362,7 +363,7 @@ internal sealed partial class Process
                     }
                     else
                     {
-                        throw new CodeEE("不明な変数型です");
+                        throw new CodeEE(LocalizationManager.Error.UnknownVarType);
                     }
                     break;
                 }
@@ -398,9 +399,9 @@ internal sealed partial class Process
                         colorG = colorArg.G.GetIntValue(exm);
                         colorB = colorArg.B.GetIntValue(exm);
                         if ((colorR < 0) || (colorG < 0) || (colorB < 0))
-                            throw new CodeEE("SETCOLORの引数に0未満の値が指定されました");
+                            throw new CodeEE(LocalizationManager.Error.SetcolorArgLessThan0);
                         if ((colorR > 255) || (colorG > 255) || (colorB > 255))
-                            throw new CodeEE("SETCOLORの引数に255を超える値が指定されました");
+                            throw new CodeEE(LocalizationManager.Error.SetcolorArgOver255);
                     }
                     Color c = Color.FromArgb((Int32)colorR, (Int32)colorG, (Int32)colorB);
                     exm.Console.SetStringStyle(c);
@@ -413,7 +414,7 @@ internal sealed partial class Process
                     if (c.A == 0)
                     {
                         if (str.Equals("transparent", StringComparison.OrdinalIgnoreCase))
-                            throw new CodeEE("無色透明(Transparent)は色として指定できません");
+                            throw new CodeEE(LocalizationManager.Error.TransparentUnsupported);
                         throw new CodeEE("指定された色名\"" + colorName + "\"は無効な色名です");
                     }
                     exm.Console.SetStringStyle(c);
@@ -445,9 +446,9 @@ internal sealed partial class Process
                         colorG = colorArg.G.GetIntValue(exm);
                         colorB = colorArg.B.GetIntValue(exm);
                         if ((colorR < 0) || (colorG < 0) || (colorB < 0))
-                            throw new CodeEE("SETCOLORの引数に0未満の値が指定されました");
+                            throw new CodeEE(LocalizationManager.Error.SetcolorArgLessThan0);
                         if ((colorR > 255) || (colorG > 255) || (colorB > 255))
-                            throw new CodeEE("SETCOLORの引数に255を超える値が指定されました");
+                            throw new CodeEE(LocalizationManager.Error.SetcolorArgOver255);
                     }
                     Color c = Color.FromArgb((Int32)colorR, (Int32)colorG, (Int32)colorB);
                     exm.Console.SetBgColor(c);
@@ -460,7 +461,7 @@ internal sealed partial class Process
                     if (c.A == 0)
                     {
                         if (str.Equals("transparent", StringComparison.OrdinalIgnoreCase))
-                            throw new CodeEE("無色透明(Transparent)は色として指定できません");
+                            throw new CodeEE(LocalizationManager.Error.TransparentUnsupported);
                         throw new CodeEE("指定された色名\"" + colorName + "\"は無効な色名です");
                     }
                     exm.Console.SetBgColor(c);
@@ -567,7 +568,7 @@ internal sealed partial class Process
             case FunctionCode.NOSKIP:
                 {
                     if (func.JumpTo == null)
-                        throw new CodeEE("対応するENDNOSKIPのないNOSKIPです");
+                        throw new CodeEE(LocalizationManager.Error.MissingEndnoskip);
                     saveSkip = skipPrint;
                     if (skipPrint)
                         skipPrint = false;
@@ -687,14 +688,14 @@ internal sealed partial class Process
                         if ((vars[0].IsArray1D && !vars[1].IsArray1D) || (vars[0].IsArray2D && !vars[1].IsArray2D) || (vars[0].IsArray3D && !vars[1].IsArray3D))
                             throw new CodeEE("ARRAYCOPY命令の２つの配列変数の次元数が一致していません");
                         if ((vars[0].IsInteger && vars[1].IsString) || (vars[0].IsString && vars[1].IsInteger))
-                            throw new CodeEE("ARRAYCOPY命令の２つの配列変数の型が一致していません");
+                            throw new CodeEE(LocalizationManager.Error.DifferentArraycopyArgsType);
                     }
                     else
                     {
                         vars[0] = GlobalStatic.IdentifierDictionary.GetVariableToken(((SingleStrTerm)varName1).Str, null, true);
                         vars[1] = GlobalStatic.IdentifierDictionary.GetVariableToken(((SingleStrTerm)varName2).Str, null, true);
                         if ((vars[0].IsInteger && vars[1].IsString) || (vars[0].IsString && vars[1].IsInteger))
-                            throw new CodeEE("ARRAYCOPY命令の２つの配列変数の型が一致していません");
+                            throw new CodeEE(LocalizationManager.Error.DifferentArraycopyArgsType);
                     }
                     VariableEvaluator.CopyArray(vars[0], vars[1]);
                 }
@@ -711,7 +712,7 @@ internal sealed partial class Process
                     int length = vEvaluator.RESULT_ARRAY.Length;
                     // result:0には長さが入るのでその分-1
                     if (target.Length > length - 1)
-                        throw new CodeEE(String.Format("ENCODETOUNIの引数が長すぎます（現在{0}文字。最大{1}文字まで）", target.Length, length - 1));
+                        throw new CodeEE(String.Format(LocalizationManager.Error.tooLongEncodetouniArg, target.Length, length - 1));
 
                     int[] ary = new int[target.Length];
                     for (int i = 0; i < target.Length; i++)
@@ -721,7 +722,7 @@ internal sealed partial class Process
                 break;
             case FunctionCode.ASSERT:
                 if (((ExpressionArgument)func.Argument).Term.GetIntValue(exm) == 0)
-                    throw new CodeEE("ASSERT文の引数が0です");
+                    throw new CodeEE(LocalizationManager.Error.AssertArgIs0);
                 break;
             case FunctionCode.THROW:
                 throw new CodeEE(((ExpressionArgument)func.Argument).Term.GetStrValue(exm));
@@ -785,10 +786,10 @@ internal sealed partial class Process
                     //EraDataResult result = vEvaluator.checkData((int)target);
                     EraDataResult result = vEvaluator.CheckData((int)target, EraSaveFileType.Normal);
                     if (result.State != EraDataState.OK)
-                        throw new CodeEE("不正なデータをロードしようとしました");
+                        throw new CodeEE(LocalizationManager.Error.LoadCorruptedData);
 
                     if (!vEvaluator.LoadFrom((int)target))
-                        throw new ExeEE("ファイルのロード中に予期しないエラーが発生しました");
+                        throw new ExeEE(LocalizationManager.Error.UnexpectedErrorInLoaddata);
                     state.ClearFunctionList();
                     state.SystemState = SystemStateCode.LoadData_DataLoaded;
                     return false;
@@ -875,7 +876,7 @@ internal sealed partial class Process
                             break;
                         default:
                             exm.Console.PrintSystemLine(state.SystemState.ToString());
-                            throw new CodeEE("DOTRAIN命令をこの位置で実行することはできません");
+                            throw new CodeEE(LocalizationManager.Error.CanNotUseDotrainHere);
                     }
                     coms.Clear();
                     isCTrain = false;
@@ -883,16 +884,16 @@ internal sealed partial class Process
 
                     Int64 train = ((ExpressionArgument)func.Argument).Term.GetIntValue(exm);
                     if (train < 0)
-                        throw new CodeEE("DOTRAIN命令に0未満の値が渡されました");
+                        throw new CodeEE(LocalizationManager.Error.DotrainArgLessThan0);
                     if (train >= TrainName.Length)
-                        throw new CodeEE("DOTRAIN命令にTRAINNAMEの配列数以上の値が渡されました");
+                        throw new CodeEE(LocalizationManager.Error.DotrainArgOverTrainnameArray);
                     doTrainSelectCom = train;
                     state.SystemState = SystemStateCode.Train_DoTrain;
                     return false;
                 }
 #if DEBUG
             default:
-                throw new ExeEE("未定義の関数です");
+                throw new ExeEE(LocalizationManager.Error.UndefinedFunc);
 #endif
         }
         return true;

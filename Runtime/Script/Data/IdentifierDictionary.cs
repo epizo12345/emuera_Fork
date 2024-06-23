@@ -13,6 +13,7 @@ using MinorShift.Emuera.Sub;
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera;
 
@@ -182,7 +183,7 @@ internal sealed partial class IdentifierDictionary
         errMes = "";
         if (labelName.Length == 0)
         {
-            errMes = "ラベル名がありません";
+            errMes = LocalizationManager.Error.LabelNameMissing;
             warnLevel = 2;
             return;
         }
@@ -502,7 +503,7 @@ internal sealed partial class IdentifierDictionary
             }
             else
             {
-                ParserMediator.Warn("コード中でローカル変数を@付きで呼ぶことは推奨されません(代わりに*.ERHファイルの利用を検討してください)", line, 1, false, false);
+                ParserMediator.Warn(LocalizationManager.Error.CannotRecommendCallLocalVar, line, 1, false, false);
                 // if (Config.ICFunction)
                 // 	subKey = subKey.ToUpper();
             }
@@ -526,7 +527,7 @@ internal sealed partial class IdentifierDictionary
             return ret;
         }
         if (subKey != null)
-            throw new CodeEE("@の使い方が不正です");
+            throw new CodeEE(LocalizationManager.Error.InvalidAt);
         return null;
     }
 

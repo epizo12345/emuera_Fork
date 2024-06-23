@@ -40,6 +40,11 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>FormLocalization.resx</DependentUpon>
     </Compile>
+    <Compile Update="UI\Framework\ConsoleLocalization.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>ConsoleLocalization.resx</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AngleSharp" Version="1.1.2" />
@@ -56,6 +61,10 @@
     <EmbeddedResource Update="UI\Framework\FormLocalization.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>FormLocalization.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="UI\Framework\ConsoleLocalization.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>ConsoleLocalization.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
 </Project>

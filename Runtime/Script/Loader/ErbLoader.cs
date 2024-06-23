@@ -14,6 +14,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.Runtime.Script.Loader;
 
@@ -60,43 +61,43 @@ internal sealed class ErbLoader
                 string file = erb.Value;
 #if DEBUG
                 if (displayReport)
-                    output.PrintSystemLine("経過時間:" + starttime.ElapsedMilliseconds + "ms:" + filename + "読み込み中・・・");
+                    output.PrintSystemLine(string.Format(LocalizationManager.SystemLine.ElapsedTimeLoad, starttime.ElapsedMilliseconds, filename));
 #else
                 if (displayReport)
-                    output.PrintSystemLine(filename + "読み込み中・・・");
+                    output.PrintSystemLine(string.Format(LocalizationManager.SystemLine.LoadingFile, filename));
 #endif
                 await Task.Run(() => loadErb(file, filename, isOnlyEvent));
             };
             ParserMediator.FlushWarningList();
 #if DEBUG
-            output.PrintSystemLine("経過時間:" + starttime.ElapsedMilliseconds + "ms:");
+            output.PrintSystemLine(string.Format(LocalizationManager.SystemLine.ElapsedTime, starttime.ElapsedMilliseconds));
 #endif
             if (displayReport)
-                output.PrintSystemLine("ユーザー定義関数のリストを構築中・・・");
+                output.PrintSystemLine(LocalizationManager.SystemLine.BuildingUserFunc);
             setLabelsArg();
             ParserMediator.FlushWarningList();
             labelDic.Initialized = true;
 #if DEBUG
-            output.PrintSystemLine("経過時間:" + starttime.ElapsedMilliseconds + "ms:");
+            output.PrintSystemLine(string.Format(LocalizationManager.SystemLine.ElapsedTime, starttime.ElapsedMilliseconds));
 #endif
             if (displayReport)
-                output.PrintSystemLine("スクリプトの構文チェック中・・・");
+                output.PrintSystemLine(LocalizationManager.SystemLine.CheckingSyntax);
 
             await Task.Run(() => ParseScript());
 
             ParserMediator.FlushWarningList();
 
 #if DEBUG
-            output.PrintSystemLine("経過時間:" + starttime.ElapsedMilliseconds + "ms:");
+            output.PrintSystemLine(string.Format(LocalizationManager.SystemLine.ElapsedTime, starttime.ElapsedMilliseconds));
 #endif
             if (displayReport)
-                output.PrintSystemLine("ロード完了");
+                output.PrintSystemLine(LocalizationManager.SystemLine.LoadComplete);
         }
         catch (Exception e)
         {
             ParserMediator.FlushWarningList();
             System.Media.SystemSounds.Hand.Play();
-            output.PrintError("予期しないエラーが発生しました:" + AssemblyData.EmueraVersionText);
+            output.PrintError(string.Format(LocalizationManager.Error.UnexpectedErrorFrom, AssemblyData.EmueraVersionText));
             output.PrintError(e.GetType().ToString() + ":" + e.Message);
             return false;
         }
@@ -174,7 +175,7 @@ internal sealed class ErbLoader
                     }
                     if (skip)
                     {
-                        ParserMediator.Warn("[SKIPSTART]が重複して使用されています", position, 1);
+                        ParserMediator.Warn(LocalizationManager.Error.DuplicateSkipstart, position, 1);
                         break;
                     }
                     ppMatch.Push("SKIPEND");
@@ -261,7 +262,7 @@ internal sealed class ErbLoader
                         string match = ppMatch.Count == 0 ? "" : ppMatch.Pop();
                         if (match != "SKIPEND")
                         {
-                            ParserMediator.Warn("[SKIPSTART]と対応しない[SKIPEND]です", position, 1);
+                            ParserMediator.Warn(LocalizationManager.Error.UnexpectedSkipend, position, 1);
                             break;
                         }
                         skip = false;
@@ -279,7 +280,7 @@ internal sealed class ErbLoader
                         string match = ppMatch.Count == 0 ? "" : ppMatch.Pop();
                         if (match != "ENDIF" && match != "ELSEIF")
                         {
-                            ParserMediator.Warn("対応する[IF]のない[ENDIF]です", position, 1);
+                            ParserMediator.Warn(LocalizationManager.Error.UnexpectedMacroEndif, position, 1);
                             break;
                         }
                         Disabled = disabledStack.Pop();
@@ -287,7 +288,7 @@ internal sealed class ErbLoader
                     }
                     break;
                 default:
-                    ParserMediator.Warn("認識できないプリプロセッサです", position, 1);
+                    ParserMediator.Warn(LocalizationManager.Error.UnrecognizedPreprosessor, position, 1);
                     break;
             }
             if (skip)
@@ -341,7 +342,7 @@ internal sealed class ErbLoader
                 LexicalAnalyzer.SkipWhiteSpace(st);
                 string token2 = LexicalAnalyzer.ReadSingleIdentifier(st);
                 if (string.IsNullOrEmpty(token) || st.Current != ']')
-                    ParserMediator.Warn("[]の使い方が不正です", position, 1);
+                    ParserMediator.Warn(LocalizationManager.Error.InvalidSBrackets, position, 1);
                 ppstate.AddKeyWord(token, token2, position);
                 st.ShiftNext();
                 if (!st.EOS)
@@ -358,7 +359,7 @@ internal sealed class ErbLoader
             {
                 if (lastLine == null || lastLine is not FunctionLabelLine funcLine)
                 {
-                    ParserMediator.Warn("関数宣言の直後以外で#行が使われています", position, 1);
+                    ParserMediator.Warn(LocalizationManager.Error.InvalidSharp, position, 1);
                     continue;
                 }
                 if (!LogicalLineParser.ParseSharpLine(funcLine, st, position, isOnlyEvent))
@@ -431,7 +432,7 @@ internal sealed class ErbLoader
                 //    st = new StringStream(replacedLine);
                 //}
                 if (lastLabelLine == null)
-                    ParserMediator.Warn("関数が定義されるより前に行があります", position, 1);
+                    ParserMediator.Warn(LocalizationManager.Error.LineBeforeFunc, position, 1);
                 nextLine = LogicalLineParser.ParseLine(st, position, output, lastLabelLine);
                 if (nextLine == null)
                     continue;
@@ -498,7 +499,7 @@ internal sealed class ErbLoader
                 if (!(exc is EmueraException))
                     errmes = exc.GetType().ToString() + ":" + errmes;
                 ParserMediator.Warn("関数@" + label.LabelName + " の引数のエラー:" + errmes, label, 2, true, false);
-                label.ErrMes = "ロード時に解析に失敗した関数が呼び出されました";
+                label.ErrMes = LocalizationManager.Error.CalledFailedFunc;
                 label.IsError = true;
             }
             finally
@@ -538,25 +539,25 @@ internal sealed class ErbLoader
             SymbolWord symbol = wc.Current as SymbolWord;
             wc.ShiftNext();
             if (symbol == null)
-            { errMes = "引数の書式が間違っています"; goto err; }
+            { errMes = LocalizationManager.Error.WrongArgFormat; goto err; }
             if (symbol.Type == '[')//TODO:subNames 結局実装しないかも
             {
                 var subNamesRow = ExpressionParser.ReduceArguments(wc, ArgsEndWith.RightBracket, false);
                 if (subNamesRow.Count == 0)
-                { errMes = "関数定義の[]内の引数は空にできません"; goto err; }
+                { errMes = LocalizationManager.Error.CanNotEmptyFuncSBrackets; goto err; }
                 subNames = new SingleTerm[subNamesRow.Count];
                 for (int i = 0; i < subNamesRow.Count; i++)
                 {
                     if (subNamesRow[i] == null)
-                    { errMes = "関数定義の引数は省略できません"; goto err; }
+                    { errMes = LocalizationManager.Error.CannotOmitFuncArg; goto err; }
                     AExpression term = subNamesRow[i].Restructure(exm);
                     subNames[i] = term as SingleTerm;
                     if (subNames[i] == null)
-                    { errMes = "関数定義の[]内の引数は定数のみ指定できます"; goto err; }
+                    { errMes = LocalizationManager.Error.FuncDefineArgOnlyConst; goto err; }
                 }
                 symbol = wc.Current as SymbolWord;
                 if (!wc.EOL && symbol == null)
-                { errMes = "引数の書式が間違っています"; goto err; }
+                { errMes = LocalizationManager.Error.WrongArgFormat; goto err; }
                 wc.ShiftNext();
             }
             if (!wc.EOL)
@@ -567,7 +568,7 @@ internal sealed class ErbLoader
                 else if (symbol.Type == '(')
                     argsRow = ExpressionParser.ReduceArguments(wc, ArgsEndWith.RightParenthesis, true);
                 else
-                { errMes = "引数の書式が間違っています"; goto err; }
+                { errMes = LocalizationManager.Error.WrongArgFormat; goto err; }
                 int length = argsRow.Count / 2;
                 args = new VariableTerm[length];
                 defs = new SingleTerm[length];
@@ -579,13 +580,13 @@ internal sealed class ErbLoader
                     //if (term == null)
                     //{ errMes = "関数定義の引数は省略できません"; goto err; }
                     if (!(term.Restructure(exm) is VariableTerm vTerm) || vTerm.Identifier.IsConst)
-                    { errMes = "関数定義の引数には代入可能な変数を指定してください"; goto err; }
+                    { errMes = LocalizationManager.Error.ArgCanOnlyAssignableVar; goto err; }
                     else if (!vTerm.Identifier.IsReference)//参照型なら添え字不要
                     {
                         if (vTerm is VariableNoArgTerm)
                         { errMes = "関数定義の参照型でない引数\"" + vTerm.Identifier.Name + "\"に添え字が指定されていません"; goto err; }
                         if (!vTerm.isAllConst)
-                        { errMes = "関数定義の引数の添え字には定数を指定してください"; goto err; }
+                        { errMes = LocalizationManager.Error.ArgSubscriptOnlyConst; goto err; }
                     }
                     for (int j = 0; j < i; j++)
                     {
@@ -618,13 +619,13 @@ internal sealed class ErbLoader
                     {
                         def = term.Restructure(exm) as SingleTerm;
                         if (def == null)
-                        { errMes = "引数の初期値には定数のみを指定できます"; goto err; }
+                        { errMes = LocalizationManager.Error.ArgCanOnlyConst; goto err; }
                         if (!canDef)
-                        { errMes = "引数の初期値を定義できるのは\"ARG\"、\"ARGS\"またはプライベート変数のみです"; goto err; }
+                        { errMes = LocalizationManager.Error.ArgCanOnlyPrivVar; goto err; }
                         else if (vTerm.Identifier.IsReference)
-                        { errMes = "参照渡しの引数に初期値は定義できません"; goto err; }
+                        { errMes = LocalizationManager.Error.RefArgCanNotInitialize; goto err; }
                         if (vTerm.GetOperandType() != def.GetOperandType())
-                        { errMes = "引数の型と初期値の型が一致していません"; goto err; }
+                        { errMes = LocalizationManager.Error.NotMatchTypeArgAndInitialValue; goto err; }
                     }
                     args[i] = vTerm;
                     defs[i] = def;
@@ -633,7 +634,7 @@ internal sealed class ErbLoader
             }
         }
         if (!wc.EOL)
-        { errMes = "引数の書式が間違っています"; goto err; }
+        { errMes = LocalizationManager.Error.WrongArgFormat; goto err; }
 
         //label.SubNames = subNames;
         label.Arg = args;
@@ -691,7 +692,7 @@ internal sealed class ErbLoader
         if (useCallForm)
         {//callform系が使われたら全ての関数が呼び出されたとみなす。
             if (Program.AnalysisMode)
-                output.PrintSystemLine("CALLFORM系命令が使われたため、呼び出されない関数のチェックは行われません。");
+                output.PrintSystemLine(LocalizationManager.Error.BeNotFuncCheckBecauseUseCallform);
             foreach (FunctionLabelLine label in labelList)
             {
                 if (label.Depth != labelDepth)
@@ -749,10 +750,10 @@ internal sealed class ErbLoader
         }
         if (Program.AnalysisMode && (warningDic.Keys.Count > 0 || GlobalStatic.tempDic.Keys.Count > 0))
         {
-            output.PrintError("・定義が見つからなかった関数: 他のファイルで定義されている場合はこの警告は無視できます");
+            output.PrintError(LocalizationManager.Error.UndefinedFunctions);
             if (warningDic.Keys.Count > 0)
             {
-                output.PrintError("　○一般関数:");
+                output.PrintError(LocalizationManager.Error.GeneralFunc);
                 foreach (string labelName in warningDic.Keys)
                 {
                     output.PrintError($"　　{labelName}: {warningDic[labelName]}回");
@@ -760,7 +761,7 @@ internal sealed class ErbLoader
             }
             if (GlobalStatic.tempDic.Keys.Count > 0)
             {
-                output.PrintError("　○文中関数:");
+                output.PrintError(LocalizationManager.Error.SentenceFunc);
                 foreach (string labelName in GlobalStatic.tempDic.Keys)
                 {
                     output.PrintError($"　　{labelName}: {GlobalStatic.tempDic[labelName]}回");
@@ -783,17 +784,17 @@ internal sealed class ErbLoader
             if (overloadedList.Count > 0)
             {
                 output.NewLine();
-                output.PrintError("＊＊＊＊＊警告＊＊＊＊＊");
+                output.PrintError(LocalizationManager.Error.OverWriteSystemFuncWarn1);
                 foreach (string funcname in overloadedList)
                 {
                     output.PrintSystemLine("  システム関数\"" + funcname + "\"がユーザー定義関数によって上書きされています");
                 }
                 output.PrintSystemLine("  上記の関数を利用するスクリプトは意図通りに動かない可能性があります");
                 output.NewLine();
-                output.PrintSystemLine("  ※この警告は該当する式中関数を利用しているEmuera専用スクリプト向けの警告です。");
-                output.PrintSystemLine("  eramaker用のスクリプトの動作には影響しません。");
-                output.PrintSystemLine("  今後この警告が不要ならばコンフィグの「システム関数が上書きされたとき警告を表示する」をOFFにして下さい。");
-                output.PrintSystemLine("＊＊＊＊＊＊＊＊＊＊＊＊");
+                output.PrintSystemLine(LocalizationManager.Error.OverWriteSystemFuncWarn4);
+                output.PrintSystemLine(LocalizationManager.Error.OverWriteSystemFuncWarn5);
+                output.PrintSystemLine(LocalizationManager.Error.OverWriteSystemFuncWarn6);
+                output.PrintSystemLine(LocalizationManager.Error.OverWriteSystemFuncWarn7);
             }
         }
 
@@ -863,7 +864,7 @@ internal sealed class ErbLoader
             //1756beta2+v6.1 修正の効率化のために何かパース関係でハンドリングできてないエラーが出た場合はスタックトレースを投げるようにした
             string errmes = exc is EmueraException ? exc.Message : exc.GetType().ToString() + ":" + exc.Message;
             ParserMediator.Warn("@" + label.LabelName + " の解析中にエラー:" + errmes, label, 2, true, false, exc is not EmueraException ? exc.StackTrace : null);
-            label.ErrMes = "ロード時に解析に失敗した関数が呼び出されました";
+            label.ErrMes = LocalizationManager.Error.CalledFailedFunc;
             System.Windows.Forms.Application.DoEvents();
         }
         finally
@@ -992,7 +993,7 @@ internal sealed class ErbLoader
                     {
                         if (iLine.FunctionCode == FunctionCode.REPEAT)
                         {
-                            ParserMediator.Warn("REPEAT文が入れ子にされています（無限ループの恐れがあります）", func, 1, false, false);
+                            ParserMediator.Warn(LocalizationManager.Error.NestedRepeat, func, 1, false, false);
                         }
                         else if (iLine.FunctionCode == FunctionCode.FOR)
                         {
@@ -1101,7 +1102,7 @@ internal sealed class ErbLoader
                         var ifLine = nestStack.Count == 0 ? null : nestStack.Peek();
                         if (ifLine == null || ifLine.FunctionCode != FunctionCode.IF)
                         {
-                            ParserMediator.Warn("対応するIFの無いENDIF文です", func, 2, true, false);
+                            ParserMediator.Warn(LocalizationManager.Error.UnexpectedEndif, func, 2, true, false);
                             break;
                         }
                         foreach (var ifelseifLine in ifLine.IfCaseList)
@@ -1143,7 +1144,7 @@ internal sealed class ErbLoader
                         InstructionLine selectLine = nestStack.Count == 0 ? null : nestStack.Peek();
                         if (selectLine == null || selectLine.FunctionCode != FunctionCode.SELECTCASE && SelectcaseStack.Count == 0)
                         {
-                            ParserMediator.Warn("対応するSELECTCASEの無いENDSELECT文です", func, 2, true, false);
+                            ParserMediator.Warn(LocalizationManager.Error.UnexpectedEndselect, func, 2, true, false);
                             break;
                         }
                         else if (selectLine.FunctionCode != FunctionCode.SELECTCASE && SelectcaseStack.Count > 0)
@@ -1187,7 +1188,7 @@ internal sealed class ErbLoader
                             foreach (var exp in caseExps)
                             {
                                 if (exp.GetOperandType() != term.GetOperandType())
-                                    ParserMediator.Warn("CASEの引数の型がSELECTCASEと一致しません", caseLine, 2, true, false);
+                                    ParserMediator.Warn(LocalizationManager.Error.NotMatchCaseTypeAndSelectcaseType, caseLine, 2, true, false);
                             }
 
                         }
@@ -1220,7 +1221,7 @@ internal sealed class ErbLoader
                         && pairLine.FunctionCode != FunctionCode.TRYCCALLFORM
                         && pairLine.FunctionCode != FunctionCode.TRYCJUMPFORM)
                     {
-                        ParserMediator.Warn("対応するTRYC系命令がありません", func, 2, true, false);
+                        ParserMediator.Warn(LocalizationManager.Error.MissingTryc, func, 2, true, false);
                         break;
                     }
                     pairLine = nestStack.Pop();//TRYC
@@ -1231,7 +1232,7 @@ internal sealed class ErbLoader
                     if (nestStack.Count == 0
                         || nestStack.Peek().FunctionCode != FunctionCode.CATCH)
                     {
-                        ParserMediator.Warn("対応するCATCHのないENDCATCHです", func, 2, true, false);
+                        ParserMediator.Warn(LocalizationManager.Error.UnexpectedEndcatch, func, 2, true, false);
                         break;
                     }
                     pairLine = nestStack.Pop();//CATCH
@@ -1251,12 +1252,12 @@ internal sealed class ErbLoader
                         {
                             if (iLine.Function.IsPrintData())
                             {
-                                ParserMediator.Warn("PRINTDATA系命令が入れ子にされています", func, 2, true, false);
+                                ParserMediator.Warn(LocalizationManager.Error.NestedPrintdata, func, 2, true, false);
                                 break;
                             }
                             if (iLine.FunctionCode == FunctionCode.STRDATA)
                             {
-                                ParserMediator.Warn("PRINTDATA系命令の中にSTRDATA系命令が含まれています", func, 2, true, false);
+                                ParserMediator.Warn(LocalizationManager.Error.StrdataInsidePrintdata, func, 2, true, false);
                                 break;
                             }
                         }
@@ -1272,12 +1273,12 @@ internal sealed class ErbLoader
                         {
                             if (iLine.FunctionCode == FunctionCode.STRDATA)
                             {
-                                ParserMediator.Warn("STRDATA命令が入れ子にされています", func, 2, true, false);
+                                ParserMediator.Warn(LocalizationManager.Error.NestedStrdata, func, 2, true, false);
                                 break;
                             }
                             if (iLine.Function.IsPrintData())
                             {
-                                ParserMediator.Warn("STRDATA系命令の中にPRINTDATA系命令が含まれています", func, 2, true, false);
+                                ParserMediator.Warn(LocalizationManager.Error.PrintdataInsideStrdata, func, 2, true, false);
                                 break;
                             }
                         }
@@ -1292,7 +1293,7 @@ internal sealed class ErbLoader
                         var pline = nestStack.Count == 0 ? null : nestStack.Peek();
                         if (pline == null || !pline.Function.IsPrintData() && pline.FunctionCode != FunctionCode.STRDATA)
                         {
-                            ParserMediator.Warn("対応するPRINTDATA系命令のないDATALISTです", func, 2, true, false);
+                            ParserMediator.Warn(LocalizationManager.Error.UnexpectedDatalist, func, 2, true, false);
                             break;
                         }
                         tempLineList = [];
@@ -1304,11 +1305,11 @@ internal sealed class ErbLoader
                     {
                         if (nestStack.Count == 0 || nestStack.Peek().FunctionCode != FunctionCode.DATALIST)
                         {
-                            ParserMediator.Warn("対応するDATALISTのないENDLISTです", func, 2, true, false);
+                            ParserMediator.Warn(LocalizationManager.Error.UnexpectedEndlist, func, 2, true, false);
                             break;
                         }
                         if (tempLineList.Count == 0)
-                            ParserMediator.Warn("DATALIST命令に表示データが与えられていません（このDATALISTは空文字列を表示します）", func, 1, false, false);
+                            ParserMediator.Warn(LocalizationManager.Error.DatalistDataIsMissing, func, 1, false, false);
                         nestStack.Pop();
                         nestStack.Peek().dataList.Add(tempLineList);
                         break;
@@ -1341,7 +1342,7 @@ internal sealed class ErbLoader
                             break;
                         }
                         if (pline.FunctionCode == FunctionCode.DATALIST)
-                            ParserMediator.Warn("DATALISTが閉じられていません", func, 2, true, false);
+                            ParserMediator.Warn(LocalizationManager.Error.DatalistNotClosed, func, 2, true, false);
                         if (pline.dataList.Count == 0)
                             ParserMediator.Warn(pline.Function.Name + "命令に表示データがありません（この命令は無視されます）", func, 1, false, false);
                         pline.JumpTo = func;
@@ -1355,7 +1356,7 @@ internal sealed class ErbLoader
                     {
                         if (iLine.FunctionCode == FunctionCode.TRYCALLLIST || iLine.FunctionCode == FunctionCode.TRYJUMPLIST || iLine.FunctionCode == FunctionCode.TRYGOTOLIST)
                         {
-                            ParserMediator.Warn("TRYCALLLIST系命令が入れ子にされています", func, 2, true, false);
+                            ParserMediator.Warn(LocalizationManager.Error.NestedTrycalllist, func, 2, true, false);
                             break;
                         }
                     }
@@ -1383,12 +1384,12 @@ internal sealed class ErbLoader
                             var spCallArg = func.Argument as SpCallArgment;
                             if (spCallArg.SubNames.Count != 0)
                             {
-                                ParserMediator.Warn("TRYGOTOLISTの呼び出し対象に[～～]が設定されています", func, 2, true, false);
+                                ParserMediator.Warn(LocalizationManager.Error.TrygotolistToSBrackets, func, 2, true, false);
                                 break;
                             }
                             if (spCallArg.RowArgs.Count != 0)
                             {
-                                ParserMediator.Warn("TRYGOTOLISTの呼び出し対象に引数が設定されています", func, 2, true, false);
+                                ParserMediator.Warn(LocalizationManager.Error.TrygotolistTargetHasArg, func, 2, true, false);
                                 break;
                             }
                         }
@@ -1411,7 +1412,7 @@ internal sealed class ErbLoader
                     {
                         if (iLine.FunctionCode == FunctionCode.NOSKIP)
                         {
-                            ParserMediator.Warn("NOSKIP系命令が入れ子にされています", func, 2, true, false);
+                            ParserMediator.Warn(LocalizationManager.Error.NestedNoskip, func, 2, true, false);
                             break;
                         }
                     }
@@ -1444,7 +1445,7 @@ internal sealed class ErbLoader
             if (func != null)
                 ParserMediator.Warn(funcName + "に対応する" + funcMatch + "が見つかりません", func, 2, true, false);
             else
-                ParserMediator.Warn("ディフォルトエラー（Emuera設定漏れ）", func, 2, true, false);
+                ParserMediator.Warn(LocalizationManager.Error.DefaultError, func, 2, true, false);
         }
         //使ったスタックをクリア
         SelectcaseStack.Clear();

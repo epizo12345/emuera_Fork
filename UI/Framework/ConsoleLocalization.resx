@@ -1,0 +1,3188 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true">
+            
+        </xsd:element>
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+
+    <data name="Error_WarnPrefix" xml:space="preserve">
+        <value>Warn: {0} at line :{1}: {2}</value>
+    </data>
+
+    <data name="Error_FuncPrefix" xml:space="preserve">
+        <value>{0} function: {1}</value>
+    </data>
+
+    <data name="Error_NotExistColorSpecifier" xml:space="preserve">
+        <value>Value cannot be interpreted as Color specifier</value>
+    </data>
+
+    <data name="Error_ContainsNonNumericCharacters" xml:space="preserve">
+        <value>Numeric config item contains non-numeric characters</value>
+    </data>
+
+    <data name="Error_InvalidSpecification" xml:space="preserve">
+        <value>invalid specification</value>
+    </data>
+
+    <data name="Error_DoesNotMatchCdflagElements" xml:space="preserve">
+        <value>The number of elements of CDFLAG does not match the number of elements of CDFLAGNAME 1 and CDFLAGNAME 2", position);</value>
+    </data>
+
+    <data name="Error_TooManyCdflagElements" xml:space="preserve">
+        <value>CDFLAG array is too many</value>
+    </data>
+    <data name="Error_DuplicateVariableDefine" xml:space="preserve">
+        <value>Variable name {0} is already used</value>
+    </data>
+    <data name="Error_KeywordsCannotBeEmpty" xml:space="preserve">
+        <value>Keywords cannot be empty</value>
+    </data>
+
+    <data name="Error_InvalidProhibitedVar" xml:space="preserve">
+        <value>Variable {0} cannot be set as protected</value>
+    </data>
+
+    <data name="Error_CanNotSpecifiedByString" xml:space="preserve">
+        <value>Array variable"{0}"elements cannot be specified as a string</value>
+    </data>
+
+    <data name="Error_NotDefinedKey" xml:space="preserve">
+        <value>There is no definition of "{1}" at "{0}"</value>
+    </data>
+
+    <data name="Error_CannotIndexSpecifiedByString" xml:space="preserve">
+        <value>Array variable "{0}" at {1}  element cannot be specified as a string"</value>
+    </data>
+
+    <data name="Error_UseCdflagname" xml:space="preserve">
+        <value>Attempted to use CDFLAGNAME1 or CDFLAGNAME2 to obtain the elements of CDFLAG</value>
+    </data>
+
+    <data name="Error_NotExistKey" xml:space="preserve">
+        <value>Attempted to refer to a key that does not exist</value>
+    </data>
+
+    <data name="Error_UsedAtForPrivVar" xml:space="preserve">
+        <value>@ was used for a private variable "{0}"</value>
+    </data>
+
+    <data name="Error_UsedProhibitedVar" xml:space="preserve">
+        <value>Called variable "{0}" is prohibited from being used by the current settings</value>
+    </data>
+
+    <data name="Error_CannotGetKeyNotExistRunningFunction" xml:space="preserve">
+        <value>Couldn't get or change "{0}" due to not having a running function that would initialize it</value>
+    </data>
+
+    <data name="Error_UsedAtForGlobalVar" xml:space="preserve">
+        <value>@ was used for a variable that is not a local variable "{0}"</value>
+    </data>
+
+    <data name="Error_InvalidAt" xml:space="preserve">
+        <value>Invalid use of @</value>
+    </data>
+
+    <data name="Error_CallfNonMethodFunc" xml:space="preserve">
+        <value>Function for which #FUNCTION(S) was not declared "@{0}" has been attempted to be called with a CALLF-type instruction</value>
+    </data>
+
+    <data name="Error_UsedNonMethodFunc" xml:space="preserve">
+        <value>Function for which #FUNCTION(S) was not declared ({0} at line :{1}) has been attempted to be called inside of an expression</value>
+    </data>
+
+    <data name="Error_DeclaringDisable" xml:space="preserve">
+        <value>{0} is declaring #DISABLE</value>
+    </data>
+
+    <data name="Error_VarNotDefinedThisFunc" xml:space="preserve">
+        <value>Variable "{0}" is not defined in this function</value>
+    </data>
+
+    <data name="Error_IllegalUseReservedWord" xml:space="preserve">
+        <value>Emuera's reserved word "{0}" is being used in an illegal way</value>
+    </data>
+
+    <data name="Error_UseVarLikeFunc" xml:space="preserve">
+        <value>Variable name "{0}" is used like a function</value>
+    </data>
+
+    <data name="Error_UseFuncLikeVar" xml:space="preserve">
+        <value>Function name "{0}" is used like a variable</value>
+    </data>
+
+    <data name="Error_UnexpectedMacro" xml:space="preserve">
+        <value>Unexpected macro name: "{0}"</value>
+    </data>
+
+    <data name="Error_UseInstructionLikeFunc" xml:space="preserve">
+        <value>Instruction name "{0}" is used like a function</value>
+    </data>
+
+    <data name="Error_UseInstructionLikeVar" xml:space="preserve">
+        <value>Instruction name "{0}" is used like a variable</value>
+    </data>
+
+    <data name="Error_CanNotInterpreted" xml:space="preserve">
+        <value>{0} cannot be interpreted</value>
+    </data>
+
+    <data name="Error_AbnormalFirstOperand" xml:space="preserve">
+        <value>First \@ operand is abnormal at the ternary operator</value>
+    </data>
+
+    <data name="Error_EmptyBrace" xml:space="preserve">
+        <value>Expression inside {{}} is empty</value>
+    </data>
+
+    <data name="Error_EmptyPer" xml:space="preserve">
+        <value>Expression inside %% is empty</value>
+    </data>
+
+    <data name="Error_NotSpecifiedLR" xml:space="preserve">
+        <value>No RIGHT or LEFT has been specified after ','</value>
+    </data>
+
+    <data name="Error_OtherThanLR" xml:space="preserve">
+        <value>Another command has been specified after ',' other than RIGHT or LEFT</value>
+    </data>
+
+    <data name="Error_ExtraCharacterLR" xml:space="preserve">
+        <value>There's an extra character after RIGHT or LEFT</value>
+    </data>
+
+    <data name="Error_IsNotNumericBrace" xml:space="preserve">
+        <value>Expression inside {{}} is not a numerical formula</value>
+    </data>
+
+    <data name="Error_IsNotStringPer" xml:space="preserve">
+        <value>Expression inside %% is not a string expression</value>
+    </data>
+
+    <data name="Error_OoRForcekanaArg" xml:space="preserve">
+        <value>The amount of allowed arguments for FORCEKANA instruction is out of range(0-3)</value>
+    </data>
+
+    <data name="Error_MaxBarNotPositive" xml:space="preserve">
+        <value>BAR maximum value is not positive</value>
+    </data>
+
+    <data name="Error_BarNotPositive" xml:space="preserve">
+        <value>BAR length is not positive</value>
+    </data>
+
+    <data name="Error_TooLongBar" xml:space="preserve">
+        <value>BAR is too long</value>
+    </data>
+
+    <data name="Error_NotCloseSBrackets" xml:space="preserve">
+        <value>[' is not closed</value>
+    </data>
+
+    <data name="Error_NotCloseBrackets" xml:space="preserve">
+        <value>(' is not closed</value>
+    </data>
+
+    <data name="Error_UnexpectedBrackets" xml:space="preserve">
+        <value>Found an unexpected ')' during parsing</value>
+    </data>
+
+    <data name="Error_UnexpectedSBrackets" xml:space="preserve">
+        <value>Found an unexpected ']' during parsing</value>
+    </data>
+
+    <data name="Error_CannotOmitFuncArg" xml:space="preserve">
+        <value>Argument of a function definition cannot be omitted</value>
+    </data>
+
+    <data name="Error_NoExpressionAfterEqual" xml:space="preserve">
+        <value>There is no expression after '='</value>
+    </data>
+
+    <data name="Error_DoesNotMatchEqual" xml:space="preserve">
+        <value>Type doesn't match before and after '='</value>
+    </data>
+
+    <data name="Error_CanNotInterpretedExpression" xml:space="preserve">
+        <value>Syntax cannot be interpreted as an expression</value>
+    </data>
+
+    <data name="Error_ExpressionResultIsNotNumeric" xml:space="preserve">
+        <value>Expression result is not numeric</value>
+    </data>
+
+    <data name="Error_EmptyStream" xml:space="preserve">
+        <value>Passed an empty stream</value>
+    </data>
+
+    <data name="Error_SBracketsFuncNotImprement" xml:space="preserve">
+        <value>[] usage functionality is not implemented</value>
+    </data>
+
+    <data name="Error_ThrowFailed" xml:space="preserve">
+        <value>Failed to throw an error</value>
+    </data>
+
+    <data name="Error_NoOpAfterIs" xml:space="preserve">
+        <value>Missing operator after the IS keyword</value>
+    </data>
+
+    <data name="Error_NotBinaryOpAfterThis" xml:space="preserve">
+        <value>The operator after the IS keyword is not a binary operator</value>
+    </data>
+
+    <data name="Error_NothingAfterIs" xml:space="preserve">
+        <value>Missing expression after the IS keyword</value>
+    </data>
+
+    <data name="Error_CanNotOmitCaseArg" xml:space="preserve">
+        <value>CASE arguments cannot be omitted</value>
+    </data>
+
+    <data name="Error_NoExpressionAfterTo" xml:space="preserve">
+        <value>Missing expression after the TO keyword</value>
+    </data>
+
+    <data name="Error_DuplicateTo" xml:space="preserve">
+        <value>Duplicate usage of TO keyword</value>
+    </data>
+
+    <data name="Error_DoesNotMatchTo" xml:space="preserve">
+        <value>The type doesn't match before and after TO keyword</value>
+    </data>
+
+    <data name="Error_InvalidTo" xml:space="preserve">
+        <value>TO keyword is not available here</value>
+    </data>
+
+    <data name="Error_InvalidIs" xml:space="preserve">
+        <value>IS keyword is not available here</value>
+    </data>
+
+    <data name="Error_UnexpectedOpInVarArg" xml:space="preserve">
+        <value>An unexpected operator has been found while reading variable argument</value>
+    </data>
+
+    <data name="Error_EqualInExpression" xml:space="preserve">
+        <value>Assignment operator '=' is used in the expression (Use '==' for equality comparison)</value>
+    </data>
+
+    <data name="Error_ComparisonOpContinuous" xml:space="preserve">
+        <value>(Syntax note) Comparison operators are continuous</value>
+    </data>
+
+    <data name="Error_MissingQuestion" xml:space="preserve">
+        <value>Missing corresponding '?' for '#'</value>
+    </data>
+
+    <data name="Error_NoContainExpressionInBrackets" xml:space="preserve">
+        <value>Parentheses "("-")" don't contain an expression</value>
+    </data>
+
+    <data name="Error_UnexpectedSymbol" xml:space="preserve">
+        <value>Found an unexpected symbol during syntax interpretation "{0}"</value>
+    </data>
+
+    <data name="Error_TernaryBinaryError" xml:space="preserve">
+        <value>The amount of '?' and '#' do not correspond properly</value>
+    </data>
+
+    <data name="Error_FailedSolveMacro" xml:space="preserve">
+        <value>Failed to solve macro</value>
+    </data>
+
+    <data name="Error_UnrecognizedSyntax" xml:space="preserve">
+        <value>Unrecognized Syntax</value>
+    </data>
+
+    <data name="Error_MultipleUnaryOp" xml:space="preserve">
+        <value>There are multiple postfix unary operators</value>
+    </data>
+
+    <data name="Error_DuplicateIncrementDecrement" xml:space="preserve">
+        <value>Cannot use increment/decrement for both prefix and postfix at the same time</value>
+    </data>
+
+    <data name="Error_InsufficientExpression" xml:space="preserve">
+        <value>The number of expressions is insufficient</value>
+    </data>
+
+    <data name="Error_EmptyFramelist" xml:space="preserve">
+        <value>totaltime is set &gt; 0 but FrameList is empty</value>
+    </data>
+
+    <data name="Error_OoRLasframe" xml:space="preserve">
+        <value>SpriteAnime: Last frame is out of range</value>
+    </data>
+
+    <data name="Error_SpriteTimeOut" xml:space="preserve">
+        <value>SpriteAnime: Time out reference</value>
+    </data>
+
+    <data name="Error_IncrementNonVar" xml:space="preserve">
+        <value>Cannot increment a non-variable</value>
+    </data>
+
+    <data name="Error_IncrementConst" xml:space="preserve">
+        <value>Cannot increment a read-only variable</value>
+    </data>
+
+    <data name="Error_NumericType" xml:space="preserve">
+        <value>Numeric type</value>
+    </data>
+
+    <data name="Error_StringType" xml:space="preserve">
+        <value>String type</value>
+    </data>
+
+    <data name="Error_UnknownType" xml:space="preserve">
+        <value>Unknown type</value>
+    </data>
+
+    <data name="Error_RefType" xml:space="preserve">
+        <value>Reference type</value>
+    </data>
+
+    <data name="Error_MultidimType" xml:space="preserve">
+        <value>Multidimensional type</value>
+    </data>
+
+    <data name="Error_CharaType" xml:space="preserve">
+        <value>Character type</value>
+    </data>
+
+    <data name="Error_CanNotAppliedUnaryOp" xml:space="preserve">
+        <value>{0}" calculation cannot be applied to binary operator "{1}"</value>
+    </data>
+
+    <data name="Error_CanNotAppliedBinaryOp" xml:space="preserve">
+        <value>{0} and {1} calculation cannot be applied to binary operator "{2}"</value>
+    </data>
+
+    <data name="Error_InvalidTernaryOp" xml:space="preserve">
+        <value>Invalid usage of a ternary operator</value>
+    </data>
+
+    <data name="Error_MultiplyNegativeToStr" xml:space="preserve">
+        <value>Attempted to multiply a string negative amount of times({0})</value>
+    </data>
+
+    <data name="Error_Multiply10kToStr" xml:space="preserve">
+        <value>Attempted to multiply a string more than 10000 times({0})</value>
+    </data>
+
+    <data name="Error_DivideByZero" xml:space="preserve">
+        <value>A division by zero has been attempted</value>
+    </data>
+
+    <data name="Error_XmlGetError" xml:space="preserve">
+        <value>XML_GET:Interpreted error of "{0}":{1}</value>
+    </data>
+
+    <data name="Error_XmlGetPathError" xml:space="preserve">
+        <value>XML_GET:Interpreted error of XPath"{0}":{1}</value>
+    </data>
+
+    <data name="Error_FirstArg" xml:space="preserve">
+        <value>first argument</value>
+    </data>
+
+    <data name="Error_NotVarFunc" xml:space="preserve">
+        <value>{0}:{1} is not variable</value>
+    </data>
+
+    <data name="Error_IsCharaVarFunc" xml:space="preserve">
+        <value>{0}:{1} is character variable</value>
+    </data>
+
+    <data name="Error_Not1DFuncArg" xml:space="preserve">
+        <value>{0}:The {1} argument is not a one-dimensional variable</value>
+    </data>
+
+    <data name="Error_NotDimVarFunc" xml:space="preserve">
+        <value>{0}:The {1} argument is not an array</value>
+    </data>
+
+    <data name="Error_AbnormalArray" xml:space="preserve">
+        <value>Abnormal array</value>
+    </data>
+
+    <data name="Error_SetStrToInt" xml:space="preserve">
+        <value>Attempted to set string to Non-string variable "{0}"</value>
+    </data>
+
+    <data name="Error_SetIntToStr" xml:space="preserve">
+        <value>Attempted to set integer to Non-integer variable "{0}"</value>
+    </data>
+
+    <data name="Error_InvalidRegexArg" xml:space="preserve">
+        <value>{0}: The {1} argument regex is invalid: {2}</value>
+    </data>
+
+    <data name="Error_XmlParseError" xml:space="preserve">
+        <value>{0}:Interpreted error of "{1}":{2}</value>
+    </data>
+
+    <data name="Error_XmlXPathParseError" xml:space="preserve">
+        <value>{0}:Interpreted error of XPath"{1}":{2}</value>
+    </data>
+
+    <data name="Error_ReturnTypeDifferentOrNotImpelemnt" xml:space="preserve">
+        <value>Return type is different or not implemented</value>
+    </data>
+
+    <data name="Error_NotImplement" xml:space="preserve">
+        <value>Unimplemented</value>
+    </data>
+
+    <data name="Error_EmptyRefFunc" xml:space="preserve">
+        <value>Attempted to call a function reference ({0}) that doesn't refer to anything</value>
+    </data>
+
+    <data name="Error_RefFuncHasNotArg" xml:space="preserve">
+        <value>Attempted to call a function reference ({0}) without any arguments</value>
+    </data>
+
+    <data name="Error_AbnormalData" xml:space="preserve">
+        <value>Data is abnormal</value>
+    </data>
+
+    <data name="Error_OoRSortKey" xml:space="preserve">
+        <value>Sort key reference is out of array</value>
+    </data>
+
+    <data name="Error_AbnormalVarDeclaration" xml:space="preserve">
+        <value>Abnormal variable declaration</value>
+    </data>
+
+    <data name="Error_AssignToConst" xml:space="preserve">
+        <value>Attempted to assign a value to a read-only variable "{0}"</value>
+    </data>
+
+    <data name="Error_OoRCharaVar" xml:space="preserve">
+        <value>Character array variable "{0}" at the {1} argument ({2}) is out of range of the array</value>
+    </data>
+
+    <data name="Error_OoRArrayShift" xml:space="preserve">
+        <value>The fourth argument of the ARRAYSHIFT instruction ({0}) is out of range of the "{1}" array</value>
+    </data>
+
+    <data name="Error_OoRArrayRemove" xml:space="preserve">
+        <value>The second argument of the ARRAYREMOVE instruction ({0}) is out of range of the "{1}" array</value>
+    </data>
+
+    <data name="Error_OoRArraySort" xml:space="preserve">
+        <value>The third argument of the ARRAYSORT instruction ({0}) is out of range of the "{1}" array</value>
+    </data>
+
+    <data name="Error_OoRCharaNum" xml:space="preserve">
+        <value>Attempted to reference a registered character that does not exist"</value>
+    </data>
+
+    <data name="Error_AddedUndefinedChara" xml:space="preserve">
+        <value>Attempted to create an undefined character"</value>
+    </data>
+
+    <data name="Error_OoRDelChara" xml:space="preserve">
+        <value>Attempted to delete registered characters ({0}) that do not exist</value>
+    </data>
+
+    <data name="Error_DuplicateDelChara" xml:space="preserve">
+        <value>Identical registered character number ({0}) has been specified more than once</value>
+    </data>
+
+    <data name="Error_NotExistFromCopyChara" xml:space="preserve">
+        <value>Source of a copy character does not exist</value>
+    </data>
+
+    <data name="Error_NotExistToCopyChara" xml:space="preserve">
+        <value>Destination of a copy character does not exist</value>
+    </data>
+
+    <data name="Error_OoRSwapChara" xml:space="preserve">
+        <value>Attempted to replace a registered character that does not exist</value>
+    </data>
+
+    <data name="Error_RefUndefinedChara" xml:space="preserve">
+        <value>Attempted to refer to an undefined character</value>
+    </data>
+
+    <data name="Error_OoRCstr" xml:space="preserve">
+        <value>Attempted reference is out of the CSTR reference range</value>
+    </data>
+
+    <data name="Error_RefDoesNotExistData" xml:space="preserve">
+        <value>Attempted to reference data that does not exist</value>
+    </data>
+
+    <data name="Error_RefOoR" xml:space="preserve">
+        <value>Attempted reference is out of the reference range</value>
+    </data>
+
+    <data name="Error_FailedCreateDataFolder" xml:space="preserve">
+        <value>Failed to create dat folder</value>
+    </data>
+
+    <data name="Error_NothingFileName" xml:space="preserve">
+        <value>File name is not specified</value>
+    </data>
+
+    <data name="Error_InvalidFileName" xml:space="preserve">
+        <value>Invalid character in the file name</value>
+    </data>
+
+    <data name="Error_DifferentGame" xml:space="preserve">
+        <value>Attempted to load save data from a different game</value>
+    </data>
+
+    <data name="Error_DifferentVersion" xml:space="preserve">
+        <value>Save data version is different</value>
+    </data>
+
+    <data name="Error_CorruptedSaveData" xml:space="preserve">
+        <value>Save data is corrupted</value>
+    </data>
+
+    <data name="Error_LoadError" xml:space="preserve">
+        <value>An error has occurred while loading</value>
+    </data>
+
+    <data name="Error_ErrorSavingGlobalData" xml:space="preserve">
+        <value>An error has occurred while saving the global data</value>
+    </data>
+
+    <data name="Error_NotExistPath" xml:space="preserve">
+        <value>Tried to load from a non-existent path</value>
+    </data>
+
+    <data name="Error_DelReadOnlyFile" xml:space="preserve">
+        <value>Specified file "{0}" cannot be deleted because it's set to read only</value>
+    </data>
+
+    <data name="Error_TooMany2DCharaVarArg" xml:space="preserve">
+        <value>Cannot omit arguments for character two-dimensional array variable "{0}"</value>
+    </data>
+
+    <data name="Error_TooMany1DCharaVarArg" xml:space="preserve">
+        <value>Cannot omit arguments for character one-dimensional array variable "{0}"</value>
+    </data>
+
+    <data name="Error_TooManyCharaVarArg" xml:space="preserve">
+        <value>Character variable "{0}" has too many arguments</value>
+    </data>
+
+    <data name="Error_CanNotOmit1DCharaVarArg1" xml:space="preserve">
+        <value>Cannot omit arguments for character one-dimensional array variable "{0}"</value>
+    </data>
+
+    <data name="Error_CanNotOmit1DCharaVarArg2" xml:space="preserve">
+        <value>Cannot omit arguments for character one-dimensional array variable "{0}" (Prohibited by the current config)</value>
+    </data>
+
+    <data name="Error_CanNotOmitCharaVarArg1" xml:space="preserve">
+        <value>Cannot omit arguments for character variable "{0}"</value>
+    </data>
+
+    <data name="Error_CanNotOmitCharaVarArg2" xml:space="preserve">
+        <value>Cannot omit arguments for character variable "{0}" (Prohibited by the current config)</value>
+    </data>
+
+    <data name="Error_CanNotOmit3DVarArg" xml:space="preserve">
+        <value>Three-dimensional array variable "{0}" cannot have omitted arguments</value>
+    </data>
+
+    <data name="Error_CanNotOmit2DVarArg" xml:space="preserve">
+        <value>Two-dimensional array variable "{0}" cannot have omitted arguments</value>
+    </data>
+
+    <data name="Error_TooMany2DVarArg" xml:space="preserve">
+        <value>Two-dimensional array "{0}" has too many arguments</value>
+    </data>
+
+    <data name="Error_TooMany1DVarArg" xml:space="preserve">
+        <value>One-dimensional array variable "{0}" has too many arguments</value>
+    </data>
+
+    <data name="Error_OmittedRandArg" xml:space="preserve">
+        <value>RAND has an omitted argument</value>
+    </data>
+
+    <data name="Error_RandArgIsZero" xml:space="preserve">
+        <value>RAND has 0 as an argument</value>
+    </data>
+
+    <data name="Error_ZeroDVarHasArg" xml:space="preserve">
+        <value>Variable that is not an array "{0}" is being called with an argument</value>
+    </data>
+
+    <data name="Error_KeywordCanNotEmpty" xml:space="preserve">
+        <value>Keyword cannot be empty</value>
+    </data>
+
+    <data name="Error_AssignToVarOoR" xml:space="preserve">
+        <value>Attempted to assign beyond the number of elements in array variable "{0}"</value>
+    </data>
+
+    <data name="Error_MissingVarArg" xml:space="preserve">
+        <value>Variable "{0}" is missing required arguments</value>
+    </data>
+
+    <data name="Error_CallStrAsInt" xml:space="preserve">
+        <value>Non-integer variable "{0}" is called as an integer</value>
+    </data>
+
+    <data name="Error_CallIntAsStr" xml:space="preserve">
+        <value>Non-string variable "{0}" is called as a string</value>
+    </data>
+
+    <data name="Error_CallNDStrAsInt" xml:space="preserve">
+        <value>Non-integer array variable "{0}" is called as an integer</value>
+    </data>
+
+    <data name="Error_CallNDIntAsStr" xml:space="preserve">
+        <value>Non-string array variable "{0}" is called as a string</value>
+    </data>
+
+    <data name="Error_GetSize0DVar" xml:space="preserve">
+        <value>Attempted to get the size of a non-array variable "{0}"</value>
+    </data>
+
+    <data name="Error_CallCharaVarAsVar" xml:space="preserve">
+        <value>Character variable "{0}" is called as a non-character variable</value>
+    </data>
+
+    <data name="Error_CallVarAsCharaVar" xml:space="preserve">
+        <value>Non-character variable "{0}" is called as a character variable</value>
+    </data>
+
+    <data name="Error_GetSize0DCharaVar" xml:space="preserve">
+        <value>Attempted to get the size of a non-array character variable "{0}"</value>
+    </data>
+
+    <data name="Error_GetSizeCharaVarWithoutDim" xml:space="preserve">
+        <value>Attempted to get the size of a {0} dimensional character variable "{1}" without specifying the dimension</value>
+    </data>
+
+    <data name="Error_GetSizeCharaVarNonExistDim" xml:space="preserve">
+        <value>Attempted to get the size of the non-existing dimension of a character array variable "{0}"</value>
+    </data>
+
+    <data name="Error_OoRCharaVarArg" xml:space="preserve">
+        <value>Character array variable "{0}" at the {1} argument ({2}) is out of the range of the character registration number </value>
+    </data>
+
+    <data name="Error_OoRInstructionArg" xml:space="preserve">
+        <value>The {1} argument of "{0}" instruction ({2}) is out of the range of the "{3}" array</value>
+    </data>
+
+    <data name="Error_GetSizeDimError" xml:space="preserve">
+        <value>Attempted to get the size of a {0} dimensional array variable "{1}"</value>
+    </data>
+
+    <data name="Error_GetSizeNonExistDim" xml:space="preserve">
+        <value>Attempted to get the size of the non-existing dimension of an array variable "{0}"</value>
+    </data>
+
+    <data name="Error_OoRVarArg" xml:space="preserve">
+        <value>Array variable "{0}" at the {1} argument ({2}) is out of the range of the array</value>
+    </data>
+
+    <data name="Error_EmptyRefVar" xml:space="preserve">
+        <value>Reference type variable "{0}" does not refer to anything</value>
+    </data>
+
+    <data name="Error_CanNotOmitRefToVar" xml:space="preserve">
+        <value>Reference variable cannot be omitted</value>
+    </data>
+
+    <data name="Error_CanNotRefPseudoVar" xml:space="preserve">
+        <value>Pseudo variables cannot be referenced</value>
+    </data>
+
+    <data name="Error_CanNotRefConstVar" xml:space="preserve">
+        <value>Constants cannot be referenced</value>
+    </data>
+
+    <data name="Error_CanNotGlobalRefLocalVar" xml:space="preserve">
+        <value>Global reference variable cannot reference local variable</value>
+    </data>
+
+    <data name="Error_CanNotRefCharaVar" xml:space="preserve">
+        <value>Character variable cannot be referenced</value>
+    </data>
+
+    <data name="Error_CanNotRefDifferentType" xml:space="preserve">
+        <value>Variables with different types cannot be referenced</value>
+    </data>
+
+    <data name="Error_CanNotRefDifferentDim" xml:space="preserve">
+        <value>Variables with a different number of dimensions cannot be referenced</value>
+    </data>
+
+    <data name="Error_AssignToPseudoVar" xml:space="preserve">
+        <value>Attempted to assign a value to a pseudo variable "{0}"</value>
+    </data>
+
+    <data name="Error_GetSizePseudoVar" xml:space="preserve">
+        <value>Attempted to get the size of a pseudo variable "{0}"</value>
+    </data>
+
+    <data name="Error_GetDimPseudoVar" xml:space="preserve">
+        <value>Attempted to get the array data of a pseudo variable "{0}"</value>
+    </data>
+
+    <data name="Error_RandArgIsNegative" xml:space="preserve">
+        <value>RAND was specified with a value less than or equal to 0 ({0})</value>
+    </data>
+
+    <data name="Error_SpriteNameAlreadyUsed" xml:space="preserve">
+        <value>A resource file with the same name already exists:{0}</value>
+    </data>
+
+    <data name="Error_NotDeclaredAnimationSpriteSize" xml:space="preserve">
+        <value>The size of the animation sprite was not declared</value>
+    </data>
+
+    <data name="Error_InvalidAnimationSpriteSize" xml:space="preserve">
+        <value>The size of the animation sprite is invalid</value>
+    </data>
+
+    <data name="Error_MissingSecondArgumentExtension" xml:space="preserve">
+        <value>Second argument lacks filename extension:{0}</value>
+    </data>
+
+    <data name="Error_NotExistImageFile" xml:space="preserve">
+        <value>Couldn't find specified image file:{0}</value>
+    </data>
+
+    <data name="Error_FailedLoadFile" xml:space="preserve">
+        <value>Failed to load specified file:{0}</value>
+    </data>
+
+    <data name="Error_TooLargeImageFile" xml:space="preserve">
+        <value>The specified image file is too large (It is strongly recommended to keep width and height within {0}px):{1}</value>
+    </data>
+
+    <data name="Error_FailedCreateResource" xml:space="preserve">
+        <value>Failed to create image resource:{0}</value>
+    </data>
+
+    <data name="Error_SpriteCreateFromFailedResource" xml:space="preserve">
+        <value>Attempted to create a sprite based on a resource that couldn't be created:{0}</value>
+    </data>
+
+    <data name="Error_SpriteSizeIsNegatibe" xml:space="preserve">
+        <value>Sprite height/width can only be specified with positive values:{0}</value>
+    </data>
+
+    <data name="Error_OoRParentImage" xml:space="preserve">
+        <value>Referencing out of range of parent image:{0}</value>
+    </data>
+
+    <data name="Error_FrameTimeIsNegative" xml:space="preserve">
+        <value>Frame display time can only be specified with positive values:{0}</value>
+    </data>
+
+    <data name="Error_FailedAddSpriteFrame" xml:space="preserve">
+        <value>Failed to add animation sprite frame:{0}</value>
+    </data>
+
+    <data name="Error_InvalidConfigName" xml:space="preserve">
+        <value>Config name "{0}" is invalid</value>
+    </data>
+
+    <data name="Error_NotAllowGetConfigValue" xml:space="preserve">
+        <value>Not allowed get "{0}" value</value>
+    </data>
+
+    <data name="Error_UseArgVarInHasNotArgFunc" xml:space="preserve">
+        <value>Function declaration argument variable "{0}" is being used inside the function that is not using them (This behavior is not recommended, consider using #DIM instead)</value>
+    </data>
+
+    <data name="Error_UseArgVarInSystemFunc" xml:space="preserve">
+        <value>{1} is being used inside of a system function "{0}" (This behavior is not recommended, consider using #DIM instead)</value>
+    </data>
+
+    <data name="Error_FailedOpenFile" xml:space="preserve">
+        <value>Failed to open {0}</value>
+    </data>
+
+    <data name="Error_UnexpectedError" xml:space="preserve">
+        <value>An unexpected error has occurred</value>
+    </data>
+
+    <data name="Error_MissingComma" xml:space="preserve">
+        <value>, is required</value>
+    </data>
+
+    <data name="Error_CanNotInterpretVarName" xml:space="preserve">
+        <value>The {0} value cannot be interpreted as a variable name</value>
+    </data>
+
+    <data name="Error_CanNotChange0DVarSize" xml:space="preserve">
+        <value>Cannot change the size of a "{0}" variable that is not an array variable</value>
+    </data>
+
+    <data name="Error_CanNotChangeVarSize" xml:space="preserve">
+        <value>Cannot change the size of a "{0}" variable</value>
+    </data>
+
+    <data name="Error_ArrayLengthIs0" xml:space="preserve">
+        <value>Array length cannot be 0 (Specify negative value for array length to disable the variable)</value>
+    </data>
+
+    <data name="Error_CanNotDisableVarArrayLengthIsNegative" xml:space="preserve">
+        <value>Negative array length is specified for a variable that cannot be disabled.</value>
+    </data>
+
+    <data name="Error_IgnoreNDData" xml:space="preserve">
+        <value>Unnecessary data for size specification of {0}-dimensional array will be ignored</value>
+    </data>
+
+    <data name="Error_LocalVarSizeCanNotLessThan1" xml:space="preserve">
+        <value>Local variable size cannot be less than 1</value>
+    </data>
+
+    <data name="Error_InternalVarSizeCanNotLessThan100" xml:space="preserve">
+        <value>The size of a one-dimensional array that is not a local variable cannot be less than 100</value>
+    </data>
+
+    <data name="Error_OneDVarSizeCanNotGreaterThan1M" xml:space="preserve">
+        <value>One-dimensional array size cannot be greater than 1 million</value>
+    </data>
+
+    <data name="Error_VarSizeCanNotLessThan1" xml:space="preserve">
+        <value>Array size cannot be less than 1</value>
+    </data>
+
+    <data name="Error_VarSizeCanNotGreaterThan1M" xml:space="preserve">
+        <value>Array size cannot be greater than 1 million</value>
+    </data>
+
+    <data name="Error_MissingVarSizeArg" xml:space="preserve">
+        <value>{0}-dimensional array sizing requires {1} numeric values</value>
+    </data>
+
+    <data name="Error_VarSizeLimitIs1M" xml:space="preserve">
+        <value>Maximum number of elements in a two-dimensional array is limited to 1 million</value>
+    </data>
+
+    <data name="Error_VarSizeAlreadyDefined" xml:space="preserve">
+        <value>{0} number of elements is already defined (Will overwrite)</value>
+    </data>
+
+    <data name="Error_DifferentVarProhibitSetting" xml:space="preserve">
+        <value>Prohibition settings of "{0}" and "{1}" differ (Restriction will be disabled)</value>
+    </data>
+
+    <data name="Error_DifferentVarSize" xml:space="preserve">
+        <value>Number of elements of "{0}" and "{1}" differs (Will adjust to the largest)</value>
+    </data>
+
+    <data name="Error_InappropriatePalamJuelPalamname" xml:space="preserve">
+        <value>Inappropriate number of elements for PALAM, JUEL and PALAMNAME</value>
+    </data>
+
+    <data name="Error_PalamnameSizeLessThanJuelSize" xml:space="preserve">
+        <value>Number of elements in PALAMNAME is less than JUEL (Will adjust to JUEL)</value>
+    </data>
+
+    <data name="Error_DuplicateCharaDefine1" xml:space="preserve">
+        <value>Character number {0} was defined more than once (To define it as an SP character use "Allow SP Characters" compatibility option)</value>
+    </data>
+
+    <data name="Error_DuplicateCharaDefine2" xml:space="preserve">
+        <value>Character number {0} was defined more than once</value>
+    </data>
+
+    <data name="Error_StartedComma" xml:space="preserve">
+        <value>Token starts with ","</value>
+    </data>
+
+    <data name="Error_CharaNoDefinedTwice" xml:space="preserve">
+        <value>Number was defined twice</value>
+    </data>
+
+    <data name="Error_CanNotConvertToInt" xml:space="preserve">
+        <value>{0} cannot be converted to an integer value</value>
+    </data>
+
+    <data name="Error_StartedDataBeforeCharaNo" xml:space="preserve">
+        <value>Other data started before the number was defined</value>
+    </data>
+
+    <data name="Error_ProgramError" xml:space="preserve">
+        <value>Program error</value>
+    </data>
+
+    <data name="Error_IsProhibitedVar" xml:space="preserve">
+        <value>{0} is a prohibited set variable</value>
+    </data>
+
+    <data name="Error_OoRArray" xml:space="preserve">
+        <value>{0} is out of the range of the array</value>
+    </data>
+
+    <data name="Error_MissingSecondIdentifier" xml:space="preserve">
+        <value>Second identifier is missing</value>
+    </data>
+
+    <data name="Error_MissingThirdIdentifier" xml:space="preserve">
+        <value>Third identifier is missing</value>
+    </data>
+
+    <data name="Error_VarKeyAreadyDefined" xml:space="preserve">
+        <value>The "{0}" element for "{1}" is already defined (Will overwrite)</value>
+    </data>
+
+    <data name="Error_FirstValueCanNotConvertToInt" xml:space="preserve">
+        <value>The first value cannot be converted to an integer value</value>
+    </data>
+
+    <data name="Error_ProhibitedArrayName" xml:space="preserve">
+        <value>Prohibited set name array</value>
+    </data>
+
+    <data name="Error_CanNotReadAmountOfMoney" xml:space="preserve">
+        <value>Couldn't read amount of money</value>
+    </data>
+
+    <data name="Error_SaveCodeIs0" xml:space="preserve">
+        <value>Code 0 save data is treated as readable data from any game variant code script</value>
+    </data>
+
+    <data name="Error_CanNotReadVersion" xml:space="preserve">
+        <value>Processing is terminated due to being unable to read version specification</value>
+    </data>
+
+    <data name="Error_RequireLaterEmuera" xml:space="preserve">
+        <value>This game variant operates with ver.{0} which requires later Emuera version</value>
+    </data>
+
+    <data name="Error_SomethingErrorInGamebase" xml:space="preserve">
+        <value>An error occurred while reading the GAMEBASE.CSV, loading will be terminated</value>
+    </data>
+
+    <data name="Error_Instruction" xml:space="preserve">
+        <value>Instruction:</value>
+    </data>
+
+    <data name="Error_MissingArg" xml:space="preserve">
+        <value>Missing argument</value>
+    </data>
+
+    <data name="Error_NotEnoughArguments" xml:space="preserve">
+        <value>Not enough arguments</value>
+    </data>
+
+    <data name="Error_TooManyArg" xml:space="preserve">
+        <value>Too many arguments</value>
+    </data>
+
+    <data name="Error_CanNotRecognizeArg" xml:space="preserve">
+        <value>Argument number {0}: unable to recognize argument</value>
+    </data>
+
+    <data name="Error_IncorrectArg" xml:space="preserve">
+        <value>Argument number {0}: argument type is incorrect</value>
+    </data>
+
+    <data name="Error_ArgIsNotVariable" xml:space="preserve">
+        <value>The {0} argument cannot be anything other than a variable</value>
+    </data>
+
+    <data name="Error_ArgIsConst" xml:space="preserve">
+        <value>The {0} argument cannot be specified with a read-only variable</value>
+    </data>
+
+    <data name="Error_AbnormalSpecification" xml:space="preserve">
+        <value>Abnormal specification</value>
+    </data>
+
+    <data name="Error_CanNotOmitArg" xml:space="preserve">
+        <value>The {0} argument cannot be omitted</value>
+    </data>
+
+    <data name="Error_DifferentArgsCount" xml:space="preserve">
+        <value>Argument count has incorrect number of argument</value>
+    </data>
+
+    <data name="Error_ArgIsNotRealNumber" xml:space="preserve">
+        <value>The {0} argument is not a real number (it is always interpreted as 0)</value>
+    </data>
+
+    <data name="Error_WrongFormat" xml:space="preserve">
+        <value>The format is wrong</value>
+    </data>
+
+    <data name="Error_ArgIsStrVar" xml:space="preserve">
+        <value>The {0} argument cannot be a string variable</value>
+    </data>
+
+    <data name="Error_MissingArgAfterComma" xml:space="preserve">
+        <value>,' doesn't have an argument after it</value>
+    </data>
+
+    <data name="Error_ArgIsNotRequired" xml:space="preserve">
+        <value>Argument is not required</value>
+    </data>
+
+    <data name="Error_TransparentUnsupported" xml:space="preserve">
+        <value>Transparent cannot be specified as a color</value>
+    </data>
+
+    <data name="Error_InvalidColorName" xml:space="preserve">
+        <value>Specified color name "{0}" is invalid</value>
+    </data>
+
+    <data name="Error_ArgIsNotArrayVar" xml:space="preserve">
+        <value>Cannot specify a variable that is not an array for the {0} argument</value>
+    </data>
+
+    <data name="Error_ExtraCharacterAfterArg" xml:space="preserve">
+        <value>There's an extra character after the argument</value>
+    </data>
+
+    <data name="Error_ArgIsNotCharaVar" xml:space="preserve">
+        <value>The {0} argument must be a character variable</value>
+    </data>
+
+    <data name="Error_ArgIsNot1DVar" xml:space="preserve">
+        <value>Cannot specify a non-one-dimensional array or array type character variable as the {0} argument</value>
+    </data>
+
+    <data name="Error_IsNotForwardBack" xml:space="preserve">
+        <value>The {0} argument has an unrecognized sort method specifier (Only FORWARD or BACK allowed)</value>
+    </data>
+
+    <data name="Error_ArgIsNotNumber" xml:space="preserve">
+        <value>The {0} argument is not a number</value>
+    </data>
+
+    <data name="Error_NotSpecifiedFuncName" xml:space="preserve">
+        <value>Function name is not specified</value>
+    </data>
+
+    <data name="Error_CanNotReadLeft" xml:space="preserve">
+        <value>Failed to read the left side of the assignment statement</value>
+    </data>
+
+    <data name="Error_LeftHasExtraComma" xml:space="preserve">
+        <value>Left side of the assignment statement has an extra ','</value>
+    </data>
+
+    <data name="Error_LeftIsNotVar" xml:space="preserve">
+        <value>Cannot specify anything other than variables on the left side of the assignment statement</value>
+    </data>
+
+    <data name="Error_LeftIsConst" xml:space="preserve">
+        <value>It is not possible to specify a variable that cannot be changed on the left side of the assignment statement</value>
+    </data>
+
+    <data name="Error_InvalidOpWithInt" xml:space="preserve">
+        <value>Operator for integer type assignment " + OperatorManager.ToOperatorString(op) + " is not available</value>
+    </data>
+
+    <data name="Error_InvalidOpWithIncrement" xml:space="preserve">
+        <value>A non-increment operation is defined in the increment line</value>
+    </data>
+
+    <data name="Error_InvalidOpWithDecrement" xml:space="preserve">
+        <value>A non-decrement operation is defined in the decrement line</value>
+    </data>
+
+    <data name="Error_CanNotReadRight" xml:space="preserve">
+        <value>Failed to read the right side of the assignment statement</value>
+    </data>
+
+    <data name="Error_CanNotContainMultipleValue" xml:space="preserve">
+        <value>Composite assignment operations cannot contain multiple values on the right side</value>
+    </data>
+
+    <data name="Error_CanNotOmitRight" xml:space="preserve">
+        <value>The value on the right side of the assignment expression cannot be omitted</value>
+    </data>
+
+    <data name="Error_CanNotAssignStrToInt" xml:space="preserve">
+        <value>Cannot assign a string to a numeric variable</value>
+    </data>
+
+    <data name="Error_StrAssignIsPrihibited" xml:space="preserve">
+        <value>String assignment is prohibited</value>
+    </data>
+
+    <data name="Error_CanNotAssignIntToStr" xml:space="preserve">
+        <value>Cannot assign a numeric type to a string variable</value>
+    </data>
+
+    <data name="Error_RightHasExtraComma" xml:space="preserve">
+        <value>Right side of the assignment statement has an extra ','</value>
+    </data>
+
+    <data name="Error_InvalidAssignmentOp" xml:space="preserve">
+        <value>Attempted to use an operator that cannot be used for an assignment expression</value>
+    </data>
+
+    <data name="Error_IgnoreArgBecauseNotInt" xml:space="preserve">
+        <value>Second argument will be ignored because not integer</value>
+    </data>
+
+    <data name="Error_OmittedArg1" xml:space="preserve">
+        <value>Arguments that cannot be omitted were omitted. Emuera will add 0</value>
+    </data>
+
+    <data name="Error_OmittedArg2" xml:space="preserve">
+        <value>Arguments that cannot be omitted were omitted. Emuera adds 0, but the behavior of eramaker is undefined</value>
+    </data>
+
+    <data name="Error_CanNotUseRepeat" xml:space="preserve">
+        <value>COUNT is forbid variable. Can not use REPEAT</value>
+    </data>
+
+    <data name="Error_RepeatCountLessthan0" xml:space="preserve">
+        <value>REPEAT of 0 times or less has been detected (eramaker will throw an error)</value>
+    </data>
+
+    <data name="Error_ArgLessThan0" xml:space="preserve">
+        <value>A value less than or equal to 0 is passed as an argument (this line does nothing)</value>
+    </data>
+
+    <data name="Error_ArgIsNegativeValue" xml:space="preserve">
+        <value>A negative value is passed as an argument (the result is undefined)</value>
+    </data>
+
+    <data name="Error_ReturnArgIsVar" xml:space="preserve">
+        <value>Variable is passed as argument to RETURN (eramaker: Always returns 0)</value>
+    </data>
+
+    <data name="Error_ReturnArgIsFormula" xml:space="preserve">
+        <value>A formula is passed as an argument to RETURN (eramaker: Emuera returns a different value</value>
+    </data>
+
+    <data name="Error_ArgIsFormula" xml:space="preserve">
+        <value>{0}: The arguments are given to more than one value (eramaker: Not supported)</value>
+    </data>
+
+    <data name="Error_CharaVarCanNotSpecifiedArg" xml:space="preserve">
+        <value>The character variable cannot be specified as the {0} argument</value>
+    </data>
+
+    <data name="Error_DifferentArgType" xml:space="preserve">
+        <value>The type of the {0} argument is different</value>
+    </data>
+
+    <data name="Error_ArgIsOoRBit" xml:space="preserve">
+        <value>{0} argument ({1}) is outside the range (0-63)"</value>
+    </data>
+
+    <data name="Error_SpecifiedConst" xml:space="preserve">
+        <value>Attempted to specify a value to a read-only variable "{0}"</value>
+    </data>
+
+    <data name="Error_CanNotSetthirdLaterArg" xml:space="preserve">
+        <value>If target variable "{0}" has its element omitted, 3rd and later arguments cannot be set</value>
+    </data>
+
+    <data name="Error_IgnoreThirdLaterArg" xml:space="preserve">
+        <value>Third and subsequent arguments are ignored except for one-dimensional arrays</value>
+    </data>
+
+    <data name="Error_NotMatchTwoArg" xml:space="preserve">
+        <value>The type of the two arguments do not match</value>
+    </data>
+
+    <data name="Error_ArgIs2DVar" xml:space="preserve">
+        <value>Cannot specify a two-dimensional array variable in the first argument</value>
+    </data>
+
+    <data name="Error_IgnoreFourthLaterArg" xml:space="preserve">
+        <value>The fourth and subsequent arguments are ignored except for one-dimensional arrays</value>
+    </data>
+
+    <data name="Error_InvalidSetcolorArgCount" xml:space="preserve">
+        <value>The number of arguments of SETCOLOR is invalid (SETCOLOR takes only 1 or 3 arguments)</value>
+    </data>
+
+    <data name="Error_ArgIsRequiredNonCharaArrayVar" xml:space="preserve">
+        <value>The {0} argument must be a non-character one-dimensional array variable</value>
+    </data>
+
+    <data name="Error_NotMatchFirstAndThirdVar" xml:space="preserve">
+        <value>First and third argument types are different</value>
+    </data>
+
+    <data name="Error_CanNotSaveCharaVar" xml:space="preserve">
+        <value>Cannot save character variable "{0}" (Use SAVECHARA in order to save character variables)</value>
+    </data>
+
+    <data name="Error_CanNotSavePrivVar" xml:space="preserve">
+        <value>Cannot save private variable "{0}"</value>
+    </data>
+
+    <data name="Error_CanNotSaveLocalVar" xml:space="preserve">
+        <value>Cannot save local variable "{0}"</value>
+    </data>
+
+    <data name="Error_CanNotSaveConstVar" xml:space="preserve">
+        <value>Read-only variable cannot be saved</value>
+    </data>
+
+    <data name="Error_CanNotSavePseudoVar" xml:space="preserve">
+        <value>Pseudo variables cannot be saved</value>
+    </data>
+
+    <data name="Error_CanNotSaveRefVar" xml:space="preserve">
+        <value>Reference type variable cannot be saved</value>
+    </data>
+
+    <data name="Error_DuplicateVarSave" xml:space="preserve">
+        <value>Attempting to save variable "{0}" more than once</value>
+    </data>
+
+    <data name="Error_NotPositiveCharaNo" xml:space="preserve">
+        <value>Character registration number must be a positive value</value>
+    </data>
+
+    <data name="Error_CharaNoOverInt32" xml:space="preserve">
+        <value>Character registration number exceeds the upper limit of the 32 bit signed integer range</value>
+    </data>
+
+    <data name="Error_DuplicateCharaSave" xml:space="preserve">
+        <value>Character registration number "{0}" is being saved more than once</value>
+    </data>
+
+    <data name="Error_ArgIsNotRef" xml:space="preserve">
+        <value>The {0} argument must be a function reference or a reference type variable</value>
+    </data>
+
+    <data name="Error_NotDefinedUserFunc" xml:space="preserve">
+        <value>Function "{0}" is missing</value>
+    </data>
+
+    <data name="Error_CanNotRefFunc" xml:space="preserve">
+        <value>Cannot refer to functions without #FUNCTION(S) attribute "{0}"</value>
+    </data>
+
+    <data name="Error_NotDefinedVar" xml:space="preserve">
+        <value>Variable "{0}" is missing</value>
+    </data>
+
+    <data name="Error_ArraycopyArgIsNotDefined" xml:space="preserve">
+        <value>The {0} argument of the ARRAYCOPY instruction "{1}" does not exist as a variable name</value>
+    </data>
+
+    <data name="Error_ArraycopyArgIsNotArray" xml:space="preserve">
+        <value>The {0} argument of the ARRAYCOPY instruction "{1}" is not an array variable</value>
+    </data>
+
+    <data name="Error_ArraycopyArgIsCharaVar" xml:space="preserve">
+        <value>The {0} argument of the ARRAYCOPY instruction "{1}" is a character variable (not supported)</value>
+    </data>
+
+    <data name="Error_ArraycopyArgIsConst" xml:space="preserve">
+        <value>The {0} argument of the ARRAYCOPY instruction "{1}" is a read-only variable</value>
+    </data>
+
+    <data name="Error_DifferentArraycopyArgsDim" xml:space="preserve">
+        <value>The two arguments of the ARRAYCOPY instruction have different dimensions</value>
+    </data>
+
+    <data name="Error_DifferentArraycopyArgsType" xml:space="preserve">
+        <value>The type of the two array variables of the ARRAYCOPY instruction do not match</value>
+    </data>
+
+    <data name="Error_MissingArgAfterColon" xml:space="preserve">
+        <value>There's no argument after variable's :</value>
+    </data>
+
+    <data name="Error_AbnormalPrint" xml:space="preserve">
+        <value>Abnormal PRINT</value>
+    </data>
+
+    <data name="Error_AbnormalPrintdata" xml:space="preserve">
+        <value>Abnormal PRINTDATA</value>
+    </data>
+
+    <data name="Error_InvalidArg" xml:space="preserve">
+        <value>Argument is invalid</value>
+    </data>
+
+    <data name="Error_NotDefinedFunc" xml:space="preserve">
+        <value>The specified function "@{0}" is not found</value>
+    </data>
+
+    <data name="Error_SPCharaConfigIsOff" xml:space="preserve">
+        <value>SP character-related features are not available by default (Turn on "Allow SP Characters" compatibility option)</value>
+    </data>
+
+    <data name="Error_OoRCvarsetArg" xml:space="preserve">
+        <value>{0} argument of CVARSET instruction ({1}) is out of character range</value>
+    </data>
+
+    <data name="Error_CvarsetArgIsNotCharaVar" xml:space="preserve">
+        <value>A variable that is not a character variable "{0}" has been passed to CVARSET instruction</value>
+    </data>
+
+    <data name="Error_OoRSavecharaArg" xml:space="preserve">
+        <value>The value of the {0} SAVECHARA argument exceeds the range of character registration number</value>
+    </data>
+
+    <data name="Error_DuplicateCharaNo" xml:space="preserve">
+        <value>Identical character registration number ({0}) has been specified more than once</value>
+    </data>
+
+    <data name="Error_ArgIsOoRColorCode" xml:space="preserve">
+        <value>The {0} argument is out of range of the color integer</value>
+    </data>
+
+    <data name="Error_ArgIsOoR" xml:space="preserve">
+        <value>Argument value is out of range</value>
+    </data>
+
+    <data name="Error_AwaitArgIsNegative" xml:space="preserve">
+        <value>AWAIT instruction has been assigned with a negative value ({0})</value>
+    </data>
+
+    <data name="Error_AwaitArgIsOver10Seconds" xml:space="preserve">
+        <value>AWAIT instruction has been assigned with time of 10 seconds or more ({0}ms)</value>
+    </data>
+
+    <data name="Error_CanNotUseInstructionInfunc" xml:space="preserve">
+        <value>{1} instructions cannot be executed inside "@{0}" function</value>
+    </data>
+
+    <data name="Error_NothingAfterSif" xml:space="preserve">
+        <value>There is no next line in the SIF statement</value>
+    </data>
+
+    <data name="Error_FuncCanNotAfterSif" xml:space="preserve">
+        <value>The next line of the SIF statement ({0}) cannot be a statement</value>
+    </data>
+
+    <data name="Error_LabelCanNotAfterSif" xml:space="preserve">
+        <value>The following line of the SIF statement cannot be a label line</value>
+    </data>
+
+    <data name="Error_EmptyAfterSif" xml:space="preserve">
+        <value>The next line in the SIF statement is an empty line or a comment line(eramaker:SIF does nothing)</value>
+    </data>
+
+    <data name="Error_AbnormalContinue" xml:space="preserve">
+        <value>Abnormal CONTINUE</value>
+    </data>
+
+    <data name="Error_CanNotUseReturnf" xml:space="preserve">
+        <value>RETURNF cannot be used outside of functions with set #FUNCTION(S)</value>
+    </data>
+
+    <data name="Error_ReturnfStrInIntFunc" xml:space="preserve">
+        <value>A string type was specified in the return value of the function starting with #FUNCTION</value>
+    </data>
+
+    <data name="Error_ReturnfIntInStrFunc" xml:space="preserve">
+        <value>A numeric type was specified in the return value of the function starting with #FUNCTIONS</value>
+    </data>
+
+    <data name="Error_CanNotUseCallevent" xml:space="preserve">
+        <value>CALLEVENT instruction is not allowed inside EVENT function</value>
+    </data>
+
+    <data name="Error_NotDefinedLabelName" xml:space="preserve">
+        <value>Specified label name "${0}" does not exist in the current function</value>
+    </data>
+
+    <data name="Error_InvalidLabelName" xml:space="preserve">
+        <value>Specified label name "${0}" is an invalid label name</value>
+    </data>
+
+    <data name="Error_NotStartedSharpLineInHeader" xml:space="preserve">
+        <value>Header files has without # lines</value>
+    </data>
+
+    <data name="Error_CanNotInterpretSharpLine" xml:space="preserve">
+        <value>Failed to interpret # line</value>
+    </data>
+
+    <data name="Error_UnknownPreprocessorInSharpLine" xml:space="preserve">
+        <value>Attempted to read an unknown preprocessor "#{0}"</value>
+    </data>
+
+    <data name="Error_MissingReplacementSource" xml:space="preserve">
+        <value>Replacement source identifier is missing</value>
+    </data>
+
+    <data name="Error_FuncMacroArgIs0" xml:space="preserve">
+        <value>Argument of a function type macro cannot be zero</value>
+    </data>
+
+    <data name="Error_WrongFormatReplacementSource" xml:space="preserve">
+        <value>Format of the argument specification of the replacement source is incorrect</value>
+    </data>
+
+    <data name="Error_DuplicateCharacterReplcaementSource" xml:space="preserve">
+        <value>Same character is used more than once in the substitution source argument</value>
+    </data>
+
+    <data name="Error_MissingSubstitution" xml:space="preserve">
+        <value>Missing substitution expression</value>
+    </data>
+
+    <data name="Error_CanNotDeclaredFuncMacro" xml:space="preserve">
+        <value>Function type macro cannot be declared</value>
+    </data>
+
+    <data name="Error_UnexpectedErrorFrom" xml:space="preserve">
+        <value>An unexpected error has occurred:{0}</value>
+    </data>
+
+    <data name="Error_HasTooManyArg" xml:space="preserve">
+        <value>There's an extra argument in {0}</value>
+    </data>
+
+    <data name="Error_DuplicateSkipstart" xml:space="preserve">
+        <value>[SKIPSTART] is being used twice or overlapping</value>
+    </data>
+
+    <data name="Error_MissingArguments" xml:space="preserve">
+        <value>Argument is missing inside {0}</value>
+    </data>
+
+    <data name="Error_IsInvalid" xml:space="preserve">
+        <value>Inappropriate {0} detected</value>
+    </data>
+
+    <data name="Error_UnexpectedSkipend" xml:space="preserve">
+        <value>[SKIPSTART] should be closed with [SKIPEND]</value>
+    </data>
+
+    <data name="Error_UnexpectedMacroEndif" xml:space="preserve">
+        <value>[IF] doesn't have a corresponding [ENDIF]</value>
+    </data>
+
+    <data name="Error_UnrecognizedPreprosessor" xml:space="preserve">
+        <value>An unrecognized preprocessor</value>
+    </data>
+
+    <data name="Error_TheresNo" xml:space="preserve">
+        <value>There's no [{0}]</value>
+    </data>
+
+    <data name="Error_InvalidSBrackets" xml:space="preserve">
+        <value>Illegal use of []</value>
+    </data>
+
+    <data name="Error_IgnoreAfterPreprosessor" xml:space="preserve">
+        <value>The back of [{0}] will be ignored</value>
+    </data>
+
+    <data name="Error_InvalidSharp" xml:space="preserve">
+        <value># labels can be only used immediately after the function declaration</value>
+    </data>
+
+    <data name="Error_FuncIsAlreadyDefined" xml:space="preserve">
+        <value>Function "@{0}" is already defined (In {1} at line {2})</value>
+    </data>
+
+    <data name="Error_LabelIsAlreadyDefined" xml:space="preserve">
+        <value>Label name "${0}" is set multiple times in the same function (In {1} at line {2})</value>
+    </data>
+
+    <data name="Error_LineBeforeFunc" xml:space="preserve">
+        <value>There is a line before the function is defined</value>
+    </data>
+
+    <data name="Error_FuncArgError" xml:space="preserve">
+        <value>Function "@{0}" contains an error in argument:{1}</value>
+    </data>
+
+    <data name="Error_CalledFailedFunc" xml:space="preserve">
+        <value>A function that failed parsing at loading was called</value>
+    </data>
+
+    <data name="Error_EventFuncHasArg" xml:space="preserve">
+        <value>Event function "@{0}" cannot be set with an argument</value>
+    </data>
+
+    <data name="Error_SystemFuncHasArg" xml:space="preserve">
+        <value>System function "@{0}" cannot be set with an argument</value>
+    </data>
+
+    <data name="Error_WrongArgFormat" xml:space="preserve">
+        <value>Wrong argument format</value>
+    </data>
+
+    <data name="Error_CanNotEmptyFuncSBrackets" xml:space="preserve">
+        <value>Arguments inside [] in the function definition cannot be empty</value>
+    </data>
+
+    <data name="Error_CanNotOmitFuncDefineArg" xml:space="preserve">
+        <value>Function definition arguments cannot be omitted</value>
+    </data>
+
+    <data name="Error_FuncDefineArgOnlyConst" xml:space="preserve">
+        <value>Arguments inside [] in the function definition can only be constants</value>
+    </data>
+
+    <data name="Error_ArgCanOnlyAssignableVar" xml:space="preserve">
+        <value>An assignable variable must be specified for the function definition argument</value>
+    </data>
+
+    <data name="Error_ArgHasNotSubscript" xml:space="preserve">
+        <value>Argument that is not a reference type of function definition "{0}" has no subscript</value>
+    </data>
+
+    <data name="Error_ArgSubscriptOnlyConst" xml:space="preserve">
+        <value>Subscript of the argument in the function definition must be specified with a constant</value>
+    </data>
+
+    <data name="Error_DuplicateArg" xml:space="preserve">
+        <value>Argument number {0}:"{1}" is already declared as the {2} argument</value>
+    </data>
+
+    <data name="Error_ArgCanOnlyConst" xml:space="preserve">
+        <value>The initial value of the argument can only be a constant</value>
+    </data>
+
+    <data name="Error_ArgCanOnlyPrivVar" xml:space="preserve">
+        <value>The initial value of the argument can only be defined with "ARG", "ARGS" or private values</value>
+    </data>
+
+    <data name="Error_RefArgCanNotInitialize" xml:space="preserve">
+        <value>Cannot define an initial value for an argument that is passed by reference</value>
+    </data>
+
+    <data name="Error_NotMatchTypeArgAndInitialValue" xml:space="preserve">
+        <value>The type of the argument does not match the type of the initial value</value>
+    </data>
+
+    <data name="Error_BeNotFuncCheckBecauseUseCallform" xml:space="preserve">
+        <value>Function availability check was not used due to the usage of CALLFORM-type instruction (always assume they exist)</value>
+    </data>
+
+    <data name="Error_FuncNeverCalled" xml:space="preserve">
+        <value>Function "@{0}" is defined but never called</value>
+    </data>
+
+    <data name="Error_UndefinedFunctions" xml:space="preserve">
+        <value>・Function is missing definition: this error can be ignored if it's defined in other files</value>
+    </data>
+
+    <data name="Error_GeneralFunc" xml:space="preserve">
+        <value>○General functions:</value>
+    </data>
+
+    <data name="Error_Occurrences" xml:space="preserve">
+        <value>occurrences</value>
+    </data>
+
+    <data name="Error_SentenceFunc" xml:space="preserve">
+        <value>○Sentence functions:</value>
+    </data>
+
+    <data name="Error_IgnoredFuncNeverCalled" xml:space="preserve">
+        <value>Warning Lv1: {0} ignored warnings about defined functions that were never been called</value>
+    </data>
+
+    <data name="Error_IgnoredUndefinedFuncCall" xml:space="preserve">
+        <value>Warning Lv2: {0} ignored warnings about calling functions that were not defined</value>
+    </data>
+
+    <data name="Error_TotalFunc" xml:space="preserve">
+        <value>Number of non-comment lines: {0}, All functions total: {1}, Total called functions: {2}</value>
+    </data>
+
+    <data name="Error_OverWriteSystemFuncWarn1" xml:space="preserve">
+        <value>＊＊＊＊＊Warning ＊＊＊＊＊</value>
+    </data>
+
+    <data name="Error_OverWriteSystemFuncWarn2" xml:space="preserve">
+        <value>  System function "{0}" is being overwritten by a user-defined function.</value>
+    </data>
+
+    <data name="Error_OverWriteSystemFuncWarn3" xml:space="preserve">
+        <value>The script that uses the mentioned function may not operate as intended.</value>
+    </data>
+
+    <data name="Error_OverWriteSystemFuncWarn4" xml:space="preserve">
+        <value>※This warning is for Emuera-only scripts that use the applicable expression.</value>
+    </data>
+
+    <data name="Error_OverWriteSystemFuncWarn5" xml:space="preserve">
+        <value>It does not affect the script behavior for eramaker.</value>
+    </data>
+
+    <data name="Error_OverWriteSystemFuncWarn6" xml:space="preserve">
+        <value>  Turn off "Warn about overridden functions" config option if this warning is unnecessary.</value>
+    </data>
+
+    <data name="Error_OverWriteSystemFuncWarn7" xml:space="preserve">
+        <value>＊＊＊＊＊＊＊＊＊＊＊＊＊＊</value>
+    </data>
+
+    <data name="Error_FuncAnalysisError" xml:space="preserve">
+        <value>An error occurred during analysis of @{0}:{1}</value>
+    </data>
+
+    <data name="Error_CanNotUseInUserFunc" xml:space="preserve">
+        <value>{0} instruction cannot be used in #FUNCTION(S)</value>
+    </data>
+
+    <data name="Error_CanNotLabelDefineInSyntax" xml:space="preserve">
+        <value>{0}$ label cannot be defined inside syntax</value>
+    </data>
+
+    <data name="Error_InvalidInstructionInSyntax" xml:space="preserve">
+        <value>{0}Attempted to use instruction that is not available in syntax '{1}"'</value>
+    </data>
+
+    <data name="Error_OutsideSelectcase" xml:space="preserve">
+        <value>Attempted to use instruction outside the branch of SELECTCASE syntax '{0}'</value>
+    </data>
+
+    <data name="Error_NestedRepeat" xml:space="preserve">
+        <value>There are nested REPEAT statements（There is a possibility of an infinite loop）</value>
+    </data>
+
+    <data name="Error_RepeatInsideFor" xml:space="preserve">
+        <value>REPEAT is called inside FOR loop that already uses COUNT:{0} as a counter variable（There is a possibility of an infinite loop）</value>
+    </data>
+
+    <data name="Error_InvalidLoopInstruction" xml:space="preserve">
+        <value>A statement other than REPEAT, FOR, WHILE or DO was used "{0}"</value>
+    </data>
+
+    <data name="Error_InvalidElse" xml:space="preserve">
+        <value>A statement other than IF-ENDIF was used "{0}"</value>
+    </data>
+
+    <data name="Error_InvalidElseAfterElse" xml:space="preserve">
+        <value>A statement was used after ELSE "{0}"</value>
+    </data>
+
+    <data name="Error_UnexpectedEndif" xml:space="preserve">
+        <value>Missing corresponding IF for ENDIF</value>
+    </data>
+
+    <data name="Error_InstructionNotClosed" xml:space="preserve">
+        <value>{0} statement has reached {1} statement without the corresponding {2} statement</value>
+    </data>
+
+    <data name="Error_InvalidCaseAfterCaseelse" xml:space="preserve">
+        <value>{0} was used after CASEELSE statement</value>
+    </data>
+
+    <data name="Error_UnexpectedEndselect" xml:space="preserve">
+        <value>Missing corresponding SELECTCASE for ENDSELECT</value>
+    </data>
+
+    <data name="Error_NotMatchCaseTypeAndSelectcaseType" xml:space="preserve">
+        <value>The type of CASE argument doesn't match SELECTCASE type</value>
+    </data>
+
+    <data name="Error_MissingCorresponding" xml:space="preserve">
+        <value>Missing corresponding "{0}" for "{1}" statement</value>
+    </data>
+
+    <data name="Error_MissingTryc" xml:space="preserve">
+        <value>Missing corresponding TRYC system instruction</value>
+    </data>
+
+    <data name="Error_UnexpectedEndcatch" xml:space="preserve">
+        <value>Missing corresponding CATCH for ENDCATCH</value>
+    </data>
+
+    <data name="Error_NestedPrintdata" xml:space="preserve">
+        <value>PRINTDATA instructions cannot be nested</value>
+    </data>
+
+    <data name="Error_StrdataInsidePrintdata" xml:space="preserve">
+        <value>PRINTDATA-type instruction cannot include STRDATA-type instruction</value>
+    </data>
+
+    <data name="Error_NestedStrdata" xml:space="preserve">
+        <value>STRDATA instructions cannot be nested</value>
+    </data>
+
+    <data name="Error_PrintdataInsideStrdata" xml:space="preserve">
+        <value>STRDATA-type instruction cannot include PRINTDATA-type instruction</value>
+    </data>
+
+    <data name="Error_UnexpectedDatalist" xml:space="preserve">
+        <value>Missing corresponding PRINTDATA-type instruction for DATALIST</value>
+    </data>
+
+    <data name="Error_UnexpectedEndlist" xml:space="preserve">
+        <value>Missing corresponding DATALIST for ENDLIST</value>
+    </data>
+
+    <data name="Error_DatalistDataIsMissing" xml:space="preserve">
+        <value>No display data is given to the DATALIST instruction (This DATALIST will always display an empty string)</value>
+    </data>
+
+    <data name="Error_MissingPrintdata" xml:space="preserve">
+        <value>Missing corresponding PRINTDATA-type instruction for {0}</value>
+    </data>
+
+    <data name="Error_MissingPrintdataStrdata" xml:space="preserve">
+        <value>Missing corresponding PRINTDATA-type or STRDATA-type instruction for {0}</value>
+    </data>
+
+    <data name="Error_InstructionDataIsMissing" xml:space="preserve">
+        <value>No display data is given to the "{0}" instruction (It will always display an empty string)</value>
+    </data>
+
+    <data name="Error_DatalistNotClosed" xml:space="preserve">
+        <value>DATALIST is not closed</value>
+    </data>
+
+    <data name="Error_NestedTrycalllist" xml:space="preserve">
+        <value>TRYCALLLIST-type instructions cannot be nested</value>
+    </data>
+
+    <data name="Error_MissingTrycalllist" xml:space="preserve">
+        <value>Missing corresponding TRYCALLLIST-type instruction for "{0}"</value>
+    </data>
+
+    <data name="Error_InvalidInstructionInTrycalllist" xml:space="preserve">
+        <value>Found an illegal "{0}" inside TRYCALLLIST-type instruction</value>
+    </data>
+
+    <data name="Error_TrygotolistToSBrackets" xml:space="preserve">
+        <value>TRYGOTOLIST has been set to [～～] as a called object</value>
+    </data>
+
+    <data name="Error_TrygotolistTargetHasArg" xml:space="preserve">
+        <value>TRYGOTOLIST has been set to an argument as a called object</value>
+    </data>
+
+    <data name="Error_NestedNoskip" xml:space="preserve">
+        <value>NOSKIP-type instructions cannot be nested</value>
+    </data>
+
+    <data name="Error_MissingNoskip" xml:space="preserve">
+        <value>Missing corresponding NOSKIP-type instruction for "{0}"</value>
+    </data>
+
+    <data name="Error_DefaultError" xml:space="preserve">
+        <value>Default error (Emuera setting is missing)</value>
+    </data>
+
+    <data name="Error_UseSingleUserFunc" xml:space="preserve">
+        <value>#SINGLE doesn't work with expression functions</value>
+    </data>
+
+    <data name="Error_UsableSingleEventFunc" xml:space="preserve">
+        <value>#SINGLE can be only used with EVENT functions</value>
+    </data>
+
+    <data name="Error_DuplicateSingle" xml:space="preserve">
+        <value>Duplicate usage of #SINGLE</value>
+    </data>
+
+    <data name="Error_OnlyWithSingle" xml:space="preserve">
+        <value>#SINGLE doesn't work with EVENT functions that have #ONLY declared</value>
+    </data>
+
+    <data name="Error_UseLaterUserFunc" xml:space="preserve">
+        <value>#LATER doesn't work with expression functions</value>
+    </data>
+
+    <data name="Error_UsableLaterEventFunc" xml:space="preserve">
+        <value>#LATER can be only used with EVENT functions</value>
+    </data>
+
+    <data name="Error_DuplicateLater" xml:space="preserve">
+        <value>Duplicate usage of #LATER</value>
+    </data>
+
+    <data name="Error_OnlyWithLater" xml:space="preserve">
+        <value>#LATER doesn't work with EVENT functions that have #ONLY declared</value>
+    </data>
+
+    <data name="Error_PriWithLater" xml:space="preserve">
+        <value>Using #PRI and #LATER together will call this function twice, duplicating it</value>
+    </data>
+
+    <data name="Error_UsePriUserFunc" xml:space="preserve">
+        <value>#PRI doesn't work with expression functions</value>
+    </data>
+
+    <data name="Error_UsablePriEventFunc" xml:space="preserve">
+        <value>#PRI can be only used with EVENT functions</value>
+    </data>
+
+    <data name="Error_DuplicatePri" xml:space="preserve">
+        <value>Duplicate usage of #PRI</value>
+    </data>
+
+    <data name="Error_OnlyWithPri" xml:space="preserve">
+        <value>#PRI doesn't work with EVENT functions that have #ONLY declared</value>
+    </data>
+
+    <data name="Error_UseOnlyUserFunc" xml:space="preserve">
+        <value>#ONLY doesn't work with expression functions</value>
+    </data>
+
+    <data name="Error_UsableOnlyEventFunc" xml:space="preserve">
+        <value>#ONLY can be only used with EVENT functions</value>
+    </data>
+
+    <data name="Error_DuplicateOnly" xml:space="preserve">
+        <value>Duplicate usage of #ONLY</value>
+    </data>
+
+    <data name="Error_AlreadyDeclaredOnly" xml:space="preserve">
+        <value>This EVENT function "@{0}" has been already declared #ONLY (This function will not be executed)</value>
+    </data>
+
+    <data name="Error_BeIgnorePri" xml:space="preserve">
+        <value>This EVENT function has been declared #PRI but is ignored</value>
+    </data>
+
+    <data name="Error_BeIgnoreLater" xml:space="preserve">
+        <value>This EVENT function has been declared #LATER but is ignored</value>
+    </data>
+
+    <data name="Error_BeIgnoreSingle" xml:space="preserve">
+        <value>This EVENT function has been declared #SINGLE but is ignored</value>
+    </data>
+
+    <data name="Error_CanNotDeclaredBeginNumberFunction" xml:space="preserve">
+        <value>Function name of a function with "#{0}" attribute cannot begin with a numeric character</value>
+    </data>
+
+    <data name="Error_FuncNameBeginNumber" xml:space="preserve">
+        <value>Function name begins with a numeric character</value>
+    </data>
+
+    <data name="Error_AlreadySharpDeclared" xml:space="preserve">
+        <value>Function "{0}" has been already declared #{1} (Line will be ignored)</value>
+    </data>
+
+    <data name="Error_AlreadyDeclaredSharpFunction" xml:space="preserve">
+        <value>Function "{0}" has been already declared #FUNCTION</value>
+    </data>
+
+    <data name="Error_AlreadyDeclaredSharpFunctions" xml:space="preserve">
+        <value>Function "{0}" has been already declared #FUNCTIONS</value>
+    </data>
+
+    <data name="Error_UseSharpInSystemFunc" xml:space="preserve">
+        <value>#{0} has been specified to a system function</value>
+    </data>
+
+    <data name="Error_SharpHasNotValidValue" xml:space="preserve">
+        <value>A valid numerical value has not been specified after #{0}</value>
+    </data>
+
+    <data name="Error_EventFuncIgnoreSpecified" xml:space="preserve">
+        <value>EVENT function will ignore the specified #{0} for {1}</value>
+    </data>
+
+    <data name="Error_LocalsizeLessThan1" xml:space="preserve">
+        <value>#{0} was given a value less or equal 0 ({1}), setting will be ignored</value>
+    </data>
+
+    <data name="Error_TooManyLocalsize" xml:space="preserve">
+        <value>#{0} was given a very large value ({1}), setting will be ignored</value>
+    </data>
+
+    <data name="Error_LocalIsProhibited" xml:space="preserve">
+        <value>#{0} is specified, but {1} variable is forbidden</value>
+    </data>
+
+    <data name="Error_DuplicateLocalsize" xml:space="preserve">
+        <value>This function already defines #LOCALSIZE (Previous definitions will be ignored)</value>
+    </data>
+
+    <data name="Error_DuplicateLocalssize" xml:space="preserve">
+        <value>This function already defines #LOCALSSIZE (Previous definitions will be ignored)</value>
+    </data>
+
+    <data name="Error_VarNameAlreadyUsed" xml:space="preserve">
+        <value>Variable name "{0}" is already in use</value>
+    </data>
+
+    <data name="Error_ExtraCharacterAfterSharp" xml:space="preserve">
+        <value>There's an extra character after the # label</value>
+    </data>
+
+    <data name="Error_InvalidFunc" xml:space="preserve">
+        <value>Function name is invalid or doesn't exist</value>
+    </data>
+
+    <data name="Error_LabelHasArg" xml:space="preserve">
+        <value>The label starting with $ has a set argument</value>
+    </data>
+
+    <data name="Error_StartedPlusButNotIncrement" xml:space="preserve">
+        <value>Line starts with a '+', but is not an increment</value>
+    </data>
+
+    <data name="Error_StartedMinusButNotDecrement" xml:space="preserve">
+        <value>Line starts with a '-', but is not a decrement</value>
+    </data>
+
+    <data name="Error_InvalidCharacterAfterInstruction1" xml:space="preserve">
+        <value>Line begins with an instruction, but there are characters other than half-width space or tab following after it (This error can be ignored by using "Include full-width space in whitespace" system option)</value>
+    </data>
+
+    <data name="Error_InvalidCharacterAfterInstruction2" xml:space="preserve">
+        <value>Line begins with an instruction, but there are characters other than half-width space or tab following after it</value>
+    </data>
+
+    <data name="Error_CanNotInterpretedLine" xml:space="preserve">
+        <value>Line cannot be interpreted</value>
+    </data>
+
+    <data name="Error_Use2EqualToAssign" xml:space="preserve">
+        <value>Assignment statement is using relational operator "=="</value>
+    </data>
+
+    <data name="Error_CalleventToNonEventFunc" xml:space="preserve">
+        <value>Function that is not an event functions "@{0}"({1}, Line:{2}) has been called as an EVENT"</value>
+    </data>
+
+    <data name="Error_CallToEventFunc" xml:space="preserve">
+        <value>A normal CALL has been attempted on an EVENT function @{0}"(This error can be ignored by using "Allow CALL On Event Functions" compatibility option)</value>
+    </data>
+
+    <data name="Error_CallToUserFunc" xml:space="preserve">
+        <value>A normal CALL has been attempted on a function with a defined #FUNCTION(S) "@{0}"({1}, Line:{2})</value>
+    </data>
+
+    <data name="Error_CanNotOmitRefArg" xml:space="preserve">
+        <value>The {1} argument is passed by the reference to "@{0}" function and cannot be omitted</value>
+    </data>
+
+    <data name="Error_RequireArrayBecauseRefArg" xml:space="preserve">
+        <value>The {1} argument must be an array variable for passing by reference to "@{1}" function </value>
+    </data>
+
+    <data name="Error_NumberOfArg" xml:space="preserve">
+        <value>The {0} argument of "@{0}" function:{2}</value>
+    </data>
+
+    <data name="Error_CanNotOmitArgWithMessage" xml:space="preserve">
+        <value>The {1} argument cannot be omitted for "@{0}" function (This error can be ignored by using "Allow Omission Of All Arguments" compatibility option)</value>
+    </data>
+
+    <data name="Error_CanNotConvertStrToInt" xml:space="preserve">
+        <value>Unable to convert {1} argument from a string type to an integer type for "@{0}" function</value>
+    </data>
+
+    <data name="Error_CanNotConvertIntToStr" xml:space="preserve">
+        <value>Unable to convert {1} argument from a string type to an integer type for "@{0}" function (This error can be ignored by using "Add TOSTR Automatically" compatibility option)</value>
+    </data>
+
+    <data name="Error_CalltrainArgMoreThanSelectcom" xml:space="preserve">
+        <value>The value of the arguments of the CALLTRAIN instruction exceeds the number of SELECTCOM elements</value>
+    </data>
+
+    <data name="Error_SelectExitInfiniteLoopMB" xml:space="preserve">
+        <value>Forced termination was selected due to suspected infinite loop</value>
+    </data>
+
+    <data name="Error_OverflowFuncStack" xml:space="preserve">
+        <value>Call stack of the function has overflowed (is it being recursively called indefinitely?)</value>
+    </data>
+
+    <data name="Error_FuncEndError" xml:space="preserve">
+        <value>An error has occurred at the end of the function:{0}</value>
+    </data>
+
+    <data name="Error_FuncEndEmueraError" xml:space="preserve">
+        <value>An Emuera error has occurred at the end of the function:{0}</value>
+    </data>
+
+    <data name="Error_FuncEndUnexpectedError" xml:space="preserve">
+        <value>An unexpected error has occurred at the end of the function:{0}</value>
+    </data>
+
+    <data name="Error_ErrorFileAndLine" xml:space="preserve">
+        <value>{0} at line {1}</value>
+    </data>
+
+    <data name="Error_ErrorFile" xml:space="preserve">
+        <value>In {0}</value>
+    </data>
+
+    <data name="Error_HasThrow" xml:space="preserve">
+        <value>{0}THROW has occurred</value>
+    </data>
+
+    <data name="Error_HasError" xml:space="preserve">
+        <value>{0}Error has occurred:{1}</value>
+    </data>
+
+    <data name="Error_ThrowMessage" xml:space="preserve">
+        <value>THROW contents: {0}</value>
+    </data>
+
+    <data name="Error_ErrorMessage" xml:space="preserve">
+        <value>Error description: {0}</value>
+    </data>
+
+    <data name="Error_ErrorInFunc" xml:space="preserve">
+        <value>Function: @{0}（file:{1} in line {2}）</value>
+    </data>
+
+    <data name="Error_FuncCallStack" xml:space="preserve">
+        <value>Function call stack:</value>
+    </data>
+
+    <data name="Error_ErrorFuncStack" xml:space="preserve">
+        <value>↑{0} at line {1}（function@{2}）</value>
+    </data>
+
+    <data name="Error_HasEmueraError" xml:space="preserve">
+        <value>{0}Emuera has encountered an error: {1}</value>
+    </data>
+
+    <data name="Error_HasUnexpectedError" xml:space="preserve">
+        <value>{0}Unexpected error has occurred: {1}</value>
+    </data>
+
+    <data name="Error_SkipdispInputError1" xml:space="preserve">
+        <value>Encountered INPUT without the default value during display skip</value>
+    </data>
+
+    <data name="Error_SkipdispInputError2" xml:space="preserve">
+        <value>Enclose the INPUT necessary for processing with NOSKIP-ENDNOSKIP or SKIPDISP 0-SKIPDISP 1</value>
+    </data>
+
+    <data name="Error_SkipdispInputError3" xml:space="preserve">
+        <value>Execution will be terminated due to the possible infinite loop</value>
+    </data>
+
+    <data name="Error_DoFailedLine" xml:space="preserve">
+        <value>Line that couldn't be read has been executed. For more information about the error, see warning during reading</value>
+    </data>
+
+    <data name="Error_OoRPickupcharaArg" xml:space="preserve">
+        <value>Argument number {0} at the PICKUPCHARA instruction has been given a value outside of the character list range ({1})</value>
+    </data>
+
+    <data name="Error_CanNotUseOutsideSystemtitle" xml:space="preserve">
+        <value>This instruction cannot be used outside @SYSTEM_TITLE</value>
+    </data>
+
+    <data name="Error_SavedataArgIsNegative" xml:space="preserve">
+        <value>A negative value has been specified to SAVEDATA ({0})</value>
+    </data>
+
+    <data name="Error_TooLargeSavedataArg" xml:space="preserve">
+        <value>Argument given to SAVEDATA ({0}) is too big</value>
+    </data>
+
+    <data name="Error_SavetextContainNewLineCharacter" xml:space="preserve">
+        <value>SAVEDATA save text contains a new line character (Save data will get corrupted)</value>
+    </data>
+
+    <data name="Error_UnexpectedErrorInSavedata" xml:space="preserve">
+        <value>An unexpected error occurred while saving with SAVEDATA instruction</value>
+    </data>
+
+    <data name="Error_PowerResultNonNumeric" xml:space="preserve">
+        <value>Power result is non-numeric</value>
+    </data>
+
+    <data name="Error_PowerResultInfinite" xml:space="preserve">
+        <value>Power result is infinite</value>
+    </data>
+
+    <data name="Error_PowerResultOverflow" xml:space="preserve">
+        <value>Power result ({0}) exceeds the upper limit of the 64 bit signed integer range</value>
+    </data>
+
+    <data name="Error_VarsTypeDifferent" xml:space="preserve">
+        <value>The type of the variable to replace is different</value>
+    </data>
+
+    <data name="Error_UnknownVarType" xml:space="preserve">
+        <value>Unknown variable type</value>
+    </data>
+
+    <data name="Error_SetcolorArgLessThan0" xml:space="preserve">
+        <value>SETCOLOR was given an argument less than 0</value>
+    </data>
+
+    <data name="Error_SetcolorArgOver255" xml:space="preserve">
+        <value>SETCOLOR was given an argument greater than 255</value>
+    </data>
+
+    <data name="Error_InvalidAlignment" xml:space="preserve">
+        <value>ALIGNMENT keyword "{0}" is illegal</value>
+    </data>
+
+    <data name="Error_MissingEndnoskip" xml:space="preserve">
+        <value>Missing corresponding ENDNOSKIP for NOSKIP</value>
+    </data>
+
+    <data name="Error_IsUsableOnly1DVar" xml:space="preserve">
+        <value>{0} supports only one-dimensional arrays and character array variables</value>
+    </data>
+
+    <data name="Error_tooLongEncodetouniArg" xml:space="preserve">
+        <value>ENCODETOUNI argument is too long (Current - {0}, limit - {1})</value>
+    </data>
+
+    <data name="Error_AssertArgIs0" xml:space="preserve">
+        <value>Argument in ASSERT statement is 0</value>
+    </data>
+
+    <data name="Error_LoaddataArgIsNegative" xml:space="preserve">
+        <value>A negative value has been specified to LOADDATA (" + target.ToString() + ")</value>
+    </data>
+
+    <data name="Error_TooLargeLoaddataArg" xml:space="preserve">
+        <value>Argument given to LOADDATA ({0}) is too big</value>
+    </data>
+
+    <data name="Error_LoadCorruptedData" xml:space="preserve">
+        <value>Attempted to load bad or corrupted save data</value>
+    </data>
+
+    <data name="Error_UnexpectedErrorInLoaddata" xml:space="preserve">
+        <value>An unexpected error occurred while loading the save file</value>
+    </data>
+
+    <data name="Error_CanNotUseDotrainHere" xml:space="preserve">
+        <value>DOTRAIN instruction cannot be executed in this position</value>
+    </data>
+
+    <data name="Error_DotrainArgLessThan0" xml:space="preserve">
+        <value>DOTRAIN instruction passed a value less than 0</value>
+    </data>
+
+    <data name="Error_DotrainArgOverTrainnameArray" xml:space="preserve">
+        <value>DOTRAIN instruction passed a value beyond the number of TRAINNAME arrays</value>
+    </data>
+
+    <data name="Error_UndefinedFunc" xml:space="preserve">
+        <value>Undefined function</value>
+    </data>
+
+    <data name="Error_InvalidBeginArg" xml:space="preserve">
+        <value>Undefined BEGIN keyword "{0}"</value>
+    </data>
+
+    <data name="Error_CalleventBeforeFinishEvent" xml:space="preserve">
+        <value>CALLEVENT instruction has been used before EVENT has been finished</value>
+    </data>
+
+    <data name="Error_FuncIsNotFound" xml:space="preserve">
+        <value>Function "@{0}" is not found</value>
+    </data>
+
+    <data name="Error_InvalidValue" xml:space="preserve">
+        <value>Invalid value</value>
+    </data>
+
+    <data name="Error_ExecutedCom" xml:space="preserve">
+        <value>＜Executed command：{0}/{1}＞</value>
+    </data>
+
+    <data name="Error_CouldNotExecuteCom" xml:space="preserve">
+        <value>Unable to execute command</value>
+    </data>
+
+    <data name="Error_AutoSaveError1" xml:space="preserve">
+        <value>An unexpected error occurred during autosave</value>
+    </data>
+
+    <data name="Error_AutoSaveError2" xml:space="preserve">
+        <value>Autosave will be skipped</value>
+    </data>
+
+    <data name="Error_NotEnoughMoney" xml:space="preserve">
+        <value>Not enough money.</value>
+    </data>
+
+    <data name="Error_OutOfStock" xml:space="preserve">
+        <value>Out of stock.</value>
+    </data>
+
+    <data name="Error_UnexpectedSaveError" xml:space="preserve">
+        <value>Unexpected error while saving has occurred</value>
+    </data>
+
+    <data name="Error_NoData" xml:space="preserve">
+        <value>No data found</value>
+    </data>
+
+    <data name="Error_UnexpectedScriptEnd" xml:space="preserve">
+        <value>Script execution terminated</value>
+    </data>
+
+    <data name="Error_CanNotSpecifiedKeyword" xml:space="preserve">
+        <value>{1} cannot be specified inside {0}</value>
+    </data>
+
+    <data name="Error_NotIdentifierAfterKeyword" xml:space="preserve">
+        <value>A valid identifier has not been specified after {0}</value>
+    </data>
+
+    <data name="Error_NotIdentifierArg" xml:space="preserve">
+        <value>No argument definition after identifier</value>
+    </data>
+
+    <data name="Error_RefArgIsNotArray" xml:space="preserve">
+        <value>REF argument must be an array variable</value>
+    </data>
+
+    <data name="Error_RefArrayCanNotMoreThan4" xml:space="preserve">
+        <value>REF argument cannot be an array of more than 4 dimensions</value>
+    </data>
+    <data name="Error_UnexpectedToken" xml:space="preserve">
+        <value>Unexpected token during argument parsing {0} has been detected</value>
+    </data>
+
+    <data name="Error_ArgParsingError" xml:space="preserve">
+        <value>An error occurred while parsing the argument</value>
+    </data>
+
+    <data name="Error_CanNotSpecifiedWith" xml:space="preserve">
+        <value>Can not specify keywords {0} and {1} simultaneously</value>
+    </data>
+
+    <data name="Error_DuplicateKeyword" xml:space="preserve">
+        <value>{0} keyword has been duplicated</value>
+    </data>
+
+    <data name="Error_CanNotUseKeywordGlobalVar" xml:space="preserve">
+        <value>{0} cannot be declared on a public variable</value>
+    </data>
+
+    <data name="Error_CanNotUseKeywordLocalVar" xml:space="preserve">
+        <value>{0} cannot be declared on a private variable</value>
+    </data>
+
+    <data name="Error_NotVarAfterKeyword" xml:space="preserve">
+        <value>Valid variable name has not been specified after {0}</value>
+    </data>
+
+    <data name="Error_ConstHasNotInitialValue" xml:space="preserve">
+        <value>CONST keyword is specified but the initial value is not set</value>
+    </data>
+
+    <data name="Error_HasNotExpressionAfterComma" xml:space="preserve">
+        <value>A valid constant expression has not been specified after a comma</value>
+    </data>
+
+    <data name="Error_CanNotSizedRef" xml:space="preserve">
+        <value>Reference type variable cannot be sized (Omit it or specify 0)</value>
+    </data>
+
+    <data name="Error_OoRDefinable" xml:space="preserve">
+        <value>User-defined variable is exceeding the allowed size range (1-1000000)</value>
+    </data>
+
+    <data name="Error_UnexpectedOp" xml:space="preserve">
+        <value>Unexpected operator detected</value>
+    </data>
+
+    <data name="Error_CanNotSetInitialValue" xml:space="preserve">
+        <value>Initial value cannot be set for {0} variable</value>
+    </data>
+
+    <data name="Error_ArrayVarCanNotOmitInitialValue" xml:space="preserve">
+        <value>Initial value of an array cannot be omitted</value>
+    </data>
+
+    <data name="Error_InitialValueMoreThanArraySize" xml:space="preserve">
+        <value>The number of initial values exceeds the size of the array</value>
+    </data>
+
+    <data name="Error_ConstInitialValueDifferentArraySize" xml:space="preserve">
+        <value>The number of constant initial values does not match the size of the arrays</value>
+    </data>
+
+    <data name="Error_InitialValueOnlyConst" xml:space="preserve">
+        <value>The initial value of an array can only be a constant</value>
+    </data>
+
+    <data name="Error_NotMatchVarTypeAndInitialValue" xml:space="preserve">
+        <value>The type of the variable does not match the type of the initial value</value>
+    </data>
+
+    <data name="Error_CanNotDeclareConstArray" xml:space="preserve">
+        <value>A variable with the CONST keyword cannot be a multidimensional array</value>
+    </data>
+
+    <data name="Error_CharaVarCanNotDeclareMoreThan3D" xml:space="preserve">
+        <value>Cannot declare more than three dimensions of a character variable</value>
+    </data>
+
+    <data name="Error_VarCanNotDeclareMoreThan4D" xml:space="preserve">
+        <value>Cannot declare an array variable with more than 3 dimensions</value>
+    </data>
+
+    <data name="Error_StrVarrRequiredBinaryOption" xml:space="preserve">
+        <value>Use Binary Format For Save Data config option is required when SAVEDATA flag is used with multidimensional array variable of a character string type</value>
+    </data>
+
+    <data name="Error_CharaStrRequiredBinaryOption" xml:space="preserve">
+        <value>Use Binary Format For Save Data config option is required when SAVEDATA flag is used with character type variable</value>
+    </data>
+
+    <data name="Error_ForceQuitAndRestartError" xml:space="preserve">
+        <value>FORCE_QUIT_AND_RESTART was consecutive executed.</value>
+    </data>
+
+    <data name="Error_ProgramStatusError" xml:space="preserve">
+        <value>Emuera error: Unable to determine program status</value>
+    </data>
+
+    <data name="Error_FailedOpenEditor" xml:space="preserve">
+        <value>Failed to open the editor</value>
+    </data>
+
+    <data name="Error_CanNotInputTimerWait" xml:space="preserve">
+        <value>Cannot input commands during timer-based instruction wait time</value>
+    </data>
+
+    <data name="Error_CanNotInputScriptRunning" xml:space="preserve">
+        <value>Cannot input commands while script is running</value>
+    </data>
+
+    <data name="Error_CanNotUseDebugWindow" xml:space="preserve">
+        <value>The debug window can only be used when executable is started with the -Debug argument</value>
+    </data>
+
+    <data name="Error_CanNotUseDebugCommand" xml:space="preserve">
+        <value>Debug commands cannot be used</value>
+    </data>
+
+    <data name="Error_InvalidDebugCommand" xml:space="preserve">
+        <value>Debug commands can only use assignment statements or imperative statements</value>
+    </data>
+
+    <data name="Error_CanNotUseFlowInstruction" xml:space="preserve">
+        <value>Flow control instructions cannot be used</value>
+    </data>
+
+    <data name="Error_CanNotUseInstruction" xml:space="preserve">
+        <value>{0} Instructions cannot be used</value>
+    </data>
+
+    <data name="Error_CanNotUseWhenError" xml:space="preserve">
+        <value>This function cannot be used when an error occurs</value>
+    </data>
+
+    <data name="Error_CanNotUseWhenInitialize" xml:space="preserve">
+        <value>This function cannot be used during initialization</value>
+    </data>
+
+    <data name="Error_Warning1" xml:space="preserve">
+        <value>Warning Lv{0}:{1}: at line {2}:{3}</value>
+    </data>
+
+    <data name="Error_Warning2" xml:space="preserve">
+        <value>Warning Lv{0}:{1}:{2}</value>
+    </data>
+
+    <data name="Error_Warning3" xml:space="preserve">
+        <value>Warning Lv{0}:{1}</value>
+    </data>
+
+    <data name="Error_EmptyDrawline" xml:space="preserve">
+        <value>An attempt to create an empty or null DRAWLINE</value>
+    </data>
+
+    <data name="Error_TextAfterP" xml:space="preserve">
+        <value>There's a text after &lt;/p&gt;</value>
+    </data>
+
+    <data name="Error_TextAfterNobr" xml:space="preserve">
+        <value>There's a text after &lt;/nobr&gt;</value>
+    </data>
+
+    <data name="Error_NotFoundCloseTag" xml:space="preserve">
+        <value>The closing comment tag "--&gt;" is not found</value>
+    </data>
+
+    <data name="Error_NotFoundTerminateTag" xml:space="preserve">
+        <value>The tag terminator '&gt;' is not found</value>
+    </data>
+
+    <data name="Error_TagIsNotClosed" xml:space="preserve">
+        <value>Non-closed tag detected (likely font or button)</value>
+    </data>
+
+    <data name="Error_CanNotUsePosWithoutNobr" xml:space="preserve">
+        <value>pos attribute is not available for lines without set &lt;nobr&gt;</value>
+    </data>
+
+    <data name="Error_CanOnlyUsePosAssignmentLR" xml:space="preserve">
+        <value>pos attribute is not allowed on lines where "align" is not set to "left"</value>
+    </data>
+
+    <data name="Error_MissingSemicolon" xml:space="preserve">
+        <value>&amp;' has no corresponding ';'</value>
+    </data>
+
+    <data name="Error_ContinuouslyAndSemicolon" xml:space="preserve">
+        <value>&amp;' and ';' are being used continuously</value>
+    </data>
+
+    <data name="Error_InvalidCharacterReference" xml:space="preserve">
+        <value>&amp;{0}; is not an appropriate character reference</value>
+    </data>
+
+    <data name="Error_OoRUnicodeHtml" xml:space="preserve">
+        <value>&amp;{0}; is out of the Unicode range (Surrogate pairs are not allowed)</value>
+    </data>
+
+    <data name="Error_UnexpectedCloseTag" xml:space="preserve">
+        <value>There's no &lt;{0}&gt; before &lt;/{0}&gt;</value>
+    </data>
+
+    <data name="Error_CanNotInterpretCloseTag" xml:space="preserve">
+        <value>The closing tag &lt;/{0}&gt; cannot be interpreted</value>
+    </data>
+
+    <data name="Error_AttributeSetToTag" xml:space="preserve">
+        <value>There's an attribute set to &lt;{0}&gt;
+Error.DuplicateTag	&lt;{0}&gt; is duplicated
+Error.TagIsNotBegin	&lt;{0}&gt; should be set at the beginning of the line
+Error.TagHasNotAttribute	&lt;{0}&gt; tag doesn't have any set attributes
+Error.CanNotInterpretPAttribute	Attribute inside &lt;p&gt; {0} cannot be interpreted
+Error.CanNotInterpretAttribute	Set attribute {0} cannot be interpreted
+Error.DuplicateAttribute	&lt;{0}&gt; tag has {1} attribute specified more than once
+Error.AttributeCanNotInterpretNum	&lt;{0}&gt; tag has a {1}" attribute with a value that cannot be interpreted as a numerical value</value>
+    </data>
+
+    <data name="Error_CanNotInterpretAttributeName" xml:space="preserve">
+        <value>Set attribute {1} of a &lt;{0}&gt; tag cannot be interpreted</value>
+    </data>
+
+    <data name="Error_NotSetAttribute" xml:space="preserve">
+        <value>&lt;{0}&gt; tag doesn't have a "{1}" attribute set</value>
+    </data>
+
+    <data name="Error_NestedButtonTag" xml:space="preserve">
+        <value>&lt;button&gt; or &lt;nonbutton&gt; tag is being nested</value>
+    </data>
+
+    <data name="Error_NestedTag" xml:space="preserve">
+        <value>&lt;{0}&gt; tag is being nested</value>
+    </data>
+
+    <data name="Error_ClearbuttonAttributeCanNotInterpretNum" xml:space="preserve">
+        <value>Can not interpreted {1} attribute at &lt;{0}&gt;:"{2}"</value>
+    </data>
+
+    <data name="Error_HtmlTagError" xml:space="preserve">
+        <value>An error has occurred during parsing the tag inside html string "{0}"</value>
+    </data>
+
+    <data name="Error_RequireColorCode" xml:space="preserve">
+        <value>Color must be set in #RRGGBB format or represented with a word</value>
+    </data>
+
+    <data name="Error_OoRColorValue" xml:space="preserve">
+        <value>{0} is out of range of the appropriate color specification</value>
+    </data>
+
+    <data name="Error_CanNotInterpretNumValue" xml:space="preserve">
+        <value>{0} cannot be interpreted as a numerical value</value>
+    </data>
+
+    <data name="Error_InvalidColorName2" xml:space="preserve">
+        <value>Specified color name "{0}" is an invalid color name (# is required before a value to specify a hexadecimal color)</value>
+    </data>
+
+    <data name="Error_BufferOverFlow" xml:space="preserve">
+        <value>※※※Amount of characters in the buffer has reached the limit (2000). Any character beyond the limit will not be displayed※※※</value>
+    </data>
+
+    <data name="Error_CanNotUseFuncCurrentVer" xml:space="preserve">
+        <value>This function cannot be used in the current version</value>
+    </data>
+
+    <data name="Error_AbnormalFileData" xml:space="preserve">
+        <value>File data type is abnormal</value>
+    </data>
+
+    <data name="Error_AbnormalBinaryData" xml:space="preserve">
+        <value>Binary data is abnormal</value>
+    </data>
+
+    <data name="Error_InvalidStream" xml:space="preserve">
+        <value>Invalid stream</value>
+    </data>
+
+    <data name="Error_NoStrToRead" xml:space="preserve">
+        <value>No strings to read</value>
+    </data>
+
+    <data name="Error_NoNumToRead" xml:space="preserve">
+        <value>No number to reads</value>
+    </data>
+
+    <data name="Error_CanNotInterpretNum" xml:space="preserve">
+        <value>Cannot detect numerical values</value>
+    </data>
+
+    <data name="Error_InvalidArray" xml:space="preserve">
+        <value>An invalid array was passed</value>
+    </data>
+
+    <data name="Error_UnexpectedSaveDataEnd" xml:space="preserve">
+        <value>Unexpected end of save data</value>
+    </data>
+
+    <data name="Error_InvalidSaveDataFormat" xml:space="preserve">
+        <value>Invalid save data format</value>
+    </data>
+
+    <data name="Error_NotSupportStringArray2D" xml:space="preserve">
+        <value>StringArray2D does not support loading</value>
+    </data>
+
+    <data name="Error_UnexpectedContinuationEnd" xml:space="preserve">
+        <value>Unexpected line-continuation terminator '}' detected</value>
+    </data>
+
+    <data name="Error_CharacterAfterContinuation" xml:space="preserve">
+        <value>Lines with line-continuation starter '{' cannot contain other characters</value>
+    </data>
+
+    <data name="Error_NotCloseLineContinuation" xml:space="preserve">
+        <value>Line-continuation starter '{' is used but the terminator '}' is not found</value>
+    </data>
+
+    <data name="Error_CharacterAfterContinuationEnd" xml:space="preserve">
+        <value>Lines with line-continuation terminator '}' cannot contain other characters</value>
+    </data>
+
+    <data name="Error_UnexpectedContinuation" xml:space="preserve">
+        <value>Unexpected line-continuation starter '{' detected</value>
+    </data>
+
+    <data name="Error_OoRInt64" xml:space="preserve">
+        <value>{0} exceeds the upper limit of the 64 bit signed integer range</value>
+    </data>
+
+    <data name="Error_CanNotUseBinaryNotate" xml:space="preserve">
+        <value>Binary notation contains illegal characters</value>
+    </data>
+
+    <data name="Error_LineBeginsIllegalCharacter" xml:space="preserve">
+        <value>Line starts with an illegal character</value>
+    </data>
+
+    <data name="Error_MacroOverLimit" xml:space="preserve">
+        <value>Maximum number of macro expansions per sentence {0} has been exceeded (Beware of self or circular references)</value>
+    </data>
+
+    <data name="Error_MacroIsNotAvailable" xml:space="preserve">
+        <value>Macro "{0}" is not available in this context (Only macros that replace one word are allowed)</value>
+    </data>
+
+    <data name="Error_UnexpectedFullWidthSpace" xml:space="preserve">
+        <value>Found an unexpected full-width space (This error can be ignored by using "Include full-width space in whitespace" system option)</value>
+    </data>
+
+    <data name="Error_MissingCharacterAfterEscape" xml:space="preserve">
+        <value>Missing character after escape character </value>
+    </data>
+
+    <data name="Error_UnexpectedEqual" xml:space="preserve">
+        <value>Found an unexpected assignment operator '=' (Use '==' for equality comparison)</value>
+    </data>
+
+    <data name="Error_CanNotRecognizedOp" xml:space="preserve">
+        <value>{0}' cannot be recognized as an operator</value>
+    </data>
+
+    <data name="Error_CanNotRecognizedAssignOp" xml:space="preserve">
+        <value>{0} cannot be recognized as an assignment operator</value>
+    </data>
+
+    <data name="Error_UnexpectedCharacter" xml:space="preserve">
+        <value>Found an unexpected character '{0}' during lexical analysis</value>
+    </data>
+
+    <data name="Error_EmptyTwoSBrackets" xml:space="preserve">
+        <value>[[]] is empty</value>
+    </data>
+
+    <data name="Error_MissingTwoSBrackets" xml:space="preserve">
+        <value>Missing corresponding "]]" for "[["</value>
+    </data>
+
+    <data name="Error_CanNotRenameKey" xml:space="preserve">
+        <value>Found an illegal substituted(rename) sign {0} during lexical analysis</value>
+    </data>
+
+    <data name="Error_NotClosed" xml:space="preserve">
+        <value>{0}' is not closed</value>
+    </data>
+
+    <data name="Error_MacroHasNotArg" xml:space="preserve">
+        <value>Macro in function format {0} has no arguments</value>
+    </data>
+
+    <data name="Error_WrongMacroUsage" xml:space="preserve">
+        <value>Macro in function format {0} is used incorrectly</value>
+    </data>
+
+    <data name="Error_MacroDifferentArgCount" xml:space="preserve">
+        <value>Macro in function format {0} has incorrect number of arguments</value>
+    </data>
+
+    <data name="Error_CanNotOmitMacroArg" xml:space="preserve">
+        <value>Macro in function format {0} is trying to omit arguments that cannot be omitted</value>
+    </data>
+
+    <data name="Error_NotFoundCorresponding" xml:space="preserve">
+        <value>Failed to find corresponding '{0}' sign for another '{1}'</value>
+    </data>
+
+    <data name="Error_CannotRecommendCallLocalVar" xml:space="preserve">
+        <value>It's not recommended to call local variables with @ inside the code (Consider using *.ERH files instead)</value>
+    </data>
+
+    <data name="Error_LabelNameMissing" xml:space="preserve">
+        <value>Label name is missing</value>
+    </data>
+
+    <data name="Error_LabelContainsOtherThanUnderline" xml:space="preserve">
+        <value>Label name "{0}" contains symbols other than "_"</value>
+    </data>
+
+    <data name="Error_LabelStartedHalfDigit" xml:space="preserve">
+        <value>Label name "{0}" starts with a half-width digit</value>
+    </data>
+
+    <data name="Error_LabelConflictReservedWord1" xml:space="preserve">
+        <value>Function name "{0}" conflicts with Emuera's reserved word. There is a risk of interfering with Emuera exclusive syntax parsing</value>
+    </data>
+
+    <data name="Error_LabelConflictReservedWord2" xml:space="preserve">
+        <value>Function name "{0}" is a reserved word for Emuera</value>
+    </data>
+
+    <data name="Error_LabelOverwriteInternalExpression" xml:space="preserve">
+        <value>Function name "{0}" overwrites functions in Emuera's internal expressions</value>
+    </data>
+
+    <data name="Error_LabelNameAlreadyUsedInternalExpression" xml:space="preserve">
+        <value>Function name "{0}" is already used as a function name in Emuera's internal expressions</value>
+    </data>
+
+    <data name="Error_LabelNameAlreadyUsedInternalVariable" xml:space="preserve">
+        <value>Function name "{0}" is already used as Emuera's internal variable</value>
+    </data>
+
+    <data name="Error_LabelNameAlreadyUsedInternalInstruction" xml:space="preserve">
+        <value>Function name "{0}" is already used as Emuera's internal variable or instruction</value>
+    </data>
+
+    <data name="Error_LabelNameAlreadyUsedMacro" xml:space="preserve">
+        <value>Function name "{0}" is already being used for macro</value>
+    </data>
+
+    <data name="Error_LabelNameAlreadyUsedRefFunction" xml:space="preserve">
+        <value>Function name "{0}" is already being used as a name for reference type function</value>
+    </data>
+
+    <data name="Error_VarContainsOtherThanUnderline" xml:space="preserve">
+        <value>Variable name "{0}" contains symbols other than "_"</value>
+    </data>
+
+    <data name="Error_VarConflictReservedWord" xml:space="preserve">
+        <value>Variable name "{0}" conflicts with Emuera's reserved word. There is a risk of interfering with Emuera exclusive syntax parsing</value>
+    </data>
+
+    <data name="Error_VarNameAlreadyUsedInternalInstruction" xml:space="preserve">
+        <value>Variable name "{0}" is already used as Emuera's internal variable or instruction</value>
+    </data>
+
+    <data name="Error_VarNameAlreadyUsedInternalVariable" xml:space="preserve">
+        <value>Variable name "{0}" is already used as Emuera's internal variable</value>
+    </data>
+
+    <data name="Error_VarNameAlreadyUsedMacro" xml:space="preserve">
+        <value>Variable name "{0}" is already being used for macro</value>
+    </data>
+
+    <data name="Error_VarNameAlreadyUsedGlobalVariable" xml:space="preserve">
+        <value>Variable name "{0}" is already used as a user-defined global variable</value>
+    </data>
+
+    <data name="Error_VarNameAlreadyUsedRefFunction" xml:space="preserve">
+        <value>Variable name "{0}" is already being used as a name for reference type function</value>
+    </data>
+
+    <data name="Error_VarStartedHalfDigit" xml:space="preserve">
+        <value>Variable name "{0}" starts with a half-width digit</value>
+    </data>
+
+    <data name="Error_MacroContainsOtherThanUnderline" xml:space="preserve">
+        <value>Macro name "{0}" contains symbols other than "_"</value>
+    </data>
+
+    <data name="Error_MacroConflictReservedWord" xml:space="preserve">
+        <value>Macro name "{0}" conflicts with Emuera's reserved word. There is a risk of interfering with Emuera exclusive syntax parsing</value>
+    </data>
+
+    <data name="Error_MacroNameAlreadyUsedInternalInstruction" xml:space="preserve">
+        <value>Macro name "{0}" is already used as Emuera's internal variable or instruction</value>
+    </data>
+
+    <data name="Error_MacroNameAlreadyUsedInternalVariable" xml:space="preserve">
+        <value>Macro name "{0}" is already used as Emuera's internal variable</value>
+    </data>
+
+    <data name="Error_MacroNameAlreadyUsedMacro" xml:space="preserve">
+        <value>Macro name "{0}" is already being used for macro</value>
+    </data>
+
+    <data name="Error_MacroNameAlreadyUsedGlobalVariable" xml:space="preserve">
+        <value>Macro name "{0}" is already used as a user-defined global variable</value>
+    </data>
+
+    <data name="Error_MacroNameAlreadyUsedRefFunction" xml:space="preserve">
+        <value>Macro name "{0}" is already being used as a name for reference type function</value>
+    </data>
+
+    <data name="Error_ArgCanNotBeNull" xml:space="preserve">
+        <value>{0}: The {1} argument cannot be omitted</value>
+    </data>
+
+    <data name="Error_ArgIsNotCharacterVar" xml:space="preserve">
+        <value>{0}: The {1} argument is not character variable</value>
+    </data>
+
+    <data name="Error_InvalidArgType" xml:space="preserve">
+        <value>{0}: Argument number {1}: argument type is incorrect</value>
+    </data>
+
+    <data name="Error_ArgIsNotStr" xml:space="preserve">
+        <value>{0}: The {1} argument is not string</value>
+    </data>
+
+    <data name="Error_ArgIsNotInt" xml:space="preserve">
+        <value>{0}: The {1} argument is not integer</value>
+    </data>
+
+    <data name="Error_ArgIsNotVar" xml:space="preserve">
+        <value>{0}: The {1} argument is not variable</value>
+    </data>
+
+    <data name="Error_ArgIsNotStrVar" xml:space="preserve">
+        <value>{0}: The {1} argument is not string variable</value>
+    </data>
+
+    <data name="Error_ArgIsNotIntVar" xml:space="preserve">
+        <value>{0}: The {1} argument is not integer variable</value>
+    </data>
+
+    <data name="Error_ArgIsNotArray" xml:space="preserve">
+        <value>{0}: The {1} argument is not array variable</value>
+    </data>
+
+    <data name="Error_ArgIsNotStrArray" xml:space="preserve">
+        <value>{0}: The {1} argument is not string array variable</value>
+    </data>
+
+    <data name="Error_ArgIsNotIntArray" xml:space="preserve">
+        <value>{0}: The {1} argument is not integer array variable</value>
+    </data>
+
+    <data name="Error_ArgIsNotNDArray" xml:space="preserve">
+        <value>{0}: The {1} argument is not {2}-dimensional variable</value>
+    </data>
+
+    <data name="Error_ArgIsNotNDStrArray" xml:space="preserve">
+        <value>{0}: The {1} argument is not string {2}-dimensional variable</value>
+    </data>
+
+    <data name="Error_ArgIsNotNDIntArray" xml:space="preserve">
+        <value>{0}: The {1} argument is not integer {2}-dimensional variable</value>
+    </data>
+
+    <data name="Error_TooManyFuncArgs" xml:space="preserve">
+        <value>{0}: Too many arguments</value>
+    </data>
+
+    <data name="Error_NotEnoughArgs" xml:space="preserve">
+        <value>{0}: Required {1} arguments</value>
+    </data>
+
+    <data name="Error_ArgsCountNotMatches" xml:space="preserve">
+        <value>{0}: Required {1} arguments but passed {2}</value>
+    </data>
+
+    <data name="Error_ArgsNotNeeded" xml:space="preserve">
+        <value>{0}: Not required arguments</value>
+    </data>
+
+    <data name="Error_NotValidArgs" xml:space="preserve">
+        <value>{0}: Arguments format is invalid | {1}</value>
+    </data>
+
+    <data name="Error_NotValidArgsReason" xml:space="preserve">
+        <value>format {0}: {1}</value>
+    </data>
+
+    <data name="Error_IsNotVar" xml:space="preserve">
+        <value>{0} is not variable</value>
+    </data>
+
+    <data name="Error_IsNotInt" xml:space="preserve">
+        <value>{0} is not integer</value>
+    </data>
+
+    <data name="Error_IsNotStr" xml:space="preserve">
+        <value>{0} is not string</value>
+    </data>
+
+    <data name="Error_SPCharacterFeatureDisabled" xml:space="preserve">
+        <value>SP character-related features are not available by default (Turn on "Allow SP Characters" compatibility option)</value>
+    </data>
+
+    <data name="Error_CharacterIndexOutOfRange" xml:space="preserve">
+        <value>{0}: The {1} argument ({2}) is out of range of array of character position</value>
+    </data>
+
+    <data name="Error_NotVariableName" xml:space="preserve">
+        <value>{0}: The {1} argument ("{2}") is not variable name</value>
+    </data>
+
+    <data name="Error_ArgIsNegative" xml:space="preserve">
+        <value>{0}: Specified negative value({2}) to the {1} argument</value>
+    </data>
+
+    <data name="Error_ArgIsNotMoreThan0" xml:space="preserve">
+        <value>{0}: Specified less than or equal to 0({2}) to the {1} argument</value>
+    </data>
+
+    <data name="Error_ArgIsTooLarge" xml:space="preserve">
+        <value>{0}: The {1} argument ({2}) is too large</value>
+    </data>
+
+    <data name="Error_FuncDeprecated" xml:space="preserve">
+        <value>{0}() function is not recommended. Consider using {1}() function instead</value>
+    </data>
+
+    <data name="Error_ArgIsOutOfRange" xml:space="preserve">
+        <value>{0}: The {1} argument({2}) is out of {3}-{4} range</value>
+    </data>
+
+    <data name="Error_ArgIsOutOfRangeExcept" xml:space="preserve">
+        <value>{0}: The {1} argument ({2}) is out of {3}-{4}(except {5}) range</value>
+    </data>
+
+    <data name="Error_InvalidFormat" xml:space="preserve">
+        <value>{0}: The {1} argument format is wrong</value>
+    </data>
+
+    <data name="Error_NegativeMaximum" xml:space="preserve">
+        <value>{0}: Specified with a maximum value equal to or less than 0{1}</value>
+    </data>
+
+    <data name="Error_MaximumLowerThanMinimum" xml:space="preserve">
+        <value>{0}: Specified with a maximum value equal to or less than the minimum value ({1})</value>
+    </data>
+
+    <data name="Error_ResultIsNaN" xml:space="preserve">
+        <value>{0}: Result is non-numeric</value>
+    </data>
+
+    <data name="Error_ResultIsInfinity" xml:space="preserve">
+        <value>{0}: Result is infinite</value>
+    </data>
+
+    <data name="Error_ResultIsOutOfTheRangeOfInt64" xml:space="preserve">
+        <value>{0}: Result({1}) is exceeds the upper limit of the 64 bit signed integer range</value>
+    </data>
+
+    <data name="Error_CharacterRangeInvalid" xml:space="preserve">
+        <value>{0}: Specified out of range of character position({1}～{2})</value>
+    </data>
+
+    <data name="Error_InvalidUnicode" xml:space="preserve">
+        <value>{0}: Passed control character(0x{1:X})</value>
+    </data>
+
+    <data name="Error_ArgShouldBeSpecificValue" xml:space="preserve">
+        <value>{0}: The {1} argument of the CONVERT function must be either {2}</value>
+    </data>
+
+    <data name="Error_EncodeToUni2ndArgError" xml:space="preserve">
+        <value>{0}: The second argument({1}) exceeds the number of characters in the string of the first argument ({2})</value>
+    </data>
+
+    <data name="Error_ArgIsEmptyString" xml:space="preserve">
+        <value>{0}: The {1} argument is an empty string</value>
+    </data>
+
+    <data name="Error_InvalidFormString" xml:space="preserve">
+        <value>{0}: Deployment error of "{1}" string：{2}</value>
+    </data>
+
+    <data name="Error_UnexectedFormStringErr" xml:space="preserve">
+        <value>{0}: An error occurred during the deployment process of "{1}" string</value>
+    </data>
+
+    <data name="Error_InvalidType" xml:space="preserve">
+        <value>{0}: Wrong type (use the {1} function)</value>
+    </data>
+
+    <data name="Error_GIdIsNegative" xml:space="preserve">
+        <value>{0}: Passed negative value to GraphicsID ({1})</value>
+    </data>
+
+    <data name="Error_GIdIsTooLarge" xml:space="preserve">
+        <value>{0}: Passed value ({1}) is too large for GraphicsID</value>
+    </data>
+
+    <data name="Error_InvalidColorARGB" xml:space="preserve">
+        <value>{0}: Specified invalid ColorARGB value (0x{1:X})</value>
+    </data>
+
+    <data name="Error_InvalidColorMatrix" xml:space="preserve">
+        <value>{0}: Specified invalid ColorMatrix({1}, {2}) or less than 5x5</value>
+    </data>
+
+    <data name="Error_GDIPlusOnly" xml:space="preserve">
+        <value>{0}: Can not use when graphic interface is WINAPI</value>
+    </data>
+
+    <data name="Error_GParamIsNegative" xml:space="preserve">
+        <value>{0}: Specified less than or equal 0({2}) to {1} Graphics</value>
+    </data>
+
+    <data name="Error_GParamTooLarge" xml:space="preserve">
+        <value>{0}: Specified more than {2}({3}) to {1 }Graphics</value>
+    </data>
+
+    <data name="Error_ImgRefOutOfRange" xml:space="preserve">
+        <value>{0}: Specified out of range of image file</value>
+    </data>
+
+    <data name="Error_MinInt64CanNotApplyABS" xml:space="preserve">
+        <value>{0}: Can not get the absolute value of the Int64 minimum</value>
+    </data>
+
+    <data name="Error_UnsupportedType" xml:space="preserve">
+        <value>{0}: Specified unsupported type</value>
+    </data>
+
+    <data name="Error_ArgsNotFitExpr" xml:space="preserve">
+        <value>{0}: The count of the arguments ({1}) is not matching {2}+{3}n</value>
+    </data>
+
+    <data name="Error_DTLackOfNamedColumn" xml:space="preserve">
+        <value>{0}: There is no column named "{2}" in the DataTable "{1}"</value>
+    </data>
+
+    <data name="Error_DTInvalidDataType" xml:space="preserve">
+        <value>{0}: Attempt to assign a different type of value to column "{2}" in the DataTable "{1}"</value>
+    </data>
+
+    <data name="Error_DTCanNotEditIdColumn" xml:space="preserve">
+        <value>{0}: Can not change the "id" column in the DataTable "{1}"</value>
+    </data>
+
+    <data name="SystemLine_LoadingFile" xml:space="preserve">
+        <value>Loading {0}...</value>
+    </data>
+
+    <data name="SystemLine_ElapsedTimeLoad" xml:space="preserve">
+        <value>Elapsed time:{0}ms:{1} is being loaded...</value>
+    </data>
+
+    <data name="SystemLine_ElapsedTime" xml:space="preserve">
+        <value>Elapsed time:{0}ms</value>
+    </data>
+
+    <data name="SystemLine_BuildingUserFunc" xml:space="preserve">
+        <value>Building a list of user-defined functions...</value>
+    </data>
+
+    <data name="SystemLine_CheckingSyntax" xml:space="preserve">
+        <value>Script syntax checking...</value>
+    </data>
+
+    <data name="SystemLine_LoadComplete" xml:space="preserve">
+        <value>Load is complete</value>
+    </data>
+
+    <data name="SystemLine_SelectExitConfigMB" xml:space="preserve">
+        <value>Processing was terminated because there was a problem with the config file and exit was selected</value>
+    </data>
+
+    <data name="SystemLine_ResourceReadError" xml:space="preserve">
+        <value>Processing was terminated because a problem occurred while loading the resource folder</value>
+    </data>
+
+    <data name="SystemLine_LoadingMacro" xml:space="preserve">
+        <value>Loading macro.txt...</value>
+    </data>
+
+    <data name="SystemLine_LoadingReplace" xml:space="preserve">
+        <value>Loading _Replace.csv...</value>
+    </data>
+
+    <data name="SystemLine_SelectExitReplaceMB" xml:space="preserve">
+        <value>Processing was terminated because _Replace.csv file had an error and exit was selected</value>
+    </data>
+
+    <data name="SystemLine_LoadingRename" xml:space="preserve">
+        <value>Loading _Rename.csv...</value>
+    </data>
+
+    <data name="SystemLine_MissingRename" xml:space="preserve">
+        <value>csv_Rename.csv is missing</value>
+    </data>
+
+    <data name="SystemLine_GamebaseError" xml:space="preserve">
+        <value>Processing was terminated because a problem occurred while loading GAMEBASE.CSV</value>
+    </data>
+
+    <data name="SystemLine_ErhLoadingError" xml:space="preserve">
+        <value>Processing was terminated because a problem occurred while loading ERH files</value>
+    </data>
+
+    <data name="SystemLine_DebugTraceCall" xml:space="preserve">
+        <value>CALL CALL :@{0}, Location:{1}, Line:{2}</value>
+    </data>
+
+    <data name="SystemLine_DebugTraceJump" xml:space="preserve">
+        <value>JUMP JUMP :@{0}, Location:{1}, Line:{2}</value>
+    </data>
+
+    <data name="SystemLine_AnalysisCompleted" xml:space="preserve">
+        <value>Completed File Analyze：Output to Analysis.log</value>
+    </data>
+
+    <data name="SystemLine_PressEnterOrClick" xml:space="preserve">
+        <value>Press enter or click to exit</value>
+    </data>
+
+    <data name="SystemLine_ExitBecauseCanNotInterpreted1" xml:space="preserve">
+        <value>Emuera has been terminated due to lines that cannot be interpreted in the ERB code</value>
+    </data>
+
+    <data name="SystemLine_ExitBecauseCanNotInterpreted2" xml:space="preserve">
+        <value>※Use "Execute even if lines cannot be interpreted" compatibility option for forcible execution</value>
+    </data>
+
+    <data name="SystemLine_ExitBecauseCanNotInterpreted3" xml:space="preserve">
+        <value>emuera.log has been created</value>
+    </data>
+
+    <data name="SystemLine_SaveQuestion" xml:space="preserve">
+        <value>Where do you want to save?</value>
+    </data>
+
+    <data name="SystemLine_LoadQuestion" xml:space="preserve">
+        <value>What do you want to load?</value>
+    </data>
+
+    <data name="SystemLine_DisplaySaveSlot" xml:space="preserve">
+        <value>[{0, 2}] Display slots {0, 2}～{1, 2}</value>
+    </data>
+
+    <data name="SystemLine_DoYouOverwrite" xml:space="preserve">
+        <value>Save already exists. Overwrite?</value>
+    </data>
+
+    <data name="SystemLine_Yes" xml:space="preserve">
+        <value>[0] Yes</value>
+    </data>
+
+    <data name="SystemLine_No" xml:space="preserve">
+        <value>[1] No</value>
+    </data>
+
+    <data name="SystemLine_Remaining" xml:space="preserve">
+        <value>Remaining: </value>
+    </data>
+
+    <data name="SystemLine_Processing" xml:space="preserve">
+        <value>*Processing</value>
+    </data>
+
+    <data name="SystemLine_FileNone" xml:space="preserve">
+        <value>File: None</value>
+    </data>
+
+    <data name="SystemLine_LineFuncNone" xml:space="preserve">
+        <value>Line: None  Function: None</value>
+    </data>
+
+    <data name="SystemLine_FileName" xml:space="preserve">
+        <value>File:{0}</value>
+    </data>
+
+    <data name="SystemLine_LineFuncName" xml:space="preserve">
+        <value>Line:{0} Function:{1}</value>
+    </data>
+
+    <data name="SystemLine_FuncCallStack" xml:space="preserve">
+        <value>*Function call stack</value>
+    </data>
+
+    <data name="SystemLine_ReloadingErb" xml:space="preserve">
+        <value>Reloading ERB files...</value>
+    </data>
+
+    <data name="SystemLine_ReloadCompleted" xml:space="preserve">
+        <value>Reload complete</value>
+    </data>
+
+    <data name="SystemLine_LogFileHasBeenCreated" xml:space="preserve">
+        <value>※※※Log file {0} has been created. Please provide stacktrace or save data with steps to reproduce to help fix it※※※</value>
+    </data>
+
+    <data name="SystemLine_MinusWontWork" xml:space="preserve">
+        <value>The minus operation to the Int64 minimum will not take effect</value>
+    </data>
+    <data name="Error_CanNotInterpretAttribute" xml:space="preserve">
+        <value>Attribute value {0} cannot be interpreted</value>
+    </data>
+    <data name="Error_IsDefinedCsvVariable" xml:space="preserve">
+        <value>The variable name "{0}” is already used in the CSV variable definition and may cause unexpected array references</value>
+    </data>
+    <data name="Error_TagHasNotAttribute" xml:space="preserve">
+        <value>Attribute not set for &lt;{0}&gt; tag</value>
+    </data>
+    <data name="Error_TagIsNotBegin" xml:space="preserve">
+        <value>&lt;{0}&gt; is used other than at the beginning of a line</value>
+    </data>
+    <data name="Error_DuplicateTag" xml:space="preserve">
+        <value>The &lt;{0}&gt; tag is used twice</value>
+    </data>
+    <data name="Error_DuplicateAttribute" xml:space="preserve">
+        <value>The {1} attribute is specified more than once in the &lt;{0}&gt; tag</value>
+    </data>
+    <data name="Error_CanNotInterpretPAttribute" xml:space="preserve">
+        <value>Attribute name {0} in &lt;p&gt; tag cannot be interpreted</value>
+    </data>
+    <data name="Error_AttributeCanNotInterpretNum" xml:space="preserve">
+        <value>Value of attribute {1} of &lt;{0}&gt; tag cannot be interpreted as a number</value>
+    </data>
+    <data name="Error_ExtraCharacterAfterDeclaration" xml:space="preserve">
+        <value>There's an extra character after the declaration</value>
+    </data>
+</root>

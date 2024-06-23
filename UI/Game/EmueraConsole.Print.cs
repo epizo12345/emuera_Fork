@@ -266,16 +266,16 @@ internal sealed partial class EmueraConsole : IDisposable
         {
             if (position.Value.LineNo >= 0)
             {
-                PrintErrorButton(string.Format("警告Lv{0}:{1}:{2}行目:{3}", level, position.Value.Filename, position.Value.LineNo, str), position, level);
+                PrintErrorButton(string.Format(LocalizationManager.Error.Warning1, level, position.Value.Filename, position.Value.LineNo, str), position, level);
                 GlobalStatic.Process.printRawLine(position);
             }
             else
-                PrintErrorButton(string.Format("警告Lv{0}:{1}:{2}", level, position.Value.Filename, str), position, level);
+                PrintErrorButton(string.Format(LocalizationManager.Error.Warning2, level, position.Value.Filename, str), position, level);
 
         }
         else
         {
-            PrintError(string.Format("警告Lv{0}:{1}", level, str));
+            PrintError(string.Format(LocalizationManager.Error.Warning3, level, str));
         }
         force_temporary = b;
     }
@@ -581,7 +581,7 @@ internal sealed partial class EmueraConsole : IDisposable
     public void printCustomBar(string barStr, bool isConst)
     {
         if (string.IsNullOrEmpty(barStr))
-            throw new CodeEE("空文字列によるDRAWLINEが行われました");
+            throw new CodeEE(LocalizationManager.Error.EmptyDrawline);
         StringStyle ss = userStyle;
         userStyle.FontStyle = FontStyle.Regular;
         if (isConst)

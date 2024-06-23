@@ -71,8 +71,8 @@
     <data name="ContextMenu_KeyMacroGroup" xml:space="preserve">
 		<value>マクログループ</value>
 	</data>
-    <data name="ContextMenu_KeyMacroGroup_Group" xml:space="preserve">
-		<value>グループ</value>
+	<data name="ContextMenu_KeyMacroGroup_Group" xml:space="preserve">
+		<value>グループ{0}</value>
 	</data>
     <data name="MsgBox_InstanceExists" xml:space="preserve">
 		<value>既に起動しています</value>

@@ -7,6 +7,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.Runtime.Script.Parser;
 
@@ -236,7 +237,7 @@ internal static partial class LexicalAnalyzer
                 if (char.IsDigit(c))
                 {
                     if (c != '0' && c != '1')
-                        throw new CodeEE("二進法表記の中で使用できない文字が使われています");
+                        throw new CodeEE(LocalizationManager.Error.CanNotUseBinaryNotate);
                     st.ShiftNext();
                     continue;
                 }
@@ -328,7 +329,7 @@ internal static partial class LexicalAnalyzer
         //int startpos = st.CurrentPosition;
         var str = ReadSingleIdentifierROS(st);
         if (str.IsEmpty)
-            throw new CodeEE("不正な文字で行が始まっています");
+            throw new CodeEE(LocalizationManager.Error.LineBeginsIllegalCharacter);
         //1808a3 先頭1単語の展開をやめる。－命令の置換を禁止。
         //if (UseMacro)
         //{
@@ -512,7 +513,7 @@ internal static partial class LexicalAnalyzer
                 }
                 if (allowAssignment)
                     return OperatorCode.Assignment;
-                throw new CodeEE("予期しない代入演算子'='を発見しました(等価比較には'=='を使用してください)");
+                throw new CodeEE(LocalizationManager.Error.UnexpectedEqual);
             case '!':
                 if (next == '=')
                 {
@@ -853,7 +854,7 @@ internal static partial class LexicalAnalyzer
                             if (find <= 2)
                             {
                                 if (find == 2)
-                                    throw new CodeEE("空の[[]]です");
+                                    throw new CodeEE(LocalizationManager.Error.EmptyTwoSBrackets);
                                 else
                                     throw new CodeEE("対応する\"]]\"のない\"[[\"です");
                             }

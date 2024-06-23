@@ -3,6 +3,7 @@ using MinorShift.Emuera.Runtime.Utils;
 using MinorShift.Emuera.Sub;
 using System;
 using System.Collections.Generic;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.Runtime.Script.Statements.Function;
 
@@ -38,8 +39,8 @@ internal abstract class FunctionMethod
     public bool HasUniqueRestructure { get; protected set; }
 
     //実際の計算。
-    public virtual long GetIntValue(ExpressionMediator exm, List<AExpression> arguments) { throw new ExeEE("戻り値の型が違う or 未実装"); }
-    public virtual string GetStrValue(ExpressionMediator exm, List<AExpression> arguments) { throw new ExeEE("戻り値の型が違う or 未実装"); }
+    public virtual long GetIntValue(ExpressionMediator exm, List<AExpression> arguments) { throw new ExeEE(LocalizationManager.Error.ReturnTypeDifferentOrNotImpelemnt); }
+    public virtual string GetStrValue(ExpressionMediator exm, List<AExpression> arguments) { throw new ExeEE(LocalizationManager.Error.ReturnTypeDifferentOrNotImpelemnt); }
     public virtual SingleTerm GetReturnValue(ExpressionMediator exm, List<AExpression> arguments)
     {
         if (ReturnType == typeof(long))

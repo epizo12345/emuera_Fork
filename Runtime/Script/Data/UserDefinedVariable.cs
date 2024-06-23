@@ -4,6 +4,7 @@ using MinorShift.Emuera.Runtime.Script.Statements.Expression;
 using MinorShift.Emuera.Runtime.Utils;
 using System;
 using System.Collections.Generic;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.Runtime.Script.Data;
 
@@ -191,7 +192,7 @@ internal sealed class UserDefinedVariableData
         if (wc.EOL)//サイズ省略
         {
             if (ret.Const)
-                throw new CodeEE("CONSTキーワードが指定されていますが初期値が設定されていません");
+                throw new CodeEE(LocalizationManager.Error.ConstHasNotInitialValue);
             sizeNum.Add(1);
         }
         else if (wc.Current.Type == ',')//サイズ指定
@@ -201,7 +202,7 @@ internal sealed class UserDefinedVariableData
                 if (wc.Current.Type == '=')//サイズ指定解読完了＆初期値指定
                     break;
                 if (wc.Current.Type != ',')
-                    throw new CodeEE("書式が間違っています", sc);
+                    throw new CodeEE(LocalizationManager.Error.WrongFormat, sc);
                 wc.ShiftNext();
                 if (ret.Reference)//参照型の場合は要素数不要
                 {
@@ -212,19 +213,19 @@ internal sealed class UserDefinedVariableData
                         continue;
                 }
                 if (wc.EOL)
-                    throw new CodeEE("カンマの後に有効な定数式が指定されていません", sc);
+                    throw new CodeEE(LocalizationManager.Error.HasNotExpressionAfterComma, sc);
                 AExpression arg = ExpressionParser.ReduceIntegerTerm(wc, TermEndWith.Comma_Assignment);
                 if (arg.Restructure(null) is not SingleLongTerm sizeTerm)
-                    throw new CodeEE("カンマの後に有効な定数式が指定されていません", sc);
+                    throw new CodeEE(LocalizationManager.Error.HasNotExpressionAfterComma, sc);
                 if (ret.Reference)//参照型には要素数指定不可(0にするか書かないかどっちか
                 {
                     if (sizeTerm.Int != 0)
-                        throw new CodeEE("参照型変数にはサイズを指定できません(サイズを省略するか0を指定してください)", sc);
+                        throw new CodeEE(LocalizationManager.Error.CanNotSizedRef, sc);
 
                     continue;
                 }
                 else if (sizeTerm.Int <= 0 || sizeTerm.Int > 1000000)
-                    throw new CodeEE("ユーザー定義変数のサイズは1以上1000000以下でなければなりません", sc);
+                    throw new CodeEE(LocalizationManager.Error.OoRDefinable, sc);
                 sizeNum.Add((int)sizeTerm.Int);
             }
         }
@@ -233,12 +234,12 @@ internal sealed class UserDefinedVariableData
         if (wc.Current.Type != '=')//初期値指定なし
         {
             if (ret.Const)
-                throw new CodeEE("CONSTキーワードが指定されていますが初期値が設定されていません");
+                throw new CodeEE(LocalizationManager.Error.ConstHasNotInitialValue);
         }
         else//初期値指定あり
         {
             if (((OperatorWord)wc.Current).Code != OperatorCode.Assignment)
-                throw new CodeEE("予期しない演算子を発見しました");
+                throw new CodeEE(LocalizationManager.Error.UnexpectedOp);
             if (ret.Reference)
                 throw new CodeEE("参照型変数には初期値を設定できません");
             if (sizeNum.Count >= 2)
@@ -251,13 +252,13 @@ internal sealed class UserDefinedVariableData
             wc.ShiftNext();
             var terms = ExpressionParser.ReduceArguments(wc, ArgsEndWith.EoL, false);
             if (terms.Count == 0)
-                throw new CodeEE("配列の初期値は省略できません");
+                throw new CodeEE(LocalizationManager.Error.ArrayVarCanNotOmitInitialValue);
             if (size > 0)
             {
                 if (terms.Count > size)
-                    throw new CodeEE("初期値の数が配列のサイズを超えています");
+                    throw new CodeEE(LocalizationManager.Error.InitialValueMoreThanArraySize);
                 if (ret.Const && terms.Count != size)
-                    throw new CodeEE("定数の初期値の数が配列のサイズと一致しません");
+                    throw new CodeEE(LocalizationManager.Error.ConstInitialValueDifferentArraySize);
             }
             if (dims)
                 ret.DefaultStr = new string[terms.Count];
@@ -267,12 +268,12 @@ internal sealed class UserDefinedVariableData
             for (int i = 0; i < terms.Count; i++)
             {
                 if (terms[i] == null)
-                    throw new CodeEE("配列の初期値は省略できません");
+                    throw new CodeEE(LocalizationManager.Error.ArrayVarCanNotOmitInitialValue);
                 terms[i] = terms[i].Restructure(GlobalStatic.EMediator);
                 if (terms[i] is not SingleTerm sTerm)
-                    throw new CodeEE("配列の初期値には定数のみ指定できます");
+                    throw new CodeEE(LocalizationManager.Error.InitialValueOnlyConst);
                 if (dims != sTerm.IsString)
-                    throw new CodeEE("変数の型と初期値の型が一致していません");
+                    throw new CodeEE(LocalizationManager.Error.NotMatchVarTypeAndInitialValue);
                 if (dims)
                     ret.DefaultStr[i] = ((SingleStrTerm)sTerm).Str;
                 else
@@ -282,7 +283,7 @@ internal sealed class UserDefinedVariableData
                 sizeNum.Add(terms.Count);
         }
         if (!wc.EOL)
-            throw new CodeEE("書式が間違っています", sc);
+            throw new CodeEE(LocalizationManager.Error.WrongFormat, sc);
 
         if (sizeNum.Count == 0)
             sizeNum.Add(1);
@@ -290,11 +291,11 @@ internal sealed class UserDefinedVariableData
         ret.Private = isPrivate;
         ret.Dimension = sizeNum.Count;
         if (ret.Const && ret.Dimension > 1)
-            throw new CodeEE("CONSTキーワードが指定された変数を多次元配列にはできません");
+            throw new CodeEE(LocalizationManager.Error.CanNotDeclareConstArray);
         if (ret.CharaData && ret.Dimension > 2)
-            throw new CodeEE("3次元以上のキャラ型変数を宣言することはできません", sc);
+            throw new CodeEE(LocalizationManager.Error.CharaVarCanNotDeclareMoreThan3D, sc);
         if (ret.Dimension > 3)
-            throw new CodeEE("4次元以上の配列変数を宣言することはできません", sc);
+            throw new CodeEE(LocalizationManager.Error.VarCanNotDeclareMoreThan4D, sc);
         ret.Lengths = new int[sizeNum.Count];
         if (ret.Reference)
             return ret;
@@ -305,13 +306,13 @@ internal sealed class UserDefinedVariableData
             totalBytes *= ret.Lengths[i];
         }
         if (totalBytes <= 0 || totalBytes > 1000000)
-            throw new CodeEE("ユーザー定義変数のサイズは1以上1000000以下でなければなりません", sc);
+            throw new CodeEE(LocalizationManager.Error.OoRDefinable, sc);
         if (!isPrivate && ret.Save && !Config.Config.SystemSaveInBinary)
         {
             if (dims && ret.Dimension > 1)
-                throw new CodeEE("文字列型の多次元配列変数にSAVEDATAフラグを付ける場合には「バイナリ型セーブ」オプションが必須です", sc);
+                throw new CodeEE(LocalizationManager.Error.StrVarrRequiredBinaryOption, sc);
             else if (ret.CharaData)
-                throw new CodeEE("キャラ型変数にSAVEDATAフラグを付ける場合には「バイナリ型セーブ」オプションが必須です", sc);
+                throw new CodeEE(LocalizationManager.Error.CharaStrRequiredBinaryOption, sc);
         }
         return ret;
     }

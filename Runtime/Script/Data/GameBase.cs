@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.Runtime.Script.Data;
 
@@ -108,7 +109,7 @@ internal sealed class GameBase
                         if (tryatoi(tokens[1], out ScriptUniqueCode))
                         {
                             if (ScriptUniqueCode == 0L)
-                                ParserMediator.Warn("コード:0のセーブデータはいかなるコードのスクリプトからも読めるデータとして扱われます", pos, 0);
+                                ParserMediator.Warn(LocalizationManager.Error.SaveCodeIs0, pos, 0);
                         }
                         break;
                     case "バージョン":
@@ -143,7 +144,7 @@ internal sealed class GameBase
                         Compatible_EmueraVer = tokens[1];
                         if (!Regex.IsMatch(Compatible_EmueraVer, @"^\d+\.\d+\.\d+\.\d+$"))
                         {
-                            ParserMediator.Warn("バージョン指定を読み取れなかったので処理を省略します", pos, 0);
+                            ParserMediator.Warn(LocalizationManager.Error.CanNotReadVersion, pos, 0);
                             break;
                         }
                         Version curerntVersion = AssemblyData.emueraVer;
@@ -159,7 +160,7 @@ internal sealed class GameBase
         }
         catch
         {
-            ParserMediator.Warn("GAMEBASE.CSVの読み込み中にエラーが発生したため、読みこみを中断します", pos, 1);
+            ParserMediator.Warn(LocalizationManager.Error.SomethingErrorInGamebase, pos, 1);
             return true;
         }
         finally

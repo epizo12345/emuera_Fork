@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.Runtime.Script.Statements.Expression;
 
@@ -49,7 +50,7 @@ internal static class ExpressionParser
     public static List<AExpression> ReduceArguments(WordCollection wc, ArgsEndWith endWith, bool isDefine)
     {
         if (wc == null)
-            throw new ExeEE("空のストリームを渡された");
+            throw new ExeEE(LocalizationManager.Error.EmptyStream);
         var terms = new LinkedList<AExpression>();
         TermEndWith termEndWith = TermEndWith.EoL;
         switch (endWith)
@@ -74,9 +75,9 @@ internal static class ExpressionParser
                 {
                     case '\0':
                         if (endWith == ArgsEndWith.RightBracket)
-                            throw new CodeEE("'['に対応する']'が見つかりません");
+                            throw new CodeEE(LocalizationManager.Error.NotCloseSBrackets);
                         if (endWith == ArgsEndWith.RightParenthesis)
-                            throw new CodeEE("'('に対応する')'が見つかりません");
+                            throw new CodeEE(LocalizationManager.Error.NotCloseBrackets);
                         return;
                     case ')':
                         if (endWith == ArgsEndWith.RightParenthesis)
@@ -84,14 +85,14 @@ internal static class ExpressionParser
                             wc.ShiftNext();
                             return;
                         }
-                        throw new CodeEE("構文解析中に予期しない')'を発見しました");
+                        throw new CodeEE(LocalizationManager.Error.UnexpectedBrackets);
                     case ']':
                         if (endWith == ArgsEndWith.RightBracket)
                         {
                             wc.ShiftNext();
                             return;
                         }
-                        throw new CodeEE("構文解析中に予期しない']'を発見しました");
+                        throw new CodeEE(LocalizationManager.Error.UnexpectedSBrackets);
                 }
                 if (!isDefine)
                     terms.AddLast(ReduceExpressionTerm(wc, termEndWith));
@@ -99,15 +100,15 @@ internal static class ExpressionParser
                 {
                     terms.AddLast(ReduceExpressionTerm(wc, termEndWith_Assignment));
                     if (terms.Last == null)
-                        throw new CodeEE("関数定義の引数は省略できません");
+                        throw new CodeEE(LocalizationManager.Error.CannotOmitFuncArg);
                     if (wc.Current is OperatorWord)
                     {//=がある
                         wc.ShiftNext();
                         AExpression term = reduceTerm(wc, false, termEndWith, VariableCode.__NULL__);
                         if (term == null)
-                            throw new CodeEE("'='の後に式がありません");
+                            throw new CodeEE(LocalizationManager.Error.NoExpressionAfterEqual);
                         if (term.GetOperandType() != terms.Last.Value.GetOperandType())
-                            throw new CodeEE("'='の前後で型が一致しません");
+                            throw new CodeEE(LocalizationManager.Error.DoesNotMatchEqual);
                         terms.AddLast(term);
                     }
                     else
@@ -158,9 +159,9 @@ internal static class ExpressionParser
     {
         AExpression term = reduceTerm(wc, false, endwith, VariableCode.__NULL__);
         if (term == null)
-            throw new CodeEE("構文を式として解釈できません");
+            throw new CodeEE(LocalizationManager.Error.CanNotInterpretedExpression);
         if (term.GetOperandType() != typeof(long))
-            throw new CodeEE("式の結果が数値ではありません");
+            throw new CodeEE(LocalizationManager.Error.ExpressionResultIsNotNumeric);
         return term;
     }
 
@@ -197,7 +198,7 @@ internal static class ExpressionParser
     {
         AExpression ret = reduceTerm(wc, false, TermEndWith.EoL, varCode);
         if (ret == null)
-            throw new CodeEE("変数の:の後に引数がありません");
+            throw new CodeEE(LocalizationManager.Error.MissingArgAfterColon);
         return ret;
     }
 
@@ -209,7 +210,7 @@ internal static class ExpressionParser
             wc.ShiftNext();
             IdentifierWord subidWT = wc.Current as IdentifierWord;
             if (subidWT == null)
-                throw new CodeEE("@の使い方が不正です");
+                throw new CodeEE(LocalizationManager.Error.InvalidAt);
             wc.ShiftNext();
             subId = subidWT.Code;
         }
@@ -237,7 +238,7 @@ internal static class ExpressionParser
         {//関数
             wc.ShiftNext();
             if (symbol.Type == '[')//1810 多分永久に実装されない
-                throw new CodeEE("[]を使った機能はまだ実装されていません");
+                throw new CodeEE(LocalizationManager.Error.SBracketsFuncNotImprement);
             //引数を処理
             var args = ReduceArguments(wc, ArgsEndWith.RightParenthesis, false);
             AExpression mToken = GlobalStatic.IdentifierDictionary.GetFunctionMethod(GlobalStatic.LabelDictionary, idStr, args, false);
@@ -274,7 +275,7 @@ internal static class ExpressionParser
                 return new SingleStrTerm(idStr);
             GlobalStatic.IdentifierDictionary.ThrowException(idStr, false);
         }
-        throw new ExeEE("エラー投げ損ねた");//ここまででthrowかreturnのどちらかをするはず。
+        throw new ExeEE(LocalizationManager.Error.ThrowFailed);//ここまででthrowかreturnのどちらかをするはず。
     }
 
     #endregion
@@ -290,22 +291,22 @@ internal static class ExpressionParser
             ret.CaseType = CaseExpressionType.Is;
             OperatorWord opWT = wc.Current as OperatorWord;
             if (opWT == null)
-                throw new CodeEE("ISキーワードの後に演算子がありません");
+                throw new CodeEE(LocalizationManager.Error.NoOpAfterIs);
 
             OperatorCode op = opWT.Code;
             if (!OperatorManager.IsBinary(op))
-                throw new CodeEE("ISキーワードの後の演算子が2項演算子ではありません");
+                throw new CodeEE(LocalizationManager.Error.NotBinaryOpAfterThis);
             wc.ShiftNext();
             ret.Operator = op;
             ret.LeftTerm = reduceTerm(wc, false, TermEndWith.Comma, VariableCode.__NULL__);
             if (ret.LeftTerm == null)
-                throw new CodeEE("ISキーワードの後に式がありません");
+                throw new CodeEE(LocalizationManager.Error.NothingAfterIs);
             //Type type = ret.LeftTerm.GetOperandType();
             return ret;
         }
         ret.LeftTerm = reduceTerm(wc, true, TermEndWith.Comma, VariableCode.__NULL__);
         if (ret.LeftTerm == null)
-            throw new CodeEE("CASEの引数は省略できません");
+            throw new CodeEE(LocalizationManager.Error.CanNotOmitCaseArg);
         id = wc.Current as IdentifierWord;
         if (id != null && id.Code.Equals("TO", Config.Config.StringComparison))
         {
@@ -313,12 +314,12 @@ internal static class ExpressionParser
             wc.ShiftNext();
             ret.RightTerm = reduceTerm(wc, true, TermEndWith.Comma, VariableCode.__NULL__);
             if (ret.RightTerm == null)
-                throw new CodeEE("TOキーワードの後に式がありません");
+                throw new CodeEE(LocalizationManager.Error.NoExpressionAfterTo);
             id = wc.Current as IdentifierWord;
             if (id != null && id.Code.Equals("TO", Config.Config.StringComparison))
-                throw new CodeEE("TOキーワードが2度使われています");
+                throw new CodeEE(LocalizationManager.Error.DuplicateTo);
             if (ret.LeftTerm.GetOperandType() != ret.RightTerm.GetOperandType())
-                throw new CodeEE("TOキーワードの前後の型が一致していません");
+                throw new CodeEE(LocalizationManager.Error.DoesNotMatchTo);
             return ret;
         }
         ret.CaseType = CaseExpressionType.Normal;
@@ -365,10 +366,10 @@ internal static class ExpressionParser
                             if (allowKeywordTo)
                                 return end(stack, ternaryCount);
                             else
-                                throw new CodeEE("TOキーワードはここでは使用できません");
+                                throw new CodeEE(LocalizationManager.Error.InvalidTo);
                         }
                         else if (idStr.Equals("IS", Config.Config.StringComparison))
-                            throw new CodeEE("ISキーワードはここでは使用できません");
+                            throw new CodeEE(LocalizationManager.Error.InvalidIs);
                         stack.Add(reduceIdentifier(wc, idStr, varCode));
                         continue;
                     }
@@ -376,13 +377,13 @@ internal static class ExpressionParser
                 case '='://OperatorWT
                     {
                         if (varArg)
-                            throw new CodeEE("変数の引数の読み取り中に予期しない演算子を発見しました");
+                            throw new CodeEE(LocalizationManager.Error.UnexpectedOpInVarArg);
                         OperatorCode op = (token as OperatorWord).Code;
                         if (op == OperatorCode.Assignment)
                         {
                             if ((endWith & TermEndWith.Assignment) == TermEndWith.Assignment)
                                 return end(stack, ternaryCount);
-                            throw new CodeEE("式中で代入演算子'='が使われています(等価比較には'=='を使用してください)");
+                            throw new CodeEE(LocalizationManager.Error.EqualInExpression);
                         }
 
                         if (formerOp == OperatorCode.Equal || formerOp == OperatorCode.Greater || formerOp == OperatorCode.Less
@@ -391,7 +392,7 @@ internal static class ExpressionParser
                             if (op == OperatorCode.Equal || op == OperatorCode.Greater || op == OperatorCode.Less
                             || op == OperatorCode.GreaterEqual || op == OperatorCode.LessEqual || op == OperatorCode.NotEqual)
                             {
-                                ParserMediator.Warn("（構文上の注意）比較演算子が連続しています。", GlobalStatic.Process.GetScaningLine(), 0, false, false);
+                                ParserMediator.Warn(LocalizationManager.Error.ComparisonOpContinuous, GlobalStatic.Process.GetScaningLine(), 0, false, false);
                             }
                         }
                         stack.Add(op);
@@ -403,7 +404,7 @@ internal static class ExpressionParser
                             if (ternaryCount > 0)
                                 ternaryCount--;
                             else
-                                throw new CodeEE("対応する'?'のない'#'です");
+                                throw new CodeEE(LocalizationManager.Error.MissingQuestion);
                         }
                         break;
                     }
@@ -431,7 +432,7 @@ internal static class ExpressionParser
                         return end(stack, ternaryCount);
                     throw new CodeEE("構文解釈中に予期しない記号'" + token.Type + "'を発見しました");
                 case 'M':
-                    throw new ExeEE("マクロ解決失敗");
+                    throw new ExeEE(LocalizationManager.Error.FailedSolveMacro);
                 default:
                     throw new CodeEE("構文解釈中に予期しない記号'" + token.Type + "'を発見しました");
             }
@@ -443,7 +444,7 @@ internal static class ExpressionParser
         static AExpression end(TermStack stack, int ternaryCount)
         {
             if (ternaryCount > 0)
-                throw new CodeEE("'?'と'#'の数が正しく対応していません");
+                throw new CodeEE(LocalizationManager.Error.TernaryBinaryError);
             return stack.ReduceAll();
         }
     }
@@ -467,11 +468,11 @@ internal static class ExpressionParser
         public void Add(OperatorCode op)
         {
             if (state == 2 || state == 3)
-                throw new CodeEE("式が異常です");
+                throw new CodeEE(LocalizationManager.Error.UnrecognizedSyntax);
             if (state == 0)
             {
                 if (!OperatorManager.IsUnary(op))
-                    throw new CodeEE("式が異常です");
+                    throw new CodeEE(LocalizationManager.Error.UnrecognizedSyntax);
                 stack.Push(op);
                 if (op == OperatorCode.Plus || op == OperatorCode.Minus || op == OperatorCode.BitNot)
                     state = 2;
@@ -487,12 +488,12 @@ internal static class ExpressionParser
                     if (hasAfter)
                     {
                         hasAfter = false;
-                        throw new CodeEE("後置の単項演算子が複数存在しています");
+                        throw new CodeEE(LocalizationManager.Error.MultipleUnaryOp);
                     }
                     if (hasBefore)
                     {
                         hasBefore = false;
-                        throw new CodeEE("インクリメント・デクリメントを前置・後置両方同時に使うことはできません");
+                        throw new CodeEE(LocalizationManager.Error.DuplicateIncrementDecrement);
                     }
                     stack.Push(op);
                     reduceUnaryAfter();
@@ -505,7 +506,7 @@ internal static class ExpressionParser
                     return;
                 }
                 if (!OperatorManager.IsBinary(op) && !OperatorManager.IsTernary(op))
-                    throw new CodeEE("式が異常です");
+                    throw new CodeEE(LocalizationManager.Error.UnrecognizedSyntax);
                 //先に未解決の前置演算子解決
                 if (waitAfter)
                     reduceUnary();
@@ -522,7 +523,7 @@ internal static class ExpressionParser
                 hasAfter = false;
                 return;
             }
-            throw new CodeEE("式が異常です");
+            throw new CodeEE(LocalizationManager.Error.UnrecognizedSyntax);
         }
         public void Add(long i) { Add(new SingleLongTerm(i)); }
         public void Add(string s) { Add(new SingleStrTerm(s)); }
@@ -530,7 +531,7 @@ internal static class ExpressionParser
         {
             stack.Push(term);
             if (state == 1)
-                throw new CodeEE("式が異常です");
+                throw new CodeEE(LocalizationManager.Error.UnrecognizedSyntax);
             if (state == 2)
                 waitAfter = true;
             if (state == 3)
@@ -559,7 +560,7 @@ internal static class ExpressionParser
             if (stack.Count == 0)
                 return null;
             if (state != 1)
-                throw new CodeEE("式が異常です");
+                throw new CodeEE(LocalizationManager.Error.UnrecognizedSyntax);
             //単項演算子の待ちが未解決の時はここで解決
             if (waitAfter)
                 reduceUnary();
@@ -609,7 +610,7 @@ internal static class ExpressionParser
                     reduceTernary(left, right);
                     return;
                 }
-                throw new CodeEE("式の数が不足しています");
+                throw new CodeEE(LocalizationManager.Error.InsufficientExpression);
             }
 
             AExpression newTerm = OperatorMethodManager.ReduceBinaryTerm(op, left, right);

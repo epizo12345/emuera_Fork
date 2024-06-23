@@ -6,6 +6,7 @@ using MinorShift.Emuera.Sub;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.Runtime.Script.Statements.Expression;
 
@@ -86,9 +87,9 @@ internal static class OperatorMethodManager
         if (op == OperatorCode.Increment || op == OperatorCode.Decrement)
         {
             if (!(o1 is VariableTerm var))
-                throw new CodeEE("変数以外をインクリメントすることはできません");
+                throw new CodeEE(LocalizationManager.Error.IncrementNonVar);
             if (var.Identifier.IsConst)
-                throw new CodeEE("変更できない変数をインクリメントすることはできません");
+                throw new CodeEE(LocalizationManager.Error.IncrementConst);
         }
         if (o1.GetOperandType() == typeof(long))
         {
@@ -101,11 +102,11 @@ internal static class OperatorMethodManager
             return new FunctionMethodTerm(method, [o1]);
         string errMes = "";
         if (o1.GetOperandType() == typeof(long))
-            errMes += "数値型";
+            errMes += LocalizationManager.Error.NumericType;
         else if (o1.GetOperandType() == typeof(string))
-            errMes += "文字列型";
+            errMes += LocalizationManager.Error.StringType;
         else
-            errMes += "不定型";
+            errMes += LocalizationManager.Error.UnknownType;
         errMes += "に単項演算子\'" + OperatorManager.ToOperatorString(op) + "\'は適用できません";
         throw new CodeEE(errMes);
     }
@@ -116,9 +117,9 @@ internal static class OperatorMethodManager
         if (op == OperatorCode.Increment || op == OperatorCode.Decrement)
         {
             if (!(o1 is VariableTerm var))
-                throw new CodeEE("変数以外をインクリメントすることはできません");
+                throw new CodeEE(LocalizationManager.Error.IncrementNonVar);
             if (var.Identifier.IsConst)
-                throw new CodeEE("変更できない変数をインクリメントすることはできません");
+                throw new CodeEE(LocalizationManager.Error.IncrementConst);
         }
         if (o1.GetOperandType() == typeof(long))
         {
@@ -129,11 +130,11 @@ internal static class OperatorMethodManager
             return new FunctionMethodTerm(method, [o1]);
         string errMes = "";
         if (o1.GetOperandType() == typeof(long))
-            errMes += "数値型";
+            errMes += LocalizationManager.Error.NumericType;
         else if (o1.GetOperandType() == typeof(string))
-            errMes += "文字列型";
+            errMes += LocalizationManager.Error.StringType;
         else
-            errMes += "不定型";
+            errMes += LocalizationManager.Error.UnknownType;
         errMes += "に後置単項演算子\'" + OperatorManager.ToOperatorString(op) + "\'は適用できません";
         throw new CodeEE(errMes);
     }
@@ -185,7 +186,7 @@ internal static class OperatorMethodManager
             method = ternaryIntStrStr;
         if (method != null)
             return new FunctionMethodTerm(method, [o1, o2, o3]);
-        throw new CodeEE("三項演算子の使用法が不正です");
+        throw new CodeEE(LocalizationManager.Error.InvalidTernaryOp);
 
     }
 
@@ -308,7 +309,7 @@ internal static class OperatorMethodManager
         {
             long right = arguments[1].GetIntValue(exm);
             if (right == 0)
-                throw new CodeEE("0による除算が行なわれました");
+                throw new CodeEE(LocalizationManager.Error.DivideByZero);
             return arguments[0].GetIntValue(exm) / right;
         }
     }
@@ -325,7 +326,7 @@ internal static class OperatorMethodManager
         {
             long right = arguments[1].GetIntValue(exm);
             if (right == 0)
-                throw new CodeEE("0による除算が行なわれました");
+                throw new CodeEE(LocalizationManager.Error.DivideByZero);
             return arguments[0].GetIntValue(exm) % right;
         }
     }

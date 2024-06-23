@@ -2,6 +2,8 @@
 using MinorShift.Emuera.Sub;
 using System;
 using System.IO;
+using MinorShift.Emuera.UI.Framework;
+
 namespace MinorShift.Emuera.Runtime.Script;
 
 internal static class KeyMacro
@@ -25,15 +27,15 @@ internal static class KeyMacro
     {
         for (int g = 0; g < MaxGroup; g++)
         {
-            groupName[g] = "マクログループ" + g.ToString() + "に設定";
+            groupName[g] = string.Format(LocalizationManager.KeyMacro.SetMacroGroup, g.ToString());
             for (int f = 0; f < MaxFkey; f++)
             {
                 int i = f + g * MaxFkey;
                 macro[i] = "";
                 if (g == 0)
-                    macroName[i] = "マクロキーF" + (f + 1).ToString() + ":";
+                    macroName[i] = string.Format(LocalizationManager.KeyMacro.MacroKeyF, (f + 1).ToString());
                 else
-                    macroName[i] = "G" + g.ToString() + ":マクロキーF" + (f + 1).ToString() + ":";
+                    macroName[i] = string.Format(LocalizationManager.KeyMacro.GMacroKeyF, g.ToString(), (f + 1).ToString());
 
             }
         }

@@ -71,8 +71,8 @@
     <data name="ContextMenu_KeyMacroGroup" xml:space="preserve">
 		<value>按键宏组</value>
 	</data>
-    <data name="ContextMenu_KeyMacroGroup_Group" xml:space="preserve">
-		<value>组</value>
+	<data name="ContextMenu_KeyMacroGroup_Group" xml:space="preserve">
+		<value>组{0}</value>
 	</data>
     <data name="MsgBox_InstanceExists" xml:space="preserve">
 		<value>已经启动</value>

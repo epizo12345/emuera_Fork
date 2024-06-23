@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
+using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.UI.Game.Image;
 
@@ -298,9 +299,9 @@ internal sealed class SpriteAnime : ASprite
             return null;
 #if DEBUG
         if (FrameList.Count == 0)
-            throw new ExeEE("totaltime > 0なのにFrameListが空");
+            throw new ExeEE(LocalizationManager.Error.EmptyFramelist);
         if (lastFrame >= FrameList.Count)
-            throw new ExeEE("SpriteAnime:最終フレームが範囲外");
+            throw new ExeEE(LocalizationManager.Error.OoRLasframe);
 #endif
         //一度もフレーム取得したことがない場合は現在時間を記録して最初のフレームを返す。
         if (lastFrame == -1)
@@ -325,7 +326,7 @@ internal sealed class SpriteAnime : ASprite
             }
         }
         //ここまでこないはず
-        throw new ExeEE("SpriteAnime:時間外参照");
+        throw new ExeEE(LocalizationManager.Error.SpriteTimeOut);
     }
 
     public override bool IsCreated
