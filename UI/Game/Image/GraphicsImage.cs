@@ -31,7 +31,7 @@ internal sealed class GraphicsImage : AbstractImage
     Size size;
     SKPaint _brush;
     SKPaint _pen;
-    SKFont font;
+    SKFont _font;
     //Bitmap b;
     //Graphics g;
 
@@ -303,11 +303,16 @@ internal sealed class GraphicsImage : AbstractImage
         }
     }
 
+    public void GDrawText(string text, SKPoint point)
+    {
+        var font = _font ?? new SKFont();
+        point.Offset(0, -font.Metrics.Top);
+        canvas.DrawText(text, point, font, _brush ?? new SKPaint());
+    }
+
     public void GSetFont(SKFont r)
     {
-        if (font != null)
-            font.Dispose();
-        font = r;
+        _font = r;
     }
     public void GSetBrush(SKPaint r)
     {
@@ -400,14 +405,12 @@ internal sealed class GraphicsImage : AbstractImage
             _brush.Dispose();
         if (_pen != null)
             _pen.Dispose();
-        if (font != null)
-            font.Dispose();
         _points = null;
         canvas = null;
         Bitmap = null;
         _brush = null;
         _pen = null;
-        font = null;
+        _font = null;
     }
 
     public override void Dispose()

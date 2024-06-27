@@ -3475,6 +3475,44 @@ internal static partial class FunctionMethodCreator
         }
     }
 
+    public sealed class GraphicsDrawTextMethod : FunctionMethod
+    {
+        public GraphicsDrawTextMethod()
+        {
+            ReturnType = typeof(long);
+            argumentTypeArray = [typeof(long), typeof(string), typeof(long), typeof(long)];
+            CanRestructure = false;
+        }
+
+        public override string CheckArgumentType(string name, List<AExpression> arguments)
+        {
+            if (arguments.Count < 2)
+                return string.Format("{0}関数:少なくとも{1}個の引数が必要です", name, 2);
+            return null;
+        }
+
+        public override long GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
+        {
+            var g = ReadGraphics(Name, exm, arguments, 0);
+            if (!g.IsCreated)
+                return 0;
+
+            var text = arguments[1].GetStrValue(exm);
+            var point = new SKPoint(0, 0);
+            if (arguments.Count == 3)
+            {
+                point.X = arguments[2].GetIntValue(exm);
+            }
+            else if (arguments.Count == 4)
+            {
+                point.Y = arguments[3].GetIntValue(exm);
+            }
+
+            g.GDrawText(text, point);
+            return 1;
+        }
+    }
+
     public sealed class GraphicsFillPolygonMethod : FunctionMethod
     {
         public GraphicsFillPolygonMethod()

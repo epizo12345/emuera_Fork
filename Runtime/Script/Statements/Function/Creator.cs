@@ -185,6 +185,8 @@ internal static partial class FunctionMethodCreator
             ["G_POLYGON_POINT_ADD"] = new GraphicsPolygonPointAddMethod(),
             ["G_POLYGON_POINT_CLEAR"] = new GraphicsPolygonPointClearMethod(),
 
+            ["GDRAWTEXT"] = new GraphicsDrawTextMethod(),
+
             ["GDRAWSPRITE"] = new GraphicsDrawSpriteMethod(),
             ["GSETCOLOR"] = new GraphicsSetColorMethod(),
             ["GDRAWG"] = new GraphicsDrawGMethod(),
