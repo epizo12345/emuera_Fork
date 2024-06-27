@@ -45,7 +45,7 @@ class ConsoleDivElement : AConsoleDisplayNode
                     foreach (var child in cbs.StrArray)
                     {
                         child.Point = Point;
-                        child.Size = new SKSize();
+                        child.Size = new SKSize(-1, -1);
                     }
                 }
 
