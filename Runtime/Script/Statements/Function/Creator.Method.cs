@@ -1647,6 +1647,44 @@ internal static partial class FunctionMethodCreator
         }
     }
 
+
+
+    private sealed class GetnumBMethod : FunctionMethod
+    {
+        public GetnumBMethod()
+        {
+            ReturnType = typeof(Int64);
+            argumentTypeArray = new Type[] { typeof(string), typeof(string) };
+            CanRestructure = true;
+        }
+        public override string CheckArgumentType(string name, List<AExpression> arguments)
+        {
+            string errStr = base.CheckArgumentType(name, arguments);
+            if (errStr != null)
+                return errStr;
+            if (arguments[0] == null)
+                return name + "関数の1番目の引数は省略できません";
+            if (arguments[0] is SingleStrTerm term)
+            {
+                string varName = term.Str;
+                if (GlobalStatic.IdentifierDictionary.GetVariableToken(varName, null, true) == null)
+                    return name + "関数の1番目の引数が変数名ではありません";
+            }
+            return null;
+        }
+        public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
+        {
+            VariableToken var = GlobalStatic.IdentifierDictionary.GetVariableToken(arguments[0].GetStrValue(exm), null, true);
+            if (var == null)
+                throw new CodeEE("GETNUMBの1番目の引数(\"" + arguments[0].GetStrValue(exm) + "\")が変数名ではありません");
+            string key = arguments[1].GetStrValue(exm);
+            if (exm.VEvaluator.Constant.TryKeywordToInteger(out int ret, var.Code, key, -1))
+                return ret;
+            else
+                return -1;
+        }
+    }
+
     private sealed class GetPalamLVMethod : FunctionMethod
     {
         public GetPalamLVMethod()

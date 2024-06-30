@@ -107,7 +107,7 @@ internal static partial class FunctionMethodCreator
             ["INRANGE"] = new InRangeMethod(),
             ["INRANGEARRAY"] = new InRangeArrayMethod(),
             ["INRANGECARRAY"] = new InRangeArrayMethod(true),
-            ["GETNUMB"] = new GetnumMethod(),
+            ["GETNUMB"] = new GetnumBMethod(),
 
             ["ARRAYMSORT"] = new ArrayMultiSortMethod(),
 
