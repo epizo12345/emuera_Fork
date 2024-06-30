@@ -241,13 +241,13 @@ internal sealed class ConsoleButtonString : AConsoleDisplayNode
 
         Point = point;
 
-        var offset = point;
+        var origin = point;
         var prevHeight = 0.0f;
         foreach (var css in strArray)
         {
             if (css is BrNode)
             {
-                point.X = offset.X;
+                point.X = origin.X;
                 point.Offset(0, prevHeight);
             }
             else
@@ -256,7 +256,6 @@ internal sealed class ConsoleButtonString : AConsoleDisplayNode
 
                 point.Offset(css.Width, 0);
                 prevHeight = css.Size.Height;
-                offset = point;
             }
 
         }
