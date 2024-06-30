@@ -605,11 +605,21 @@ internal static partial class HtmlManager
                                     }
                                 }
 
+                                var hoverBackColor = SKColor.Empty;
+                                {
+                                    var hoverBackColorStr = elem.GetAttribute("hover-background-color");
+                                    if (!string.IsNullOrEmpty(hoverBackColorStr))
+                                    {
+                                        hoverBackColor = ParseColor(hoverBackColorStr, divState.BackgroundColor);
+                                    }
+                                }
+
 
                                 var c = ParseNode(node.ChildNodes, stringStyle, style, align);
 
                                 nodeList.Add(new ConsoleDivElement(
                                     [.. c],
+                                    hoverBackColor,
                                     display: display,
                                     borderStyle: borderStyle,
                                     position: position,

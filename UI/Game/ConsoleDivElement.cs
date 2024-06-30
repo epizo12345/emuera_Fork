@@ -22,11 +22,13 @@ class ConsoleDivElement : AConsoleDisplayNode
     readonly DisplayMode _display;
 
     SKColor? _backColor;
+    readonly SKColor _hoverBackColor;
 
     BorderStyle? _borderStyle;
     SKRect? _padding;
 
     public ConsoleDivElement(List<AConsoleDisplayNode> childNode,
+                                SKColor hoverBackColor,
                                 DisplayMode display = DisplayMode.Relative,
                                 SKPoint position = default,
                                 SKSize size = default,
@@ -58,6 +60,7 @@ class ConsoleDivElement : AConsoleDisplayNode
         Size = size;
 
         _backColor = backcolor;
+        _hoverBackColor = hoverBackColor;
 
         _borderStyle = borderStyle;
 
@@ -131,6 +134,15 @@ class ConsoleDivElement : AConsoleDisplayNode
                 var paint = new SKPaint()
                 {
                     Color = _backColor.Value,
+                };
+                canvas.DrawRect(SKRect.Create(Point, Size), paint);
+            }
+
+            if (isSelecting && _hoverBackColor != SKColor.Empty)
+            {
+                var paint = new SKPaint()
+                {
+                    Color = _hoverBackColor,
                 };
                 canvas.DrawRect(SKRect.Create(Point, Size), paint);
             }
