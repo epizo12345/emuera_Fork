@@ -10,6 +10,7 @@ using System.IO;
 using System.Runtime;
 using System.Windows.Forms;
 using MinorShift.Emuera.UI.Framework;
+using System.Globalization;
 
 namespace MinorShift.Emuera;
 #nullable enable
@@ -47,6 +48,7 @@ static partial class Program
         // memo: Shift-JISを扱うためのおまじない
         System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
+        CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
         var rootCommand = new RootCommand("Emuera");
 
