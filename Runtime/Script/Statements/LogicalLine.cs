@@ -355,7 +355,7 @@ internal sealed class GotoLabelLine : LogicalLine, IEqualityComparer<GotoLabelLi
 
     public int GetHashCode(GotoLabelLine obj)
     {
-        return labelname.GetHashCode() ^ ParentLabelLine.GetHashCode();
+        return labelname.GetHashCode(StringComparison.Ordinal) ^ ParentLabelLine.GetHashCode();
     }
 
     #endregion
