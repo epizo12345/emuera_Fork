@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
 using MinorShift.Emuera.UI.Framework;
+using System.Globalization;
 
 namespace MinorShift.Emuera.Runtime.Script.Parser;
 
@@ -249,7 +250,7 @@ internal static partial class LexicalAnalyzer
         {
             if (fromBase == 10)
             {
-                return long.Parse(strInt);
+                return long.Parse(strInt, CultureInfo.InvariantCulture);
             }
             return Convert.ToInt64(strInt.ToString(), fromBase);
         }
@@ -316,7 +317,7 @@ internal static partial class LexicalAnalyzer
 
 
 
-        return double.Parse(st.SubstringROS(start, st.CurrentPosition - start));
+        return double.Parse(st.SubstringROS(start, st.CurrentPosition - start), CultureInfo.InvariantCulture);
     }
 
     /// <summary>
@@ -372,7 +373,7 @@ internal static partial class LexicalAnalyzer
                 DefineMacro macro = GlobalStatic.IdentifierDictionary.GetMacro(str);
                 i++;
                 if (i > MAX_EXPAND_MACRO)
-                    throw new CodeEE("マクロの展開数が1文あたりの上限値" + MAX_EXPAND_MACRO.ToString() + "を超えました(自己参照・循環参照のおそれ)");
+                    throw new CodeEE("マクロの展開数が1文あたりの上限値" + MAX_EXPAND_MACRO.ToString(CultureInfo.InvariantCulture) + "を超えました(自己参照・循環参照のおそれ)");
                 if (macro == null)
                     break;
                 if (macro.IDWord != null)
@@ -1000,7 +1001,7 @@ internal static partial class LexicalAnalyzer
             }
             count++;
             if (count > MAX_EXPAND_MACRO)
-                throw new CodeEE("マクロの展開数が1文あたりの上限" + MAX_EXPAND_MACRO.ToString() + "を超えました(自己参照・循環参照のおそれ)");
+                throw new CodeEE("マクロの展開数が1文あたりの上限" + MAX_EXPAND_MACRO.ToString(CultureInfo.InvariantCulture) + "を超えました(自己参照・循環参照のおそれ)");
             if (!macro.HasArguments)
             {
                 wc.Remove();

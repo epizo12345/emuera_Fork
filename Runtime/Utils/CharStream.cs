@@ -124,7 +124,7 @@ internal sealed class CharStream
     /// <param name="str"></param>
     public int Find(string str)
     {
-        return source.IndexOf(str, pointer) - pointer;
+        return source.IndexOf(str, pointer, StringComparison.Ordinal) - pointer;
     }
 
     /// <summary>
@@ -160,15 +160,6 @@ internal sealed class CharStream
         if (pointer + 3 > source.Length)
             return false;
         return source[pointer] == source[pointer + 1] && source[pointer] == source[pointer + 2];
-    }
-
-
-    public bool CurrentEqualTo(string rother, StringComparison comp)
-    {
-        if (pointer + rother.Length > source.Length)
-            return false;
-        string sub = source.Substring(pointer, rother.Length);
-        return sub.Equals(rother, comp);
     }
 
     public void Seek(int offset, SeekOrigin origin)
