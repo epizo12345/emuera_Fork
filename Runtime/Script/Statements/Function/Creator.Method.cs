@@ -18,6 +18,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using MinorShift.Emuera.UI.Framework;
+using System.Globalization;
 
 namespace MinorShift.Emuera.GameData.Function;
 
@@ -2401,9 +2402,9 @@ internal static partial class FunctionMethodCreator
             switch (strType)
             {
                 case StrFormType.Upper:
-                    return str.ToUpper();
+                    return str.ToUpper(CultureInfo.InvariantCulture);
                 case StrFormType.Lower:
-                    return str.ToLower();
+                    return str.ToLower(CultureInfo.InvariantCulture);
                 case StrFormType.Half:
                     return Microsoft.VisualBasic.Strings.StrConv(str, Microsoft.VisualBasic.VbStrConv.Narrow, Config.Language);
                 case StrFormType.Full:
