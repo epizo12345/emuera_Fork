@@ -3538,11 +3538,11 @@ internal static partial class FunctionMethodCreator
 
             var text = arguments[1].GetStrValue(exm);
             var point = new SKPoint(0, 0);
-            if (arguments.Count == 3)
+            if (arguments.Count >= 3)
             {
                 point.X = arguments[2].GetIntValue(exm);
             }
-            else if (arguments.Count == 4)
+            if (arguments.Count >= 4)
             {
                 point.Y = arguments[3].GetIntValue(exm);
             }
