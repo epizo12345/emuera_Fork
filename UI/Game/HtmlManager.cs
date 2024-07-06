@@ -13,6 +13,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using MinorShift.Emuera.UI.Framework;
+using System.Globalization;
 
 namespace MinorShift.Emuera.UI.Game;
 
@@ -322,7 +323,7 @@ internal static partial class HtmlManager
                                 var elem = node as Element;
 
                                 var alignStr = elem.GetAttribute("align");
-                                align = alignStr.ToLower() switch
+                                align = alignStr.ToLower(CultureInfo.InvariantCulture) switch
                                 {
                                     "left" => DisplayLineAlignment.LEFT,
                                     "center" => DisplayLineAlignment.CENTER,
@@ -370,11 +371,11 @@ internal static partial class HtmlManager
                                 var xposStr = elem.GetAttribute("pos");
                                 if (!string.IsNullOrEmpty(xposStr))
                                 {
-                                    xpos = int.Parse(xposStr);
+                                    xpos = int.Parse(xposStr, CultureInfo.InvariantCulture);
                                     lockXpos = true;
                                 }
 
-                                var title = elem.GetAttribute("title")?.Replace("<br>", "\n");
+                                var title = elem.GetAttribute("title")?.Replace("<br>", "\n", StringComparison.Ordinal);
 
 
                                 var c = ParseNode(node.ChildNodes, stringStyle, divState, align);
@@ -423,11 +424,11 @@ internal static partial class HtmlManager
                                 var xposStr = elem.GetAttribute("pos");
                                 if (!string.IsNullOrEmpty(xposStr))
                                 {
-                                    xpos = int.Parse(xposStr);
+                                    xpos = int.Parse(xposStr, CultureInfo.InvariantCulture);
                                     lockXpos = true;
                                 }
 
-                                var title = elem.GetAttribute("title")?.Replace("<br>", "\n"); ;
+                                var title = elem.GetAttribute("title")?.Replace("<br>", "\n", StringComparison.Ordinal); ;
 
                                 var c = ParseNode(node.ChildNodes, stringStyle, divState, align);
 
@@ -774,13 +775,13 @@ internal static partial class HtmlManager
     private static int ParseSizeValue(string value)
     {
         int xpos;
-        if (value.EndsWith("px"))
+        if (value.EndsWith("px", StringComparison.OrdinalIgnoreCase))
         {
-            xpos = int.Parse(value.AsSpan()[..^2]);
+            xpos = int.Parse(value.AsSpan()[..^2], CultureInfo.InvariantCulture);
         }
         else
         {
-            xpos = int.Parse(value) * Config.FontSize / 100;
+            xpos = int.Parse(value, CultureInfo.InvariantCulture) * Config.FontSize / 100;
         }
 
         return xpos;
@@ -845,7 +846,7 @@ internal static partial class HtmlManager
             }
             string escWordRow = str.Substring(index + 1, found - index - 1);
             index = found + 1;
-            string escWord = escWordRow.ToLower();
+            string escWord = escWordRow.ToLower(CultureInfo.InvariantCulture);
             int unicode;
             switch (escWord)
             {
@@ -931,7 +932,7 @@ internal static partial class HtmlManager
         StringBuilder b = new();
         b.Append('#');
         int colorValue = color.R * 0x10000 + color.G * 0x100 + color.B;
-        b.Append(colorValue.ToString("X6"));
+        b.Append(colorValue.ToString("X6", CultureInfo.InvariantCulture));
         return b.ToString();
     }
     private static string getStringStyleStartingTag(StringStyle style)
@@ -953,14 +954,14 @@ internal static partial class HtmlManager
             {
                 b.Append(" color='#");
                 int colorValue = style.Color.R * 0x10000 + style.Color.G * 0x100 + style.Color.B;
-                b.Append(colorValue.ToString("X6"));
+                b.Append(colorValue.ToString("X6", CultureInfo.InvariantCulture));
                 b.Append('\'');
             }
             if (style.ButtonColor != Config.FocusColor)
             {
                 b.Append(" bcolor='#");
                 int colorValue = style.ButtonColor.R * 0x10000 + style.ButtonColor.G * 0x100 + style.ButtonColor.B;
-                b.Append(colorValue.ToString("X6"));
+                b.Append(colorValue.ToString("X6", CultureInfo.InvariantCulture));
                 b.Append('\'');
             }
             b.Append('>');
