@@ -666,7 +666,8 @@ internal sealed partial class EmueraConsole : IDisposable
         {
             if (window.Created)
             {
-                PrintSystemLine("※※※ログファイルを" + filename.Replace(Program.ExeDir, "") + "に出力しました※※※");
+                PrintSystemLine(string.Format(LocalizationManager.SystemLine.LogFileHasBeenCreated,
+                    filename.Replace(Program.ExeDir, ""))); 
                 RefreshStrings(true);
             }
             return true;
@@ -680,13 +681,13 @@ internal sealed partial class EmueraConsole : IDisposable
         var builder = new StringBuilder();
 
 
-        builder.AppendLine("# 環境情報");
+        builder.AppendLine(LocalizationManager.SystemLine.Enviroment);
         builder.AppendLine(AssemblyData.EmueraVersionText);
 
         var patchVersionsPath = Path.Combine(Program.ExeDir, "patch_versions");
         if (Directory.Exists(patchVersionsPath))
         {
-            builder.AppendLine("# パッチバージョン");
+            builder.AppendLine(LocalizationManager.SystemLine.Patch);
             var versionTexts = Directory.EnumerateFiles(patchVersionsPath, "*.txt")
                     .Where(x => Path.GetExtension(x) == ".txt")
                     .OrderBy(x => x, StringComparer.Ordinal)
@@ -695,7 +696,7 @@ internal sealed partial class EmueraConsole : IDisposable
             builder.AppendLine(versionText);
         }
         builder.AppendLine();
-        builder.AppendLine("# ログ");
+        builder.AppendLine(LocalizationManager.SystemLine.Log);
         builder.AppendLine();
 
         for (int i = 0; i < displayLineList.Count; i++)

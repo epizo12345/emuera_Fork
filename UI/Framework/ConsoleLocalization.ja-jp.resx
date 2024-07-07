@@ -3178,4 +3178,16 @@
     <data name="Error_ExtraCharacterAfterDeclaration" xml:space="preserve">
         <value>宣言の後に余分な文字があります</value>
     </data>
+    <data name="Error_InitFatalError" xml:space="preserve">
+        <value>初期化中に致命的なエラーが発生したため処理を終了しました</value>
+    </data>
+    <data name="SystemLine_Enviroment" xml:space="preserve">
+        <value># 環境情報</value>
+    </data>
+    <data name="SystemLine_Patch" xml:space="preserve">
+        <value># パッチバージョン</value>
+    </data>
+    <data name="SystemLine_Log" xml:space="preserve">
+        <value># ログ</value>
+    </data>
 </root>

@@ -3185,4 +3185,16 @@ Error.AttributeCanNotInterpretNum	&lt;{0}&gt; tag has a {1}" attribute with a va
     <data name="Error_ExtraCharacterAfterDeclaration" xml:space="preserve">
         <value>There's an extra character after the declaration</value>
     </data>
+    <data name="Error_InitFatalError" xml:space="preserve">
+        <value>The process was terminated due to a fatal error during initialisation.</value>
+    </data>
+    <data name="SystemLine_Enviroment" xml:space="preserve">
+        <value># Environment</value>
+    </data>
+    <data name="SystemLine_Patch" xml:space="preserve">
+        <value># Patch Version</value>
+    </data>
+    <data name="SystemLine_Log" xml:space="preserve">
+        <value># Log</value>
+    </data>
 </root>

@@ -1141,6 +1141,7 @@ public static class LocalizationManager
         public static string DTInvalidDataType => ConsoleLocalization.Error_DTInvalidDataType;
         public static string DTCanNotEditIdColumn => ConsoleLocalization.Error_DTCanNotEditIdColumn;
         public static string IsDefinedCsvVariable => ConsoleLocalization.Error_IsDefinedCsvVariable;
+        public static string InitFatalError => ConsoleLocalization.Error_InitFatalError;
     }
 
     public static class SystemLine
@@ -1191,6 +1192,9 @@ public static class LocalizationManager
         public static string ReloadCompleted => ConsoleLocalization.SystemLine_ReloadCompleted;
         public static string LogFileHasBeenCreated => ConsoleLocalization.SystemLine_LogFileHasBeenCreated;
         public static string MinusWontWork => ConsoleLocalization.SystemLine_MinusWontWork;
+        public static string Patch => ConsoleLocalization.SystemLine_Patch;
+        public static string Enviroment => ConsoleLocalization.SystemLine_Enviroment;
+        public static string Log => ConsoleLocalization.SystemLine_Log;
     }
 
     public static void SetLanguage(string language)
