@@ -2909,12 +2909,8 @@ internal static partial class FunctionMethodCreator
     /// </summary>
     private static GraphicsImage ReadGraphics(string Name, ExpressionMediator exm, List<AExpression> arguments, int argNo)
     {
-        Int64 target = arguments[argNo].GetIntValue(exm);
-        if (target < 0)//funcname + "関数:GraphicsIDに負の値(" + target.ToString() + ")が指定されました"
-            throw new CodeEE(string.Format("{0}関数:GraphicsIDに負の値({1})が指定されました", Name, target));
-        else if (target > int.MaxValue)//funcname + "関数:GraphicsIDの値(" + target.ToString() + ")が大きすぎます"
-            throw new CodeEE(string.Format("{0}関数:GraphicsIDの値({1})が大きすぎます", Name, target));
-        return AppContents.GetGraphics((int)target);
+        var target = arguments[argNo].GetIntValue(exm);
+        return AppContents.GetGraphics(target);
     }
 
     /// <summary>
@@ -2961,7 +2957,7 @@ internal static partial class FunctionMethodCreator
         if (h64 < int.MinValue || h64 > int.MaxValue || h64 == 0)
             throw new CodeEE(string.Format(LocalizationManager.Error.ArgIsOutOfRangeExcept, Name, h64, argNo + 3 + 1, int.MinValue, int.MaxValue, 0));
         return new Rectangle((int)x64, (int)y64, (int)w64, (int)h64);
-    }   
+    }
 
     /// <summary>
     /// argNo番目の引数を5x5のカラーマトリクス配列変数として読み取り、 5x5のfloat[][]形式にして返す。

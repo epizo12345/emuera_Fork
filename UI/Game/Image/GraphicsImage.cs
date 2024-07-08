@@ -19,7 +19,7 @@ internal sealed class GraphicsImage : AbstractImage
     //protected IntPtr hBitmap;
     //protected IntPtr hDefaultImg;
 
-    public GraphicsImage(int id)
+    public GraphicsImage(long id)
     {
         ID = id;
         canvas = null;
@@ -27,7 +27,7 @@ internal sealed class GraphicsImage : AbstractImage
         //created = false;
         //locked = false;
     }
-    public readonly int ID;
+    public readonly long ID;
     Size size;
     SKPaint _brush;
     SKPaint _pen;

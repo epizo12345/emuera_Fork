@@ -15,7 +15,7 @@ static class AppContents
 {
     static readonly ConcurrentDictionary<string, AbstractImage> resourceDic = new(Config.StrComper);
     static readonly ConcurrentDictionary<string, ASprite> imageDictionary = new(Config.StrComper);
-    static readonly ConcurrentDictionary<int, GraphicsImage> gList = [];
+    static readonly ConcurrentDictionary<long, GraphicsImage> gList = [];
 
     //static public T GetContent<T>(string name)where T :AContentItem
     //{
@@ -26,11 +26,11 @@ static class AppContents
     //		return null;
     //	return itemDic[name] as T;
     //}
-    static public GraphicsImage GetGraphics(int i)
+    static public GraphicsImage GetGraphics(long i)
     {
         if (gList.TryGetValue(i, out GraphicsImage value))
             return value;
-        GraphicsImage g = new(i);
+        var g = new GraphicsImage(i);
         gList[i] = g;
         return g;
     }
