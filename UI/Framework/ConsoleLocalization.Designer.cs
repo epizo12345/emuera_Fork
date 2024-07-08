@@ -3109,6 +3109,15 @@ namespace MinorShift.Emuera.UI.Framework {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The process was terminated due to a fatal error during initialisation..
+        /// </summary>
+        internal static string Error_InitFatalError {
+            get {
+                return ResourceManager.GetString("Error_InitFatalError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The number of initial values exceeds the size of the array.
         /// </summary>
         internal static string Error_InitialValueMoreThanArraySize {
@@ -6934,6 +6943,15 @@ namespace MinorShift.Emuera.UI.Framework {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to # Environment.
+        /// </summary>
+        internal static string SystemLine_Enviroment {
+            get {
+                return ResourceManager.GetString("SystemLine_Enviroment", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Processing was terminated because a problem occurred while loading ERH files.
         /// </summary>
         internal static string SystemLine_ErhLoadingError {
@@ -7078,6 +7096,15 @@ namespace MinorShift.Emuera.UI.Framework {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to # Log.
+        /// </summary>
+        internal static string SystemLine_Log {
+            get {
+                return ResourceManager.GetString("SystemLine_Log", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to ※※※Log file {0} has been created. Please provide stacktrace or save data with steps to reproduce to help fix it※※※.
         /// </summary>
         internal static string SystemLine_LogFileHasBeenCreated {
@@ -7110,6 +7137,15 @@ namespace MinorShift.Emuera.UI.Framework {
         internal static string SystemLine_No {
             get {
                 return ResourceManager.GetString("SystemLine_No", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to # Patch Version.
+        /// </summary>
+        internal static string SystemLine_Patch {
+            get {
+                return ResourceManager.GetString("SystemLine_Patch", resourceCulture);
             }
         }
         

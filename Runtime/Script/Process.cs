@@ -139,7 +139,7 @@ internal sealed partial class Process(EmueraConsole view)
                     ParserMediator.LoadEraExRenameFile(Program.CsvDir + "_Rename.csv");
                 }
                 else
-                    console.PrintError("csv\\_Rename.csvが見つかりません");
+                    console.PrintError(LocalizationManager.SystemLine.MissingRename);
             }
             logWriter.WriteLine($"Proc:Init:Rename:Load:End {stopWatch.ElapsedMilliseconds}ms");
 
@@ -221,7 +221,7 @@ internal sealed partial class Process(EmueraConsole view)
         catch (Exception e)
         {
             handleException(e, null, true);
-            console.PrintSystemLine("初期化中に致命的なエラーが発生したため処理を終了しました");
+            console.PrintSystemLine(LocalizationManager.Error.InitFatalError);
             return false;
         }
         if (labelDic == null)
@@ -475,17 +475,17 @@ internal sealed partial class Process(EmueraConsole view)
         console.ThrowError(playSound);
         if (exc is CodeEE)
         {
-            console.PrintError("関数の終端でエラーが発生しました:" + AssemblyData.EmueraVersionText);
+            console.PrintError(string.Format(LocalizationManager.Error.FuncEndError, AssemblyData.EmueraVersionText));
             console.PrintError(exc.Message);
         }
         else if (exc is ExeEE)
         {
-            console.PrintError("関数の終端でEmueraのエラーが発生しました:" + AssemblyData.EmueraVersionText);
+            console.PrintError(string.Format(LocalizationManager.Error.FuncEndEmueraError, AssemblyData.EmueraVersionText));
             console.PrintError(exc.Message);
         }
         else
         {
-            console.PrintError("関数の終端で予期しないエラーが発生しました:" + AssemblyData.EmueraVersionText);
+            console.PrintError(string.Format(LocalizationManager.Error.FuncEndUnexpectedError, AssemblyData.EmueraVersionText));
             console.PrintError(exc.GetType().ToString() + ":" + exc.Message);
             string[] stack = exc.StackTrace.Split('\n');
             for (int i = 0; i < stack.Length; i++)
@@ -507,9 +507,9 @@ internal sealed partial class Process(EmueraConsole view)
         if (position != null)
         {
             if (position.Value.LineNo >= 0)
-                posString = position.Value.Filename + "の" + position.Value.LineNo.ToString() + "行目で";
+                posString = string.Format(LocalizationManager.Error.ErrorFileAndLine, position.Value.Filename, position.Value.LineNo.ToString());
             else
-                posString = position.Value.Filename + "で";
+                posString = string.Format(LocalizationManager.Error.ErrorFile, position.Value.Filename);
 
         }
         if (exc is CodeEE)
@@ -518,17 +518,17 @@ internal sealed partial class Process(EmueraConsole view)
             {
                 if (current is InstructionLine procline && procline.FunctionCode == FunctionCode.THROW)
                 {
-                    console.PrintErrorButton(posString + "THROWが発生しました", position);
+                    console.PrintErrorButton(string.Format(LocalizationManager.Error.HasThrow, posString), position);
                     printRawLine(position);
-                    console.PrintError("THROW内容：" + exc.Message);
+                    console.PrintError(string.Format(LocalizationManager.Error.ThrowMessage, exc.Message));
                 }
                 else
                 {
-                    console.PrintErrorButton(posString + "エラーが発生しました:" + AssemblyData.EmueraVersionText, position);
+                    console.PrintErrorButton(string.Format(LocalizationManager.Error.HasError, posString, AssemblyData.EmueraVersionText), position);
                     printRawLine(position);
-                    console.PrintError("エラー内容：" + exc.Message);
+                    console.PrintError(string.Format(LocalizationManager.Error.ErrorMessage, exc.Message));
                 }
-                console.PrintError("現在の関数：@" + current.ParentLabelLine.LabelName + "（" + current.ParentLabelLine.Position.Value.Filename + "の" + current.ParentLabelLine.Position.Value.LineNo.ToString() + "行目）");
+                console.PrintError(string.Format(LocalizationManager.Error.ErrorInFunc, current.ParentLabelLine.LabelName, current.ParentLabelLine.Position.Value.Filename, current.ParentLabelLine.Position.Value.LineNo.ToString()));
                 console.PrintError(LocalizationManager.Error.FuncCallStack);
                 LogicalLine parent;
                 int depth = 0;
@@ -536,25 +536,25 @@ internal sealed partial class Process(EmueraConsole view)
                 {
                     if (parent.Position != null)
                     {
-                        console.PrintErrorButton("↑" + parent.Position.Value.Filename + "の" + parent.Position.Value.LineNo.ToString() + "行目（関数@" + parent.ParentLabelLine.LabelName + "内）", parent.Position);
+                        console.PrintErrorButton(string.Format(LocalizationManager.Error.ErrorFuncStack, parent.Position.Value.Filename, parent.Position.Value.LineNo.ToString(), parent.ParentLabelLine.LabelName), parent.Position);
                     }
                 }
             }
             else
             {
-                console.PrintError(posString + "エラーが発生しました:" + AssemblyData.EmueraVersionText);
+                console.PrintError(string.Format(LocalizationManager.Error.HasError, posString, AssemblyData.EmueraVersionText));
                 console.PrintError(exc.Message);
             }
         }
         else if (exc is ExeEE)
         {
-            console.PrintError(posString + "Emueraのエラーが発生しました:" + AssemblyData.EmueraVersionText);
+            console.PrintError(string.Format(LocalizationManager.Error.HasEmueraError, posString, AssemblyData.EmueraVersionText));
             console.PrintError(exc.Message);
         }
         else
         {
-            console.PrintError(posString + "予期しないエラーが発生しました:" + AssemblyData.EmueraVersionText);
-            console.PrintError(exc.GetType().ToString() + ":" + exc.Message);
+            console.PrintError(string.Format(LocalizationManager.Error.HasUnexpectedError, posString, AssemblyData.EmueraVersionText));
+            console.PrintError(exc.GetType() + ":" + exc.Message);
             string[] stack = exc.StackTrace.Split('\n');
             for (int i = 0; i < stack.Length; i++)
             {
