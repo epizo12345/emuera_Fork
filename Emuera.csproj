@@ -56,6 +56,7 @@
     <PackageReference Include="SkiaSharp" Version="3.0.0-preview.3.1 " />
     <PackageReference Include="SkiaSharp.Views.WindowsForms" Version="3.0.0-preview.3.1 " />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+    <PackageReference Include="System.IO.Hashing" Version="8.0.0" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Update="UI\Framework\FormLocalization.resx">
