@@ -10,9 +10,9 @@ namespace MinorShift.Emuera.GameData.Function;
 
 internal static partial class FunctionMethodCreator
 {
-    public sealed class XHH3 : FunctionMethod
+    public sealed class XXH3 : FunctionMethod
     {
-        public XHH3()
+        public XXH3()
         {
             ReturnType = typeof(long);
             argumentTypeArray = [typeof(string)];
@@ -26,9 +26,9 @@ internal static partial class FunctionMethodCreator
             return (long)XxHash3.HashToUInt64(Encoding.UTF8.GetBytes(source));
         }
     }
-    public sealed class XHH32 : FunctionMethod
+    public sealed class XXH32 : FunctionMethod
     {
-        public XHH32()
+        public XXH32()
         {
             ReturnType = typeof(long);
             argumentTypeArray = [typeof(string)];
