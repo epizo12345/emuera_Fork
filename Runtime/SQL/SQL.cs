@@ -1,8 +1,10 @@
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using Microsoft.Data.Sqlite;
 using MinorShift.Emuera.Runtime.Config;
+using MinorShift.Emuera.Runtime.Utils;
 #nullable enable
 namespace Runtime.SQL;
 
@@ -71,6 +73,10 @@ static class SQL
 
     static public void ExecuteReader(long readerID, string sql)
     {
+        if (_connection == null)
+        {
+            throw new CodeEE("SQLコネクションが開いていません");
+        }
         var command = _connection.CreateCommand();
         command.CommandText = sql;
         _readers[readerID] = command.ExecuteReader();
@@ -78,12 +84,20 @@ static class SQL
 
     static public T? ExecuteScaler<T>(string sql)
     {
+        if (_connection == null)
+        {
+            throw new CodeEE("SQLコネクションが開いていません");
+        }
         var command = _connection.CreateCommand();
         command.CommandText = sql;
         return (T?)command.ExecuteScalar();
     }
     static public void ExecuteNonQuery(string sql)
     {
+        if (_connection == null)
+        {
+            throw new CodeEE("SQLコネクションが開いていません");
+        }
         var command = _connection.CreateCommand();
         command.CommandText = sql;
         command.ExecuteNonQuery();
@@ -91,16 +105,29 @@ static class SQL
 
     static public void ReaderRead(long readerID)
     {
-        _readers[readerID].Read();
+        if (!_readers.TryGetValue(readerID, out var reader))
+        {
+            throw new CodeEE($"IDが {readerID} のREADERは存在しません");
+        }
+
+        reader.Read();
     }
 
     static public long ReaderGetLong(long readerID, int index)
     {
-        return _readers[readerID].GetInt64(index);
+        if (!_readers.TryGetValue(readerID, out var reader))
+        {
+            throw new CodeEE($"IDが {readerID} のREADERは存在しません");
+        }
+        return reader.GetInt64(index);
     }
 
     static public string ReaderGetString(long readerID, int index)
     {
-        return _readers[readerID].GetString(index);
+        if (!_readers.TryGetValue(readerID, out var reader))
+        {
+            throw new CodeEE($"IDが {readerID} のREADERは存在しません");
+        }
+        return reader.GetString(index);
     }
 }
