@@ -3327,7 +3327,7 @@ internal static partial class FunctionMethodCreator
                 return 0;
 
             string filename = arguments[1].GetStrValue(exm);
-            SKBitmap bmp = null;
+            SKImage img = null;
             try
             {
                 string filepath = filename;
@@ -3335,10 +3335,10 @@ internal static partial class FunctionMethodCreator
                     filepath = Program.ContentDir + filename;
                 if (!System.IO.File.Exists(filepath))
                     return 0;
-                bmp = SKBitmap.Decode(filepath);
-                if (bmp.Width > AbstractImage.MAX_IMAGESIZE || bmp.Height > AbstractImage.MAX_IMAGESIZE)
+                img = SKImage.FromEncodedData(filepath);
+                if (img.Width > AbstractImage.MAX_IMAGESIZE || img.Height > AbstractImage.MAX_IMAGESIZE)
                     return 0;
-                g.GCreateFromF(bmp, Config.TextDrawingMode == TextDrawingMode.WINAPI);
+                g.GCreateFromF(img, Config.TextDrawingMode == TextDrawingMode.WINAPI);
             }
             catch (Exception e)
             {
@@ -3347,8 +3347,8 @@ internal static partial class FunctionMethodCreator
             }
             finally
             {
-                if (bmp != null)
-                    bmp.Dispose();
+                if (img != null)
+                    img.Dispose();
             }
             //画像ファイルではなかった、などによる失敗
             if (!g.IsCreated)
@@ -4393,15 +4393,15 @@ internal static partial class FunctionMethodCreator
                 return 0;
 
             string filepath = GetSaveDataPathGraphics((int)i64);
-            SKBitmap bmp = null;
+            SKImage img = null;
             try
             {
                 if (!System.IO.File.Exists(filepath))
                     return 0;
-                bmp = SKBitmap.Decode(filepath);
-                if (bmp.Width > AbstractImage.MAX_IMAGESIZE || bmp.Height > AbstractImage.MAX_IMAGESIZE)
+                img = SKImage.FromEncodedData(filepath);
+                if (img.Width > AbstractImage.MAX_IMAGESIZE || img.Height > AbstractImage.MAX_IMAGESIZE)
                     return 0;
-                g.GCreateFromF(bmp, Config.TextDrawingMode == TextDrawingMode.WINAPI);
+                g.GCreateFromF(img, Config.TextDrawingMode == TextDrawingMode.WINAPI);
             }
             catch (Exception e)
             {
@@ -4410,8 +4410,8 @@ internal static partial class FunctionMethodCreator
             }
             finally
             {
-                if (bmp != null)
-                    bmp.Dispose();
+                if (img != null)
+                    img.Dispose();
             }
             if (!g.IsCreated)
                 return 0;

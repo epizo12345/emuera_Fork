@@ -68,15 +68,15 @@ internal sealed class GraphicsImage : AbstractImage
         canvas = new SKCanvas(Bitmap);
     }
 
-    internal void GCreateFromF(SKBitmap bmp, bool useGDI)
+    internal void GCreateFromF(SKImage img, bool useGDI)
     {
         if (useGDI)
             throw new NotImplementedException();
         GDispose();
-        Bitmap = new SKBitmap(bmp.Width, bmp.Height);
-        size = new Size(bmp.Width, bmp.Height);
+        Bitmap = new SKBitmap(img.Width, img.Height);
+        size = new Size(img.Width, img.Height);
         canvas = new SKCanvas(Bitmap);
-        canvas.DrawBitmap(bmp, new SKPoint(0, 0));
+        canvas.DrawImage(img, new SKPoint(0, 0));
     }
 
     /// <summary>
