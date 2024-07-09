@@ -9,6 +9,13 @@ enum Resampler
     Cubic,
 }
 
+enum FontAntialias
+{
+    None,
+    Normal,
+    Full,
+}
+
 sealed class JSONGameConfigData
 {
     //ボタンにカーソルを合わせたときに背景色を変更するか
@@ -22,6 +29,8 @@ sealed class JSONGameConfigData
     public Resampler ImageSamplingOption { get; set; } = Resampler.Linear;
 
     public bool CheckUTF8withBOM { get; set; } = true;
+
+    public FontAntialias FontAntialias { get; set; } = FontAntialias.Normal;
 }
 
 sealed class JSONUserConfigData

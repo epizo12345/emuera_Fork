@@ -1,4 +1,5 @@
 using MinorShift.Emuera.Runtime.Config;
+using MinorShift.Emuera.Runtime.Config.JSON;
 using MinorShift.Emuera.UI.Game;
 using SkiaSharp;
 using System.Collections.Generic;
@@ -67,6 +68,19 @@ static class FontFactory
                 return null;
             }
 
+            switch (JSONConfig.Game.FontAntialias)
+            {
+                case FontAntialias.None:
+                    font.Hinting = SKFontHinting.None;
+                    font.Edging = SKFontEdging.Alias;
+                    break;
+                case FontAntialias.Normal:
+                    break;
+                case FontAntialias.Full:
+                    font.Hinting = SKFontHinting.Full;
+                    font.Edging = SKFontEdging.SubpixelAntialias;
+                    break;
+            }
 
             fontDic.Add((familyName, fontSize.Value, style), font);
         }
