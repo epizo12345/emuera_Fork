@@ -1721,11 +1721,10 @@ internal sealed partial class EmueraConsole : IDisposable
 
             if (parent is ConsoleButtonString cbs)
             {
+                if (cbs.IsButton || !string.IsNullOrEmpty(cbs.Title))
+                    selectableButton = cbs;
                 foreach (var node in cbs.StrArray)
                 {
-                    if (cbs.IsButton || !string.IsNullOrEmpty(cbs.Title))
-                        selectableButton = cbs;
-
                     var r = findButton(pointX, pointY, relPointY, node, selectableButton);
                     if (r != null)
                     {
