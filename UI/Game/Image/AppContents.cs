@@ -30,7 +30,7 @@ static class AppContents
     {
         if (gList.TryGetValue(i, out GraphicsImage value))
             return value;
-        var g = new GraphicsImage(i);
+        var g = new GraphicsImage();
         gList[i] = g;
         return g;
     }
