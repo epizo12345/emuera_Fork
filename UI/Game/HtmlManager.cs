@@ -45,16 +45,16 @@ namespace MinorShift.Emuera.UI.Game;
 /// </summary>
 internal static partial class HtmlManager
 {
-    static HtmlManager()
-    {
-        repDic.Add('&', "&amp;");
-        repDic.Add('>', "&gt;");
-        repDic.Add('<', "&lt;");
-        repDic.Add('\"', "&quot;");
-        repDic.Add('\'', "&apos;");
-    }
     static readonly char[] rep = ['&', '>', '<', '\"', '\''];
-    static readonly Dictionary<char, string> repDic = [];
+    static readonly Dictionary<char, string> repDic = new()
+    {
+        { '&', "&amp;" },
+        { '>', "&gt;" },
+        { '<', "&lt;" },
+        { '\"', "&quot;" },
+        { '\'', "&apos;" }
+    };
+
     private sealed class HtmlAnalzeStateFontTag
     {
         public int Color = -1;
