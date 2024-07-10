@@ -23,6 +23,7 @@ using System.Windows.Forms;
 using MinorShift.Emuera.UI.Framework;
 using MinorShift.Emuera.UI;
 using System.Linq;
+using System.Threading;
 
 namespace MinorShift.Emuera.GameView;
 
@@ -81,12 +82,19 @@ internal sealed partial class EmueraConsole : IDisposable
         genericTimer.Enabled = false;
         CBG_Clear();//文字列描画用ダミー追加
 
-        redrawTimer = new Timer
-        {
-            Enabled = false//TODO:1824アニメ用再描画タイマー有効化関数の追加
-        };
-        redrawTimer.Tick += new EventHandler(tickRedrawTimer);
-        redrawTimer.Interval = 10;
+        redrawTimer = new(TimeSpan.FromMilliseconds(10));
+        redrawTask = new Task(
+            async () =>
+            {
+                while (await redrawTimer.WaitForNextTickAsync())
+                {
+                    if (isRedrawEnabled)
+                    {
+                        Draw();
+                    }
+                }
+            }
+        );
     }
     #region 1823 cbg関連
     private readonly List<ClientBackGroundImage> cbgList = [];
@@ -542,18 +550,18 @@ internal sealed partial class EmueraConsole : IDisposable
     /// <summary>
     /// INPUT中のアニメーション用タイマー
     /// </summary>
-    Timer redrawTimer;
+    PeriodicTimer redrawTimer;
+    bool isRedrawEnabled;
+    Task redrawTask;
 
-    private void tickRedrawTimer(object sender, EventArgs e)
+    private void Draw()
     {
-        if (!redrawTimer.Enabled)
-            return;
         //INPUT待ちでないとき、又はタイマー付きINPUT状態の場合はこれ以外の処理に任せる
         if (state != ConsoleState.WaitInput || genericTimer.Enabled)
         {
             return;
         }
-        window.Refresh();//OnPaint発行
+        window.Invoke(window.Refresh);//OnPaint発行
     }
 
     /// <summary>
@@ -563,13 +571,17 @@ internal sealed partial class EmueraConsole : IDisposable
     {
         if (tickcount <= 0)
         {
-            redrawTimer.Enabled = false;
+            isRedrawEnabled = false;
             return;
         }
-        if (tickcount < 10)
-            tickcount = 10;
-        redrawTimer.Interval = tickcount;
-        redrawTimer.Enabled = true;
+
+        if (redrawTask.Status == TaskStatus.Created)
+        {
+            redrawTask.Start();
+        }
+
+        isRedrawEnabled = true;
+        redrawTimer.Period = TimeSpan.FromMilliseconds(tickcount);
     }
 
 
