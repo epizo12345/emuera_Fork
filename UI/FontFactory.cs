@@ -37,7 +37,7 @@ static class FontFactory
 
     public static SKFont GetFont(StringStyle stringStyle)
     {
-        return GetFont(stringStyle.Fontname, stringStyle.FontStyle);
+        return GetFont(stringStyle.Fontname, stringStyle.FontStyle, stringStyle.FontSize);
     }
     public static SKFont GetFont(string familyName, FontStyle style, float? fontSize = null)
     {

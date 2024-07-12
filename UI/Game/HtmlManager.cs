@@ -456,9 +456,11 @@ internal static partial class HtmlManager
                                 var face = elem.GetAttribute("face");
                                 var color = ParseColor(elem.GetAttribute("color"), style.Color.ToSKColor());
                                 var bcolor = ParseColor(elem.GetAttribute("bcolor"), style.ButtonColor.ToSKColor());
+                                var fontSize = ParseSizeValue(elem.GetAttribute("size"), Config.FontSize);
                                 style.Fontname = face;
                                 style.Color = color.ToDrawingColor();
                                 style.ButtonColor = bcolor.ToDrawingColor();
+                                style.FontSize = fontSize;
 
                                 var c = ParseNode(node.ChildNodes, style, divState, align);
 

@@ -58,6 +58,7 @@ internal struct StringStyle
     public bool HasStrikeout;
     public bool HasUnderline;
     public string Fontname;
+    public int FontSize = Config.FontSize;
     public override bool Equals(object? obj)
     {
         if (obj == null || obj is not StringStyle ss)

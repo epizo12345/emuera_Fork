@@ -40,7 +40,7 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
         str = str.Replace("\t", "", StringComparison.Ordinal);
         Text = str;
         StringStyle = style;
-        Font = FontFactory.GetFont(style.Fontname, style.FontStyle);
+        Font = FontFactory.GetFont(style);
         if (Font == null)
         {
             Error = true;
