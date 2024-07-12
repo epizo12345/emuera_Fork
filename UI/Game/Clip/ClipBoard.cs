@@ -9,7 +9,7 @@ using MinorShift.Emuera.UI.Game;
 
 namespace MinorShift.Emuera.GameProc.Function;
 
-internal class ClipboardProcessor
+internal partial class ClipboardProcessor
 {
     private readonly bool classicMode; // New Lines Only mode
 
@@ -27,8 +27,6 @@ internal class ClipboardProcessor
     private StringBuilder OldText; //Last set of lines sent to the clipboard
     private readonly CircularBuffer<string> lineBuffer; //Buffer for processed strings ready for clipboard
 
-    public string GetLatestString => OldText.ToString();
-
     internal enum CBTriggers
     {
         LeftClick,
@@ -37,8 +35,6 @@ internal class ClipboardProcessor
         AnyKeyWait,
         InputWait,
     }
-
-    private delegate void SetClipboardDelegate(string text, bool copy, int times, int delay); //Just for using the timer to set the clipboard.
 
     public ClipboardProcessor(Forms.MainWindow parent)
     {
@@ -191,19 +187,19 @@ internal class ClipboardProcessor
         else length = Math.Min(MaxCB, lineBuffer.Count - ScrollPos);
         if (length <= 0) return;
 
-        var newText = new StringBuilder();
+        var builder = new StringBuilder();
         for (int count = 0; count < length; count++)
         {
-            newText.AppendLine(lineBuffer[lineBuffer.Count - length - ScrollPos + count]);
+            builder.AppendLine(lineBuffer[lineBuffer.Count - length - ScrollPos + count]);
         }
-        if (newText.ToString().Equals(OldText.ToString())) return;
-        var scpDelegate = new SetClipboardDelegate(Clipboard.SetDataObject);
+        var newText = builder.ToString();
+        if (newText.Equals(OldText.ToString())) return;
         try
         {
-            mainWin.Invoke(scpDelegate, newText.ToString(), false, 3, 200);
+            mainWin.Invoke(() => Clipboard.SetDataObject(newText, false, 3, 200));
             if (ScrollPos == 0) OldNewLineCount = NewLineCount;
             NewLineCount = 0;
-            OldText = newText;
+            OldText = builder;
             postWaiting = false;
         }
         catch (Exception)
@@ -212,15 +208,17 @@ internal class ClipboardProcessor
         }
     }
 
-    private const string HTML_TAG_PATTERN = "<.*?>";
+
+    [GeneratedRegex("<.*?>")]
+    private static partial Regex HTMLTagRegex();
 
     public static string StripHTML(string input)
     {
         // still faster to use String.Contains to check if we need to do this at all first, supposedly
-        if (JSONConfig.User.CBIgnoreTags && input.Contains("<"))
+        if (JSONConfig.User.CBIgnoreTags && input.Contains('<'))
         {
             // regex is faster and simpler than a for loop you nerds
-            return Regex.Replace(input, HTML_TAG_PATTERN, JSONConfig.User.CBReplaceTags);
+            return HTMLTagRegex().Replace(input, JSONConfig.User.CBReplaceTags);
         }
         return input;
     }
