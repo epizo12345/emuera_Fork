@@ -24,6 +24,7 @@ using MinorShift.Emuera.UI.Framework;
 using MinorShift.Emuera.UI;
 using System.Linq;
 using System.Threading;
+using MinorShift.Emuera.Runtime.Config.JSON;
 
 namespace MinorShift.Emuera.GameView;
 
@@ -67,6 +68,11 @@ internal sealed partial class EmueraConsole : IDisposable
     public EmueraConsole(MainWindow parent)
     {
         window = parent;
+
+        #region EE_AnchorのCB機能移植
+        CBProc = new ClipboardProcessor(parent);
+        #endregion
+
 
         //1.713 この段階でsetStBarを使用してはいけない
         //setStBar(StaticConfig.DrawLineString);
@@ -242,6 +248,10 @@ internal sealed partial class EmueraConsole : IDisposable
 
     const string ErrorButtonsText = "__openFileWithDebug__";
     private readonly MainWindow window;
+    #region EE_AnchorのCB機能移植
+    public readonly ClipboardProcessor CBProc;
+    #endregion
+
 
     MinorShift.Emuera.GameProc.Process process;
     ConsoleState state = ConsoleState.Initializing;
@@ -515,6 +525,11 @@ internal sealed partial class EmueraConsole : IDisposable
 
     public void WaitInput(InputRequest req)
     {
+        #region EE_AnchorのCB機能移植
+        if (JSONConfig.User.CBUseClipboard)
+            CBProc.Check(ClipboardProcessor.CBTriggers.InputWait);
+        #endregion
+
         state = ConsoleState.WaitInput;
         inputReq = req;
         if (req.Timelimit > 0)
@@ -535,6 +550,11 @@ internal sealed partial class EmueraConsole : IDisposable
 
     public void ReadAnyKey(bool anykey = false, bool stopMesskip = false)
     {
+        #region EE_AnchorのCB機能移植
+        if (JSONConfig.User.CBUseClipboard)
+            CBProc.Check(ClipboardProcessor.CBTriggers.AnyKeyWait);
+        #endregion
+
         InputRequest req = new();
         if (!anykey)
             req.InputType = InputType.EnterKey;

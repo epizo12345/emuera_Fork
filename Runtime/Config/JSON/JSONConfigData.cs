@@ -36,4 +36,20 @@ sealed class JSONGameConfigData
 sealed class JSONUserConfigData
 {
     public int[] WatchListWidth { get; set; } = [-2, -2];
+
+    public bool CBUseClipboard { get; private set; } = true;
+    public bool CBIgnoreTags { get; private set; } = true;
+    public string CBReplaceTags { get; private set; } = ".";
+    public bool CBNewLinesOnly { get; private set; } = true;
+    public bool CBClearBuffer { get; private set; } = false;
+    public bool CBTriggerLeftClick { get; private set; } = true;
+    public bool CBTriggerMiddleClick { get; private set; } = false;
+    public bool CBTriggerDoubleLeftClick { get; private set; } = false;
+    public bool CBTriggerAnyKeyWait { get; private set; } = false;
+    public bool CBTriggerInputWait { get; private set; } = true;
+    public int CBMaxCB { get; private set; } = 25;
+    public int CBBufferSize { get; private set; } = 300;
+    public int CBScrollCount { get; private set; } = 5;
+    public int CBMinTimer { get; private set; } = 800;
+
 }

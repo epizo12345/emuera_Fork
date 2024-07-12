@@ -577,6 +577,10 @@ namespace MinorShift.Emuera.Forms
             mainPicBox.MouseDown += mainPicBox_MouseDown;
             mainPicBox.MouseLeave += mainPicBox_MouseLeave;
             mainPicBox.MouseMove += mainPicBox_MouseMove;
+
+            mainPicBox.MouseClick += mainPicBox_MouseClickCBCheck;
+            mainPicBox.MouseDoubleClick += mainPicBox_MouseDoubleClickCBCheck;
+
             // 
             // englishToolStripMenuItem
             // 

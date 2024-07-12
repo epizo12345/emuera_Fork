@@ -13,6 +13,7 @@ using System.Text;
 using System.Windows.Forms;
 using MinorShift.Emuera.UI.Framework;
 using MinorShift.Emuera.UI;
+using MinorShift.Emuera.Runtime.Config.JSON;
 
 namespace MinorShift.Emuera.GameView;
 
@@ -29,6 +30,10 @@ internal sealed partial class EmueraConsole : IDisposable
 
     public void ClearDisplay()
     {
+        #region EE_AnchorのCB機能移植
+        CBProc.ClearScreen();
+        #endregion
+
         displayLineList.Clear();
         _htmlElementListDict.Clear();
         logicalLineCount = 0;
@@ -150,6 +155,11 @@ internal sealed partial class EmueraConsole : IDisposable
 
     private void addDisplayLine(ConsoleDisplayLine line, bool force_LEFT)
     {
+        #region EE_AnchorのCB機能移植
+        if (JSONConfig.User.CBUseClipboard)
+            CBProc.AddLine(line, force_LEFT);
+        #endregion
+
         if (LastLineIsTemporary)
             deleteLine(1);
         //不適正なFontのチェック
@@ -204,6 +214,11 @@ internal sealed partial class EmueraConsole : IDisposable
 
     public void deleteLine(int argNum)
     {
+        #region EE_AnchorのCB機能移植
+        if (JSONConfig.User.CBUseClipboard)
+            CBProc.DelLine(Math.Min(argNum, displayLineList.Count)); //FIXIT - Do we need to worry about the count?
+        #endregion
+
         int delNum = 0;
         int num = argNum;
         while (delNum < num)
@@ -667,7 +682,7 @@ internal sealed partial class EmueraConsole : IDisposable
             if (window.Created)
             {
                 PrintSystemLine(string.Format(LocalizationManager.SystemLine.LogFileHasBeenCreated,
-                    filename.Replace(Program.ExeDir, ""))); 
+                    filename.Replace(Program.ExeDir, "")));
                 RefreshStrings(true);
             }
             return true;

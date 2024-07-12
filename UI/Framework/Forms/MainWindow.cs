@@ -14,6 +14,8 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using MinorShift.Emuera.UI.Framework;
+using MinorShift.Emuera.Runtime.Config.JSON;
+using MinorShift.Emuera.GameProc.Function;
 
 #nullable enable
 
@@ -134,6 +136,17 @@ internal sealed partial class MainWindow : Form
         //    if ((console.DebugDialog != null) && (console.DebugDialog.Created))
         //        console.DebugDialog.UpdateData();
         //}
+        #region EE_AnchorのCB機能移植
+        else if (Keys.Up == (keyData & Keys.KeyCode) && ((keyData & Keys.Modifiers & Keys.Control) == Keys.Control))
+        {
+            if (JSONConfig.User.CBUseClipboard && console.CBProc.ScrollUp(1)) return true;
+        }
+        else if (Keys.Down == (keyData & Keys.KeyCode) && ((keyData & Keys.Modifiers & Keys.Control) == Keys.Control))
+        {
+            if (JSONConfig.User.CBUseClipboard && console.CBProc.ScrollDown(1)) return true;
+        }
+        #endregion
+
         else if (Config.UseKeyMacro)
         {
             int keyCode = (int)(keyData & Keys.KeyCode);
@@ -336,6 +349,23 @@ internal sealed partial class MainWindow : Form
     }
 
     bool changeTextbyMouse;
+
+    #region EE_AnchorのCB機能移植
+    private void mainPicBox_MouseClickCBCheck(object sender, System.Windows.Forms.MouseEventArgs e)
+    {
+        if (JSONConfig.User.CBUseClipboard)
+        {
+            if (e.Button == MouseButtons.Left) console.CBProc.Check(ClipboardProcessor.CBTriggers.LeftClick);
+            else if (e.Button == MouseButtons.Middle) console.CBProc.Check(ClipboardProcessor.CBTriggers.MiddleClick);
+        }
+    }
+
+    private void mainPicBox_MouseDoubleClickCBCheck(object sender, System.Windows.Forms.MouseEventArgs e)
+    {
+        if (JSONConfig.User.CBUseClipboard && e.Button == MouseButtons.Left) console.CBProc.Check(ClipboardProcessor.CBTriggers.DoubleLeftClick);
+    }
+    #endregion
+
     private void mainPicBox_MouseDown(object sender, MouseEventArgs e)
     {
         richTextBox1.Focus();//画面をクリックしてもテキストボックスからフォーカスが外れないようにする
@@ -726,6 +756,16 @@ internal sealed partial class MainWindow : Form
         }
         //e.Deltaには大きな値が入っているので符号のみ採用する
         int move = -Math.Sign(e.Delta) * vScrollBar.SmallChange * Config.ScrollHeight;
+        #region EE_AnchorのCB機能移植
+        //Clipboard scroll only when using ctrl
+        if (JSONConfig.User.CBUseClipboard && ModifierKeys == Keys.Control)
+        {
+            if (move > 0) console.CBProc.ScrollDown(move);
+            else if (move < 0) console.CBProc.ScrollUp(-move);
+            return;
+        }
+        #endregion
+
         //スクロールが必要ないならリターンする
         if ((vScrollBar.Value == vScrollBar.Maximum && move > 0) || (vScrollBar.Value == vScrollBar.Minimum && move < 0))
             return;
