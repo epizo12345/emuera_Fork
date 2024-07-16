@@ -8,6 +8,7 @@ using MinorShift.Emuera.Runtime.Script.Statements.Function;
 using MinorShift.Emuera.Runtime.Script.Statements.Variable;
 using MinorShift.Emuera.Runtime.Utils;
 using MinorShift.Emuera.Sub;
+using MinorShift.Emuera.UI.Framework;
 using System;
 using System.Collections.Generic;
 
@@ -46,7 +47,7 @@ internal sealed class UserDefinedFunctionArgument
                 {
                     long charaNo = vTerm.GetElementInt(0, exm);
                     if (charaNo < 0 || charaNo >= GlobalStatic.VariableData.CharacterList.Count)
-                        throw new CodeEE("キャラクタ配列変数" + vTerm.Identifier.Name + "の第１引数(" + charaNo.ToString() + ")はキャラ登録番号の範囲外です");
+                        throw new CodeEE(string.Format(LocalizationManager.Error.OoRCharaVarArg, vTerm.Identifier.Name, "1", charaNo.ToString()));
                     TransporterRef[i] = (Array)vTerm.Identifier.GetArrayChara((int)charaNo);
                 }
                 else
@@ -94,7 +95,7 @@ internal sealed class CalledFunction
             FunctionLabelLine line = parent.LabelDictionary.GetNonEventLabel(label);
             if (parent.LabelDictionary.GetNonEventLabel(label) != null)
             {
-                throw new CodeEE("イベント関数でない関数@" + label + "(" + line.Position.Value.Filename + ":" + line.Position.Value.LineNo + "行目)に対しEVENT呼び出しが行われました");
+                throw new CodeEE(string.Format(LocalizationManager.Error.CalleventToNonEventFunc, label, line.Position.Value.Filename, line.Position.Value.LineNo));
             }
             return null;
         }
@@ -118,13 +119,13 @@ internal sealed class CalledFunction
         {
             if (parent.LabelDictionary.GetEventLabels(label) != null)
             {
-                throw new CodeEE("イベント関数@" + label + "に対し通常のCALLが行われました(このエラーは互換性オプション「" + Config.Config.GetConfigName(ConfigCode.CompatiCallEvent) + "」により無視できます)");
+                throw new CodeEE(string.Format(LocalizationManager.Error.CallToEventFunc, label, Config.Config.GetConfigName(ConfigCode.CompatiCallEvent)));
             }
             return null;
         }
         else if (labelline.IsMethod)
         {
-            throw new CodeEE("#FUCNTION(S)が定義された関数@" + labelline.LabelName + "(" + labelline.Position.Value.Filename + ":" + labelline.Position.Value.LineNo.ToString() + "行目)に対し通常のCALLが行われました");
+            throw new CodeEE(string.Format(LocalizationManager.Error.CallToUserFunc, labelline.LabelName, labelline.Position.Value.Filename, labelline.Position.Value.LineNo.ToString()));
         }
         called.TopLabel = labelline;
         called.CurrentLabel = labelline;
@@ -164,7 +165,7 @@ internal sealed class CalledFunction
         AExpression[] convertedArg = new AExpression[func.Arg.Length];
         if (convertedArg.Length < srcArgs.Count)
         {
-            errMes = "引数の数が関数\"@" + func.LabelName + "\"に設定された数を超えています";
+            errMes = string.Format(LocalizationManager.Error.TooManyFuncArgs, func.LabelName);
             return null;
         }
         AExpression term;
@@ -179,20 +180,20 @@ internal sealed class CalledFunction
             {
                 if (term == null)
                 {
-                    errMes = "\"@" + func.LabelName + "\"の" + (i + 1).ToString() + "番目の引数は参照渡しのため省略できません";
+                    errMes = string.Format(LocalizationManager.Error.CanNotOmitRefArg, func.LabelName, (i + 1).ToString());
                     return null;
                 }
                 VariableTerm vTerm = term as VariableTerm;
                 if (vTerm == null || vTerm.Identifier.Dimension == 0)
                 {
-                    errMes = "\"@" + func.LabelName + "\"の" + (i + 1).ToString() + "番目の引数は参照渡しのための配列変数でなければなりません";
+                    errMes = string.Format(LocalizationManager.Error.RequireArrayBecauseRefArg, func.LabelName, (i + 1).ToString());
                     return null;
                 }
                 //TODO 1810alpha007 キャラ型を認めるかどうかはっきりしたい 今のところ認めない方向
                 //型チェック
                 if (!((ReferenceToken)destArg.Identifier).MatchType(vTerm.Identifier, false, out errMes))
                 {
-                    errMes = "\"@" + func.LabelName + "\"の" + (i + 1).ToString() + "番目の引数:" + errMes;
+                    errMes = string.Format(LocalizationManager.Error.NumberOfArg, func.LabelName, (i + 1).ToString(), errMes);
                     return null;
                 }
             }
@@ -203,7 +204,7 @@ internal sealed class CalledFunction
                                    //一応逃がす
                 if (term == null && !Config.Config.CompatiFuncArgOptional)
                 {
-                    errMes = "\"@" + func.LabelName + "\"の" + (i + 1).ToString() + "番目の引数は省略できません(この警告は互換性オプション「" + Config.Config.GetConfigName(ConfigCode.CompatiFuncArgOptional) + "」により無視できます)";
+                    errMes = string.Format(LocalizationManager.Error.CanNotOmitArgWithMessage, func.LabelName, (i + 1).ToString(), Config.Config.GetConfigName(ConfigCode.CompatiFuncArgOptional));
                     return null;
                 }
             }
@@ -211,14 +212,14 @@ internal sealed class CalledFunction
             {
                 if (term.GetOperandType() == typeof(string))
                 {
-                    errMes = "\"@" + func.LabelName + "\"の" + (i + 1).ToString() + "番目の引数を文字列型から整数型に変換できません";
+                    errMes = string.Format(LocalizationManager.Error.CanNotConvertStrToInt, func.LabelName, (i + 1).ToString());
                     return null;
                 }
                 else
                 {
                     if (!Config.Config.CompatiFuncArgAutoConvert)
                     {
-                        errMes = "\"@" + func.LabelName + "\"の" + (i + 1).ToString() + "番目の引数を整数型から文字列型に変換できません(この警告は互換性オプション「" + Config.Config.GetConfigName(ConfigCode.CompatiFuncArgAutoConvert) + "」により無視できます)";
+                        errMes = string.Format(LocalizationManager.Error.CanNotConvertIntToStr, func.LabelName, (i + 1).ToString(), Config.Config.GetConfigName(ConfigCode.CompatiFuncArgAutoConvert));
                         return null;
                     }
                     if (tostrMethod == null)

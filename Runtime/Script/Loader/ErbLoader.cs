@@ -130,7 +130,7 @@ internal sealed class ErbLoader
                 fname = fpath;
             if (Program.AnalysisMode)
             {
-                output.PrintSystemLine(fname + "読み込み中・・・");
+                output.PrintSystemLine(string.Format(LocalizationManager.SystemLine.LoadingFile, fname));;
             }
             await Task.Run(() =>
             {
@@ -170,7 +170,7 @@ internal sealed class ErbLoader
                 case "SKIPSTART":
                     if (!string.IsNullOrEmpty(token2))
                     {
-                        ParserMediator.Warn(token + "に余分な引数があります", position, 1);
+                        ParserMediator.Warn(string.Format(LocalizationManager.Error.HasTooManyArg, token), position, 1);
                         break;
                     }
                     if (skip)
@@ -188,7 +188,7 @@ internal sealed class ErbLoader
                 case "IF_DEBUG":
                     if (!string.IsNullOrEmpty(token2))
                     {
-                        ParserMediator.Warn(token + "に余分な引数があります", position, 1);
+                        ParserMediator.Warn(string.Format(LocalizationManager.Error.HasTooManyArg, token), position, 1);
                         break;
                     }
                     ppMatch.Push("ELSEIF");
@@ -200,7 +200,7 @@ internal sealed class ErbLoader
                 case "IF_NDEBUG":
                     if (!string.IsNullOrEmpty(token2))
                     {
-                        ParserMediator.Warn(token + "に余分な引数があります", position, 1);
+                        ParserMediator.Warn(string.Format(LocalizationManager.Error.HasTooManyArg, token), position, 1);
                         break;
                     }
                     ppMatch.Push("ELSEIF");
@@ -212,7 +212,7 @@ internal sealed class ErbLoader
                 case "IF":
                     if (string.IsNullOrEmpty(token2))
                     {
-                        ParserMediator.Warn(token + "に引数がありません", position, 1);
+                        ParserMediator.Warn(string.Format(LocalizationManager.Error.MissingArguments, token), position, 1);
                         break;
                     }
                     ppMatch.Push("ELSEIF");
@@ -224,12 +224,12 @@ internal sealed class ErbLoader
                 case "ELSEIF":
                     if (string.IsNullOrEmpty(token2))
                     {
-                        ParserMediator.Warn(token + "に引数がありません", position, 1);
+                        ParserMediator.Warn(string.Format(LocalizationManager.Error.MissingArguments, token), position, 1);
                         break;
                     }
                     if (ppMatch.Count == 0 || ppMatch.Pop() != "ELSEIF")
                     {
-                        ParserMediator.Warn("不適切な[ELSEIF]です", position, 1);
+                        ParserMediator.Warn(string.Format(LocalizationManager.Error.IsInvalid, "[ELSEIF]"), position, 1);
                         break;
                     }
                     ppMatch.Push("ELSEIF");
@@ -239,12 +239,12 @@ internal sealed class ErbLoader
                 case "ELSE":
                     if (!string.IsNullOrEmpty(token2))
                     {
-                        ParserMediator.Warn(token + "に余分な引数があります", position, 1);
+                        ParserMediator.Warn(string.Format(LocalizationManager.Error.HasTooManyArg, token), position, 1);
                         break;
                     }
                     if (ppMatch.Count == 0 || ppMatch.Pop() != "ELSEIF")
                     {
-                        ParserMediator.Warn("不適切な[ELSE]です", position, 1);
+                        ParserMediator.Warn(string.Format(LocalizationManager.Error.IsInvalid, "[ELSE]"), position, 1);
                         break;
                     }
                     ppMatch.Push("ENDIF");
@@ -256,7 +256,7 @@ internal sealed class ErbLoader
                     {
                         if (!string.IsNullOrEmpty(token2))
                         {
-                            ParserMediator.Warn(token + "に余分な引数があります", position, 1);
+                            ParserMediator.Warn(string.Format(LocalizationManager.Error.HasTooManyArg, token), position, 1);
                             break;
                         }
                         string match = ppMatch.Count == 0 ? "" : ppMatch.Pop();
@@ -274,7 +274,7 @@ internal sealed class ErbLoader
                     {
                         if (!string.IsNullOrEmpty(token2))
                         {
-                            ParserMediator.Warn(token + "に余分な引数があります", position, 1);
+                            ParserMediator.Warn(string.Format(LocalizationManager.Error.HasTooManyArg, token), position, 1);
                             break;
                         }
                         string match = ppMatch.Count == 0 ? "" : ppMatch.Pop();
@@ -302,7 +302,7 @@ internal sealed class ErbLoader
                 string match = ppMatch.Pop();
                 if (match == "ELSEIF")
                     match = "ENDIF";
-                ParserMediator.Warn("[" + match + "]がありません", position, 1);
+                ParserMediator.Warn(string.Format(LocalizationManager.Error.TheresNo, match), position, 1);
             }
         }
     }
@@ -319,7 +319,7 @@ internal sealed class ErbLoader
 
         if (!eReader.OpenOnCache(filepath, filename))
         {
-            output.PrintError(eReader.Filename + "のオープンに失敗しました");
+            output.PrintError(string.Format(LocalizationManager.Error.FailedOpenFile, eReader.Filename));
         }
         var ppstate = new PPState();
         LogicalLine nextLine = new NullLine();
@@ -346,7 +346,7 @@ internal sealed class ErbLoader
                 ppstate.AddKeyWord(token, token2, position);
                 st.ShiftNext();
                 if (!st.EOS)
-                    ParserMediator.Warn("[" + token + "]の後ろは無視されます。", position, 1);
+                    ParserMediator.Warn(string.Format(LocalizationManager.Error.IgnoreAfterPreprosessor, token), position, 1);
                 continue;
             }
             //if ((skip) || (Program.DebugMode && ifndebug) || (!Program.DebugMode && ifdebug))
@@ -389,7 +389,7 @@ internal sealed class ErbLoader
                             if (seniorLabel != null)
                             {
                                 //output.NewLine();
-                                ParserMediator.Warn($"関数@{label.LabelName}は既に定義({seniorLabel.Position.Value.Filename}の{seniorLabel.Position.Value.LineNo}行目)されています", position, 1);
+                                ParserMediator.Warn(string.Format(LocalizationManager.Error.FuncIsAlreadyDefined, label.LabelName, seniorLabel.Position.Value.Filename, seniorLabel.Position.Value.LineNo.ToString()), position, 1);
                                 funcCount = -1;
                             }
                         }
@@ -409,7 +409,7 @@ internal sealed class ErbLoader
                         if (lastLabelLine != null && !labelDic.AddLabelDollar(gotoLabel))
                         {
                             ScriptPosition? pos = labelDic.GetLabelDollar(gotoLabel.LabelName, lastLabelLine).Position;
-                            ParserMediator.Warn($"ラベル名${gotoLabel.LabelName}は既に同じ関数内({pos.Value.Filename}の{pos.Value.LineNo}行目)で使用されています", position, 2);
+                            ParserMediator.Warn(string.Format(LocalizationManager.Error.LabelIsAlreadyDefined, gotoLabel.LabelName, pos.Value.Filename, pos.Value.LineNo.ToString()), position, 2);
                         }
                     }
                 }
@@ -447,13 +447,13 @@ internal sealed class ErbLoader
                     switch (instruction.FunctionCode)
                     {
                         case FunctionCode.RANDOMIZE:
-                            ParserMediator.Warn("新しい乱数アルゴリズムの使用時はRANDOMIZEは無視されます", position, 1);
+                            ParserMediator.Warn(LocalizationManager.Error.IgnoreRandomize, position, 0);
                             break;
                         case FunctionCode.DUMPRAND:
-                            ParserMediator.Warn("新しい乱数アルゴリズムの使用時はDUMPRANDは無視されます", position, 1);
+                            ParserMediator.Warn(LocalizationManager.Error.CanNotUseDumprand, position, 0);
                             break;
                         case FunctionCode.INITRAND:
-                            ParserMediator.Warn("新しい乱数アルゴリズムの使用時はINITRANDは無視されます", position, 1);
+                            ParserMediator.Warn(LocalizationManager.Error.CanNotUseInitrand, position, 0);
                             break;
                         default:
                             break;
@@ -498,7 +498,7 @@ internal sealed class ErbLoader
                 string errmes = exc.Message;
                 if (!(exc is EmueraException))
                     errmes = exc.GetType().ToString() + ":" + errmes;
-                ParserMediator.Warn("関数@" + label.LabelName + " の引数のエラー:" + errmes, label, 2, true, false);
+                ParserMediator.Warn(string.Format(LocalizationManager.Error.FuncArgError, label.LabelName, errmes), label, 2, true, false);
                 label.ErrMes = LocalizationManager.Error.CalledFailedFunc;
                 label.IsError = true;
             }
@@ -523,7 +523,7 @@ internal sealed class ErbLoader
         if (label.IsEvent)
         {
             if (!wc.EOL)
-                ParserMediator.Warn("イベント関数@" + label.LabelName + " に引数は設定できません", label, 2, true, false);
+                ParserMediator.Warn(string.Format(LocalizationManager.Error.EventFuncHasArg, label.LabelName), label, 2, true, false);
             //label.SubNames = subNames;
             label.Arg = args;
             label.Def = defs;
@@ -535,7 +535,7 @@ internal sealed class ErbLoader
         if (!wc.EOL)
         {
             if (label.IsSystem)
-                ParserMediator.Warn("システム関数@" + label.LabelName + " に引数が設定されています", label, 1, false, false);
+                ParserMediator.Warn(string.Format(LocalizationManager.Error.SystemFuncHasArg, label.LabelName), label, 2, true, false);
             SymbolWord symbol = wc.Current as SymbolWord;
             wc.ShiftNext();
             if (symbol == null)
@@ -584,14 +584,14 @@ internal sealed class ErbLoader
                     else if (!vTerm.Identifier.IsReference)//参照型なら添え字不要
                     {
                         if (vTerm is VariableNoArgTerm)
-                        { errMes = "関数定義の参照型でない引数\"" + vTerm.Identifier.Name + "\"に添え字が指定されていません"; goto err; }
+                        { errMes = string.Format(LocalizationManager.Error.ArgHasNotSubscript, vTerm.Identifier.Name); goto err; }
                         if (!vTerm.isAllConst)
                         { errMes = LocalizationManager.Error.ArgSubscriptOnlyConst; goto err; }
                     }
                     for (int j = 0; j < i; j++)
                     {
                         if (vTerm.checkSameTerm(args[j]))
-                            ParserMediator.Warn($"第{i + 1}引数\"{vTerm.GetFullString()}\"はすでに第{j + 1}引数として宣言されています", label, 1, false, false);
+                            ParserMediator.Warn(string.Format(LocalizationManager.Error.DuplicateArg, i + 1, vTerm.GetFullString(), j + 1), label, 1, false, false);
                     }
                     if (vTerm.Identifier.Code == VariableCode.ARG)
                     {
@@ -643,7 +643,7 @@ internal sealed class ErbLoader
         label.ArgsLength = maxArgs;
         return;
     err:
-        ParserMediator.Warn("関数@" + label.LabelName + " の引数のエラー:" + errMes, label, 2, true, false);
+        ParserMediator.Warn(string.Format(LocalizationManager.Error.FuncArgError, label.LabelName, errMes), label, 2, true, false);
         return;
     }
 
@@ -732,7 +732,7 @@ internal sealed class ErbLoader
                 if (ignoreAll || ignore)
                     ignoredFNCWarningCount++;
                 else
-                    ParserMediator.Warn("関数@" + label.LabelName + "は定義されていますが一度も呼び出されません", label, 1, false, false);
+                    ParserMediator.Warn(string.Format(LocalizationManager.Error.FuncNeverCalled, label.LabelName), label, 1, false, false);
                 if (!ignoreUncalledFunction)
                     ParseFunctionWithCatch(label);
                 else
@@ -771,13 +771,13 @@ internal sealed class ErbLoader
         else
         {
             if (ignoredFNCWarningCount > 0 && Config.Config.DisplayWarningLevel <= 1 && notCalledWarning != DisplayWarningFlag.IGNORE)
-                output.PrintError($"警告Lv1:定義された関数が一度も呼び出されていない事に関する警告を{ignoredFNCWarningCount}件無視しました");
+                output.PrintError(string.Format(LocalizationManager.Error.IgnoredUndefinedFuncCall, ignoredFNFWarningCount));
             if (ignoredFNFWarningCount > 0 && Config.Config.DisplayWarningLevel <= 2 && notCalledWarning != DisplayWarningFlag.IGNORE)
-                output.PrintError($"警告Lv2:定義されていない関数を呼び出した事に関する警告を{ignoredFNFWarningCount}件無視しました");
+                output.PrintError(string.Format(LocalizationManager.Error.IgnoredUndefinedFuncCall, ignoredFNFWarningCount));
         }
         ParserMediator.FlushWarningList();
         if (Config.Config.DisplayReport)
-            output.PrintError($"非コメント行数:{enabledLineCount}, 全関数合計:{labelDic.Count}, 被呼出関数合計:{usedLabelCount}");
+            output.PrintError(string.Format(LocalizationManager.Error.TotalFunc, enabledLineCount, labelDic.Count, usedLabelCount));
         if (Config.Config.AllowFunctionOverloading && Config.Config.WarnFunctionOverloading)
         {
             List<string> overloadedList = GlobalStatic.IdentifierDictionary.GetOverloadedList(labelDic);
@@ -787,9 +787,9 @@ internal sealed class ErbLoader
                 output.PrintError(LocalizationManager.Error.OverWriteSystemFuncWarn1);
                 foreach (string funcname in overloadedList)
                 {
-                    output.PrintSystemLine("  システム関数\"" + funcname + "\"がユーザー定義関数によって上書きされています");
+                    output.PrintSystemLine(string.Format(LocalizationManager.Error.OverWriteSystemFuncWarn2, funcname));
                 }
-                output.PrintSystemLine("  上記の関数を利用するスクリプトは意図通りに動かない可能性があります");
+                output.PrintSystemLine(LocalizationManager.Error.OverWriteSystemFuncWarn3);
                 output.NewLine();
                 output.PrintSystemLine(LocalizationManager.Error.OverWriteSystemFuncWarn4);
                 output.PrintSystemLine(LocalizationManager.Error.OverWriteSystemFuncWarn5);

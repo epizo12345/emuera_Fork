@@ -107,7 +107,7 @@ static class AppContents
                             currentAnime = item as SpriteAnime;
                             if (!imageDictionary.TryAdd(item.Name, item))
                             {
-                                ParserMediator.Warn("同名のリソースがすでに作成されています:" + item.Name, sp, 0);
+                                ParserMediator.Warn(string.Format(LocalizationManager.Error.SpriteNameAlreadyUsed, item.Name), sp, 0);
                                 item.Dispose();
                             }
                         }
@@ -182,7 +182,7 @@ static class AppContents
 
         if (arg2.IndexOf('.') < 0)
         {
-            ParserMediator.Warn("第二引数に拡張子がありません:" + arg2, sp, 1);
+            ParserMediator.Warn(string.Format(LocalizationManager.Error.MissingSecondArgumentExtension, arg2), sp, 1);
             return null;
         }
         string parentName = dir + arg2;
@@ -196,7 +196,7 @@ static class AppContents
             var skImage = SKImage.FromEncodedData(filepath);
             if (skImage == null)
             {
-                ParserMediator.Warn("指定されたファイルの読み込みに失敗しました:" + arg2, sp, 1);
+                ParserMediator.Warn(string.Format(LocalizationManager.Error.FailedLoadFile, arg2), sp, 1);
                 return null;
             }
 
@@ -204,14 +204,14 @@ static class AppContents
             {
                 //1824-2 すでに8192以上の幅を持つ画像を利用したバリアントが存在してしまっていたため、警告しつつ許容するように変更
                 //	bmp.Dispose();
-                ParserMediator.Warn("指定された画像ファイルの大きさが大きすぎます(幅及び高さを" + AbstractImage.MAX_IMAGESIZE.ToString() + "以下にすることを強く推奨します):" + arg2, sp, 1);
+                ParserMediator.Warn(string.Format(LocalizationManager.Error.TooLargeImageFile, AbstractImage.MAX_IMAGESIZE.ToString(), arg2), sp, 1);
                 //return null;
             }
             ConstImage img = new(parentName);
             img.CreateFrom(skImage);
             if (!img.IsCreated)
             {
-                ParserMediator.Warn("画像リソースの作成に失敗しました:" + arg2, sp, 1);
+                ParserMediator.Warn(string.Format(LocalizationManager.Error.FailedCreateResource, arg2), sp, 1);
                 return null;
             }
 
@@ -220,7 +220,7 @@ static class AppContents
         }
         if (value is not ConstImage parentImage || !parentImage.IsCreated)
         {
-            ParserMediator.Warn("作成に失敗したリソースを元にスプライトを作成しようとしました:" + arg2, sp, 1);
+            ParserMediator.Warn(string.Format(LocalizationManager.Error.SpriteCreateFromFailedResource, arg2), sp, 1);
             return null;
         }
         var rect = new Rectangle(new Point(0, 0), new Size(parentImage.Image.Width, parentImage.Image.Height));
@@ -238,12 +238,12 @@ static class AppContents
                 rect = new Rectangle(rectValue[0], rectValue[1], rectValue[2], rectValue[3]);
                 if (rect.Width <= 0 || rect.Height <= 0)
                 {
-                    ParserMediator.Warn("スプライトの高さ又は幅には正の値のみ指定できます:" + name, sp, 1);
+                    ParserMediator.Warn(string.Format(LocalizationManager.Error.SpriteSizeIsNegatibe, name), sp, 1);
                     return null;
                 }
                 if (!rect.IntersectsWith(new Rectangle(0, 0, parentImage.Image.Width, parentImage.Image.Height)))
                 {
-                    ParserMediator.Warn("親画像の範囲外を参照しています:" + name, sp, 1);
+                    ParserMediator.Warn(string.Format(LocalizationManager.Error.OoRParentImage, name), sp, 1);
                     return null;
                 }
             }
@@ -259,7 +259,7 @@ static class AppContents
                     sccs = int.TryParse(tokens[8], out delay);
                     if (sccs && delay <= 0)
                     {
-                        ParserMediator.Warn("フレーム表示時間には正の値のみ指定できます:" + name, sp, 1);
+                        ParserMediator.Warn(string.Format(LocalizationManager.Error.FrameTimeIsNegative, name), sp, 1);
                         return null;
                     }
                 }
@@ -270,7 +270,7 @@ static class AppContents
         {
             if (!currentAnime.AddFrame(parentImage, rect, pos, delay))
             {
-                ParserMediator.Warn("アニメーションスプライトのフレームの追加に失敗しました:" + arg2, sp, 1);
+                ParserMediator.Warn(string.Format(LocalizationManager.Error.FailedAddSpriteFrame, arg2), sp, 1);
                 return null;
             }
             return null;

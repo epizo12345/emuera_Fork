@@ -657,7 +657,7 @@ internal sealed partial class EmueraConsole : IDisposable
         if (inputReq.DisplayTime)
         {
             var remainingMs = inputReq.Timelimit - _genericTimerStopwatch.ElapsedMilliseconds;
-            window.Invoke(() => changeLastLine($"残り {remainingMs / 1000.0f:0.0}"));
+            window.Invoke(() => changeLastLine($"{LocalizationManager.SystemLine.Remaining} {remainingMs / 1000.0f:0.0}"));
         }
     }
 
@@ -1490,8 +1490,8 @@ internal sealed partial class EmueraConsole : IDisposable
         }
         else
         {
-            builder.AppendLine("ファイル名:" + line.Position.Value.Filename);
-            builder.AppendLine("行番号:" + line.Position.Value.LineNo.ToString() + " 関数名:" + line.ParentLabelLine.LabelName);
+            builder.AppendLine(string.Format(LocalizationManager.SystemLine.FileName, line.Position.Value.Filename));
+            builder.AppendLine(string.Format(LocalizationManager.SystemLine.LineFuncName, line.Position.Value.LineNo.ToString(), line.ParentLabelLine.LabelName));
             builder.AppendLine("");
         }
         builder.AppendLine(LocalizationManager.SystemLine.FuncCallStack);
@@ -1586,7 +1586,7 @@ internal sealed partial class EmueraConsole : IDisposable
                 WordCollection wc = LexicalAnalyzer.Analyse(new CharStream(com), LexEndWith.EoL, LexAnalyzeFlag.None);
                 AExpression term = ExpressionParser.ReduceExpressionTerm(wc, TermEndWith.EoL);
                 if (term == null)
-                    throw new CodeEE("解釈不能なコードです");
+                    throw new CodeEE(LocalizationManager.Error.CanNotInterpretedLine);
                 if (term.GetOperandType() == typeof(Int64))
                 {
                     if (outputDebugConsole)
@@ -1604,7 +1604,7 @@ internal sealed partial class EmueraConsole : IDisposable
                 line = LogicalLineParser.ParseLine(com, null);
             }
             if (line == null)
-                throw new CodeEE("解釈不能なコードです");
+                throw new CodeEE(LocalizationManager.Error.CanNotInterpretedLine);
             if (line is InvalidLine)
                 throw new CodeEE(line.ErrMes);
             if (!(line is InstructionLine))
@@ -1614,13 +1614,13 @@ internal sealed partial class EmueraConsole : IDisposable
                 throw new CodeEE(LocalizationManager.Error.CanNotUseFlowInstruction);
             //__METHOD_SAFE__をみるならいらないかも
             if (func.Function.IsWaitInput())
-                throw new CodeEE(func.Function.Name + "命令は使用できません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.CanNotUseInstruction, func.Function.Name));
             //1750 __METHOD_SAFE__とほぼ条件同じだよねってことで
             if (!func.Function.IsMethodSafe())
-                throw new CodeEE(func.Function.Name + "命令は使用できません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.CanNotUseInstruction, func.Function.Name));
             //1756 SIFの次に来てはいけないものはここでも不可。
             if (func.Function.IsPartial())
-                throw new CodeEE(func.Function.Name + "命令は使用できません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.CanNotUseInstruction, func.Function.Name));
             switch (func.FunctionCode)
             {//取りこぼし
              //逆にOUTPUTLOG、QUITはDebugCommandの前に捕まえる
@@ -1628,7 +1628,7 @@ internal sealed partial class EmueraConsole : IDisposable
                 case FunctionCode.UPCHECK:
                 case FunctionCode.CUPCHECK:
                 case FunctionCode.SAVEDATA:
-                    throw new CodeEE(func.Function.Name + "命令は使用できません");
+                    throw new CodeEE(string.Format(LocalizationManager.Error.CanNotUseInstruction, func.Function.Name));
             }
             ArgumentParser.SetArgumentTo(func);
             if (func.IsError)

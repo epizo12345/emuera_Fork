@@ -3190,4 +3190,19 @@
     <data name="SystemLine_Log" xml:space="preserve">
         <value># ログ</value>
     </data>
+    <data name="Error_FileNotUTF8BOM" xml:space="preserve">
+        <value>ファイルが UTF-8 with BOM ではありません</value>
+    </data>
+    <data name="Error_CanNotUseVAR" xml:space="preserve">
+        <value>{0}命令は現在の設定では使用できません</value>
+    </data>
+    <data name="Error_IgnoreRandomize" xml:space="preserve">
+        <value>新しい乱数アルゴリズムではRANDOMIZEは無視されます</value>
+    </data>
+    <data name="Error_CanNotUseInitrand" xml:space="preserve">
+        <value>新しい乱数アルゴリズムではINITRANDは機能しません</value>
+    </data>
+    <data name="Error_CanNotUseDumprand" xml:space="preserve">
+        <value>新しい乱数アルゴリズムではDUMPRANDは機能しません</value>
+    </data>
 </root>
