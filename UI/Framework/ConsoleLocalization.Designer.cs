@@ -1651,6 +1651,15 @@ namespace MinorShift.Emuera.UI.Framework {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to DUMPRAND does not work with the new random number algorithm.
+        /// </summary>
+        internal static string Error_CanNotUseDumprand {
+            get {
+                return ResourceManager.GetString("Error_CanNotUseDumprand", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Flow control instructions cannot be used.
         /// </summary>
         internal static string Error_CanNotUseFlowInstruction {
@@ -1665,6 +1674,15 @@ namespace MinorShift.Emuera.UI.Framework {
         internal static string Error_CanNotUseFuncCurrentVer {
             get {
                 return ResourceManager.GetString("Error_CanNotUseFuncCurrentVer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to INITRAND does not work with the new random number algorithm.
+        /// </summary>
+        internal static string Error_CanNotUseInitrand {
+            get {
+                return ResourceManager.GetString("Error_CanNotUseInitrand", resourceCulture);
             }
         }
         
@@ -1746,6 +1764,15 @@ namespace MinorShift.Emuera.UI.Framework {
         internal static string Error_CanNotUseReturnf {
             get {
                 return ResourceManager.GetString("Error_CanNotUseReturnf", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The {0} instruction is not available in the current configuration.
+        /// </summary>
+        internal static string Error_CanNotUseVAR {
+            get {
+                return ResourceManager.GetString("Error_CanNotUseVAR", resourceCulture);
             }
         }
         
@@ -2632,6 +2659,15 @@ namespace MinorShift.Emuera.UI.Framework {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to File is not UTF-8 with BOM.
+        /// </summary>
+        internal static string Error_FileNotUTF8BOM {
+            get {
+                return ResourceManager.GetString("Error_FileNotUTF8BOM", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to first argument.
         /// </summary>
         internal static string Error_FirstArg {
@@ -3042,6 +3078,15 @@ namespace MinorShift.Emuera.UI.Framework {
         internal static string Error_IgnoreNDData {
             get {
                 return ResourceManager.GetString("Error_IgnoreNDData", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to RANDOMIZE is ignored in the new random number algorithm.
+        /// </summary>
+        internal static string Error_IgnoreRandomize {
+            get {
+                return ResourceManager.GetString("Error_IgnoreRandomize", resourceCulture);
             }
         }
         

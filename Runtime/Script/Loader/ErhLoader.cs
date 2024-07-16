@@ -44,7 +44,7 @@ internal sealed class ErhLoader
             foreach (var (filename, file) in headerFiles)
             {
                 if (displayReport)
-                    output.PrintSystemLine(filename + "読み込み中・・・");
+                    output.PrintSystemLine(string.Format(LocalizationManager.SystemLine.LoadingFile, filename));
                 noError = loadHeaderFile(file, filename);
                 if (!noError)
                     break;
@@ -77,7 +77,7 @@ internal sealed class ErhLoader
 
         if (!eReader.OpenOnCache(filepath, filename))
         {
-            throw new CodeEE(eReader.Filename + "のオープンに失敗しました");
+            throw new CodeEE(string.Format(LocalizationManager.Error.FailedOpenFile, eReader.Filename));
             //return false;
         }
         try
@@ -117,7 +117,9 @@ internal sealed class ErhLoader
                         //analyzeSharpDim(st, position, sharpID == "DIMS");
                         break;
                     default:
-                        throw new CodeEE($"#{sharpID}は解釈できないプリプロセッサです", position);
+                        throw new CodeEE(
+                            string.Format(LocalizationManager.Error.UnknownPreprocessorInSharpLine, sharpID.ToString()),
+                            position);
                 }
             }
         }
@@ -202,7 +204,7 @@ internal sealed class ErhLoader
                 throw new CodeEE(LocalizationManager.Error.WrongFormatReplacementSource, position);
             }
             if (wc.EOL)
-                throw new CodeEE("')'が閉じられていません", position);
+                throw new CodeEE(LocalizationManager.Error.NotCloseBrackets, position);
 
             wc.ShiftNext();
         }

@@ -188,12 +188,12 @@ internal sealed class ConstantData
         using var eReader = new EraStreamReader(false);
         if (!eReader.Open(csvPath))
         {
-            output.PrintError(eReader.Filename + "のオープンに失敗しました");
+            output.PrintError(string.Format(LocalizationManager.Error.FailedOpenFile, eReader.Filename));
             return;
         }
         ScriptPosition? position = null;
         if (disp)
-            output.PrintSystemLine(eReader.Filename + "読み込み中・・・");
+            output.PrintSystemLine(string.Format(LocalizationManager.SystemLine.LoadingFile, eReader.Filename));
         try
         {
             CharStream st = null;
@@ -983,12 +983,12 @@ internal sealed class ConstantData
         using var eReader = new EraStreamReader(false);
         if (!eReader.OpenOnCache(csvPath, csvName))
         {
-            output.PrintError(eReader.Filename + "のオープンに失敗しました");
+            output.PrintError(string.Format(LocalizationManager.Error.FailedOpenFile, eReader.Filename));
             return;
         }
         ScriptPosition? position = null;
         if (disp)
-            output.PrintSystemLine(eReader.Filename + "読み込み中・・・");
+            output.PrintSystemLine(string.Format(LocalizationManager.SystemLine.LoadingFile, eReader.Filename));
         try
         {
             long index = -1;
@@ -999,12 +999,12 @@ internal sealed class ConstantData
                 string[] tokens = st.Substring().Split(',');
                 if (tokens.Length < 2)
                 {
-                    ParserMediator.Warn("\",\"が必要です", position, 1);
+                    ParserMediator.Warn(LocalizationManager.Error.MissingComma, position, 1);
                     continue;
                 }
                 if (tokens[0].Length == 0)
                 {
-                    ParserMediator.Warn("\",\"で始まっています", position, 1);
+                    ParserMediator.Warn(LocalizationManager.Error.ProhibitedArrayName, position, 2);
                     continue;
                 }
                 if (tokens[0].Equals("NO", Config.Config.StringComparison)
@@ -1017,7 +1017,7 @@ internal sealed class ConstantData
                     }
                     if (!long.TryParse(tokens[1].TrimEnd(), out index))
                     {
-                        ParserMediator.Warn(tokens[1] + "を整数値に変換できません", position, 1);
+                        ParserMediator.Warn(LocalizationManager.Error.FirstValueCanNotConvertToInt, position, 1);
                         continue;
                     }
                     tmpl = new CharacterTemplate(index, this);
@@ -1211,7 +1211,7 @@ internal sealed class ConstantData
             case "助手":
                 return;
             default:
-                ParserMediator.Warn("\"" + tokens[0] + "\"は解釈できない識別子です", position, 1);
+                ParserMediator.Warn(string.Format(LocalizationManager.Error.CanNotInterpreted, tokens[0]), position, 1);
                 return;
         }
         if (length < 0)
@@ -1221,13 +1221,13 @@ internal sealed class ConstantData
         }
         if (length == 0)
         {
-            ParserMediator.Warn(varname + "は禁止設定された変数です", position, 2);
+            ParserMediator.Warn(string.Format(LocalizationManager.Error.IsProhibitedVar, varname), position, 2);
             return;
         }
         bool p1isNumeric = tryToInt64(tokens[1].TrimEnd(), out long p1);
         if (p1isNumeric && (p1 < 0 || p1 >= length))
         {
-            ParserMediator.Warn(p1.ToString() + "は配列の範囲外です", position, 1);
+            ParserMediator.Warn(string.Format(LocalizationManager.Error.OoRArray, p1.ToString()), position, 1);
             return;
         }
         int index = (int)p1;
@@ -1235,13 +1235,13 @@ internal sealed class ConstantData
         {
             if (!namearray.TryGetValue(tokens[1], out index))
             {
-                ParserMediator.Warn(errPos + "に\"" + tokens[1] + "\"の定義がありません", position, 1);
+                ParserMediator.Warn(string.Format(LocalizationManager.Error.NotDefinedKey, errPos, tokens[1]), position, 1);
                 //ParserMediator.Warn("\"" + tokens[1] + "\"は解釈できない識別子です", position, 1);
                 return;
             }
             else if (index >= length)
             {
-                ParserMediator.Warn("\"" + tokens[1] + "\"は配列の範囲外です", position, 1);
+                ParserMediator.Warn(string.Format(LocalizationManager.Error.OoRArray, tokens[1]), position, 1);
                 return;
             }
         }
@@ -1249,11 +1249,11 @@ internal sealed class ConstantData
         if (index < 0 || index >= length)
         {
             if (p1isNumeric)
-                ParserMediator.Warn(index.ToString() + "は配列の範囲外です", position, 1);
+                ParserMediator.Warn(string.Format(LocalizationManager.Error.OoRArray, index.ToString()), position, 1);
             else if (tokens[1].Length == 0)
                 ParserMediator.Warn(LocalizationManager.Error.MissingSecondIdentifier, position, 1);
             else
-                ParserMediator.Warn("\"" + tokens[1] + "\"は解釈できない識別子です", position, 1);
+                ParserMediator.Warn(string.Format(LocalizationManager.Error.CanNotInterpreted, tokens[1]), position, 1);
             return;
         }
         if (strArray != null)
@@ -1261,7 +1261,7 @@ internal sealed class ConstantData
             if (tokens.Length < 3)
                 ParserMediator.Warn(LocalizationManager.Error.MissingThirdIdentifier, position, 1);
             if (strArray.ContainsKey(index))
-                ParserMediator.Warn(varname + "の" + index.ToString() + "番目の要素は既に定義されています(上書きします)", position, 1);
+                ParserMediator.Warn(string.Format(LocalizationManager.Error.VarKeyAreadyDefined, varname, index.ToString()), position, 1);
             strArray[index] = tokens[2];
         }
         else
@@ -1269,7 +1269,7 @@ internal sealed class ConstantData
             if (tokens.Length < 3 || !tryToInt64(tokens[2], out long p2))
                 p2 = 1;
             if (intArray.ContainsKey(index))
-                ParserMediator.Warn(varname + "の" + index.ToString() + "番目の要素は既に定義されています(上書きします)", position, 1);
+                ParserMediator.Warn(string.Format(LocalizationManager.Error.VarKeyAreadyDefined, varname, index.ToString()), position, 1);
             intArray[index] = p2;
         }
     }
@@ -1285,13 +1285,13 @@ internal sealed class ConstantData
         using var eReader = new EraStreamReader(false);
         if (!eReader.OpenOnCache(csvPath))
         {
-            output.PrintError(eReader.Filename + "のオープンに失敗しました");
+            output.PrintError(string.Format(LocalizationManager.Error.FailedOpenFile, eReader.Filename));
             return;
         }
         ScriptPosition? position = null;
 
         if (disp || Program.AnalysisMode)
-            output.PrintSystemLine(eReader.Filename + "読み込み中・・・");
+            output.PrintSystemLine(string.Format(LocalizationManager.SystemLine.LoadingFile, eReader.Filename));
         try
         {
             CharStream st = null;
@@ -1318,11 +1318,11 @@ internal sealed class ConstantData
                 }
                 if (index < 0 || target.Length <= index)
                 {
-                    ParserMediator.Warn(index.ToString() + "は配列の範囲外です", position, 1);
+                    ParserMediator.Warn(string.Format(LocalizationManager.Error.OoRArray, index.ToString()), position, 1);
                     continue;
                 }
                 if (!defined.Add(index))
-                    ParserMediator.Warn(index.ToString() + "番目の要素はすでに定義されています（新しい値で上書きします）", position, 1);
+                    ParserMediator.Warn(string.Format(LocalizationManager.Error.VarKeyAreadyDefined, index.ToString()), position, 1);
                 target[index] = ros[dest[1]].ToString();
                 if (targetI != null && length >= 3)
                 {

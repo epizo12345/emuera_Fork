@@ -1,5 +1,6 @@
 using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Config.JSON;
+using MinorShift.Emuera.UI.Framework;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -46,7 +47,7 @@ static partial class Preload
                         file.Close();
                         if (!bom.SequenceEqual<byte>([0xEF, 0xBB, 0xBF]))
                         {
-                            ParserMediator.ConfigWarn("ファイルが UTF-8 with BOM ではありません", new ScriptPosition(childPath.FullName, 0), 0, "");
+                            ParserMediator.ConfigWarn(LocalizationManager.Error.FileNotUTF8BOM, new ScriptPosition(childPath.FullName, 0), 0, "");
                         }
                     }
 

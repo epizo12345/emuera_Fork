@@ -125,7 +125,7 @@ internal sealed partial class Process
             if (!force)
                 return false;
             else
-                throw new CodeEE("関数\"@" + functionName + "\"が見つかりません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.FuncIsNotFound, functionName));
         //そもそも非イベント関数では関数1個分しか与えないので条件を満たすわけがない
         //if ((!isEvent) && (call.Count > 1))
         //    throw new ExeEE("イベント関数でない関数\"@" + functionName + "\"の候補が複数ある");
@@ -157,7 +157,7 @@ internal sealed partial class Process
         if ((!noError) && (!Config.CompatiErrorLine))
         {
             console.PrintErrorButton(LocalizationManager.SystemLine.ExitBecauseCanNotInterpreted1, null, 3);
-            console.PrintSystemLine("※互換性オプション「" + Config.GetConfigName(ConfigCode.CompatiErrorLine) + "」により強制的に動作させることができます");
+            console.PrintSystemLine(string.Format(LocalizationManager.SystemLine.ExitBecauseCanNotInterpreted2, Config.GetConfigName(ConfigCode.CompatiErrorLine)));
             console.PrintSystemLine(LocalizationManager.SystemLine.ExitBecauseCanNotInterpreted3);
             console.OutputLog(Program.ExeDir + "emuera.log");
             console.noOutputLog = true;

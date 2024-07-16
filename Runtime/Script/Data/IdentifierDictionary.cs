@@ -190,13 +190,13 @@ internal sealed partial class IdentifierDictionary
         //1.721 記号をサポートしない方向に変更
         if (labelName.AsSpan().ContainsAny(badSymbolAsIdentifier))
         {
-            errMes = "ラベル名" + labelName + "に\"_\"以外の記号が含まれています";
+            errMes = string.Format(LocalizationManager.Error.LabelContainsOtherThanUnderline, labelName);
             warnLevel = 1;
             return;
         }
         if (char.IsDigit(labelName[0]) && labelName[0].ToString().Length == LangManager.GetStrlenLang(labelName[0].ToString()))
         {
-            errMes = "ラベル名" + labelName + "が半角数字から始まっています";
+            errMes = string.Format(LocalizationManager.Error.LabelStartedHalfDigit, labelName);
             warnLevel = 0;
             return;
         }
@@ -209,42 +209,42 @@ internal sealed partial class IdentifierDictionary
                 case DefinedNameType.Reserved:
                     if (Config.AllowFunctionOverloading)
                     {
-                        errMes = "関数名" + labelName + "はEmueraの予約語と衝突しています。Emuera専用構文の構文解析に支障をきたす恐れがあります";
+                        errMes = string.Format(LocalizationManager.Error.LabelConflictReservedWord1, labelName);
                         warnLevel = 1;
                     }
                     else
                     {
-                        errMes = "関数名" + labelName + "はEmueraの予約語です";
+                        errMes = string.Format(LocalizationManager.Error.LabelConflictReservedWord2, labelName);
                         warnLevel = 2;
                     }
                     break;
                 case DefinedNameType.SystemMethod:
                     if (Config.AllowFunctionOverloading)
                     {
-                        errMes = "関数名" + labelName + "はEmueraの式中関数を上書きします";
+                        errMes = string.Format(LocalizationManager.Error.LabelOverwriteInternalExpression, labelName);
                         warnLevel = 1;
                     }
                     else
                     {
-                        errMes = "関数名" + labelName + "はEmueraの式中関数名として使われています";
+                        errMes = string.Format(LocalizationManager.Error.LabelNameAlreadyUsedInternalExpression, labelName);
                         warnLevel = 2;
                     }
                     break;
                 case DefinedNameType.SystemVariable:
-                    errMes = "関数名" + labelName + "はEmueraの変数で使われています";
+                    errMes = string.Format(LocalizationManager.Error.LabelNameAlreadyUsedInternalVariable, labelName);
                     warnLevel = 1;
                     break;
                 case DefinedNameType.SystemInstrument:
-                    errMes = "関数名" + labelName + "はEmueraの変数もしくは命令で使われています";
+                    errMes = string.Format(LocalizationManager.Error.LabelNameAlreadyUsedInternalInstruction, labelName);
                     warnLevel = 1;
                     break;
                 case DefinedNameType.UserMacro:
                     //字句解析がうまくいっていれば本来あり得ないはず
-                    errMes = "関数名" + labelName + "はマクロに使用されています";
+                    errMes = string.Format(LocalizationManager.Error.LabelNameAlreadyUsedMacro, labelName);
                     warnLevel = 2;
                     break;
                 case DefinedNameType.UserRefMethod:
-                    errMes = "関数名" + labelName + "は参照型関数の名称に使用されています";
+                    errMes = string.Format(LocalizationManager.Error.LabelNameAlreadyUsedRefFunction, labelName);
                     warnLevel = 2;
                     break;
             }
@@ -263,7 +263,7 @@ internal sealed partial class IdentifierDictionary
         //1.721 記号をサポートしない方向に変更
         if (varName.AsSpan().IndexOfAny(badSymbolAsIdentifier) != -1)
         {
-            errMes = "変数名" + varName + "に\"_\"以外の記号が含まれています";
+            errMes = string.Format(LocalizationManager.Error.VarContainsOtherThanUnderline, varName);
             warnLevel = 2;
             return;
         }
@@ -279,29 +279,29 @@ internal sealed partial class IdentifierDictionary
             switch (value)
             {
                 case DefinedNameType.Reserved:
-                    errMes = "変数名" + varName + "はEmueraの予約語です";
+                    errMes = string.Format(LocalizationManager.Error.VarConflictReservedWord, varName);
                     warnLevel = 2;
                     break;
                 case DefinedNameType.SystemInstrument:
                 case DefinedNameType.SystemMethod:
                     //代入文が使えなくなるために命令名との衝突は致命的。
-                    errMes = "変数名" + varName + "はEmueraの命令名として使われています";
+                    errMes = string.Format(LocalizationManager.Error.VarNameAlreadyUsedInternalInstruction, varName);
                     warnLevel = 2;
                     break;
                 case DefinedNameType.SystemVariable:
-                    errMes = "変数名" + varName + "はEmueraの変数名として使われています";
+                    errMes = string.Format(LocalizationManager.Error.VarNameAlreadyUsedInternalVariable, varName);
                     warnLevel = 2;
                     break;
                 case DefinedNameType.UserMacro:
-                    errMes = "変数名" + varName + "は既にマクロ名に使用されています";
+                    errMes = string.Format(LocalizationManager.Error.VarNameAlreadyUsedMacro, varName);
                     warnLevel = 2;
                     break;
                 case DefinedNameType.UserGlobalVariable:
-                    errMes = "変数名" + varName + "はユーザー定義の広域変数名に使用されています";
+                    errMes = string.Format(LocalizationManager.Error.VarNameAlreadyUsedGlobalVariable, varName);
                     warnLevel = 2;
                     break;
                 case DefinedNameType.UserRefMethod:
-                    errMes = "変数名" + varName + "は参照型関数の名称に使用されています";
+                    errMes = string.Format(LocalizationManager.Error.VarNameAlreadyUsedRefFunction, varName);
                     warnLevel = 2;
                     break;
             }
@@ -312,7 +312,7 @@ internal sealed partial class IdentifierDictionary
     {
         if (macroName.AsSpan().IndexOfAny(badSymbolAsIdentifier) != -1)
         {
-            errMes = "マクロ名" + macroName + "に\"_\"以外の記号が含まれています";
+            errMes = string.Format(LocalizationManager.Error.MacroContainsOtherThanUnderline, macroName);
             warnLevel = 2;
             return;
         }
@@ -321,30 +321,30 @@ internal sealed partial class IdentifierDictionary
             switch (value)
             {
                 case DefinedNameType.Reserved:
-                    errMes = "マクロ名" + macroName + "はEmueraの予約語です";
+                    errMes = string.Format(LocalizationManager.Error.MacroConflictReservedWord, macroName);
                     warnLevel = 2;
                     break;
                 case DefinedNameType.SystemInstrument:
                 case DefinedNameType.SystemMethod:
                     //命令名を上書きした時が面倒なのでとりあえず許可しない
-                    errMes = "マクロ名" + macroName + "はEmueraの命令名として使われています";
+                    errMes = string.Format(LocalizationManager.Error.MacroNameAlreadyUsedInternalInstruction, macroName);
                     warnLevel = 2;
                     break;
                 case DefinedNameType.SystemVariable:
                     //別に上書きしてもいいがとりあえず許可しないでおく。いずれ解放するかもしれない
-                    errMes = "マクロ名" + macroName + "はEmueraの変数名として使われています";
+                    errMes = string.Format(LocalizationManager.Error.MacroNameAlreadyUsedInternalVariable, macroName);
                     warnLevel = 2;
                     break;
                 case DefinedNameType.UserMacro:
-                    errMes = "マクロ名" + macroName + "は既にマクロ名に使用されています";
+                    errMes = string.Format(LocalizationManager.Error.MacroNameAlreadyUsedMacro, macroName);
                     warnLevel = 2;
                     break;
                 case DefinedNameType.UserGlobalVariable:
-                    errMes = "マクロ名" + macroName + "はユーザー定義の広域変数名に使用されています";
+                    errMes = string.Format(LocalizationManager.Error.MacroNameAlreadyUsedGlobalVariable, macroName);
                     warnLevel = 2;
                     break;
                 case DefinedNameType.UserRefMethod:
-                    errMes = "マクロ名" + macroName + "は参照型関数の名称に使用されています";
+                    errMes = string.Format(LocalizationManager.Error.MacroNameAlreadyUsedRefFunction, macroName);
                     warnLevel = 2;
                     break;
             }
@@ -355,20 +355,20 @@ internal sealed partial class IdentifierDictionary
     {
         if (varName.Length == 0)
         {
-            errMes = "変数名がありません";
+            errMes = LocalizationManager.Error.LabelNameMissing;
             warnLevel = 2;
             return;
         }
         //1.721 記号をサポートしない方向に変更
         if (varName.AsSpan().IndexOfAny(badSymbolAsIdentifier) != -1)
         {
-            errMes = "変数名" + varName + "に\"_\"以外の記号が含まれています";
+            errMes = string.Format(LocalizationManager.Error.VarContainsOtherThanUnderline, varName);
             warnLevel = 2;
             return;
         }
         if (char.IsDigit(varName[0]))
         {
-            errMes = "変数名" + varName + "が半角数字から始まっています";
+            errMes = string.Format(LocalizationManager.Error.VarStartedHalfDigit, varName);
             warnLevel = 2;
             return;
         }
@@ -377,32 +377,32 @@ internal sealed partial class IdentifierDictionary
             switch (value)
             {
                 case DefinedNameType.Reserved:
-                    errMes = "変数名" + varName + "はEmueraの予約語です";
+                    errMes = string.Format(LocalizationManager.Error.VarConflictReservedWord, varName);
                     warnLevel = 2;
                     return;
                 case DefinedNameType.SystemInstrument:
                 case DefinedNameType.SystemMethod:
                     //代入文が使えなくなるために命令名との衝突は致命的。
-                    errMes = "変数名" + varName + "はEmueraの命令名として使われています";
+                    errMes = string.Format(LocalizationManager.Error.VarNameAlreadyUsedInternalInstruction, varName);
                     warnLevel = 2;
                     return;
                 case DefinedNameType.SystemVariable:
                     //システム変数の上書きは不可
-                    errMes = "変数名" + varName + "はEmueraの変数名として使われています";
+                    errMes = string.Format(LocalizationManager.Error.VarNameAlreadyUsedInternalVariable, varName);
                     warnLevel = 2;
                     break;
                 case DefinedNameType.UserMacro:
                     //字句解析がうまくいっていれば本来あり得ないはず
-                    errMes = "変数名" + varName + "はマクロに使用されています";
+                    errMes = string.Format(LocalizationManager.Error.VarNameAlreadyUsedMacro, varName);
                     warnLevel = 2;
                     break;
                 case DefinedNameType.UserGlobalVariable:
                     //広域変数の上書きは禁止しておく
-                    errMes = "変数名" + varName + "はユーザー定義の広域変数名に使用されています";
+                    errMes = string.Format(LocalizationManager.Error.VarNameAlreadyUsedGlobalVariable, varName);
                     warnLevel = 2;
                     break;
                 case DefinedNameType.UserRefMethod:
-                    errMes = "変数名" + varName + "は参照型関数の名称に使用されています";
+                    errMes = string.Format(LocalizationManager.Error.VarNameAlreadyUsedRefFunction, varName);
                     warnLevel = 2;
                     break;
             }
@@ -482,7 +482,7 @@ internal sealed partial class IdentifierDictionary
                 if (ret != null)
                 {
                     if (subKey != null)
-                        throw new CodeEE("プライベート変数" + key + "に対して@が使われました");
+                        throw new CodeEE(string.Format(LocalizationManager.Error.UsedAtForPrivVar, key));
                     return ret;
                 }
             }
@@ -491,14 +491,14 @@ internal sealed partial class IdentifierDictionary
         {
             if (value.IsForbid)
             {
-                throw new CodeEE("呼び出された変数\"" + key + "\"は設定により使用が禁止されています");
+                throw new CodeEE(string.Format(LocalizationManager.Error.UsedProhibitedVar, key));
             }
             LogicalLine line = GlobalStatic.Process.GetScaningLine();
             if (string.IsNullOrEmpty(subKey))
             {
                 //システムの入力待ち中にデバッグコマンドからLOCALを呼んだとき。
                 if ((line == null) || (line.ParentLabelLine == null))
-                    throw new CodeEE("実行中の関数が存在しないため" + key + "を取得又は変更できませんでした");
+                    throw new CodeEE(string.Format(LocalizationManager.Error.CannotGetKeyNotExistRunningFunction, key));
                 subKey = line.ParentLabelLine.LabelName;
             }
             else
@@ -519,11 +519,11 @@ internal sealed partial class IdentifierDictionary
             if (ret.IsForbid)
             {
                 if (!ret.CanForbid)
-                    throw new ExeEE("CanForbidでない変数\"" + ret.Name + "\"にIsForbidがついている");
-                throw new CodeEE("呼び出された変数\"" + ret.Name + "\"は設定により使用が禁止されています");
+                    throw new ExeEE(string.Format(LocalizationManager.Error.InvalidProhibitedVar, ret.Name));
+                throw new CodeEE(string.Format(LocalizationManager.Error.UsedProhibitedVar, ret.Name));
             }
             if (subKey != null)
-                throw new CodeEE("ローカル変数でない変数" + key + "に対して@が使われました");
+                throw new CodeEE(string.Format(LocalizationManager.Error.UsedAtForGlobalVar, key));
             return ret;
         }
         if (subKey != null)
@@ -583,7 +583,7 @@ internal sealed partial class IdentifierDictionary
             {
                 if (userDefinedOnly && !func.IsMethod)
                 {
-                    throw new CodeEE("#FUNCTIONが指定されていない関数\"@" + func.LabelName + "\"をCALLF系命令で呼び出そうとしました");
+                    throw new CodeEE(string.Format(LocalizationManager.Error.CallfNonMethodFunc, func.LabelName));
                 }
                 if (func.IsMethod)
                 {
@@ -594,7 +594,7 @@ internal sealed partial class IdentifierDictionary
                 }
                 //1.721 #FUNCTIONが定義されていない関数は組み込み関数を上書きしない方向に。 PANCTION.ERBのRANDとか。
                 if (!methodDic.ContainsKey(codeStr))
-                    throw new CodeEE("#FUNCTIONが定義されていない関数(" + func.Position.Value.Filename + ":" + func.Position.Value.LineNo + "行目)を式中で呼び出そうとしました");
+                    throw new CodeEE(string.Format(LocalizationManager.Error.UsedNonMethodFunc, func.Position.Value.Filename, func.Position.Value.LineNo));
             }
         }
         if (userDefinedOnly)
@@ -616,40 +616,40 @@ internal sealed partial class IdentifierDictionary
         // if (Config.ICFunction || Config.IgnoreCase) //片方だけなのは互換性用オプションなのでレアケースのはず。対応しない。
         // 	idStr = idStr.ToUpper();
         if (!isFunc && privateDimList.Contains(idStr))
-            throw new IdentifierNotFoundCodeEE("変数\"" + str + "\"はこの関数中では定義されていません");
+            throw new IdentifierNotFoundCodeEE(string.Format(LocalizationManager.Error.VarNotDefinedThisFunc, str));
         if (nameDic.TryGetValue(idStr, out DefinedNameType value))
         {
             DefinedNameType type = value;
             switch (type)
             {
                 case DefinedNameType.Reserved:
-                    throw new CodeEE("Emueraの予約語\"" + str + "\"が不正な使われ方をしています");
+                    throw new CodeEE(string.Format(LocalizationManager.Error.IllegalUseReservedWord, str));
                 case DefinedNameType.SystemVariable:
                 case DefinedNameType.UserGlobalVariable:
                     if (isFunc)
-                        throw new CodeEE("変数名\"" + str + "\"が関数のように使われています");
+                        throw new CodeEE(string.Format(LocalizationManager.Error.UseVarLikeFunc, str));
                     break;
                 case DefinedNameType.SystemMethod:
                 case DefinedNameType.UserRefMethod:
                     if (!isFunc)
-                        throw new CodeEE("関数名\"" + str + "\"が変数のように使われています");
+                        throw new CodeEE(string.Format(LocalizationManager.Error.UseFuncLikeVar, str));
                     break;
                 case DefinedNameType.UserMacro:
-                    throw new CodeEE("予期しないマクロ名\"" + str + "\"です");
+                    throw new CodeEE(string.Format(LocalizationManager.Error.UnexpectedMacro, str));
                 case DefinedNameType.SystemInstrument:
                     if (isFunc)
-                        throw new CodeEE("命令名\"" + str + "\"が関数のように使われています");
+                        throw new CodeEE(string.Format(LocalizationManager.Error.UseInstructionLikeFunc, str));
                     else
-                        throw new CodeEE("命令名\"" + str + "\"が変数のように使われています");
+                        throw new CodeEE(string.Format(LocalizationManager.Error.UseInstructionLikeVar, str));
 
             }
         }
         if (!JSONConfig.Game.UseScopedVariableInstruction &&
             (idStr == "VARS" || idStr == "VARI"))
         {
-            throw new CodeEE($"{idStr}命令は現在の設定では使用できません");
+            throw new CodeEE(string.Format(LocalizationManager.Error.CanNotUseVAR, idStr));
         }
-        throw new IdentifierNotFoundCodeEE("\"" + idStr + "\"は解釈できない識別子です");
+        throw new IdentifierNotFoundCodeEE(string.Format(LocalizationManager.Error.CanNotInterpreted, idStr));
     }
     #endregion
 

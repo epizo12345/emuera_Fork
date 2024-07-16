@@ -1142,6 +1142,11 @@ public static class LocalizationManager
         public static string DTCanNotEditIdColumn => ConsoleLocalization.Error_DTCanNotEditIdColumn;
         public static string IsDefinedCsvVariable => ConsoleLocalization.Error_IsDefinedCsvVariable;
         public static string InitFatalError => ConsoleLocalization.Error_InitFatalError;
+        public static string FileNotUTF8BOM => ConsoleLocalization.Error_FileNotUTF8BOM;
+        public static string CanNotUseVAR => ConsoleLocalization.Error_CanNotUseVAR;
+        public static string CanNotUseDumprand => ConsoleLocalization.Error_CanNotUseDumprand;
+        public static string CanNotUseInitrand => ConsoleLocalization.Error_CanNotUseInitrand;
+        public static string IgnoreRandomize => ConsoleLocalization.Error_IgnoreRandomize;
     }
 
     public static class SystemLine

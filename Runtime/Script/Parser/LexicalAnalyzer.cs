@@ -187,7 +187,7 @@ internal static partial class LexicalAnalyzer
 
             double d = significand * Math.Pow(expBase, exponent);
             if (double.IsNaN(d) || double.IsInfinity(d) || d > long.MaxValue || d < long.MinValue)
-                throw new CodeEE($"\"{st.SubstringROS(stStartPos, stEndPos)}\"は64ビット符号付整数の範囲を超えています");
+                throw new CodeEE(string.Format(LocalizationManager.Error.OoRInt64, st.Substring(stStartPos, stEndPos)));
             significand = (long)d;
         }
         return significand;
@@ -256,17 +256,17 @@ internal static partial class LexicalAnalyzer
         }
         catch (FormatException)
         {
-            throw new CodeEE($"\"{strInt}\"は整数値に変換できません");
+            throw new CodeEE(string.Format(LocalizationManager.Error.CanNotConvertToInt, strInt.ToString()));
         }
         catch (OverflowException)
         {
-            throw new CodeEE($"\"{strInt}\"は64ビット符号付き整数の範囲を超えています");
+            throw new CodeEE(string.Format(LocalizationManager.Error.OoRInt64, strInt.ToString()));
         }
         catch (ArgumentOutOfRangeException)
         {
             if (strInt.IsEmpty)
-                throw new CodeEE("数値として認識できる文字が必要です");
-            throw new CodeEE($"文字列\"{strInt}\"は数値として認識できません");
+                throw new CodeEE(LocalizationManager.Error.CanNotInterpretNum);
+            throw new CodeEE(string.Format(LocalizationManager.Error.CanNotInterpretNumValue, strInt.ToString()));
         }
     }
 
@@ -373,11 +373,11 @@ internal static partial class LexicalAnalyzer
                 DefineMacro macro = GlobalStatic.IdentifierDictionary.GetMacro(str);
                 i++;
                 if (i > MAX_EXPAND_MACRO)
-                    throw new CodeEE("マクロの展開数が1文あたりの上限値" + MAX_EXPAND_MACRO.ToString(CultureInfo.InvariantCulture) + "を超えました(自己参照・循環参照のおそれ)");
+                    throw new CodeEE(string.Format(LocalizationManager.Error.MacroOverLimit, MAX_EXPAND_MACRO.ToString()));
                 if (macro == null)
                     break;
                 if (macro.IDWord != null)
-                    throw new CodeEE("マクロ" + macro.Keyword + "はこの文脈では使用できません(1単語に置き換えるマクロのみが使用できます)");
+                    throw new CodeEE(string.Format(LocalizationManager.Error.MacroIsNotAvailable, macro.Keyword));
                 str = macro.IDWord.Code;
             }
         }
@@ -453,7 +453,7 @@ internal static partial class LexicalAnalyzer
                         switch (st.Current)
                         {
                             case CharStream.EndOfString:
-                                throw new CodeEE("エスケープ文字\\の後に文字がありません");
+                                throw new CodeEE(LocalizationManager.Error.MissingCharacterAfterEscape);
                             case '\n': break;
                             case 's': buffer.Append(' '); break;
                             case 'S': buffer.Append('　'); break;
@@ -585,7 +585,7 @@ internal static partial class LexicalAnalyzer
                 return OperatorCode.Ternary_b;
 
         }
-        throw new CodeEE("'" + cur + "'は演算子として認識できません");
+        throw new CodeEE(string.Format(LocalizationManager.Error.CanNotRecognizedOp, cur));
     }
 
     /// <summary>
@@ -639,7 +639,7 @@ internal static partial class LexicalAnalyzer
                     ret = OperatorCode.AssignmentStr;
                     break;
                 }
-                throw new CodeEE("\"\'\"は代入演算子として認識できません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.CanNotRecognizedAssignOp, "\'"));
             case '<':
                 if (next == '<')
                 {
@@ -649,7 +649,7 @@ internal static partial class LexicalAnalyzer
                         ret = OperatorCode.LeftShift;
                         break;
                     }
-                    throw new CodeEE("'<'は代入演算子として認識できません");
+                    throw new CodeEE(string.Format(LocalizationManager.Error.CanNotRecognizedAssignOp, "<"));
                 }
                 break;
             case '>':
@@ -661,7 +661,7 @@ internal static partial class LexicalAnalyzer
                         ret = OperatorCode.RightShift;
                         break;
                     }
-                    throw new CodeEE("'>'は代入演算子として認識できません");
+                    throw new CodeEE(string.Format(LocalizationManager.Error.CanNotRecognizedAssignOp, ">"));
                 }
                 break;
             case '|':
@@ -678,7 +678,7 @@ internal static partial class LexicalAnalyzer
                 break;
         }
         if (ret == OperatorCode.NULL)
-            throw new CodeEE("'" + cur + "'は代入演算子として認識できません");
+            throw new CodeEE(string.Format(LocalizationManager.Error.CanNotRecognizedAssignOp, cur));
         st.ShiftNext();
         return ret;
     }
@@ -794,7 +794,7 @@ internal static partial class LexicalAnalyzer
                         continue;
                     case '　':
                         if (!Config.Config.SystemAllowFullSpace)
-                            throw new CodeEE("字句解析中に予期しない全角スペースを発見しました(この警告はシステムオプション「" + Config.Config.GetConfigName(ConfigCode.SystemAllowFullSpace) + "」により無視できます)");
+                            throw new CodeEE(string.Format(LocalizationManager.Error.UnexpectedFullWidthSpace, Config.Config.GetConfigName(ConfigCode.SystemAllowFullSpace)));
                         st.ShiftNext();
                         continue;
                     case '0':
@@ -849,7 +849,7 @@ internal static partial class LexicalAnalyzer
                             //1808beta009 ここだけ戻す
                             //現在の処理だとここに来た時点でrename失敗確定だが警告内容を元に戻すため
                             if (ParserMediator.RenameDic == null)
-                                throw new CodeEE("字句解析中に予期しない文字\"[[\"を発見しました");
+                                throw new CodeEE(string.Format(LocalizationManager.Error.UnexpectedCharacter, "[["));
                             int start = st.CurrentPosition;
                             int find = st.Find("]]");
                             if (find <= 2)
@@ -857,12 +857,12 @@ internal static partial class LexicalAnalyzer
                                 if (find == 2)
                                     throw new CodeEE(LocalizationManager.Error.EmptyTwoSBrackets);
                                 else
-                                    throw new CodeEE("対応する\"]]\"のない\"[[\"です");
+                                    throw new CodeEE(LocalizationManager.Error.MissingTwoSBrackets);
                             }
                             string key = st.Substring(start, find + 2);
                             //1810 ここまでで置換できなかったものは強制エラーにする
                             //行連結前に置換不能で行連結より置換することができるようになったものまで置換されていたため
-                            throw new CodeEE("字句解析中に置換(rename)できない符号" + key + "を発見しました");
+                            throw new CodeEE(string.Format(LocalizationManager.Error.CanNotRenameKey, key));
                             //string value = null;
                             //if (!ParserMediator.RenameDic.TryGetValue(key, out value))
                             //    throw new CodeEE("字句解析中に置換(rename)できない符号" + key + "を発見しました");
@@ -883,16 +883,16 @@ internal static partial class LexicalAnalyzer
                             st.ShiftNext();
                             ret.Add(new LiteralStringWord(ReadString(st, StrEndWith.SingleQuotation)));
                             if (st.Current != '\'')
-                                throw new CodeEE("\'が閉じられていません");
+                                throw new CodeEE(string.Format(LocalizationManager.Error.NotClosed, "'"));
                             st.ShiftNext();
                             break;
-                        }
+                        }   
                         if ((flag & LexAnalyzeFlag.AnalyzePrintV) != LexAnalyzeFlag.AnalyzePrintV)
                         {
                             //AssignmentStr用特殊処理 代入文の代入演算子を探索中で'=の場合のみ許可
                             if (endWith == LexEndWith.Operator && nestBracketS == 0 && nestBracketL == 0 && st.Next == '=')
                                 return;
-                            throw new CodeEE("字句解析中に予期しない文字'" + st.Current + "'を発見しました");
+                            throw new CodeEE(string.Format(LocalizationManager.Error.UnexpectedCharacter, st.Current));
                         }
                         st.ShiftNext();
                         ret.Add(new LiteralStringWord(ReadString(st, StrEndWith.Comma)));
@@ -902,12 +902,12 @@ internal static partial class LexicalAnalyzer
                     case '}':
                         if (endWith == LexEndWith.RightCurlyBrace)
                             return;
-                        throw new CodeEE("字句解析中に予期しない文字'" + st.Current + "'を発見しました");
+                        throw new CodeEE(string.Format(LocalizationManager.Error.UnexpectedCharacter, st.Current));
                     case '\"':
                         st.ShiftNext();
                         ret.Add(new LiteralStringWord(ReadString(st, StrEndWith.DoubleQuotation)));
                         if (st.Current != '\"')
-                            throw new CodeEE("\"が閉じられていません");
+                            throw new CodeEE(string.Format(LocalizationManager.Error.NotClosed, "\""));
                         st.ShiftNext();
                         break;
                     case '@':
@@ -921,7 +921,7 @@ internal static partial class LexicalAnalyzer
                         st.ShiftNext();
                         ret.Add(AnalyseFormattedString(st, FormStrEndWith.DoubleQuotation, false));
                         if (st.Current != '\"')
-                            throw new CodeEE("\"が閉じられていません");
+                            throw new CodeEE(string.Format(LocalizationManager.Error.NotClosed, "\""));
                         st.ShiftNext();
                         break;
                     case '.':
@@ -931,7 +931,7 @@ internal static partial class LexicalAnalyzer
 
                     case '\\':
                         if (st.Next != '@')
-                            throw new CodeEE("字句解析中に予期しない文字'" + st.Current + "'を発見しました");
+                            throw new CodeEE(string.Format(LocalizationManager.Error.UnexpectedCharacter, st.Current));
                         {
                             st.Jump(2);
                             ret.Add(new StrFormWord(["", ""], [AnalyseYenAt(st)]));
@@ -939,7 +939,7 @@ internal static partial class LexicalAnalyzer
                         break;
                     case '{':
                     case '$':
-                        throw new CodeEE("字句解析中に予期しない文字'" + st.Current + "'を発見しました");
+                        throw new CodeEE(string.Format(LocalizationManager.Error.UnexpectedCharacter, st.Current));
                     case ';'://1807 行中コメント
                         if (st.CurrentEqualTo(";#;") && Program.DebugMode)
                         {
@@ -965,13 +965,13 @@ internal static partial class LexicalAnalyzer
         if (nestBracketS != 0 || nestBracketL != 0)
         {
             if (nestBracketS < 0)
-                throw new CodeEE("字句解析中に対応する'('のない')'を発見しました");
+                throw new CodeEE(LocalizationManager.Error.NotCloseBrackets);
             else if (nestBracketS > 0)
-                throw new CodeEE("字句解析中に対応する')'のない'('を発見しました");
+                throw new CodeEE(LocalizationManager.Error.UnexpectedBrackets);
             if (nestBracketL < 0)
-                throw new CodeEE("字句解析中に対応する'['のない']'を発見しました");
+                throw new CodeEE(LocalizationManager.Error.NotCloseSBrackets);
             else if (nestBracketL > 0)
-                throw new CodeEE("字句解析中に対応する']'のない'['を発見しました");
+                throw new CodeEE(LocalizationManager.Error.UnexpectedSBrackets);
         }
         if (UseMacro)
             return expandMacro(ret);
@@ -1001,7 +1001,7 @@ internal static partial class LexicalAnalyzer
             }
             count++;
             if (count > MAX_EXPAND_MACRO)
-                throw new CodeEE("マクロの展開数が1文あたりの上限" + MAX_EXPAND_MACRO.ToString(CultureInfo.InvariantCulture) + "を超えました(自己参照・循環参照のおそれ)");
+                throw new CodeEE(string.Format(LocalizationManager.Error.MacroOverLimit, MAX_EXPAND_MACRO.ToString()));
             if (!macro.HasArguments)
             {
                 wc.Remove();
@@ -1021,7 +1021,7 @@ internal static partial class LexicalAnalyzer
         wc.ShiftNext();
         SymbolWord symbol = wc.Current as SymbolWord;
         if (symbol == null || symbol.Type != '(')
-            throw new CodeEE("関数形式のマクロ" + macro.Keyword + "に引数がありません");
+            throw new CodeEE(string.Format(LocalizationManager.Error.MacroHasNotArg, macro.Keyword));
         WordCollection macroWC = macro.Statement.Clone();
         WordCollection[] args = new WordCollection[macro.ArgCount];
         //引数部読み取りループ
@@ -1033,7 +1033,7 @@ internal static partial class LexicalAnalyzer
             {
                 wc.ShiftNext();
                 if (wc.EOL)
-                    throw new CodeEE("関数形式のマクロ" + macro.Keyword + "の用法が正しくありません");
+                    throw new CodeEE(string.Format(LocalizationManager.Error.WrongMacroUsage, macro.Keyword));
                 symbol = wc.Current as SymbolWord;
                 if (symbol == null)
                 {
@@ -1050,7 +1050,7 @@ internal static partial class LexicalAnalyzer
                             break;
                         }
                         if (i != macro.ArgCount - 1)
-                            throw new CodeEE("関数形式のマクロ" + macro.Keyword + "の引数の数が正しくありません");
+                            throw new CodeEE(string.Format(LocalizationManager.Error.MacroDifferentArgCount, macro.Keyword));
                         goto exitfor;
                     case ',':
                         if (macroNestBracketS == 0)
@@ -1061,14 +1061,14 @@ internal static partial class LexicalAnalyzer
             }
         exitwhile:
             if (args[i].Collection.Count == 0)
-                throw new CodeEE("関数形式のマクロ" + macro.Keyword + "の引数を省略することはできません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.CanNotOmitMacroArg, macro.Keyword));
             continue;
         }
     //引数部読み取りループ終端
     exitfor:
         symbol = wc.Current as SymbolWord;
         if (symbol == null || symbol.Type != ')')
-            throw new CodeEE("関数形式のマクロ" + macro.Keyword + "の用法が正しくありません");
+            throw new CodeEE(string.Format(LocalizationManager.Error.WrongMacroUsage, macro.Keyword));
 
         var macroEnd = wc.Pointer;
         wc.Pointer = macroStart;
@@ -1144,7 +1144,7 @@ internal static partial class LexicalAnalyzer
                     st.ShiftNext();
                     SWTs.Add(new PercentSubWord(Analyse(st, LexEndWith.Percent, LexAnalyzeFlag.None)));
                     if (st.Current != '%')
-                        throw new CodeEE("\'%\'が使われましたが対応する\'%\'が見つかりません");
+                        throw new CodeEE(string.Format(LocalizationManager.Error.NotFoundCorresponding, "%", "%"));
                     break;
                 case '{':
                     strs.Add(buffer.ToString());
@@ -1152,7 +1152,7 @@ internal static partial class LexicalAnalyzer
                     st.ShiftNext();
                     SWTs.Add(new CurlyBraceSubWord(Analyse(st, LexEndWith.RightCurlyBrace, LexAnalyzeFlag.None)));
                     if (st.Current != '}')
-                        throw new CodeEE("\'{\'が使われましたが対応する\'}\'が見つかりません");
+                        throw new CodeEE(string.Format(LocalizationManager.Error.NotFoundCorresponding, "{", "}"));
                     break;
                 case '*':
                 case '+':
@@ -1177,7 +1177,7 @@ internal static partial class LexicalAnalyzer
                     switch (cur)
                     {
                         case '\0':
-                            throw new CodeEE("エスケープ文字\\の後に文字がありません");
+                            throw new CodeEE(LocalizationManager.Error.MissingCharacterAfterEscape);
                         case '\n': break;
                         case 's': buffer.Append(' '); break;
                         case 'S': buffer.Append('　'); break;
@@ -1231,21 +1231,21 @@ internal static partial class LexicalAnalyzer
     {
         WordCollection w = Analyse(st, LexEndWith.Question, LexAnalyzeFlag.None);
         if (st.Current != '?')
-            throw new CodeEE("\'\\@\'が使われましたが対応する\'?\'が見つかりません");
+            throw new CodeEE(string.Format(LocalizationManager.Error.NotFoundCorresponding, "\\@", "?"));
         st.ShiftNext();
         StrFormWord left = AnalyseFormattedString(st, FormStrEndWith.Sharp, true);
         if (st.Current != '#')
         {
             if (st.Current != '@')
-                throw new CodeEE("\'\\@\',\'?\'が使われましたが対応する\'#\'が見つかりません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.NotFoundCorresponding, "\\@", "#"));
             st.ShiftNext();
-            ParserMediator.Warn("\'\\@\',\'?\'が使われましたが対応する\'#\'が見つかりません", GlobalStatic.Process.GetScaningLine(), 1, false, false);
+            ParserMediator.Warn(string.Format(LocalizationManager.Error.NotFoundCorresponding, "\\@", "#"), GlobalStatic.Process.GetScaningLine(), 1, false, false);
             return new YenAtSubWord(w, left, null);
         }
         st.ShiftNext();
         StrFormWord right = AnalyseFormattedString(st, FormStrEndWith.YenAt, true);
         if (st.Current != '@')
-            throw new CodeEE("\'\\@\',\'?\',\'#\'が使われましたが対応する\'\\@\'が見つかりません");
+            throw new CodeEE(string.Format(LocalizationManager.Error.NotFoundCorresponding, "\\@\',\'?\',\'#", "\\@"));
         st.ShiftNext();
         return new YenAtSubWord(w, left, right);
     }

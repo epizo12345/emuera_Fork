@@ -3197,4 +3197,19 @@ Error.AttributeCanNotInterpretNum	&lt;{0}&gt; tag has a {1}" attribute with a va
     <data name="SystemLine_Log" xml:space="preserve">
         <value># Log</value>
     </data>
+    <data name="Error_FileNotUTF8BOM" xml:space="preserve">
+        <value>File is not UTF-8 with BOM</value>
+    </data>
+    <data name="Error_CanNotUseVAR" xml:space="preserve">
+        <value>The {0} instruction is not available in the current configuration</value>
+    </data>
+    <data name="Error_IgnoreRandomize" xml:space="preserve">
+        <value>RANDOMIZE is ignored in the new random number algorithm</value>
+    </data>
+    <data name="Error_CanNotUseInitrand" xml:space="preserve">
+        <value>INITRAND does not work with the new random number algorithm</value>
+    </data>
+    <data name="Error_CanNotUseDumprand" xml:space="preserve">
+        <value>DUMPRAND does not work with the new random number algorithm</value>
+    </data>
 </root>
