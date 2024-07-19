@@ -102,6 +102,16 @@ internal sealed partial class ConfigDialog : Form
         updown.Value = value;
         updown.Enabled = !item.Fixed;
     }
+    
+    static void setNumericUpDown(NumericUpDown updown, int configValue)
+    {
+        decimal value = configValue;
+        if (updown.Maximum < value)
+            updown.Maximum = value;
+        if (updown.Minimum > value)
+            updown.Minimum = value;
+        updown.Value = value;
+    }
 
     static void setColorBox(ColorBox colorBox, ConfigCode code)
     {
@@ -290,6 +300,22 @@ internal sealed partial class ConfigDialog : Form
         _useButtonFocusColor.Checked = JSONConfig.Game.UseButtonFocusBackgroundColor;
         _useNewRandom.Checked = JSONConfig.Game.UseNewRandom;
         _useScopedVariableInstruction.Checked = JSONConfig.Game.UseScopedVariableInstruction;
+
+        #region EE_AnchorのCB機能移植
+        checkBoxCBIgnoreTags.Checked = JSONConfig.User.CBIgnoreTags;
+        textBoxCBReplaceTags.Text = JSONConfig.User.CBReplaceTags;
+        checkBoxCBNewLinesOnly.Checked = JSONConfig.User.CBNewLinesOnly;
+        checkBoxCBClearBuffer.Checked = JSONConfig.User.CBClearBuffer;
+        checkBoxCBTriggerLeftClick.Checked = JSONConfig.User.CBTriggerLeftClick;
+        checkBoxCBTriggerMiddleClick.Checked = JSONConfig.User.CBTriggerMiddleClick;
+        checkBoxCBTriggerDoubleLeftClick.Checked = JSONConfig.User.CBTriggerDoubleLeftClick;
+        checkBoxCBTriggerAnyKeyWait.Checked = JSONConfig.User.CBTriggerAnyKeyWait;
+        checkBoxCBTriggerInputWait.Checked = JSONConfig.User.CBTriggerInputWait;
+        setNumericUpDown(numericUpDownCBMaxCB, JSONConfig.User.CBMaxCB);
+        setNumericUpDown(numericUpDownCBBufferSize, JSONConfig.User.CBBufferSize);
+        setNumericUpDown(numericUpDownCBScrollCount, JSONConfig.User.CBScrollCount);
+        setNumericUpDown(numericUpDownCBMinTimer,JSONConfig.User.CBMinTimer);
+        #endregion
     }
 
     private void SaveConfig()
@@ -770,23 +796,22 @@ internal sealed partial class ConfigDialog : Form
         button5.Text = LocalizationManager.ConfigDialog.Debug_PlayerStandard;
         button6.Text = LocalizationManager.ConfigDialog.Debug_DeveloperStandard;
 
-        // tabPageClipboard.Text = LocalizationManager.ConfigDialog.Clipboard;
-        // checkBoxCBuseCB.Text = LocalizationManager.ConfigDialog.Clipboard_CopyToClipboard;
-        // checkBoxCBIgnoreTags.Text = LocalizationManager.ConfigDialog.Clipboard_IgnoreTags;
-        // label29.Text = LocalizationManager.ConfigDialog.Clipboard_ReplaceTags;
-        // checkBoxCBNewLinesOnly.Text = LocalizationManager.ConfigDialog.Clipboard_NewLineOnly;
-        // checkBoxCBClearBuffer.Text = LocalizationManager.ConfigDialog.Clipboard_ClearClipboard;
-        // label27.Text = LocalizationManager.ConfigDialog.Clipboard_TriggerToUse;
-        // checkBoxCBTriggerLeftClick.Text = LocalizationManager.ConfigDialog.Clipboard_LClick;
-        // checkBoxCBTriggerMiddleClick.Text = LocalizationManager.ConfigDialog.Clipboard_MClick;
-        // checkBoxCBTriggerDoubleLeftClick.Text = LocalizationManager.ConfigDialog.Clipboard_DoubleClick;
-        // checkBoxCBTriggerAnyKeyWait.Text = LocalizationManager.ConfigDialog.Clipboard_AnyKeyWait;
-        // checkBoxCBTriggerInputWait.Text = LocalizationManager.ConfigDialog.Clipboard_InputWait;
-        // label28.Text = LocalizationManager.ConfigDialog.Clipboard_LinesToClipboard;
-        // label31.Text = LocalizationManager.ConfigDialog.Clipboard_TotalBuffer;
-        // label32.Text = LocalizationManager.ConfigDialog.Clipboard_LinesToScroll;
-        // label33.Text = LocalizationManager.ConfigDialog.Clipboard_UpdateTime;
-        // label34.Text = LocalizationManager.ConfigDialog.Clipboard_ScrollThrough;
+        tabPageClipboard.Text = LocalizationManager.ConfigDialog.Clipboard;
+        checkBoxCBIgnoreTags.Text = LocalizationManager.ConfigDialog.Clipboard_IgnoreTags;
+        label29.Text = LocalizationManager.ConfigDialog.Clipboard_ReplaceTags;
+        checkBoxCBNewLinesOnly.Text = LocalizationManager.ConfigDialog.Clipboard_NewLineOnly;
+        checkBoxCBClearBuffer.Text = LocalizationManager.ConfigDialog.Clipboard_ClearClipboard;
+        label27.Text = LocalizationManager.ConfigDialog.Clipboard_TriggerToUse;
+        checkBoxCBTriggerLeftClick.Text = LocalizationManager.ConfigDialog.Clipboard_LClick;
+        checkBoxCBTriggerMiddleClick.Text = LocalizationManager.ConfigDialog.Clipboard_MClick;
+        checkBoxCBTriggerDoubleLeftClick.Text = LocalizationManager.ConfigDialog.Clipboard_DoubleClick;
+        checkBoxCBTriggerAnyKeyWait.Text = LocalizationManager.ConfigDialog.Clipboard_AnyKeyWait;
+        checkBoxCBTriggerInputWait.Text = LocalizationManager.ConfigDialog.Clipboard_InputWait;
+        label28.Text = LocalizationManager.ConfigDialog.Clipboard_LinesToClipboard;
+        label31.Text = LocalizationManager.ConfigDialog.Clipboard_TotalBuffer;
+        label32.Text = LocalizationManager.ConfigDialog.Clipboard_LinesToScroll;
+        label33.Text = LocalizationManager.ConfigDialog.Clipboard_UpdateTime;
+        label34.Text = LocalizationManager.ConfigDialog.Clipboard_ScrollThrough;
         //
         // tabPageRikai.Text = LocalizationManager.ConfigDialog.Rikai;
         // rikaiCheckBoxEnable.Text = LocalizationManager.ConfigDialog.Rikai_RikaiEnable;
@@ -820,5 +845,73 @@ internal sealed partial class ConfigDialog : Form
         // 	page.Location = new Point(diff.Width / 2, diff.Height / 2);
         // }
 
+    }
+
+    private void checkBoxCBIgnoreTags_CheckedChanged(object sender, EventArgs e)
+    {
+        JSONConfig.User.CBIgnoreTags = checkBoxCBIgnoreTags.Checked;
+    }
+
+    private void textBoxCBReplaceTags_TextChanged(object sender, EventArgs e)
+    {
+        JSONConfig.User.CBReplaceTags = textBoxCBReplaceTags.Text;
+    }
+
+    private void checkBoxCBNewLinesOnly_CheckedChanged(object sender, EventArgs e)
+    {
+        JSONConfig.User.CBNewLinesOnly = checkBoxCBNewLinesOnly.Checked;
+    }
+
+    private void checkBoxCBClearBuffer_CheckedChanged(object sender, EventArgs e)
+    {
+        JSONConfig.User.CBClearBuffer = checkBoxCBClearBuffer.Checked;
+    }
+
+    private void checkBoxCBTriggerLeftClick_CheckedChanged(object sender, EventArgs e)
+    {
+        JSONConfig.User.CBTriggerLeftClick = checkBoxCBTriggerLeftClick.Checked;
+    }
+
+    private void checkBoxCBTriggerMiddleClick_CheckedChanged(object sender, EventArgs e)
+    {
+        JSONConfig.User.CBTriggerMiddleClick = checkBoxCBTriggerMiddleClick.Checked;
+    }
+
+    private void checkBoxCBTriggerDoubleLeftClick_CheckedChanged(object sender, EventArgs e)
+    {
+        JSONConfig.User.CBTriggerDoubleLeftClick = checkBoxCBTriggerDoubleLeftClick.Checked;
+    }
+
+    private void checkBoxCBTriggerAnyKeyWait_CheckedChanged(object sender, EventArgs e)
+    {
+        JSONConfig.User.CBTriggerAnyKeyWait = checkBoxCBTriggerAnyKeyWait.Checked;
+    }
+
+    private void checkBoxCBTriggerInputWait_CheckedChanged(object sender, EventArgs e)
+    {
+        JSONConfig.User.CBTriggerInputWait = checkBoxCBTriggerInputWait.Checked;
+    }
+
+    private void numericUpDownCBMaxCB_ValueChanged(object sender, EventArgs e)
+    {
+        JSONConfig.User.CBMaxCB = (int)numericUpDownCBMaxCB.Value;
+        GlobalStatic.Console.CBProc.SetMaxCB(JSONConfig.User.CBMaxCB);
+    }
+
+    private void numericUpDownCBBufferSize_ValueChanged(object sender, EventArgs e)
+    {
+        JSONConfig.User.CBBufferSize = (int)numericUpDownCBBufferSize.Value;
+    }
+
+    private void numericUpDownCBScrollCount_ValueChanged(object sender, EventArgs e)
+    {
+        JSONConfig.User.CBScrollCount = (int)numericUpDownCBScrollCount.Value;
+        GlobalStatic.Console.CBProc.SetScrollCount(JSONConfig.User.CBScrollCount);
+    }
+
+    private void numericUpDownCBMinTimer_ValueChanged(object sender, EventArgs e)
+    {
+        JSONConfig.User.CBMinTimer = (int)numericUpDownCBMinTimer.Value;
+        GlobalStatic.Console.CBProc.SetTimerInterval(JSONConfig.User.CBMinTimer);
     }
 }

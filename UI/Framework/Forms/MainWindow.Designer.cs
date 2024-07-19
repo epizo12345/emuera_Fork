@@ -1,4 +1,5 @@
-﻿using MinorShift.Emuera.UI.Framework;
+﻿using MinorShift.Emuera.Runtime.Config.JSON;
+using MinorShift.Emuera.UI.Framework;
 using MinorShift.Emuera.UI.Framework.Forms;
 using SkiaSharp.Views.Desktop;
 namespace MinorShift.Emuera.Forms
@@ -50,8 +51,13 @@ namespace MinorShift.Emuera.Forms
             デバッグ情報の更新ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             ツールToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             ウィンドウ幅のロック変更ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
+            クリップボードにコピーToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             設定ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
+            englishToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            japaneseToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            chineseToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            koreanToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             EmuVerToolStripTextBox = new System.Windows.Forms.ToolStripTextBox();
             openFileDialog = new System.Windows.Forms.OpenFileDialog();
             saveFileDialog = new System.Windows.Forms.SaveFileDialog();
@@ -93,10 +99,6 @@ namespace MinorShift.Emuera.Forms
             timerKeyMacroChanged = new System.Windows.Forms.Timer(components);
             labelMacroGroupChanged = new System.Windows.Forms.Label();
             mainPicBox = new EraPictureBox();
-            englishToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            japaneseToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            chineseToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            koreanToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             menuStrip.SuspendLayout();
             AutoVerbMenu.SuspendLayout();
             SuspendLayout();
@@ -129,8 +131,8 @@ namespace MinorShift.Emuera.Forms
             fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { rebootToolStripMenuItem, デバッグモードで再起動ToolStripMenuItem, ログを保存するSToolStripMenuItem, ログをクリップボードにコピーToolStripMenuItem, タイトルへ戻るTToolStripMenuItem, コードを読み直すcToolStripMenuItem, フォルダを読み直すFToolStripMenuItem, ファイルを読み直すFToolStripMenuItem, exitToolStripMenuItem });
             fileToolStripMenuItem.ForeColor = System.Drawing.SystemColors.MenuText;
             fileToolStripMenuItem.Name = "fileToolStripMenuItem";
-            fileToolStripMenuItem.Size = new System.Drawing.Size(70, 20);
-            fileToolStripMenuItem.Text = LocalizationManager.MainWindow.File;
+            fileToolStripMenuItem.Size = new System.Drawing.Size(51, 20);
+            fileToolStripMenuItem.Text = "File(&F)";
             // 
             // rebootToolStripMenuItem
             // 
@@ -222,7 +224,7 @@ namespace MinorShift.Emuera.Forms
             // 
             // ツールToolStripMenuItem
             // 
-            ツールToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { ウィンドウ幅のロック変更ToolStripMenuItem });
+            ツールToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { ウィンドウ幅のロック変更ToolStripMenuItem, クリップボードにコピーToolStripMenuItem });
             ツールToolStripMenuItem.ForeColor = System.Drawing.SystemColors.MenuText;
             ツールToolStripMenuItem.Name = "ツールToolStripMenuItem";
             ツールToolStripMenuItem.Size = new System.Drawing.Size(51, 20);
@@ -235,13 +237,14 @@ namespace MinorShift.Emuera.Forms
             ウィンドウ幅のロック変更ToolStripMenuItem.Text = "ウィンドウ幅のロック変更";
             ウィンドウ幅のロック変更ToolStripMenuItem.Click += ウィンドウ幅のロック変更ToolStripMenuItem_Click;
             // 
-            // toolStripMenuItem1
+            // クリップボードにコピーToolStripMenuItem
             // 
-            toolStripMenuItem1.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { englishToolStripMenuItem, japaneseToolStripMenuItem, chineseToolStripMenuItem, koreanToolStripMenuItem });
-            toolStripMenuItem1.ForeColor = System.Drawing.SystemColors.MenuText;
-            toolStripMenuItem1.Name = "toolStripMenuItem1";
-            toolStripMenuItem1.Size = new System.Drawing.Size(59, 20);
-            toolStripMenuItem1.Text = "言語(&L)";
+            クリップボードにコピーToolStripMenuItem.CheckOnClick = true;
+            クリップボードにコピーToolStripMenuItem.Name = "クリップボードにコピーToolStripMenuItem";
+            クリップボードにコピーToolStripMenuItem.Size = new System.Drawing.Size(196, 22);
+            クリップボードにコピーToolStripMenuItem.Text = "クリップボードにコピー";
+            クリップボードにコピーToolStripMenuItem.Click += クリップボードにコピーToolStripMenuItem_Click;
+            クリップボードにコピーToolStripMenuItem.Checked = JSONConfig.User.CBUseClipboard;
             // 
             // 設定ToolStripMenuItem
             // 
@@ -250,6 +253,42 @@ namespace MinorShift.Emuera.Forms
             設定ToolStripMenuItem.Size = new System.Drawing.Size(59, 20);
             設定ToolStripMenuItem.Text = "設定(&S)";
             設定ToolStripMenuItem.Click += コンフィグCToolStripMenuItem_Click;
+            // 
+            // toolStripMenuItem1
+            // 
+            toolStripMenuItem1.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { englishToolStripMenuItem, japaneseToolStripMenuItem, chineseToolStripMenuItem, koreanToolStripMenuItem });
+            toolStripMenuItem1.ForeColor = System.Drawing.SystemColors.MenuText;
+            toolStripMenuItem1.Name = "toolStripMenuItem1";
+            toolStripMenuItem1.Size = new System.Drawing.Size(59, 20);
+            toolStripMenuItem1.Text = "言語(&L)";
+            // 
+            // englishToolStripMenuItem
+            // 
+            englishToolStripMenuItem.Name = "englishToolStripMenuItem";
+            englishToolStripMenuItem.Size = new System.Drawing.Size(121, 22);
+            englishToolStripMenuItem.Text = "English";
+            englishToolStripMenuItem.Click += englishToolStripMenuItem_Click;
+            // 
+            // japaneseToolStripMenuItem
+            // 
+            japaneseToolStripMenuItem.Name = "japaneseToolStripMenuItem";
+            japaneseToolStripMenuItem.Size = new System.Drawing.Size(121, 22);
+            japaneseToolStripMenuItem.Text = "Japanese";
+            japaneseToolStripMenuItem.Click += japaneseToolStripMenuItem_Click;
+            // 
+            // chineseToolStripMenuItem
+            // 
+            chineseToolStripMenuItem.Name = "chineseToolStripMenuItem";
+            chineseToolStripMenuItem.Size = new System.Drawing.Size(121, 22);
+            chineseToolStripMenuItem.Text = "Chinese";
+            chineseToolStripMenuItem.Click += chineseToolStripMenuItem_Click;
+            // 
+            // koreanToolStripMenuItem
+            // 
+            koreanToolStripMenuItem.Name = "koreanToolStripMenuItem";
+            koreanToolStripMenuItem.Size = new System.Drawing.Size(121, 22);
+            koreanToolStripMenuItem.Text = "Korean";
+            koreanToolStripMenuItem.Click += koreanToolStripMenuItem_Click;
             // 
             // EmuVerToolStripTextBox
             // 
@@ -574,41 +613,11 @@ namespace MinorShift.Emuera.Forms
             mainPicBox.TabStop = false;
             mainPicBox.VSync = true;
             mainPicBox.PaintSurface += mainPicBox_Paint;
+            mainPicBox.MouseClick += mainPicBox_MouseClickCBCheck;
+            mainPicBox.MouseDoubleClick += mainPicBox_MouseDoubleClickCBCheck;
             mainPicBox.MouseDown += mainPicBox_MouseDown;
             mainPicBox.MouseLeave += mainPicBox_MouseLeave;
             mainPicBox.MouseMove += mainPicBox_MouseMove;
-
-            mainPicBox.MouseClick += mainPicBox_MouseClickCBCheck;
-            mainPicBox.MouseDoubleClick += mainPicBox_MouseDoubleClickCBCheck;
-
-            // 
-            // englishToolStripMenuItem
-            // 
-            englishToolStripMenuItem.Name = "englishToolStripMenuItem";
-            englishToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            englishToolStripMenuItem.Text = "English";
-            englishToolStripMenuItem.Click += englishToolStripMenuItem_Click;
-            // 
-            // japaneseToolStripMenuItem
-            // 
-            japaneseToolStripMenuItem.Name = "japaneseToolStripMenuItem";
-            japaneseToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            japaneseToolStripMenuItem.Text = "Japanese";
-            japaneseToolStripMenuItem.Click += japaneseToolStripMenuItem_Click;
-            // 
-            // chineseToolStripMenuItem
-            // 
-            chineseToolStripMenuItem.Name = "chineseToolStripMenuItem";
-            chineseToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            chineseToolStripMenuItem.Text = "Chinese";
-            chineseToolStripMenuItem.Click += chineseToolStripMenuItem_Click;
-            // 
-            // koreanToolStripMenuItem
-            // 
-            koreanToolStripMenuItem.Name = "koreanToolStripMenuItem";
-            koreanToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            koreanToolStripMenuItem.Text = "Korean";
-            koreanToolStripMenuItem.Click += koreanToolStripMenuItem_Click;
             // 
             // MainWindow
             // 
@@ -703,6 +712,7 @@ namespace MinorShift.Emuera.Forms
         private System.Windows.Forms.ToolStripMenuItem japaneseToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem chineseToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem koreanToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem クリップボードにコピーToolStripMenuItem;
     }
 }
 

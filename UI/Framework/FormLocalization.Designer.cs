@@ -78,6 +78,150 @@ namespace MinorShift.Emuera.UI.Framework {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Clipboard.
+        /// </summary>
+        internal static string ConfigDialog_Clipboard {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Clipboard", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to AnyKey Wait - When the script waits for any key press.
+        /// </summary>
+        internal static string ConfigDialog_Clipboard_AnyKeyWait {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Clipboard_AnyKeyWait", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Clear Clipboard and Buffer when game screen clears.
+        /// </summary>
+        internal static string ConfigDialog_Clipboard_ClearClipboard {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Clipboard_ClearClipboard", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Double Left Click - Mouse.
+        /// </summary>
+        internal static string ConfigDialog_Clipboard_DoubleClick {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Clipboard_DoubleClick", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Ignore &lt;&gt; tags.
+        /// </summary>
+        internal static string ConfigDialog_Clipboard_IgnoreTags {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Clipboard_IgnoreTags", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Input Wait - When the script waits for user input.
+        /// </summary>
+        internal static string ConfigDialog_Clipboard_InputWait {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Clipboard_InputWait", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to LeftClick - Mouse.
+        /// </summary>
+        internal static string ConfigDialog_Clipboard_LClick {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Clipboard_LClick", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Lines to send to Clipboard.
+        /// </summary>
+        internal static string ConfigDialog_Clipboard_LinesToClipboard {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Clipboard_LinesToClipboard", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Lines to scroll at a time.
+        /// </summary>
+        internal static string ConfigDialog_Clipboard_LinesToScroll {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Clipboard_LinesToScroll", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to MiddleClick - Mouse.
+        /// </summary>
+        internal static string ConfigDialog_Clipboard_MClick {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Clipboard_MClick", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Show new lines only - Classic Mode.
+        /// </summary>
+        internal static string ConfigDialog_Clipboard_NewLineOnly {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Clipboard_NewLineOnly", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Replace &lt;&gt; with.
+        /// </summary>
+        internal static string ConfigDialog_Clipboard_ReplaceTags {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Clipboard_ReplaceTags", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Scroll through the history using ctrl+↑ and ↓ or ctrl + mouse wheel up and down..
+        /// </summary>
+        internal static string ConfigDialog_Clipboard_ScrollThrough {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Clipboard_ScrollThrough", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Total Buffer Size.
+        /// </summary>
+        internal static string ConfigDialog_Clipboard_TotalBuffer {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Clipboard_TotalBuffer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Triggers to Use.
+        /// </summary>
+        internal static string ConfigDialog_Clipboard_TriggerToUse {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Clipboard_TriggerToUse", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Min time(mS) between clipboard updates.
+        /// </summary>
+        internal static string ConfigDialog_Clipboard_UpdateTime {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Clipboard_UpdateTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Compatibility.
         /// </summary>
         internal static string ConfigDialog_Compatibility {
@@ -1235,7 +1379,7 @@ namespace MinorShift.Emuera.UI.Framework {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Object.
+        ///   Looks up a localized string similar to Expression.
         /// </summary>
         internal static string DebugDialog_VariableWatch_Object {
             get {
@@ -1285,6 +1429,15 @@ namespace MinorShift.Emuera.UI.Framework {
         internal static string MainWindow_BackToTitle {
             get {
                 return ResourceManager.GetString("MainWindow_BackToTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Copy to Clipboard.
+        /// </summary>
+        internal static string MainWindow_CopyToClipboard {
+            get {
+                return ResourceManager.GetString("MainWindow_CopyToClipboard", resourceCulture);
             }
         }
         
@@ -1433,7 +1586,7 @@ namespace MinorShift.Emuera.UI.Framework {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to エラー発生時はこの機能は使えません.
+        ///   Looks up a localized string similar to This function cannot be used when an error occurs.
         /// </summary>
         internal static string MessageBox_CanNotUseWhenError {
             get {
@@ -1442,7 +1595,7 @@ namespace MinorShift.Emuera.UI.Framework {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to 初期化中はこの機能は使えません.
+        ///   Looks up a localized string similar to This function cannot be used during initialization.
         /// </summary>
         internal static string MessageBox_CanNotUseWhenInitialize {
             get {
@@ -1524,7 +1677,7 @@ namespace MinorShift.Emuera.UI.Framework {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to datフォルダーの作成に失敗しました.
+        ///   Looks up a localized string similar to Failed to create dat folder.
         /// </summary>
         internal static string MessageBox_FailedCreateDataFolder {
             get {
