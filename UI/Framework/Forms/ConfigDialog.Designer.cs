@@ -147,6 +147,33 @@ namespace MinorShift.Emuera.Forms
             comboBoxReduceArgumentOnLoad = new System.Windows.Forms.ComboBox();
             checkBox11 = new System.Windows.Forms.CheckBox();
             checkBox13 = new System.Windows.Forms.CheckBox();
+            tabPageClipboard = new System.Windows.Forms.TabPage();
+            checkBoxCBIgnoreTags = new System.Windows.Forms.CheckBox();
+            flowLayoutPanel36 = new System.Windows.Forms.FlowLayoutPanel();
+            label29 = new System.Windows.Forms.Label();
+            textBoxCBReplaceTags = new System.Windows.Forms.TextBox();
+            checkBoxCBNewLinesOnly = new System.Windows.Forms.CheckBox();
+            checkBoxCBClearBuffer = new System.Windows.Forms.CheckBox();
+            label27 = new System.Windows.Forms.Label();
+            flowLayoutPanel37 = new System.Windows.Forms.FlowLayoutPanel();
+            checkBoxCBTriggerLeftClick = new System.Windows.Forms.CheckBox();
+            checkBoxCBTriggerMiddleClick = new System.Windows.Forms.CheckBox();
+            checkBoxCBTriggerDoubleLeftClick = new System.Windows.Forms.CheckBox();
+            checkBoxCBTriggerAnyKeyWait = new System.Windows.Forms.CheckBox();
+            checkBoxCBTriggerInputWait = new System.Windows.Forms.CheckBox();
+            flowLayoutPanel38 = new System.Windows.Forms.FlowLayoutPanel();
+            numericUpDownCBMaxCB = new System.Windows.Forms.NumericUpDown();
+            label28 = new System.Windows.Forms.Label();
+            flowLayoutPanel39 = new System.Windows.Forms.FlowLayoutPanel();
+            numericUpDownCBBufferSize = new System.Windows.Forms.NumericUpDown();
+            label31 = new System.Windows.Forms.Label();
+            flowLayoutPanel40 = new System.Windows.Forms.FlowLayoutPanel();
+            numericUpDownCBScrollCount = new System.Windows.Forms.NumericUpDown();
+            label32 = new System.Windows.Forms.Label();
+            flowLayoutPanel41 = new System.Windows.Forms.FlowLayoutPanel();
+            numericUpDownCBMinTimer = new System.Windows.Forms.NumericUpDown();
+            label33 = new System.Windows.Forms.Label();
+            label34 = new System.Windows.Forms.Label();
             label16 = new System.Windows.Forms.Label();
             openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
             toolTip1 = new System.Windows.Forms.ToolTip(components);
@@ -175,6 +202,17 @@ namespace MinorShift.Emuera.Forms
             tabPageSystem2.SuspendLayout();
             tabPageCompati.SuspendLayout();
             tabPageDebug.SuspendLayout();
+            tabPageClipboard.SuspendLayout();
+            flowLayoutPanel36.SuspendLayout();
+            flowLayoutPanel37.SuspendLayout();
+            flowLayoutPanel38.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)numericUpDownCBMaxCB).BeginInit();
+            flowLayoutPanel39.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)numericUpDownCBBufferSize).BeginInit();
+            flowLayoutPanel40.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)numericUpDownCBScrollCount).BeginInit();
+            flowLayoutPanel41.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)numericUpDownCBMinTimer).BeginInit();
             SuspendLayout();
             // 
             // buttonSave
@@ -220,6 +258,7 @@ namespace MinorShift.Emuera.Forms
             tabControl.Controls.Add(tabPageSystem2);
             tabControl.Controls.Add(tabPageCompati);
             tabControl.Controls.Add(tabPageDebug);
+            tabControl.Controls.Add(tabPageClipboard);
             tabControl.Dock = System.Windows.Forms.DockStyle.Top;
             tabControl.Location = new System.Drawing.Point(4, 4);
             tabControl.Margin = new System.Windows.Forms.Padding(4);
@@ -276,7 +315,7 @@ namespace MinorShift.Emuera.Forms
             checkBox24.Location = new System.Drawing.Point(14, 115);
             checkBox24.Margin = new System.Windows.Forms.Padding(4);
             checkBox24.Name = "checkBox24";
-            checkBox24.Size = new System.Drawing.Size(15, 14);
+            checkBox24.Size = new System.Drawing.Size(224, 19);
             checkBox24.TabIndex = 77;
             checkBox24.Text = "セーブデータをsavフォルダ内に作成する";
             checkBox24.UseVisualStyleBackColor = true;
@@ -1510,6 +1549,317 @@ namespace MinorShift.Emuera.Forms
             checkBox13.Text = "ロード時にレポートを表示する";
             checkBox13.UseVisualStyleBackColor = true;
             // 
+            // tabPageClipboard
+            // 
+            tabPageClipboard.Controls.Add(checkBoxCBIgnoreTags);
+            tabPageClipboard.Controls.Add(flowLayoutPanel36);
+            tabPageClipboard.Controls.Add(checkBoxCBNewLinesOnly);
+            tabPageClipboard.Controls.Add(checkBoxCBClearBuffer);
+            tabPageClipboard.Controls.Add(label27);
+            tabPageClipboard.Controls.Add(flowLayoutPanel37);
+            tabPageClipboard.Controls.Add(checkBoxCBTriggerDoubleLeftClick);
+            tabPageClipboard.Controls.Add(checkBoxCBTriggerAnyKeyWait);
+            tabPageClipboard.Controls.Add(checkBoxCBTriggerInputWait);
+            tabPageClipboard.Controls.Add(flowLayoutPanel38);
+            tabPageClipboard.Controls.Add(flowLayoutPanel39);
+            tabPageClipboard.Controls.Add(flowLayoutPanel40);
+            tabPageClipboard.Controls.Add(flowLayoutPanel41);
+            tabPageClipboard.Controls.Add(label34);
+            tabPageClipboard.Location = new System.Drawing.Point(4, 44);
+            tabPageClipboard.Name = "tabPageClipboard";
+            tabPageClipboard.Padding = new System.Windows.Forms.Padding(3);
+            tabPageClipboard.Size = new System.Drawing.Size(341, 445);
+            tabPageClipboard.TabIndex = 10;
+            tabPageClipboard.Text = "クリップボード";
+            tabPageClipboard.UseVisualStyleBackColor = true;
+            // 
+            // checkBoxCBIgnoreTags
+            // 
+            checkBoxCBIgnoreTags.AutoSize = true;
+            checkBoxCBIgnoreTags.ImeMode = System.Windows.Forms.ImeMode.NoControl;
+            checkBoxCBIgnoreTags.Location = new System.Drawing.Point(16, 36);
+            checkBoxCBIgnoreTags.Name = "checkBoxCBIgnoreTags";
+            checkBoxCBIgnoreTags.Size = new System.Drawing.Size(104, 19);
+            checkBoxCBIgnoreTags.TabIndex = 112;
+            checkBoxCBIgnoreTags.Text = "Ignore <> tags";
+            toolTip1.SetToolTip(checkBoxCBIgnoreTags, "Some games will use html style <> tags for graphics, which can fill up\r\nthe clipboard. This removes those tags. Note some games use <> in\r\n normal text.");
+            checkBoxCBIgnoreTags.UseVisualStyleBackColor = true;
+            checkBoxCBIgnoreTags.CheckedChanged += checkBoxCBIgnoreTags_CheckedChanged;
+            // 
+            // flowLayoutPanel36
+            // 
+            flowLayoutPanel36.AutoSize = true;
+            flowLayoutPanel36.Controls.Add(label29);
+            flowLayoutPanel36.Controls.Add(textBoxCBReplaceTags);
+            flowLayoutPanel36.Location = new System.Drawing.Point(16, 61);
+            flowLayoutPanel36.Name = "flowLayoutPanel36";
+            flowLayoutPanel36.Size = new System.Drawing.Size(217, 29);
+            flowLayoutPanel36.TabIndex = 113;
+            // 
+            // label29
+            // 
+            label29.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            label29.AutoSize = true;
+            label29.ImeMode = System.Windows.Forms.ImeMode.NoControl;
+            label29.Location = new System.Drawing.Point(3, 7);
+            label29.Name = "label29";
+            label29.Size = new System.Drawing.Size(105, 15);
+            label29.TabIndex = 97;
+            label29.Text = "    Replace <> with";
+            // 
+            // textBoxCBReplaceTags
+            // 
+            textBoxCBReplaceTags.Location = new System.Drawing.Point(114, 3);
+            textBoxCBReplaceTags.Name = "textBoxCBReplaceTags";
+            textBoxCBReplaceTags.Size = new System.Drawing.Size(100, 23);
+            textBoxCBReplaceTags.TabIndex = 96;
+            textBoxCBReplaceTags.TextChanged += textBoxCBReplaceTags_TextChanged;
+            // 
+            // checkBoxCBNewLinesOnly
+            // 
+            checkBoxCBNewLinesOnly.AutoSize = true;
+            checkBoxCBNewLinesOnly.ImeMode = System.Windows.Forms.ImeMode.NoControl;
+            checkBoxCBNewLinesOnly.Location = new System.Drawing.Point(16, 96);
+            checkBoxCBNewLinesOnly.Name = "checkBoxCBNewLinesOnly";
+            checkBoxCBNewLinesOnly.Size = new System.Drawing.Size(214, 19);
+            checkBoxCBNewLinesOnly.TabIndex = 114;
+            checkBoxCBNewLinesOnly.Text = "Show new lines only - Classic Mode";
+            checkBoxCBNewLinesOnly.UseVisualStyleBackColor = true;
+            checkBoxCBNewLinesOnly.CheckedChanged += checkBoxCBNewLinesOnly_CheckedChanged;
+            // 
+            // checkBoxCBClearBuffer
+            // 
+            checkBoxCBClearBuffer.AutoSize = true;
+            checkBoxCBClearBuffer.ImeMode = System.Windows.Forms.ImeMode.NoControl;
+            checkBoxCBClearBuffer.Location = new System.Drawing.Point(16, 121);
+            checkBoxCBClearBuffer.Name = "checkBoxCBClearBuffer";
+            checkBoxCBClearBuffer.Size = new System.Drawing.Size(301, 19);
+            checkBoxCBClearBuffer.TabIndex = 115;
+            checkBoxCBClearBuffer.Text = "Clear Clipboard and Buffer when game screen clears";
+            toolTip1.SetToolTip(checkBoxCBClearBuffer, "This will clear the clipboard and buffers whenever the game explicitly\r\nclears the whole screen. Otherwise it merely inserts a blank line and\r\nkeeps all text.");
+            checkBoxCBClearBuffer.UseVisualStyleBackColor = true;
+            checkBoxCBClearBuffer.CheckedChanged += checkBoxCBClearBuffer_CheckedChanged;
+            // 
+            // label27
+            // 
+            label27.AutoSize = true;
+            label27.ImeMode = System.Windows.Forms.ImeMode.NoControl;
+            label27.Location = new System.Drawing.Point(16, 143);
+            label27.Name = "label27";
+            label27.Size = new System.Drawing.Size(87, 15);
+            label27.TabIndex = 116;
+            label27.Text = "Triggers to Use:";
+            toolTip1.SetToolTip(label27, "Triggers are what causes the clipboard to update. Important for Classic\r\nMode, which only displays the new lines since last update, and can skip\r\ntext when there's too many triggers in succession.");
+            // 
+            // flowLayoutPanel37
+            // 
+            flowLayoutPanel37.AutoSize = true;
+            flowLayoutPanel37.Controls.Add(checkBoxCBTriggerLeftClick);
+            flowLayoutPanel37.Controls.Add(checkBoxCBTriggerMiddleClick);
+            flowLayoutPanel37.Location = new System.Drawing.Point(16, 161);
+            flowLayoutPanel37.Name = "flowLayoutPanel37";
+            flowLayoutPanel37.Size = new System.Drawing.Size(267, 25);
+            flowLayoutPanel37.TabIndex = 117;
+            // 
+            // checkBoxCBTriggerLeftClick
+            // 
+            checkBoxCBTriggerLeftClick.AutoSize = true;
+            checkBoxCBTriggerLeftClick.ImeMode = System.Windows.Forms.ImeMode.NoControl;
+            checkBoxCBTriggerLeftClick.Location = new System.Drawing.Point(3, 3);
+            checkBoxCBTriggerLeftClick.Name = "checkBoxCBTriggerLeftClick";
+            checkBoxCBTriggerLeftClick.Size = new System.Drawing.Size(119, 19);
+            checkBoxCBTriggerLeftClick.TabIndex = 89;
+            checkBoxCBTriggerLeftClick.Text = "LeftClick - Mouse";
+            toolTip1.SetToolTip(checkBoxCBTriggerLeftClick, "This triggers on any single or double left click in the text window.");
+            checkBoxCBTriggerLeftClick.UseVisualStyleBackColor = true;
+            checkBoxCBTriggerLeftClick.CheckedChanged += checkBoxCBTriggerLeftClick_CheckedChanged;
+            // 
+            // checkBoxCBTriggerMiddleClick
+            // 
+            checkBoxCBTriggerMiddleClick.AutoSize = true;
+            checkBoxCBTriggerMiddleClick.ImeMode = System.Windows.Forms.ImeMode.NoControl;
+            checkBoxCBTriggerMiddleClick.Location = new System.Drawing.Point(128, 3);
+            checkBoxCBTriggerMiddleClick.Name = "checkBoxCBTriggerMiddleClick";
+            checkBoxCBTriggerMiddleClick.Size = new System.Drawing.Size(136, 19);
+            checkBoxCBTriggerMiddleClick.TabIndex = 102;
+            checkBoxCBTriggerMiddleClick.Text = "MiddleClick - Mouse";
+            toolTip1.SetToolTip(checkBoxCBTriggerMiddleClick, "This triggers on any middle click in the text window.");
+            checkBoxCBTriggerMiddleClick.UseVisualStyleBackColor = true;
+            checkBoxCBTriggerMiddleClick.CheckedChanged += checkBoxCBTriggerMiddleClick_CheckedChanged;
+            // 
+            // checkBoxCBTriggerDoubleLeftClick
+            // 
+            checkBoxCBTriggerDoubleLeftClick.AutoSize = true;
+            checkBoxCBTriggerDoubleLeftClick.ImeMode = System.Windows.Forms.ImeMode.NoControl;
+            checkBoxCBTriggerDoubleLeftClick.Location = new System.Drawing.Point(16, 192);
+            checkBoxCBTriggerDoubleLeftClick.Name = "checkBoxCBTriggerDoubleLeftClick";
+            checkBoxCBTriggerDoubleLeftClick.Size = new System.Drawing.Size(163, 19);
+            checkBoxCBTriggerDoubleLeftClick.TabIndex = 118;
+            checkBoxCBTriggerDoubleLeftClick.Text = "Double Left Click - Mouse";
+            toolTip1.SetToolTip(checkBoxCBTriggerDoubleLeftClick, "This triggers on any double left click in the text window.");
+            checkBoxCBTriggerDoubleLeftClick.UseVisualStyleBackColor = true;
+            checkBoxCBTriggerDoubleLeftClick.CheckedChanged += checkBoxCBTriggerDoubleLeftClick_CheckedChanged;
+            // 
+            // checkBoxCBTriggerAnyKeyWait
+            // 
+            checkBoxCBTriggerAnyKeyWait.AutoSize = true;
+            checkBoxCBTriggerAnyKeyWait.ImeMode = System.Windows.Forms.ImeMode.NoControl;
+            checkBoxCBTriggerAnyKeyWait.Location = new System.Drawing.Point(16, 217);
+            checkBoxCBTriggerAnyKeyWait.Name = "checkBoxCBTriggerAnyKeyWait";
+            checkBoxCBTriggerAnyKeyWait.Size = new System.Drawing.Size(308, 19);
+            checkBoxCBTriggerAnyKeyWait.TabIndex = 119;
+            checkBoxCBTriggerAnyKeyWait.Text = "AnyKey Wait - When the script waits for any key press";
+            toolTip1.SetToolTip(checkBoxCBTriggerAnyKeyWait, "This triggers any time the game waits for any key to be pressed. Note\r\nthat this will still occur if you hold right click through a section of text.");
+            checkBoxCBTriggerAnyKeyWait.UseVisualStyleBackColor = true;
+            checkBoxCBTriggerAnyKeyWait.CheckedChanged += checkBoxCBTriggerAnyKeyWait_CheckedChanged;
+            // 
+            // checkBoxCBTriggerInputWait
+            // 
+            checkBoxCBTriggerInputWait.AutoSize = true;
+            checkBoxCBTriggerInputWait.ImeMode = System.Windows.Forms.ImeMode.NoControl;
+            checkBoxCBTriggerInputWait.Location = new System.Drawing.Point(16, 242);
+            checkBoxCBTriggerInputWait.Name = "checkBoxCBTriggerInputWait";
+            checkBoxCBTriggerInputWait.Size = new System.Drawing.Size(279, 19);
+            checkBoxCBTriggerInputWait.TabIndex = 120;
+            checkBoxCBTriggerInputWait.Text = "Input Wait - When the script waits for user input";
+            toolTip1.SetToolTip(checkBoxCBTriggerInputWait, "This trigger occurs any time the program asks for text input.");
+            checkBoxCBTriggerInputWait.UseVisualStyleBackColor = true;
+            checkBoxCBTriggerInputWait.CheckedChanged += checkBoxCBTriggerInputWait_CheckedChanged;
+            // 
+            // flowLayoutPanel38
+            // 
+            flowLayoutPanel38.AutoSize = true;
+            flowLayoutPanel38.Controls.Add(numericUpDownCBMaxCB);
+            flowLayoutPanel38.Controls.Add(label28);
+            flowLayoutPanel38.Location = new System.Drawing.Point(16, 267);
+            flowLayoutPanel38.Name = "flowLayoutPanel38";
+            flowLayoutPanel38.Size = new System.Drawing.Size(227, 29);
+            flowLayoutPanel38.TabIndex = 121;
+            // 
+            // numericUpDownCBMaxCB
+            // 
+            numericUpDownCBMaxCB.Location = new System.Drawing.Point(3, 3);
+            numericUpDownCBMaxCB.Name = "numericUpDownCBMaxCB";
+            numericUpDownCBMaxCB.Size = new System.Drawing.Size(70, 23);
+            numericUpDownCBMaxCB.TabIndex = 84;
+            toolTip1.SetToolTip(numericUpDownCBMaxCB, "This determines how many lines long the clipboard is when scrolling back or\r\nin non-Classic Mode.");
+            numericUpDownCBMaxCB.ValueChanged += numericUpDownCBMaxCB_ValueChanged;
+            // 
+            // label28
+            // 
+            label28.Anchor = System.Windows.Forms.AnchorStyles.Right;
+            label28.AutoSize = true;
+            label28.ImeMode = System.Windows.Forms.ImeMode.NoControl;
+            label28.Location = new System.Drawing.Point(79, 7);
+            label28.Name = "label28";
+            label28.Size = new System.Drawing.Size(145, 15);
+            label28.TabIndex = 86;
+            label28.Text = "Lines to send to Clipboard";
+            toolTip1.SetToolTip(label28, "This determines how many lines long the clipboard is when scrolling back or\r\nin non-Classic Mode.");
+            // 
+            // flowLayoutPanel39
+            // 
+            flowLayoutPanel39.AutoSize = true;
+            flowLayoutPanel39.Controls.Add(numericUpDownCBBufferSize);
+            flowLayoutPanel39.Controls.Add(label31);
+            flowLayoutPanel39.Location = new System.Drawing.Point(16, 302);
+            flowLayoutPanel39.Name = "flowLayoutPanel39";
+            flowLayoutPanel39.Size = new System.Drawing.Size(172, 29);
+            flowLayoutPanel39.TabIndex = 122;
+            // 
+            // numericUpDownCBBufferSize
+            // 
+            numericUpDownCBBufferSize.Location = new System.Drawing.Point(3, 3);
+            numericUpDownCBBufferSize.Name = "numericUpDownCBBufferSize";
+            numericUpDownCBBufferSize.Size = new System.Drawing.Size(70, 23);
+            numericUpDownCBBufferSize.TabIndex = 85;
+            toolTip1.SetToolTip(numericUpDownCBBufferSize, "This determines the total lines of old text to keep. Shouldn't need\r\nadjusting unless you need a really long scrollable history.");
+            numericUpDownCBBufferSize.ValueChanged += numericUpDownCBBufferSize_ValueChanged;
+            // 
+            // label31
+            // 
+            label31.Anchor = System.Windows.Forms.AnchorStyles.Right;
+            label31.AutoSize = true;
+            label31.ImeMode = System.Windows.Forms.ImeMode.NoControl;
+            label31.Location = new System.Drawing.Point(79, 7);
+            label31.Name = "label31";
+            label31.Size = new System.Drawing.Size(90, 15);
+            label31.TabIndex = 87;
+            label31.Text = "Total Buffer Size";
+            toolTip1.SetToolTip(label31, "This determines the total lines of old text to keep. Shouldn't need\r\nadjusting unless you need a really long scrollable history.");
+            // 
+            // flowLayoutPanel40
+            // 
+            flowLayoutPanel40.AutoSize = true;
+            flowLayoutPanel40.Controls.Add(numericUpDownCBScrollCount);
+            flowLayoutPanel40.Controls.Add(label32);
+            flowLayoutPanel40.Location = new System.Drawing.Point(16, 337);
+            flowLayoutPanel40.Name = "flowLayoutPanel40";
+            flowLayoutPanel40.Size = new System.Drawing.Size(210, 29);
+            flowLayoutPanel40.TabIndex = 123;
+            // 
+            // numericUpDownCBScrollCount
+            // 
+            numericUpDownCBScrollCount.Location = new System.Drawing.Point(3, 3);
+            numericUpDownCBScrollCount.Name = "numericUpDownCBScrollCount";
+            numericUpDownCBScrollCount.Size = new System.Drawing.Size(70, 23);
+            numericUpDownCBScrollCount.TabIndex = 96;
+            toolTip1.SetToolTip(numericUpDownCBScrollCount, "How many lines are skipped at a time when scrolling through the history.");
+            numericUpDownCBScrollCount.ValueChanged += numericUpDownCBScrollCount_ValueChanged;
+            // 
+            // label32
+            // 
+            label32.Anchor = System.Windows.Forms.AnchorStyles.Right;
+            label32.AutoSize = true;
+            label32.ImeMode = System.Windows.Forms.ImeMode.NoControl;
+            label32.Location = new System.Drawing.Point(79, 7);
+            label32.Name = "label32";
+            label32.Size = new System.Drawing.Size(128, 15);
+            label32.TabIndex = 97;
+            label32.Text = "Lines to scroll at a time";
+            toolTip1.SetToolTip(label32, "How many lines are skipped at a time when scrolling through the history.");
+            // 
+            // flowLayoutPanel41
+            // 
+            flowLayoutPanel41.AutoSize = true;
+            flowLayoutPanel41.Controls.Add(numericUpDownCBMinTimer);
+            flowLayoutPanel41.Controls.Add(label33);
+            flowLayoutPanel41.Location = new System.Drawing.Point(16, 372);
+            flowLayoutPanel41.Name = "flowLayoutPanel41";
+            flowLayoutPanel41.Size = new System.Drawing.Size(308, 29);
+            flowLayoutPanel41.TabIndex = 124;
+            // 
+            // numericUpDownCBMinTimer
+            // 
+            numericUpDownCBMinTimer.Location = new System.Drawing.Point(3, 3);
+            numericUpDownCBMinTimer.Name = "numericUpDownCBMinTimer";
+            numericUpDownCBMinTimer.Size = new System.Drawing.Size(70, 23);
+            numericUpDownCBMinTimer.TabIndex = 92;
+            numericUpDownCBMinTimer.ValueChanged += numericUpDownCBMinTimer_ValueChanged;
+            // 
+            // label33
+            // 
+            label33.Anchor = System.Windows.Forms.AnchorStyles.Right;
+            label33.AutoSize = true;
+            label33.ImeMode = System.Windows.Forms.ImeMode.NoControl;
+            label33.Location = new System.Drawing.Point(79, 7);
+            label33.MaximumSize = new System.Drawing.Size(250, 0);
+            label33.Name = "label33";
+            label33.Size = new System.Drawing.Size(226, 15);
+            label33.TabIndex = 93;
+            label33.Text = "Min time(mS) between clipboard updates";
+            // 
+            // label34
+            // 
+            label34.AutoSize = true;
+            label34.ImeMode = System.Windows.Forms.ImeMode.NoControl;
+            label34.Location = new System.Drawing.Point(16, 404);
+            label34.MaximumSize = new System.Drawing.Size(230, 0);
+            label34.Name = "label34";
+            label34.Size = new System.Drawing.Size(230, 30);
+            label34.TabIndex = 125;
+            label34.Text = "Scroll through the history using ctrl+↑ and ↓ or ctrl + mouse wheel up and down.";
+            // 
             // label16
             // 
             label16.AutoSize = true;
@@ -1576,6 +1926,24 @@ namespace MinorShift.Emuera.Forms
             tabPageCompati.PerformLayout();
             tabPageDebug.ResumeLayout(false);
             tabPageDebug.PerformLayout();
+            tabPageClipboard.ResumeLayout(false);
+            tabPageClipboard.PerformLayout();
+            flowLayoutPanel36.ResumeLayout(false);
+            flowLayoutPanel36.PerformLayout();
+            flowLayoutPanel37.ResumeLayout(false);
+            flowLayoutPanel37.PerformLayout();
+            flowLayoutPanel38.ResumeLayout(false);
+            flowLayoutPanel38.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)numericUpDownCBMaxCB).EndInit();
+            flowLayoutPanel39.ResumeLayout(false);
+            flowLayoutPanel39.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)numericUpDownCBBufferSize).EndInit();
+            flowLayoutPanel40.ResumeLayout(false);
+            flowLayoutPanel40.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)numericUpDownCBScrollCount).EndInit();
+            flowLayoutPanel41.ResumeLayout(false);
+            flowLayoutPanel41.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)numericUpDownCBMinTimer).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -1702,5 +2070,32 @@ namespace MinorShift.Emuera.Forms
         private System.Windows.Forms.CheckBox _useButtonFocusColor;
         private System.Windows.Forms.CheckBox _useNewRandom;
         private System.Windows.Forms.CheckBox _useScopedVariableInstruction;
+        private System.Windows.Forms.TabPage tabPageClipboard;
+        private System.Windows.Forms.CheckBox checkBoxCBIgnoreTags;
+        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel36;
+        private System.Windows.Forms.Label label29;
+        private System.Windows.Forms.TextBox textBoxCBReplaceTags;
+        private System.Windows.Forms.CheckBox checkBoxCBNewLinesOnly;
+        private System.Windows.Forms.CheckBox checkBoxCBClearBuffer;
+        private System.Windows.Forms.Label label27;
+        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel37;
+        private System.Windows.Forms.CheckBox checkBoxCBTriggerLeftClick;
+        private System.Windows.Forms.CheckBox checkBoxCBTriggerMiddleClick;
+        private System.Windows.Forms.CheckBox checkBoxCBTriggerDoubleLeftClick;
+        private System.Windows.Forms.CheckBox checkBoxCBTriggerAnyKeyWait;
+        private System.Windows.Forms.CheckBox checkBoxCBTriggerInputWait;
+        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel38;
+        private System.Windows.Forms.NumericUpDown numericUpDownCBMaxCB;
+        private System.Windows.Forms.Label label28;
+        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel39;
+        private System.Windows.Forms.NumericUpDown numericUpDownCBBufferSize;
+        private System.Windows.Forms.Label label31;
+        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel40;
+        private System.Windows.Forms.NumericUpDown numericUpDownCBScrollCount;
+        private System.Windows.Forms.Label label32;
+        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel41;
+        private System.Windows.Forms.NumericUpDown numericUpDownCBMinTimer;
+        private System.Windows.Forms.Label label33;
+        private System.Windows.Forms.Label label34;
     }
 }

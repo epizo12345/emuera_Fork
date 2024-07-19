@@ -1172,6 +1172,7 @@ internal sealed partial class MainWindow : Form
 
         ツールToolStripMenuItem.Text = LocalizationManager.MainWindow.Tools;
         ウィンドウ幅のロック変更ToolStripMenuItem.Text = LocalizationManager.MainWindow.ToggleWidthLock;
+        クリップボードにコピーToolStripMenuItem.Text = LocalizationManager.MainWindow.CopyToClipboard;
 
         設定ToolStripMenuItem.Text = LocalizationManager.MainWindow.Settings;
 
@@ -1222,5 +1223,15 @@ internal sealed partial class MainWindow : Form
     {
         LocalizationManager.SetLanguage("kr");
         Localize();
+    }
+
+    private void クリップボードにコピーToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        if(クリップボードにコピーToolStripMenuItem.Checked)
+            GlobalStatic.Console.CBProc.Init();
+        else
+            GlobalStatic.Console.CBProc.Reset();
+        JSONConfig.User.CBUseClipboard = クリップボードにコピーToolStripMenuItem.Checked;
+        JSONConfig.Save();
     }
 }

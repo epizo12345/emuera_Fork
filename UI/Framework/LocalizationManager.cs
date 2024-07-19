@@ -43,6 +43,7 @@ public static class LocalizationManager
 
         public static string Tools => FormLocalization.MainWindow_Tools;
         public static string ToggleWidthLock => FormLocalization.MainWindow_ToggleWidthLock;
+        public static string CopyToClipboard => FormLocalization.MainWindow_CopyToClipboard;
 
 
         public static string Settings => FormLocalization.MainWindow_Settings;
@@ -207,6 +208,23 @@ public static class LocalizationManager
             FormLocalization.ConfigDialog_Debug_WarnSetting_OncePerFile;
 
         public static string Debug_WarnSetting_Always => FormLocalization.ConfigDialog_Debug_WarnSetting_Always;
+        
+        public static string Clipboard => FormLocalization.ConfigDialog_Clipboard;
+        public static string Clipboard_IgnoreTags => FormLocalization.ConfigDialog_Clipboard_IgnoreTags;
+        public static string Clipboard_ReplaceTags => FormLocalization.ConfigDialog_Clipboard_ReplaceTags;
+        public static string Clipboard_NewLineOnly => FormLocalization.ConfigDialog_Clipboard_NewLineOnly;
+        public static string Clipboard_ClearClipboard => FormLocalization.ConfigDialog_Clipboard_ClearClipboard;
+        public static string Clipboard_TriggerToUse => FormLocalization.ConfigDialog_Clipboard_TriggerToUse;
+        public static string Clipboard_LClick => FormLocalization.ConfigDialog_Clipboard_LClick;
+        public static string Clipboard_MClick => FormLocalization.ConfigDialog_Clipboard_MClick;
+        public static string Clipboard_DoubleClick => FormLocalization.ConfigDialog_Clipboard_DoubleClick;
+        public static string Clipboard_AnyKeyWait => FormLocalization.ConfigDialog_Clipboard_AnyKeyWait;
+        public static string Clipboard_InputWait => FormLocalization.ConfigDialog_Clipboard_InputWait;
+        public static string Clipboard_LinesToClipboard => FormLocalization.ConfigDialog_Clipboard_LinesToClipboard;
+        public static string Clipboard_TotalBuffer => FormLocalization.ConfigDialog_Clipboard_TotalBuffer;
+        public static string Clipboard_LinesToScroll => FormLocalization.ConfigDialog_Clipboard_LinesToScroll;
+        public static string Clipboard_UpdateTime => FormLocalization.ConfigDialog_Clipboard_UpdateTime;
+        public static string Clipboard_ScrollThrough => FormLocalization.ConfigDialog_Clipboard_ScrollThrough;
     }
 
     public static class DebugConfigDialog

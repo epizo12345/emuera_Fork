@@ -641,4 +641,55 @@ Emueraを終了しますか？</value>
 	<data name="DebugConfigDialog_Title" xml:space="preserve">
 		<value>ConfigDialog</value>
 	</data>
+	<data name="ConfigDialog_Clipboard" xml:space="preserve">
+        <value>クリップボード</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_IgnoreTags" xml:space="preserve">
+        <value>テキスト中の&lt;&gt;タグを無視する</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_ReplaceTags" xml:space="preserve">
+        <value>&lt;&gt;を次の文で置き換える</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_NewLineOnly" xml:space="preserve">
+        <value>新しい行のみコピーする</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_ClearClipboard" xml:space="preserve">
+        <value>タイトル画面に戻った時にクリップボードとバッファを消去する</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_TriggerToUse" xml:space="preserve">
+        <value>クリップボードにコピーするタイミング</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_LClick" xml:space="preserve">
+        <value>左クリック時</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_MClick" xml:space="preserve">
+        <value>ホイールクリック時</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_DoubleClick" xml:space="preserve">
+        <value>ダブルクリック時</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_AnyKeyWait" xml:space="preserve">
+        <value>WAIT時</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_InputWait" xml:space="preserve">
+        <value>INPUT時</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_LinesToClipboard" xml:space="preserve">
+        <value>クリップボードに貼り付ける行数</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_TotalBuffer" xml:space="preserve">
+        <value>総バッファサイズ</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_LinesToScroll" xml:space="preserve">
+        <value>スクロールの行数</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_UpdateTime" xml:space="preserve">
+        <value>クリップボードの更新間隔(ミリ秒)</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_ScrollThrough" xml:space="preserve">
+        <value>Ctrl+↑、Ctrl+↓、またはCtrl+マウスホイールで履歴をスクロールできます</value>
+    </data>
+	<data name="MainWindow_CopyToClipboard" xml:space="preserve">
+		<value>クリップボードにコピー</value>
+	</data>
 </root>

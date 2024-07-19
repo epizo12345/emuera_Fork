@@ -55,7 +55,7 @@ static class JSONConfig
             }
 
             {
-                var json = File.ReadAllText(_gameConfigFilePath);
+                var json = File.ReadAllText(_userConfigFilePath);
 
                 User = JsonSerializer.Deserialize<JSONUserConfigData>(json);
             }

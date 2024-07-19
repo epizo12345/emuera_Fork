@@ -657,4 +657,55 @@ Settings apply only at start</value>
 	<data name="DebugConfigDialog_WindowY" xml:space="preserve">
 		<value>Position in Y</value>
 	</data>
+	<data name="ConfigDialog_Clipboard" xml:space="preserve">
+        <value>Clipboard</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_IgnoreTags" xml:space="preserve">
+        <value>Ignore &lt;&gt; tags</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_ReplaceTags" xml:space="preserve">
+        <value>Replace &lt;&gt; with</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_NewLineOnly" xml:space="preserve">
+        <value>Show new lines only - Classic Mode</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_ClearClipboard" xml:space="preserve">
+        <value>Clear Clipboard and Buffer when game screen clears</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_TriggerToUse" xml:space="preserve">
+        <value>Triggers to Use</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_LClick" xml:space="preserve">
+        <value>LeftClick - Mouse</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_MClick" xml:space="preserve">
+        <value>MiddleClick - Mouse</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_DoubleClick" xml:space="preserve">
+        <value>Double Left Click - Mouse</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_AnyKeyWait" xml:space="preserve">
+        <value>AnyKey Wait - When the script waits for any key press</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_InputWait" xml:space="preserve">
+        <value>Input Wait - When the script waits for user input</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_LinesToClipboard" xml:space="preserve">
+        <value>Lines to send to Clipboard</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_TotalBuffer" xml:space="preserve">
+        <value>Total Buffer Size</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_LinesToScroll" xml:space="preserve">
+        <value>Lines to scroll at a time</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_UpdateTime" xml:space="preserve">
+        <value>Min time(mS) between clipboard updates</value>
+    </data>
+	<data name="ConfigDialog_Clipboard_ScrollThrough" xml:space="preserve">
+        <value>Scroll through the history using ctrl+↑ and ↓ or ctrl + mouse wheel up and down.</value>
+    </data>
+	<data name="MainWindow_CopyToClipboard" xml:space="preserve">
+		<value>Copy to Clipboard</value>
+	</data>
 </root>

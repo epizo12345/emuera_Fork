@@ -19,13 +19,15 @@ internal partial class ClipboardProcessor
     private bool postWaiting; //Is there text waiting to be sent to clipboard?
     private static System.Timers.Timer minTimer = null; //Minimum timer for refrehsing the clipboard to prevent spam
 
-    private readonly int MaxCB; //Max length in lines of the output to clipboard
+    private int MaxCB; //Max length in lines of the output to clipboard
     private int ScrollPos; //Position of the clipboard output in the buffer
-    private readonly int ScrollCount; //Lines to scroll at a time
+    private int ScrollCount; //Lines to scroll at a time
     private int NewLineCount; //Number of new lines
     private int OldNewLineCount; //Number of lines in the last update, used for Classic mode + scrolling back to bottom
     private StringBuilder OldText; //Last set of lines sent to the clipboard
-    private readonly CircularBuffer<string> lineBuffer; //Buffer for processed strings ready for clipboard
+    private CircularBuffer<string> lineBuffer; //Buffer for processed strings ready for clipboard
+
+    private bool Initialized;
 
     internal enum CBTriggers
     {
@@ -53,10 +55,43 @@ internal partial class ClipboardProcessor
 
         if (!JSONConfig.User.CBUseClipboard) return;
 
+        Init();
+    }
+
+    public void Init()
+    {
+        if(Initialized)
+            return;
         lineBuffer = new CircularBuffer<string>(JSONConfig.User.CBBufferSize);
         minTimer = new System.Timers.Timer(JSONConfig.User.CBMinTimer) { AutoReset = false };
         minTimer.Elapsed += MinTimerDone;
         OldText = new StringBuilder();
+        Initialized = true;
+    }
+
+    public void Reset()
+    {
+        lineBuffer = null;
+        minTimer.Dispose();
+        OldText = null;
+        Initialized = false;
+    }
+
+    public void SetTimerInterval(int interval)
+    {
+        if(!Initialized)
+            return;
+        minTimer.Interval = interval;
+    }
+
+    public void SetMaxCB(int value)
+    {
+        MaxCB = value;
+    }
+
+    public void SetScrollCount(int value)
+    {
+        ScrollCount = value;
     }
 
     public bool ScrollUp(int value)
