@@ -911,6 +911,7 @@ internal sealed partial class ConfigDialog : Form
     private void comboBox7_SelectionChangeCommitted(object sender, EventArgs e)
     {
         JSONConfig.Game.ImageSamplingOption = (Resampler)_imageSampling.SelectedIndex;
+        JSONConfig.SetSamplingOptions();
     }
 
     private void _fontAntialias_SelectionChangeCommitted(object sender, EventArgs e)
