@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Config.JSON;
 using MinorShift.Emuera.UI.Game;
+using System.Runtime.CompilerServices;
 
 namespace MinorShift.Emuera.GameProc.Function;
 
@@ -24,7 +25,7 @@ internal partial class ClipboardProcessor
     private int ScrollCount; //Lines to scroll at a time
     private int NewLineCount; //Number of new lines
     private int OldNewLineCount; //Number of lines in the last update, used for Classic mode + scrolling back to bottom
-    private StringBuilder OldText; //Last set of lines sent to the clipboard
+    private string OldText; //Last set of lines sent to the clipboard
     private CircularBuffer<string> lineBuffer; //Buffer for processed strings ready for clipboard
 
     private bool Initialized;
@@ -60,12 +61,12 @@ internal partial class ClipboardProcessor
 
     public void Init()
     {
-        if(Initialized)
+        if (Initialized)
             return;
         lineBuffer = new CircularBuffer<string>(JSONConfig.User.CBBufferSize);
         minTimer = new System.Timers.Timer(JSONConfig.User.CBMinTimer) { AutoReset = false };
         minTimer.Elapsed += MinTimerDone;
-        OldText = new StringBuilder();
+        OldText = "";
         Initialized = true;
     }
 
@@ -79,7 +80,7 @@ internal partial class ClipboardProcessor
 
     public void SetTimerInterval(int interval)
     {
-        if(!Initialized)
+        if (!Initialized)
             return;
         minTimer.Interval = interval;
     }
@@ -222,19 +223,21 @@ internal partial class ClipboardProcessor
         else length = Math.Min(MaxCB, lineBuffer.Count - ScrollPos);
         if (length <= 0) return;
 
-        var builder = new StringBuilder();
+        var builder = new DefaultInterpolatedStringHandler(length * 2, 0);
         for (int count = 0; count < length; count++)
         {
-            builder.AppendLine(lineBuffer[lineBuffer.Count - length - ScrollPos + count]);
+            builder.AppendLiteral(lineBuffer[lineBuffer.Count - length - ScrollPos + count]);
+            builder.AppendLiteral("\n");
         }
         var newText = builder.ToString();
-        if (newText.Equals(OldText.ToString())) return;
+
+        if (newText == OldText) return;
         try
         {
             mainWin.Invoke(() => Clipboard.SetDataObject(newText, false, 3, 200));
             if (ScrollPos == 0) OldNewLineCount = NewLineCount;
             NewLineCount = 0;
-            OldText = builder;
+            OldText = newText;
             postWaiting = false;
         }
         catch (Exception)

@@ -245,6 +245,7 @@ namespace MinorShift.Emuera.Forms
             クリップボードにコピーToolStripMenuItem.Text = "クリップボードにコピー";
             クリップボードにコピーToolStripMenuItem.Click += クリップボードにコピーToolStripMenuItem_Click;
             クリップボードにコピーToolStripMenuItem.Checked = JSONConfig.User.CBUseClipboard;
+            クリップボードにコピーToolStripMenuItem.ImageScaling = System.Windows.Forms.ToolStripItemImageScaling.None;
             // 
             // 設定ToolStripMenuItem
             // 
