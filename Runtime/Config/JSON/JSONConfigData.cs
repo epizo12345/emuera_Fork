@@ -28,7 +28,7 @@ sealed class JSONGameConfigData
     public bool UseScopedVariableInstruction { get; set; }
     public Resampler ImageSamplingOption { get; set; } = Resampler.Linear;
 
-    public bool CheckUTF8withBOM { get; set; } = true;
+    public bool CheckUTF8withBOM { get; set; } = false;
 
     public FontAntialias FontAntialias { get; set; } = FontAntialias.Normal;
 }
