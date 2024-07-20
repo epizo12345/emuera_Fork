@@ -58,8 +58,6 @@ namespace MinorShift.Emuera.Forms
             tabPageView = new System.Windows.Forms.TabPage();
             _useButtonFocusColor = new System.Windows.Forms.CheckBox();
             checkBox14 = new System.Windows.Forms.CheckBox();
-            label18 = new System.Windows.Forms.Label();
-            comboBoxTextDrawingMode = new System.Windows.Forms.ComboBox();
             label1 = new System.Windows.Forms.Label();
             numericUpDown9 = new System.Windows.Forms.NumericUpDown();
             label5 = new System.Windows.Forms.Label();
@@ -491,8 +489,6 @@ namespace MinorShift.Emuera.Forms
             // 
             tabPageView.Controls.Add(_useButtonFocusColor);
             tabPageView.Controls.Add(checkBox14);
-            tabPageView.Controls.Add(label18);
-            tabPageView.Controls.Add(comboBoxTextDrawingMode);
             tabPageView.Controls.Add(label1);
             tabPageView.Controls.Add(numericUpDown9);
             tabPageView.Controls.Add(label5);
@@ -530,27 +526,6 @@ namespace MinorShift.Emuera.Forms
             checkBox14.TabIndex = 67;
             checkBox14.Text = "ボタンの途中で行を折りかえさない";
             checkBox14.UseVisualStyleBackColor = true;
-            // 
-            // label18
-            // 
-            label18.AutoSize = true;
-            label18.Location = new System.Drawing.Point(7, 47);
-            label18.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            label18.Name = "label18";
-            label18.Size = new System.Drawing.Size(110, 15);
-            label18.TabIndex = 65;
-            label18.Text = "描画インターフェース";
-            // 
-            // comboBoxTextDrawingMode
-            // 
-            comboBoxTextDrawingMode.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            comboBoxTextDrawingMode.FormattingEnabled = true;
-            comboBoxTextDrawingMode.Items.AddRange(new object[] { "TextRenderer (GDI&GDI+)", "Graphics (GDI+)" });
-            comboBoxTextDrawingMode.Location = new System.Drawing.Point(20, 66);
-            comboBoxTextDrawingMode.Margin = new System.Windows.Forms.Padding(4);
-            comboBoxTextDrawingMode.Name = "comboBoxTextDrawingMode";
-            comboBoxTextDrawingMode.Size = new System.Drawing.Size(202, 23);
-            comboBoxTextDrawingMode.TabIndex = 64;
             // 
             // label1
             // 
@@ -1984,8 +1959,6 @@ namespace MinorShift.Emuera.Forms
 		private System.Windows.Forms.NumericUpDown numericUpDown9;
 		private System.Windows.Forms.Label label5;
 		private System.Windows.Forms.NumericUpDown numericUpDown1;
-		private System.Windows.Forms.Label label18;
-		private System.Windows.Forms.ComboBox comboBoxTextDrawingMode;
 		private System.Windows.Forms.CheckBox checkBox14;
 		private System.Windows.Forms.TabPage tabPageWindow;
 		private System.Windows.Forms.CheckBox checkBox17;

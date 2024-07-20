@@ -189,16 +189,6 @@ internal sealed partial class ConfigDialog : Form
         setColorBox(colorBoxSelecting, ConfigCode.FocusColor);
         setColorBox(colorBoxBacklog, ConfigCode.LogColor);
 
-        var itemTDM = (ConfigItem<TextDrawingMode>)ConfigData.Instance.GetConfigItem(ConfigCode.TextDrawingMode);
-        switch (itemTDM.Value)
-        {
-            case TextDrawingMode.TEXTRENDERER:
-                comboBoxTextDrawingMode.SelectedIndex = 0; break;
-            case TextDrawingMode.GRAPHICS:
-                comboBoxTextDrawingMode.SelectedIndex = 1; break;
-        }
-        comboBoxTextDrawingMode.Enabled = !itemTDM.Fixed;
-
         ConfigItem<string> itemStr = (ConfigItem<string>)ConfigData.Instance.GetConfigItem(ConfigCode.FontName);
         string fontname = itemStr.Value;
         int nameIndex = comboBox2.Items.IndexOf(fontname);
@@ -390,14 +380,6 @@ internal sealed partial class ConfigDialog : Form
         config.GetConfigItem(ConfigCode.BackColor).SetValue<Color>(colorBoxBG.SelectingColor);
         config.GetConfigItem(ConfigCode.FocusColor).SetValue<Color>(colorBoxSelecting.SelectingColor);
         config.GetConfigItem(ConfigCode.LogColor).SetValue<Color>(colorBoxBacklog.SelectingColor);
-
-        switch (comboBoxTextDrawingMode.SelectedIndex)
-        {
-            case 0:
-                config.GetConfigItem(ConfigCode.TextDrawingMode).SetValue<TextDrawingMode>(TextDrawingMode.TEXTRENDERER); break;
-            case 1:
-                config.GetConfigItem(ConfigCode.TextDrawingMode).SetValue<TextDrawingMode>(TextDrawingMode.GRAPHICS); break;
-        }
 
         switch (comboBoxReduceArgumentOnLoad.SelectedIndex)
         {
@@ -698,7 +680,6 @@ internal sealed partial class ConfigDialog : Form
         comboBox6.Items[3] = LocalizationManager.ConfigDialog.Environment_TextEditorCommandline_UserSetting;
 
         tabPageView.Text = LocalizationManager.ConfigDialog.Display;
-        label18.Text = LocalizationManager.ConfigDialog.Display_TextDrawingMode;
         label9.Text = LocalizationManager.ConfigDialog.Display_FPS;
         label5.Text = LocalizationManager.ConfigDialog.Display_PrintCPerLine;
         label1.Text = LocalizationManager.ConfigDialog.Display_PrintCLength;
