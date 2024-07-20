@@ -56,6 +56,8 @@ namespace MinorShift.Emuera.Forms
             checkBox4 = new System.Windows.Forms.CheckBox();
             checkBox3 = new System.Windows.Forms.CheckBox();
             tabPageView = new System.Windows.Forms.TabPage();
+            _imageSamplingLabel = new System.Windows.Forms.Label();
+            _imageSampling = new System.Windows.Forms.ComboBox();
             _useButtonFocusColor = new System.Windows.Forms.CheckBox();
             checkBox14 = new System.Windows.Forms.CheckBox();
             label1 = new System.Windows.Forms.Label();
@@ -91,11 +93,13 @@ namespace MinorShift.Emuera.Forms
             flowLayoutPanel4 = new System.Windows.Forms.FlowLayoutPanel();
             tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             label7 = new System.Windows.Forms.Label();
+            _fontAntialiasLabel = new System.Windows.Forms.Label();
             label8 = new System.Windows.Forms.Label();
             comboBox2 = new System.Windows.Forms.ComboBox();
             label4 = new System.Windows.Forms.Label();
             numericUpDown5 = new System.Windows.Forms.NumericUpDown();
             numericUpDown6 = new System.Windows.Forms.NumericUpDown();
+            _fontAntialias = new System.Windows.Forms.ComboBox();
             tabPageSystem = new System.Windows.Forms.TabPage();
             comboBox1 = new System.Windows.Forms.ComboBox();
             label11 = new System.Windows.Forms.Label();
@@ -132,6 +136,7 @@ namespace MinorShift.Emuera.Forms
             checkBoxCompatiCALLNAME = new System.Windows.Forms.CheckBox();
             checkBoxCompatiErrorLine = new System.Windows.Forms.CheckBox();
             tabPageDebug = new System.Windows.Forms.TabPage();
+            _checkUTF8withBOM = new System.Windows.Forms.CheckBox();
             button6 = new System.Windows.Forms.Button();
             button5 = new System.Windows.Forms.Button();
             checkBox23 = new System.Windows.Forms.CheckBox();
@@ -313,7 +318,7 @@ namespace MinorShift.Emuera.Forms
             checkBox24.Location = new System.Drawing.Point(14, 115);
             checkBox24.Margin = new System.Windows.Forms.Padding(4);
             checkBox24.Name = "checkBox24";
-            checkBox24.Size = new System.Drawing.Size(224, 19);
+            checkBox24.Size = new System.Drawing.Size(204, 19);
             checkBox24.TabIndex = 77;
             checkBox24.Text = "セーブデータをsavフォルダ内に作成する";
             checkBox24.UseVisualStyleBackColor = true;
@@ -332,7 +337,7 @@ namespace MinorShift.Emuera.Forms
             label23.Location = new System.Drawing.Point(12, 333);
             label23.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             label23.Name = "label23";
-            label23.Size = new System.Drawing.Size(99, 15);
+            label23.Size = new System.Drawing.Size(91, 15);
             label23.TabIndex = 75;
             label23.Text = "コマンドライン引数";
             // 
@@ -361,7 +366,7 @@ namespace MinorShift.Emuera.Forms
             label22.Location = new System.Drawing.Point(9, 272);
             label22.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             label22.Name = "label22";
-            label22.Size = new System.Drawing.Size(142, 15);
+            label22.Size = new System.Drawing.Size(128, 15);
             label22.TabIndex = 72;
             label22.Text = "関連づけるテキストエディタ";
             // 
@@ -371,7 +376,7 @@ namespace MinorShift.Emuera.Forms
             label20.Location = new System.Drawing.Point(154, 218);
             label20.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             label20.Name = "label20";
-            label20.Size = new System.Drawing.Size(130, 15);
+            label20.Size = new System.Drawing.Size(115, 15);
             label20.TabIndex = 71;
             label20.Text = "使用するセーブデータ数";
             // 
@@ -381,7 +386,7 @@ namespace MinorShift.Emuera.Forms
             label17.Location = new System.Drawing.Point(152, 186);
             label17.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             label17.Name = "label17";
-            label17.Size = new System.Drawing.Size(152, 15);
+            label17.Size = new System.Drawing.Size(138, 15);
             label17.TabIndex = 70;
             label17.Text = "無限ループ警告までのミリ秒";
             // 
@@ -391,7 +396,7 @@ namespace MinorShift.Emuera.Forms
             label6.Location = new System.Drawing.Point(152, 151);
             label6.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             label6.Name = "label6";
-            label6.Size = new System.Drawing.Size(89, 15);
+            label6.Size = new System.Drawing.Size(83, 15);
             label6.TabIndex = 69;
             label6.Text = "履歴ログの行数";
             // 
@@ -409,7 +414,7 @@ namespace MinorShift.Emuera.Forms
             checkBox18.Location = new System.Drawing.Point(14, 80);
             checkBox18.Margin = new System.Windows.Forms.Padding(4);
             checkBox18.Name = "checkBox18";
-            checkBox18.Size = new System.Drawing.Size(164, 19);
+            checkBox18.Size = new System.Drawing.Size(148, 19);
             checkBox18.TabIndex = 65;
             checkBox18.Text = "キーボードマクロを使用する";
             checkBox18.UseVisualStyleBackColor = true;
@@ -436,7 +441,7 @@ namespace MinorShift.Emuera.Forms
             checkBox7.Location = new System.Drawing.Point(179, 80);
             checkBox7.Margin = new System.Windows.Forms.Padding(4);
             checkBox7.Name = "checkBox7";
-            checkBox7.Size = new System.Drawing.Size(130, 19);
+            checkBox7.Size = new System.Drawing.Size(117, 19);
             checkBox7.TabIndex = 62;
             checkBox7.Text = "オートセーブを行なう";
             checkBox7.UseVisualStyleBackColor = true;
@@ -447,7 +452,7 @@ namespace MinorShift.Emuera.Forms
             checkBox6.Location = new System.Drawing.Point(179, 51);
             checkBox6.Margin = new System.Windows.Forms.Padding(4);
             checkBox6.Name = "checkBox6";
-            checkBox6.Size = new System.Drawing.Size(135, 19);
+            checkBox6.Size = new System.Drawing.Size(126, 19);
             checkBox6.TabIndex = 61;
             checkBox6.Text = "多重起動を許可する";
             checkBox6.UseVisualStyleBackColor = true;
@@ -458,7 +463,7 @@ namespace MinorShift.Emuera.Forms
             checkBox5.Location = new System.Drawing.Point(14, 51);
             checkBox5.Margin = new System.Windows.Forms.Padding(4);
             checkBox5.Name = "checkBox5";
-            checkBox5.Size = new System.Drawing.Size(161, 19);
+            checkBox5.Size = new System.Drawing.Size(148, 19);
             checkBox5.TabIndex = 60;
             checkBox5.Text = "デバッグコマンドを使用する";
             checkBox5.UseVisualStyleBackColor = true;
@@ -469,7 +474,7 @@ namespace MinorShift.Emuera.Forms
             checkBox4.Location = new System.Drawing.Point(179, 22);
             checkBox4.Margin = new System.Windows.Forms.Padding(4);
             checkBox4.Name = "checkBox4";
-            checkBox4.Size = new System.Drawing.Size(122, 19);
+            checkBox4.Size = new System.Drawing.Size(111, 19);
             checkBox4.TabIndex = 59;
             checkBox4.Text = "メニューを使用する";
             checkBox4.UseVisualStyleBackColor = true;
@@ -480,13 +485,15 @@ namespace MinorShift.Emuera.Forms
             checkBox3.Location = new System.Drawing.Point(14, 22);
             checkBox3.Margin = new System.Windows.Forms.Padding(4);
             checkBox3.Name = "checkBox3";
-            checkBox3.Size = new System.Drawing.Size(113, 19);
+            checkBox3.Size = new System.Drawing.Size(105, 19);
             checkBox3.TabIndex = 58;
             checkBox3.Text = "マウスを使用する";
             checkBox3.UseVisualStyleBackColor = true;
             // 
             // tabPageView
             // 
+            tabPageView.Controls.Add(_imageSamplingLabel);
+            tabPageView.Controls.Add(_imageSampling);
             tabPageView.Controls.Add(_useButtonFocusColor);
             tabPageView.Controls.Add(checkBox14);
             tabPageView.Controls.Add(label1);
@@ -504,13 +511,32 @@ namespace MinorShift.Emuera.Forms
             tabPageView.Text = "表示";
             tabPageView.UseVisualStyleBackColor = true;
             // 
+            // label18
+            // 
+            _imageSamplingLabel.AutoSize = true;
+            _imageSamplingLabel.Location = new System.Drawing.Point(18, 35);
+            _imageSamplingLabel.Name = "label18";
+            _imageSamplingLabel.Size = new System.Drawing.Size(101, 15);
+            _imageSamplingLabel.TabIndex = 70;
+            _imageSamplingLabel.Text = "画像リサイズフィルタ";
+            // 
+            // comboBox7
+            // 
+            _imageSampling.FormattingEnabled = true;
+            _imageSampling.Items.AddRange(new object[] { "Nearest", "Linear", "Cubic" });
+            _imageSampling.Location = new System.Drawing.Point(146, 32);
+            _imageSampling.Name = "comboBox7";
+            _imageSampling.Size = new System.Drawing.Size(168, 23);
+            _imageSampling.TabIndex = 69;
+            _imageSampling.SelectionChangeCommitted += comboBox7_SelectionChangeCommitted;
+            // 
             // _useButtonFocusColor
             // 
             _useButtonFocusColor.AutoSize = true;
             _useButtonFocusColor.Location = new System.Drawing.Point(18, 272);
             _useButtonFocusColor.Margin = new System.Windows.Forms.Padding(2);
             _useButtonFocusColor.Name = "_useButtonFocusColor";
-            _useButtonFocusColor.Size = new System.Drawing.Size(322, 19);
+            _useButtonFocusColor.Size = new System.Drawing.Size(296, 19);
             _useButtonFocusColor.TabIndex = 68;
             _useButtonFocusColor.Text = "ボタンにカーソルを合わせた時にボタンの背景色を変更する";
             _useButtonFocusColor.UseVisualStyleBackColor = true;
@@ -522,7 +548,7 @@ namespace MinorShift.Emuera.Forms
             checkBox14.Location = new System.Drawing.Point(18, 246);
             checkBox14.Margin = new System.Windows.Forms.Padding(4);
             checkBox14.Name = "checkBox14";
-            checkBox14.Size = new System.Drawing.Size(200, 19);
+            checkBox14.Size = new System.Drawing.Size(186, 19);
             checkBox14.TabIndex = 67;
             checkBox14.Text = "ボタンの途中で行を折りかえさない";
             checkBox14.UseVisualStyleBackColor = true;
@@ -533,7 +559,7 @@ namespace MinorShift.Emuera.Forms
             label1.Location = new System.Drawing.Point(153, 215);
             label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             label1.Name = "label1";
-            label1.Size = new System.Drawing.Size(96, 15);
+            label1.Size = new System.Drawing.Size(92, 15);
             label1.TabIndex = 63;
             label1.Text = "PRINTCの文字数";
             // 
@@ -551,7 +577,7 @@ namespace MinorShift.Emuera.Forms
             label5.Location = new System.Drawing.Point(153, 182);
             label5.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             label5.Name = "label5";
-            label5.Size = new System.Drawing.Size(103, 15);
+            label5.Size = new System.Drawing.Size(98, 15);
             label5.TabIndex = 61;
             label5.Text = "PRINTCを並べる数";
             // 
@@ -569,7 +595,7 @@ namespace MinorShift.Emuera.Forms
             label9.Location = new System.Drawing.Point(153, 148);
             label9.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             label9.Name = "label9";
-            label9.Size = new System.Drawing.Size(74, 15);
+            label9.Size = new System.Drawing.Size(65, 15);
             label9.TabIndex = 56;
             label9.Text = "フレーム毎秒";
             // 
@@ -612,7 +638,7 @@ namespace MinorShift.Emuera.Forms
             checkBox21.Location = new System.Drawing.Point(14, 154);
             checkBox21.Margin = new System.Windows.Forms.Padding(4);
             checkBox21.Name = "checkBox21";
-            checkBox21.Size = new System.Drawing.Size(191, 19);
+            checkBox21.Size = new System.Drawing.Size(177, 19);
             checkBox21.TabIndex = 83;
             checkBox21.Text = "起動時にウィンドウを最大化する";
             checkBox21.UseVisualStyleBackColor = true;
@@ -623,7 +649,7 @@ namespace MinorShift.Emuera.Forms
             ScrollRange.Location = new System.Drawing.Point(148, 332);
             ScrollRange.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             ScrollRange.Name = "ScrollRange";
-            ScrollRange.Size = new System.Drawing.Size(94, 15);
+            ScrollRange.Size = new System.Drawing.Size(86, 15);
             ScrollRange.TabIndex = 82;
             ScrollRange.Text = "スクロールの行数";
             // 
@@ -641,7 +667,7 @@ namespace MinorShift.Emuera.Forms
             checkBox17.Location = new System.Drawing.Point(14, 182);
             checkBox17.Margin = new System.Windows.Forms.Padding(4);
             checkBox17.Name = "checkBox17";
-            checkBox17.Size = new System.Drawing.Size(216, 19);
+            checkBox17.Size = new System.Drawing.Size(200, 19);
             checkBox17.TabIndex = 80;
             checkBox17.Text = "起動時のウィンドウの位置を固定する";
             checkBox17.UseVisualStyleBackColor = true;
@@ -663,7 +689,7 @@ namespace MinorShift.Emuera.Forms
             label10.Location = new System.Drawing.Point(148, 246);
             label10.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             label10.Name = "label10";
-            label10.Size = new System.Drawing.Size(86, 15);
+            label10.Size = new System.Drawing.Size(80, 15);
             label10.TabIndex = 78;
             label10.Text = "ウィンドウ位置Y";
             // 
@@ -673,7 +699,7 @@ namespace MinorShift.Emuera.Forms
             label19.Location = new System.Drawing.Point(148, 214);
             label19.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             label19.Name = "label19";
-            label19.Size = new System.Drawing.Size(86, 15);
+            label19.Size = new System.Drawing.Size(80, 15);
             label19.TabIndex = 77;
             label19.Text = "ウィンドウ位置X";
             // 
@@ -710,7 +736,7 @@ namespace MinorShift.Emuera.Forms
             label3.Location = new System.Drawing.Point(148, 51);
             label3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             label3.Name = "label3";
-            label3.Size = new System.Drawing.Size(75, 15);
+            label3.Size = new System.Drawing.Size(69, 15);
             label3.TabIndex = 73;
             label3.Text = "ウィンドウ高さ";
             // 
@@ -720,7 +746,7 @@ namespace MinorShift.Emuera.Forms
             label2.Location = new System.Drawing.Point(148, 17);
             label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             label2.Name = "label2";
-            label2.Size = new System.Drawing.Size(66, 15);
+            label2.Size = new System.Drawing.Size(61, 15);
             label2.TabIndex = 72;
             label2.Text = "ウィンドウ幅";
             // 
@@ -746,7 +772,7 @@ namespace MinorShift.Emuera.Forms
             checkBox8.Location = new System.Drawing.Point(14, 126);
             checkBox8.Margin = new System.Windows.Forms.Padding(4);
             checkBox8.Name = "checkBox8";
-            checkBox8.Size = new System.Drawing.Size(172, 19);
+            checkBox8.Size = new System.Drawing.Size(159, 19);
             checkBox8.TabIndex = 69;
             checkBox8.Text = "ウィンドウの高さを可変にする";
             checkBox8.UseVisualStyleBackColor = true;
@@ -856,21 +882,24 @@ namespace MinorShift.Emuera.Forms
             tableLayoutPanel1.AutoSize = true;
             tableLayoutPanel1.ColumnCount = 2;
             tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 33.3333321F));
-            tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 66.6666641F));
+            tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 66.66667F));
             tableLayoutPanel1.Controls.Add(label7, 0, 2);
+            tableLayoutPanel1.Controls.Add(_fontAntialiasLabel, 0, 3);
             tableLayoutPanel1.Controls.Add(label8, 0, 1);
             tableLayoutPanel1.Controls.Add(comboBox2, 1, 0);
             tableLayoutPanel1.Controls.Add(label4, 0, 0);
             tableLayoutPanel1.Controls.Add(numericUpDown5, 1, 1);
             tableLayoutPanel1.Controls.Add(numericUpDown6, 1, 2);
+            tableLayoutPanel1.Controls.Add(_fontAntialias, 1, 3);
             tableLayoutPanel1.Location = new System.Drawing.Point(2, 226);
             tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(2);
             tableLayoutPanel1.Name = "tableLayoutPanel1";
-            tableLayoutPanel1.RowCount = 3;
+            tableLayoutPanel1.RowCount = 4;
             tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            tableLayoutPanel1.Size = new System.Drawing.Size(328, 93);
+            tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            tableLayoutPanel1.Size = new System.Drawing.Size(328, 122);
             tableLayoutPanel1.TabIndex = 57;
             // 
             // label7
@@ -883,6 +912,17 @@ namespace MinorShift.Emuera.Forms
             label7.TabIndex = 53;
             label7.Text = "一行の高さ";
             label7.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // label25
+            // 
+            _fontAntialiasLabel.Dock = System.Windows.Forms.DockStyle.Fill;
+            _fontAntialiasLabel.Location = new System.Drawing.Point(4, 93);
+            _fontAntialiasLabel.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            _fontAntialiasLabel.Name = "label25";
+            _fontAntialiasLabel.Size = new System.Drawing.Size(101, 29);
+            _fontAntialiasLabel.TabIndex = 54;
+            _fontAntialiasLabel.Text = "アンチエイリアス";
+            _fontAntialiasLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // label8
             // 
@@ -932,6 +972,16 @@ namespace MinorShift.Emuera.Forms
             numericUpDown6.Size = new System.Drawing.Size(48, 23);
             numericUpDown6.TabIndex = 51;
             // 
+            // comboBox8
+            // 
+            _fontAntialias.FormattingEnabled = true;
+            _fontAntialias.Items.AddRange(new object[] { "None", "Normal", "Full" });
+            _fontAntialias.Location = new System.Drawing.Point(112, 96);
+            _fontAntialias.Name = "comboBox8";
+            _fontAntialias.Size = new System.Drawing.Size(213, 23);
+            _fontAntialias.TabIndex = 55;
+            _fontAntialias.SelectionChangeCommitted += _fontAntialias_SelectionChangeCommitted;
+            // 
             // tabPageSystem
             // 
             tabPageSystem.Controls.Add(comboBox1);
@@ -972,7 +1022,7 @@ namespace MinorShift.Emuera.Forms
             label11.Location = new System.Drawing.Point(8, 361);
             label11.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             label11.Name = "label11";
-            label11.Size = new System.Drawing.Size(161, 15);
+            label11.Size = new System.Drawing.Size(148, 15);
             label11.TabIndex = 77;
             label11.Text = "内部で使用する東アジア言語";
             // 
@@ -982,7 +1032,7 @@ namespace MinorShift.Emuera.Forms
             checkBoxSystemFullSpace.Location = new System.Drawing.Point(8, 262);
             checkBoxSystemFullSpace.Margin = new System.Windows.Forms.Padding(4);
             checkBoxSystemFullSpace.Name = "checkBoxSystemFullSpace";
-            checkBoxSystemFullSpace.Size = new System.Drawing.Size(229, 19);
+            checkBoxSystemFullSpace.Size = new System.Drawing.Size(207, 19);
             checkBoxSystemFullSpace.TabIndex = 74;
             checkBoxSystemFullSpace.Text = "全角スペースをホワイトスペースに含める";
             checkBoxSystemFullSpace.UseVisualStyleBackColor = true;
@@ -993,7 +1043,7 @@ namespace MinorShift.Emuera.Forms
             checkBox22.Location = new System.Drawing.Point(8, 235);
             checkBox22.Margin = new System.Windows.Forms.Padding(4);
             checkBox22.Name = "checkBox22";
-            checkBox22.Size = new System.Drawing.Size(300, 19);
+            checkBox22.Size = new System.Drawing.Size(279, 19);
             checkBox22.TabIndex = 73;
             checkBox22.Text = "同名の非イベント関数が複数定義されたとき警告する";
             checkBox22.UseVisualStyleBackColor = true;
@@ -1004,7 +1054,7 @@ namespace MinorShift.Emuera.Forms
             label21.Location = new System.Drawing.Point(8, 8);
             label21.Margin = new System.Windows.Forms.Padding(4);
             label21.Name = "label21";
-            label21.Size = new System.Drawing.Size(245, 30);
+            label21.Size = new System.Drawing.Size(229, 30);
             label21.TabIndex = 71;
             label21.Text = "※システムの項目を変化させた場合、\r\nERBスクリプトが正常に動作しないことがあります";
             // 
@@ -1014,7 +1064,7 @@ namespace MinorShift.Emuera.Forms
             checkBox20.Location = new System.Drawing.Point(8, 181);
             checkBox20.Margin = new System.Windows.Forms.Padding(4);
             checkBox20.Name = "checkBox20";
-            checkBox20.Size = new System.Drawing.Size(198, 19);
+            checkBox20.Size = new System.Drawing.Size(182, 19);
             checkBox20.TabIndex = 70;
             checkBox20.Text = "システム関数の上書きを許可する";
             checkBox20.UseVisualStyleBackColor = true;
@@ -1026,7 +1076,7 @@ namespace MinorShift.Emuera.Forms
             checkBox19.Margin = new System.Windows.Forms.Padding(4);
             checkBox19.Name = "checkBox19";
             checkBox19.Padding = new System.Windows.Forms.Padding(15, 0, 0, 0);
-            checkBox19.Size = new System.Drawing.Size(288, 19);
+            checkBox19.Size = new System.Drawing.Size(267, 19);
             checkBox19.TabIndex = 69;
             checkBox19.Text = "システム関数が上書きされたとき警告を表示する";
             checkBox19.UseVisualStyleBackColor = true;
@@ -1037,7 +1087,7 @@ namespace MinorShift.Emuera.Forms
             checkBox16.Location = new System.Drawing.Point(8, 154);
             checkBox16.Margin = new System.Windows.Forms.Padding(4);
             checkBox16.Name = "checkBox16";
-            checkBox16.Size = new System.Drawing.Size(223, 19);
+            checkBox16.Size = new System.Drawing.Size(204, 19);
             checkBox16.TabIndex = 55;
             checkBox16.Text = "読み込み順をファイル名順にソートする";
             checkBox16.UseVisualStyleBackColor = true;
@@ -1048,7 +1098,7 @@ namespace MinorShift.Emuera.Forms
             checkBox15.Location = new System.Drawing.Point(8, 127);
             checkBox15.Margin = new System.Windows.Forms.Padding(4);
             checkBox15.Name = "checkBox15";
-            checkBox15.Size = new System.Drawing.Size(158, 19);
+            checkBox15.Size = new System.Drawing.Size(147, 19);
             checkBox15.TabIndex = 54;
             checkBox15.Text = "サブディレクトリを検索する";
             checkBox15.UseVisualStyleBackColor = true;
@@ -1059,7 +1109,7 @@ namespace MinorShift.Emuera.Forms
             checkBox1.Location = new System.Drawing.Point(8, 46);
             checkBox1.Margin = new System.Windows.Forms.Padding(4);
             checkBox1.Name = "checkBox1";
-            checkBox1.Size = new System.Drawing.Size(196, 19);
+            checkBox1.Size = new System.Drawing.Size(182, 19);
             checkBox1.TabIndex = 38;
             checkBox1.Text = "大文字小文字の違いを無視する";
             checkBox1.UseVisualStyleBackColor = true;
@@ -1070,7 +1120,7 @@ namespace MinorShift.Emuera.Forms
             checkBox10.Location = new System.Drawing.Point(8, 100);
             checkBox10.Margin = new System.Windows.Forms.Padding(4);
             checkBox10.Name = "checkBox10";
-            checkBox10.Size = new System.Drawing.Size(149, 19);
+            checkBox10.Size = new System.Drawing.Size(144, 19);
             checkBox10.TabIndex = 53;
             checkBox10.Text = "_Replace.csvを利用する";
             checkBox10.UseVisualStyleBackColor = true;
@@ -1081,7 +1131,7 @@ namespace MinorShift.Emuera.Forms
             checkBox2.Location = new System.Drawing.Point(8, 73);
             checkBox2.Margin = new System.Windows.Forms.Padding(4);
             checkBox2.Name = "checkBox2";
-            checkBox2.Size = new System.Drawing.Size(151, 19);
+            checkBox2.Size = new System.Drawing.Size(145, 19);
             checkBox2.TabIndex = 12;
             checkBox2.Text = "_Rename.csvを利用する";
             checkBox2.UseVisualStyleBackColor = true;
@@ -1110,7 +1160,7 @@ namespace MinorShift.Emuera.Forms
             label24.Location = new System.Drawing.Point(8, 8);
             label24.Margin = new System.Windows.Forms.Padding(4);
             label24.Name = "label24";
-            label24.Size = new System.Drawing.Size(245, 30);
+            label24.Size = new System.Drawing.Size(229, 30);
             label24.TabIndex = 72;
             label24.Text = "※システムの項目を変化させた場合、\r\nERBスクリプトが正常に動作しないことがあります";
             // 
@@ -1120,7 +1170,7 @@ namespace MinorShift.Emuera.Forms
             checkBox29.Location = new System.Drawing.Point(8, 127);
             checkBox29.Margin = new System.Windows.Forms.Padding(4);
             checkBox29.Name = "checkBox29";
-            checkBox29.Size = new System.Drawing.Size(203, 19);
+            checkBox29.Size = new System.Drawing.Size(188, 19);
             checkBox29.TabIndex = 83;
             checkBox29.Text = "キャラクタ変数の引数を補完しない";
             checkBox29.UseVisualStyleBackColor = true;
@@ -1131,7 +1181,7 @@ namespace MinorShift.Emuera.Forms
             checkBox26.Location = new System.Drawing.Point(8, 73);
             checkBox26.Margin = new System.Windows.Forms.Padding(4);
             checkBox26.Name = "checkBox26";
-            checkBox26.Size = new System.Drawing.Size(221, 19);
+            checkBox26.Size = new System.Drawing.Size(201, 19);
             checkBox26.TabIndex = 82;
             checkBox26.Text = "セーブデータをバイナリ形式で保存する";
             checkBox26.UseVisualStyleBackColor = true;
@@ -1143,7 +1193,7 @@ namespace MinorShift.Emuera.Forms
             checkBox27.Margin = new System.Windows.Forms.Padding(4);
             checkBox27.Name = "checkBox27";
             checkBox27.Padding = new System.Windows.Forms.Padding(15, 0, 0, 0);
-            checkBox27.Size = new System.Drawing.Size(298, 19);
+            checkBox27.Size = new System.Drawing.Size(275, 19);
             checkBox27.TabIndex = 81;
             checkBox27.Text = "セーブデータをUTF-8で保存する(非バイナリ時のみ)";
             checkBox27.UseVisualStyleBackColor = true;
@@ -1155,7 +1205,7 @@ namespace MinorShift.Emuera.Forms
             checkBoxSystemTripleSymbol.Location = new System.Drawing.Point(8, 46);
             checkBoxSystemTripleSymbol.Margin = new System.Windows.Forms.Padding(4);
             checkBoxSystemTripleSymbol.Name = "checkBoxSystemTripleSymbol";
-            checkBoxSystemTripleSymbol.Size = new System.Drawing.Size(202, 19);
+            checkBoxSystemTripleSymbol.Size = new System.Drawing.Size(190, 19);
             checkBoxSystemTripleSymbol.TabIndex = 73;
             checkBoxSystemTripleSymbol.Text = "FORM中の三連記号を展開しない";
             checkBoxSystemTripleSymbol.UseVisualStyleBackColor = true;
@@ -1167,7 +1217,7 @@ namespace MinorShift.Emuera.Forms
             _useScopedVariableInstruction.Location = new System.Drawing.Point(8, 181);
             _useScopedVariableInstruction.Margin = new System.Windows.Forms.Padding(4);
             _useScopedVariableInstruction.Name = "_useScopedVariableInstruction";
-            _useScopedVariableInstruction.Size = new System.Drawing.Size(179, 19);
+            _useScopedVariableInstruction.Size = new System.Drawing.Size(169, 19);
             _useScopedVariableInstruction.TabIndex = 85;
             _useScopedVariableInstruction.Text = "VAR系命令を利用可能にする";
             _useScopedVariableInstruction.UseVisualStyleBackColor = true;
@@ -1179,7 +1229,7 @@ namespace MinorShift.Emuera.Forms
             _useNewRandom.Location = new System.Drawing.Point(8, 154);
             _useNewRandom.Margin = new System.Windows.Forms.Padding(4);
             _useNewRandom.Name = "_useNewRandom";
-            _useNewRandom.Size = new System.Drawing.Size(214, 19);
+            _useNewRandom.Size = new System.Drawing.Size(197, 19);
             _useNewRandom.TabIndex = 84;
             _useNewRandom.Text = "新しい高速な乱数アルゴリズムを使う";
             _useNewRandom.UseVisualStyleBackColor = true;
@@ -1215,7 +1265,7 @@ namespace MinorShift.Emuera.Forms
             checkBox9.Location = new System.Drawing.Point(8, 172);
             checkBox9.Margin = new System.Windows.Forms.Padding(4);
             checkBox9.Name = "checkBox9";
-            checkBox9.Size = new System.Drawing.Size(207, 19);
+            checkBox9.Size = new System.Drawing.Size(197, 19);
             checkBox9.TabIndex = 82;
             checkBox9.Text = "TIMESの計算をeramakerにあわせる";
             checkBox9.UseVisualStyleBackColor = true;
@@ -1226,7 +1276,7 @@ namespace MinorShift.Emuera.Forms
             checkBoxCompatiSP.Location = new System.Drawing.Point(8, 260);
             checkBoxCompatiSP.Margin = new System.Windows.Forms.Padding(4);
             checkBoxCompatiSP.Name = "checkBoxCompatiSP";
-            checkBoxCompatiSP.Size = new System.Drawing.Size(125, 19);
+            checkBoxCompatiSP.Size = new System.Drawing.Size(116, 19);
             checkBoxCompatiSP.TabIndex = 81;
             checkBoxCompatiSP.Text = "SPキャラを使用する";
             toolTip1.SetToolTip(checkBoxCompatiSP, "ON：eramaker仕様");
@@ -1238,7 +1288,7 @@ namespace MinorShift.Emuera.Forms
             checkBox28.Location = new System.Drawing.Point(8, 230);
             checkBox28.Margin = new System.Windows.Forms.Padding(4);
             checkBox28.Name = "checkBox28";
-            checkBox28.Size = new System.Drawing.Size(187, 19);
+            checkBox28.Size = new System.Drawing.Size(175, 19);
             checkBox28.TabIndex = 80;
             checkBox28.Text = "イベント関数のCALLを許可する";
             toolTip1.SetToolTip(checkBox28, "ON：eramaker仕様");
@@ -1250,7 +1300,7 @@ namespace MinorShift.Emuera.Forms
             checkBox25.Location = new System.Drawing.Point(8, 367);
             checkBox25.Margin = new System.Windows.Forms.Padding(4);
             checkBox25.Name = "checkBox25";
-            checkBox25.Size = new System.Drawing.Size(282, 19);
+            checkBox25.Size = new System.Drawing.Size(260, 19);
             checkBox25.TabIndex = 79;
             checkBox25.Text = "ユーザー関数の引数に自動的にTOSTRを補完する";
             toolTip1.SetToolTip(checkBox25, "ON：Emuera旧仕様　OFF：標準仕様（eramaker仕様）");
@@ -1262,7 +1312,7 @@ namespace MinorShift.Emuera.Forms
             checkBox12.Location = new System.Drawing.Point(8, 337);
             checkBox12.Margin = new System.Windows.Forms.Padding(4);
             checkBox12.Name = "checkBox12";
-            checkBox12.Size = new System.Drawing.Size(261, 19);
+            checkBox12.Size = new System.Drawing.Size(237, 19);
             checkBox12.TabIndex = 78;
             checkBox12.Text = "ユーザー関数の全ての引数の省略を許可する";
             toolTip1.SetToolTip(checkBox12, "ON：Emuera旧仕様　OFF：標準仕様（eramaker仕様）");
@@ -1274,7 +1324,7 @@ namespace MinorShift.Emuera.Forms
             checkBoxFuncNoIgnoreCase.Location = new System.Drawing.Point(8, 202);
             checkBoxFuncNoIgnoreCase.Margin = new System.Windows.Forms.Padding(4);
             checkBoxFuncNoIgnoreCase.Name = "checkBoxFuncNoIgnoreCase";
-            checkBoxFuncNoIgnoreCase.Size = new System.Drawing.Size(282, 19);
+            checkBoxFuncNoIgnoreCase.Size = new System.Drawing.Size(260, 19);
             checkBoxFuncNoIgnoreCase.TabIndex = 77;
             checkBoxFuncNoIgnoreCase.Text = "関数・属性については大文字小文字を無視しない";
             toolTip1.SetToolTip(checkBoxFuncNoIgnoreCase, "ON：eramaker仕様");
@@ -1308,7 +1358,7 @@ namespace MinorShift.Emuera.Forms
             checkBoxCompatiLinefeedAs1739.Location = new System.Drawing.Point(8, 308);
             checkBoxCompatiLinefeedAs1739.Margin = new System.Windows.Forms.Padding(4);
             checkBoxCompatiLinefeedAs1739.Name = "checkBoxCompatiLinefeedAs1739";
-            checkBoxCompatiLinefeedAs1739.Size = new System.Drawing.Size(246, 19);
+            checkBoxCompatiLinefeedAs1739.Size = new System.Drawing.Size(232, 19);
             checkBoxCompatiLinefeedAs1739.TabIndex = 74;
             checkBoxCompatiLinefeedAs1739.Text = "ver1739以前の非ボタン折り返しを再現する";
             toolTip1.SetToolTip(checkBoxCompatiLinefeedAs1739, "ON：Emuera旧仕様　OFF：標準仕様（eramaker仕様）");
@@ -1320,7 +1370,7 @@ namespace MinorShift.Emuera.Forms
             checkBoxCompatiRAND.Location = new System.Drawing.Point(8, 143);
             checkBoxCompatiRAND.Margin = new System.Windows.Forms.Padding(4);
             checkBoxCompatiRAND.Name = "checkBoxCompatiRAND";
-            checkBoxCompatiRAND.Size = new System.Drawing.Size(261, 19);
+            checkBoxCompatiRAND.Size = new System.Drawing.Size(247, 19);
             checkBoxCompatiRAND.TabIndex = 73;
             checkBoxCompatiRAND.Text = "擬似変数RANDの仕様をeramakerに合わせる";
             toolTip1.SetToolTip(checkBoxCompatiRAND, "ON：eramaker仕様");
@@ -1332,7 +1382,7 @@ namespace MinorShift.Emuera.Forms
             label30.Location = new System.Drawing.Point(6, 4);
             label30.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             label30.Name = "label30";
-            label30.Size = new System.Drawing.Size(299, 60);
+            label30.Size = new System.Drawing.Size(274, 60);
             label30.TabIndex = 72;
             label30.Text = "※eramakerとEmueraで動作が違う、\r\nEmueraの過去のバージョンで動作したものが動作しない、\r\nなどの問題を解決するためのオプションです\r\n標準で問題ない場合は変更しないでください";
             // 
@@ -1342,7 +1392,7 @@ namespace MinorShift.Emuera.Forms
             checkBoxCompatiCALLNAME.Location = new System.Drawing.Point(8, 113);
             checkBoxCompatiCALLNAME.Margin = new System.Windows.Forms.Padding(4);
             checkBoxCompatiCALLNAME.Name = "checkBoxCompatiCALLNAME";
-            checkBoxCompatiCALLNAME.Size = new System.Drawing.Size(276, 19);
+            checkBoxCompatiCALLNAME.Size = new System.Drawing.Size(262, 19);
             checkBoxCompatiCALLNAME.TabIndex = 56;
             checkBoxCompatiCALLNAME.Text = "CALLNAMEが空文字列の時にNAMEを代入する";
             toolTip1.SetToolTip(checkBoxCompatiCALLNAME, "ON：eramaker仕様");
@@ -1354,7 +1404,7 @@ namespace MinorShift.Emuera.Forms
             checkBoxCompatiErrorLine.Location = new System.Drawing.Point(8, 84);
             checkBoxCompatiErrorLine.Margin = new System.Windows.Forms.Padding(4);
             checkBoxCompatiErrorLine.Name = "checkBoxCompatiErrorLine";
-            checkBoxCompatiErrorLine.Size = new System.Drawing.Size(212, 19);
+            checkBoxCompatiErrorLine.Size = new System.Drawing.Size(197, 19);
             checkBoxCompatiErrorLine.TabIndex = 54;
             checkBoxCompatiErrorLine.Text = "解釈不可能な行があっても実行する";
             toolTip1.SetToolTip(checkBoxCompatiErrorLine, "ON：eramaker仕様");
@@ -1362,6 +1412,7 @@ namespace MinorShift.Emuera.Forms
             // 
             // tabPageDebug
             // 
+            tabPageDebug.Controls.Add(_checkUTF8withBOM);
             tabPageDebug.Controls.Add(button6);
             tabPageDebug.Controls.Add(button5);
             tabPageDebug.Controls.Add(checkBox23);
@@ -1383,6 +1434,18 @@ namespace MinorShift.Emuera.Forms
             tabPageDebug.TabIndex = 2;
             tabPageDebug.Text = "解析";
             tabPageDebug.UseVisualStyleBackColor = true;
+            // 
+            // _checkUTF8withBOM
+            // 
+            _checkUTF8withBOM.AutoSize = true;
+            _checkUTF8withBOM.Location = new System.Drawing.Point(4, 62);
+            _checkUTF8withBOM.Margin = new System.Windows.Forms.Padding(4);
+            _checkUTF8withBOM.Name = "_checkUTF8withBOM";
+            _checkUTF8withBOM.Size = new System.Drawing.Size(206, 19);
+            _checkUTF8withBOM.TabIndex = 76;
+            _checkUTF8withBOM.Text = "ファイルがBOM付きUTF8かチェックする";
+            _checkUTF8withBOM.UseVisualStyleBackColor = true;
+            _checkUTF8withBOM.CheckedChanged += _checkUTF8withBOM_CheckedChanged;
             // 
             // button6
             // 
@@ -1409,10 +1472,10 @@ namespace MinorShift.Emuera.Forms
             // checkBox23
             // 
             checkBox23.AutoSize = true;
-            checkBox23.Location = new System.Drawing.Point(6, 16);
+            checkBox23.Location = new System.Drawing.Point(4, 8);
             checkBox23.Margin = new System.Windows.Forms.Padding(4);
             checkBox23.Name = "checkBox23";
-            checkBox23.Size = new System.Drawing.Size(241, 19);
+            checkBox23.Size = new System.Drawing.Size(226, 19);
             checkBox23.TabIndex = 73;
             checkBox23.Text = "eramaker互換性に関する警告を表示する";
             checkBox23.UseVisualStyleBackColor = true;
@@ -1423,7 +1486,7 @@ namespace MinorShift.Emuera.Forms
             label15.Location = new System.Drawing.Point(28, 137);
             label15.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             label15.Name = "label15";
-            label15.Size = new System.Drawing.Size(138, 15);
+            label15.Size = new System.Drawing.Size(127, 15);
             label15.TabIndex = 56;
             label15.Text = "表示する最低警告レベル";
             // 
@@ -1444,7 +1507,7 @@ namespace MinorShift.Emuera.Forms
             label14.Location = new System.Drawing.Point(28, 294);
             label14.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             label14.Name = "label14";
-            label14.Size = new System.Drawing.Size(203, 15);
+            label14.Size = new System.Drawing.Size(187, 15);
             label14.TabIndex = 54;
             label14.Text = "関数が呼び出されなかった警告の扱い";
             // 
@@ -1465,7 +1528,7 @@ namespace MinorShift.Emuera.Forms
             label13.Location = new System.Drawing.Point(28, 228);
             label13.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             label13.Name = "label13";
-            label13.Size = new System.Drawing.Size(170, 15);
+            label13.Size = new System.Drawing.Size(157, 15);
             label13.TabIndex = 52;
             label13.Text = "関数が見つからない警告の扱い";
             // 
@@ -1486,7 +1549,7 @@ namespace MinorShift.Emuera.Forms
             label12.Location = new System.Drawing.Point(6, 86);
             label12.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             label12.Name = "label12";
-            label12.Size = new System.Drawing.Size(142, 15);
+            label12.Size = new System.Drawing.Size(129, 15);
             label12.TabIndex = 50;
             label12.Text = "ロード時に引数を解析する";
             // 
@@ -1508,7 +1571,7 @@ namespace MinorShift.Emuera.Forms
             checkBox11.Location = new System.Drawing.Point(31, 202);
             checkBox11.Margin = new System.Windows.Forms.Padding(4);
             checkBox11.Name = "checkBox11";
-            checkBox11.Size = new System.Drawing.Size(207, 19);
+            checkBox11.Size = new System.Drawing.Size(192, 19);
             checkBox11.TabIndex = 18;
             checkBox11.Text = "呼び出されなかった関数を無視する";
             checkBox11.UseVisualStyleBackColor = true;
@@ -1516,10 +1579,10 @@ namespace MinorShift.Emuera.Forms
             // checkBox13
             // 
             checkBox13.AutoSize = true;
-            checkBox13.Location = new System.Drawing.Point(6, 45);
+            checkBox13.Location = new System.Drawing.Point(4, 35);
             checkBox13.Margin = new System.Windows.Forms.Padding(4);
             checkBox13.Name = "checkBox13";
-            checkBox13.Size = new System.Drawing.Size(176, 19);
+            checkBox13.Size = new System.Drawing.Size(159, 19);
             checkBox13.TabIndex = 16;
             checkBox13.Text = "ロード時にレポートを表示する";
             checkBox13.UseVisualStyleBackColor = true;
@@ -1596,7 +1659,7 @@ namespace MinorShift.Emuera.Forms
             checkBoxCBNewLinesOnly.ImeMode = System.Windows.Forms.ImeMode.NoControl;
             checkBoxCBNewLinesOnly.Location = new System.Drawing.Point(16, 96);
             checkBoxCBNewLinesOnly.Name = "checkBoxCBNewLinesOnly";
-            checkBoxCBNewLinesOnly.Size = new System.Drawing.Size(214, 19);
+            checkBoxCBNewLinesOnly.Size = new System.Drawing.Size(213, 19);
             checkBoxCBNewLinesOnly.TabIndex = 114;
             checkBoxCBNewLinesOnly.Text = "Show new lines only - Classic Mode";
             checkBoxCBNewLinesOnly.UseVisualStyleBackColor = true;
@@ -1608,7 +1671,7 @@ namespace MinorShift.Emuera.Forms
             checkBoxCBClearBuffer.ImeMode = System.Windows.Forms.ImeMode.NoControl;
             checkBoxCBClearBuffer.Location = new System.Drawing.Point(16, 121);
             checkBoxCBClearBuffer.Name = "checkBoxCBClearBuffer";
-            checkBoxCBClearBuffer.Size = new System.Drawing.Size(301, 19);
+            checkBoxCBClearBuffer.Size = new System.Drawing.Size(298, 19);
             checkBoxCBClearBuffer.TabIndex = 115;
             checkBoxCBClearBuffer.Text = "Clear Clipboard and Buffer when game screen clears";
             toolTip1.SetToolTip(checkBoxCBClearBuffer, "This will clear the clipboard and buffers whenever the game explicitly\r\nclears the whole screen. Otherwise it merely inserts a blank line and\r\nkeeps all text.");
@@ -1642,7 +1705,7 @@ namespace MinorShift.Emuera.Forms
             checkBoxCBTriggerLeftClick.ImeMode = System.Windows.Forms.ImeMode.NoControl;
             checkBoxCBTriggerLeftClick.Location = new System.Drawing.Point(3, 3);
             checkBoxCBTriggerLeftClick.Name = "checkBoxCBTriggerLeftClick";
-            checkBoxCBTriggerLeftClick.Size = new System.Drawing.Size(119, 19);
+            checkBoxCBTriggerLeftClick.Size = new System.Drawing.Size(118, 19);
             checkBoxCBTriggerLeftClick.TabIndex = 89;
             checkBoxCBTriggerLeftClick.Text = "LeftClick - Mouse";
             toolTip1.SetToolTip(checkBoxCBTriggerLeftClick, "This triggers on any single or double left click in the text window.");
@@ -1653,9 +1716,9 @@ namespace MinorShift.Emuera.Forms
             // 
             checkBoxCBTriggerMiddleClick.AutoSize = true;
             checkBoxCBTriggerMiddleClick.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            checkBoxCBTriggerMiddleClick.Location = new System.Drawing.Point(128, 3);
+            checkBoxCBTriggerMiddleClick.Location = new System.Drawing.Point(127, 3);
             checkBoxCBTriggerMiddleClick.Name = "checkBoxCBTriggerMiddleClick";
-            checkBoxCBTriggerMiddleClick.Size = new System.Drawing.Size(136, 19);
+            checkBoxCBTriggerMiddleClick.Size = new System.Drawing.Size(135, 19);
             checkBoxCBTriggerMiddleClick.TabIndex = 102;
             checkBoxCBTriggerMiddleClick.Text = "MiddleClick - Mouse";
             toolTip1.SetToolTip(checkBoxCBTriggerMiddleClick, "This triggers on any middle click in the text window.");
@@ -1668,7 +1731,7 @@ namespace MinorShift.Emuera.Forms
             checkBoxCBTriggerDoubleLeftClick.ImeMode = System.Windows.Forms.ImeMode.NoControl;
             checkBoxCBTriggerDoubleLeftClick.Location = new System.Drawing.Point(16, 192);
             checkBoxCBTriggerDoubleLeftClick.Name = "checkBoxCBTriggerDoubleLeftClick";
-            checkBoxCBTriggerDoubleLeftClick.Size = new System.Drawing.Size(163, 19);
+            checkBoxCBTriggerDoubleLeftClick.Size = new System.Drawing.Size(162, 19);
             checkBoxCBTriggerDoubleLeftClick.TabIndex = 118;
             checkBoxCBTriggerDoubleLeftClick.Text = "Double Left Click - Mouse";
             toolTip1.SetToolTip(checkBoxCBTriggerDoubleLeftClick, "This triggers on any double left click in the text window.");
@@ -1727,7 +1790,7 @@ namespace MinorShift.Emuera.Forms
             label28.ImeMode = System.Windows.Forms.ImeMode.NoControl;
             label28.Location = new System.Drawing.Point(79, 7);
             label28.Name = "label28";
-            label28.Size = new System.Drawing.Size(145, 15);
+            label28.Size = new System.Drawing.Size(144, 15);
             label28.TabIndex = 86;
             label28.Text = "Lines to send to Clipboard";
             toolTip1.SetToolTip(label28, "This determines how many lines long the clipboard is when scrolling back or\r\nin non-Classic Mode.");
@@ -1789,7 +1852,7 @@ namespace MinorShift.Emuera.Forms
             label32.ImeMode = System.Windows.Forms.ImeMode.NoControl;
             label32.Location = new System.Drawing.Point(79, 7);
             label32.Name = "label32";
-            label32.Size = new System.Drawing.Size(128, 15);
+            label32.Size = new System.Drawing.Size(127, 15);
             label32.TabIndex = 97;
             label32.Text = "Lines to scroll at a time";
             toolTip1.SetToolTip(label32, "How many lines are skipped at a time when scrolling through the history.");
@@ -1820,7 +1883,7 @@ namespace MinorShift.Emuera.Forms
             label33.Location = new System.Drawing.Point(79, 7);
             label33.MaximumSize = new System.Drawing.Size(250, 0);
             label33.Name = "label33";
-            label33.Size = new System.Drawing.Size(226, 15);
+            label33.Size = new System.Drawing.Size(224, 15);
             label33.TabIndex = 93;
             label33.Text = "Min time(mS) between clipboard updates";
             // 
@@ -1831,7 +1894,7 @@ namespace MinorShift.Emuera.Forms
             label34.Location = new System.Drawing.Point(16, 404);
             label34.MaximumSize = new System.Drawing.Size(230, 0);
             label34.Name = "label34";
-            label34.Size = new System.Drawing.Size(230, 30);
+            label34.Size = new System.Drawing.Size(216, 45);
             label34.TabIndex = 125;
             label34.Text = "Scroll through the history using ctrl+↑ and ↓ or ctrl + mouse wheel up and down.";
             // 
@@ -1841,7 +1904,7 @@ namespace MinorShift.Emuera.Forms
             label16.Location = new System.Drawing.Point(98, 517);
             label16.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             label16.Name = "label16";
-            label16.Size = new System.Drawing.Size(216, 15);
+            label16.Size = new System.Drawing.Size(199, 15);
             label16.TabIndex = 36;
             label16.Text = "※変更は再起動するまで反映されません";
             // 
@@ -2070,5 +2133,10 @@ namespace MinorShift.Emuera.Forms
         private System.Windows.Forms.NumericUpDown numericUpDownCBMinTimer;
         private System.Windows.Forms.Label label33;
         private System.Windows.Forms.Label label34;
+        private System.Windows.Forms.Label _imageSamplingLabel;
+        private System.Windows.Forms.ComboBox _imageSampling;
+        private System.Windows.Forms.Label _fontAntialiasLabel;
+        private System.Windows.Forms.ComboBox _fontAntialias;
+        private System.Windows.Forms.CheckBox _checkUTF8withBOM;
     }
 }

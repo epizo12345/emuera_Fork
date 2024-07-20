@@ -102,7 +102,7 @@ internal sealed partial class ConfigDialog : Form
         updown.Value = value;
         updown.Enabled = !item.Fixed;
     }
-    
+
     static void setNumericUpDown(NumericUpDown updown, int configValue)
     {
         decimal value = configValue;
@@ -304,8 +304,12 @@ internal sealed partial class ConfigDialog : Form
         setNumericUpDown(numericUpDownCBMaxCB, JSONConfig.User.CBMaxCB);
         setNumericUpDown(numericUpDownCBBufferSize, JSONConfig.User.CBBufferSize);
         setNumericUpDown(numericUpDownCBScrollCount, JSONConfig.User.CBScrollCount);
-        setNumericUpDown(numericUpDownCBMinTimer,JSONConfig.User.CBMinTimer);
+        setNumericUpDown(numericUpDownCBMinTimer, JSONConfig.User.CBMinTimer);
         #endregion
+
+        _checkUTF8withBOM.Checked = JSONConfig.Game.CheckUTF8withBOM;
+        _fontAntialias.SelectedIndex = (int)JSONConfig.Game.FontAntialias;
+        _imageSampling.SelectedIndex = (int)JSONConfig.Game.ImageSamplingOption;
     }
 
     private void SaveConfig()
@@ -826,6 +830,9 @@ internal sealed partial class ConfigDialog : Form
         // 	page.Location = new Point(diff.Width / 2, diff.Height / 2);
         // }
 
+        _checkUTF8withBOM.Text = LocalizationManager.ConfigDialog.Check_UTF8withBOM;
+        _fontAntialiasLabel.Text = LocalizationManager.ConfigDialog.FontAntialias;
+        _imageSamplingLabel.Text = LocalizationManager.ConfigDialog.ImageSampling;
     }
 
     private void checkBoxCBIgnoreTags_CheckedChanged(object sender, EventArgs e)
@@ -894,5 +901,20 @@ internal sealed partial class ConfigDialog : Form
     {
         JSONConfig.User.CBMinTimer = (int)numericUpDownCBMinTimer.Value;
         GlobalStatic.Console.CBProc.SetTimerInterval(JSONConfig.User.CBMinTimer);
+    }
+
+    private void _checkUTF8withBOM_CheckedChanged(object sender, EventArgs e)
+    {
+        JSONConfig.Game.CheckUTF8withBOM = _checkUTF8withBOM.Checked;
+    }
+
+    private void comboBox7_SelectionChangeCommitted(object sender, EventArgs e)
+    {
+        JSONConfig.Game.ImageSamplingOption = (Resampler)_imageSampling.SelectedIndex;
+    }
+
+    private void _fontAntialias_SelectionChangeCommitted(object sender, EventArgs e)
+    {
+        JSONConfig.Game.FontAntialias = (FontAntialias)_fontAntialias.SelectedIndex;
     }
 }

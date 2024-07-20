@@ -225,6 +225,10 @@ public static class LocalizationManager
         public static string Clipboard_LinesToScroll => FormLocalization.ConfigDialog_Clipboard_LinesToScroll;
         public static string Clipboard_UpdateTime => FormLocalization.ConfigDialog_Clipboard_UpdateTime;
         public static string Clipboard_ScrollThrough => FormLocalization.ConfigDialog_Clipboard_ScrollThrough;
+
+        public static string Check_UTF8withBOM => FormLocalization.ConfigDialog_CheckUTF8BOM;
+        public static string ImageSampling => FormLocalization.ConfigDialog_ImageSampling;
+        public static string FontAntialias => FormLocalization.ConfigDialog_FontAntialias;
     }
 
     public static class DebugConfigDialog

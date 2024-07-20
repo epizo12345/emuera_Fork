@@ -1,695 +1,810 @@
+<?xml version="1.0" encoding="utf-8"?>
 <root>
-    <resheader name="resmimetype">
-        <value>text/microsoft-resx</value>
-    </resheader>
-    <resheader name="version">
-        <value>1.3</value>
-    </resheader>
-    <resheader name="reader">
-        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-    </resheader>
-    <resheader name="writer">
-        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-    </resheader>
-    <data name="MainWindow_FileFilter" xml:space="preserve">
-		<value>ERBファイル</value>
-	</data>
-    <data name="MainWindow_File" xml:space="preserve">
-		<value>ファイル(&amp;F)</value>
-	</data>
-    <data name="MainWindow_Restart" xml:space="preserve">
-		<value>再起動(&amp;R)</value>
-	</data>
-    <data name="MainWindow_SaveLog" xml:space="preserve">
-		<value>ログを保存する...(&amp;S)</value>
-	</data>
-    <data name="CopyLogToClipboard" xml:space="preserve">
-		<value>ログをクリップボードにコピー(&amp;C)</value>
-	</data>
-    <data name="MainWindow_BackToTitle" xml:space="preserve">
-		<value>タイトル画面へ戻る(&amp;T)</value>
-	</data>
-    <data name="MainWindow_ReloadAllScripts" xml:space="preserve">
-		<value>全コードを読み直す(&amp;C)</value>
-	</data>
-    <data name="MainWindow_ReloadFolder" xml:space="preserve">
-		<value>フォルダを読み直す(&amp;F)</value>
-	</data>
-    <data name="MainWindow_ReloadScriptFile" xml:space="preserve">
-		<value>ファイルを読み直す(&amp;A)</value>
-	</data>
-    <data name="MainWindow_Exit" xml:space="preserve">
-		<value>終了(&amp;X)</value>
-	</data>
-    <data name="MainWindow_Debug" xml:space="preserve">
-		<value>デバッグ(&amp;D)</value>
-	</data>
-    <data name="MainWindow_OpenDebugWindow" xml:space="preserve">
-		<value>デバッグウインドウを開く</value>
-	</data>
-    <data name="UpdateDebugInfo" xml:space="preserve">
-		<value>デバッグ情報の更新</value>
-	</data>
-    <data name="ContextMenu_KeyMacro" xml:space="preserve">
-		<value>マクロ</value>
-	</data>
-    <data name="ContextMenu_Cut" xml:space="preserve">
-		<value>切り取り</value>
-	</data>
-    <data name="ContextMenu_Copy" xml:space="preserve">
-		<value>コピー</value>
-	</data>
-    <data name="ContextMenu_Paste" xml:space="preserve">
-		<value>貼り付け</value>
-	</data>
-    <data name="ContextMenu_Delete" xml:space="preserve">
-		<value>削除</value>
-	</data>
-    <data name="ContextMenu_Execute" xml:space="preserve">
-		<value>実行</value>
-	</data>
-    <data name="ContextMenu_KeyMacroGroup" xml:space="preserve">
-		<value>マクログループ</value>
-	</data>
-	<data name="ContextMenu_KeyMacroGroup_Group" xml:space="preserve">
-		<value>グループ{0}</value>
-	</data>
-    <data name="MsgBox_InstanceExists" xml:space="preserve">
-		<value>既に起動しています</value>
-	</data>
-    <data name="MsgBox_MultiInstanceInfo" xml:space="preserve">
-		<value>多重起動を許可する場合、emuera.configを書き換えて下さい</value>
-	</data>
-    <data name="MsgBox_FolderNotFound" xml:space="preserve">
-		<value>フォルダなし</value>
-	</data>
-    <data name="MsgBox_NoCsvFolder" xml:space="preserve">
-		<value>csvフォルダが見つかりません</value>
-	</data>
-    <data name="MsgBox_NoErbFolder" xml:space="preserve">
-		<value>erbフォルダが見つかりません</value>
-	</data>
-    <data name="MsgBox_FailedCreateDebugFolder" xml:space="preserve">
-		<value>debugフォルダの作成に失敗しました</value>
-	</data>
-	<data name="MsgBox_InvalidArg" xml:space="preserve">
-		<value>ドロップ可能なファイルはERBファイルのみです</value>
-	</data>
-    <data name="MainWindow_Language" xml:space="preserve">
-		<value>言語(&amp;L)</value>
-	</data>
-    <data name="RestartDebugMode" xml:space="preserve">
-		<value>デバッグモードで再起動</value>
-	</data>
-    <data name="MainWindow_Settings" xml:space="preserve">
-		<value>設定(&amp;C)</value>
-	</data>
-    <data name="MainWindow_ToggleWidthLock" xml:space="preserve">
-		<value>ウィンドウ幅のロック変更</value>
-	</data>
-    <data name="MainWindow_Tools" xml:space="preserve">
-		<value>ツール</value>
-	</data>
-    <data name="Parameters_HelpExeDir" xml:space="preserve">
-		<value>与えられたフォルダのEraを起動します</value>
-	</data>
-    <data name="Parameters_HelpDebug" xml:space="preserve">
-		<value>デバッグモード</value>
-	</data>
-    <data name="Parameters_HelpFilesArg" xml:space="preserve">
-		<value>解析するファイル</value>
-	</data>
-    <data name="ConfigDialog_ChangeWontTakeEffectUntilRestart" xml:space="preserve">
-		<value>※変更は再起動するまで反映されません</value>
-	</data>
-    <data name="ConfigDialog_Save" xml:space="preserve">
-		<value>保存</value>
-	</data>
-    <data name="ConfigDialog_SaveAndRestart" xml:space="preserve">
-		<value>保存して再起動</value>
-	</data>
-    <data name="ConfigDialog_Cancel" xml:space="preserve">
-		<value>キャンセル</value>
-	</data>
-    <data name="ConfigDialog_Environment" xml:space="preserve">
-		<value>環境</value>
-	</data>
-    <data name="ConfigDialog_Environment_UseMouse" xml:space="preserve">
-		<value>マウスを使用する</value>
-	</data>
-    <data name="ConfigDialog_Environment_UseMenu" xml:space="preserve">
-		<value>メニューを使用する</value>
-	</data>
-    <data name="ConfigDialog_Environment_UseDebugCommand" xml:space="preserve">
-		<value>デバッグコマンドを使用する</value>
-	</data>
-    <data name="ConfigDialog_Environment_AllowMultipleInstances" xml:space="preserve">
-		<value>多重起動を許可する</value>
-	</data>
-    <data name="ConfigDialog_Environment_UseKeyMacro" xml:space="preserve">
-		<value>キーボードマクロを使用する</value>
-	</data>
-    <data name="ConfigDialog_Environment_AutoSave" xml:space="preserve">
-		<value>オートセーブを行なう</value>
-	</data>
-    <data name="ConfigDialog_Environment_UseSaveFolder" xml:space="preserve">
-		<value>セーブデータをsavフォルダ内に作成する</value>
-	</data>
-	<data name="ConfigDialog_Environment_MaxLog" xml:space="preserve">
-		<value>履歴ログの行数</value>
-	</data>
-    <data name="ConfigDialog_Environment_InfiniteLoopAlertTime" xml:space="preserve">
-		<value>無限ループ警告までのミリ秒</value>
-	</data>
-    <data name="ConfigDialog_Environment_SaveDataPerPage" xml:space="preserve">
-		<value>使用するセーブデータ数</value>
-	</data>
-    <data name="ConfigDialog_Environment_TextEditor" xml:space="preserve">
-		<value>関連づけるテキストエディタ</value>
-	</data>
-    <data name="ConfigDialog_Environment_Browse" xml:space="preserve">
-		<value>選択</value>
-	</data>
-    <data name="ConfigDialog_Environment_TextEditorCommandline" xml:space="preserve">
-		<value>コマンドライン引数</value>
-	</data>
-    <data name="ConfigDialog_Environment_TextEditorCommandline_UserSetting" xml:space="preserve">
-		<value>ユーザー設定</value>
-	</data>
-    <data name="ConfigDialog_Display" xml:space="preserve">
-		<value>表示</value>
-	</data>
-    <data name="ConfigDialog_Display_TextDrawingMode" xml:space="preserve">
-		<value>描画インターフェース</value>
-	</data>
-    <data name="ConfigDialog_Display_FPS" xml:space="preserve">
-		<value>フレーム毎秒</value>
-	</data>
-    <data name="ConfigDialog_Display_PrintCPerLine" xml:space="preserve">
-		<value>PRINTCを並べる数</value>
-	</data>
-    <data name="ConfigDialog_Display_PrintCLength" xml:space="preserve">
-		<value>PRINTCの文字数</value>
-	</data>
-    <data name="ConfigDialog_Display_ButtonWrap" xml:space="preserve">
-		<value>ボタンの途中で行を折りかえさない</value>
-	</data>
-	<data name="ConfigDialog_Window" xml:space="preserve">
-		<value>ウィンドウ</value>
-	</data>
-    <data name="ConfigDialog_Window_WindowWidth" xml:space="preserve">
-		<value>ウィンドウ幅</value>
-	</data>
-    <data name="ConfigDialog_Window_WindowHeight" xml:space="preserve">
-		<value>ウィンドウ高さ</value>
-	</data>
-    <data name="ConfigDialog_Window_GetWindowSize" xml:space="preserve">
-		<value>現在のウィンドウサイズを取得</value>
-	</data>
-    <data name="ConfigDialog_Window_ChangeableWindowHeight" xml:space="preserve">
-		<value>ウィンドウの高さを可変にする</value>
-	</data>
-    <data name="ConfigDialog_Window_WindowMaximixed" xml:space="preserve">
-		<value>起動時にウィンドウを最大化する</value>
-	</data>
-    <data name="ConfigDialog_Window_SetWindowPos" xml:space="preserve">
-		<value>起動時のウィンドウの位置を固定する</value>
-	</data>
-    <data name="ConfigDialog_Window_WindowX" xml:space="preserve">
-		<value>ウィンドウ位置X</value>
-	</data>
-    <data name="ConfigDialog_Window_WindowY" xml:space="preserve">
-		<value>ウィンドウ位置Y</value>
-	</data>
-    <data name="ConfigDialog_Window_GetWindowPos" xml:space="preserve">
-		<value>現在のウィンドウ位置を取得</value>
-	</data>
-    <data name="ConfigDialog_Window_LinesPerScroll" xml:space="preserve">
-		<value>スクロールの行数</value>
-	</data>
-    <data name="ConfigDialog_Font" xml:space="preserve">
-		<value>フォント</value>
-	</data>
-    <data name="ConfigDialog_Font_BackgroundColor" xml:space="preserve">
-		<value>背景色</value>
-	</data>
-    <data name="ConfigDialog_Font_TextColor" xml:space="preserve">
-		<value>文字色</value>
-	</data>
-    <data name="ConfigDialog_Font_HighlightColor" xml:space="preserve">
-		<value>選択中文字色</value>
-	</data>
-    <data name="ConfigDialog_Font_LogHistoryColor" xml:space="preserve">
-		<value>履歴文字色</value>
-	</data>
-    <data name="ConfigDialog_Font_FontName" xml:space="preserve">
-		<value>フォント名</value>
-	</data>
-	<data name="ConfigDialog_Font_FontSize" xml:space="preserve">
-		<value>フォントサイズ</value>
-	</data>
-    <data name="ConfigDialog_Font_LineHeight" xml:space="preserve">
-		<value>一行の高さ</value>
-	</data>
-    <data name="ConfigDialog_System" xml:space="preserve">
-		<value>システム</value>
-	</data>
-    <data name="ConfigDialog_System_Warning" xml:space="preserve">
-		<value>※システムの項目を変化させた場合、
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="MainWindow_FileFilter" xml:space="preserve">
+    <value>ERBファイル</value>
+  </data>
+  <data name="MainWindow_File" xml:space="preserve">
+    <value>ファイル(&amp;F)</value>
+  </data>
+  <data name="MainWindow_Restart" xml:space="preserve">
+    <value>再起動(&amp;R)</value>
+  </data>
+  <data name="MainWindow_SaveLog" xml:space="preserve">
+    <value>ログを保存する...(&amp;S)</value>
+  </data>
+  <data name="CopyLogToClipboard" xml:space="preserve">
+    <value>ログをクリップボードにコピー(&amp;C)</value>
+  </data>
+  <data name="MainWindow_BackToTitle" xml:space="preserve">
+    <value>タイトル画面へ戻る(&amp;T)</value>
+  </data>
+  <data name="MainWindow_ReloadAllScripts" xml:space="preserve">
+    <value>全コードを読み直す(&amp;C)</value>
+  </data>
+  <data name="MainWindow_ReloadFolder" xml:space="preserve">
+    <value>フォルダを読み直す(&amp;F)</value>
+  </data>
+  <data name="MainWindow_ReloadScriptFile" xml:space="preserve">
+    <value>ファイルを読み直す(&amp;A)</value>
+  </data>
+  <data name="MainWindow_Exit" xml:space="preserve">
+    <value>終了(&amp;X)</value>
+  </data>
+  <data name="MainWindow_Debug" xml:space="preserve">
+    <value>デバッグ(&amp;D)</value>
+  </data>
+  <data name="MainWindow_OpenDebugWindow" xml:space="preserve">
+    <value>デバッグウインドウを開く</value>
+  </data>
+  <data name="UpdateDebugInfo" xml:space="preserve">
+    <value>デバッグ情報の更新</value>
+  </data>
+  <data name="ContextMenu_KeyMacro" xml:space="preserve">
+    <value>マクロ</value>
+  </data>
+  <data name="ContextMenu_Cut" xml:space="preserve">
+    <value>切り取り</value>
+  </data>
+  <data name="ContextMenu_Copy" xml:space="preserve">
+    <value>コピー</value>
+  </data>
+  <data name="ContextMenu_Paste" xml:space="preserve">
+    <value>貼り付け</value>
+  </data>
+  <data name="ContextMenu_Delete" xml:space="preserve">
+    <value>削除</value>
+  </data>
+  <data name="ContextMenu_Execute" xml:space="preserve">
+    <value>実行</value>
+  </data>
+  <data name="ContextMenu_KeyMacroGroup" xml:space="preserve">
+    <value>マクログループ</value>
+  </data>
+  <data name="ContextMenu_KeyMacroGroup_Group" xml:space="preserve">
+    <value>グループ{0}</value>
+  </data>
+  <data name="MsgBox_InstanceExists" xml:space="preserve">
+    <value>既に起動しています</value>
+  </data>
+  <data name="MsgBox_MultiInstanceInfo" xml:space="preserve">
+    <value>多重起動を許可する場合、emuera.configを書き換えて下さい</value>
+  </data>
+  <data name="MsgBox_FolderNotFound" xml:space="preserve">
+    <value>フォルダなし</value>
+  </data>
+  <data name="MsgBox_NoCsvFolder" xml:space="preserve">
+    <value>csvフォルダが見つかりません</value>
+  </data>
+  <data name="MsgBox_NoErbFolder" xml:space="preserve">
+    <value>erbフォルダが見つかりません</value>
+  </data>
+  <data name="MsgBox_FailedCreateDebugFolder" xml:space="preserve">
+    <value>debugフォルダの作成に失敗しました</value>
+  </data>
+  <data name="MsgBox_InvalidArg" xml:space="preserve">
+    <value>ドロップ可能なファイルはERBファイルのみです</value>
+  </data>
+  <data name="MainWindow_Language" xml:space="preserve">
+    <value>言語(&amp;L)</value>
+  </data>
+  <data name="RestartDebugMode" xml:space="preserve">
+    <value>デバッグモードで再起動</value>
+  </data>
+  <data name="MainWindow_Settings" xml:space="preserve">
+    <value>設定(&amp;C)</value>
+  </data>
+  <data name="MainWindow_ToggleWidthLock" xml:space="preserve">
+    <value>ウィンドウ幅のロック変更</value>
+  </data>
+  <data name="MainWindow_Tools" xml:space="preserve">
+    <value>ツール</value>
+  </data>
+  <data name="Parameters_HelpExeDir" xml:space="preserve">
+    <value>与えられたフォルダのEraを起動します</value>
+  </data>
+  <data name="Parameters_HelpDebug" xml:space="preserve">
+    <value>デバッグモード</value>
+  </data>
+  <data name="Parameters_HelpFilesArg" xml:space="preserve">
+    <value>解析するファイル</value>
+  </data>
+  <data name="ConfigDialog_ChangeWontTakeEffectUntilRestart" xml:space="preserve">
+    <value>※変更は再起動するまで反映されません</value>
+  </data>
+  <data name="ConfigDialog_Save" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="ConfigDialog_SaveAndRestart" xml:space="preserve">
+    <value>保存して再起動</value>
+  </data>
+  <data name="ConfigDialog_Cancel" xml:space="preserve">
+    <value>キャンセル</value>
+  </data>
+  <data name="ConfigDialog_Environment" xml:space="preserve">
+    <value>環境</value>
+  </data>
+  <data name="ConfigDialog_Environment_UseMouse" xml:space="preserve">
+    <value>マウスを使用する</value>
+  </data>
+  <data name="ConfigDialog_Environment_UseMenu" xml:space="preserve">
+    <value>メニューを使用する</value>
+  </data>
+  <data name="ConfigDialog_Environment_UseDebugCommand" xml:space="preserve">
+    <value>デバッグコマンドを使用する</value>
+  </data>
+  <data name="ConfigDialog_Environment_AllowMultipleInstances" xml:space="preserve">
+    <value>多重起動を許可する</value>
+  </data>
+  <data name="ConfigDialog_Environment_UseKeyMacro" xml:space="preserve">
+    <value>キーボードマクロを使用する</value>
+  </data>
+  <data name="ConfigDialog_Environment_AutoSave" xml:space="preserve">
+    <value>オートセーブを行なう</value>
+  </data>
+  <data name="ConfigDialog_Environment_UseSaveFolder" xml:space="preserve">
+    <value>セーブデータをsavフォルダ内に作成する</value>
+  </data>
+  <data name="ConfigDialog_Environment_MaxLog" xml:space="preserve">
+    <value>履歴ログの行数</value>
+  </data>
+  <data name="ConfigDialog_Environment_InfiniteLoopAlertTime" xml:space="preserve">
+    <value>無限ループ警告までのミリ秒</value>
+  </data>
+  <data name="ConfigDialog_Environment_SaveDataPerPage" xml:space="preserve">
+    <value>使用するセーブデータ数</value>
+  </data>
+  <data name="ConfigDialog_Environment_TextEditor" xml:space="preserve">
+    <value>関連づけるテキストエディタ</value>
+  </data>
+  <data name="ConfigDialog_Environment_Browse" xml:space="preserve">
+    <value>選択</value>
+  </data>
+  <data name="ConfigDialog_Environment_TextEditorCommandline" xml:space="preserve">
+    <value>コマンドライン引数</value>
+  </data>
+  <data name="ConfigDialog_Environment_TextEditorCommandline_UserSetting" xml:space="preserve">
+    <value>ユーザー設定</value>
+  </data>
+  <data name="ConfigDialog_Display" xml:space="preserve">
+    <value>表示</value>
+  </data>
+  <data name="ConfigDialog_Display_TextDrawingMode" xml:space="preserve">
+    <value>描画インターフェース</value>
+  </data>
+  <data name="ConfigDialog_Display_FPS" xml:space="preserve">
+    <value>フレーム毎秒</value>
+  </data>
+  <data name="ConfigDialog_Display_PrintCPerLine" xml:space="preserve">
+    <value>PRINTCを並べる数</value>
+  </data>
+  <data name="ConfigDialog_Display_PrintCLength" xml:space="preserve">
+    <value>PRINTCの文字数</value>
+  </data>
+  <data name="ConfigDialog_Display_ButtonWrap" xml:space="preserve">
+    <value>ボタンの途中で行を折りかえさない</value>
+  </data>
+  <data name="ConfigDialog_Window" xml:space="preserve">
+    <value>ウィンドウ</value>
+  </data>
+  <data name="ConfigDialog_Window_WindowWidth" xml:space="preserve">
+    <value>ウィンドウ幅</value>
+  </data>
+  <data name="ConfigDialog_Window_WindowHeight" xml:space="preserve">
+    <value>ウィンドウ高さ</value>
+  </data>
+  <data name="ConfigDialog_Window_GetWindowSize" xml:space="preserve">
+    <value>現在のウィンドウサイズを取得</value>
+  </data>
+  <data name="ConfigDialog_Window_ChangeableWindowHeight" xml:space="preserve">
+    <value>ウィンドウの高さを可変にする</value>
+  </data>
+  <data name="ConfigDialog_Window_WindowMaximixed" xml:space="preserve">
+    <value>起動時にウィンドウを最大化する</value>
+  </data>
+  <data name="ConfigDialog_Window_SetWindowPos" xml:space="preserve">
+    <value>起動時のウィンドウの位置を固定する</value>
+  </data>
+  <data name="ConfigDialog_Window_WindowX" xml:space="preserve">
+    <value>ウィンドウ位置X</value>
+  </data>
+  <data name="ConfigDialog_Window_WindowY" xml:space="preserve">
+    <value>ウィンドウ位置Y</value>
+  </data>
+  <data name="ConfigDialog_Window_GetWindowPos" xml:space="preserve">
+    <value>現在のウィンドウ位置を取得</value>
+  </data>
+  <data name="ConfigDialog_Window_LinesPerScroll" xml:space="preserve">
+    <value>スクロールの行数</value>
+  </data>
+  <data name="ConfigDialog_Font" xml:space="preserve">
+    <value>フォント</value>
+  </data>
+  <data name="ConfigDialog_Font_BackgroundColor" xml:space="preserve">
+    <value>背景色</value>
+  </data>
+  <data name="ConfigDialog_Font_TextColor" xml:space="preserve">
+    <value>文字色</value>
+  </data>
+  <data name="ConfigDialog_Font_HighlightColor" xml:space="preserve">
+    <value>選択中文字色</value>
+  </data>
+  <data name="ConfigDialog_Font_LogHistoryColor" xml:space="preserve">
+    <value>履歴文字色</value>
+  </data>
+  <data name="ConfigDialog_Font_FontName" xml:space="preserve">
+    <value>フォント名</value>
+  </data>
+  <data name="ConfigDialog_Font_FontSize" xml:space="preserve">
+    <value>フォントサイズ</value>
+  </data>
+  <data name="ConfigDialog_Font_LineHeight" xml:space="preserve">
+    <value>一行の高さ</value>
+  </data>
+  <data name="ConfigDialog_System" xml:space="preserve">
+    <value>システム</value>
+  </data>
+  <data name="ConfigDialog_System_Warning" xml:space="preserve">
+    <value>※システムの項目を変化させた場合、
 ERBスクリプトが正常に動作しないことがあります</value>
-	</data>
-    <data name="ConfigDialog_System_IgnoreCase" xml:space="preserve">
-		<value>大文字小文字の違いを無視する</value>
-	</data>
-    <data name="ConfigDialog_System_UseRename" xml:space="preserve">
-		<value>_Rename.csvを利用する</value>
-	</data>
-    <data name="ConfigDialog_System_UseReplace" xml:space="preserve">
-		<value>_Replace.csvを利用する</value>
-	</data>
-    <data name="ConfigDialog_System_SearchSubfolder" xml:space="preserve">
-		<value>サブディレクトリを検索する</value>
-	</data>
-    <data name="ConfigDialog_System_SortFileNames" xml:space="preserve">
-		<value>読み込み順をファイル名順にソートする</value>
-	</data>
-    <data name="ConfigDialog_System_SystemFuncOverride" xml:space="preserve">
-		<value>システム関数の上書きを許可する</value>
-	</data>
-    <data name="ConfigDialog_System_SystemFuncOverrideWarn" xml:space="preserve">
-		<value>システム関数が上書きされたとき警告を表示する</value>
-	</data>
-    <data name="ConfigDialog_System_DuplicateFuncWarn" xml:space="preserve">
-		<value>同名の非イベント関数が複数定義されたとき警告する</value>
-	</data>
-    <data name="ConfigDialog_System_WSIncludesFullWidth" xml:space="preserve">
-		<value>全角スペースをホワイトスペースに含める</value>
-	</data>
-    <data name="ConfigDialog_System_ANSI" xml:space="preserve">
-		<value>内部で使用する東アジア言語</value>
-	</data>
-    <data name="ConfigDialog_System2" xml:space="preserve">
-		<value>システム2</value>
-	</data>
-    <data name="ConfigDialog_System2_IgnoreTripleSymbol" xml:space="preserve">
-		<value>FORM中の三連記号を展開しない</value>
-	</data>
-    <data name="ConfigDialog_System2_SaveInBinary" xml:space="preserve">
-		<value>セーブデータをバイナリ形式で保存する</value>
-	</data>
-	<data name="ConfigDialog_System2_NoAutoCompleteCVar" xml:space="preserve">
-		<value>キャラクタ変数の引数を補完しない</value>
-	</data>
-	<data name="ConfigDialog_Compatibility" xml:space="preserve">
-		<value>互換性</value>
-	</data>
-    <data name="ConfigDialog_Compatibility_Warning" xml:space="preserve">
-		<value>※eramakerとEmueraで動作が違う、
+  </data>
+  <data name="ConfigDialog_System_IgnoreCase" xml:space="preserve">
+    <value>大文字小文字の違いを無視する</value>
+  </data>
+  <data name="ConfigDialog_System_UseRename" xml:space="preserve">
+    <value>_Rename.csvを利用する</value>
+  </data>
+  <data name="ConfigDialog_System_UseReplace" xml:space="preserve">
+    <value>_Replace.csvを利用する</value>
+  </data>
+  <data name="ConfigDialog_System_SearchSubfolder" xml:space="preserve">
+    <value>サブディレクトリを検索する</value>
+  </data>
+  <data name="ConfigDialog_System_SortFileNames" xml:space="preserve">
+    <value>読み込み順をファイル名順にソートする</value>
+  </data>
+  <data name="ConfigDialog_System_SystemFuncOverride" xml:space="preserve">
+    <value>システム関数の上書きを許可する</value>
+  </data>
+  <data name="ConfigDialog_System_SystemFuncOverrideWarn" xml:space="preserve">
+    <value>システム関数が上書きされたとき警告を表示する</value>
+  </data>
+  <data name="ConfigDialog_System_DuplicateFuncWarn" xml:space="preserve">
+    <value>同名の非イベント関数が複数定義されたとき警告する</value>
+  </data>
+  <data name="ConfigDialog_System_WSIncludesFullWidth" xml:space="preserve">
+    <value>全角スペースをホワイトスペースに含める</value>
+  </data>
+  <data name="ConfigDialog_System_ANSI" xml:space="preserve">
+    <value>内部で使用する東アジア言語</value>
+  </data>
+  <data name="ConfigDialog_System2" xml:space="preserve">
+    <value>システム2</value>
+  </data>
+  <data name="ConfigDialog_System2_IgnoreTripleSymbol" xml:space="preserve">
+    <value>FORM中の三連記号を展開しない</value>
+  </data>
+  <data name="ConfigDialog_System2_SaveInBinary" xml:space="preserve">
+    <value>セーブデータをバイナリ形式で保存する</value>
+  </data>
+  <data name="ConfigDialog_System2_NoAutoCompleteCVar" xml:space="preserve">
+    <value>キャラクタ変数の引数を補完しない</value>
+  </data>
+  <data name="ConfigDialog_Compatibility" xml:space="preserve">
+    <value>互換性</value>
+  </data>
+  <data name="ConfigDialog_Compatibility_Warning" xml:space="preserve">
+    <value>※eramakerとEmueraで動作が違う、
 Emueraの過去のバージョンで動作したものが動作しない、
 などの問題を解決するためのオプションです
 標準で問題ない場合は変更しないでください</value>
-	</data>
-    <data name="ConfigDialog_Compatibility_ExecuteErrorLine" xml:space="preserve">
-		<value>解釈不可能な行があっても実行する</value>
-	</data>
-    <data name="ConfigDialog_Compatibility_NameForCallname" xml:space="preserve">
-		<value>CALLNAMEが空文字列の時にNAMEを代入する</value>
-	</data>
-    <data name="ConfigDialog_Compatibility_EramakerRAND" xml:space="preserve">
-		<value>擬似変数RANDの仕様をeramakerに合わせる</value>
-	</data>
-    <data name="ConfigDialog_Compatibility_EramakerTIMES" xml:space="preserve">
-		<value>TIMESの計算をeramakerにあわせる</value>
-	</data>
-    <data name="ConfigDialog_Compatibility_NoIgnoreCase" xml:space="preserve">
-		<value>関数・属性については大文字小文字を無視しない</value>
-	</data>
-    <data name="ConfigDialog_Compatibility_CallEvent" xml:space="preserve">
-		<value>イベント関数のCALLを許可する</value>
-	</data>
-    <data name="ConfigDialog_Compatibility_UseSPCharacters" xml:space="preserve">
-		<value>SPキャラを使用する</value>
-	</data>
-    <data name="ConfigDialog_Compatibility_ButtonWarp" xml:space="preserve">
-		<value>ver1739以前の非ボタン折り返しを再現する</value>
-	</data>
-    <data name="ConfigDialog_Compatibility_OmitArgs" xml:space="preserve">
-		<value>ユーザー関数の全ての引数の省略を許可する</value>
-	</data>
-    <data name="ConfigDialog_Compatibility_AutoTOSTR" xml:space="preserve">
-		<value>ユーザー関数の引数に自動的にTOSTRを補完する</value>
-	</data>
-    <data name="ConfigDialog_Compatibility_EramakerStandard" xml:space="preserve">
-		<value>eramakerの仕様にする</value>
-	</data>
-    <data name="ConfigDialog_Compatibility_EmueraStandard" xml:space="preserve">
-		<value>Emuera標準仕様にする</value>
-	</data>
-    <data name="ConfigDialog_Debug" xml:space="preserve">
-		<value>解析</value>
-	</data>
-    <data name="ConfigDialog_Debug_CompatibilityWarn" xml:space="preserve">
-		<value>eramaker互換性に関する警告を表示する</value>
-	</data>
-    <data name="ConfigDialog_Debug_LoadingReport" xml:space="preserve">
-		<value>ロード時にレポートを表示する</value>
-	</data>
-    <data name="ConfigDialog_Debug_IgnoreUnusedFuncs" xml:space="preserve">
-		<value>呼び出されなかった関数を無視する</value>
-	</data>
-    <data name="ConfigDialog_Debug_FuncNotFoundWarn" xml:space="preserve">
-		<value>関数が見つからない警告の扱い</value>
-	</data>
-    <data name="ConfigDialog_Debug_UnusedFuncWarn" xml:space="preserve">
-		<value>関数が呼び出されなかった警告の扱い</value>
-	</data>
-    <data name="ConfigDialog_Debug_PlayerStandard" xml:space="preserve">
-		<value>ユーザー向けの設定にする</value>
-	</data>
-    <data name="ConfigDialog_Debug_DeveloperStandard" xml:space="preserve">
-		<value>開発者向けの設定にする</value>
-	</data>
-    <data name="ConfigDialog_Debug_ReduceArgs" xml:space="preserve">
-		<value>ロード時に引数を解析する</value>
-	</data>
-    <data name="ConfigDialog_Debug_ReduceArgs_Never" xml:space="preserve">
-		<value>常に行わない</value>
-	</data>
-    <data name="ConfigDialog_Debug_ReduceArgs_OnUpdate" xml:space="preserve">
-		<value>更新されていれば行う</value>
-	</data>
-    <data name="ConfigDialog_Debug_ReduceArgs_Always" xml:space="preserve">
-		<value>常に行う</value>
-	</data>
-    <data name="ConfigDialog_Debug_WarnLevel" xml:space="preserve">
-		<value>表示する最低警告レベル</value>
-	</data>
-    <data name="ConfigDialog_Debug_WarnLevel_Level0" xml:space="preserve">
-		<value>0:標準でない文法</value>
-	</data>
-    <data name="ConfigDialog_Debug_WarnLevel_Level1" xml:space="preserve">
-		<value>1:無視可能なエラー</value>
-	</data>
-    <data name="ConfigDialog_Debug_WarnLevel_Level2" xml:space="preserve">
-		<value>2:動作しないエラー</value>
-	</data>
-    <data name="ConfigDialog_Debug_WarnLevel_Level3" xml:space="preserve">
-		<value>3:致命的エラー</value>
-	</data>
-    <data name="ConfigDialog_Debug_WarnSetting_Ignore" xml:space="preserve">
-		<value>無視</value>
-	</data>
-    <data name="ConfigDialog_Debug_WarnSetting_TotalNumber" xml:space="preserve">
-		<value>総数のみ表示する</value>
-	</data>
-    <data name="ConfigDialog_Debug_WarnSetting_OncePerFile" xml:space="preserve">
-		<value>ファイル毎に一度だけ表示する</value>
-	</data>
-    <data name="ConfigDialog_Debug_WarnSetting_Always" xml:space="preserve">
-		<value>表示する</value>
-	</data>
-    <data name="ConfigDialog_System2_UseScopedVariableInstruction" xml:space="preserve">
-		<value>VAR系命令を利用可能にする</value>
-	</data>
-    <data name="ConfigDialog_System2_UseNewRandom" xml:space="preserve">
-		<value>新しい高速な乱数アルゴリズムを使う</value>
-	</data>
-    <data name="ConfigDialog_Title" xml:space="preserve">
-		<value>設定</value>
-	</data>
-    <data name="ConfigDialog_Display_UseButtonFocusColor" xml:space="preserve">
-		<value>ボタンにカーソルを合わせた時にボタンの背景色を変更する</value>
-	</data>
-    <data name="MessageBox_WINAPINotSupported" xml:space="preserve">
-		<value>WINAPIモードはサポートされていません</value>
-	</data>
-    <data name="MessageBox_FailedCreateDataFolder" xml:space="preserve">
-		<value>datフォルダーの作成に失敗しました</value>
-	</data>
-    <data name="MessageBox_ConfigError" xml:space="preserve">
-		<value>設定のエラー</value>
-	</data>
-    <data name="MessageBox_TooSmallFontSize" xml:space="preserve">
-		<value>フォントサイズが小さすぎます(8が下限)</value>
-	</data>
-    <data name="MessageBox_LineHeightLessThanFontSize" xml:space="preserve">
-		<value>行の高さがフォントサイズより小さいため、フォントサイズと同じ高さと解釈されます</value>
-	</data>
-    <data name="MessageBox_TooSmallDisplaySaveData" xml:space="preserve">
-		<value>表示するセーブデータ数が少なすぎます(20が下限)</value>
-	</data>
-    <data name="MessageBox_TooLargeDisplaySaveData" xml:space="preserve">
-		<value>表示するセーブデータ数が多すぎます(80が上限)</value>
-	</data>
-    <data name="MessageBox_TooSmallLogSize" xml:space="preserve">
-		<value>ログ表示行数が少なすぎます(500が下限)</value>
-	</data>
-    <data name="MessageBox_FolderCreationFailure" xml:space="preserve">
-		<value>フォルダ作成失敗</value>
-	</data>
-    <data name="MessageBox_FailedCreateSavFolder" xml:space="preserve">
-		<value>savフォルダの作成に失敗しました</value>
-	</data>
-    <data name="MessageBox_SavFolderCreated" xml:space="preserve">
-		<value>savフォルダを作成しました
+  </data>
+  <data name="ConfigDialog_Compatibility_ExecuteErrorLine" xml:space="preserve">
+    <value>解釈不可能な行があっても実行する</value>
+  </data>
+  <data name="ConfigDialog_Compatibility_NameForCallname" xml:space="preserve">
+    <value>CALLNAMEが空文字列の時にNAMEを代入する</value>
+  </data>
+  <data name="ConfigDialog_Compatibility_EramakerRAND" xml:space="preserve">
+    <value>擬似変数RANDの仕様をeramakerに合わせる</value>
+  </data>
+  <data name="ConfigDialog_Compatibility_EramakerTIMES" xml:space="preserve">
+    <value>TIMESの計算をeramakerにあわせる</value>
+  </data>
+  <data name="ConfigDialog_Compatibility_NoIgnoreCase" xml:space="preserve">
+    <value>関数・属性については大文字小文字を無視しない</value>
+  </data>
+  <data name="ConfigDialog_Compatibility_CallEvent" xml:space="preserve">
+    <value>イベント関数のCALLを許可する</value>
+  </data>
+  <data name="ConfigDialog_Compatibility_UseSPCharacters" xml:space="preserve">
+    <value>SPキャラを使用する</value>
+  </data>
+  <data name="ConfigDialog_Compatibility_ButtonWarp" xml:space="preserve">
+    <value>ver1739以前の非ボタン折り返しを再現する</value>
+  </data>
+  <data name="ConfigDialog_Compatibility_OmitArgs" xml:space="preserve">
+    <value>ユーザー関数の全ての引数の省略を許可する</value>
+  </data>
+  <data name="ConfigDialog_Compatibility_AutoTOSTR" xml:space="preserve">
+    <value>ユーザー関数の引数に自動的にTOSTRを補完する</value>
+  </data>
+  <data name="ConfigDialog_Compatibility_EramakerStandard" xml:space="preserve">
+    <value>eramakerの仕様にする</value>
+  </data>
+  <data name="ConfigDialog_Compatibility_EmueraStandard" xml:space="preserve">
+    <value>Emuera標準仕様にする</value>
+  </data>
+  <data name="ConfigDialog_Debug" xml:space="preserve">
+    <value>解析</value>
+  </data>
+  <data name="ConfigDialog_Debug_CompatibilityWarn" xml:space="preserve">
+    <value>eramaker互換性に関する警告を表示する</value>
+  </data>
+  <data name="ConfigDialog_Debug_LoadingReport" xml:space="preserve">
+    <value>ロード時にレポートを表示する</value>
+  </data>
+  <data name="ConfigDialog_Debug_IgnoreUnusedFuncs" xml:space="preserve">
+    <value>呼び出されなかった関数を無視する</value>
+  </data>
+  <data name="ConfigDialog_Debug_FuncNotFoundWarn" xml:space="preserve">
+    <value>関数が見つからない警告の扱い</value>
+  </data>
+  <data name="ConfigDialog_Debug_UnusedFuncWarn" xml:space="preserve">
+    <value>関数が呼び出されなかった警告の扱い</value>
+  </data>
+  <data name="ConfigDialog_Debug_PlayerStandard" xml:space="preserve">
+    <value>ユーザー向けの設定にする</value>
+  </data>
+  <data name="ConfigDialog_Debug_DeveloperStandard" xml:space="preserve">
+    <value>開発者向けの設定にする</value>
+  </data>
+  <data name="ConfigDialog_Debug_ReduceArgs" xml:space="preserve">
+    <value>ロード時に引数を解析する</value>
+  </data>
+  <data name="ConfigDialog_Debug_ReduceArgs_Never" xml:space="preserve">
+    <value>常に行わない</value>
+  </data>
+  <data name="ConfigDialog_Debug_ReduceArgs_OnUpdate" xml:space="preserve">
+    <value>更新されていれば行う</value>
+  </data>
+  <data name="ConfigDialog_Debug_ReduceArgs_Always" xml:space="preserve">
+    <value>常に行う</value>
+  </data>
+  <data name="ConfigDialog_Debug_WarnLevel" xml:space="preserve">
+    <value>表示する最低警告レベル</value>
+  </data>
+  <data name="ConfigDialog_Debug_WarnLevel_Level0" xml:space="preserve">
+    <value>0:標準でない文法</value>
+  </data>
+  <data name="ConfigDialog_Debug_WarnLevel_Level1" xml:space="preserve">
+    <value>1:無視可能なエラー</value>
+  </data>
+  <data name="ConfigDialog_Debug_WarnLevel_Level2" xml:space="preserve">
+    <value>2:動作しないエラー</value>
+  </data>
+  <data name="ConfigDialog_Debug_WarnLevel_Level3" xml:space="preserve">
+    <value>3:致命的エラー</value>
+  </data>
+  <data name="ConfigDialog_Debug_WarnSetting_Ignore" xml:space="preserve">
+    <value>無視</value>
+  </data>
+  <data name="ConfigDialog_Debug_WarnSetting_TotalNumber" xml:space="preserve">
+    <value>総数のみ表示する</value>
+  </data>
+  <data name="ConfigDialog_Debug_WarnSetting_OncePerFile" xml:space="preserve">
+    <value>ファイル毎に一度だけ表示する</value>
+  </data>
+  <data name="ConfigDialog_Debug_WarnSetting_Always" xml:space="preserve">
+    <value>表示する</value>
+  </data>
+  <data name="ConfigDialog_System2_UseScopedVariableInstruction" xml:space="preserve">
+    <value>VAR系命令を利用可能にする</value>
+  </data>
+  <data name="ConfigDialog_System2_UseNewRandom" xml:space="preserve">
+    <value>新しい高速な乱数アルゴリズムを使う</value>
+  </data>
+  <data name="ConfigDialog_Title" xml:space="preserve">
+    <value>設定</value>
+  </data>
+  <data name="ConfigDialog_Display_UseButtonFocusColor" xml:space="preserve">
+    <value>ボタンにカーソルを合わせた時にボタンの背景色を変更する</value>
+  </data>
+  <data name="MessageBox_WINAPINotSupported" xml:space="preserve">
+    <value>WINAPIモードはサポートされていません</value>
+  </data>
+  <data name="MessageBox_FailedCreateDataFolder" xml:space="preserve">
+    <value>datフォルダーの作成に失敗しました</value>
+  </data>
+  <data name="MessageBox_ConfigError" xml:space="preserve">
+    <value>設定のエラー</value>
+  </data>
+  <data name="MessageBox_TooSmallFontSize" xml:space="preserve">
+    <value>フォントサイズが小さすぎます(8が下限)</value>
+  </data>
+  <data name="MessageBox_LineHeightLessThanFontSize" xml:space="preserve">
+    <value>行の高さがフォントサイズより小さいため、フォントサイズと同じ高さと解釈されます</value>
+  </data>
+  <data name="MessageBox_TooSmallDisplaySaveData" xml:space="preserve">
+    <value>表示するセーブデータ数が少なすぎます(20が下限)</value>
+  </data>
+  <data name="MessageBox_TooLargeDisplaySaveData" xml:space="preserve">
+    <value>表示するセーブデータ数が多すぎます(80が上限)</value>
+  </data>
+  <data name="MessageBox_TooSmallLogSize" xml:space="preserve">
+    <value>ログ表示行数が少なすぎます(500が下限)</value>
+  </data>
+  <data name="MessageBox_FolderCreationFailure" xml:space="preserve">
+    <value>フォルダ作成失敗</value>
+  </data>
+  <data name="MessageBox_FailedCreateSavFolder" xml:space="preserve">
+    <value>savフォルダの作成に失敗しました</value>
+  </data>
+  <data name="MessageBox_SavFolderCreated" xml:space="preserve">
+    <value>savフォルダを作成しました
 現在のデータをsavフォルダ内に移動しますか？</value>
-	</data>
-    <data name="MessageBox_DataTransfer" xml:space="preserve">
-		<value>データ移動</value>
-	</data>
-    <data name="MessageBox_MissingSavFolder" xml:space="preserve">
-		<value>savフォルダは作成されましたが見つかりません
+  </data>
+  <data name="MessageBox_DataTransfer" xml:space="preserve">
+    <value>データ移動</value>
+  </data>
+  <data name="MessageBox_MissingSavFolder" xml:space="preserve">
+    <value>savフォルダは作成されましたが見つかりません
 削除しましたか？</value>
-	</data>
-    <data name="MessageBox_DataTransferFailure" xml:space="preserve">
-		<value>データ移動失敗</value>
-	</data>
-    <data name="MessageBox_FailedMoveSavFiles" xml:space="preserve">
-		<value>savファイルの移動に失敗しました</value>
-	</data>
-	<data name="MessageBox_ConfigFileError" xml:space="preserve">
-		<value>コンフィグファイルに異常があります
+  </data>
+  <data name="MessageBox_DataTransferFailure" xml:space="preserve">
+    <value>データ移動失敗</value>
+  </data>
+  <data name="MessageBox_FailedMoveSavFiles" xml:space="preserve">
+    <value>savファイルの移動に失敗しました</value>
+  </data>
+  <data name="MessageBox_ConfigFileError" xml:space="preserve">
+    <value>コンフィグファイルに異常があります
 Emueraを終了しますか？</value>
-	</data>
-    <data name="MessageBox_ReplaceFileError" xml:space="preserve">
-		<value>_Replace.csvに異常があります
+  </data>
+  <data name="MessageBox_ReplaceFileError" xml:space="preserve">
+    <value>_Replace.csvに異常があります
 Emueraを終了しますか？</value>
-	</data>
-    <data name="MessageBox_ReplaceError" xml:space="preserve">
-		<value>_Replace.csvエラー</value>
-	</data>
-    <data name="MessageBox_InfiniteLoop" xml:space="preserve">
-		<value>無限ループの可能性があります</value>
-	</data>
-    <data name="MessageBox_TooLongLoop" xml:space="preserve">
-		<value>現在、{0}の{1}行目を実行中です。
+  </data>
+  <data name="MessageBox_ReplaceError" xml:space="preserve">
+    <value>_Replace.csvエラー</value>
+  </data>
+  <data name="MessageBox_InfiniteLoop" xml:space="preserve">
+    <value>無限ループの可能性があります</value>
+  </data>
+  <data name="MessageBox_TooLongLoop" xml:space="preserve">
+    <value>現在、{0}の{1}行目を実行中です。
 最後の入力から{3}ミリ秒経過し{2}行が実行されました。
 処理を中断し強制終了しますか？</value>
-	</data>
-	<data name="MessageBox_IllegalFontError" xml:space="preserve">
-		<value>Emueraの表示処理中に不適正なフォントを検出しました
+  </data>
+  <data name="MessageBox_IllegalFontError" xml:space="preserve">
+    <value>Emueraの表示処理中に不適正なフォントを検出しました
 描画処理を続行できないため強制終了します</value>
-	</data>
-    <data name="MessageBox_IllegalFont" xml:space="preserve">
-		<value>フォント不適正</value>
-	</data>
-    <data name="MessageBox_FailedOutputLogError" xml:space="preserve">
-		<value>ログの出力に失敗しました</value>
-	</data>
-    <data name="MessageBox_FailedOutputLog" xml:space="preserve">
-		<value>ログ出力失敗</value>
-	</data>
-	<data name="MessageBox_CanOnlyOutputToSubDirectory" xml:space="preserve">
-		<value>ログファイルは実行ファイル以下のディレクトリにのみ保存できます</value>
-	</data>
-    <data name="MessageBox_NotAvailableDuringScript" xml:space="preserve">
-		<value>スクリプト動作中には使用できません</value>
-	</data>
-    <data name="MessageBox_FileNotFound" xml:space="preserve">
-		<value>ファイルがありません</value>
-	</data>
-    <data name="MessageBox_IsNotErb" xml:space="preserve">
-		<value>ERBファイル以外は読み込めません</value>
-	</data>
-    <data name="MessageBox_FileFormatError" xml:space="preserve">
-		<value>ファイル形式エラー</value>
-	</data>
-    <data name="MessageBox_ErrorInAnalysisMode" xml:space="preserve">
-		<value>コード解析でエラーが発見されたため、タイトルへは飛べません</value>
-	</data>
-    <data name="MessageBox_CanNotReturnToTitle" xml:space="preserve">
-		<value>解析モードのためタイトルへは飛べません</value>
-	</data>
-    <data name="MessageBox_ReturnToTitleAsk" xml:space="preserve">
-		<value>タイトル画面に戻りますか？</value>
-	</data>
-    <data name="MessageBox_ReturnToTitle" xml:space="preserve">
-		<value>タイトルに戻る</value>
-	</data>
-    <data name="MessageBox_RestartAsk" xml:space="preserve">
-		<value>再起動しますか？</value>
-	</data>
-    <data name="MessageBox_Restart" xml:space="preserve">
-		<value>再起動</value>
-	</data>
-    <data name="MessageBox_ExitAsk" xml:space="preserve">
-		<value>ゲームを終了します</value>
-	</data>
-    <data name="MessageBox_Exit" xml:space="preserve">
-		<value>終了</value>
-	</data>
-    <data name="MessageBox_ReloadErbAsk" xml:space="preserve">
-		<value>ERBファイルを読み直します</value>
-	</data>
-    <data name="MessageBox_ReloadErb" xml:space="preserve">
-		<value>ERBファイル再読み込み</value>
-	</data>
-    <data name="MessageBox_CanNotOpenClipboard" xml:space="preserve">
-		<value>予期せぬエラーが発生したためクリップボードを開けません</value>
-	</data>
-    <data name="MessageBox_NotAllowChangeSetting" xml:space="preserve">
-		<value>いくつかの設定は_fixed.configにより変更を許可されていないために変更できませんでした</value>
-	</data>
-    <data name="MessageBox_UnableChangeSetting" xml:space="preserve">
-		<value>設定変更不可</value>
-	</data>
-    <data name="ConfigDialog_System2_SaveInUTF8" xml:space="preserve">
-		<value>セーブデータをUTF-8で保存する(非バイナリ時のみ)</value>
-	</data>
-    <data name="KeyMacro_SetMacroGroup" xml:space="preserve">
-		<value>マクログループ{0}に設定</value>
-	</data>
-    <data name="KeyMacro_MacroKeyF" xml:space="preserve">
-		<value>マクロキーF{0}:</value>
-	</data>
-    <data name="KeyMacro_GMacroKeyF" xml:space="preserve">
-		<value>G{0}:マクロキーF{1}:</value>
-	</data>
-    <data name="MessageBox_CanNotUseWhenError" xml:space="preserve">
-		<value>エラー発生時はこの機能は使えません</value>
-	</data>
-    <data name="MessageBox_CanNotUseWhenInitialize" xml:space="preserve">
-		<value>初期化中はこの機能は使えません</value>
-	</data>
-    <data name="DebugConfigDialog_Name" xml:space="preserve">
-		<value>デバッグ</value>
-	</data>
-    <data name="DebugConfigDialog_Warning" xml:space="preserve">
-		<value>※デバッグ関連のオプションはコマンドライン引数に-Debug
+  </data>
+  <data name="MessageBox_IllegalFont" xml:space="preserve">
+    <value>フォント不適正</value>
+  </data>
+  <data name="MessageBox_FailedOutputLogError" xml:space="preserve">
+    <value>ログの出力に失敗しました</value>
+  </data>
+  <data name="MessageBox_FailedOutputLog" xml:space="preserve">
+    <value>ログ出力失敗</value>
+  </data>
+  <data name="MessageBox_CanOnlyOutputToSubDirectory" xml:space="preserve">
+    <value>ログファイルは実行ファイル以下のディレクトリにのみ保存できます</value>
+  </data>
+  <data name="MessageBox_NotAvailableDuringScript" xml:space="preserve">
+    <value>スクリプト動作中には使用できません</value>
+  </data>
+  <data name="MessageBox_FileNotFound" xml:space="preserve">
+    <value>ファイルがありません</value>
+  </data>
+  <data name="MessageBox_IsNotErb" xml:space="preserve">
+    <value>ERBファイル以外は読み込めません</value>
+  </data>
+  <data name="MessageBox_FileFormatError" xml:space="preserve">
+    <value>ファイル形式エラー</value>
+  </data>
+  <data name="MessageBox_ErrorInAnalysisMode" xml:space="preserve">
+    <value>コード解析でエラーが発見されたため、タイトルへは飛べません</value>
+  </data>
+  <data name="MessageBox_CanNotReturnToTitle" xml:space="preserve">
+    <value>解析モードのためタイトルへは飛べません</value>
+  </data>
+  <data name="MessageBox_ReturnToTitleAsk" xml:space="preserve">
+    <value>タイトル画面に戻りますか？</value>
+  </data>
+  <data name="MessageBox_ReturnToTitle" xml:space="preserve">
+    <value>タイトルに戻る</value>
+  </data>
+  <data name="MessageBox_RestartAsk" xml:space="preserve">
+    <value>再起動しますか？</value>
+  </data>
+  <data name="MessageBox_Restart" xml:space="preserve">
+    <value>再起動</value>
+  </data>
+  <data name="MessageBox_ExitAsk" xml:space="preserve">
+    <value>ゲームを終了します</value>
+  </data>
+  <data name="MessageBox_Exit" xml:space="preserve">
+    <value>終了</value>
+  </data>
+  <data name="MessageBox_ReloadErbAsk" xml:space="preserve">
+    <value>ERBファイルを読み直します</value>
+  </data>
+  <data name="MessageBox_ReloadErb" xml:space="preserve">
+    <value>ERBファイル再読み込み</value>
+  </data>
+  <data name="MessageBox_CanNotOpenClipboard" xml:space="preserve">
+    <value>予期せぬエラーが発生したためクリップボードを開けません</value>
+  </data>
+  <data name="MessageBox_NotAllowChangeSetting" xml:space="preserve">
+    <value>いくつかの設定は_fixed.configにより変更を許可されていないために変更できませんでした</value>
+  </data>
+  <data name="MessageBox_UnableChangeSetting" xml:space="preserve">
+    <value>設定変更不可</value>
+  </data>
+  <data name="ConfigDialog_System2_SaveInUTF8" xml:space="preserve">
+    <value>セーブデータをUTF-8で保存する(非バイナリ時のみ)</value>
+  </data>
+  <data name="KeyMacro_SetMacroGroup" xml:space="preserve">
+    <value>マクログループ{0}に設定</value>
+  </data>
+  <data name="KeyMacro_MacroKeyF" xml:space="preserve">
+    <value>マクロキーF{0}:</value>
+  </data>
+  <data name="KeyMacro_GMacroKeyF" xml:space="preserve">
+    <value>G{0}:マクロキーF{1}:</value>
+  </data>
+  <data name="MessageBox_CanNotUseWhenError" xml:space="preserve">
+    <value>エラー発生時はこの機能は使えません</value>
+  </data>
+  <data name="MessageBox_CanNotUseWhenInitialize" xml:space="preserve">
+    <value>初期化中はこの機能は使えません</value>
+  </data>
+  <data name="DebugConfigDialog_Name" xml:space="preserve">
+    <value>デバッグ</value>
+  </data>
+  <data name="DebugConfigDialog_Warning" xml:space="preserve">
+    <value>※デバッグ関連のオプションはコマンドライン引数に-Debug
 を指定して起動した時のみ有効です</value>
-	</data>
-    <data name="DebugConfigDialog_OpenDebugWindowOnStartup" xml:space="preserve">
-		<value>起動時にデバッグウインドウを表示する</value>
-	</data>
-    <data name="DebugConfigDialog_AlwaysOnTop" xml:space="preserve">
-		<value>デバッグウインドウを最前面に表示する</value>
-	</data>
-    <data name="DebugConfigDialog_WindowWidth" xml:space="preserve">
-		<value>デバッグウィンドウ幅</value>
-	</data>
-    <data name="DebugConfigDialog_WindowHeight" xml:space="preserve">
-		<value>デバッグウィンドウ高さ</value>
-	</data>
-    <data name="DebugConfigDialog_SetWindowPos" xml:space="preserve">
-		<value>デバッグウィンドウ位置を指定する</value>
-	</data>
-    <data name="DebugConfigDialog_WindowX" xml:space="preserve">
-		<value>デバッグウィンドウ位置X</value>
-	</data>
-    <data name="DebugConfigDialog_WindowY" xml:space="preserve">
-		<value>デバッグウィンドウ位置Y</value>
-	</data>
-    <data name="DebugDialog_Title" xml:space="preserve">
-		<value>Emuera - デバッグウインドウ</value>
-	</data>
-    <data name="DebugDialog_StackTrace" xml:space="preserve">
-		<value>スタックトレース</value>
-	</data>
-    <data name="DebugDialog_Console" xml:space="preserve">
-		<value>コンソール</value>
-	</data>
-    <data name="DebugDialog_StayOnTop" xml:space="preserve">
-		<value>最前面に表示</value>
-	</data>
-    <data name="DebugDialog_UpdateData" xml:space="preserve">
-		<value>データ更新</value>
-	</data>
-    <data name="DebugDialog_Close" xml:space="preserve">
-		<value>閉じる</value>
-	</data>
-    <data name="DebugDialog_File_SaveWatchList" xml:space="preserve">
-		<value>ウォッチリストの保存</value>
-	</data>
-    <data name="DebugDialog_File_LoadWatchList" xml:space="preserve">
-		<value>ウォッチリストの読込</value>
-	</data>
-    <data name="DebugDialog_Setting" xml:space="preserve">
-		<value>設定(&amp;C)</value>
-	</data>
-    <data name="DebugDialog_Setting_Config" xml:space="preserve">
-		<value>コンフィグ(&amp;C)</value>
-	</data>
-    <data name="DebugDialog_VariableWatch" xml:space="preserve">
-		<value>変数ウォッチ</value>
-	</data>
-    <data name="DebugDialog_VariableWatch_Object" xml:space="preserve">
-		<value>式</value>
-	</data>
-    <data name="DebugDialog_VariableWatch_Value" xml:space="preserve">
-		<value>値</value>
-	</data>
-	<data name="DebugConfigDialog_Title" xml:space="preserve">
-		<value>ConfigDialog</value>
-	</data>
-	<data name="ConfigDialog_Clipboard" xml:space="preserve">
-        <value>クリップボード</value>
-    </data>
-	<data name="ConfigDialog_Clipboard_IgnoreTags" xml:space="preserve">
-        <value>テキスト中の&lt;&gt;タグを無視する</value>
-    </data>
-	<data name="ConfigDialog_Clipboard_ReplaceTags" xml:space="preserve">
-        <value>&lt;&gt;を次の文で置き換える</value>
-    </data>
-	<data name="ConfigDialog_Clipboard_NewLineOnly" xml:space="preserve">
-        <value>新しい行のみコピーする</value>
-    </data>
-	<data name="ConfigDialog_Clipboard_ClearClipboard" xml:space="preserve">
-        <value>タイトル画面に戻った時にクリップボードとバッファを消去する</value>
-    </data>
-	<data name="ConfigDialog_Clipboard_TriggerToUse" xml:space="preserve">
-        <value>クリップボードにコピーするタイミング</value>
-    </data>
-	<data name="ConfigDialog_Clipboard_LClick" xml:space="preserve">
-        <value>左クリック時</value>
-    </data>
-	<data name="ConfigDialog_Clipboard_MClick" xml:space="preserve">
-        <value>ホイールクリック時</value>
-    </data>
-	<data name="ConfigDialog_Clipboard_DoubleClick" xml:space="preserve">
-        <value>ダブルクリック時</value>
-    </data>
-	<data name="ConfigDialog_Clipboard_AnyKeyWait" xml:space="preserve">
-        <value>WAIT時</value>
-    </data>
-	<data name="ConfigDialog_Clipboard_InputWait" xml:space="preserve">
-        <value>INPUT時</value>
-    </data>
-	<data name="ConfigDialog_Clipboard_LinesToClipboard" xml:space="preserve">
-        <value>クリップボードに貼り付ける行数</value>
-    </data>
-	<data name="ConfigDialog_Clipboard_TotalBuffer" xml:space="preserve">
-        <value>総バッファサイズ</value>
-    </data>
-	<data name="ConfigDialog_Clipboard_LinesToScroll" xml:space="preserve">
-        <value>スクロールの行数</value>
-    </data>
-	<data name="ConfigDialog_Clipboard_UpdateTime" xml:space="preserve">
-        <value>クリップボードの更新間隔(ミリ秒)</value>
-    </data>
-	<data name="ConfigDialog_Clipboard_ScrollThrough" xml:space="preserve">
-        <value>Ctrl+↑、Ctrl+↓、またはCtrl+マウスホイールで履歴をスクロールできます</value>
-    </data>
-	<data name="MainWindow_CopyToClipboard" xml:space="preserve">
-		<value>クリップボードにコピー</value>
-	</data>
+  </data>
+  <data name="DebugConfigDialog_OpenDebugWindowOnStartup" xml:space="preserve">
+    <value>起動時にデバッグウインドウを表示する</value>
+  </data>
+  <data name="DebugConfigDialog_AlwaysOnTop" xml:space="preserve">
+    <value>デバッグウインドウを最前面に表示する</value>
+  </data>
+  <data name="DebugConfigDialog_WindowWidth" xml:space="preserve">
+    <value>デバッグウィンドウ幅</value>
+  </data>
+  <data name="DebugConfigDialog_WindowHeight" xml:space="preserve">
+    <value>デバッグウィンドウ高さ</value>
+  </data>
+  <data name="DebugConfigDialog_SetWindowPos" xml:space="preserve">
+    <value>デバッグウィンドウ位置を指定する</value>
+  </data>
+  <data name="DebugConfigDialog_WindowX" xml:space="preserve">
+    <value>デバッグウィンドウ位置X</value>
+  </data>
+  <data name="DebugConfigDialog_WindowY" xml:space="preserve">
+    <value>デバッグウィンドウ位置Y</value>
+  </data>
+  <data name="DebugDialog_Title" xml:space="preserve">
+    <value>Emuera - デバッグウインドウ</value>
+  </data>
+  <data name="DebugDialog_StackTrace" xml:space="preserve">
+    <value>スタックトレース</value>
+  </data>
+  <data name="DebugDialog_Console" xml:space="preserve">
+    <value>コンソール</value>
+  </data>
+  <data name="DebugDialog_StayOnTop" xml:space="preserve">
+    <value>最前面に表示</value>
+  </data>
+  <data name="DebugDialog_UpdateData" xml:space="preserve">
+    <value>データ更新</value>
+  </data>
+  <data name="DebugDialog_Close" xml:space="preserve">
+    <value>閉じる</value>
+  </data>
+  <data name="DebugDialog_File_SaveWatchList" xml:space="preserve">
+    <value>ウォッチリストの保存</value>
+  </data>
+  <data name="DebugDialog_File_LoadWatchList" xml:space="preserve">
+    <value>ウォッチリストの読込</value>
+  </data>
+  <data name="DebugDialog_Setting" xml:space="preserve">
+    <value>設定(&amp;C)</value>
+  </data>
+  <data name="DebugDialog_Setting_Config" xml:space="preserve">
+    <value>コンフィグ(&amp;C)</value>
+  </data>
+  <data name="DebugDialog_VariableWatch" xml:space="preserve">
+    <value>変数ウォッチ</value>
+  </data>
+  <data name="DebugDialog_VariableWatch_Object" xml:space="preserve">
+    <value>式</value>
+  </data>
+  <data name="DebugDialog_VariableWatch_Value" xml:space="preserve">
+    <value>値</value>
+  </data>
+  <data name="DebugConfigDialog_Title" xml:space="preserve">
+    <value>ConfigDialog</value>
+  </data>
+  <data name="ConfigDialog_Clipboard" xml:space="preserve">
+    <value>クリップボード</value>
+  </data>
+  <data name="ConfigDialog_Clipboard_IgnoreTags" xml:space="preserve">
+    <value>テキスト中の&lt;&gt;タグを無視する</value>
+  </data>
+  <data name="ConfigDialog_Clipboard_ReplaceTags" xml:space="preserve">
+    <value>&lt;&gt;を次の文で置き換える</value>
+  </data>
+  <data name="ConfigDialog_Clipboard_NewLineOnly" xml:space="preserve">
+    <value>新しい行のみコピーする</value>
+  </data>
+  <data name="ConfigDialog_Clipboard_ClearClipboard" xml:space="preserve">
+    <value>タイトル画面に戻った時にクリップボードとバッファを消去する</value>
+  </data>
+  <data name="ConfigDialog_Clipboard_TriggerToUse" xml:space="preserve">
+    <value>クリップボードにコピーするタイミング</value>
+  </data>
+  <data name="ConfigDialog_Clipboard_LClick" xml:space="preserve">
+    <value>左クリック時</value>
+  </data>
+  <data name="ConfigDialog_Clipboard_MClick" xml:space="preserve">
+    <value>ホイールクリック時</value>
+  </data>
+  <data name="ConfigDialog_Clipboard_DoubleClick" xml:space="preserve">
+    <value>ダブルクリック時</value>
+  </data>
+  <data name="ConfigDialog_Clipboard_AnyKeyWait" xml:space="preserve">
+    <value>WAIT時</value>
+  </data>
+  <data name="ConfigDialog_Clipboard_InputWait" xml:space="preserve">
+    <value>INPUT時</value>
+  </data>
+  <data name="ConfigDialog_Clipboard_LinesToClipboard" xml:space="preserve">
+    <value>クリップボードに貼り付ける行数</value>
+  </data>
+  <data name="ConfigDialog_Clipboard_TotalBuffer" xml:space="preserve">
+    <value>総バッファサイズ</value>
+  </data>
+  <data name="ConfigDialog_Clipboard_LinesToScroll" xml:space="preserve">
+    <value>スクロールの行数</value>
+  </data>
+  <data name="ConfigDialog_Clipboard_UpdateTime" xml:space="preserve">
+    <value>クリップボードの更新間隔(ミリ秒)</value>
+  </data>
+  <data name="ConfigDialog_Clipboard_ScrollThrough" xml:space="preserve">
+    <value>Ctrl+↑、Ctrl+↓、またはCtrl+マウスホイールで履歴をスクロールできます</value>
+  </data>
+  <data name="MainWindow_CopyToClipboard" xml:space="preserve">
+    <value>クリップボードにコピー</value>
+  </data>
+  <data name="ConfigDialog_CheckUTF8BOM" xml:space="preserve">
+    <value>ファイルがBOM付きUTF8かチェックする</value>
+  </data>
+  <data name="ConfigDialog_FontAntialias" xml:space="preserve">
+    <value>アンチエイリアス</value>
+  </data>
+  <data name="ConfigDialog_ImageSampling" xml:space="preserve">
+    <value>画像リサイズフィルタ</value>
+  </data>
 </root>
