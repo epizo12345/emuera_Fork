@@ -31,6 +31,8 @@ sealed class JSONGameConfigData
     public bool CheckUTF8withBOM { get; set; } = false;
 
     public FontAntialias FontAntialias { get; set; } = FontAntialias.Normal;
+
+    public bool UseRenameInCharaCSV = false;
 }
 
 sealed class JSONUserConfigData

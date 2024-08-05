@@ -9,6 +9,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using MinorShift.Emuera.UI.Framework;
+using MinorShift.Emuera.Runtime.Config.JSON;
 
 namespace MinorShift.Emuera.Runtime.Script.Data;
 
@@ -980,7 +981,7 @@ internal sealed class ConstantData
     private void loadCharacterDataFile(string csvPath, string csvName, bool disp)
     {
         CharacterTemplate tmpl = null;
-        using var eReader = new EraStreamReader(false);
+        using var eReader = new EraStreamReader(JSONConfig.Game.UseRenameInCharaCSV);
         if (!eReader.OpenOnCache(csvPath, csvName))
         {
             output.PrintError(string.Format(LocalizationManager.Error.FailedOpenFile, eReader.Filename));
