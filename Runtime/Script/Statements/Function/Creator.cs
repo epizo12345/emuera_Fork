@@ -227,6 +227,8 @@ internal static partial class FunctionMethodCreator
 
             ["HASH_XXH3"] = new XXH3(),
             ["HASH_XXH32"] = new XXH32(),
+
+            ["EXISTFUNCTION"] = new EXISTFUNCTION()
         };
 
 

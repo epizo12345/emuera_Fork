@@ -607,6 +607,28 @@ internal sealed partial class IdentifierDictionary
         return new FunctionMethodTerm(method, arguments);
     }
 
+    public long ExistFunction(string functionName)
+    {
+        var label = GlobalStatic.LabelDictionary.GetNonEventLabel(functionName);
+        if (label != null)
+        {
+            if (label.IsMethod)
+            {
+                if (label.MethodType == typeof(long))
+                {
+                    return 2;
+                }
+                if (label.MethodType == typeof(string))
+                {
+                    return 3;
+                }
+            }
+            return 1;
+        }
+
+        return 0;
+    }
+
     //1756 作成中途
     //名前リストを元に何がやりたかったのかを推定してCodeEEを投げる
     //1822 DIMリストの解決中にIdentifierNotFoundCodeEEが飛んだ場合にはやり直しの可能性がある
