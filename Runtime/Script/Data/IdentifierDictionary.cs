@@ -111,8 +111,6 @@ internal sealed partial class IdentifierDictionary
 
     List<string> privateDimList = [];
     //Dictionary<string, VariableToken> userDefinedVarDic = new Dictionary<string, VariableToken>();
-
-    VariableData varData;
     readonly Dictionary<string, VariableToken> varTokenDic;
     readonly Dictionary<string, VariableLocal> localvarTokenDic;
     readonly Dictionary<string, FunctionIdentifier> instructionDic;
@@ -122,7 +120,6 @@ internal sealed partial class IdentifierDictionary
     #region initialize
     public IdentifierDictionary(VariableData varData)
     {
-        this.varData = varData;
         nameDic.Clear();
         //予約語を登録。式中に登場すると構文解析が崩壊する名前群。
         //ただしeramaker用スクリプトなら特に気にすることはない。式中に出てこない単語も同様。
