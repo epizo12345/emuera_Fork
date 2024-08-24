@@ -604,7 +604,7 @@ internal sealed partial class IdentifierDictionary
         return new FunctionMethodTerm(method, arguments);
     }
 
-    public long ExistFunction(string functionName)
+    public static long ExistFunction(string functionName)
     {
         var label = GlobalStatic.LabelDictionary.GetNonEventLabel(functionName);
         if (label != null)

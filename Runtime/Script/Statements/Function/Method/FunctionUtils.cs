@@ -18,7 +18,7 @@ internal static partial class FunctionMethodCreator
         public override long GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             var functionName = arguments[0].GetStrValue(exm);
-            return GlobalStatic.IdentifierDictionary.ExistFunction(functionName);
+            return IdentifierDictionary.ExistFunction(functionName);
         }
     }
 
