@@ -32,7 +32,7 @@ sealed class JSONGameConfigData
 
     public FontAntialias FontAntialias { get; set; } = FontAntialias.Normal;
 
-    public bool UseRenameInCharaCSV = false;
+    public bool UseRenameInCharaCSV { get; set; } = false;
 }
 
 sealed class JSONUserConfigData
