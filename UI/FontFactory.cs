@@ -23,6 +23,7 @@ static class FontFactory
                 if (typeface != null)
                 {
                     _typefaces[typeface.FamilyName] = typeface;
+                    _typefaces[fontFile.Name] = typeface;
                 }
             }
         }
