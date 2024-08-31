@@ -12,7 +12,7 @@ static class SQL
 {
     static SqliteConnection? _connection;
     static Dictionary<long, SqliteDataReader> _readers = [];
-    static string tempDir { get => Config.SavDir + "temp_db/"; }
+    static string tempDir { get => Config.SavDir + "temp_db" + Path.DirectorySeparatorChar; }
 
     static public void ConnectionOpen(string name)
     {
@@ -20,8 +20,19 @@ static class SQL
         {
             Directory.CreateDirectory(tempDir);
         }
-        _connection = new SqliteConnection("Data Source=" + tempDir + name + ".db");
+
+        _connection?.Close();
+
+        var connection = new SqliteConnectionStringBuilder()
+        {
+            DataSource = $"{tempDir}{name}.db",
+        };
+        _connection = new SqliteConnection(connection.ConnectionString);
         _connection.Open();
+
+        var command = _connection.CreateCommand();
+        command.CommandText = "PRAGMA journal_mode = OFF;PRAGMA synchronous  = OFF;";
+        command.ExecuteNonQuery();
     }
 
     static public void SetUpTempDB()
