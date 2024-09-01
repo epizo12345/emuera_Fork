@@ -221,6 +221,7 @@ internal static partial class FunctionMethodCreator
             ["SQL_EXECUTE_READER"] = new SQLExecuteReader(),
             ["SQL_EXECUTE_SCALER_LONG"] = new SQLExecuteScalerLong(),
             ["SQL_EXECUTE_SCALER_STRING"] = new SQLExecuteScalerStr(),
+            ["SQL_EXECUTE_NONQUERY"] = new SQLExecuteNonQuery(),
             ["SQL_READER_READ"] = new SQLReaderRead(),
             ["SQL_READER_GET_LONG"] = new SQLReaderGetLong(),
             ["SQL_READER_GET_STRING"] = new SQLReaderGetString(),

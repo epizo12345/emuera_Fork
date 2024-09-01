@@ -115,4 +115,20 @@ internal static partial class FunctionMethodCreator
             return SQL.ReaderGetString(id, (int)index);
         }
     }
+
+    public sealed class SQLExecuteNonQuery : FunctionMethod
+    {
+        public SQLExecuteNonQuery()
+        {
+            ReturnType = typeof(long);
+            argumentTypeArray = [typeof(string)];
+            CanRestructure = false;
+        }
+        public override long GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
+        {
+            var sql = arguments[0].GetStrValue(exm);
+            SQL.ExecuteNonQuery(sql);
+            return 0;
+        }
+    }
 }
