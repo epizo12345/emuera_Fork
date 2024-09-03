@@ -225,6 +225,7 @@ internal static partial class FunctionMethodCreator
             ["SQL_READER_READ"] = new SQLReaderRead(),
             ["SQL_READER_GET_LONG"] = new SQLReaderGetLong(),
             ["SQL_READER_GET_STRING"] = new SQLReaderGetString(),
+            ["SQL_READER_IS_NULL"] = new SQLReaderIsNull(),
 
             ["HASH_XXH3"] = new XXH3(),
             ["HASH_XXH32"] = new XXH32(),

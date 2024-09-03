@@ -114,14 +114,14 @@ static class SQL
         command.ExecuteNonQuery();
     }
 
-    static public void ReaderRead(long readerID)
+    static public bool ReaderRead(long readerID)
     {
         if (!_readers.TryGetValue(readerID, out var reader))
         {
             throw new CodeEE($"IDが {readerID} のREADERは存在しません");
         }
 
-        reader.Read();
+        return reader.Read();
     }
 
     static public long ReaderGetLong(long readerID, int index)
@@ -140,5 +140,15 @@ static class SQL
             throw new CodeEE($"IDが {readerID} のREADERは存在しません");
         }
         return reader.GetString(index);
+    }
+
+    static public bool ReaderIsNull(long readerID, int index)
+    {
+        if (!_readers.TryGetValue(readerID, out var reader))
+        {
+            throw new CodeEE($"IDが {readerID} のREADERは存在しません");
+        }
+
+        return reader.IsDBNull(index);
     }
 }

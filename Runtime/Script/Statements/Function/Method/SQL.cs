@@ -80,8 +80,14 @@ internal static partial class FunctionMethodCreator
         public override long GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             var id = arguments[0].GetIntValue(exm);
-            SQL.ReaderRead(id);
-            return 1;
+            if (SQL.ReaderRead(id))
+            {
+                return 0;
+            }
+            else
+            {
+                return 1;
+            };
         }
     }
     public sealed class SQLReaderGetLong : FunctionMethod
@@ -129,6 +135,29 @@ internal static partial class FunctionMethodCreator
             var sql = arguments[0].GetStrValue(exm);
             SQL.ExecuteNonQuery(sql);
             return 0;
+        }
+    }
+
+    public sealed class SQLReaderIsNull : FunctionMethod
+    {
+        public SQLReaderIsNull()
+        {
+            ReturnType = typeof(long);
+            argumentTypeArray = [typeof(long), typeof(long)];
+            CanRestructure = false;
+        }
+        public override long GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
+        {
+            var id = arguments[0].GetIntValue(exm);
+            var index = arguments[1].GetIntValue(exm);
+            if (SQL.ReaderIsNull(id, (int)index))
+            {
+                return 1;
+            }
+            else
+            {
+                return 0;
+            };
         }
     }
 }
