@@ -149,6 +149,11 @@ static class SQL
             throw new CodeEE($"IDが {readerID} のREADERは存在しません");
         }
 
+        if (reader.FieldCount <= index)
+        {
+            return true;
+        }
+
         return reader.IsDBNull(index);
     }
 }
