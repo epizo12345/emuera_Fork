@@ -32,7 +32,6 @@ internal sealed partial class FunctionIdentifier
             var varName = arg.ConstStr;
 
             var privateVar = func.ParentLabelLine.GetPrivateVariable(varName);
-            privateVar.ScopeIn();
             if (privateVar.GetLength(0) == 1)
             {
                 privateVar.SetValue(arg.Exp.GetIntValue(exm), [0]);
@@ -56,7 +55,6 @@ internal sealed partial class FunctionIdentifier
             var varName = arg.ConstStr;
 
             var privateVar = func.ParentLabelLine.GetPrivateVariable(varName);
-            privateVar.ScopeIn();
             if (privateVar.GetLength(0) == 1)
             {
                 privateVar.SetValue(arg.Value, [0]);
