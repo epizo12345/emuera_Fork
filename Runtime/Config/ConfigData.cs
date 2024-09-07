@@ -129,10 +129,10 @@ internal sealed class ConfigData
         replaceArray[i++] = new ConfigItem<string>(ConfigCode.TitleMenuString0, "システムメニュー0", "最初からはじめる");
         replaceArray[i++] = new ConfigItem<string>(ConfigCode.TitleMenuString1, "システムメニュー1", "ロードしてはじめる");
         replaceArray[i++] = new ConfigItem<int>(ConfigCode.ComAbleDefault, "COM_ABLE初期値", 1);
-        replaceArray[i++] = new ConfigItem<List<long>>(ConfigCode.StainDefault, "汚れの初期値", new List<long>(new long[] { 0, 0, 2, 1, 8 }));
+        replaceArray[i++] = new ConfigItem<List<long>>(ConfigCode.StainDefault, "汚れの初期値", [0, 0, 2, 1, 8]);
         replaceArray[i++] = new ConfigItem<string>(ConfigCode.TimeupLabel, "時間切れ表示", "時間切れ");
-        replaceArray[i++] = new ConfigItem<List<long>>(ConfigCode.ExpLvDef, "EXPLVの初期値", new List<long>(new long[] { 0, 1, 4, 20, 50, 200 }));
-        replaceArray[i++] = new ConfigItem<List<long>>(ConfigCode.PalamLvDef, "PALAMLVの初期値", new List<long>(new long[] { 0, 100, 500, 3000, 10000, 30000, 60000, 100000, 150000, 250000 }));
+        replaceArray[i++] = new ConfigItem<List<long>>(ConfigCode.ExpLvDef, "EXPLVの初期値", [0, 1, 4, 20, 50, 200]);
+        replaceArray[i++] = new ConfigItem<List<long>>(ConfigCode.PalamLvDef, "PALAMLVの初期値", [0, 100, 500, 3000, 10000, 30000, 60000, 100000, 150000, 250000]);
         replaceArray[i++] = new ConfigItem<long>(ConfigCode.pbandDef, "PBANDの初期値", 4);
         replaceArray[i++] = new ConfigItem<long>(ConfigCode.RelationDef, "RELATIONの初期値", 0);
     }
