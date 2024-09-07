@@ -2081,9 +2081,10 @@ internal sealed partial class VariableData
             : base(VariableCode.VAR, data)
         {
             IsStatic = false;
+            arrayStack = [];
             defArray = data.DefaultInt;
         }
-
+        readonly Stack<long[]> arrayStack;
         Int64[] array;
         Int64[] defArray;
         //int counter = 0;
@@ -2124,16 +2125,21 @@ internal sealed partial class VariableData
         public override void ScopeIn()
         {
             if (array != null)
-                throw new Exception("内部エラー:配列が2重で初期化されている");
+                arrayStack.Push(array);
             //counter++;
-            array = new long[sizes[0]];
-
-            defArray?.AsSpan().CopyTo(array.AsSpan());
+            array = new Int64[sizes[0]];
+            if (defArray != null)
+                defArray.AsSpan().CopyTo(array.AsSpan());
         }
 
         public override void ScopeOut()
         {
-            array = null;
+            if (arrayStack.Count > 0)
+            {
+                array = arrayStack.Pop();
+            }
+            else
+                array = null;
         }
     }
     private sealed class PrivateInt2DVariableToken : UserDefinedVariableToken
@@ -2142,7 +2148,9 @@ internal sealed partial class VariableData
             : base(VariableCode.VAR2D, data)
         {
             IsStatic = false;
+            arrayStack = [];
         }
+        readonly Stack<long[,]> arrayStack;
         Int64[,] array;
         //int counter = 0;
         public override void SetDefault() { }
@@ -2181,14 +2189,21 @@ internal sealed partial class VariableData
         public override void ScopeIn()
         {
             if (array != null)
-                throw new Exception("内部エラー:配列が2重で初期化されている");
+                arrayStack.Push(array);
             //counter++;
             array = new Int64[sizes[0], sizes[1]];
         }
 
         public override void ScopeOut()
         {
-            array = null;
+            //counter--;
+            //arrayList.RemoveAt(arrayList.Count - 1);
+            if (arrayStack.Count > 0)
+            {
+                array = arrayStack.Pop();
+            }
+            else
+                array = null;
         }
     }
     private sealed class PrivateInt3DVariableToken : UserDefinedVariableToken
@@ -2197,7 +2212,9 @@ internal sealed partial class VariableData
             : base(VariableCode.VAR3D, data)
         {
             IsStatic = false;
+            arrayStack = [];
         }
+        readonly Stack<long[,,]> arrayStack;
         Int64[,,] array;
         //int counter = 0;
         public override void SetDefault() { }
@@ -2239,14 +2256,21 @@ internal sealed partial class VariableData
         public override void ScopeIn()
         {
             if (array != null)
-                throw new Exception("内部エラー:配列が2重で初期化されている");
+                arrayStack.Push(array);
             //counter++;
             array = new Int64[sizes[0], sizes[1], sizes[2]];
         }
 
         public override void ScopeOut()
         {
-            array = null;
+            //counter--;
+            //arrayList.RemoveAt(arrayList.Count - 1);
+            if (arrayStack.Count > 0)
+            {
+                array = arrayStack.Pop();
+            }
+            else
+                array = null;
         }
     }
 
@@ -2257,9 +2281,11 @@ internal sealed partial class VariableData
         {
             sizes = data.Lengths;
             IsStatic = false;
+            arrayStack = [];
             defArray = data.DefaultStr;
         }
         //int counter = 0;
+        readonly Stack<string[]> arrayStack;
         string[] array;
         string[] defArray;
         public override void SetDefault()
@@ -2298,7 +2324,7 @@ internal sealed partial class VariableData
         {
             //counter++;
             if (array != null)
-                throw new Exception("内部エラー:配列が2重で初期化されている");
+                arrayStack.Push(array);
             array = new string[sizes[0]];
             if (defArray != null)
                 Array.Copy(defArray, array, defArray.Length);
@@ -2307,7 +2333,14 @@ internal sealed partial class VariableData
 
         public override void ScopeOut()
         {
-            array = null;
+            //counter--;
+            //arrayList.RemoveAt(arrayList.Count - 1);
+            if (arrayStack.Count > 0)
+            {
+                array = arrayStack.Pop();
+            }
+            else
+                array = null;
         }
     }
 
@@ -2317,8 +2350,10 @@ internal sealed partial class VariableData
             : base(VariableCode.VARS2D, data)
         {
             IsStatic = false;
+            arrayStack = [];
         }
         //int counter = 0;
+        readonly Stack<string[,]> arrayStack;
         string[,] array;
         public override void SetDefault()
         {
@@ -2354,14 +2389,21 @@ internal sealed partial class VariableData
         {
             //counter++;
             if (array != null)
-                throw new Exception("内部エラー:配列が2重で初期化されている");
+                arrayStack.Push(array);
             array = new string[sizes[0], sizes[1]];
             //arrayList.Add(array);
         }
 
         public override void ScopeOut()
         {
-            array = null;
+            //counter--;
+            //arrayList.RemoveAt(arrayList.Count - 1);
+            if (arrayStack.Count > 0)
+            {
+                array = arrayStack.Pop();
+            }
+            else
+                array = null;
         }
     }
 
@@ -2370,9 +2412,12 @@ internal sealed partial class VariableData
         public PrivateStr3DVariableToken(UserDefinedVariableData data)
             : base(VariableCode.VARS3D, data)
         {
-            sizes = data.Lengths;
+            int[] sizes = data.Lengths;
             IsStatic = false;
+            arrayStack = [];
         }
+        //int counter = 0;
+        readonly Stack<string[,,]> arrayStack;
         string[,,] array;
         public override void SetDefault() { }
 
@@ -2406,14 +2451,23 @@ internal sealed partial class VariableData
         public override object GetArray() { return array; }
         public override void ScopeIn()
         {
+            //counter++;
             if (array != null)
-                throw new Exception("内部エラー:配列が2重で初期化されている");
+                arrayStack.Push(array);
             array = new string[sizes[0], sizes[1], sizes[2]];
+            //arrayList.Add(array);
         }
 
         public override void ScopeOut()
         {
-            array = null;
+            //counter--;
+            //arrayList.RemoveAt(arrayList.Count - 1);
+            if (arrayStack.Count > 0)
+            {
+                array = arrayStack.Pop();
+            }
+            else
+                array = null;
         }
     }
 
