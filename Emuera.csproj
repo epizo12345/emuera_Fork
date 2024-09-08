@@ -19,6 +19,7 @@
     <AnalysisMode>Minimum</AnalysisMode>
     
     <TieredCompilation>false</TieredCompilation>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
 
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     
