@@ -843,6 +843,23 @@ internal sealed partial class EmueraConsole : IDisposable
     //1823 Key入力を捕まえる
     internal void InputMouseKey(int type, int result1, int result2, int result3, int result4)
     {
+        if (type != 0) //マウス入力を捕まえた
+        {
+            var pos = window.MainPicBox.PointToClient(Cursor.Position);
+            var button = FindButton(pos.X, pos.Y);
+            if (button != null)
+            {
+                if (button.IsInteger)
+                {
+                    process.SetResultArray(button.Input, 5);
+                }
+                else
+                {
+                    process.SetResultsArray(button.Inputs, 5);
+                }
+            }
+        }
+
         process.InputResult5(type, result1, result2, result3, result4);
 
         inProcess = true;
@@ -1732,117 +1749,23 @@ internal sealed partial class EmueraConsole : IDisposable
         //履歴表示中は無視
         //if (window.ScrollBar.Value != window.ScrollBar.Maximum)
         //	goto end;
-        ConsoleDisplayLine curLine;
 
-        int bottomLineNo = window.ScrollBar.Value - 1;
-        if (displayLineList.Count - 1 < bottomLineNo)
-            bottomLineNo = displayLineList.Count - 1;//1820 この処理不要な気がするけどエラー報告があったので入れとく
-        int topLineNo = bottomLineNo - (window.MainPicBox.Height / Config.LineHeight);
-        if (topLineNo < 0)
-            topLineNo = 0;
+        pointing = FindButton(point.X, point.Y);
 
 
+        //int posy_bottom2up = window.MainPicBox.Height - pointY;
+        //int logNum = window.ScrollBar.Maximum - window.ScrollBar.Value;
+        ////表示中の一番下の行番号
+        //int curBottomLineNo = displayLineList.Count - logNum;
+        //int curPointingLineNo = curBottomLineNo - (posy_bottom2up / Config.LineHeight + 1);
+        //if ((curPointingLineNo < 0) || (curPointingLineNo >= displayLineList.Count))
+        //	curLine = null;
+        //else
+        //	curLine =  displayLineList[curPointingLineNo];
+        //if (curLine == null)
+        //	goto end;
 
-        int pointX = point.X;
-        int pointY = point.Y;
-        int relPointY = pointY - window.MainPicBox.Height;
-        //子を再帰的に探索する
-        static ConsoleButtonString findButton(int pointX, int pointY, int relPointY, AConsoleDisplayNode parent, ConsoleButtonString selectableButton)
-        {
-            if (parent == null) return null;
-
-            if (parent is ConsoleButtonString cbs)
-            {
-                if (cbs.IsButton || !string.IsNullOrEmpty(cbs.Title))
-                    selectableButton = cbs;
-                foreach (var node in cbs.StrArray)
-                {
-                    var r = findButton(pointX, pointY, relPointY, node, selectableButton);
-                    if (r != null)
-                    {
-                        return r;
-                    }
-                }
-            }
-            else if (parent is ConsoleDivElement div)
-            {
-                foreach (var node in div._childNodes)
-                {
-                    var r = findButton(pointX, pointY, relPointY, node, selectableButton);
-                    if (r != null)
-                    {
-                        return r;
-                    }
-                }
-            }
-            else
-            {
-                if ((parent.Point.X <= pointX) && (parent.Point.X + parent.Size.Width >= pointX) &&
-                    (pointY >= parent.Point.Y) && (pointY <= parent.Point.Y + parent.Size.Height))
-                {
-                    if (selectableButton != null)
-                        return selectableButton;
-                }
-            }
-
-            return null;
-        }
-        //HTML Islandの探索
-        foreach (var (_, list) in _htmlElementListDict.Reverse())
-        {
-            foreach (var elem in list)
-            {
-                foreach (var button in elem.Buttons)
-                {
-                    foreach (var part in button.StrArray)
-                    {
-                        pointing = findButton(pointX, pointY, relPointY, button, null);
-                        if (pointing != null)
-                        {
-                            goto breakfor;
-                        }
-                    }
-
-                }
-            }
-
-        }
-
-        //通常の描画領域の探索
-        for (int i = bottomLineNo; i >= topLineNo; i--)
-        {
-            relPointY += Config.LineHeight;
-            curLine = displayLineList[i];
-
-            for (int b = 0; b < curLine.Buttons.Length; b++)
-            {
-                var button = curLine.Buttons[curLine.Buttons.Length - b - 1];
-                if (button == null || button.StrArray == null)
-                    continue;
-
-                pointing = findButton(pointX, pointY, relPointY, button, null);
-                if (pointing != null)
-                {
-                    goto breakfor;
-                }
-            }
-        }
-
-
-    //int posy_bottom2up = window.MainPicBox.Height - pointY;
-    //int logNum = window.ScrollBar.Maximum - window.ScrollBar.Value;
-    ////表示中の一番下の行番号
-    //int curBottomLineNo = displayLineList.Count - logNum;
-    //int curPointingLineNo = curBottomLineNo - (posy_bottom2up / Config.LineHeight + 1);
-    //if ((curPointingLineNo < 0) || (curPointingLineNo >= displayLineList.Count))
-    //	curLine = null;
-    //else
-    //	curLine =  displayLineList[curPointingLineNo];
-    //if (curLine == null)
-    //	goto end;
-
-    //pointing = curLine.GetPointingButton(pointX);
-    breakfor:
+        //pointing = curLine.GetPointingButton(pointX);
         if ((pointing == null) || (pointing.Generation != lastButtonGeneration))
             canSelect = false;
         else if (!pointing.IsButton)
@@ -1857,8 +1780,112 @@ internal sealed partial class EmueraConsole : IDisposable
         selectingButton = select;
         return needRefresh;
 
+
     }
 
+    public ConsoleButtonString FindButton(int x, int y)
+    {
+        ConsoleDisplayLine curLine;
+        ConsoleButtonString pointing = null;
+
+        int bottomLineNo = window.ScrollBar.Value - 1;
+        if (displayLineList.Count - 1 < bottomLineNo)
+            bottomLineNo = displayLineList.Count - 1;//1820 この処理不要な気がするけどエラー報告があったので入れとく
+        int topLineNo = bottomLineNo - (window.MainPicBox.Height / Config.LineHeight);
+        if (topLineNo < 0)
+            topLineNo = 0;
+
+
+
+        int pointX = x;
+        int pointY = y;
+
+        //HTML Islandの探索
+        foreach (var (_, list) in _htmlElementListDict.Reverse())
+        {
+            foreach (var elem in list)
+            {
+                foreach (var button in elem.Buttons)
+                {
+                    foreach (var part in button.StrArray)
+                    {
+                        pointing = findButton(pointX, pointY, button, null);
+                        if (pointing != null)
+                        {
+                            return pointing;
+                        }
+                    }
+
+                }
+            }
+
+        }
+
+        //通常の描画領域の探索
+        for (int i = bottomLineNo; i >= topLineNo; i--)
+        {
+            curLine = displayLineList[i];
+
+            for (int b = 0; b < curLine.Buttons.Length; b++)
+            {
+                var button = curLine.Buttons[curLine.Buttons.Length - b - 1];
+                if (button == null || button.StrArray == null)
+                    continue;
+
+                pointing = findButton(pointX, pointY, button, null);
+                if (pointing != null)
+                {
+                    return pointing;
+                }
+            }
+        }
+
+        return pointing;
+
+
+    }
+
+    //子を再帰的に探索する
+    static ConsoleButtonString findButton(int pointX, int pointY, AConsoleDisplayNode parent, ConsoleButtonString selectableButton)
+    {
+        if (parent == null) return null;
+
+        if (parent is ConsoleButtonString cbs)
+        {
+            if (cbs.IsButton || !string.IsNullOrEmpty(cbs.Title))
+                selectableButton = cbs;
+            foreach (var node in cbs.StrArray)
+            {
+                var r = findButton(pointX, pointY, node, selectableButton);
+                if (r != null)
+                {
+                    return r;
+                }
+            }
+        }
+        else if (parent is ConsoleDivElement div)
+        {
+            foreach (var node in div._childNodes)
+            {
+                var r = findButton(pointX, pointY, node, selectableButton);
+                if (r != null)
+                {
+                    return r;
+                }
+            }
+        }
+        else
+        {
+            if ((parent.Point.X <= pointX) && (parent.Point.X + parent.Size.Width >= pointX) &&
+                (pointY >= parent.Point.Y) && (pointY <= parent.Point.Y + parent.Size.Height))
+            {
+                if (selectableButton != null)
+                    return selectableButton;
+            }
+        }
+
+        return null;
+    }
 
     public void LeaveMouse()
     {

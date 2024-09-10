@@ -309,6 +309,10 @@ internal sealed partial class Process(EmueraConsole view)
     {
         vEvaluator.RESULT = i;
     }
+    public void SetResultArray(long i, int index)
+    {
+        vEvaluator.RESULT_ARRAY[index] = i;
+    }
     public void InputSystemInteger(Int64 i)
     {
         systemResult = i;
@@ -316,6 +320,11 @@ internal sealed partial class Process(EmueraConsole view)
     public void InputString(string s)
     {
         vEvaluator.RESULTS = s;
+    }
+
+    public void SetResultsArray(string s, int index)
+    {
+        vEvaluator.RESULTS_ARRAY[index] = s;
     }
 
     readonly Stopwatch startTime = new();
