@@ -845,8 +845,13 @@ internal sealed partial class EmueraConsole : IDisposable
     {
         if (type != 0) //マウス入力を捕まえた
         {
-            var pos = window.MainPicBox.PointToClient(Cursor.Position);
+            var pos = window.Invoke(() => window.MainPicBox.PointToClient(Cursor.Position));
             var button = FindButton(pos.X, pos.Y);
+
+            //結果の初期化
+            process.SetResultArray(0, 5);
+            process.SetResultsArray("", 5);
+
             if (button != null)
             {
                 if (button.IsInteger)
