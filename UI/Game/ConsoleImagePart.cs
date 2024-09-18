@@ -186,7 +186,7 @@ sealed class ConsoleImagePart : AConsoleDisplayNode
                     break;
                 case DisplayMode.AbsoluteLeftBottom:
                     rect.X = _positionX;
-                    rect.Y = GlobalStatic.Console.ClientHeight - Config.FontSize + _positionY;
+                    rect.Y = GlobalStatic.Console.ClientHeight + _positionY;
                     break;
                 default:
                     throw new NotImplementedException();

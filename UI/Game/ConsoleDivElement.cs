@@ -76,7 +76,7 @@ class ConsoleDivElement : AConsoleDisplayNode
         {
             DisplayMode.Relative => new SKPoint(origin.X + _position.X, (int)origin.Y + _position.Y),
             DisplayMode.AbsoluteLeftTop => _position,
-            DisplayMode.AbsoluteLeftBottom => new SKPoint(_position.X, GlobalStatic.Console.ClientHeight - Config.FontSize + _position.Y),
+            DisplayMode.AbsoluteLeftBottom => new SKPoint(_position.X, GlobalStatic.Console.ClientHeight + _position.Y),
             _ => throw new NotImplementedException($"{_display}はまだ実装されていません")
         };
 
