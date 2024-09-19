@@ -1032,7 +1032,7 @@ internal sealed class ConstantData
                         ss.ShiftNext();
                     }
                     if (sb.Length > 0)
-                        tmpl.csvNo = Convert.ToInt64(sb.ToString());
+                        tmpl.csvNo = long.Parse(sb.ToString());
                     else
                         tmpl.csvNo = 0;
                     //tmpl.csvNo = index;

@@ -797,97 +797,12 @@ internal static partial class HtmlManager
 
     public static string Escape(string str)
     {
-        //Net4.5では便利なクラスがあるらしい
-        //return System.Web.HttpUtility.HtmlEncode(str);
-
-        int index = 0;
-        int found;
-        StringBuilder b = new();
-        while (index < str.Length)
-        {
-            found = str.IndexOfAny(rep, index);
-            if (found < 0)//見つからなければ以降を追加して終了
-            {
-                b.Append(str[index..]);
-                break;
-            }
-            if (found > index)//間に非エスケープ文字があるなら追加しておく
-                b.Append(str[index..found]);
-            string repnew = repDic[str[found]];
-            b.Append(repnew);
-            index = found + 1;
-        }
-        return b.ToString();
+        return System.Web.HttpUtility.HtmlEncode(str);
     }
 
     public static string Unescape(string str)
     {
-        int index = 0;
-        int found = str.IndexOf('&', index);
-        if (found < 0)
-            return str;
-        StringBuilder b = new();
-        // &～; をひたすら置換するだけ
-        while (index < str.Length)
-        {
-            found = str.IndexOf('&', index);
-            if (found < 0)//見つからなければ以降を追加して終了
-            {
-                b.Append(str[index..]);
-                break;
-            }
-            if (found > index)//間に非エスケープ文字があるなら追加しておく
-                b.Append(str[index..found]);
-            index = found;
-            found = str.IndexOf(';', index);
-            if (found <= index + 1)
-            {
-                if (found < 0)
-                    throw new CodeEE(LocalizationManager.Error.MissingSemicolon);
-                throw new CodeEE(LocalizationManager.Error.ContinuouslyAndSemicolon);
-            }
-            string escWordRow = str.Substring(index + 1, found - index - 1);
-            index = found + 1;
-            string escWord = escWordRow.ToLower(CultureInfo.InvariantCulture);
-            int unicode;
-            switch (escWord)
-            {
-                case "nbsp": b.Append(' '); break;
-                case "amp": b.Append('&'); break;
-                case "gt": b.Append('>'); break;
-                case "lt": b.Append('<'); break;
-                case "quot": b.Append('"'); break;
-                case "apos": b.Append('\''); break;
-                default:
-                    {
-                        int iBbase = 10;
-                        if (escWord[0] != '#')
-                            throw new CodeEE("\"&" + escWordRow + ";\"は適切な文字参照ではありません");
-                        if (escWord.Length > 1 && escWord[1] == 'x')
-                        {
-                            iBbase = 16;
-                            escWord = escWord[2..];
-                        }
-                        else
-                            escWord = escWord[1..];
-                        try
-                        {
-                            unicode = Convert.ToInt32(escWord, iBbase);
-                        }
-                        catch
-                        {
-
-                            throw new CodeEE("\"&" + escWordRow + ";\"は適切な文字参照ではありません");
-                        }
-
-                        if (unicode < 0 || unicode > 0xFFFF)
-                            throw new CodeEE("\"&" + escWordRow + ";\"はUnicodeの範囲外です(サロゲートペアは使えません)");
-                        b.Append((char)unicode);
-                        break;
-                    }
-            }
-        }
-        return b.ToString();
+        return System.Web.HttpUtility.HtmlDecode(str);
     }
 
     /// <summary>
@@ -1023,16 +938,16 @@ internal static partial class HtmlManager
         int i;
         if (str[0] == '#')
         {
-            string colorvalue = str[1..];
+            var colorvalue = str.AsSpan()[1..];
             try
             {
-                i = Convert.ToInt32(colorvalue, 16);
+                i = int.Parse(colorvalue, NumberStyles.HexNumber);
                 if (i < 0 || i > 0xFFFFFF)
-                    throw new CodeEE(colorvalue + "は適切な色指定の範囲外です");
+                    throw new CodeEE($"{colorvalue}は適切な色指定の範囲外です");
             }
             catch
             {
-                throw new CodeEE(colorvalue + "は数値として解釈できません");
+                throw new CodeEE($"{colorvalue}は数値として解釈できません");
             }
         }
         else

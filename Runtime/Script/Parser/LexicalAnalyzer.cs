@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using MinorShift.Emuera.UI.Framework;
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace MinorShift.Emuera.Runtime.Script.Parser;
 
@@ -192,81 +193,58 @@ internal static partial class LexicalAnalyzer
         }
         return significand;
     }
-    //static Regex reg = new Regex(@"[0-9A-Fa-f]+", RegexOptions.Compiled);
+
+    static readonly SearchValues<char> digit = SearchValues.Create(['0','1','2','3','4','5','6','7','8','9',
+                                                        'a', 'b', 'c', 'd', 'e', 'f',
+                                                        'A', 'B', 'C', 'D', 'E', 'F']);
     private static long readDigits(CharStream st, int fromBase)
     {
-        int start = st.CurrentPosition;
-        //1756 正規表現を使ってみたがほぼ変わらなかったので没
-        //Match m = reg.Match(st.RowString, st.CurrentPosition);
-        //st.Jump(m.Length);
-        char c = st.Current;
-        if (c == '-' || c == '+')
+        var span = st.SubstringROS();
+
+        var searchStart = 0;
+        if (span[0] == '-' || span[0] == '+')
         {
-            st.ShiftNext();
+            searchStart = 1;
         }
-        if (fromBase == 10)
+
+        var end = span[searchStart..].IndexOfAnyExcept(digit);
+        if (end == -1)
         {
-            while (!st.EOS)
-            {
-                c = st.Current;
-                if (char.IsDigit(c))
-                {
-                    st.ShiftNext();
-                    continue;
-                }
-                break;
-            }
+            end = searchStart + span.Length;
         }
-        else if (fromBase == 16)
-        {
-            while (!st.EOS)
-            {
-                c = st.Current;
-                if (char.IsDigit(c) || hexadecimalDigits.AsSpan().Contains(c))
-                {
-                    st.ShiftNext();
-                    continue;
-                }
-                break;
-            }
-        }
-        else if (fromBase == 2)
-        {
-            while (!st.EOS)
-            {
-                c = st.Current;
-                if (char.IsDigit(c))
-                {
-                    if (c != '0' && c != '1')
-                        throw new CodeEE(LocalizationManager.Error.CanNotUseBinaryNotate);
-                    st.ShiftNext();
-                    continue;
-                }
-                break;
-            }
-        }
-        var strInt = st.SubstringROS(start, st.CurrentPosition - start);
+        st.Jump(end);
+
+        var integerSpan = span[..end];
+
         try
         {
             if (fromBase == 10)
             {
-                return long.Parse(strInt, CultureInfo.InvariantCulture);
+                return long.Parse(integerSpan, CultureInfo.InvariantCulture);
             }
-            return Convert.ToInt64(strInt.ToString(), fromBase);
+            if (fromBase == 16)
+            {
+                return long.Parse(integerSpan, NumberStyles.HexNumber);
+            }
+            if (fromBase == 2)
+            {
+                return long.Parse(integerSpan, NumberStyles.BinaryNumber);
+            }
+            return Convert.ToInt64(integerSpan.ToString(), fromBase);
         }
         catch (FormatException)
         {
-            throw new CodeEE(string.Format(LocalizationManager.Error.CanNotConvertToInt, strInt.ToString()));
+            throw new CodeEE(string.Format(LocalizationManager.Error.CanNotConvertToInt, integerSpan.ToString()));
         }
         catch (OverflowException)
         {
-            throw new CodeEE(string.Format(LocalizationManager.Error.OoRInt64, strInt.ToString()));
+            throw new CodeEE(string.Format(LocalizationManager.Error.OoRInt64, integerSpan.ToString()));
         }
         catch (ArgumentOutOfRangeException)
         {
-            if (strInt.IsEmpty)
+            if (integerSpan.IsEmpty)
                 throw new CodeEE(LocalizationManager.Error.CanNotInterpretNum);
-            throw new CodeEE(string.Format(LocalizationManager.Error.CanNotInterpretNumValue, strInt.ToString()));
+            throw new CodeEE(string.Format(LocalizationManager.Error.CanNotInterpretNumValue, integerSpan.ToString()));
         }
     }
 
@@ -886,7 +864,7 @@ internal static partial class LexicalAnalyzer
                                 throw new CodeEE(string.Format(LocalizationManager.Error.NotClosed, "'"));
                             st.ShiftNext();
                             break;
-                        }   
+                        }
                         if ((flag & LexAnalyzeFlag.AnalyzePrintV) != LexAnalyzeFlag.AnalyzePrintV)
                         {
                             //AssignmentStr用特殊処理 代入文の代入演算子を探索中で'=の場合のみ許可
