@@ -366,7 +366,7 @@ internal sealed partial class EmueraConsole : IDisposable
     public async Task Initialize()
     {
         var boottimeDebugStopwatch = Stopwatch.StartNew();
-        using var fs = new FileStream(Program.ExeDir + "time.log", FileMode.OpenOrCreate);
+        using var fs = new FileStream(Program.ExeDir + "time.log", FileMode.Create);
         using var logWriter = new StreamWriter(fs);
         logWriter.WriteLine("Init:Start");
         _genericTimerStopwatch.Restart();
