@@ -220,7 +220,7 @@ internal static partial class LexicalAnalyzer
         {
             if (fromBase == 10)
             {
-                return long.Parse(integerSpan, CultureInfo.InvariantCulture);
+                return long.Parse(integerSpan, NumberStyles.AllowLeadingSign | NumberStyles.AllowExponent);
             }
             if (fromBase == 16)
             {
