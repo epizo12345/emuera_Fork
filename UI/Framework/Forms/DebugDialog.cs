@@ -149,7 +149,7 @@ public partial class DebugDialog : Form
         {
             if (Config.UseRenameFile)
             {
-                Rename.RenameString(ref str);
+                str = Rename.RenameString(str);
             }
             CharStream st = new(str);
             WordCollection wc = LexicalAnalyzer.Analyse(st, LexEndWith.EoL, LexAnalyzeFlag.None);

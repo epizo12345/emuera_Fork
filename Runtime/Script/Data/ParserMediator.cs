@@ -5,8 +5,6 @@ using MinorShift.Emuera.Runtime.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Hashing;
-using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
 namespace MinorShift.Emuera;
@@ -40,7 +38,7 @@ internal static partial class ParserMediator
     }
 
     #region Rename
-    public static Dictionary<ulong, string> RenameDic { get; private set; }
+    public static Dictionary<string, string> RenameDic { get; private set; }
     //1756 Process.Load.csより移動
     public static void LoadEraExRenameFile(string filepath)
     {
@@ -68,7 +66,7 @@ internal static partial class ParserMediator
                     //右がERB中の表記、左が変換先になる。
                     string key = $"[[{tokens[1].Trim()}]]";
                     string value = tokens[0].Trim();
-                    RenameDic[XxHash3.HashToUInt64(MemoryMarshal.AsBytes(key.AsSpan()))] = value;
+                    RenameDic[key] = value;
                 }
                 lineNo++;
             }

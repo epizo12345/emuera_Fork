@@ -1599,7 +1599,7 @@ internal sealed partial class EmueraConsole : IDisposable
             {
                 if (Config.UseRenameFile)
                 {
-                    Rename.RenameString(ref com);
+                    com = Rename.RenameString(com);
                 }
                 line = LogicalLineParser.ParseLine(com, null);
             }
