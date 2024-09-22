@@ -97,7 +97,7 @@ internal sealed partial class EraStreamReader : IDisposable
 
             if (useRename)
             {
-                line = Rename.RenameString(line);
+                Rename.RenameString(ref line);
             }
             st = new CharStream(line);
             LexicalAnalyzer.SkipWhiteSpace(st);
@@ -129,7 +129,7 @@ internal sealed partial class EraStreamReader : IDisposable
 
             if (useRename)
             {
-                line = Rename.RenameString(line);
+                Rename.RenameString(ref line);
             }
             var test = line.AsSpan().TrimStart();
             if (test.Length > 0)
