@@ -1,4 +1,5 @@
-﻿using MinorShift.Emuera.Runtime.Script.Statements.Expression;
+﻿using EnumsNET;
+using MinorShift.Emuera.Runtime.Script.Statements.Expression;
 using MinorShift.Emuera.Runtime.Utils;
 using MinorShift.Emuera.Sub;
 using System;
@@ -25,91 +26,95 @@ internal sealed class ConfigData
     private ConfigData() { setDefault(); }
 
     //適当に大き目の配列を作っておく。
-    private AConfigItem[] configArray = new AConfigItem[70];
+    private Dictionary<string, AConfigItem> configArray = new();
     private AConfigItem[] replaceArray = new AConfigItem[50];
     private AConfigItem[] debugArray = new AConfigItem[20];
 
+    private void SetConfigItem<T>(ConfigItem<T> configItem)
+    {
+        configArray[configItem.Text] = configItem;
+    }
+
     private void setDefault()
     {
-        int i = 0;
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.IgnoreCase, "大文字小文字の違いを無視する", true);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.UseRenameFile, "_Rename.csvを利用する", false);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.UseReplaceFile, "_Replace.csvを利用する", true);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.UseMouse, "マウスを使用する", true);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.UseMenu, "メニューを使用する", true);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.UseDebugCommand, "デバッグコマンドを使用する", false);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.AllowMultipleInstances, "多重起動を許可する", true);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.AutoSave, "オートセーブを行なう", true);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.UseKeyMacro, "キーボードマクロを使用する", true);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.SizableWindow, "ウィンドウの高さを可変にする", true);
-        configArray[i++] = new ConfigItem<TextDrawingMode>(ConfigCode.TextDrawingMode, "描画インターフェース", TextDrawingMode.TEXTRENDERER);
-        //configArray[i++] = new ConfigItem<bool>(ConfigCode.UseImageBuffer, "イメージバッファを使用する", true);
-        configArray[i++] = new ConfigItem<int>(ConfigCode.WindowX, "ウィンドウ幅", 760);
-        configArray[i++] = new ConfigItem<int>(ConfigCode.WindowY, "ウィンドウ高さ", 480);
-        configArray[i++] = new ConfigItem<int>(ConfigCode.WindowPosX, "ウィンドウ位置X", 0);
-        configArray[i++] = new ConfigItem<int>(ConfigCode.WindowPosY, "ウィンドウ位置Y", 0);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.SetWindowPos, "起動時のウィンドウ位置を指定する", false);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.WindowMaximixed, "起動時にウィンドウを最大化する", false);
-        configArray[i++] = new ConfigItem<int>(ConfigCode.MaxLog, "履歴ログの行数", 5000);
-        configArray[i++] = new ConfigItem<int>(ConfigCode.PrintCPerLine, "PRINTCを並べる数", 3);
-        configArray[i++] = new ConfigItem<int>(ConfigCode.PrintCLength, "PRINTCの文字数", 25);
-        configArray[i++] = new ConfigItem<string>(ConfigCode.FontName, "フォント名", "ＭＳ ゴシック");
-        configArray[i++] = new ConfigItem<int>(ConfigCode.FontSize, "フォントサイズ", 18);
-        configArray[i++] = new ConfigItem<int>(ConfigCode.LineHeight, "一行の高さ", 19);
-        configArray[i++] = new ConfigItem<Color>(ConfigCode.ForeColor, "文字色", Color.FromArgb(192, 192, 192));//LIGHTGRAY
-        configArray[i++] = new ConfigItem<Color>(ConfigCode.BackColor, "背景色", Color.FromArgb(0, 0, 0));//BLACK
-        configArray[i++] = new ConfigItem<Color>(ConfigCode.FocusColor, "選択中文字色", Color.FromArgb(255, 255, 0));//YELLOW
-        configArray[i++] = new ConfigItem<Color>(ConfigCode.LogColor, "履歴文字色", Color.FromArgb(192, 192, 192));//LIGHTGRAY//Color.FromArgb(128, 128, 128);//GRAY
-        configArray[i++] = new ConfigItem<int>(ConfigCode.FPS, "フレーム毎秒", 5);
-        configArray[i++] = new ConfigItem<int>(ConfigCode.SkipFrame, "最大スキップフレーム数", 3);
-        configArray[i++] = new ConfigItem<int>(ConfigCode.ScrollHeight, "スクロール行数", 1);
-        configArray[i++] = new ConfigItem<int>(ConfigCode.InfiniteLoopAlertTime, "無限ループ警告までのミリ秒数", 5000);
-        configArray[i++] = new ConfigItem<int>(ConfigCode.DisplayWarningLevel, "表示する最低警告レベル", 1);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.DisplayReport, "ロード時にレポートを表示する", false);
-        configArray[i++] = new ConfigItem<ReduceArgumentOnLoadFlag>(ConfigCode.ReduceArgumentOnLoad, "ロード時に引数を解析する", ReduceArgumentOnLoadFlag.NO);
-        //configArray[i++] = new ConfigItem<bool>(ConfigCode.ReduceFormattedStringOnLoad, "ロード時にFORM文字列を解析する", true);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.IgnoreUncalledFunction, "呼び出されなかった関数を無視する", true);
-        configArray[i++] = new ConfigItem<DisplayWarningFlag>(ConfigCode.FunctionNotFoundWarning, "関数が見つからない警告の扱い", DisplayWarningFlag.IGNORE);
-        configArray[i++] = new ConfigItem<DisplayWarningFlag>(ConfigCode.FunctionNotCalledWarning, "関数が呼び出されなかった警告の扱い", DisplayWarningFlag.IGNORE);
-        //configArray[i++] = new ConfigItem<List<string>>(ConfigCode.IgnoreWarningFiles, "指定したファイル中の警告を無視する", new List<string>());
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.ChangeMasterNameIfDebug, "デバッグコマンドを使用した時にMASTERの名前を変更する", true);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.ButtonWrap, "ボタンの途中で行を折りかえさない", false);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.SearchSubdirectory, "サブディレクトリを検索する", false);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.SortWithFilename, "読み込み順をファイル名順にソートする", false);
-        configArray[i++] = new ConfigItem<long>(ConfigCode.LastKey, "最終更新コード", 0);
-        configArray[i++] = new ConfigItem<int>(ConfigCode.SaveDataNos, "表示するセーブデータ数", 20);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.WarnBackCompatibility, "eramaker互換性に関する警告を表示する", true);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.AllowFunctionOverloading, "システム関数の上書きを許可する", true);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.WarnFunctionOverloading, "システム関数が上書きされたとき警告を表示する", true);
-        configArray[i++] = new ConfigItem<string>(ConfigCode.TextEditor, "関連づけるテキストエディタ", "notepad");
-        configArray[i++] = new ConfigItem<TextEditorType>(ConfigCode.EditorType, "テキストエディタコマンドライン指定", TextEditorType.USER_SETTING);
-        configArray[i++] = new ConfigItem<string>(ConfigCode.EditorArgument, "エディタに渡す行指定引数", "");
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.WarnNormalFunctionOverloading, "同名の非イベント関数が複数定義されたとき警告する", false);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.CompatiErrorLine, "解釈不可能な行があっても実行する", false);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.CompatiCALLNAME, "CALLNAMEが空文字列の時にNAMEを代入する", false);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.UseSaveFolder, "セーブデータをsavフォルダ内に作成する", false);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.CompatiRAND, "擬似変数RANDの仕様をeramakerに合わせる", false);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.CompatiDRAWLINE, "DRAWLINEを常に新しい行で行う", false);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.CompatiFunctionNoignoreCase, "関数・属性については大文字小文字を無視しない", false); ;
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.SystemAllowFullSpace, "全角スペースをホワイトスペースに含める", true);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.SystemSaveInUTF8, "セーブデータをUTF-8で保存する", false);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.CompatiLinefeedAs1739, "ver1739以前の非ボタン折り返しを再現する", false);
-        configArray[i++] = new ConfigItem<UseLanguage>(ConfigCode.useLanguage, "内部で使用する東アジア言語", UseLanguage.JAPANESE);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.AllowLongInputByMouse, "ONEINPUT系命令でマウスによる2文字以上の入力を許可する", false);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.CompatiCallEvent, "イベント関数のCALLを許可する", false);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.CompatiSPChara, "SPキャラを使用する", false);
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.IgnoreCase, "大文字小文字の違いを無視する", true));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.UseRenameFile, "_Rename.csvを利用する", false));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.UseReplaceFile, "_Replace.csvを利用する", true));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.UseMouse, "マウスを使用する", true));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.UseMenu, "メニューを使用する", true));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.UseDebugCommand, "デバッグコマンドを使用する", false));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.AllowMultipleInstances, "多重起動を許可する", true));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.AutoSave, "オートセーブを行なう", true));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.UseKeyMacro, "キーボードマクロを使用する", true));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.SizableWindow, "ウィンドウの高さを可変にする", true));
+        SetConfigItem(new ConfigItem<TextDrawingMode>(ConfigCode.TextDrawingMode, "描画インターフェース", TextDrawingMode.TEXTRENDERER));
+        //SetConfigItem(new ConfigItem<bool>(ConfigCode.UseImageBuffer, "イメージバッファを使用する", true);
+        SetConfigItem(new ConfigItem<int>(ConfigCode.WindowX, "ウィンドウ幅", 760));
+        SetConfigItem(new ConfigItem<int>(ConfigCode.WindowY, "ウィンドウ高さ", 480));
+        SetConfigItem(new ConfigItem<int>(ConfigCode.WindowPosX, "ウィンドウ位置X", 0));
+        SetConfigItem(new ConfigItem<int>(ConfigCode.WindowPosY, "ウィンドウ位置Y", 0));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.SetWindowPos, "起動時のウィンドウ位置を指定する", false));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.WindowMaximixed, "起動時にウィンドウを最大化する", false));
+        SetConfigItem(new ConfigItem<int>(ConfigCode.MaxLog, "履歴ログの行数", 5000));
+        SetConfigItem(new ConfigItem<int>(ConfigCode.PrintCPerLine, "PRINTCを並べる数", 3));
+        SetConfigItem(new ConfigItem<int>(ConfigCode.PrintCLength, "PRINTCの文字数", 25));
+        SetConfigItem(new ConfigItem<string>(ConfigCode.FontName, "フォント名", "ＭＳ ゴシック"));
+        SetConfigItem(new ConfigItem<int>(ConfigCode.FontSize, "フォントサイズ", 18));
+        SetConfigItem(new ConfigItem<int>(ConfigCode.LineHeight, "一行の高さ", 19));
+        SetConfigItem(new ConfigItem<Color>(ConfigCode.ForeColor, "文字色", Color.FromArgb(192, 192, 192)));//LIGHTGRAY
+        SetConfigItem(new ConfigItem<Color>(ConfigCode.BackColor, "背景色", Color.FromArgb(0, 0, 0)));//BLACK
+        SetConfigItem(new ConfigItem<Color>(ConfigCode.FocusColor, "選択中文字色", Color.FromArgb(255, 255, 0)));//YELLOW
+        SetConfigItem(new ConfigItem<Color>(ConfigCode.LogColor, "履歴文字色", Color.FromArgb(192, 192, 192)));//LIGHTGRAY//Color.FromArgb(128, 128, 128));//GRAY
+        SetConfigItem(new ConfigItem<int>(ConfigCode.FPS, "フレーム毎秒", 5));
+        SetConfigItem(new ConfigItem<int>(ConfigCode.SkipFrame, "最大スキップフレーム数", 3));
+        SetConfigItem(new ConfigItem<int>(ConfigCode.ScrollHeight, "スクロール行数", 1));
+        SetConfigItem(new ConfigItem<int>(ConfigCode.InfiniteLoopAlertTime, "無限ループ警告までのミリ秒数", 5000));
+        SetConfigItem(new ConfigItem<int>(ConfigCode.DisplayWarningLevel, "表示する最低警告レベル", 1));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.DisplayReport, "ロード時にレポートを表示する", false));
+        SetConfigItem(new ConfigItem<ReduceArgumentOnLoadFlag>(ConfigCode.ReduceArgumentOnLoad, "ロード時に引数を解析する", ReduceArgumentOnLoadFlag.NO));
+        //SetConfigItem(new ConfigItem<bool>(ConfigCode.ReduceFormattedStringOnLoad, "ロード時にFORM文字列を解析する", true);
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.IgnoreUncalledFunction, "呼び出されなかった関数を無視する", true));
+        SetConfigItem(new ConfigItem<DisplayWarningFlag>(ConfigCode.FunctionNotFoundWarning, "関数が見つからない警告の扱い", DisplayWarningFlag.IGNORE));
+        SetConfigItem(new ConfigItem<DisplayWarningFlag>(ConfigCode.FunctionNotCalledWarning, "関数が呼び出されなかった警告の扱い", DisplayWarningFlag.IGNORE));
+        //SetConfigItem(new ConfigItem<List<string>>(ConfigCode.IgnoreWarningFiles, "指定したファイル中の警告を無視する", new List<string>()));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.ChangeMasterNameIfDebug, "デバッグコマンドを使用した時にMASTERの名前を変更する", true));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.ButtonWrap, "ボタンの途中で行を折りかえさない", false));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.SearchSubdirectory, "サブディレクトリを検索する", false));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.SortWithFilename, "読み込み順をファイル名順にソートする", false));
+        SetConfigItem(new ConfigItem<long>(ConfigCode.LastKey, "最終更新コード", 0));
+        SetConfigItem(new ConfigItem<int>(ConfigCode.SaveDataNos, "表示するセーブデータ数", 20));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.WarnBackCompatibility, "eramaker互換性に関する警告を表示する", true));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.AllowFunctionOverloading, "システム関数の上書きを許可する", true));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.WarnFunctionOverloading, "システム関数が上書きされたとき警告を表示する", true));
+        SetConfigItem(new ConfigItem<string>(ConfigCode.TextEditor, "関連づけるテキストエディタ", "notepad"));
+        SetConfigItem(new ConfigItem<TextEditorType>(ConfigCode.EditorType, "テキストエディタコマンドライン指定", TextEditorType.USER_SETTING));
+        SetConfigItem(new ConfigItem<string>(ConfigCode.EditorArgument, "エディタに渡す行指定引数", ""));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.WarnNormalFunctionOverloading, "同名の非イベント関数が複数定義されたとき警告する", false));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.CompatiErrorLine, "解釈不可能な行があっても実行する", false));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.CompatiCALLNAME, "CALLNAMEが空文字列の時にNAMEを代入する", false));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.UseSaveFolder, "セーブデータをsavフォルダ内に作成する", false));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.CompatiRAND, "擬似変数RANDの仕様をeramakerに合わせる", false));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.CompatiDRAWLINE, "DRAWLINEを常に新しい行で行う", false));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.CompatiFunctionNoignoreCase, "関数・属性については大文字小文字を無視しない", false));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.SystemAllowFullSpace, "全角スペースをホワイトスペースに含める", true));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.SystemSaveInUTF8, "セーブデータをUTF-8で保存する", false));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.CompatiLinefeedAs1739, "ver1739以前の非ボタン折り返しを再現する", false));
+        SetConfigItem(new ConfigItem<UseLanguage>(ConfigCode.useLanguage, "内部で使用する東アジア言語", UseLanguage.JAPANESE));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.AllowLongInputByMouse, "ONEINPUT系命令でマウスによる2文字以上の入力を許可する", false));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.CompatiCallEvent, "イベント関数のCALLを許可する", false));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.CompatiSPChara, "SPキャラを使用する", false));
 
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.SystemSaveInBinary, "セーブデータをバイナリ形式で保存する", false);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.CompatiFuncArgOptional, "ユーザー関数の全ての引数の省略を許可する", false);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.CompatiFuncArgAutoConvert, "ユーザー関数の引数に自動的にTOSTRを補完する", false);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.SystemIgnoreTripleSymbol, "FORM中の三連記号を展開しない", false);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.TimesNotRigorousCalculation, "TIMESの計算をeramakerにあわせる", false);
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.SystemSaveInBinary, "セーブデータをバイナリ形式で保存する", false));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.CompatiFuncArgOptional, "ユーザー関数の全ての引数の省略を許可する", false));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.CompatiFuncArgAutoConvert, "ユーザー関数の引数に自動的にTOSTRを補完する", false));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.SystemIgnoreTripleSymbol, "FORM中の三連記号を展開しない", false));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.TimesNotRigorousCalculation, "TIMESの計算をeramakerにあわせる", false));
         //一文字変数の禁止オプションを考えた名残
-        //configArray[i++] = new ConfigItem<bool>(ConfigCode.ForbidOneCodeVariable, "一文字変数の使用を禁止する", false);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.SystemNoTarget, "キャラクタ変数の引数を補完しない", false);
-        configArray[i++] = new ConfigItem<bool>(ConfigCode.SystemIgnoreStringSet, "文字列変数の代入に文字列式を強制する", false);
+        //SetConfigItem(new ConfigItem<bool>(ConfigCode.ForbidOneCodeVariable, "一文字変数の使用を禁止する", false));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.SystemNoTarget, "キャラクタ変数の引数を補完しない", false));
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.SystemIgnoreStringSet, "文字列変数の代入に文字列式を強制する", false));
 
-        i = 0;
+        var i = 0;
         debugArray[i++] = new ConfigItem<bool>(ConfigCode.DebugShowWindow, "起動時にデバッグウインドウを表示する", true);
         debugArray[i++] = new ConfigItem<bool>(ConfigCode.DebugWindowTopMost, "デバッグウインドウを最前面に表示する", true);
         debugArray[i++] = new ConfigItem<int>(ConfigCode.DebugWindowWidth, "デバッグウィンドウ幅", 400);
@@ -139,26 +144,20 @@ internal sealed class ConfigData
 
     public ConfigData Copy()
     {
-        ConfigData config = new();
-        for (int i = 0; i < configArray.Length; i++)
-            if (configArray[i] != null && config.configArray[i] != null)
-                configArray[i].CopyTo(config.configArray[i]);
-        for (int i = 0; i < configArray.Length; i++)
-            if (configArray[i] != null && config.configArray[i] != null)
-                configArray[i].CopyTo(config.configArray[i]);
-        for (int i = 0; i < replaceArray.Length; i++)
-            if (replaceArray[i] != null && config.replaceArray[i] != null)
-                replaceArray[i].CopyTo(config.replaceArray[i]);
-        return config;
+        return new()
+        {
+            configArray = new(configArray),
+            debugArray = [.. debugArray],
+            replaceArray = [.. replaceArray]
+        };
     }
 
     public Dictionary<ConfigCode, string> GetConfigNameDic()
     {
         Dictionary<ConfigCode, string> ret = [];
-        foreach (AConfigItem item in configArray)
+        foreach ((_, var item) in configArray)
         {
-            if (item != null)
-                ret.Add(item.Code, item.Text);
+            ret.Add(item.Code, item.Text);
         }
         return ret;
     }
@@ -201,7 +200,7 @@ internal sealed class ConfigData
 
     public AConfigItem GetConfigItem(ConfigCode code)
     {
-        foreach (AConfigItem item in configArray)
+        foreach ((_, var item) in configArray)
         {
             if (item == null)
                 continue;
@@ -212,16 +211,8 @@ internal sealed class ConfigData
     }
     public AConfigItem GetConfigItem(string key)
     {
-        foreach (AConfigItem item in configArray)
-        {
-            if (item == null)
-                continue;
-            if (item.Name == key)
-                return item;
-            if (item.Text == key)
-                return item;
-        }
-        return null;
+        configArray.TryGetValue(key, out var result);
+        return result;
     }
 
     public AConfigItem GetReplaceItem(ConfigCode code)
@@ -359,9 +350,9 @@ internal sealed class ConfigData
         try
         {
             writer = new StreamWriter(configPath, false, Config.Encode);
-            for (int i = 0; i < configArray.Length; i++)
+
+            foreach ((_, var item) in configArray)
             {
-                AConfigItem item = configArray[i];
                 if (item == null)
                     continue;
 
@@ -397,7 +388,7 @@ internal sealed class ConfigData
     public bool ReLoadConfig()
     {
         //_fixed.configの中身が変わった場合、非固定になったものが保持されてしまうので、ここで一旦すべて解除
-        foreach (AConfigItem item in configArray)
+        foreach ((_, var item) in configArray)
         {
             if (item == null)
                 continue;
@@ -437,22 +428,21 @@ internal sealed class ConfigData
 
     private bool loadConfig(string confPath, bool fix)
     {
-        if (!File.Exists(confPath))
+        var file = new FileInfo(confPath);
+        if (!file.Exists)
             return false;
-        using var eReader = new EraStreamReader(false);
-        if (!eReader.Open(confPath))
+        var lines = File.ReadAllLines(confPath, Config.Encode);
+        if (lines == null)
             return false;
         ScriptPosition? pos = null;
         try
         {
-            string line = null;
             //bool defineIgnoreWarningFiles = false;
-            while ((line = eReader.ReadLine()) != null)
+            foreach (var rawline in lines)
             {
-                line = line.Trim();
+                var line = rawline.AsSpan().Trim();
                 if (line[0] == ';')
                     continue;
-                pos = new ScriptPosition(eReader.Filename, eReader.LineNo);
 
                 var index = line.IndexOf(':');
                 if (index == -1)
@@ -460,9 +450,8 @@ internal sealed class ConfigData
                     continue;
                 }
 
-                var span = line.AsSpan();
-                var key = span[0..index].Trim();
-                var value = span[(index + 1)..];
+                var key = line[0..index].Trim();
+                var value = line[(index + 1)..];
 
                 var item = GetConfigItem(key.ToString());
                 if (item != null)
@@ -500,6 +489,7 @@ internal sealed class ConfigData
                         }
                     }
                 }
+
             }
         }
         catch (EmueraException ee)

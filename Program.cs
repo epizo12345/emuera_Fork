@@ -11,6 +11,7 @@ using System.Runtime;
 using System.Windows.Forms;
 using MinorShift.Emuera.UI.Framework;
 using System.Globalization;
+using System.Reflection;
 
 namespace MinorShift.Emuera;
 #nullable enable
@@ -94,7 +95,7 @@ static partial class Program
         }
 
         ProfileOptimization.SetProfileRoot(exeDir ?? ExeDir);
-        ProfileOptimization.StartProfile("profile");
+        ProfileOptimization.StartProfile(AssemblyData.EmueraVersionText + ".profile");
 
         ConfigData.Instance.LoadConfig();
         JSONConfig.Load();
