@@ -202,6 +202,7 @@ internal static partial class LexicalAnalyzer
         var span = st.SubstringROS();
 
         var searchStart = 0;
+        // "+"、"-"の符号が先頭につく場合、開始位置を符号の次の文字に設定する、
         if (span[0] == '-' || span[0] == '+')
         {
             searchStart = 1;
@@ -211,6 +212,11 @@ internal static partial class LexicalAnalyzer
         if (end == -1)
         {
             end = searchStart + span.Length;
+            // "+"、"-"の符号が先頭につく場合、符号以降の文字数を取得する、
+            if (span[0] == '-' || span[0] == '+')
+            {
+                end -= 1;
+            }
         }
         st.Jump(end);
 
