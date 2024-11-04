@@ -1327,9 +1327,6 @@ internal sealed partial class EmueraConsole : IDisposable
         if (!this.Enabled)
             return;
 
-        //描画が重いと入力が処理できないので、描画毎に入力を捌く
-        Application.DoEvents();
-
         //デバッグ用。描画が超重い環境を想定1
         //Task.Delay(100).Wait();
 
