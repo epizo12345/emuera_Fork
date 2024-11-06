@@ -96,6 +96,10 @@ internal sealed partial class EmueraConsole : IDisposable
                 {
                     if (isRedrawEnabled)
                     {
+                        //入力受け付け
+                        Application.DoEvents();
+
+                        //画面再描画(アニメーション処理)
                         Draw();
                     }
                 }
