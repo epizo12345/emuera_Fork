@@ -131,12 +131,14 @@ internal sealed class ConsoleRectangleShapePart : ConsoleShapePart
 
         Color dcolor = isSelecting ? ButtonColor : Color;
 
-        var paint = new SKPaint
+        using (var paint = new SKPaint()
         {
             Style = SKPaintStyle.Fill,
             Color = dcolor.ToSKColor()
-        };
-        graph.DrawRect(targetRect, paint);
+        })
+        {
+            graph.DrawRect(targetRect, paint);
+        }
     }
     public override void SetWidth(StringMeasure sm, float subPixel)
     {
@@ -179,7 +181,10 @@ internal sealed class ConsoleErrorShapePart : ConsoleShapePart
     public override void DrawTo(SKCanvas graph, SKPoint point, bool isSelecting, bool isBackLog, TextDrawingMode mode, bool isButton = false)
     {
         point.Offset(0, -Config.DefaultFont.Metrics.Top);
-        graph.DrawText(Text, point, SKTextAlign.Left, Config.DefaultFont, new SKPaint() { Color = Config.ForeColor.ToSKColor() });
+        using (var paint = new SKPaint() { Color = Config.ForeColor.ToSKColor() })
+        {
+            graph.DrawText(Text, point, SKTextAlign.Left, Config.DefaultFont, paint);
+        }
     }
     public override void SetWidth(StringMeasure sm, float subPixel)
     {

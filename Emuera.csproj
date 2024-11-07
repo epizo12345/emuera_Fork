@@ -19,7 +19,6 @@
     <AnalysisMode>Minimum</AnalysisMode>
     
     <TieredCompilation>false</TieredCompilation>
-    <ServerGarbageCollection>true</ServerGarbageCollection>
 
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     
@@ -35,6 +34,16 @@
     </Compile>
     <Compile Update="Forms\EraPictureBox.cs">
       <SubType>Component</SubType>
+    </Compile>
+    <Compile Update="Properties\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Properties\Settings.Designer.cs">
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
     <Compile Update="UI\Framework\FormLocalization.Designer.cs">
       <DesignTime>True</DesignTime>
@@ -60,6 +69,10 @@
     <PackageReference Include="System.IO.Hashing" Version="8.0.0" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
     <EmbeddedResource Update="UI\Framework\FormLocalization.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>FormLocalization.Designer.cs</LastGenOutput>
@@ -68,5 +81,11 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>ConsoleLocalization.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
   </ItemGroup>
 </Project>
