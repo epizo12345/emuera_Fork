@@ -40,7 +40,7 @@ build_job:
   stage: build
   only:
     - master
-    - BagFix_WindowSizeErr
+    - BugFix_Test
   script:
     - 'dotnet publish'  # build the project
     - mkdir build
