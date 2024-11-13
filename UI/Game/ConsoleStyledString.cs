@@ -202,59 +202,59 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
             color = Config.LogColor;
         }
 
-        var paint = new SKPaint
+        using (var paint = new SKPaint() { Color = color.ToSKColor() })
         {
-            Color = color.ToSKColor()
-        };
+            var point = new SKPoint(origin.X, origin.Y);
 
-        var point = new SKPoint(origin.X, origin.Y);
+            Point = point;
 
-        Point = point;
-
-        if (backcolor.HasValue)
-        {
-            var size = new SKSize(Width, Font.Size);
-            graph.DrawRect(SKRect.Create(point, size), new SKPaint() { Color = backcolor.Value });
-        }
-
-        if (_texts == null)
-        {
-            point.Offset(0, Math.Abs(Font.Metrics.Top));
-            graph.DrawText(Text, point, SKTextAlign.Left, Font, paint);
-        }
-        else
-        {
-            foreach (var text in _texts)
+            if (backcolor.HasValue)
             {
-                var offsetPoint = point with { Y = point.Y + Math.Abs(text.Font.Metrics.Top) };
-                graph.DrawText(text.Text, offsetPoint, SKTextAlign.Left, text.Font, paint);
+                var size = new SKSize(Width, Font.Size);
+                using (var paint2 = new SKPaint() { Color = backcolor.Value })
+                {
+                    graph.DrawRect(SKRect.Create(point, size), paint2);
+                }
+            }
 
-                point.Offset(text.Width, 0);
+            if (_texts == null)
+            {
+                point.Offset(0, Math.Abs(Font.Metrics.Top));
+                graph.DrawText(Text, point, SKTextAlign.Left, Font, paint);
+            }
+            else
+            {
+                foreach (var text in _texts)
+                {
+                    var offsetPoint = point with { Y = point.Y + Math.Abs(text.Font.Metrics.Top) };
+                    graph.DrawText(text.Text, offsetPoint, SKTextAlign.Left, text.Font, paint);
+
+                    point.Offset(text.Width, 0);
+                }
+            }
+
+
+            if (StringStyle.HasUnderline)
+            {
+                var underlinePosition = Point;
+                underlinePosition.Offset(0, -Font.Metrics.Top + (Font.Metrics.UnderlinePosition ?? 0));
+
+                var width = paint.StrokeWidth;
+                paint.StrokeWidth = Font.Metrics.UnderlineThickness ?? 1;
+                graph.DrawLine(underlinePosition, underlinePosition + new SKPoint(Width, 0), paint);
+                paint.StrokeWidth = width;
+            }
+
+            if (StringStyle.HasStrikeout)
+            {
+                var strikeoutPosition = Point;
+                strikeoutPosition.Offset(0, -Font.Metrics.Top + (Font.Metrics.StrikeoutPosition ?? 0));
+
+                var width = paint.StrokeWidth;
+                paint.StrokeWidth = Font.Metrics.StrikeoutThickness ?? 1;
+                graph.DrawLine(strikeoutPosition, strikeoutPosition + new SKPoint(Width, 0), paint);
+                paint.StrokeWidth = width;
             }
         }
-
-
-        if (StringStyle.HasUnderline)
-        {
-            var underlinePosition = Point;
-            underlinePosition.Offset(0, -Font.Metrics.Top + (Font.Metrics.UnderlinePosition ?? 0));
-
-            var width = paint.StrokeWidth;
-            paint.StrokeWidth = Font.Metrics.UnderlineThickness ?? 1;
-            graph.DrawLine(underlinePosition, underlinePosition + new SKPoint(Width, 0), paint);
-            paint.StrokeWidth = width;
-        }
-
-        if (StringStyle.HasStrikeout)
-        {
-            var strikeoutPosition = Point;
-            strikeoutPosition.Offset(0, -Font.Metrics.Top + (Font.Metrics.StrikeoutPosition ?? 0));
-
-            var width = paint.StrokeWidth;
-            paint.StrokeWidth = Font.Metrics.StrikeoutThickness ?? 1;
-            graph.DrawLine(strikeoutPosition, strikeoutPosition + new SKPoint(Width, 0), paint);
-            paint.StrokeWidth = width;
-        }
-
     }
 }

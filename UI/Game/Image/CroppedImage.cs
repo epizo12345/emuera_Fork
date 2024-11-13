@@ -399,11 +399,10 @@ internal sealed class SpriteAnime : ASprite
         //g.DrawImage(frame.BaseImage.Bitmap, destRect, SrcRectangle, GraphicsUnit.Pixel, attr);←このパターンがない
         //g.DrawImage(frame.BaseImage.SKBitmap.ToBitmap(), destRect, frame.SrcRectangle.X, frame.SrcRectangle.Y, frame.SrcRectangle.Width, frame.SrcRectangle.Height, GraphicsUnit.Pixel, attr);
 
-        var paint = new SKPaint()
+        using (var paint = new SKPaint() { ColorFilter = attr })
         {
-            ColorFilter = attr
-        };
-        g.DrawBitmap(frame.BaseImage.Bitmap, destRect.ToSKRect(), paint);
+            g.DrawBitmap(frame.BaseImage.Bitmap, destRect.ToSKRect(), paint);
+        }
     }
 
 }

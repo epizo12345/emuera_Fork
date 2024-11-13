@@ -130,20 +130,18 @@ class ConsoleDivElement : AConsoleDisplayNode
 
             if (_backColor.HasValue)
             {
-                var paint = new SKPaint()
+                using (var paint = new SKPaint() { Color = _backColor.Value, })
                 {
-                    Color = _backColor.Value,
-                };
-                canvas.DrawRect(SKRect.Create(Point, Size), paint);
+                    canvas.DrawRect(SKRect.Create(Point, Size), paint);
+                }
             }
 
             if (isSelecting && _hoverBackColor != SKColor.Empty)
             {
-                var paint = new SKPaint()
+                using (var paint = new SKPaint() { Color = _hoverBackColor, })
                 {
-                    Color = _hoverBackColor,
-                };
-                canvas.DrawRect(SKRect.Create(Point, Size), paint);
+                    canvas.DrawRect(SKRect.Create(Point, Size), paint);
+                }
             }
 
         }
