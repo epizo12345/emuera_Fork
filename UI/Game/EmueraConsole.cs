@@ -86,6 +86,7 @@ internal sealed partial class EmueraConsole : IDisposable
         genericTimer.Elapsed += tickTimer;
         genericTimer.Interval = 10;
         genericTimer.Enabled = false;
+        genericTimer.SynchronizingObject = parent;
         CBG_Clear();//文字列描画用ダミー追加
 
         redrawTimer = new(TimeSpan.FromMilliseconds(10));

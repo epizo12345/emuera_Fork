@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Text;
 using MinorShift.Emuera.UI.Framework;
+using System.Linq;
+using System.Windows.Forms;
 
 namespace MinorShift.Emuera.UI.Game;
 
@@ -162,7 +164,10 @@ internal sealed class PrintStringBuffer
     {
         fromCssToButton();
         ConsoleDisplayLine[] ret = ButtonsToDisplayLines(m_buttonList, stringMeasure, false, temporary);
-        ret[^1].IsLineEnd = isLastLineEnd;
+        if (ret.Length > 0)
+        {
+            ret[^1].IsLineEnd = isLastLineEnd;
+        }
         clearBuffer();
         return ret;
     }
@@ -185,6 +190,12 @@ internal sealed class PrintStringBuffer
         bool firstLine = true;
         for (int i = 0; i < buttonList.Count; i++)
         {
+            if (buttonList.Count == 0)
+                return [];
+
+            if (i > buttonList.Count - 1)
+                break;
+
             if (buttonList[i] == null)
             {//強制改行フラグ
                 lineList.Add(m_buttonsToDisplayLine(lineButtonList, firstLine, temporary));
@@ -231,7 +242,7 @@ internal sealed class PrintStringBuffer
             int pointX = 0;
             for (int j = i; j < buttonList.Count; j++)
             {
-                if (buttonList[j] == null)//強制改行を挟んだ後は調整無用
+                if (j >= buttonList.Count || buttonList[j] == null)//強制改行を挟んだ後は調整無用
                     break;
                 buttonList[j].CalcPointX(pointX);
                 pointX += buttonList[j].Width;
