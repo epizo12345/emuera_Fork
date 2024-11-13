@@ -109,8 +109,10 @@ internal sealed class GraphicsImage : AbstractImage
             //using var b = new SolidBrush(Config.BackColor);
             //canvas.FillRectangle(b, rect);
 
-            var paint = new SKPaint();
-            canvas.DrawRect(rect.ToSKRect(), paint);
+            using (var paint = new SKPaint())
+            {
+                canvas.DrawRect(rect.ToSKRect(), paint);
+            }
         }
     }
 
@@ -123,10 +125,11 @@ internal sealed class GraphicsImage : AbstractImage
         {
             throw new NullReferenceException("DrawPolygonに渡されるPointsが空です");
         }
-        var paint = _pen ?? new SKPaint();
-        paint.Style = SKPaintStyle.Stroke;
-
-        canvas.DrawPoints(SKPointMode.Polygon, [.. _points, _points[0]], paint);
+        using (var paint = _pen ?? new SKPaint())
+        {
+            paint.Style = SKPaintStyle.Stroke;
+            canvas.DrawPoints(SKPointMode.Polygon, [.. _points, _points[0]], paint);
+        }
     }
     public void GFillPolygon()
     {
@@ -136,16 +139,18 @@ internal sealed class GraphicsImage : AbstractImage
         {
             throw new NullReferenceException("FillPolygonに渡されるPointsが空です");
         }
-        var paint = _brush ?? new SKPaint();
-        paint.Style = SKPaintStyle.Fill;
-
-        var path = new SKPath();
-        foreach (var p in _points)
+        using (var paint = _brush ?? new SKPaint())
         {
-            path.LineTo(p);
+            paint.Style = SKPaintStyle.Fill;
+
+            var path = new SKPath();
+            foreach (var p in _points)
+            {
+                path.LineTo(p);
+            }
+            path.LineTo(_points[0]);
+            canvas.DrawPath(path, paint);
         }
-        path.LineTo(_points[0]);
-        canvas.DrawPath(path, paint);
     }
 
     public void GDrawPolygonAddPoint(SKPoint point)
@@ -234,7 +239,10 @@ internal sealed class GraphicsImage : AbstractImage
             cm[0][3],cm[1][3],cm[2][3],cm[3][3],cm[3][4],
         ];
         var filter = SKColorFilter.CreateColorMatrix(skiaCM);
-        canvas.DrawBitmap(src, srcRect.ToSKRect(), destRect.ToSKRect(), new SKPaint() { ColorFilter = filter });
+        using (var paint = new SKPaint() { ColorFilter = filter })
+        {
+            canvas.DrawBitmap(src, srcRect.ToSKRect(), destRect.ToSKRect(), paint);
+        }
     }
 
 
@@ -305,7 +313,10 @@ internal sealed class GraphicsImage : AbstractImage
     {
         var font = _font ?? new SKFont();
         point.Offset(0, -font.Metrics.Top);
-        canvas.DrawText(text, point, font, _brush ?? new SKPaint());
+        using (var paint = _brush ?? new SKPaint())
+        {
+            canvas.DrawText(text, point, font, paint);
+        }
     }
 
     public void GSetFont(SKFont r)
