@@ -96,6 +96,10 @@ internal sealed partial class EmueraConsole : IDisposable
                 {
                     if (isRedrawEnabled)
                     {
+                        //描画が重いと入力が処理できないので、描画毎に入力を捌く
+                        Application.DoEvents();
+
+                        //画面再描画(アニメーション処理)
                         Draw();
                     }
                 }
@@ -1307,6 +1311,9 @@ internal sealed partial class EmueraConsole : IDisposable
         }
         window.Invoke(() =>
         {
+            //描画が重いと入力が処理できないので、描画毎に入力を捌く
+            Application.DoEvents();
+
             verticalScrollBarUpdate();
             window.MainPicBox.Refresh();//OnPaint発行
         });
@@ -1326,9 +1333,6 @@ internal sealed partial class EmueraConsole : IDisposable
         //OnPaintからgraphをもらった直後だから大丈夫だとは思うけど一応
         if (!this.Enabled)
             return;
-
-        //描画が重いと入力が処理できないので、描画毎に入力を捌く
-        Application.DoEvents();
 
         //デバッグ用。描画が超重い環境を想定1
         //Task.Delay(100).Wait();
