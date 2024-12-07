@@ -2348,7 +2348,16 @@ internal static partial class FunctionMethodCreator
                 return 0;
             else if ((st.Current == '+' || st.Current == '-') && !char.IsDigit(st.Next))
                 return 0;
-            Int64 ret = LexicalAnalyzer.ReadInt64(st, true);
+            Int64 ret = 0;
+            //ここでエラーが発生する場合、文字列ではないので0を返す
+            try
+            {
+                ret = LexicalAnalyzer.ReadInt64(st, true);
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
             if (!st.EOS)
             {
                 if (st.Current == '.')
@@ -2543,7 +2552,8 @@ internal static partial class FunctionMethodCreator
                 return 0;
             else if ((st.Current == '+' || st.Current == '-') && !char.IsDigit(st.Next))
                 return 0;
-            _ = LexicalAnalyzer.ReadInt64(st, true);
+            if (!LexicalAnalyzer.NumericCheck(st))
+                return (0);
             if (!st.EOS)
             {
                 if (st.Current == '.')
