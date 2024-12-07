@@ -4,6 +4,7 @@ using System;
 using System.Drawing;
 using System.Drawing.Text;
 using System.Windows.Forms;
+using MinorShift.Emuera.UI;
 using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.Forms;
@@ -49,17 +50,9 @@ internal sealed partial class ConfigDialog : Form
 
     private void shown(object sender, EventArgs e)
     {
-        //フォントを事前読み込み
-        foreach (var ff in new InstalledFontCollection().Families)
+        foreach (var fontName in FontFactory.AvailableFonts)
         {
-            if (ff.IsStyleAvailable(FontStyle.Regular) &&
-                ff.IsStyleAvailable(FontStyle.Bold) &&
-                ff.IsStyleAvailable(FontStyle.Italic) &&
-                ff.IsStyleAvailable(FontStyle.Strikeout) &&
-                ff.IsStyleAvailable(FontStyle.Underline))
-            {
-                comboBox2.Items.Add(ff.Name);
-            }
+            comboBox2.Items.Add(fontName);
         }
     }
 
