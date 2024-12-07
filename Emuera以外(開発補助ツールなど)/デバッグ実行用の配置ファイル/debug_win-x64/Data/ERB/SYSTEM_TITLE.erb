@@ -1,0 +1,29 @@
+﻿
+;_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/#
+; ここに、テスト用の処理を記載します。
+;_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/#
+@SYSTEM_TITLE
+#DIM numBuf
+#DIMS strBuf
+
+PRINTFORML テスト開始
+
+numBuf = ISNUMERIC("999")
+;numBuf = ISNUMERIC("-1")
+;numBuf = ISNUMERIC("0e")
+;numBuf = ISNUMERIC("-1-")
+
+;numBuf = TOINT("999")
+;numBuf = TOINT("-1")
+;numBuf = TOINT("0e")
+;numBuf = TOINT("-1-")
+
+PRINTFORML {numBuf}
+
+PRINTFORML テスト終了
+
+WAIT
+
+
+RETURN -1
+
