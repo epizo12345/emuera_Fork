@@ -40,6 +40,7 @@ build_job:
   stage: build
   only:
     - master
+    - SkiaSharp
     - BugFix_Test
   script:
     - 'dotnet publish'  # build the project
