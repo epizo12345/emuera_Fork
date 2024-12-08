@@ -29,8 +29,6 @@ git checkout BugFix_Test
 
 --------------------------------------------------------------------------
 簡易なデバッグ実行するための準備を行う
-※erbファイルなどを用意しないとそもそも起動できないため
-
 -------------------------------------------------------------------------
 本格的に各種テストを行う場合はeraMegatenの全ファイルを
 C:\work\GitLab\EmueraDotNet\artifacts\bin\Emuera\debug_win-x64
@@ -39,23 +37,20 @@ C:\work\GitLab\EmueraDotNet\artifacts\bin\Emuera\debug_win-x64
 
 1.「C:\work\GitLab\EmueraDotNet\Emuera.sln」を起動してリビルドする
 
-2.デバッグ実行に必要なファイルの廃止
+2.デバッグ実行に必要なファイルの配置
 上記のリビルドで作成された下記の「フォルダ1」をコピーして「フォルダ2」へ上書きする
 
 [フォルダ1]
-C:\work\GitLab\EmueraDotNet\Emuera以外(開発補助ツールなど)\デバッグ実行用の配置ファイル\debug_win-x64
+C:\work\GitLab\EmueraDotNet\Emuera以外(開発補助ツールなど)\デバッグ実行用の配置ファイル\1.簡易テスト用(可能な限りファイル数を少なく)\debug_win-x64
 
 [フォルダ2]
 C:\work\GitLab\EmueraDotNet\artifacts\bin\Emuera\debug_win-x64
 
 
 上記のコピーが面倒な場合、コマンドプロンプトで以下のコマンドを実行すればOK
-xcopy /E "C:\work\GitLab\EmueraDotNet\Emuera以外(開発補助ツールなど)\デバッグ実行用の配置ファイル\debug_win-x64\Data\" "C:\work\GitLab\EmueraDotNet\artifacts\bin\Emuera\debug_win-x64\Data\"
+xcopy /E "C:\work\GitLab\EmueraDotNet\Emuera以外(開発補助ツールなど)\デバッグ実行用の配置ファイル\1.簡易テスト用(可能な限りファイル数を少なく)\debug_win-x64\Data\" "C:\work\GitLab\EmueraDotNet\artifacts\bin\Emuera\debug_win-x64\Data\"
 
 
---------------------------------------------------------------------------
-テストの実施
---------------------------------------------------------------------------
 上記の「デバッグ実行するための準備を行う」で配置した
 以下のerbファイルの記述を変更することで
 erbの記述に対応したEmuera側の処理をデバッグ実行で確認します。
@@ -63,3 +58,30 @@ erbの記述に対応したEmuera側の処理をデバッグ実行で確認し�
 C:\work\GitLab\EmueraDotNet\artifacts\bin\Emuera\debug_win-x64\Data\ERB\SYSTEM_TITLE.erb
 
 
+--------------------------------------------------------------------------
+がっつりデバッグ実行するための準備を行う
+--------------------------------------------------------------------------
+正式にリリースされているeraMegatenの全ファイルを導入し
+さらにテスト専用の「イベント125：開発テスト」を追加する
+
+1.「C:\work\GitLab\EmueraDotNet\Emuera.sln」を起動してリビルドする
+
+2.eraMegatenの正式にリリースされている各ファイルを配置する。
+普段プレイしているeraMegatenの全ファイル(「Data」「追加アイコン」フォルダなどがおいてあるところの一式)をコピーして
+下記の「フォルダ1」の中へ配置する
+
+[フォルダ1]
+C:\work\GitLab\EmueraDotNet\Emuera以外(開発補助ツールなど)\デバッグ実行用の配置ファイル\1.簡易テスト用(可能な限りファイル数を少なく)\debug_win-x64
+
+3.テスト専用の「イベント125：開発テスト」を配置する。
+下記の「フォルダ2」をコピーして「フォルダ3」を上書きする
+
+[フォルダ2]
+C:\work\GitLab\EmueraDotNet\Emuera以外(開発補助ツールなど)\デバッグ実行用の配置ファイル\2.がっつりテスト用(eraMegatenの本体にテスト用イベントを追加する)\debug_win-x64
+
+[フォルダ3]
+C:\work\GitLab\EmueraDotNet\artifacts\bin\Emuera\debug_win-x64
+
+
+上記のコピーが面倒な場合、コマンドプロンプトで以下のコマンドを実行すればOK
+xcopy /E "C:\work\GitLab\EmueraDotNet\Emuera以外(開発補助ツールなど)\デバッグ実行用の配置ファイル\2.がっつりテスト用(eraMegatenの本体にテスト用イベントを追加する)\debug_win-x64\Data\" "C:\work\GitLab\EmueraDotNet\artifacts\bin\Emuera\debug_win-x64\Data\"
