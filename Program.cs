@@ -94,8 +94,11 @@ static partial class Program
             AnalysisMode = true;
         }
 
-        ProfileOptimization.SetProfileRoot(exeDir ?? ExeDir);
-        ProfileOptimization.StartProfile(AssemblyData.EmueraVersionText + ".profile");
+        // --------------------------------------
+        // 「ProfileOptimization」の使用が原因による起動時失敗が発生するため、処理をコメントアウト
+        //ProfileOptimization.SetProfileRoot(exeDir ?? ExeDir);
+        //ProfileOptimization.StartProfile(AssemblyData.EmueraVersionText + ".profile");
+        // --------------------------------------
 
         ConfigData.Instance.LoadConfig();
         JSONConfig.Load();
