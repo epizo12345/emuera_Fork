@@ -641,6 +641,8 @@ internal sealed class ConstantData
                 relationDic.Add(tmpl.Callname, (int)tmpl.No);
             if (!string.IsNullOrEmpty(tmpl.Nickname) && !relationDic.ContainsKey(tmpl.Nickname))
                 relationDic.Add(tmpl.Nickname, (int)tmpl.No);
+            if (!string.IsNullOrEmpty(tmpl.Mastername) && !relationDic.ContainsKey(tmpl.Mastername))
+                relationDic.Add(tmpl.Mastername, (int)tmpl.No);
         }
     }
 
@@ -875,6 +877,8 @@ internal sealed class ConstantData
                 break;
             case VariableCode.NAME:
             case VariableCode.CALLNAME:
+            case VariableCode.NICKNAME:
+            case VariableCode.MASTERNAME:
                 ret = relationDic;
                 errPos = "chara*.csv";
                 allowIndex = -1;
