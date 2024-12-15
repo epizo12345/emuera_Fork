@@ -96,13 +96,8 @@ static partial class Program
             AnalysisMode = true;
         }
 
-        //利用推奨の.NET CoreのバージョンをAppConfigファイルから取得する
-        string targetVersion = string.Empty;
-        String? strBuf = ConfigurationManager.AppSettings["targetDotNetCoreVersion"];
-        if (!String.IsNullOrWhiteSpace(strBuf))
-        {
-            targetVersion = strBuf;
-        }
+        //利用推奨の.NET Coreのバージョン
+        string targetVersion = "9.0.0";
 
         //使用している端末の.NET Coreのバージョンを確認し、一定以下の場合はエラーとする
         if (Environment.Version.Build < new Version(targetVersion).Build)
@@ -110,12 +105,9 @@ static partial class Program
             //.Net Coreのバージョンが一定以下の場合はエラーメッセージを表示する
             MessageBox.Show("ご使用の端末の「.NET Core」のバージョンは" + Environment.Version + "です。" + Environment.NewLine + targetVersion + "以上に更新してください。");
 
-            //App.configに.Net Coreのインストール用ページのURLが設定されている場合は、URLを開く
-            String? installUrl = ConfigurationManager.AppSettings["dotNetInstallUrl"];
-            if (!String.IsNullOrWhiteSpace(installUrl))
-            {
-                Process.Start(new ProcessStartInfo(installUrl) { UseShellExecute = true });
-            }
+            //App.configに.Net Coreのインストール用ページを開く
+            String installUrl = "https://dotnet.microsoft.com/en-us/download/dotnet/9.0";
+            Process.Start(new ProcessStartInfo(installUrl) { UseShellExecute = true });
             return;
         }
 
