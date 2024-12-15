@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
+using System.ComponentModel;
 
 namespace MinorShift.Emuera.Forms;
 
@@ -10,11 +11,13 @@ public partial class ColorBox : UserControl
     {
         InitializeComponent();
     }
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
     public Color SelectingColor
     {
         get { return pictureBox1.BackColor; }
         set { pictureBox1.BackColor = value; }
     }
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
     public string LabelText
     {
         get { return label1.Text; }

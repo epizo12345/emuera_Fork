@@ -12,6 +12,8 @@ using System.Windows.Forms;
 using MinorShift.Emuera.UI.Framework;
 using System.Globalization;
 using System.Reflection;
+using System.Configuration;
+using System.Diagnostics;
 
 namespace MinorShift.Emuera;
 #nullable enable
@@ -94,11 +96,31 @@ static partial class Program
             AnalysisMode = true;
         }
 
-        // --------------------------------------
-        // 「ProfileOptimization」の使用が原因による起動時失敗が発生するため、処理をコメントアウト
-        //ProfileOptimization.SetProfileRoot(exeDir ?? ExeDir);
-        //ProfileOptimization.StartProfile(AssemblyData.EmueraVersionText + ".profile");
-        // --------------------------------------
+        //利用推奨の.NET CoreのバージョンをAppConfigファイルから取得する
+        string targetVersion = string.Empty;
+        String? strBuf = ConfigurationManager.AppSettings["targetDotNetCoreVersion"];
+        if (!String.IsNullOrWhiteSpace(strBuf))
+        {
+            targetVersion = strBuf;
+        }
+
+        //使用している端末の.NET Coreのバージョンを確認し、一定以下の場合はエラーとする
+        if (Environment.Version.Build < new Version(targetVersion).Build)
+        {
+            //.Net Coreのバージョンが一定以下の場合はエラーメッセージを表示する
+            MessageBox.Show("ご使用の端末の「.NET Core」のバージョンは" + Environment.Version + "です。" + Environment.NewLine + targetVersion + "以上に更新してください。");
+
+            //App.configに.Net Coreのインストール用ページのURLが設定されている場合は、URLを開く
+            String? installUrl = ConfigurationManager.AppSettings["dotNetInstallUrl"];
+            if (!String.IsNullOrWhiteSpace(installUrl))
+            {
+                Process.Start(new ProcessStartInfo(installUrl) { UseShellExecute = true });
+            }
+            return;
+        }
+
+        ProfileOptimization.SetProfileRoot(exeDir ?? ExeDir);
+        ProfileOptimization.StartProfile(AssemblyData.EmueraVersionText + ".profile");
 
         ConfigData.Instance.LoadConfig();
         JSONConfig.Load();

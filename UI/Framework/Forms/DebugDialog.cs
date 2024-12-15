@@ -75,11 +75,13 @@ public partial class DebugDialog : Form
         mainConsole = console;
     }
 
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
     public string ConsoleText
     {
         get { return textBoxConsole.Text; }
         set { textBoxConsole.Text = value; }
     }
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
     public string TraceText
     {
         get { return textBoxTrace.Text; }
