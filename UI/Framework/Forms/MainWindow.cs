@@ -587,6 +587,8 @@ internal sealed partial class MainWindow : Form
     public void ShowConfigDialog()
     {
 
+        if (console == null || GlobalStatic.Console == null)
+            return;
         ConfigDialog dialog = new()
         {
             StartPosition = FormStartPosition.CenterParent
@@ -1227,10 +1229,12 @@ internal sealed partial class MainWindow : Form
 
     private void クリップボードにコピーToolStripMenuItem_Click(object sender, EventArgs e)
     {
-        if(クリップボードにコピーToolStripMenuItem.Checked)
-            GlobalStatic.Console.CBProc.Init();
+        if (console == null || GlobalStatic.Console == null)
+            return;
+        if (クリップボードにコピーToolStripMenuItem.Checked)
+            console.CBProc.Init();
         else
-            GlobalStatic.Console.CBProc.Reset();
+            console.CBProc.Reset();
         JSONConfig.User.CBUseClipboard = クリップボードにコピーToolStripMenuItem.Checked;
         JSONConfig.Save();
     }
