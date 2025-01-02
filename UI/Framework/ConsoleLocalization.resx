@@ -3212,4 +3212,7 @@ Error.AttributeCanNotInterpretNum	&lt;{0}&gt; tag has a {1}" attribute with a va
     <data name="Error_CanNotUseDumprand" xml:space="preserve">
         <value>DUMPRAND does not work with the new random number algorithm</value>
     </data>
+    <data name="Error_MacroLoading" xml:space="preserve">
+        <value>An error has occurred while loading macro.txt</value>
+    </data>
 </root>

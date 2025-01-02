@@ -322,6 +322,17 @@ public static class LocalizationManager
         public static string SetMacroGroup => FormLocalization.KeyMacro_SetMacroGroup;
         public static string MacroKeyF => FormLocalization.KeyMacro_MacroKeyF;
         public static string GMacroKeyF => FormLocalization.KeyMacro_GMacroKeyF;
+        public static string SetMacroGroupEnglish => FormLocalization.ResourceManager.GetString("KeyMacro_SetMacroGroup", English);
+        public static string MacroKeyFEnglish => FormLocalization.ResourceManager.GetString("KeyMacro_MacroKeyF", English);
+        public static string GMacroKeyFEnglish => FormLocalization.ResourceManager.GetString("KeyMacro_GMacroKeyF", English);
+
+        public static string SetMacroGroupJapanese => FormLocalization.ResourceManager.GetString("KeyMacro_SetMacroGroup", Japanese);
+        public static string MacroKeyFJapanese => FormLocalization.ResourceManager.GetString("KeyMacro_MacroKeyF", Japanese);
+        public static string GMacroKeyFJapanese => FormLocalization.ResourceManager.GetString("KeyMacro_GMacroKeyF", Japanese);
+        
+        public static string SetMacroGroupChinese => FormLocalization.ResourceManager.GetString("KeyMacro_SetMacroGroup", ChineseSimplified);
+        public static string MacroKeyFChinese => FormLocalization.ResourceManager.GetString("KeyMacro_MacroKeyF", ChineseSimplified);
+        public static string GMacroKeyFChinese => FormLocalization.ResourceManager.GetString("KeyMacro_GMacroKeyF", ChineseSimplified);
     }
 
     public static class Error
@@ -1169,6 +1180,7 @@ public static class LocalizationManager
         public static string CanNotUseDumprand => ConsoleLocalization.Error_CanNotUseDumprand;
         public static string CanNotUseInitrand => ConsoleLocalization.Error_CanNotUseInitrand;
         public static string IgnoreRandomize => ConsoleLocalization.Error_IgnoreRandomize;
+        public static string MacroLoadingError => ConsoleLocalization.Error_MacroLoading;
     }
 
     public static class SystemLine
@@ -1224,9 +1236,15 @@ public static class LocalizationManager
         public static string Log => ConsoleLocalization.SystemLine_Log;
     }
 
-    public static void SetLanguage(string language)
+    public static void SetLanguage(CultureInfo culture)
     {
-        var culture = new CultureInfo(language);
         Thread.CurrentThread.CurrentUICulture = culture;
     }
+    
+    public static CultureInfo CurrentCulture => Thread.CurrentThread.CurrentUICulture;
+
+    public static CultureInfo Japanese => new("ja-jp");
+    public static CultureInfo English => new("en");
+    public static CultureInfo ChineseSimplified => new("zh-hans");
+    
 }

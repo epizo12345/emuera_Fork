@@ -3175,4 +3175,7 @@
     <data name="Error_ExtraCharacterAfterDeclaration" xml:space="preserve">
         <value>声明之后有多余的字符</value>
     </data>
+    <data name="Error_MacroLoading" xml:space="preserve">
+        <value>加载 macro.txt 时发生错误。</value>
+    </data>
 </root>

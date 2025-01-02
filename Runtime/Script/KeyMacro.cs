@@ -2,14 +2,15 @@
 using MinorShift.Emuera.Sub;
 using System;
 using System.IO;
+using System.Text.RegularExpressions;
 using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.Runtime.Script;
 
-internal static class KeyMacro
+internal static partial class KeyMacro
 {
-    readonly static string macroPath = Program.ExeDir + "macro.txt";
-    public const string gID = "グループ";
+    public static readonly string macroPath = Program.ExeDir + "macro.txt";
+    private const string gID = "グループ{0}:{1}";
     public const int MaxGroup = 10;
     public const int MaxFkey = 12;
     public const int MaxMacro = MaxFkey * MaxGroup;
@@ -33,9 +34,9 @@ internal static class KeyMacro
                 int i = f + g * MaxFkey;
                 macro[i] = "";
                 if (g == 0)
-                    macroName[i] = string.Format(LocalizationManager.KeyMacro.MacroKeyF, (f + 1).ToString());
+                    macroName[i] = string.Format(LocalizationManager.KeyMacro.MacroKeyFJapanese, (f + 1).ToString());
                 else
-                    macroName[i] = string.Format(LocalizationManager.KeyMacro.GMacroKeyF, g.ToString(), (f + 1).ToString());
+                    macroName[i] = string.Format(LocalizationManager.KeyMacro.GMacroKeyFJapanese, g.ToString(), (f + 1).ToString());
 
             }
         }
@@ -45,14 +46,12 @@ internal static class KeyMacro
     {
         if (!isMacroChanged)
             return true;
-        StreamWriter writer = null;
-
         try
         {
-            writer = new StreamWriter(macroPath, false, Config.Config.Encode);
+            using var writer = new StreamWriter(macroPath, false, Config.Config.Encode);
             for (int g = 0; g < MaxGroup; g++)
             {
-                writer.WriteLine(gID + g.ToString() + ":" + groupName[g]);
+                writer.WriteLine(gID, g, groupName[g]);
             }
             for (int i = 0; i < MaxMacro; i++)
             {
@@ -63,49 +62,44 @@ internal static class KeyMacro
         {
             return false;
         }
-        finally
-        {
-            if (writer != null)
-                writer.Close();
-        }
         return true;
     }
+    
+    [GeneratedRegex(@"^グループ([0-9]):(.{3,})$")]
+    private static partial Regex MacroGroupNameRegex();
+    
+    [GeneratedRegex(@"^(?:G([0-9]):)?マクロキーF([1-9]|1[0-2]):(.+)$")]
+    private static partial Regex MacroKeyRegex();
 
-    public static void LoadMacroFile(string filename)
+    public static bool LoadMacroFile(string filename)
     {
         using var eReader = new EraStreamReader(false);
         if (!eReader.Open(filename))
-            return;
+            return false;
         try
         {
-            string line = null;
-            while ((line = eReader.ReadLine()) != null)
+            while (eReader.ReadLine() is { } line)
             {
                 if (line.Length == 0 || line[0] == ';')
                     continue;
-                if (line.StartsWith(gID))
+                if (MacroGroupNameRegex().Match(line) is { Success: true } groupNameMatch)
                 {
-                    if (line.Length < gID.Length + 4)
-                        continue;
-                    int num = line[gID.Length] - '0';
-                    if (num < 0 || num > 9)
-                        continue;
-                    if (line[gID.Length + 1] != ':')
-                        continue;
-                    groupName[num] = line[(gID.Length + 2)..];
+                    int num = int.Parse(groupNameMatch.Groups[1].Value);
+                    groupName[num] = groupNameMatch.Groups[2].Value;
                 }
-                for (int i = 0; i < MaxMacro; i++)
+                else if (MacroKeyRegex().Match(line) is { Success: true } macroMatch)
                 {
-                    if (line.StartsWith(macroName[i]))
-                    {
-                        macro[i] = line[macroName[i].Length..];
-                        break;
-                    }
+                    int groupNum = macroMatch.Groups[1].Success ? int.Parse(macroMatch.Groups[1].Value) : 0;
+                    int fkeyNum = int.Parse(macroMatch.Groups[2].Value);
+                    macro[fkeyNum + groupNum * MaxFkey - 1] = macroMatch.Groups[3].Value;
                 }
             }
         }
-        catch { return; }
-        finally { eReader.Dispose(); }
+        catch
+        {
+            return false;
+        }
+        return true;
     }
 
     public static void SetMacro(int FkeyNum, int groupNum, string macroStr)
