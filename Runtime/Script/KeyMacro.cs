@@ -66,10 +66,10 @@ internal static partial class KeyMacro
     }
     
     [GeneratedRegex(@"^グループ([0-9]):(.{3,})$")]
-    private static partial Regex MacroGroupNameRegex();
+    private static partial Regex MacroGroupNameRegex { get; }
     
     [GeneratedRegex(@"^(?:G([0-9]):)?マクロキーF([1-9]|1[0-2]):(.+)$")]
-    private static partial Regex MacroKeyRegex();
+    private static partial Regex MacroKeyRegex { get; }
 
     public static bool LoadMacroFile(string filename)
     {
@@ -82,12 +82,12 @@ internal static partial class KeyMacro
             {
                 if (line.Length == 0 || line[0] == ';')
                     continue;
-                if (MacroGroupNameRegex().Match(line) is { Success: true } groupNameMatch)
+                if (MacroGroupNameRegex.Match(line) is { Success: true } groupNameMatch)
                 {
                     int num = int.Parse(groupNameMatch.Groups[1].Value);
                     groupName[num] = groupNameMatch.Groups[2].Value;
                 }
-                else if (MacroKeyRegex().Match(line) is { Success: true } macroMatch)
+                else if (MacroKeyRegex.Match(line) is { Success: true } macroMatch)
                 {
                     int groupNum = macroMatch.Groups[1].Success ? int.Parse(macroMatch.Groups[1].Value) : 0;
                     int fkeyNum = int.Parse(macroMatch.Groups[2].Value);
