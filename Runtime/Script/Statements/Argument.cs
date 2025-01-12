@@ -435,6 +435,23 @@ internal sealed class SpSaveVarArgument : Argument
     readonly public VariableToken[] VarTokens;
 }
 
+internal sealed class SpMatchAllArgument : Argument
+{
+	public SpMatchAllArgument(VariableToken token, AExpression value, AExpression beg, AExpression end, long? index)
+	{
+		Token = token;
+		Value = value;
+        Beg = beg;
+        End = end;
+        Index = index;
+	}
+	readonly public VariableToken Token;
+	readonly public AExpression Value;
+	readonly public AExpression Beg;
+	readonly public AExpression End;
+	readonly public long? Index;
+}
+
 internal sealed class RefArgument : Argument
 {
     public RefArgument(UserDefinedRefMethod udrm, UserDefinedRefMethod src)

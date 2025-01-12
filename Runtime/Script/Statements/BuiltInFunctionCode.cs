@@ -240,6 +240,8 @@ enum FunctionCode
     VARSET,
     CVARSET,
 
+    MATCHALL,
+
     RESET_STAIN,
 
     SAVENOS,//引数の仕様が違うので(ry

@@ -44,10 +44,11 @@ enum FunctionArgType
     EXPRESSION,//<式>、変数の型は不問
     EXPRESSION_NULLABLE,//<式>、変数の型は不問
     CASE,//<CASE条件式>(, <CASE条件式>...)
+    SP_MATCHALL,
 
 
-    //TODO　省略時の処理に違いがあるが統合可能なはず
-    VAR_INT,//<可変数値変数> //引数は省略可
+	//TODO　省略時の処理に違いがあるが統合可能なはず
+	VAR_INT,//<可変数値変数> //引数は省略可
     SP_GETINT,//<可変数値変数>(今までこれがないことに驚いた)
 
     VAR_STR,//<可変数値変数> //引数は省略可

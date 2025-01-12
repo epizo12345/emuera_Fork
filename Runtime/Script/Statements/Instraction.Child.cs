@@ -17,6 +17,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using MinorShift.Emuera.UI.Framework;
+using System.Threading;
 
 namespace MinorShift.Emuera.GameProc.Function;
 
@@ -1858,11 +1859,96 @@ internal sealed partial class FunctionIdentifier
             exm.Console.Await((int)waittime);
         }
     }
-    #endregion
 
-    #region flowControlFunction
+	private sealed class MATCHALL_Instruction : AInstruction
+	{
+		public MATCHALL_Instruction()
+		{
+			ArgBuilder = ArgumentParser.GetArgumentBuilder(FunctionArgType.SP_MATCHALL);
+			flag = EXTENDED | METHOD_SAFE;
+		}
 
-    private sealed class BEGIN_Instruction : AInstruction
+		public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
+		{
+			var arg = func.Argument as SpMatchAllArgument;
+            var token = arg.Token;
+            var valExpr = arg.Value;
+            var type = valExpr.GetOperandType();
+            var beg = arg.Beg?.GetIntValue(exm) ?? 0;
+            long end;
+            long len;
+            var count = 0;
+            var arr = exm.VEvaluator.RESULT_ARRAY;
+            var output = arr.AsSpan()[1..];
+            if (token.IsCharacterData)
+            {
+                if (token.IsArray1D)
+					len = exm.VEvaluator.CHARANUM;
+				else if(token.IsArray2D || token.IsArray3D)
+					throw new ExeEE("type error");
+				else
+                    len = exm.VEvaluator.CHARANUM;
+            }
+            else
+            {
+                if (token.IsArray1D)
+                    len = token.GetLength(0);
+                else
+                    throw new ExeEE("type error");
+            }
+            if (arg.End is not null)
+                end = arg.End.GetIntValue(exm);
+            else
+                end = len;
+            if(beg < 0 || end < 0)
+				throw new CodeEE("検索範囲に負の値が渡されました");
+			if (beg > end)
+				throw new CodeEE("検索範囲の指定が不正です");
+			if (long.Max(beg, end) > len)
+                throw new CodeEE("検索範囲が変数のサイズを超えています");
+
+			var idxs = new long[2];
+            int p = 0;
+            if (arg.Index.HasValue)
+                idxs[1] = arg.Index.Value;
+            if (type == typeof(long))
+            {
+                var val = valExpr.GetIntValue(exm);
+                for (var i = beg; i < end; i++)
+                {
+                    idxs[p] = i;
+                    if (val == token.GetIntValue(exm, idxs))
+                    {
+                        if (output.Length > count)
+                            output[count] = i;
+                        ++count;
+                    }
+                }
+            }
+            else if (type == typeof(string))
+            {
+                var val = valExpr.GetStrValue(exm);
+                for (var i = beg; i < end; i++)
+                {
+                    idxs[p] = i;
+                    if (val == token.GetStrValue(exm, idxs))
+                    {
+                        if (output.Length > count)
+                            output[count] = i;
+                        ++count;
+                    }
+                }
+            }
+            else
+                throw new ExeEE("unknown type");
+            arr[0] = count;
+		}
+	}
+	#endregion
+
+	#region flowControlFunction
+
+	private sealed class BEGIN_Instruction : AInstruction
     {
         public BEGIN_Instruction()
         {
