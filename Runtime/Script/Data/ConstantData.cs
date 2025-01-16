@@ -10,6 +10,8 @@ using System.IO;
 using System.Text;
 using MinorShift.Emuera.UI.Framework;
 using MinorShift.Emuera.Runtime.Config.JSON;
+using System.Linq;
+using System.Collections.ObjectModel;
 
 namespace MinorShift.Emuera.Runtime.Script.Data;
 
@@ -93,7 +95,15 @@ internal sealed class ConstantData
     public long[] ItemPrice;
 
     private readonly List<CharacterTemplate> CharacterTmplList;
-    private EmueraConsole output;
+    private Dictionary<string, long> _nameToTemplateMap = new();
+	private Dictionary<string, long> _nicknameToTemplateMap = new();
+	private Dictionary<string, long> _callnameToTemplateMap = new();
+	private Dictionary<string, long> _masternameToTemplateMap = new();
+    public ReadOnlyDictionary<string, long> NameToTemplateMap => _nameToTemplateMap.AsReadOnly();
+	public ReadOnlyDictionary<string, long> NicknameToTemplateMap => _nicknameToTemplateMap.AsReadOnly();
+	public ReadOnlyDictionary<string, long> CallnameToTemplateMap => _callnameToTemplateMap.AsReadOnly();
+	public ReadOnlyDictionary<string, long> MasternameToTemplateMap => _masternameToTemplateMap.AsReadOnly();
+	private EmueraConsole output;
 
     public ConstantData()
     {
@@ -1053,6 +1063,17 @@ internal sealed class ConstantData
             }
 
             CharacterTmplList.Sort((left, right) => (int)(left.No - right.No));
+            foreach(var t in ((IEnumerable<CharacterTemplate>)CharacterTmplList).Reverse())
+            {
+                if (t.Name is not null)
+                    _nameToTemplateMap[t.Name] = t.No;
+				if (t.Nickname is not null)
+					_nicknameToTemplateMap[t.Nickname] = t.No;
+				if (t.Callname is not null)
+					_callnameToTemplateMap[t.Callname] = t.No;
+				if (t.Mastername is not null)
+					_masternameToTemplateMap[t.Mastername] = t.No;
+			}
         }
         catch
         {

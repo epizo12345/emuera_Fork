@@ -31,7 +31,11 @@ internal static partial class FunctionMethodCreator
             ["CSVCFLAG"] = new CsvDataMethod(CharacterIntData.CFLAG),
             ["CSVEQUIP"] = new CsvDataMethod(CharacterIntData.EQUIP),
             ["CSVJUEL"] = new CsvDataMethod(CharacterIntData.JUEL),
-            ["FINDCHARA"] = new FindcharaMethod(false),
+            ["GETCSVNOBYNAME"] = new GetCsvNoMethod(CharacterStrData.NAME),
+			["GETCSVNOBYNICKNAME"] = new GetCsvNoMethod(CharacterStrData.NICKNAME),
+			["GETCSVNOBYCALLNAME"] = new GetCsvNoMethod(CharacterStrData.CALLNAME),
+			["GETCSVNOBYMASTERNAME"] = new GetCsvNoMethod(CharacterStrData.MASTERNAME),
+			["FINDCHARA"] = new FindcharaMethod(false),
             ["FINDLASTCHARA"] = new FindcharaMethod(true),
             ["EXISTCSV"] = new ExistCsvMethod(),
 
