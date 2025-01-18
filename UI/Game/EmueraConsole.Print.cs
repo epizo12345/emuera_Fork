@@ -698,7 +698,8 @@ internal sealed partial class EmueraConsole : IDisposable
 
         builder.AppendLine(LocalizationManager.SystemLine.Enviroment);
         builder.AppendLine(AssemblyData.EmueraVersionText);
-
+        if(!string.IsNullOrEmpty(GlobalStatic.GameBaseData?.ScriptWindowTitle))
+            builder.AppendLine(GlobalStatic.GameBaseData.ScriptWindowTitle);
         var patchVersionsPath = Path.Combine(Program.ExeDir, "patch_versions");
         if (Directory.Exists(patchVersionsPath))
         {

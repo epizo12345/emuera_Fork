@@ -1995,15 +1995,15 @@
     </data>
 
     <data name="Error_FuncEndError" xml:space="preserve">
-        <value>関数の終端でエラーが発生しました:{0}</value>
+        <value>関数の終端でエラーが発生しました.</value>
     </data>
 
     <data name="Error_FuncEndEmueraError" xml:space="preserve">
-        <value>関数の終端でEmueraのエラーが発生しました:{0}</value>
+        <value>関数の終端でEmueraのエラーが発生しました.</value>
     </data>
 
     <data name="Error_FuncEndUnexpectedError" xml:space="preserve">
-        <value>関数の終端で予期しないエラーが発生しました:{0}</value>
+        <value>関数の終端で予期しないエラーが発生しました.</value>
     </data>
 
     <data name="Error_ErrorFileAndLine" xml:space="preserve">
@@ -2019,7 +2019,7 @@
     </data>
 
     <data name="Error_HasError" xml:space="preserve">
-        <value>{0}エラーが発生しました:{1}</value>
+        <value>{0}エラーが発生しました.</value>
     </data>
 
     <data name="Error_ThrowMessage" xml:space="preserve">
@@ -2043,11 +2043,11 @@
     </data>
 
     <data name="Error_HasEmueraError" xml:space="preserve">
-        <value>{0}Emueraのエラーが発生しました:{1}</value>
+        <value>{0}Emueraのエラーが発生しました.</value>
     </data>
 
     <data name="Error_HasUnexpectedError" xml:space="preserve">
-        <value>{0}予期しないエラーが発生しました:{1}</value>
+        <value>{0}予期しないエラーが発生しました.</value>
     </data>
 
     <data name="Error_SkipdispInputError1" xml:space="preserve">
@@ -3204,5 +3204,9 @@
     </data>
     <data name="Error_CanNotUseDumprand" xml:space="preserve">
         <value>新しい乱数アルゴリズムではDUMPRANDは機能しません</value>
+    </data>
+    <data name="Error_EnviromentInfo" xml:space="preserve">
+        <value>Emueraのバージョン:{0}
+ゲームのバージョン:{1}</value>
     </data>
 </root>

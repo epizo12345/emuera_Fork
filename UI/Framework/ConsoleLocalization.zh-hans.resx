@@ -1995,15 +1995,15 @@
     </data>
 
     <data name="Error_FuncEndError" xml:space="preserve">
-        <value>函数结尾发生错误:{0}</value>
+        <value>函数结尾发生错误.}</value>
     </data>
 
     <data name="Error_FuncEndEmueraError" xml:space="preserve">
-        <value>函数结尾发生Emuera错误:{0}</value>
+        <value>函数结尾发生Emuera错误.</value>
     </data>
 
     <data name="Error_FuncEndUnexpectedError" xml:space="preserve">
-        <value>函数结尾发生意料之外的错误:{0}</value>
+        <value>函数结尾发生意料之外的错误.</value>
     </data>
 
     <data name="Error_ErrorFileAndLine" xml:space="preserve">
@@ -2019,7 +2019,7 @@
     </data>
 
     <data name="Error_HasError" xml:space="preserve">
-        <value>{0}错误发生在:{1}</value>
+        <value>{0}错误发生在.</value>
     </data>
 
     <data name="Error_ThrowMessage" xml:space="preserve">
@@ -2043,11 +2043,11 @@
     </data>
 
     <data name="Error_HasEmueraError" xml:space="preserve">
-        <value>{0}发生了Emuera错误:{1}</value>
+        <value>{0}发生了Emuera错误.</value>
     </data>
 
     <data name="Error_HasUnexpectedError" xml:space="preserve">
-        <value>{0}发生了意料之外的错误:{1}</value>
+        <value>{0}发生了意料之外的错误.</value>
     </data>
 
     <data name="Error_SkipdispInputError1" xml:space="preserve">

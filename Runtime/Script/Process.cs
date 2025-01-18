@@ -484,17 +484,23 @@ internal sealed partial class Process(EmueraConsole view)
         console.ThrowError(playSound);
         if (exc is CodeEE)
         {
-            console.PrintError(string.Format(LocalizationManager.Error.FuncEndError, AssemblyData.EmueraVersionText));
+            console.PrintError(string.Format(LocalizationManager.Error.FuncEndError));
+            console.Print(string.Format(LocalizationManager.Error.EnviromentInfo,
+                AssemblyData.EmueraVersionText, GlobalStatic.GameBaseData?.ScriptWindowTitle));
             console.PrintError(exc.Message);
         }
         else if (exc is ExeEE)
         {
-            console.PrintError(string.Format(LocalizationManager.Error.FuncEndEmueraError, AssemblyData.EmueraVersionText));
+            console.PrintError(string.Format(LocalizationManager.Error.FuncEndEmueraError));
+            console.Print(string.Format(LocalizationManager.Error.EnviromentInfo,
+                AssemblyData.EmueraVersionText, GlobalStatic.GameBaseData?.ScriptWindowTitle));
             console.PrintError(exc.Message);
         }
         else
         {
-            console.PrintError(string.Format(LocalizationManager.Error.FuncEndUnexpectedError, AssemblyData.EmueraVersionText));
+            console.PrintError(string.Format(LocalizationManager.Error.FuncEndUnexpectedError));
+            console.Print(string.Format(LocalizationManager.Error.EnviromentInfo,
+                AssemblyData.EmueraVersionText, GlobalStatic.GameBaseData?.ScriptWindowTitle));
             console.PrintError(exc.GetType().ToString() + ":" + exc.Message);
             string[] stack = exc.StackTrace.Split('\n');
             for (int i = 0; i < stack.Length; i++)
@@ -533,7 +539,9 @@ internal sealed partial class Process(EmueraConsole view)
                 }
                 else
                 {
-                    console.PrintErrorButton(string.Format(LocalizationManager.Error.HasError, posString, AssemblyData.EmueraVersionText), position);
+                    console.PrintErrorButton(string.Format(LocalizationManager.Error.HasError, posString), position);
+                    console.Print(string.Format(LocalizationManager.Error.EnviromentInfo,
+                        AssemblyData.EmueraVersionText, GlobalStatic.GameBaseData?.ScriptWindowTitle));
                     printRawLine(position);
                     console.PrintError(string.Format(LocalizationManager.Error.ErrorMessage, exc.Message));
                 }
@@ -551,18 +559,24 @@ internal sealed partial class Process(EmueraConsole view)
             }
             else
             {
-                console.PrintError(string.Format(LocalizationManager.Error.HasError, posString, AssemblyData.EmueraVersionText));
+                console.PrintError(string.Format(LocalizationManager.Error.HasError, posString));
+                console.Print(string.Format(LocalizationManager.Error.EnviromentInfo,
+                    AssemblyData.EmueraVersionText, GlobalStatic.GameBaseData?.ScriptWindowTitle));
                 console.PrintError(exc.Message);
             }
         }
         else if (exc is ExeEE)
         {
-            console.PrintError(string.Format(LocalizationManager.Error.HasEmueraError, posString, AssemblyData.EmueraVersionText));
+            console.PrintError(string.Format(LocalizationManager.Error.HasEmueraError, posString));
+            console.Print(string.Format(LocalizationManager.Error.EnviromentInfo,
+                AssemblyData.EmueraVersionText, GlobalStatic.GameBaseData?.ScriptWindowTitle));
             console.PrintError(exc.Message);
         }
         else
         {
-            console.PrintError(string.Format(LocalizationManager.Error.HasUnexpectedError, posString, AssemblyData.EmueraVersionText));
+            console.PrintError(string.Format(LocalizationManager.Error.HasUnexpectedError, posString));
+            console.Print(string.Format(LocalizationManager.Error.EnviromentInfo,
+                AssemblyData.EmueraVersionText, GlobalStatic.GameBaseData?.ScriptWindowTitle));
             console.PrintError(exc.GetType() + ":" + exc.Message);
             string[] stack = exc.StackTrace.Split('\n');
             for (int i = 0; i < stack.Length; i++)
