@@ -2461,6 +2461,16 @@ namespace MinorShift.Emuera.UI.Framework {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Emuera Version: {0}
+        ///  Game Version: {1}.
+        /// </summary>
+        internal static string Error_EnviromentInfo {
+            get {
+                return ResourceManager.GetString("Error_EnviromentInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Assignment operator &apos;=&apos; is used in the expression (Use &apos;==&apos; for equality comparison).
         /// </summary>
         internal static string Error_EqualInExpression {
@@ -2758,7 +2768,7 @@ namespace MinorShift.Emuera.UI.Framework {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to An Emuera error has occurred at the end of the function:{0}.
+        ///   Looks up a localized string similar to An Emuera error has occurred at the end of the function..
         /// </summary>
         internal static string Error_FuncEndEmueraError {
             get {
@@ -2767,7 +2777,7 @@ namespace MinorShift.Emuera.UI.Framework {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to An error has occurred at the end of the function:{0}.
+        ///   Looks up a localized string similar to An error has occurred at the end of the function..
         /// </summary>
         internal static string Error_FuncEndError {
             get {
@@ -2776,7 +2786,7 @@ namespace MinorShift.Emuera.UI.Framework {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to An unexpected error has occurred at the end of the function:{0}.
+        ///   Looks up a localized string similar to An unexpected error has occurred at the end of the function..
         /// </summary>
         internal static string Error_FuncEndUnexpectedError {
             get {
@@ -2965,7 +2975,7 @@ namespace MinorShift.Emuera.UI.Framework {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to {0}Emuera has encountered an error: {1}.
+        ///   Looks up a localized string similar to {0}. Emuera has encountered an error..
         /// </summary>
         internal static string Error_HasEmueraError {
             get {
@@ -2974,7 +2984,7 @@ namespace MinorShift.Emuera.UI.Framework {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to {0}Error has occurred:{1}.
+        ///   Looks up a localized string similar to {0}. An Error has occurred..
         /// </summary>
         internal static string Error_HasError {
             get {
@@ -3010,7 +3020,7 @@ namespace MinorShift.Emuera.UI.Framework {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to {0}Unexpected error has occurred: {1}.
+        ///   Looks up a localized string similar to {0}. A unexpected error has occurred..
         /// </summary>
         internal static string Error_HasUnexpectedError {
             get {
