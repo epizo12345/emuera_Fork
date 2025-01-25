@@ -1232,8 +1232,9 @@ public static class LocalizationManager
         public static string LogFileHasBeenCreated => ConsoleLocalization.SystemLine_LogFileHasBeenCreated;
         public static string MinusWontWork => ConsoleLocalization.SystemLine_MinusWontWork;
         public static string Patch => ConsoleLocalization.SystemLine_Patch;
-        public static string Enviroment => ConsoleLocalization.SystemLine_Enviroment;
+        public static string Environment => ConsoleLocalization.SystemLine_Enviroment;
         public static string Log => ConsoleLocalization.SystemLine_Log;
+        public static string EnvironmentInfo => ConsoleLocalization.SystemLine_EnvironmentInfo;
     }
 
     public static void SetLanguage(CultureInfo culture)

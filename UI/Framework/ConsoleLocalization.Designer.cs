@@ -2461,16 +2461,6 @@ namespace MinorShift.Emuera.UI.Framework {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Emuera Version: {0}
-        ///  Game Version: {1}.
-        /// </summary>
-        internal static string Error_EnviromentInfo {
-            get {
-                return ResourceManager.GetString("Error_EnviromentInfo", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Assignment operator &apos;=&apos; is used in the expression (Use &apos;==&apos; for equality comparison).
         /// </summary>
         internal static string Error_EqualInExpression {
@@ -4028,7 +4018,7 @@ namespace MinorShift.Emuera.UI.Framework {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to An error has occurred while loading macro.txt.
+        ///   Looks up a localized string similar to An error occurred while loading macro.txt.
         /// </summary>
         internal static string Error_MacroLoading {
             get {
@@ -7012,6 +7002,16 @@ namespace MinorShift.Emuera.UI.Framework {
         internal static string SystemLine_Enviroment {
             get {
                 return ResourceManager.GetString("SystemLine_Enviroment", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Emuera Version: {0}
+        ///  Game Version: {1}.
+        /// </summary>
+        internal static string SystemLine_EnvironmentInfo {
+            get {
+                return ResourceManager.GetString("SystemLine_EnvironmentInfo", resourceCulture);
             }
         }
         

@@ -696,7 +696,7 @@ internal sealed partial class EmueraConsole : IDisposable
         var builder = new StringBuilder();
 
 
-        builder.AppendLine(LocalizationManager.SystemLine.Enviroment);
+        builder.AppendLine(LocalizationManager.SystemLine.Environment);
         builder.AppendLine(AssemblyData.EmueraVersionText);
         if(!string.IsNullOrEmpty(GlobalStatic.GameBaseData?.ScriptWindowTitle))
             builder.AppendLine(GlobalStatic.GameBaseData.ScriptWindowTitle);

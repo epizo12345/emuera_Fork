@@ -3212,8 +3212,11 @@ Error.AttributeCanNotInterpretNum	&lt;{0}&gt; tag has a {1}" attribute with a va
     <data name="Error_CanNotUseDumprand" xml:space="preserve">
         <value>DUMPRAND does not work with the new random number algorithm</value>
     </data>
-    <data name="Error_EnviromentInfo" xml:space="preserve">
+    <data name="SystemLine_EnvironmentInfo" xml:space="preserve">
         <value>Emuera Version: {0}
   Game Version: {1}</value>
+    </data>
+    <data name="Error_MacroLoading" xml:space="preserve">
+        <value>An error occurred while loading macro.txt</value>
     </data>
 </root>

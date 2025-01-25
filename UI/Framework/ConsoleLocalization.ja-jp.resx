@@ -3205,8 +3205,11 @@
     <data name="Error_CanNotUseDumprand" xml:space="preserve">
         <value>新しい乱数アルゴリズムではDUMPRANDは機能しません</value>
     </data>
-    <data name="Error_EnviromentInfo" xml:space="preserve">
+    <data name="SystemLine_EnvironmentInfo" xml:space="preserve">
         <value>Emueraのバージョン:{0}
 ゲームのバージョン:{1}</value>
+    </data>
+    <data name="Error_MacroLoading" xml:space="preserve">
+        <value>macro.txt の読み込み中にエラーが発生しました</value>
     </data>
 </root>
