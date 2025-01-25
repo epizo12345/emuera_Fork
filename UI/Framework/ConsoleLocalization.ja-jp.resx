@@ -3205,4 +3205,7 @@
     <data name="Error_CanNotUseDumprand" xml:space="preserve">
         <value>新しい乱数アルゴリズムではDUMPRANDは機能しません</value>
     </data>
+    <data name="Error_MacroLoading" xml:space="preserve">
+        <value>macro.txtの読み込み中にエラーが発生しました。</value>
+    </data>
 </root>
