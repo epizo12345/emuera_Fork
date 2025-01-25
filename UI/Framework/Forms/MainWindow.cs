@@ -1185,7 +1185,7 @@ internal sealed partial class MainWindow : Form
             this.マクロToolStripMenuItem.DropDownItems[i].Text = LocalizationManager.MainWindow.ContextMenu_KeyMacro + i.ToString("D2");
         this.マクログループToolStripMenuItem.Text = LocalizationManager.MainWindow.ContextMenu_KeyMacroGroup;
         for (int i = 0; i < this.マクログループToolStripMenuItem.DropDownItems.Count; i++)
-            this.マクログループToolStripMenuItem.DropDownItems[i].Text = string.Format(LocalizationManager.MainWindow.ContextMenu_KeyMacroGroup_Group, i);
+            this.マクログループToolStripMenuItem.DropDownItems[i].Text = KeyMacro.GetGroupName(i);
 
         this.切り取り.Text = LocalizationManager.MainWindow.ContextMenu_Cut;
         this.コピー.Text = LocalizationManager.MainWindow.ContextMenu_Copy;
@@ -1205,26 +1205,28 @@ internal sealed partial class MainWindow : Form
 
     private void englishToolStripMenuItem_Click(object sender, EventArgs e)
     {
-        LocalizationManager.SetLanguage("en");
+        LocalizationManager.SetLanguage(LocalizationManager.English);
         Localize();
     }
 
     private void japaneseToolStripMenuItem_Click(object sender, EventArgs e)
     {
-        LocalizationManager.SetLanguage("ja-jp");
+        LocalizationManager.SetLanguage(LocalizationManager.Japanese);
         Localize();
     }
 
     private void chineseToolStripMenuItem_Click(object sender, EventArgs e)
     {
-        LocalizationManager.SetLanguage("zh-hans");
+        LocalizationManager.SetLanguage(LocalizationManager.ChineseSimplified);
         Localize();
     }
 
     private void koreanToolStripMenuItem_Click(object sender, EventArgs e)
     {
-        LocalizationManager.SetLanguage("kr");
-        Localize();
+        //Not implemented yet
+        return;
+        //LocalizationManager.SetLanguage(Korean);
+        //Localize();
     }
 
     private void クリップボードにコピーToolStripMenuItem_Click(object sender, EventArgs e)
@@ -1237,5 +1239,11 @@ internal sealed partial class MainWindow : Form
             console.CBProc.Reset();
         JSONConfig.User.CBUseClipboard = クリップボードにコピーToolStripMenuItem.Checked;
         JSONConfig.Save();
+    }
+
+    public void SetMacroGroupNames()
+    {
+        for (int i = 0; i < this.マクログループToolStripMenuItem.DropDownItems.Count; i++)
+            this.マクログループToolStripMenuItem.DropDownItems[i].Text = KeyMacro.GetGroupName(i);
     }
 }

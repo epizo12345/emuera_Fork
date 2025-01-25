@@ -4028,6 +4028,15 @@ namespace MinorShift.Emuera.UI.Framework {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to An error has occurred while loading macro.txt.
+        /// </summary>
+        internal static string Error_MacroLoading {
+            get {
+                return ResourceManager.GetString("Error_MacroLoading", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Macro name &quot;{0}&quot; is already used as a user-defined global variable.
         /// </summary>
         internal static string Error_MacroNameAlreadyUsedGlobalVariable {

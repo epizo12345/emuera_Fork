@@ -404,6 +404,7 @@ internal sealed partial class EmueraConsole : IDisposable
             RefreshStrings(true);
             return;
         }
+        window.SetMacroGroupNames();
         RunEmueraProgram("");
         RefreshStrings(true);
 
