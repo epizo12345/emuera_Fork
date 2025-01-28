@@ -3178,4 +3178,8 @@
     <data name="Error_MacroLoading" xml:space="preserve">
         <value>加载 macro.txt 时发生错误。</value>
     </data>
+    <data name="SystemLine_EnvironmentInfo" xml:space="preserve">
+        <value>Emuera 版本：{0}
+游戏版本：{1}</value>
+    </data>
 </root>
