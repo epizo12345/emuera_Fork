@@ -223,8 +223,35 @@ internal static partial class FunctionMethodCreator
             return exm.VEvaluator.GetCharacterIntfromCSVData(x, charaInt, z != 0, y);
         }
     }
+	private sealed class GetCsvNoMethod : FunctionMethod
+	{
+        private CharacterStrData _type;
+		public GetCsvNoMethod(CharacterStrData data)
+		{
+			ReturnType = typeof(Int64);
+			argumentTypeArray = new Type[] {typeof(string)};
+			CanRestructure = true;
+            _type = data;
+		}
+		public override long GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
+		{
+            var str = arguments[0].GetStrValue(exm);
+            long ret;
 
-    private sealed class FindcharaMethod : FunctionMethod
+			var b = _type switch
+            {
+				CharacterStrData.NAME => exm.VEvaluator.Constant.NameToTemplateMap.TryGetValue(str, out ret),
+				CharacterStrData.NICKNAME => exm.VEvaluator.Constant.NicknameToTemplateMap.TryGetValue(str, out ret),
+				CharacterStrData.CALLNAME => exm.VEvaluator.Constant.CallnameToTemplateMap.TryGetValue(str, out ret),
+				CharacterStrData.MASTERNAME => exm.VEvaluator.Constant.MasternameToTemplateMap.TryGetValue(str, out ret),
+                _ => throw new ExeEE("error")
+            };
+            if (!b)
+                ret = -1;
+            return ret;
+		}
+	}
+	private sealed class FindcharaMethod : FunctionMethod
     {
         public FindcharaMethod(bool last)
         {
