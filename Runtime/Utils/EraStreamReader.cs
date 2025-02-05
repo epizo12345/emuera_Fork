@@ -95,12 +95,16 @@ internal sealed partial class EraStreamReader : IDisposable
             if (line.Length == 0)
                 continue;
 
-            if (useRename)
-            {
-                line = Rename.RenameString(line);
-            }
             st = new CharStream(line);
             LexicalAnalyzer.SkipWhiteSpace(st);
+
+            if (useRename)
+            {
+                line = Rename.RenameString(st.Substring(), new ScriptPosition(filename, LineNo));
+                st = new CharStream(line);
+                LexicalAnalyzer.SkipWhiteSpace(st);
+            }
+
             if (st.EOS)
                 continue;
             //[SKIPSTART]～[SKIPEND]中にここが誤爆するので無効化
