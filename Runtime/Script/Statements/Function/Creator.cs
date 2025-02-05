@@ -32,10 +32,10 @@ internal static partial class FunctionMethodCreator
             ["CSVEQUIP"] = new CsvDataMethod(CharacterIntData.EQUIP),
             ["CSVJUEL"] = new CsvDataMethod(CharacterIntData.JUEL),
             ["GETCSVNOBYNAME"] = new GetCsvNoMethod(CharacterStrData.NAME),
-			["GETCSVNOBYNICKNAME"] = new GetCsvNoMethod(CharacterStrData.NICKNAME),
-			["GETCSVNOBYCALLNAME"] = new GetCsvNoMethod(CharacterStrData.CALLNAME),
-			["GETCSVNOBYMASTERNAME"] = new GetCsvNoMethod(CharacterStrData.MASTERNAME),
-			["FINDCHARA"] = new FindcharaMethod(false),
+            ["GETCSVNOBYNICKNAME"] = new GetCsvNoMethod(CharacterStrData.NICKNAME),
+            ["GETCSVNOBYCALLNAME"] = new GetCsvNoMethod(CharacterStrData.CALLNAME),
+            ["GETCSVNOBYMASTERNAME"] = new GetCsvNoMethod(CharacterStrData.MASTERNAME),
+            ["FINDCHARA"] = new FindcharaMethod(false),
             ["FINDLASTCHARA"] = new FindcharaMethod(true),
             ["EXISTCSV"] = new ExistCsvMethod(),
 
@@ -234,7 +234,14 @@ internal static partial class FunctionMethodCreator
             ["HASH_XXH3"] = new XXH3(),
             ["HASH_XXH32"] = new XXH32(),
 
-            ["EXISTFUNCTION"] = new EXISTFUNCTION()
+            ["EXISTFUNCTION"] = new EXISTFUNCTION(),
+
+            ["DICT_CREATE"] = new DictCreate(),
+            ["DICT_EXIST"] = new DictExist(),
+            ["DICT_CONTAINS_KEY"] = new DictContainsKey(),
+            ["DICT_SET_VALUE"] = new DictSetValue(),
+            ["DICT_GET_VALUE_STRING"] = new DictGetValueString(),
+            ["DICT_GET_VALUE_LONG"] = new DictGetValueInt()
         };
 
 
