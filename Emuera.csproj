@@ -14,12 +14,11 @@
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>false</SelfContained>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
 
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisMode>Minimum</AnalysisMode>
     
-    <TieredCompilation>false</TieredCompilation>
-
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     
     <UseWindowsForms>true</UseWindowsForms>
@@ -57,16 +56,16 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="AngleSharp" Version="1.1.2" />
-    <PackageReference Include="Enums.NET" Version="4.0.2" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.5" />
-    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.49-beta">
+    <PackageReference Include="AngleSharp" Version="1.2.0" />
+    <PackageReference Include="Enums.NET" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.1" />
+    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.162">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="SkiaSharp" Version="3.0.0-preview.4.1  " />
-    <PackageReference Include="SkiaSharp.Views.WindowsForms" Version="3.0.0-preview.4.1  " />
+    <PackageReference Include="SkiaSharp" Version="3.116.1" />
+    <PackageReference Include="SkiaSharp.Views.WindowsForms" Version="3.116.1" />
+    <PackageReference Include="System.IO.Hashing" Version="9.0.1" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
-    <PackageReference Include="System.IO.Hashing" Version="8.0.0" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Update="Properties\Resources.resx">
