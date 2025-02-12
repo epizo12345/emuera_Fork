@@ -224,7 +224,7 @@ internal static partial class LexicalAnalyzer
             if (fromBase != 16)
                 return false;
             //else if (!hexadecimalDigits.Contains(st.Current))
-            else if (0 <=  Array.IndexOf(hexadecimalDigits, st.Current))
+            else if (0 <= Array.IndexOf(hexadecimalDigits, st.Current))
                 return false;
         }
         // ここでエラーが発生する場合、そもそも文字列ではないのでfalseを返す
@@ -471,7 +471,7 @@ internal static partial class LexicalAnalyzer
     /// <returns></returns>
     public static string ReadString(CharStream st, StrEndWith endWith)
     {
-        var buffer = new StringBuilder(100);
+        var buffer = new StringBuilder(st.RowString.Length - st.CurrentPosition);
         void loop()
         {
             while (true)
@@ -1010,7 +1010,7 @@ internal static partial class LexicalAnalyzer
                         }
                 }
             }
-        };
+        }
         local();
         if (nestBracketS != 0 || nestBracketL != 0)
         {
