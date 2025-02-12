@@ -408,6 +408,9 @@ internal sealed partial class EmueraConsole : IDisposable
         Preload.Clear();
 
         logWriter.WriteLine("Init:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
+
+        Debug.WriteLine($"GC:{GC.GetTotalMemory(true):N0}");
+        Debug.WriteLine($"WorkingSet:{Environment.WorkingSet:N0}");
     }
 
 
@@ -737,6 +740,7 @@ internal sealed partial class EmueraConsole : IDisposable
                 return;
         }
         state = ConsoleState.Running;
+        //process.CompileScript();
         process.DoScript();
         if (state == ConsoleState.Running)
         {//RunningならProcessは処理を継続するべき
