@@ -18,6 +18,9 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using MinorShift.Emuera.UI.Framework;
+using System.Reflection.Emit;
+using System.Reflection;
+using System.Runtime.Loader;
 
 namespace MinorShift.Emuera.GameProc;
 
@@ -122,9 +125,10 @@ internal sealed partial class Process(EmueraConsole view)
                     }
                 }
             }
+            Config.SetReplace(ConfigData.Instance);
+
             logWriter.WriteLine($"Proc:Init:Replace:End {stopWatch.ElapsedMilliseconds}ms");
 
-            Config.SetReplace(ConfigData.Instance);
             //ここでBARを設定すれば、いいことに気づいた予感
             console.setStBar(Config.DrawLineString);
 
@@ -160,10 +164,10 @@ internal sealed partial class Process(EmueraConsole view)
             GlobalStatic.GameBaseData = gamebase;
             logWriter.WriteLine($"Proc:Init:MainCSV:End {stopWatch.ElapsedMilliseconds}ms");
 
+            logWriter.WriteLine($"Proc:Init:EtcCSV:Start {stopWatch.ElapsedMilliseconds}ms");
             //前記以外のcsvを全て読み込み
-            ConstantData constant = new();
+            var constant = new ConstantData();
             constant.LoadData(Program.CsvDir, console, Config.DisplayReport);
-            logWriter.WriteLine($"Proc:Init:EtcCSV:End {stopWatch.ElapsedMilliseconds}ms");
             GlobalStatic.ConstantData = constant;
             TrainName = constant.GetCsvNameList(VariableCode.TRAINNAME);
             logWriter.WriteLine($"Proc:Init:EtcCSV:End {stopWatch.ElapsedMilliseconds}ms");
@@ -325,6 +329,46 @@ internal sealed partial class Process(EmueraConsole view)
     public void SetResultsArray(string s, int index)
     {
         vEvaluator.RESULTS_ARRAY[index] = s;
+    }
+    public void CompileScript()
+    {
+        var ab = new PersistedAssemblyBuilder(new AssemblyName("MyAssembly"), typeof(object).Assembly);
+        var mob = ab.DefineDynamicModule("MyModule");
+        var tb = mob.DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
+        systemProcessDictionary[state.SystemState]();
+        var line = state.CurrentLine;
+
+        if (line is FunctionLabelLine functionLabelLine)
+        {
+            var functionName = functionLabelLine.LabelName;
+            var args = functionLabelLine.Arg.Select(x => x.GetOperandType()).ToArray();
+            args = [];
+
+            var meb = tb.DefineMethod(functionName, MethodAttributes.Public | MethodAttributes.Static,
+                                                                    typeof(object), args);
+            var il = meb.GetILGenerator();
+
+            line = functionLabelLine.NextLine;
+            while (line != null)
+            {
+                if (line is InstructionLine instructionLine)
+                {
+                    il.EmitWriteLine(instructionLine.ToString());
+                }
+                line = line.NextLine;
+            }
+
+            il.Emit(OpCodes.Ldstr, "OK");
+            il.Emit(OpCodes.Ret);
+
+            tb.CreateType();
+            ab.Save(functionName + ".dll");
+
+
+            var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.GetFullPath(functionName + ".dll"));
+            var method = assembly.GetType("MyType").GetMethod(functionName);
+            Console.WriteLine(method.Invoke(null, []));
+        }
     }
 
     long startTime = Stopwatch.GetTimestamp();
