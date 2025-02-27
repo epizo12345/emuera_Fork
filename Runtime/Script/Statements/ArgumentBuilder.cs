@@ -1,5 +1,4 @@
-﻿using AngleSharp.Dom;
-using MinorShift.Emuera.GameData.Variable;
+﻿using MinorShift.Emuera.GameData.Variable;
 using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Script;
 using MinorShift.Emuera.Runtime.Script.Parser;
@@ -230,7 +229,7 @@ internal static partial class ArgumentParser
         argb[FunctionArgType.SP_REFBYNAME] = new SP_REF_ArgumentBuilder(true);
         argb[FunctionArgType.SP_HTMLSPLIT] = new SP_HTMLSPLIT_ArgumentBuilder();
         argb[FunctionArgType.SP_HTML_PRINT] = new HTML_PRINT_ArgumentBuilder();
-		argb[FunctionArgType.SP_MATCHALL] = new SP_MATCHALL_ArgumentBuilder();
+        argb[FunctionArgType.SP_MATCHALL] = new SP_MATCHALL_ArgumentBuilder();
         argb[FunctionArgType.SP_HTML_PRINT_ISLAND] = new HTML_PRINT_ISLAND_ArgumentBuilder();
         argb[FunctionArgType.SP_HTML_PRINT_ISLAND_CLEAR] = new HTML_PRINT_ISLAND_CLEAR_ArgumentBuilder();
     }
@@ -912,107 +911,107 @@ internal static partial class ArgumentParser
         }
     }
 
-	private sealed class SP_MATCHALL_ArgumentBuilder : ArgumentBuilder
-	{
-		public SP_MATCHALL_ArgumentBuilder()
-		{
-		}
-		public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
-		{
+    private sealed class SP_MATCHALL_ArgumentBuilder : ArgumentBuilder
+    {
+        public SP_MATCHALL_ArgumentBuilder()
+        {
+        }
+        public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
+        {
             long? indexValue = null;
             AExpression beg = null;
             AExpression end = null;
-			var terms = popTerms(line);
-			int count = 0;
-			if (terms.Count <= count)
+            var terms = popTerms(line);
+            int count = 0;
+            if (terms.Count <= count)
             {
-				warn("引数がありません", line, 2, false);
-				return null;
-			}
+                warn("引数がありません", line, 2, false);
+                return null;
+            }
             ++count;
             VariableTerm varTerm = getChangeableVariable(terms, 1, line);
-			var token = varTerm?.Identifier;
-			var targetType = token.VariableType;
-			if (token == null)
-			{
-				warn("第一引数が無効な変数指定です", line, 2, false);
-				return null;
-			}
+            var token = varTerm?.Identifier;
+            var targetType = token.VariableType;
+            if (token == null)
+            {
+                warn("第一引数が無効な変数指定です", line, 2, false);
+                return null;
+            }
             if (token.IsArray3D || token.IsArray2D)
             {
-				warn("変数の次元が大きすぎます", line, 2, false);
-				return null;
-			}
-            if(!token.IsCharacterData && !token.IsArray1D)
+                warn("変数の次元が大きすぎます", line, 2, false);
+                return null;
+            }
+            if (!token.IsCharacterData && !token.IsArray1D)
             {
-				warn("非キャラクタ変数が対象の場合は1次元である必要があります", line, 2, false);
-				return null;
-			}
+                warn("非キャラクタ変数が対象の場合は1次元である必要があります", line, 2, false);
+                return null;
+            }
             if (token.IsCharacterData && token.IsArray1D)
             {
-                if(terms.Count <= count)
+                if (terms.Count <= count)
                 {
-					warn("1次元キャラクタ変数に対するインデックス指定がありません", line, 2, false);
-					return null;
-				}
+                    warn("1次元キャラクタ変数に対するインデックス指定がありません", line, 2, false);
+                    return null;
+                }
                 var indexTerm = terms[count] as SingleLongTerm;
-                if(indexTerm is null)
+                if (indexTerm is null)
                 {
-					warn("1次元キャラクタ変数に対するインデックス指定は整数定数である必要があります", line, 2, false);
-					return null;
-				}
+                    warn("1次元キャラクタ変数に対するインデックス指定は整数定数である必要があります", line, 2, false);
+                    return null;
+                }
                 ++count;
                 indexValue = indexTerm.GetIntValue(exm);
-                if(indexValue < 0)
+                if (indexValue < 0)
                 {
                     warn("インデックスが負の値です", line, 2, false);
                     return null;
                 }
             }
-            if(terms.Count <= count)
+            if (terms.Count <= count)
             {
-				warn("探す値の指定がありません", line, 2, false);
+                warn("探す値の指定がありません", line, 2, false);
                 return null;
-			}
+            }
             var value = terms[count];
             ++count;
-            if(value.GetOperandType() != targetType)
+            if (value.GetOperandType() != targetType)
             {
                 warn("検索する値と対象変数の型が一致しません", line, 2, false);
                 return null;
             }
-            if(terms.Count > count)
+            if (terms.Count > count)
             {
                 beg = terms[count];
-				if (!beg.IsInteger)
-				{
-					warn("範囲指定は整数値である必要があります", line, 2, false);
-					return null;
-				}
-				++count;
-			}
-			if (terms.Count > count)
-			{
-				end = terms[count];
+                if (!beg.IsInteger)
+                {
+                    warn("範囲指定は整数値である必要があります", line, 2, false);
+                    return null;
+                }
+                ++count;
+            }
+            if (terms.Count > count)
+            {
+                end = terms[count];
                 if (!end.IsInteger)
                 {
-					warn("範囲指定は整数値である必要があります", line, 2, false);
-					return null;
-				}
-				++count;
-			}
-			if (terms.Count > count)
-			{
+                    warn("範囲指定は整数値である必要があります", line, 2, false);
+                    return null;
+                }
+                ++count;
+            }
+            if (terms.Count > count)
+            {
                 warn("引数が多すぎます", line, 2, false);
                 return null;
-			}
-			return new SpMatchAllArgument(token, value, beg, end, indexValue);
-		}
-	}
+            }
+            return new SpMatchAllArgument(token, value, beg, end, indexValue);
+        }
+    }
 
-	#region 正規型 popTerms()とcheckArgumentType()を両方行うもの。考えることは最低限でよい。
+    #region 正規型 popTerms()とcheckArgumentType()を両方行うもの。考えることは最低限でよい。
 
-	private sealed class INT_EXPRESSION_ArgumentBuilder : ArgumentBuilder
+    private sealed class INT_EXPRESSION_ArgumentBuilder : ArgumentBuilder
     {
         public INT_EXPRESSION_ArgumentBuilder(bool nullable)
         {
