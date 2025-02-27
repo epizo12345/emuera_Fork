@@ -1148,6 +1148,7 @@ internal static partial class LexicalAnalyzer
         return wc;
     }
 
+    public static StringBuilder buffer = new(100);
     /// <summary>
     /// @"などの直後からの開始
     /// return時にはendWithの文字がCurrentになっているはず。終端の適切さの検証は呼び出し元が行う。
@@ -1157,7 +1158,7 @@ internal static partial class LexicalAnalyzer
     {
         List<string> strs = [];
         List<SubWord> SWTs = [];
-        StringBuilder buffer = new(100);
+        buffer.Clear();
         while (true)
         {
             char cur = st.Current;
@@ -1190,7 +1191,7 @@ internal static partial class LexicalAnalyzer
                     break;
                 case '%':
                     strs.Add(buffer.ToString());
-                    buffer.Remove(0, buffer.Length);
+                    buffer.Clear();
                     st.ShiftNext();
                     SWTs.Add(new PercentSubWord(Analyse(st, LexEndWith.Percent, LexAnalyzeFlag.None)));
                     if (st.Current != '%')
@@ -1198,7 +1199,7 @@ internal static partial class LexicalAnalyzer
                     break;
                 case '{':
                     strs.Add(buffer.ToString());
-                    buffer.Remove(0, buffer.Length);
+                    buffer.Clear();
                     st.ShiftNext();
                     SWTs.Add(new CurlyBraceSubWord(Analyse(st, LexEndWith.RightCurlyBrace, LexAnalyzeFlag.None)));
                     if (st.Current != '}')
@@ -1212,7 +1213,7 @@ internal static partial class LexicalAnalyzer
                     if (!Config.Config.SystemIgnoreTripleSymbol && st.TripleSymbol())
                     {
                         strs.Add(buffer.ToString());
-                        buffer.Remove(0, buffer.Length);
+                        buffer.Clear();
                         st.Jump(3);
                         SWTs.Add(new TripleSymbolSubWord(cur));
                         continue;
@@ -1238,7 +1239,7 @@ internal static partial class LexicalAnalyzer
                                 if (endWith == FormStrEndWith.YenAt || endWith == FormStrEndWith.Sharp)
                                     goto end;
                                 strs.Add(buffer.ToString());
-                                buffer.Remove(0, buffer.Length);
+                                buffer.Clear();
                                 st.ShiftNext();
                                 SWTs.Add(AnalyseYenAt(st));
                                 continue;
