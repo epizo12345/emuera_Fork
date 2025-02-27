@@ -43,7 +43,11 @@ static partial class Preload
                 {
                     var bytes = File.ReadAllBytes(childPath.FullName).AsSpan();
 
-                    if (bytes.IsEmpty) return;
+                    if (bytes.IsEmpty)
+                    {
+                        files[childPath.FullName] = [""];
+                        return;
+                    }
 
                     var encoding = Config.Config.Encode;
                     if (bytes.StartsWith<byte>([0xEF, 0xBB, 0xBF]))
