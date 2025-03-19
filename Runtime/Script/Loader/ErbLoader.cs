@@ -894,7 +894,7 @@ internal sealed class ErbLoader
             {
                 if (!func.Function.IsMethodSafe())
                 {
-                    ParserMediator.Warn(func.Function.Name + "命令は#FUNCTION中で使うことはできません", nextLine, 2, true, false);
+                    ParserMediator.Warn(string.Format(LocalizationManager.Error.CanNotUseInUserFunc, func.Function.Name), nextLine, 2, true, false);
                     continue;
                 }
             }
@@ -1443,7 +1443,7 @@ internal sealed class ErbLoader
             string funcName = func.Function.Name;
             string funcMatch = FunctionIdentifier.getMatchFunction(func.FunctionCode);
             if (func != null)
-                ParserMediator.Warn(funcName + "に対応する" + funcMatch + "が見つかりません", func, 2, true, false);
+                ParserMediator.Warn(string.Format(LocalizationManager.Error.MissingCorresponding, funcMatch, funcName), func, 2, true, false);
             else
                 ParserMediator.Warn(LocalizationManager.Error.DefaultError, func, 2, true, false);
         }

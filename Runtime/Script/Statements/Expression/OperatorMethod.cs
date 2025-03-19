@@ -107,7 +107,7 @@ internal static class OperatorMethodManager
             errMes += LocalizationManager.Error.StringType;
         else
             errMes += LocalizationManager.Error.UnknownType;
-        errMes += "に単項演算子\'" + OperatorManager.ToOperatorString(op) + "\'は適用できません";
+        errMes += string.Format(LocalizationManager.Error.CanNotAppliedUnaryOp, errMes, OperatorManager.ToOperatorString(op));
         throw new CodeEE(errMes);
     }
 
@@ -135,7 +135,7 @@ internal static class OperatorMethodManager
             errMes += LocalizationManager.Error.StringType;
         else
             errMes += LocalizationManager.Error.UnknownType;
-        errMes += "に後置単項演算子\'" + OperatorManager.ToOperatorString(op) + "\'は適用できません";
+        errMes += string.Format(LocalizationManager.Error.CanNotAppliedUnaryOp, errMes, OperatorManager.ToOperatorString(op));
         throw new CodeEE(errMes);
     }
 
@@ -160,20 +160,20 @@ internal static class OperatorMethodManager
         }
         if (method != null)
             return new FunctionMethodTerm(method, [left, right]);
-        string errMes = "";
+        string typeName1, typeName2, errMes;
         if (left.GetOperandType() == typeof(long))
-            errMes += "数値型と";
+            typeName1 = LocalizationManager.Error.NumericType;
         else if (left.GetOperandType() == typeof(string))
-            errMes += "文字列型と";
+            typeName1 = LocalizationManager.Error.StringType;
         else
-            errMes += "不定型と";
+            typeName1 = LocalizationManager.Error.UnknownType;
         if (right.GetOperandType() == typeof(long))
-            errMes += "数値型の";
+            typeName2 = LocalizationManager.Error.NumericType;
         else if (right.GetOperandType() == typeof(string))
-            errMes += "文字列型の";
+            typeName2 = LocalizationManager.Error.StringType;
         else
-            errMes += "不定型の";
-        errMes += "演算に二項演算子\'" + OperatorManager.ToOperatorString(op) + "\'は適用できません";
+            typeName2 = LocalizationManager.Error.UnknownType;
+        errMes = string.Format(LocalizationManager.Error.CanNotAppliedBinaryOp, typeName1, typeName2, OperatorManager.ToOperatorString(op));
         throw new CodeEE(errMes);
     }
 
