@@ -99,38 +99,38 @@ internal abstract class VariableToken
 
     //CodeEEにしているけど実際はExeEEかもしれない
     public virtual Int64 GetIntValue(ExpressionMediator exm, Int64[] arguments)
-    { throw new CodeEE("整数型でない変数" + varName + "を整数型として呼び出しました"); }
+    { throw new CodeEE(string.Format(LocalizationManager.Error.CallStrAsInt, varName)); }
     public virtual string GetStrValue(ExpressionMediator exm, Int64[] arguments)
-    { throw new CodeEE("文字列型でない変数" + varName + "を文字列型として呼び出しました"); }
+    { throw new CodeEE(string.Format(LocalizationManager.Error.CallIntAsStr, varName)); }
     public virtual void SetValue(Int64 value, Int64[] arguments)
-    { throw new CodeEE("整数型でない変数" + varName + "を整数型として呼び出しました"); }
+    { throw new CodeEE(string.Format(LocalizationManager.Error.CallStrAsInt, varName)); }
     public virtual void SetValue(string value, Int64[] arguments)
-    { throw new CodeEE("文字列型でない変数" + varName + "を文字列型として呼び出しました"); }
+    { throw new CodeEE(string.Format(LocalizationManager.Error.CallIntAsStr, varName)); }
     public virtual void SetValue(Int64[] values, Int64[] arguments)
-    { throw new CodeEE("整数型配列でない変数" + varName + "を整数型配列として呼び出しました"); }
+    { throw new CodeEE(string.Format(LocalizationManager.Error.CallNDStrAsInt, varName)); }
     public virtual void SetValue(string[] values, Int64[] arguments)
-    { throw new CodeEE("文字列型配列でない変数" + varName + "を文字列型配列として呼び出しました"); }
+    { throw new CodeEE(string.Format(LocalizationManager.Error.CallNDIntAsStr, varName)); }
     public virtual void SetValueAll(Int64 value, int start, int end, int charaPos)
-    { throw new CodeEE("整数型配列でない変数" + varName + "を整数型配列として呼び出しました"); }
+    { throw new CodeEE(string.Format(LocalizationManager.Error.CallNDStrAsInt, varName)); }
     public virtual void SetValueAll(string value, int start, int end, int charaPos)
-    { throw new CodeEE("文字列型配列でない変数" + varName + "を文字列型配列として呼び出しました"); }
+    { throw new CodeEE(string.Format(LocalizationManager.Error.CallNDIntAsStr, varName)); }
     public virtual Int64 PlusValue(Int64 value, Int64[] arguments)
-    { throw new CodeEE("整数型でない変数" + varName + "を整数型として呼び出しました"); }
+    { throw new CodeEE(string.Format(LocalizationManager.Error.CallStrAsInt, varName)); }
     public virtual Int32 GetLength()
-    { throw new CodeEE("配列型でない変数" + varName + "の長さを取得しようとしました"); }
+    { throw new CodeEE(string.Format(LocalizationManager.Error.GetSize0DVar, varName)); }
     public virtual Int32 GetLength(int dimension)
-    { throw new CodeEE("配列型でない変数" + varName + "の長さを取得しようとしました"); }
+    { throw new CodeEE(string.Format(LocalizationManager.Error.GetSize0DVar, varName)); }
     public virtual object GetArray()
     {
         if (IsCharacterData)
-            throw new CodeEE("キャラクタ変数" + varName + "を非キャラ変数として呼び出しました");
-        throw new CodeEE("配列型でない変数" + varName + "の配列を取得しようとしました");
+            throw new CodeEE(string.Format(LocalizationManager.Error.CallCharaVarAsVar, varName));
+        throw new CodeEE(string.Format(LocalizationManager.Error.GetSize0DVar, varName));
     }
     public virtual object GetArrayChara(int charano)
     {
         if (!IsCharacterData)
-            throw new CodeEE("非キャラクタ変数" + varName + "をキャラ変数として呼び出しました");
-        throw new CodeEE("配列型でない変数" + varName + "の配列を取得しようとしました");
+            throw new CodeEE(string.Format(LocalizationManager.Error.CallVarAsCharaVar, varName));
+        throw new CodeEE(string.Format(LocalizationManager.Error.GetSize0DVar, varName));
     }
 
     public void throwOutOfRangeException(Int64[] arguments, Exception e)
@@ -266,25 +266,25 @@ internal abstract class CharaVariableToken : VariableToken
         if (sizes.Length == 1)
             return sizes[0];
         if (sizes.Length == 0)
-            throw new CodeEE("非配列型のキャラ変数" + varName + "の長さを取得しようとしました");
-        throw new CodeEE(Dimension.ToString() + "次元配列型のキャラ変数" + varName + "の長さを次元を指定せずに取得しようとしました");
+            throw new CodeEE(string.Format(LocalizationManager.Error.GetSize0DCharaVar, varName));
+        throw new CodeEE(string.Format(LocalizationManager.Error.GetSizeCharaVarWithoutDim, Dimension.ToString(), varName));
     }
     public override Int32 GetLength(int dimension)
     {
         if (sizes.Length == 0)
-            throw new CodeEE("非配列型のキャラ変数" + varName + "の長さを取得しようとしました");
+            throw new CodeEE(string.Format(LocalizationManager.Error.GetSize0DCharaVar, varName));
         if (dimension < sizes.Length)
             return sizes[dimension];
-        throw new CodeEE("配列型変数のキャラ変数" + varName + "の存在しない次元の長さを取得しようとしました");
+        throw new CodeEE(string.Format(LocalizationManager.Error.GetSizeCharaVarNonExistDim, varName));
     }
     public override void CheckElement(Int64[] arguments, bool[] doCheck)
     {
         if (doCheck[0] && ((arguments[0] < 0) || (arguments[0] >= varData.CharacterList.Count)))
-            throw new CodeEE("キャラクタ配列変数" + varName + "の第１引数(" + arguments[0].ToString() + ")はキャラ登録番号の範囲外です");
+            throw new CodeEE(string.Format(LocalizationManager.Error.OoRCharaVarArg, varName, "1", arguments[0].ToString()));
         if (doCheck.Length > 1 && sizes.Length > 0 && doCheck[1] && ((arguments[1] < 0) || (arguments[1] >= sizes[0])))
-            throw new CodeEE("キャラクタ配列変数" + varName + "の第２引数(" + arguments[1].ToString() + ")は配列の範囲外です");
+            throw new CodeEE(string.Format(LocalizationManager.Error.OoRCharaVarArg, varName, "2", arguments[1].ToString()));
         if (doCheck.Length > 2 && sizes.Length > 1 && doCheck[2] && ((arguments[2] < 0) || (arguments[2] >= sizes[1])))
-            throw new CodeEE("キャラクタ配列変数" + varName + "の第３引数(" + arguments[2].ToString() + ")は配列の範囲外です");
+            throw new CodeEE(string.Format(LocalizationManager.Error.OoRCharaVarArg, varName, "3", arguments[2].ToString()));
     }
 
     public override void IsArrayRangeValid(Int64[] arguments, Int64 index1, Int64 index2, string funcName, Int64 i1, Int64 i2)
@@ -292,9 +292,9 @@ internal abstract class CharaVariableToken : VariableToken
         CheckElement(arguments);
         //CharacterData chara = varData.CharacterList[(int)arguments[0]];
         if ((index1 < 0) || (index1 > sizes[0]))
-            throw new CodeEE(funcName + "命令の第" + i1.ToString() + "引数(" + index1.ToString() + ")は配列" + varName + "の範囲外です");
+            throw new CodeEE(string.Format(LocalizationManager.Error.OoRInstructionArg, funcName, i1.ToString(), index1.ToString(), varName));
         if ((index2 < 0) || (index2 > sizes[0]))
-            throw new CodeEE(funcName + "命令の第" + i2.ToString() + "引数(" + index2.ToString() + ")は配列" + varName + "の範囲外です");
+            throw new CodeEE(string.Format(LocalizationManager.Error.OoRInstructionArg, funcName, i2.ToString(), index2.ToString(), varName));
     }
 }
 
@@ -335,14 +335,14 @@ internal abstract class UserDefinedVariableToken : VariableToken
     {
         if (this.Dimension == 1)
             return sizes[0];
-        throw new CodeEE(Dimension.ToString() + "次元配列型変数" + varName + "の長さを取得しようとしました");
+        throw new CodeEE(string.Format(LocalizationManager.Error.GetSizeDimError, Dimension.ToString(), varName));
     }
 
     public override Int32 GetLength(int dimension)
     {
         if (dimension < this.Dimension)
             return sizes[dimension];
-        throw new CodeEE("配列型変数" + varName + "の存在しない次元の長さを取得しようとしました");
+        throw new CodeEE(string.Format(LocalizationManager.Error.GetSizeNonExistDim, varName));
     }
     public override void CheckElement(Int64[] arguments, bool[] doCheck)
     {
@@ -350,11 +350,11 @@ internal abstract class UserDefinedVariableToken : VariableToken
         //	throw new ExeEE("プライベート変数" + varName + "の配列が用意されていない");
 
         if (doCheck[0] && ((arguments[0] < 0) || (arguments[0] >= sizes[0])))
-            throw new CodeEE("配列型変数" + varName + "の第１引数(" + arguments[0].ToString() + ")は配列の範囲外です");
+            throw new CodeEE(string.Format(LocalizationManager.Error.OoRVarArg, varName, "1", arguments[0].ToString()));
         if (sizes.Length >= 2 && ((arguments[1] < 0) || (arguments[1] >= sizes[1])))
-            throw new CodeEE("配列型変数" + varName + "の第２引数(" + arguments[1].ToString() + ")は配列の範囲外です");
+            throw new CodeEE(string.Format(LocalizationManager.Error.OoRVarArg, varName, "2", arguments[1].ToString()));
         if (sizes.Length >= 3 && ((arguments[2] < 0) || (arguments[2] >= sizes[2])))
-            throw new CodeEE("配列型変数" + varName + "の第３引数(" + arguments[2].ToString() + ")は配列の範囲外です");
+            throw new CodeEE(string.Format(LocalizationManager.Error.OoRVarArg, varName, "3", arguments[2].ToString()));
     }
     void CheckBounds(long i1, long i2, long i3)
     {
@@ -362,19 +362,19 @@ internal abstract class UserDefinedVariableToken : VariableToken
         //	throw new ExeEE("プライベート変数" + varName + "の配列が用意されていない");
 
         if ((i1 < 0) || (i1 >= sizes[0]))
-            throw new CodeEE($"配列型変数{varName}の第１引数({i1})は配列の範囲外です");
+            throw new CodeEE(string.Format(LocalizationManager.Error.OoRVarArg, varName, "1", i1.ToString()));
         if (sizes.Length >= 2 && ((i2 < 0) || (i2 >= sizes[1])))
-            throw new CodeEE($"配列型変数{varName}の第２引数({i2})は配列の範囲外です");
+            throw new CodeEE(string.Format(LocalizationManager.Error.OoRVarArg, varName, "2", i2.ToString()));
         if (sizes.Length >= 3 && ((i3 < 0) || (i3 >= sizes[2])))
-            throw new CodeEE($"配列型変数{varName}の第３引数({i3})は配列の範囲外です");
+            throw new CodeEE(string.Format(LocalizationManager.Error.OoRVarArg, varName, "3", i3.ToString()));
     }
     public override void IsArrayRangeValid(Int64[] arguments, Int64 index1, Int64 index2, string funcName, Int64 i1, Int64 i2)
     {
         CheckBounds(arguments[0], arguments[1], arguments[2]);
         if ((index1 < 0) || (index1 > sizes[Dimension - 1]))
-            throw new CodeEE(funcName + "命令の第" + i1.ToString() + "引数(" + index1.ToString() + ")は配列" + varName + "の範囲外です");
+            throw new CodeEE(string.Format(LocalizationManager.Error.OoRInstructionArg, funcName, i1.ToString(), index1.ToString(), varName));
         if ((index2 < 0) || (index2 > sizes[Dimension - 1]))
-            throw new CodeEE(funcName + "命令の第" + i2.ToString() + "引数(" + index2.ToString() + ")は配列" + varName + "の範囲外です");
+            throw new CodeEE(string.Format(LocalizationManager.Error.OoRInstructionArg, funcName, i2.ToString(), index2.ToString(), varName));
     }
     public abstract void ScopeIn();
     public abstract void ScopeOut();
@@ -441,38 +441,38 @@ internal abstract class ReferenceToken : UserDefinedVariableToken
     public override Int32 GetLength()
     {
         if (array == null)
-            throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+            throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
         if (this.Dimension != 1)
-            throw new CodeEE(Dimension.ToString() + "次元配列型変数" + varName + "の長さを取得しようとしました");
+            throw new CodeEE(string.Format(LocalizationManager.Error.GetSizeDimError, Dimension.ToString(), varName));
         return array.Length;
     }
 
     public override Int32 GetLength(int dimension)
     {
         if (array == null)
-            throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+            throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
         if (dimension < this.Dimension)
             return array.GetLength(dimension);
-        throw new CodeEE("配列型変数" + varName + "の存在しない次元の長さを取得しようとしました");
+        throw new CodeEE(string.Format(LocalizationManager.Error.GetSizeNonExistDim, varName));
     }
     public override void CheckElement(Int64[] arguments, bool[] doCheck)
     {
         if (array == null)
-            throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+            throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
         if (doCheck[0] && ((arguments[0] < 0) || (arguments[0] >= array.GetLength(0))))
-            throw new CodeEE("配列型変数" + varName + "の第１引数(" + arguments[0].ToString() + ")は配列の範囲外です");
+            throw new CodeEE(string.Format(LocalizationManager.Error.OoRVarArg, varName, "1", arguments[0].ToString()));
         if (Dimension >= 2 && ((arguments[1] < 0) || (arguments[1] >= array.GetLength(1))))
-            throw new CodeEE("配列型変数" + varName + "の第２引数(" + arguments[1].ToString() + ")は配列の範囲外です");
+            throw new CodeEE(string.Format(LocalizationManager.Error.OoRVarArg, varName, "2", arguments[1].ToString()));
         if (Dimension >= 3 && ((arguments[2] < 0) || (arguments[2] >= array.GetLength(2))))
-            throw new CodeEE("配列型変数" + varName + "の第３引数(" + arguments[2].ToString() + ")は配列の範囲外です");
+            throw new CodeEE(string.Format(LocalizationManager.Error.OoRVarArg, varName, "3", arguments[2].ToString()));
     }
     public override void IsArrayRangeValid(Int64[] arguments, Int64 index1, Int64 index2, string funcName, Int64 i1, Int64 i2)
     {
         CheckElement(arguments);
         if ((index1 < 0) || (index1 > array.GetLength(Dimension - 1)))
-            throw new CodeEE(funcName + "命令の第" + i1.ToString() + "引数(" + index1.ToString() + ")は配列" + varName + "の範囲外です");
+            throw new CodeEE(string.Format(LocalizationManager.Error.OoRInstructionArg, funcName, i1.ToString(), index1.ToString(), varName));
         if ((index2 < 0) || (index2 > array.GetLength(Dimension - 1)))
-            throw new CodeEE(funcName + "命令の第" + i2.ToString() + "引数(" + index2.ToString() + ")は配列" + varName + "の範囲外です");
+            throw new CodeEE(string.Format(LocalizationManager.Error.OoRInstructionArg, funcName, i2.ToString(), index2.ToString(), varName));
     }
 
     int counter;
@@ -499,7 +499,7 @@ internal abstract class ReferenceToken : UserDefinedVariableToken
     public override object GetArray()
     {
         if (array == null)
-            throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+            throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
         return array;
     }
 
@@ -562,22 +562,22 @@ internal abstract class LocalVariableToken : VariableToken
     {
         if (dimension == 0)
             return size;
-        throw new CodeEE("配列型変数" + varName + "の存在しない次元の長さを取得しようとしました");
+        throw new CodeEE(string.Format(LocalizationManager.Error.GetSizeNonExistDim, varName));
     }
     public override void CheckElement(Int64[] arguments, bool[] doCheck)
     {
         //if (array == null)
         //	throw new ExeEE("プライベート変数" + varName + "の配列が用意されていない");
         if (doCheck[0] && ((arguments[0] < 0) || (arguments[0] >= size)))
-            throw new CodeEE("配列変数" + varName + "の第１引数(" + arguments[0].ToString() + ")は配列の範囲外です");
+            throw new CodeEE(string.Format(LocalizationManager.Error.OoRVarArg, varName, "1", arguments[0].ToString()));
     }
     public override void IsArrayRangeValid(Int64[] arguments, Int64 index1, Int64 index2, string funcName, Int64 i1, Int64 i2)
     {
         CheckElement(arguments);
         if ((index1 < 0) || (index1 > size))
-            throw new CodeEE(funcName + "命令の第" + i1.ToString() + "引数(" + index1.ToString() + ")は配列" + varName + "の範囲外です");
+            throw new CodeEE(string.Format(LocalizationManager.Error.OoRInstructionArg, funcName, i1.ToString(), index1.ToString(), varName));
         if ((index2 < 0) || (index2 > size))
-            throw new CodeEE(funcName + "命令の第" + i2.ToString() + "引数(" + index2.ToString() + ")は配列" + varName + "の範囲外です");
+            throw new CodeEE(string.Format(LocalizationManager.Error.OoRInstructionArg, funcName, i2.ToString(), index2.ToString(), varName));
     }
 }
 
@@ -633,22 +633,22 @@ internal sealed partial class VariableData
         {
             if (dimension == 0)
                 return array.Length;
-            throw new CodeEE("配列型変数" + varName + "の存在しない次元の長さを取得しようとしました");
+            throw new CodeEE(string.Format(LocalizationManager.Error.GetSizeDimError, varName));
         }
         public override object GetArray() { return array; }
 
         public override void CheckElement(Int64[] arguments, bool[] doCheck)
         {
             if (doCheck[0] && ((arguments[0] < 0) || (arguments[0] >= array.Length)))
-                throw new CodeEE("配列変数" + varName + "の第１引数(" + arguments[0].ToString() + ")は配列の範囲外です");
+                throw new CodeEE(string.Format(LocalizationManager.Error.OoRVarArg, varName, "1", arguments[0].ToString()));
         }
         public override void IsArrayRangeValid(Int64[] arguments, Int64 index1, Int64 index2, string funcName, Int64 i1, Int64 i2)
         {
             CheckElement(arguments);
             if ((index1 < 0) || (index1 > array.Length))
-                throw new CodeEE(funcName + "命令の第" + i1.ToString() + "引数(" + index1.ToString() + ")は配列" + varName + "の範囲外です");
+                throw new CodeEE(string.Format(LocalizationManager.Error.OoRInstructionArg, funcName, i1.ToString(), index1.ToString(), varName));
             if ((index2 < 0) || (index2 > array.Length))
-                throw new CodeEE(funcName + "命令の第" + i2.ToString() + "引数(" + index2.ToString() + ")は配列" + varName + "の範囲外です");
+                throw new CodeEE(string.Format(LocalizationManager.Error.OoRInstructionArg, funcName, i2.ToString(), index2.ToString(), varName));
         }
     }
 
@@ -694,29 +694,29 @@ internal sealed partial class VariableData
             return array[arguments[0], arguments[1]];
         }
         public override Int32 GetLength()
-        { throw new CodeEE("2次元配列型変数" + varName + "の長さを取得しようとしました"); }
+        { throw new CodeEE(string.Format(LocalizationManager.Error.GetSizeDimError, "2", varName)); }
         public override Int32 GetLength(int dimension)
         {
             if ((dimension == 0) || (dimension == 1))
                 return array.GetLength(dimension);
-            throw new CodeEE("配列型変数" + varName + "の存在しない次元の長さを取得しようとしました");
+            throw new CodeEE(string.Format(LocalizationManager.Error.GetSizeNonExistDim, varName));
         }
         public override object GetArray() { return array; }
 
         public override void CheckElement(Int64[] arguments, bool[] doCheck)
         {
             if (doCheck[0] && ((arguments[0] < 0) || (arguments[0] >= array.GetLength(0))))
-                throw new CodeEE("二次元配列" + varName + "の第１引数(" + arguments[0].ToString() + ")は配列の範囲外です");
+                throw new CodeEE(string.Format(LocalizationManager.Error.OoRVarArg, varName, "1", arguments[0].ToString()));
             if (doCheck[1] && ((arguments[1] < 0) || (arguments[1] >= array.GetLength(1))))
-                throw new CodeEE("二次元配列" + varName + "の第２引数(" + arguments[1].ToString() + ")は配列の範囲外です");
+                throw new CodeEE(string.Format(LocalizationManager.Error.OoRVarArg, varName, "2", arguments[1].ToString()));
         }
         public override void IsArrayRangeValid(Int64[] arguments, Int64 index1, Int64 index2, string funcName, Int64 i1, Int64 i2)
         {
             CheckElement(arguments);
             if ((index1 < 0) || (index1 > array.GetLength(1)))
-                throw new CodeEE(funcName + "命令の第" + i1.ToString() + "引数(" + index1.ToString() + ")は配列" + varName + "の範囲外です");
+                throw new CodeEE(string.Format(LocalizationManager.Error.OoRInstructionArg, funcName, i1.ToString(), index1.ToString(), varName));
             if ((index2 < 0) || (index2 > array.GetLength(1)))
-                throw new CodeEE(funcName + "命令の第" + i2.ToString() + "引数(" + index2.ToString() + ")は配列" + varName + "の範囲外です");
+                throw new CodeEE(string.Format(LocalizationManager.Error.OoRInstructionArg, funcName, i2.ToString(), index2.ToString(), varName));
         }
     }
 
@@ -764,31 +764,31 @@ internal sealed partial class VariableData
             return array[arguments[0], arguments[1], arguments[2]];
         }
         public override Int32 GetLength()
-        { throw new CodeEE("3次元配列型変数" + varName + "の長さを取得しようとしました"); }
+        { throw new CodeEE(string.Format(LocalizationManager.Error.GetSizeDimError, "3", varName)); }
         public override Int32 GetLength(int dimension)
         {
             if ((dimension == 0) || (dimension == 1) || (dimension == 2))
                 return array.GetLength(dimension);
-            throw new CodeEE("配列型変数" + varName + "の存在しない次元の長さを取得しようとしました");
+            throw new CodeEE(string.Format(LocalizationManager.Error.GetSizeNonExistDim, varName));
         }
         public override object GetArray() { return array; }
 
         public override void CheckElement(Int64[] arguments, bool[] doCheck)
         {
             if (doCheck[0] && ((arguments[0] < 0) || (arguments[0] >= array.GetLength(0))))
-                throw new CodeEE("三次元配列" + varName + "の第１引数(" + arguments[0].ToString() + ")は配列の範囲外です");
+                throw new CodeEE(string.Format(LocalizationManager.Error.OoRVarArg, varName, "1", arguments[0].ToString()));
             if (doCheck[1] && ((arguments[1] < 0) || (arguments[1] >= array.GetLength(1))))
-                throw new CodeEE("三次元配列" + varName + "の第２引数(" + arguments[1].ToString() + ")は配列の範囲外です");
+                throw new CodeEE(string.Format(LocalizationManager.Error.OoRVarArg, varName, "2", arguments[1].ToString()));
             if (doCheck[2] && ((arguments[2] < 0) || (arguments[2] >= array.GetLength(2))))
-                throw new CodeEE("三次元配列" + varName + "の第３引数(" + arguments[2].ToString() + ")は配列の範囲外です");
+                throw new CodeEE(string.Format(LocalizationManager.Error.OoRVarArg, varName, "3", arguments[2].ToString()));
         }
         public override void IsArrayRangeValid(Int64[] arguments, Int64 index1, Int64 index2, string funcName, Int64 i1, Int64 i2)
         {
             CheckElement(arguments);
             if ((index1 < 0) || (index1 > array.GetLength(2)))
-                throw new CodeEE(funcName + "命令の第" + i1.ToString() + "引数(" + index1.ToString() + ")は配列" + varName + "の範囲外です");
+                throw new CodeEE(string.Format(LocalizationManager.Error.OoRInstructionArg, funcName, i1.ToString(), index1.ToString(), varName));
             if ((index2 < 0) || (index2 > array.GetLength(2)))
-                throw new CodeEE(funcName + "命令の第" + i2.ToString() + "引数(" + index2.ToString() + ")は配列" + varName + "の範囲外です");
+                throw new CodeEE(string.Format(LocalizationManager.Error.OoRInstructionArg, funcName, i2.ToString(), index2.ToString(), varName));
         }
     }
 
@@ -856,22 +856,22 @@ internal sealed partial class VariableData
         {
             if (dimension == 0)
                 return array.Length;
-            throw new CodeEE("配列型変数" + varName + "の存在しない次元の長さを取得しようとしました");
+            throw new CodeEE(string.Format(LocalizationManager.Error.GetSizeNonExistDim, varName));
         }
         public override object GetArray() { return array; }
 
         public override void CheckElement(Int64[] arguments, bool[] doCheck)
         {
             if (doCheck[0] && ((arguments[0] < 0) || (arguments[0] >= array.Length)))
-                throw new CodeEE("配列変数" + varName + "の第１引数(" + arguments[0].ToString() + ")は配列の範囲外です");
+                throw new CodeEE(string.Format(LocalizationManager.Error.OoRVarArg, varName, "1", arguments[0].ToString()));
         }
         public override void IsArrayRangeValid(Int64[] arguments, Int64 index1, Int64 index2, string funcName, Int64 i1, Int64 i2)
         {
             CheckElement(arguments);
             if ((index1 < 0) || (index1 > array.Length))
-                throw new CodeEE(funcName + "命令の第" + i1.ToString() + "引数(" + index1.ToString() + ")は配列" + varName + "の範囲外です");
+                throw new CodeEE(string.Format(LocalizationManager.Error.OoRInstructionArg, funcName, i1.ToString(), index1.ToString(), varName));
             if ((index2 < 0) || (index2 > array.Length))
-                throw new CodeEE(funcName + "命令の第" + i2.ToString() + "引数(" + index2.ToString() + ")は配列" + varName + "の範囲外です");
+                throw new CodeEE(string.Format(LocalizationManager.Error.OoRInstructionArg, funcName, i2.ToString(), index2.ToString(), varName));
         }
     }
     private sealed class CharaIntVariableToken : CharaVariableToken
@@ -1107,15 +1107,15 @@ internal sealed partial class VariableData
             CanRestructure = true;
         }
         public override void SetValue(Int64 value, Int64[] arguments)
-        { throw new CodeEE("読み取り専用の変数" + varName + "に代入しようとしました"); }
+        { throw new CodeEE(string.Format(LocalizationManager.Error.AssignToConst, varName)); }
         public override void SetValue(string value, Int64[] arguments)
-        { throw new CodeEE("読み取り専用の変数" + varName + "に代入しようとしました"); }
+        { throw new CodeEE(string.Format(LocalizationManager.Error.AssignToConst, varName)); }
         public override void SetValue(Int64[] values, Int64[] arguments)
-        { throw new CodeEE("読み取り専用の変数" + varName + "に代入しようとしました"); }
+        { throw new CodeEE(string.Format(LocalizationManager.Error.AssignToConst, varName)); }
         public override void SetValue(string[] values, Int64[] arguments)
-        { throw new CodeEE("読み取り専用の変数" + varName + "に代入しようとしました"); }
+        { throw new CodeEE(string.Format(LocalizationManager.Error.AssignToConst, varName)); }
         public override Int64 PlusValue(Int64 value, Int64[] arguments)
-        { throw new CodeEE("読み取り専用の変数" + varName + "に代入しようとしました"); }
+        { throw new CodeEE(string.Format(LocalizationManager.Error.AssignToConst, varName)); }
     }
 
     private sealed class IntConstantToken : ConstantToken
@@ -1163,22 +1163,22 @@ internal sealed partial class VariableData
         {
             if (dimension == 0)
                 return array.Length;
-            throw new CodeEE("配列型変数" + varName + "の存在しない次元の長さを取得しようとしました");
+            throw new CodeEE(string.Format(LocalizationManager.Error.GetSizeNonExistDim, varName));
         }
         public override object GetArray() { return array; }
 
         public override void CheckElement(Int64[] arguments, bool[] doCheck)
         {
             if (doCheck[0] && ((arguments[0] < 0) || (arguments[0] >= array.Length)))
-                throw new CodeEE("配列変数" + varName + "の第１引数(" + arguments[0].ToString() + ")は配列の範囲外です");
+                throw new CodeEE(string.Format(LocalizationManager.Error.OoRVarArg, varName, "1", arguments[0].ToString()));
         }
         public override void IsArrayRangeValid(Int64[] arguments, Int64 index1, Int64 index2, string funcName, Int64 i1, Int64 i2)
         {
             CheckElement(arguments);
             if ((index1 < 0) || (index1 > array.Length))
-                throw new CodeEE(funcName + "命令の第" + i1.ToString() + "引数(" + index1.ToString() + ")は配列" + varName + "の範囲外です");
+                throw new CodeEE(string.Format(LocalizationManager.Error.OoRInstructionArg, funcName, i1.ToString(), index1.ToString(), varName));
             if ((index2 < 0) || (index2 > array.Length))
-                throw new CodeEE(funcName + "命令の第" + i2.ToString() + "引数(" + index2.ToString() + ")は配列" + varName + "の範囲外です");
+                throw new CodeEE(string.Format(LocalizationManager.Error.OoRInstructionArg, funcName, i2.ToString(), index2.ToString(), varName));
         }
     }
 
@@ -1208,22 +1208,22 @@ internal sealed partial class VariableData
         {
             if (dimension == 0)
                 return array.Length;
-            throw new CodeEE("配列型変数" + varName + "の存在しない次元の長さを取得しようとしました");
+            throw new CodeEE(string.Format(LocalizationManager.Error.GetSizeNonExistDim, varName));
         }
         public override object GetArray() { return array; }
 
         public override void CheckElement(Int64[] arguments, bool[] doCheck)
         {
             if (doCheck[0] && ((arguments[0] < 0) || (arguments[0] >= array.Length)))
-                throw new CodeEE("配列変数" + varName + "の第１引数(" + arguments[0].ToString() + ")は配列の範囲外です");
+                throw new CodeEE(string.Format(LocalizationManager.Error.OoRVarArg, varName, "1", arguments[0].ToString()));
         }
         public override void IsArrayRangeValid(Int64[] arguments, Int64 index1, Int64 index2, string funcName, Int64 i1, Int64 i2)
         {
             CheckElement(arguments);
             if ((index1 < 0) || (index1 > array.Length))
-                throw new CodeEE(funcName + "命令の第" + i1.ToString() + "引数(" + index1.ToString() + ")は配列" + varName + "の範囲外です");
+                throw new CodeEE(string.Format(LocalizationManager.Error.OoRInstructionArg, funcName, i1.ToString(), index1.ToString(), varName));
             if ((index2 < 0) || (index2 > array.Length))
-                throw new CodeEE(funcName + "命令の第" + i2.ToString() + "引数(" + index2.ToString() + ")は配列" + varName + "の範囲外です");
+                throw new CodeEE(string.Format(LocalizationManager.Error.OoRInstructionArg, funcName, i2.ToString(), index2.ToString(), varName));
         }
     }
 
@@ -1238,21 +1238,21 @@ internal sealed partial class VariableData
             CanRestructure = false;
         }
         public override void SetValue(Int64 value, Int64[] arguments)
-        { throw new CodeEE("擬似変数" + varName + "に代入しようとしました"); }
+        { throw new CodeEE(string.Format(LocalizationManager.Error.AssignToPseudoVar, varName)); }
         public override void SetValue(string value, Int64[] arguments)
-        { throw new CodeEE("擬似変数" + varName + "に代入しようとしました"); }
+        { throw new CodeEE(string.Format(LocalizationManager.Error.AssignToPseudoVar, varName)); }
         public override void SetValue(Int64[] values, Int64[] arguments)
-        { throw new CodeEE("擬似変数" + varName + "に代入しようとしました"); }
+        { throw new CodeEE(string.Format(LocalizationManager.Error.AssignToPseudoVar, varName)); }
         public override void SetValue(string[] values, Int64[] arguments)
-        { throw new CodeEE("擬似変数" + varName + "に代入しようとしました"); }
+        { throw new CodeEE(string.Format(LocalizationManager.Error.AssignToPseudoVar, varName)); }
         public override Int64 PlusValue(Int64 value, Int64[] arguments)
-        { throw new CodeEE("擬似変数" + varName + "に代入しようとしました"); }
+        { throw new CodeEE(string.Format(LocalizationManager.Error.AssignToPseudoVar, varName)); }
         public override Int32 GetLength()
-        { throw new CodeEE("擬似変数" + varName + "の長さを取得しようとしました"); }
+        { throw new CodeEE(string.Format(LocalizationManager.Error.GetSizePseudoVar, varName)); }
         public override Int32 GetLength(int dimension)
-        { throw new CodeEE("擬似変数" + varName + "の長さを取得しようとしました"); }
+        { throw new CodeEE(string.Format(LocalizationManager.Error.GetSizePseudoVar, varName)); }
         public override object GetArray()
-        { throw new CodeEE("擬似変数" + varName + "の配列を取得しようとしました"); }
+        { throw new CodeEE(string.Format(LocalizationManager.Error.GetDimPseudoVar, varName)); }
     }
 
 
@@ -1266,7 +1266,7 @@ internal sealed partial class VariableData
         {
             Int64 i = arguments[0];
             if (i <= 0)
-                throw new CodeEE("RANDの引数に0以下の値(" + i.ToString() + ")が指定されました");
+                throw new CodeEE(string.Format(LocalizationManager.Error.RandArgIsNegative, i.ToString()));
             return exm.VEvaluator.GetNextRand(i);
         }
     }
@@ -2490,21 +2490,21 @@ internal sealed partial class VariableData
         public override Int64 GetIntValue(ExpressionMediator exm, Int64[] arguments)
         {
             if (array == null)
-                throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
             return ((Int64[])array)[arguments[0]];
         }
 
         public override void SetValue(Int64 value, Int64[] arguments)
         {
             if (array == null)
-                throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
             ((Int64[])array)[arguments[0]] = value;
         }
 
         public override void SetValue(Int64[] values, Int64[] arguments)
         {
             if (array == null)
-                throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
             int start = (int)arguments[0];
             int end = start + values.Length;
             for (int i = start; i < end; i++)
@@ -2514,7 +2514,7 @@ internal sealed partial class VariableData
         public override void SetValueAll(long value, int start, int end, int charaPos)
         {
             if (array == null)
-                throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
             for (int i = start; i < end; i++)
                 ((Int64[])array)[i] = value;
         }
@@ -2522,7 +2522,7 @@ internal sealed partial class VariableData
         public override Int64 PlusValue(Int64 value, Int64[] arguments)
         {
             if (array == null)
-                throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
             ((Int64[])array)[arguments[0]] += value;
             return ((Int64[])array)[arguments[0]];
         }
@@ -2540,21 +2540,21 @@ internal sealed partial class VariableData
         public override Int64 GetIntValue(ExpressionMediator exm, Int64[] arguments)
         {
             if (array == null)
-                throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
             return ((Int64[,])array)[arguments[0], arguments[1]];
         }
 
         public override void SetValue(Int64 value, Int64[] arguments)
         {
             if (array == null)
-                throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
             ((Int64[,])array)[arguments[0], arguments[1]] = value;
         }
 
         public override void SetValue(Int64[] values, Int64[] arguments)
         {
             if (array == null)
-                throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
             int start = (int)arguments[1];
             int end = start + values.Length;
             for (int i = start; i < end; i++)
@@ -2564,7 +2564,7 @@ internal sealed partial class VariableData
         public override void SetValueAll(long value, int start, int end, int charaPos)
         {
             if (array == null)
-                throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
             int a1 = array.GetLength(0);
             int a2 = array.GetLength(1);
             for (int i = 0; i < a1; i++)
@@ -2576,7 +2576,7 @@ internal sealed partial class VariableData
         public override Int64 PlusValue(Int64 value, Int64[] arguments)
         {
             if (array == null)
-                throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
             ((Int64[,])array)[arguments[0], arguments[1]] += value;
             return ((Int64[,])array)[arguments[0], arguments[1]];
         }
@@ -2593,21 +2593,21 @@ internal sealed partial class VariableData
         public override Int64 GetIntValue(ExpressionMediator exm, Int64[] arguments)
         {
             if (array == null)
-                throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
             return ((Int64[,,])array)[arguments[0], arguments[1], arguments[2]];
         }
 
         public override void SetValue(Int64 value, Int64[] arguments)
         {
             if (array == null)
-                throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
             ((Int64[,,])array)[arguments[0], arguments[1], arguments[2]] = value;
         }
 
         public override void SetValue(Int64[] values, Int64[] arguments)
         {
             if (array == null)
-                throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
             int start = (int)arguments[2];
             int end = start + values.Length;
             for (int i = start; i < end; i++)
@@ -2617,7 +2617,7 @@ internal sealed partial class VariableData
         public override void SetValueAll(long value, int start, int end, int charaPos)
         {
             if (array == null)
-                throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
             int a1 = array.GetLength(0);
             int a2 = array.GetLength(1);
             int a3 = array.GetLength(2);
@@ -2631,7 +2631,7 @@ internal sealed partial class VariableData
         public override Int64 PlusValue(Int64 value, Int64[] arguments)
         {
             if (array == null)
-                throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
             ((Int64[,,])array)[arguments[0], arguments[1], arguments[2]] += value;
             return ((Int64[,,])array)[arguments[0], arguments[1], arguments[2]];
         }
@@ -2648,21 +2648,21 @@ internal sealed partial class VariableData
         public override string GetStrValue(ExpressionMediator exm, Int64[] arguments)
         {
             if (array == null)
-                throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
             return ((string[])array)[arguments[0]];
         }
 
         public override void SetValue(string value, Int64[] arguments)
         {
             if (array == null)
-                throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
             ((string[])array)[arguments[0]] = value;
         }
 
         public override void SetValue(string[] values, Int64[] arguments)
         {
             if (array == null)
-                throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
             int start = (int)arguments[0];
             int end = start + values.Length;
             for (int i = start; i < end; i++)
@@ -2672,7 +2672,7 @@ internal sealed partial class VariableData
         public override void SetValueAll(string value, int start, int end, int charaPos)
         {
             if (array == null)
-                throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
             for (int i = start; i < end; i++)
                 ((string[])array)[i] = value;
         }
@@ -2689,21 +2689,21 @@ internal sealed partial class VariableData
         public override string GetStrValue(ExpressionMediator exm, Int64[] arguments)
         {
             if (array == null)
-                throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
             return ((string[,])array)[arguments[0], arguments[1]];
         }
 
         public override void SetValue(string value, Int64[] arguments)
         {
             if (array == null)
-                throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
             ((string[,])array)[arguments[0], arguments[1]] = value;
         }
 
         public override void SetValue(string[] values, Int64[] arguments)
         {
             if (array == null)
-                throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
             int start = (int)arguments[1];
             int end = start + values.Length;
             for (int i = start; i < end; i++)
@@ -2713,7 +2713,7 @@ internal sealed partial class VariableData
         public override void SetValueAll(string value, int start, int end, int charaPos)
         {
             if (array == null)
-                throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
             int a1 = array.GetLength(0);
             int a2 = array.GetLength(1);
             for (int i = 0; i < a1; i++)
@@ -2733,21 +2733,21 @@ internal sealed partial class VariableData
         public override string GetStrValue(ExpressionMediator exm, Int64[] arguments)
         {
             if (array == null)
-                throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
             return ((string[,,])array)[arguments[0], arguments[1], arguments[2]];
         }
 
         public override void SetValue(string value, Int64[] arguments)
         {
             if (array == null)
-                throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
             ((string[,,])array)[arguments[0], arguments[1], arguments[2]] = value;
         }
 
         public override void SetValue(string[] values, Int64[] arguments)
         {
             if (array == null)
-                throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
             int start = (int)arguments[2];
             int end = start + values.Length;
             for (int i = start; i < end; i++)
@@ -2757,7 +2757,7 @@ internal sealed partial class VariableData
         public override void SetValueAll(string value, int start, int end, int charaPos)
         {
             if (array == null)
-                throw new CodeEE("参照型変数" + varName + "は何も参照していません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.EmptyRefVar, varName));
             int a1 = array.GetLength(0);
             int a2 = array.GetLength(1);
             int a3 = array.GetLength(2);

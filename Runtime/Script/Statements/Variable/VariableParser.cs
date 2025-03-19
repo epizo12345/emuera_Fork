@@ -95,19 +95,19 @@ internal static class VariableParser
                 if (op1 == null && op2 == null && op3 == null)
                     return new VariableNoArgTerm(id);
                 if (op1 == null || op2 == null || op3 == null)
-                    throw new CodeEE("キャラクタ二次元配列変数" + id.Name + "の引数は省略できません");
+                    throw new CodeEE(string.Format(LocalizationManager.Error.CanNotOmit1DCharaVarArg1, id.Name));
                 terms = [op1, op2, op3];
             }
             else if (id.IsArray1D)
             {
                 if (op3 != null)
-                    throw new CodeEE("キャラクタ変数" + id.Name + "の引数が多すぎます");
+                    throw new CodeEE(string.Format(LocalizationManager.Error.TooMany1DCharaVarArg, id.Name));
                 if (op1 == null && op2 == null && op3 == null && Config.Config.SystemNoTarget)
                     return new VariableNoArgTerm(id);
                 if (op2 == null)
                 {
                     if (Config.Config.SystemNoTarget)
-                        throw new CodeEE("キャラクタ配列変数" + id.Name + "の引数は省略できません(コンフィグにより禁止が選択されています)");
+                        throw new CodeEE(string.Format(LocalizationManager.Error.CanNotOmit1DCharaVarArg2, id.Name));
                     if (op1 == null)
                         op2 = ZeroTerm;
                     else
@@ -119,13 +119,13 @@ internal static class VariableParser
             else
             {
                 if (op2 != null)
-                    throw new CodeEE("キャラクタ変数" + id.Name + "の引数が多すぎます");
+                    throw new CodeEE(string.Format(LocalizationManager.Error.TooManyCharaVarArg, id.Name));
                 if (op1 == null && op2 == null && op3 == null && Config.Config.SystemNoTarget)
                     return new VariableNoArgTerm(id);
                 if (op1 == null)
                 {
                     if (Config.Config.SystemNoTarget)
-                        throw new CodeEE("キャラクタ変数" + id.Name + "の引数は省略できません(コンフィグにより禁止が選択されています)");
+                        throw new CodeEE(string.Format(LocalizationManager.Error.CanNotOmitCharaVarArg2, id.Name));
                     op1 = TARGET;
                 }
                 terms = [op1];
@@ -136,7 +136,7 @@ internal static class VariableParser
             if (op1 == null && op2 == null && op3 == null)
                 return new VariableNoArgTerm(id);
             if (op1 == null || op2 == null || op3 == null)
-                throw new CodeEE("三次元配列変数" + id.Name + "の引数は省略できません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.CanNotOmit3DVarArg, id.Name));
             terms = [op1, op2, op3];
         }
         else if (id.IsArray2D)
@@ -144,15 +144,15 @@ internal static class VariableParser
             if (op1 == null && op2 == null && op3 == null)
                 return new VariableNoArgTerm(id);
             if (op1 == null || op2 == null)
-                throw new CodeEE("二次元配列変数" + id.Name + "の引数は省略できません");
+                throw new CodeEE(string.Format(LocalizationManager.Error.CanNotOmit2DVarArg, id.Name));
             if (op3 != null)
-                throw new CodeEE("二次元配列" + id.Name + "の引数が多すぎます");
+                throw new CodeEE(string.Format(LocalizationManager.Error.TooMany2DVarArg, id.Name));
             terms = [op1, op2];
         }
         else if (id.IsArray1D)
         {
             if (op2 != null)
-                throw new CodeEE("一次元配列変数" + id.Name + "の引数が多すぎます");
+                throw new CodeEE(string.Format(LocalizationManager.Error.TooMany1DVarArg, id.Name));
             if (op1 == null)
             {
                 op1 = ZeroTerm;
@@ -170,7 +170,7 @@ internal static class VariableParser
         }
         else if (op1 != null)
         {
-            throw new CodeEE("配列でない変数" + id.Name + "を引数付きで呼び出しています");
+            throw new CodeEE(string.Format(LocalizationManager.Error.ZeroDVarHasArg, id.Name));
         }
         else
             terms = [];
