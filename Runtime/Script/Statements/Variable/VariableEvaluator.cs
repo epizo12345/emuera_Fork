@@ -154,9 +154,9 @@ internal sealed class VariableEvaluator : IDisposable
     public void SetValueAllEachChara(FixedVariableTerm p, SingleTerm index, long srcValue, int start, int end)
     {
         if (!p.Identifier.IsInteger)
-            throw new CodeEE("整数型でない変数" + p.Identifier.Name + "に整数値を代入しようとしました");
+            throw new CodeEE(string.Format(LocalizationManager.Error.SetIntToStr, p.Identifier.Name));
         if (p.Identifier.IsConst)
-            throw new CodeEE("読み取り専用の変数" + p.Identifier.Name + "に代入しようとしました");
+            throw new CodeEE(string.Format(LocalizationManager.Error.AssignToConst, p.Identifier.Name));
         if (p.Identifier.IsCalc)
             return;
         //一応チェック済み
@@ -174,7 +174,7 @@ internal sealed class VariableEvaluator : IDisposable
             else
                 indexNum = constant.KeywordToInteger(p.Identifier.Code, ((SingleStrTerm)index).Str, 1);
             if (indexNum < 0 || indexNum >= ((long[])p.Identifier.GetArrayChara(0)).Length)
-                throw new CodeEE("キャラクタ配列変数" + p.Identifier.Name + "の第２引数(" + indexNum.ToString() + ")は配列の範囲外です");
+                throw new CodeEE(string.Format(LocalizationManager.Error.OoRCharaVar, p.Identifier.Name, "2", indexNum.ToString()));
         }
 
         for (int i = start; i < end; i++)
@@ -186,9 +186,9 @@ internal sealed class VariableEvaluator : IDisposable
     public void SetValueAllEachChara(FixedVariableTerm p, SingleTerm index, string srcValue, int start, int end)
     {
         if (!p.Identifier.IsString)
-            throw new CodeEE("文字列型でない変数" + p.Identifier.Name + "に文字列型を代入しようとしました");
+            throw new CodeEE(string.Format(LocalizationManager.Error.SetStrToInt, p.Identifier.Name));
         if (p.Identifier.IsConst)
-            throw new CodeEE("読み取り専用の変数" + p.Identifier.Name + "に代入しようとしました");
+            throw new CodeEE(string.Format(LocalizationManager.Error.AssignToConst, p.Identifier.Name));
         if (p.Identifier.IsCalc)
         {
             if (p.Identifier.Code == VariableCode.WINDOW_TITLE)
@@ -212,7 +212,7 @@ internal sealed class VariableEvaluator : IDisposable
             else
                 indexNum = constant.KeywordToInteger(p.Identifier.Code, ((SingleStrTerm)index).Str, 1);
             if (indexNum < 0 || indexNum >= ((string[])p.Identifier.GetArrayChara(0)).Length)
-                throw new CodeEE("キャラクタ配列変数" + p.Identifier.Name + "の第２引数(" + indexNum.ToString() + ")は配列の範囲外です");
+                throw new CodeEE(string.Format(LocalizationManager.Error.OoRCharaVar, p.Identifier.Name, "2", indexNum.ToString()));
         }
 
         for (int i = start; i < end; i++)
@@ -538,7 +538,7 @@ internal sealed class VariableEvaluator : IDisposable
             array = (long[])p.Identifier.GetArray();
 
         if (start >= array.Length)
-            throw new CodeEE("命令ARRAYSHIFTの第４引数(" + start.ToString() + ")が配列" + p.Identifier.Name + "の範囲を超えています");
+            throw new CodeEE(string.Format(LocalizationManager.Error.OoRArrayShift, start.ToString(), p.Identifier.Name));
 
         if (num == -1)
             num = array.Length - start;
@@ -611,7 +611,7 @@ internal sealed class VariableEvaluator : IDisposable
             arrays = (string[])p.Identifier.GetArray();
 
         if (start >= arrays.Length)
-            throw new CodeEE("命令ARRAYSHIFTの第４引数(" + start.ToString() + ")が配列" + p.Identifier.Name + "の範囲を超えています");
+            throw new CodeEE(string.Format(LocalizationManager.Error.OoRArrayShift, start.ToString(), p.Identifier.Name));
 
         //for (int i = 0; i < arrays.Length; i++)
         //    arrays[i] = "";
@@ -685,7 +685,7 @@ internal sealed class VariableEvaluator : IDisposable
                 array = (long[])p.Identifier.GetArray();
 
             if (start >= array.Length)
-                throw new CodeEE("命令ARRAYREMOVEの第２引数(" + start.ToString() + ")が配列" + p.Identifier.Name + "の範囲を超えています");
+                throw new CodeEE(string.Format(LocalizationManager.Error.OoRArrayRemove, start.ToString(), p.Identifier.Name));
             if (num <= 0)
                 num = array.Length;
             long[] temp = new long[array.Length];
@@ -1083,7 +1083,7 @@ internal sealed class VariableEvaluator : IDisposable
     public void DelCharacter(long charaNo)
     {
         if (charaNo < 0 || charaNo >= varData.CharacterList.Count)
-            throw new CodeEE("存在しない登録キャラクタ(" + charaNo.ToString() + ")を削除しようとしました");
+            throw new CodeEE(string.Format(LocalizationManager.Error.OoRDelChara, charaNo.ToString()));
         varData.CharacterList[(int)charaNo].Dispose();
         varData.CharacterList.RemoveAt((int)charaNo);
     }
@@ -1094,10 +1094,10 @@ internal sealed class VariableEvaluator : IDisposable
         foreach (long charaNo in charaNoList)
         {
             if (charaNo < 0 || charaNo >= varData.CharacterList.Count)
-                throw new CodeEE("存在しない登録キャラクタ(" + charaNoList.ToString() + ")を削除しようとしました");
+                throw new CodeEE(string.Format(LocalizationManager.Error.OoRDelChara, charaNoList.ToString()));
             CharacterData chara = varData.CharacterList[(int)charaNo];
             if (DelList.Contains(chara))
-                throw new CodeEE("同一の登録キャラクタ番号(" + charaNo.ToString() + ")が複数回指定されました");
+                throw new CodeEE(string.Format(LocalizationManager.Error.DuplicateDelChara, charaNo.ToString()));
             DelList.Add(chara);
             chara.Dispose();
         }
@@ -1669,7 +1669,7 @@ internal sealed class VariableEvaluator : IDisposable
     public void SetDefaultStain(long no)
     {
         if (no < 0 || no >= varData.CharacterList.Count)
-            throw new CodeEE("存在しないキャラクターを参照しようとしました");
+            throw new CodeEE(LocalizationManager.Error.RefUndefinedChara);
         CharacterData chara = varData.CharacterList[(int)no];
         setDefaultStain(chara);
     }
@@ -2444,7 +2444,7 @@ internal sealed class VariableEvaluator : IDisposable
             return;
         FileAttributes att = File.GetAttributes(filepath);
         if ((att & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
-            throw new CodeEE("指定されたファイル\"" + filepath + "\"は読み込み専用のため削除できません");
+            throw new CodeEE(string.Format(LocalizationManager.Error.DelReadOnlyFile, filepath));
         //{
 
         //    console.PrintError("指定されたファイル\"" + filepath + "\"は読み込み専用のため削除できません");
