@@ -40,7 +40,8 @@ public partial class DebugDialog : Form
         var consoleHistoryFilePath = Program.ExeDir + "console_history.json";
         if (File.Exists(consoleHistoryFilePath))
         {
-            history = JsonSerializer.Deserialize<List<string>>(File.OpenRead(consoleHistoryFilePath));
+            using (var stream = File.OpenRead(consoleHistoryFilePath))
+                history = JsonSerializer.Deserialize<List<string>>(stream);
             selectedIndex = history.Count;
         }
         else
