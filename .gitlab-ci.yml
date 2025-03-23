@@ -39,7 +39,8 @@ stages:
 build_job:
   stage: build
   only:
-    - main
+    - SkiaSharp
+    - BugFix_Test
   script:
     - 'dotnet publish'  # build the project
     - mkdir build
