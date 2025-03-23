@@ -1,7 +1,9 @@
 ﻿using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Script.Statements;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace MinorShift.Emuera.Runtime.Script.Data;
 
@@ -18,12 +20,12 @@ internal sealed class LabelDictionary
     /// <summary>
     /// 本体。全てのFunctionLabelLineを記録
     /// </summary>
-    Dictionary<string, List<FunctionLabelLine>> labelAtDic = new(Config.Config.StrComper);
-    List<FunctionLabelLine> invalidList = [];
-    Dictionary<string, Dictionary<FunctionLabelLine, GotoLabelLine>> labelDollarList = new(Config.Config.StrComper);
+    ConcurrentDictionary<string, List<FunctionLabelLine>> labelAtDic = new(Config.Config.StrComper);
+    ConcurrentBag<FunctionLabelLine> invalidList = [];
+    ConcurrentDictionary<string, Dictionary<FunctionLabelLine, GotoLabelLine>> labelDollarList = new(Config.Config.StrComper);
     int count;
 
-    HashSet<string> loadedFileSet = [];
+    ConcurrentDictionary<string, bool> loadedFileSet = [];
     int currentFileCount;
     int totalFileCount;
 
@@ -156,10 +158,10 @@ internal sealed class LabelDictionary
 
         foreach (var rKey in removeFunctions)
         {
-            labelAtDic.Remove(rKey);
+            labelAtDic.Remove(rKey, out _);
         }
 
-        invalidList.RemoveAll(line => IsMatch(fname, line));
+        //invalidList.RemoveAll(line => IsMatch(fname, line));
 
         static bool IsMatch(string fname, FunctionLabelLine line)
         {
@@ -167,13 +169,12 @@ internal sealed class LabelDictionary
         }
     }
 
-
     /// <summary>
     /// ファイルの重複をチェックし、重複していたらすでにあるそのファイルに関連するラベルを消去する
     /// </summary>
     public void RemoveDuplicationFileData(string filename)
     {
-        if (loadedFileSet.Contains(filename))
+        if (loadedFileSet.ContainsKey(filename))
         {
             currentFileCount = loadedFileSet.Count;
             RemoveLabelWithPath(filename);
@@ -181,11 +182,10 @@ internal sealed class LabelDictionary
         }
         totalFileCount++;
         currentFileCount = totalFileCount;
-        loadedFileSet.Add(filename);
+        loadedFileSet.TryAdd(filename, true);
     }
     public void AddLabel(FunctionLabelLine point)
     {
-        point.Index = count;
         point.FileIndex = currentFileCount;
         count++;
         string id = point.LabelName;
@@ -205,7 +205,7 @@ internal sealed class LabelDictionary
         if (labelDollarList.TryGetValue(id, out var label))
         {
             return label.TryAdd(point.ParentLabelLine, point);
-        };
+        }
         labelDollarList.TryAdd(id, new() { { point.ParentLabelLine, point }, });
         return true;
     }

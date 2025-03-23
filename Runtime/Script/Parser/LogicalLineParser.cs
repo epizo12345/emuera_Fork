@@ -415,9 +415,8 @@ internal static class LogicalLineParser
             if (idWT != null)
             {
                 FunctionIdentifier func = GlobalStatic.IdentifierDictionary.GetFunctionIdentifier(idWT.Code);
+
                 //命令文
-
-
                 if (func != null)//関数文
                 {
                     if (func.Code == FunctionCode.VARI || func.Code == FunctionCode.VARS)
@@ -426,7 +425,7 @@ internal static class LogicalLineParser
                         {
                             ParentLabelLine = parentLine
                         };
-                        var statementsSpan = line.PopArgumentPrimitive().SubstringROS();
+                        var statementsSpan = stream.SubstringROS();
                         var commentIndex = statementsSpan.IndexOf(';');
                         if (commentIndex != -1)
                         {
@@ -452,7 +451,6 @@ internal static class LogicalLineParser
 
                         if (func.Code == FunctionCode.VARI)
                         {
-                            AExpression exp = null;
                             if (leftSplit.Length > 1)
                             {
                                 //配列である
@@ -464,13 +462,7 @@ internal static class LogicalLineParser
                             }
                             else
                             {
-                                //初期値がある
-                                if (!right.IsWhiteSpace())
-                                {
-                                    GlobalStatic.Process.scaningLine = line;
-                                    var wc = LexicalAnalyzer.Analyse(new CharStream(right.ToString()), LexEndWith.EoL, LexAnalyzeFlag.None);
-                                    exp = ExpressionParser.ReduceIntegerTerm(wc, TermEndWith.EoL);
-                                }
+
                             }
 
                             var varData = new UserDefinedVariableData
@@ -483,19 +475,10 @@ internal static class LogicalLineParser
                             };
                             parentLine.AddPrivateVariable(varData);
 
-                            if (exp != null)
-                            {
-                                line.Argument = new IntAsignArgument(varName, [.. lengths], exp);
-                            }
-                            else
-                            {
-                                line.Argument = new IntAsignArgument(varName, [.. lengths], new SingleLongTerm(default));
-                            }
                             return line;
                         }
                         else if (func.Code == FunctionCode.VARS)
                         {
-                            string value = default;
                             if (leftSplit.Length > 1)
                             {
                                 //配列である
@@ -507,13 +490,7 @@ internal static class LogicalLineParser
                             }
                             else
                             {
-                                //初期値がある
-                                if (!right.IsWhiteSpace())
-                                {
-                                    var literalStart = right.IndexOf('\"');
-                                    var literalEnd = right.LastIndexOf('\"');
-                                    value = right[(literalStart + 1)..literalEnd].ToString();
-                                }
+
                             }
 
                             var varData = new UserDefinedVariableData
@@ -526,7 +503,6 @@ internal static class LogicalLineParser
                             };
                             parentLine.AddPrivateVariable(varData);
 
-                            line.Argument = new StrAsignArgument(varName, varData.Lengths, value);
                             return line;
                         }
                     }

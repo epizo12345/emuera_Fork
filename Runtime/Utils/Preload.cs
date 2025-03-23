@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
+using System.Text.Unicode;
 using System.Threading.Tasks;
 
 namespace MinorShift.Emuera.Runtime.Utils;
@@ -39,21 +41,51 @@ static partial class Preload
                             ext.Equals(".erh", StringComparison.OrdinalIgnoreCase);
                 }).ForAll((childPath) =>
                 {
-                    if (JSONConfig.Game.CheckUTF8withBOM)
+                    var bytes = File.ReadAllBytes(childPath.FullName).AsSpan();
+
+                    if (bytes.IsEmpty)
                     {
-                        using var file = File.OpenRead(childPath.FullName);
-                        Span<byte> bom = stackalloc byte[3];
-                        _ = file.Read(bom);
-                        file.Close();
-                        if (!bom.SequenceEqual<byte>([0xEF, 0xBB, 0xBF]))
+                        files[childPath.FullName] = [""];
+                        return;
+                    }
+
+                    var encoding = Config.Config.Encode;
+                    if (bytes.StartsWith<byte>([0xEF, 0xBB, 0xBF]))
+                    {
+                        encoding = Encoding.UTF8;
+                        bytes = bytes[3..];
+                    }
+                    else
+                    {
+                        if (JSONConfig.Game.CheckUTF8withBOM)
                         {
                             ParserMediator.ConfigWarn(LocalizationManager.Error.FileNotUTF8BOM, new ScriptPosition(childPath.FullName, 0), 0, "");
                         }
                     }
 
+                    var lines = new List<string>();
+                    var n = (byte)'\n';
 
-                    var value = File.ReadAllLines(childPath.FullName, Config.Config.Encode);
-                    files[childPath.FullName] = value;
+                    foreach (var range in ((ReadOnlySpan<byte>)bytes[..]).Split(n))
+                    {
+                        if (bytes[range].IsEmpty)
+                        {
+                            lines.Add("");
+                        }
+                        else
+                        {
+                            if (bytes[range].EndsWith([(byte)'\r']))
+                            {
+                                lines.Add(encoding.GetString(bytes[range.Start..(range.End.Value - 1)]));
+                            }
+                            else
+                            {
+                                lines.Add(encoding.GetString(bytes[range]));
+                            }
+
+                        }
+                    }
+                    files[childPath.FullName] = [.. lines];
                 });
             });
         }
@@ -62,10 +94,7 @@ static partial class Preload
             var key = path;
             var value = File.ReadAllLines(path, Config.Config.Encode);
             files[key] = value;
-        };
-
-
-
+        }
 
         Debug.WriteLine($"Load: {path} : End in {(DateTime.Now - startTime).TotalMilliseconds}ms");
     }

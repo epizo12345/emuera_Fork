@@ -12,6 +12,10 @@ using MinorShift.Emuera.UI.Framework;
 using MinorShift.Emuera.Runtime.Config.JSON;
 using System.Linq;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Collections.Concurrent;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace MinorShift.Emuera.Runtime.Script.Data;
 
@@ -94,16 +98,17 @@ internal sealed class ConstantData
 
     public long[] ItemPrice;
 
+    readonly Lock _characterTmplListLock = new();
     private readonly List<CharacterTemplate> CharacterTmplList;
     private Dictionary<string, long> _nameToTemplateMap = new();
-	private Dictionary<string, long> _nicknameToTemplateMap = new();
-	private Dictionary<string, long> _callnameToTemplateMap = new();
-	private Dictionary<string, long> _masternameToTemplateMap = new();
+    private Dictionary<string, long> _nicknameToTemplateMap = new();
+    private Dictionary<string, long> _callnameToTemplateMap = new();
+    private Dictionary<string, long> _masternameToTemplateMap = new();
     public ReadOnlyDictionary<string, long> NameToTemplateMap => _nameToTemplateMap.AsReadOnly();
-	public ReadOnlyDictionary<string, long> NicknameToTemplateMap => _nicknameToTemplateMap.AsReadOnly();
-	public ReadOnlyDictionary<string, long> CallnameToTemplateMap => _callnameToTemplateMap.AsReadOnly();
-	public ReadOnlyDictionary<string, long> MasternameToTemplateMap => _masternameToTemplateMap.AsReadOnly();
-	private EmueraConsole output;
+    public ReadOnlyDictionary<string, long> NicknameToTemplateMap => _nicknameToTemplateMap.AsReadOnly();
+    public ReadOnlyDictionary<string, long> CallnameToTemplateMap => _callnameToTemplateMap.AsReadOnly();
+    public ReadOnlyDictionary<string, long> MasternameToTemplateMap => _masternameToTemplateMap.AsReadOnly();
+    private EmueraConsole output;
 
     public ConstantData()
     {
@@ -588,15 +593,18 @@ internal sealed class ConstantData
 
     public void LoadData(string csvDir, EmueraConsole console, bool disp)
     {
-
+        var startTime = Stopwatch.GetTimestamp();
+        Debug.WriteLine($"start:{Stopwatch.GetElapsedTime(startTime).TotalMilliseconds}ms");
         output = console;
         loadVariableSizeData(Path.Combine(csvDir, "VariableSize.CSV"), disp);
+        Debug.WriteLine($"loadVariableSizeData:{Stopwatch.GetElapsedTime(startTime).TotalMilliseconds}ms");
         for (int i = 0; i < countNameCsv; i++)
         {
             names[i] = new string[MaxDataList[i]];
             nameToIntDics[i] = [];
         }
         ItemPrice = new long[MaxDataList[itemIndex]];
+        Debug.WriteLine($"e1:{Stopwatch.GetElapsedTime(startTime).TotalMilliseconds}ms");
 
         loadDataTo(Path.Combine(csvDir, "ABL.CSV"), ablIndex, null, disp);
         loadDataTo(Path.Combine(csvDir, "EXP.CSV"), expIndex, null, disp);
@@ -625,6 +633,7 @@ internal sealed class ConstantData
         loadDataTo(Path.Combine(csvDir, "SAVESTR.CSV"), savestrnameIndex, null, disp);
         loadDataTo(Path.Combine(csvDir, "GLOBAL.CSV"), globalIndex, null, disp);
         loadDataTo(Path.Combine(csvDir, "GLOBALS.CSV"), globalsIndex, null, disp);
+        Debug.WriteLine($"loadDataTo:{Stopwatch.GetElapsedTime(startTime).TotalMilliseconds}ms");
 
         //逆引き辞書を作成
         for (int i = 0; i < names.Length; i++)
@@ -638,8 +647,24 @@ internal sealed class ConstantData
                     nameToIntDics[i].Add(nameArray[j], j);
             }
         }
+        Debug.WriteLine($"Reverse1:{Stopwatch.GetElapsedTime(startTime).TotalMilliseconds}ms");
         //if (!Program.AnalysisMode)
         loadCharacterData(csvDir, disp);
+        Debug.WriteLine($"loadCharacterData:{Stopwatch.GetElapsedTime(startTime).TotalMilliseconds}ms");
+
+        CharacterTmplList.Sort((left, right) => (int)(left.No - right.No));
+        foreach (var t in ((IEnumerable<CharacterTemplate>)CharacterTmplList).Reverse())
+        {
+            if (t.Name is not null)
+                _nameToTemplateMap[t.Name] = t.No;
+            if (t.Nickname is not null)
+                _nicknameToTemplateMap[t.Nickname] = t.No;
+            if (t.Callname is not null)
+                _callnameToTemplateMap[t.Callname] = t.No;
+            if (t.Mastername is not null)
+                _masternameToTemplateMap[t.Mastername] = t.No;
+        }
+        Debug.WriteLine($"Reverse2:{Stopwatch.GetElapsedTime(startTime).TotalMilliseconds}ms");
 
         //逆引き辞書を作成2 (RELATION)
         for (int i = 0; i < CharacterTmplList.Count; i++)
@@ -654,6 +679,7 @@ internal sealed class ConstantData
             if (!string.IsNullOrEmpty(tmpl.Mastername) && !relationDic.ContainsKey(tmpl.Mastername))
                 relationDic.Add(tmpl.Mastername, (int)tmpl.No);
         }
+        Debug.WriteLine($"Reverse3:{Stopwatch.GetElapsedTime(startTime).TotalMilliseconds}ms");
     }
 
     public bool isDefined(VariableCode varCode, string str)
@@ -951,14 +977,35 @@ internal sealed class ConstantData
     //    set { dummyChara = value; }
     //}
 
+    ConcurrentQueue<string> logQueue = [];
+
     private void loadCharacterData(string csvDir, bool disp)
     {
         if (!Directory.Exists(csvDir))
             return;
         List<KeyValuePair<string, string>> csvPaths = Config.Config.GetFiles(csvDir, "CHARA*.CSV");
 
-        for (int i = 0; i < csvPaths.Count; i++)
-            loadCharacterDataFile(csvPaths[i].Value, csvPaths[i].Key, disp);
+        var t1 = Task.Run(() => csvPaths.AsParallel().ForAll(x => loadCharacterDataFile(x.Value, x.Key, disp)));
+        var source = new CancellationTokenSource();
+        if (disp)
+        {
+            var locks = new Lock();
+            Task.Run(() =>
+            {
+                while (source.IsCancellationRequested)
+                {
+                    if (logQueue.TryDequeue(out var log))
+                    {
+                        lock (locks)
+                        {
+                            output.PrintSystemLine(log);
+                        }
+                    }
+                }
+            }, source.Token);
+        }
+        t1.Wait();
+        source.Cancel();
 
         if (useCompatiName)
         {
@@ -992,6 +1039,7 @@ internal sealed class ConstantData
         }
     }
 
+
     private void loadCharacterDataFile(string csvPath, string csvName, bool disp)
     {
         CharacterTemplate tmpl = null;
@@ -1002,8 +1050,6 @@ internal sealed class ConstantData
             return;
         }
         ScriptPosition? position = null;
-        if (disp)
-            output.PrintSystemLine(string.Format(LocalizationManager.SystemLine.LoadingFile, eReader.Filename));
         try
         {
             long index = -1;
@@ -1050,7 +1096,10 @@ internal sealed class ConstantData
                     else
                         tmpl.csvNo = 0;
                     //tmpl.csvNo = index;
-                    CharacterTmplList.Add(tmpl);
+                    lock (_characterTmplListLock)
+                    {
+                        CharacterTmplList.Add(tmpl);
+                    }
                     continue;
                 }
 
@@ -1061,19 +1110,6 @@ internal sealed class ConstantData
                 }
                 toCharacterTemplate(position, tmpl, tokens);
             }
-
-            CharacterTmplList.Sort((left, right) => (int)(left.No - right.No));
-            foreach(var t in ((IEnumerable<CharacterTemplate>)CharacterTmplList).Reverse())
-            {
-                if (t.Name is not null)
-                    _nameToTemplateMap[t.Name] = t.No;
-				if (t.Nickname is not null)
-					_nicknameToTemplateMap[t.Nickname] = t.No;
-				if (t.Callname is not null)
-					_callnameToTemplateMap[t.Callname] = t.No;
-				if (t.Mastername is not null)
-					_masternameToTemplateMap[t.Mastername] = t.No;
-			}
         }
         catch
         {
