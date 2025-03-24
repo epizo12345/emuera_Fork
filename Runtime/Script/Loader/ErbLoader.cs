@@ -15,6 +15,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using MinorShift.Emuera.UI.Framework;
+using System.Linq;
+using System.Threading;
+using System.Collections.Concurrent;
 
 namespace MinorShift.Emuera.Runtime.Script.Loader;
 
@@ -55,19 +58,45 @@ internal sealed class ErbLoader
         try
         {
             labelDic.RemoveAll();
-            foreach (var erb in erbFiles)
+
+            ConcurrentQueue<string> logQueue = [];
+
+            var task = Task.Run(() => erbFiles.AsParallel().ForAll(erb =>
             {
                 string filename = erb.Key;
                 string file = erb.Value;
+                loadErb(file, filename, isOnlyEvent);
 #if DEBUG
                 if (displayReport)
-                    output.PrintSystemLine(string.Format(LocalizationManager.SystemLine.ElapsedTimeLoad, starttime.ElapsedMilliseconds, filename));
+                    logQueue.Enqueue(string.Format(LocalizationManager.SystemLine.ElapsedTimeLoad, starttime.ElapsedMilliseconds, filename));
 #else
                 if (displayReport)
-                    output.PrintSystemLine(string.Format(LocalizationManager.SystemLine.LoadingFile, filename));
+                    logQueue.Enqueue(string.Format(LocalizationManager.SystemLine.LoadingFile, filename));
 #endif
-                await Task.Run(() => loadErb(file, filename, isOnlyEvent));
-            };
+            }));
+
+            var source = new CancellationTokenSource();
+            if (displayReport)
+            {
+                var locks = new Lock();
+                await Task.Run(() =>
+                {
+                    while (source.IsCancellationRequested)
+                    {
+                        if (logQueue.TryDequeue(out var log))
+                        {
+                            lock (locks)
+                            {
+                                output.PrintSystemLine(log);
+                            }
+                        }
+                    }
+                }, source.Token);
+            }
+            await task;
+            source.Cancel();
+
+
             ParserMediator.FlushWarningList();
 #if DEBUG
             output.PrintSystemLine(string.Format(LocalizationManager.SystemLine.ElapsedTime, starttime.ElapsedMilliseconds));
@@ -130,13 +159,13 @@ internal sealed class ErbLoader
                 fname = fpath;
             if (Program.AnalysisMode)
             {
-                output.PrintSystemLine(string.Format(LocalizationManager.SystemLine.LoadingFile, fname));;
+                output.PrintSystemLine(string.Format(LocalizationManager.SystemLine.LoadingFile, fname)); ;
             }
             await Task.Run(() =>
             {
                 loadErb(fpath, fname, isOnlyEvent);
             });
-        };
+        }
 
         if (Program.AnalysisMode)
             output.NewLine();

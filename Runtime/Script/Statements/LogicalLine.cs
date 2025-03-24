@@ -203,7 +203,6 @@ internal sealed class InvalidLabelLine : FunctionLabelLine
         LabelName = labelname;
         errMes = err;
         IsSingle = false;
-        Index = -1;
         Depth = -1;
         IsMethod = false;
         MethodType = typeof(void);
@@ -226,7 +225,6 @@ internal class FunctionLabelLine : LogicalLine, IComparable<FunctionLabelLine>
         LabelName = labelname;
         IsSingle = false;
         hasPrivDynamicVar = false;
-        Index = -1;
         Depth = -1;
         LocalLength = 0;
         LocalsLength = 0;
@@ -272,16 +270,13 @@ internal class FunctionLabelLine : LogicalLine, IComparable<FunctionLabelLine>
 
     #region IComparable<FunctionLabelLine> メンバ
     //ソート用情報
-    public int Index { get; set; }
     public int FileIndex { get; set; }
     public int CompareTo(FunctionLabelLine other)
     {
         if (FileIndex != other.FileIndex)
             return FileIndex.CompareTo(other.FileIndex);
         //position == nullであるLine(デバッグコマンドなど)をSortすることはないはず
-        if (Position.Value.LineNo != other.Position.Value.LineNo)
-            return Position.Value.LineNo.CompareTo(other.Position.Value.LineNo);
-        return Index.CompareTo(other.Index);
+        return Position.Value.LineNo.CompareTo(other.Position.Value.LineNo);
     }
     #endregion
     #region private変数

@@ -27,6 +27,12 @@ internal sealed partial class FunctionIdentifier
 
     private sealed class VARI_Instruction : AInstruction
     {
+
+        public VARI_Instruction()
+        {
+            flag = EXTENDED | METHOD_SAFE;
+            //ArgBuilder = ArgumentParser.GetArgumentBuilder(FunctionArgType.INT_EXPRESSION);
+        }
         public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
         {
             var arg = (IntAsignArgument)func.Argument;
@@ -45,11 +51,70 @@ internal sealed partial class FunctionIdentifier
 
         public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
         {
-            return null;
+            var statementsSpan = line.PopArgumentPrimitive().SubstringROS();
+            var commentIndex = statementsSpan.IndexOf(';');
+            if (commentIndex != -1)
+            {
+                statementsSpan = statementsSpan[..commentIndex];
+            }
+
+            var equalsIndex = statementsSpan.IndexOf('=');
+            string left;
+            ReadOnlySpan<char> right = "";
+            if (equalsIndex == -1)
+            {
+                left = statementsSpan.ToString();
+            }
+            else
+            {
+                left = statementsSpan[..equalsIndex].ToString();
+                right = statementsSpan[(equalsIndex + 1)..];
+            }
+
+            var leftSplit = left.Split(',');
+            var varName = leftSplit[0].Trim();
+            List<int> lengths = [1];
+
+
+            AExpression exp = null;
+            if (leftSplit.Length > 1)
+            {
+                //配列である
+                lengths.Clear();
+                for (int i = 1; i < leftSplit.Length; i++)
+                {
+                    lengths.Add(int.Parse(leftSplit[i].Trim()));
+                }
+            }
+            else
+            {
+                //初期値がある
+                if (!right.IsWhiteSpace())
+                {
+                    var wc = LexicalAnalyzer.Analyse(new CharStream(right.ToString()), LexEndWith.EoL, LexAnalyzeFlag.None);
+                    exp = ExpressionParser.ReduceIntegerTerm(wc, TermEndWith.EoL);
+                }
+            }
+
+            IntAsignArgument argment;
+            if (exp != null)
+            {
+                argment = new IntAsignArgument(varName, [.. lengths], exp);
+            }
+            else
+            {
+                argment = new IntAsignArgument(varName, [.. lengths], new SingleLongTerm(default));
+            }
+            return argment;
         }
     }
     private sealed class VARS_Instruction : AInstruction
     {
+        public VARS_Instruction()
+        {
+            flag = EXTENDED | METHOD_SAFE;
+            //ArgBuilder = ArgumentParser.GetArgumentBuilder(FunctionArgType.INT_EXPRESSION);
+        }
         public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
         {
             var arg = (StrAsignArgument)func.Argument;
@@ -68,7 +133,61 @@ internal sealed partial class FunctionIdentifier
 
         public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
         {
-            return null;
+            var statementsSpan = line.PopArgumentPrimitive().SubstringROS();
+            var commentIndex = statementsSpan.IndexOf(';');
+            if (commentIndex != -1)
+            {
+                statementsSpan = statementsSpan[..commentIndex];
+            }
+
+            var equalsIndex = statementsSpan.IndexOf('=');
+            string left;
+            ReadOnlySpan<char> right = "";
+            if (equalsIndex == -1)
+            {
+                left = statementsSpan.ToString();
+            }
+            else
+            {
+                left = statementsSpan[..equalsIndex].ToString();
+                right = statementsSpan[(equalsIndex + 1)..];
+            }
+
+            var leftSplit = left.Split(',');
+            var varName = leftSplit[0].Trim();
+            List<int> lengths = [1];
+
+            string value = default;
+            if (leftSplit.Length > 1)
+            {
+                //配列である
+                lengths.Clear();
+                for (int i = 1; i < leftSplit.Length; i++)
+                {
+                    lengths.Add(int.Parse(leftSplit[i].Trim()));
+                }
+            }
+            else
+            {
+                //初期値がある
+                if (!right.IsWhiteSpace())
+                {
+                    var literalStart = right.IndexOf('\"');
+                    var literalEnd = right.LastIndexOf('\"');
+                    value = right[(literalStart + 1)..literalEnd].ToString();
+                }
+            }
+
+            var varData = new UserDefinedVariableData
+            {
+                Name = varName,
+                Static = false,
+                Lengths = [.. lengths],
+                Dimension = lengths.Count,
+                TypeIsStr = true
+            };
+
+            return new StrAsignArgument(varName, varData.Lengths, value);
         }
     }
 
@@ -1860,17 +1979,17 @@ internal sealed partial class FunctionIdentifier
         }
     }
 
-	private sealed class MATCHALL_Instruction : AInstruction
-	{
-		public MATCHALL_Instruction()
-		{
-			ArgBuilder = ArgumentParser.GetArgumentBuilder(FunctionArgType.SP_MATCHALL);
-			flag = EXTENDED | METHOD_SAFE;
-		}
+    private sealed class MATCHALL_Instruction : AInstruction
+    {
+        public MATCHALL_Instruction()
+        {
+            ArgBuilder = ArgumentParser.GetArgumentBuilder(FunctionArgType.SP_MATCHALL);
+            flag = EXTENDED | METHOD_SAFE;
+        }
 
-		public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
-		{
-			var arg = func.Argument as SpMatchAllArgument;
+        public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
+        {
+            var arg = func.Argument as SpMatchAllArgument;
             var token = arg.Token;
             var valExpr = arg.Value;
             var type = valExpr.GetOperandType();
@@ -1883,10 +2002,10 @@ internal sealed partial class FunctionIdentifier
             if (token.IsCharacterData)
             {
                 if (token.IsArray1D)
-					len = exm.VEvaluator.CHARANUM;
-				else if(token.IsArray2D || token.IsArray3D)
-					throw new ExeEE("type error");
-				else
+                    len = exm.VEvaluator.CHARANUM;
+                else if (token.IsArray2D || token.IsArray3D)
+                    throw new ExeEE("type error");
+                else
                     len = exm.VEvaluator.CHARANUM;
             }
             else
@@ -1900,14 +2019,14 @@ internal sealed partial class FunctionIdentifier
                 end = arg.End.GetIntValue(exm);
             else
                 end = len;
-            if(beg < 0 || end < 0)
-				throw new CodeEE("検索範囲に負の値が渡されました");
-			if (beg > end)
-				throw new CodeEE("検索範囲の指定が不正です");
-			if (long.Max(beg, end) > len)
+            if (beg < 0 || end < 0)
+                throw new CodeEE("検索範囲に負の値が渡されました");
+            if (beg > end)
+                throw new CodeEE("検索範囲の指定が不正です");
+            if (long.Max(beg, end) > len)
                 throw new CodeEE("検索範囲が変数のサイズを超えています");
 
-			var idxs = new long[2];
+            var idxs = new long[2];
             int p = 0;
             if (arg.Index.HasValue)
                 idxs[1] = arg.Index.Value;
@@ -1942,13 +2061,13 @@ internal sealed partial class FunctionIdentifier
             else
                 throw new ExeEE("unknown type");
             arr[0] = count;
-		}
-	}
-	#endregion
+        }
+    }
+    #endregion
 
-	#region flowControlFunction
+    #region flowControlFunction
 
-	private sealed class BEGIN_Instruction : AInstruction
+    private sealed class BEGIN_Instruction : AInstruction
     {
         public BEGIN_Instruction()
         {

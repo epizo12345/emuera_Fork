@@ -224,7 +224,7 @@ internal static partial class LexicalAnalyzer
             if (fromBase != 16)
                 return false;
             //else if (!hexadecimalDigits.Contains(st.Current))
-            else if (0 <=  Array.IndexOf(hexadecimalDigits, st.Current))
+            else if (0 <= Array.IndexOf(hexadecimalDigits, st.Current))
                 return false;
         }
         // ここでエラーが発生する場合、そもそも文字列ではないのでfalseを返す
@@ -471,7 +471,7 @@ internal static partial class LexicalAnalyzer
     /// <returns></returns>
     public static string ReadString(CharStream st, StrEndWith endWith)
     {
-        var buffer = new StringBuilder(100);
+        var buffer = new StringBuilder(st.RowString.Length - st.CurrentPosition);
         void loop()
         {
             while (true)
@@ -1010,7 +1010,7 @@ internal static partial class LexicalAnalyzer
                         }
                 }
             }
-        };
+        }
         local();
         if (nestBracketS != 0 || nestBracketL != 0)
         {
@@ -1148,6 +1148,7 @@ internal static partial class LexicalAnalyzer
         return wc;
     }
 
+    public static StringBuilder buffer = new(100);
     /// <summary>
     /// @"などの直後からの開始
     /// return時にはendWithの文字がCurrentになっているはず。終端の適切さの検証は呼び出し元が行う。
@@ -1157,7 +1158,7 @@ internal static partial class LexicalAnalyzer
     {
         List<string> strs = [];
         List<SubWord> SWTs = [];
-        StringBuilder buffer = new(100);
+        buffer.Clear();
         while (true)
         {
             char cur = st.Current;
@@ -1190,7 +1191,7 @@ internal static partial class LexicalAnalyzer
                     break;
                 case '%':
                     strs.Add(buffer.ToString());
-                    buffer.Remove(0, buffer.Length);
+                    buffer.Clear();
                     st.ShiftNext();
                     SWTs.Add(new PercentSubWord(Analyse(st, LexEndWith.Percent, LexAnalyzeFlag.None)));
                     if (st.Current != '%')
@@ -1198,7 +1199,7 @@ internal static partial class LexicalAnalyzer
                     break;
                 case '{':
                     strs.Add(buffer.ToString());
-                    buffer.Remove(0, buffer.Length);
+                    buffer.Clear();
                     st.ShiftNext();
                     SWTs.Add(new CurlyBraceSubWord(Analyse(st, LexEndWith.RightCurlyBrace, LexAnalyzeFlag.None)));
                     if (st.Current != '}')
@@ -1212,7 +1213,7 @@ internal static partial class LexicalAnalyzer
                     if (!Config.Config.SystemIgnoreTripleSymbol && st.TripleSymbol())
                     {
                         strs.Add(buffer.ToString());
-                        buffer.Remove(0, buffer.Length);
+                        buffer.Clear();
                         st.Jump(3);
                         SWTs.Add(new TripleSymbolSubWord(cur));
                         continue;
@@ -1238,7 +1239,7 @@ internal static partial class LexicalAnalyzer
                                 if (endWith == FormStrEndWith.YenAt || endWith == FormStrEndWith.Sharp)
                                     goto end;
                                 strs.Add(buffer.ToString());
-                                buffer.Remove(0, buffer.Length);
+                                buffer.Clear();
                                 st.ShiftNext();
                                 SWTs.Add(AnalyseYenAt(st));
                                 continue;

@@ -1,15 +1,12 @@
 ﻿using AngleSharp.Dom;
 using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.Runtime.Config;
-using MinorShift.Emuera.Runtime.Script.Parser;
-using MinorShift.Emuera.Runtime.Script.Statements.Expression;
 using MinorShift.Emuera.Runtime.Utils;
 using SkiaSharp;
 using SkiaSharp.Views.Desktop;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using MinorShift.Emuera.UI.Framework;
@@ -294,7 +291,7 @@ internal static partial class HtmlManager
     /// <param name="console">実際の表示に使わないならnullにする</param>
     /// <returns></returns>
     /// 
-    static AngleSharp.Html.Parser.HtmlParser parser = new();
+    static readonly AngleSharp.Html.Parser.HtmlParser parser = new();
     public static ConsoleDisplayLine[] Html2DisplayLine(string str, StringMeasure sm, EmueraConsole console, bool lineEnd)
     {
 
@@ -678,6 +675,8 @@ internal static partial class HtmlManager
                                 nodeList.AddRange(c);
 
                             }
+                            break;
+                        case "#comment":
                             break;
                         default:
                             {
