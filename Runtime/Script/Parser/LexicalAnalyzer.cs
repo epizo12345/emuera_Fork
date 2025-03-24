@@ -1148,7 +1148,6 @@ internal static partial class LexicalAnalyzer
         return wc;
     }
 
-    public static StringBuilder buffer = new(100);
     /// <summary>
     /// @"などの直後からの開始
     /// return時にはendWithの文字がCurrentになっているはず。終端の適切さの検証は呼び出し元が行う。
@@ -1158,7 +1157,8 @@ internal static partial class LexicalAnalyzer
     {
         List<string> strs = [];
         List<SubWord> SWTs = [];
-        buffer.Clear();
+        //関数が再帰呼び出しを持つため、このバッファはローカル変数である必要があります。
+        StringBuilder buffer = new(100);
         while (true)
         {
             char cur = st.Current;
