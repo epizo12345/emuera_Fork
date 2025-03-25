@@ -223,35 +223,35 @@ internal static partial class FunctionMethodCreator
             return exm.VEvaluator.GetCharacterIntfromCSVData(x, charaInt, z != 0, y);
         }
     }
-    private sealed class GetCsvNoMethod : FunctionMethod
-    {
+	private sealed class GetCsvNoMethod : FunctionMethod
+	{
         private CharacterStrData _type;
-        public GetCsvNoMethod(CharacterStrData data)
-        {
-            ReturnType = typeof(Int64);
-            argumentTypeArray = new Type[] { typeof(string) };
-            CanRestructure = true;
+		public GetCsvNoMethod(CharacterStrData data)
+		{
+			ReturnType = typeof(Int64);
+			argumentTypeArray = new Type[] {typeof(string)};
+			CanRestructure = true;
             _type = data;
-        }
-        public override long GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
-        {
+		}
+		public override long GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
+		{
             var str = arguments[0].GetStrValue(exm);
             long ret;
 
-            var b = _type switch
+			var b = _type switch
             {
-                CharacterStrData.NAME => exm.VEvaluator.Constant.NameToTemplateMap.TryGetValue(str, out ret),
-                CharacterStrData.NICKNAME => exm.VEvaluator.Constant.NicknameToTemplateMap.TryGetValue(str, out ret),
-                CharacterStrData.CALLNAME => exm.VEvaluator.Constant.CallnameToTemplateMap.TryGetValue(str, out ret),
-                CharacterStrData.MASTERNAME => exm.VEvaluator.Constant.MasternameToTemplateMap.TryGetValue(str, out ret),
+				CharacterStrData.NAME => exm.VEvaluator.Constant.NameToTemplateMap.TryGetValue(str, out ret),
+				CharacterStrData.NICKNAME => exm.VEvaluator.Constant.NicknameToTemplateMap.TryGetValue(str, out ret),
+				CharacterStrData.CALLNAME => exm.VEvaluator.Constant.CallnameToTemplateMap.TryGetValue(str, out ret),
+				CharacterStrData.MASTERNAME => exm.VEvaluator.Constant.MasternameToTemplateMap.TryGetValue(str, out ret),
                 _ => throw new ExeEE("error")
             };
             if (!b)
                 ret = -1;
             return ret;
-        }
-    }
-    private sealed class FindcharaMethod : FunctionMethod
+		}
+	}
+	private sealed class FindcharaMethod : FunctionMethod
     {
         public FindcharaMethod(bool last)
         {
@@ -865,14 +865,13 @@ internal static partial class FunctionMethodCreator
         }
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
-            var now = DateTime.Now;
-            long date = now.Year;
-            date = date * 100 + now.Month;
-            date = date * 100 + now.Day;
-            date = date * 100 + now.Hour;
-            date = date * 100 + now.Minute;
-            date = date * 100 + now.Second;
-            date = date * 1000 + now.Millisecond;
+            long date = DateTime.Now.Year;
+            date = date * 100 + DateTime.Now.Month;
+            date = date * 100 + DateTime.Now.Day;
+            date = date * 100 + DateTime.Now.Hour;
+            date = date * 100 + DateTime.Now.Minute;
+            date = date * 100 + DateTime.Now.Second;
+            date = date * 1000 + DateTime.Now.Millisecond;
             return date;//17桁。2京くらい。
         }
     }
@@ -3156,8 +3155,7 @@ internal static partial class FunctionMethodCreator
                 return 0;
             var c = ReadColor(Name, exm, arguments, 1);
 
-            using (var paint = new SKPaint() { Color = c.ToSKColor() })
-            {
+            using (var paint = new SKPaint() { Color = c.ToSKColor() }){
                 g.GSetBrush(paint);
             }
             return 1;

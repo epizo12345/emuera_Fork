@@ -95,11 +95,14 @@ internal sealed partial class EmueraConsole : IDisposable
             {
                 while (await redrawTimer.WaitForNextTickAsync())
                 {
-                    //描画が重いと入力が処理できないので、描画毎に入力を捌く
-                    Application.DoEvents();
+                    if (isRedrawEnabled)
+                    {
+                        //描画が重いと入力が処理できないので、描画毎に入力を捌く
+                        Application.DoEvents();
 
-                    //画面再描画(アニメーション処理)
-                    Draw();
+                        //画面再描画(アニメーション処理)
+                        Draw();
+                    }
                 }
             }
         );
@@ -371,7 +374,7 @@ internal sealed partial class EmueraConsole : IDisposable
         using var fs = new FileStream(Program.ExeDir + "time.log", FileMode.Create);
         using var logWriter = new StreamWriter(fs);
         logWriter.WriteLine("Init:Start");
-        _genericTimerStopwatch = Stopwatch.GetTimestamp();
+        _genericTimerStopwatch.Restart();
 
         //必要なソースファイルを事前にメモリに一気に読み込む
         logWriter.WriteLine("File:Preload:Start");
@@ -598,7 +601,6 @@ internal sealed partial class EmueraConsole : IDisposable
         if (tickcount <= 0)
         {
             isRedrawEnabled = false;
-            redrawTimer.Period = Timeout.InfiniteTimeSpan;
             return;
         }
 
@@ -615,7 +617,7 @@ internal sealed partial class EmueraConsole : IDisposable
 
     System.Timers.Timer genericTimer = new();
     Int64 timerID = -1;
-    long _genericTimerStopwatch = Stopwatch.GetTimestamp();//現在のタイマーを開始した時のミリ秒数（WinmmTimer.TickCount基準）
+    readonly Stopwatch _genericTimerStopwatch = new();//現在のタイマーを開始した時のミリ秒数（WinmmTimer.TickCount基準）
     Int64 timer_endTime;//現在のタイマーを終了する時のTickCountミリ秒数
     bool isTimeout;
     public bool IsTimeOut { get { return isTimeout; } }
@@ -631,7 +633,7 @@ internal sealed partial class EmueraConsole : IDisposable
 
         if (inputReq.DisplayTime)
         {
-            var remainingMs = inputReq.Timelimit - Stopwatch.GetElapsedTime(_genericTimerStopwatch).TotalMilliseconds;
+            var remainingMs = inputReq.Timelimit - _genericTimerStopwatch.ElapsedMilliseconds;
             PrintSingleLine($"{LocalizationManager.SystemLine.Remaining} {remainingMs} ms");
         }
     }
@@ -640,7 +642,7 @@ internal sealed partial class EmueraConsole : IDisposable
         isTimeout = false;
         timerID = inputReq.ID;
         genericTimer.Enabled = true;
-        _genericTimerStopwatch = Stopwatch.GetTimestamp();
+        _genericTimerStopwatch.Restart();
         timer_endTime = inputReq.Timelimit;
     }
 
@@ -654,7 +656,7 @@ internal sealed partial class EmueraConsole : IDisposable
             stopTimer();
             return;
         }
-        var elapsedMs = Stopwatch.GetElapsedTime(_genericTimerStopwatch).TotalMilliseconds;
+        var elapsedMs = _genericTimerStopwatch.ElapsedMilliseconds;
         if (elapsedMs >= timer_endTime)
         {
             endTimer();
@@ -663,7 +665,7 @@ internal sealed partial class EmueraConsole : IDisposable
 
         if (inputReq.DisplayTime)
         {
-            var remainingMs = inputReq.Timelimit - Stopwatch.GetElapsedTime(_genericTimerStopwatch).TotalMilliseconds;
+            var remainingMs = inputReq.Timelimit - _genericTimerStopwatch.ElapsedMilliseconds;
             window.Invoke(() => changeLastLine($"{LocalizationManager.SystemLine.Remaining} {remainingMs / 1000.0f:0.0}"));
         }
     }
@@ -1220,7 +1222,7 @@ internal sealed partial class EmueraConsole : IDisposable
     #endregion
 
     #region 描画系
-    long _frameStartTime = Stopwatch.GetTimestamp();
+    Stopwatch _frameDeltaTimer = Stopwatch.StartNew();
     uint msPerFrame = 1000 / 60;//60FPS
     ConsoleRedraw redraw = ConsoleRedraw.Normal;
     public ConsoleRedraw Redraw { get { return redraw; } }
@@ -1290,31 +1292,28 @@ internal sealed partial class EmueraConsole : IDisposable
                 return;
             //まだ書き換えるタイミングでないなら次の更新を待ってみる
             //ただし、入力待ちなど、しばらく更新のタイミングがない場合には強制的に書き換えてみる
-            if (Stopwatch.GetElapsedTime(_frameStartTime).TotalMilliseconds < msPerFrame && (state == ConsoleState.Running || state == ConsoleState.Initializing))
+            if (_frameDeltaTimer.ElapsedMilliseconds < msPerFrame && (state == ConsoleState.Running || state == ConsoleState.Initializing))
                 return;
         }
 
         if (forceTextBoxColor)
         {
-            var now = Stopwatch.GetTimestamp();
-            var sec = Stopwatch.GetElapsedTime(_genericTimerStopwatch, now).TotalMilliseconds;
-
+            var sec = _genericTimerStopwatch.ElapsedMilliseconds;
             //色変化が速くなりすぎないように一定時間以内の再呼び出しは強制待ちにする
-            if (_drawStopwatch == 0)
+            if (_drawStopwatch == null)
             {
-                _drawStopwatch = now;
+                _drawStopwatch = Stopwatch.StartNew();
             }
             else
             {
-                while (Stopwatch.GetElapsedTime(_drawStopwatch, now).TotalMilliseconds < msPerFrame)
+                while (_drawStopwatch.ElapsedMilliseconds < msPerFrame)
                 {
                     Application.DoEvents();
-                    now = Stopwatch.GetTimestamp();
                 }
             }
             window.TextBox.BackColor = this.bgColor.ToDrawingColor();
 
-            _drawStopwatch = now;
+            _drawStopwatch.Restart();
         }
         window.Invoke(() =>
         {
@@ -1345,7 +1344,7 @@ internal sealed partial class EmueraConsole : IDisposable
         //Task.Delay(100).Wait();
 
         //1824 アニメスプライト用・現在フレームの時間を決定
-        _frameStartTime = Stopwatch.GetTimestamp();
+        _frameDeltaTimer.Restart();
 
         bool isBackLog = window.ScrollBar.Value != window.ScrollBar.Maximum;
         int pointY = window.MainPicBox.Height - Config.LineHeight;

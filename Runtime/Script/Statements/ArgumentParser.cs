@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using MinorShift.Emuera.Runtime.Script.Statements;
+﻿using MinorShift.Emuera.Runtime.Script.Statements;
 using MinorShift.Emuera.Runtime.Utils;
 
 namespace MinorShift.Emuera.GameProc.Function;
@@ -50,14 +47,15 @@ internal static partial class ArgumentParser
         if (arg == null)
             line.IsError = true;
         return true;
-    }
-    static bool error(InstructionLine line, string errmes)
-    {
-        System.Media.SystemSounds.Hand.Play();
 
-        line.IsError = true;
-        line.ErrMes = errmes;
-        ParserMediator.Warn(errmes, line, 2, true, false);
-        return false;
+        static bool error(InstructionLine line, string errmes)
+        {
+            System.Media.SystemSounds.Hand.Play();
+
+            line.IsError = true;
+            line.ErrMes = errmes;
+            ParserMediator.Warn(errmes, line, 2, true, false);
+            return false;
+        }
     }
 }

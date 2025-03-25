@@ -55,7 +55,8 @@ internal sealed partial class Process(EmueraConsole view)
 
     public async Task<bool> Initialize(StreamWriter logWriter)
     {
-        var stopWatch = Stopwatch.StartNew();
+        var stopWatch = new Stopwatch();
+        stopWatch.Start();
         LexicalAnalyzer.UseMacro = false;
         state = new ProcessState(console);
         originalState = state;
@@ -99,7 +100,7 @@ internal sealed partial class Process(EmueraConsole view)
                 {
                     if (Config.DisplayReport)
                         console.PrintSystemLine(LocalizationManager.SystemLine.LoadingMacro);
-                    if (!KeyMacro.LoadMacroFile(KeyMacro.macroPath))
+                    if(!KeyMacro.LoadMacroFile(KeyMacro.macroPath))
                         console.PrintSystemLine(LocalizationManager.Error.MacroLoadingError);
                 }
             }
@@ -371,11 +372,11 @@ internal sealed partial class Process(EmueraConsole view)
         }
     }
 
-    long startTime = Stopwatch.GetTimestamp();
+    readonly Stopwatch startTime = new();
 
     public void DoScript()
     {
-        startTime = Stopwatch.GetTimestamp();
+        startTime.Restart();
         state.lineCount = 0;
         bool systemProcRunning = true;
         try
@@ -413,7 +414,7 @@ internal sealed partial class Process(EmueraConsole view)
 
     public void UpdateCheckInfiniteLoopState()
     {
-        startTime = Stopwatch.GetTimestamp();
+        startTime.Restart();
         state.lineCount = 0;
     }
 
@@ -430,7 +431,7 @@ internal sealed partial class Process(EmueraConsole view)
         //    console.ReadAnyKey();
         //    return;
         //}
-        var elapsedTime = Stopwatch.GetElapsedTime(startTime).TotalMilliseconds;
+        var elapsedTime = startTime.ElapsedMilliseconds;
         if (elapsedTime < Config.InfiniteLoopAlertTime)
             return;
         LogicalLine currentLine = state.CurrentLine;
@@ -448,7 +449,7 @@ internal sealed partial class Process(EmueraConsole view)
         else
         {
             state.lineCount = 0;
-            startTime = Stopwatch.GetTimestamp();
+            startTime.Restart();
         }
     }
 

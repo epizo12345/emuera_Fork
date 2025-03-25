@@ -89,7 +89,7 @@ internal sealed partial class EmueraConsole : IDisposable
     /// </summary>
     string stBar;
 
-    long _drawStopwatch;
+    Stopwatch _drawStopwatch;
     bool forceTextBoxColor;
     public void SetBgColor(Color color)
     {
@@ -100,21 +100,19 @@ internal sealed partial class EmueraConsole : IDisposable
         if (redraw == ConsoleRedraw.None && window.ScrollBar.Value == window.ScrollBar.Maximum)
             return;
         //色変化が速くなりすぎないように一定時間以内の再呼び出しは強制待ちにする
-        var now = Stopwatch.GetTimestamp();
-        if (_drawStopwatch == 0)
+        if (_drawStopwatch == null)
         {
-            _drawStopwatch = now;
+            _drawStopwatch = Stopwatch.StartNew();
         }
         else
         {
-            while (Stopwatch.GetElapsedTime(_drawStopwatch, now).TotalMilliseconds < msPerFrame)
+            while (_drawStopwatch.ElapsedMilliseconds < msPerFrame)
             {
                 Application.DoEvents();
-                now = Stopwatch.GetTimestamp();
             }
         }
         RefreshStrings(true);
-        _drawStopwatch = Stopwatch.GetTimestamp();
+        _drawStopwatch.Restart();
     }
 
     //完全に独立したHTML
@@ -700,7 +698,7 @@ internal sealed partial class EmueraConsole : IDisposable
 
         builder.AppendLine(LocalizationManager.SystemLine.Environment);
         builder.AppendLine(AssemblyData.EmueraVersionText);
-        if (!string.IsNullOrEmpty(GlobalStatic.GameBaseData?.ScriptWindowTitle))
+        if(!string.IsNullOrEmpty(GlobalStatic.GameBaseData?.ScriptWindowTitle))
             builder.AppendLine(GlobalStatic.GameBaseData.ScriptWindowTitle);
         var patchVersionsPath = Path.Combine(Program.ExeDir, "patch_versions");
         if (Directory.Exists(patchVersionsPath))

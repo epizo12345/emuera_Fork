@@ -369,16 +369,15 @@ internal sealed partial class Process
                 }
             case FunctionCode.GETTIME:
                 {
-                    var now = DateTime.Now;
-                    long date = now.Year;
-                    date = date * 100 + now.Month;
-                    date = date * 100 + now.Day;
-                    date = date * 100 + now.Hour;
-                    date = date * 100 + now.Minute;
-                    date = date * 100 + now.Second;
-                    date = date * 1000 + now.Millisecond;
+                    long date = DateTime.Now.Year;
+                    date = date * 100 + DateTime.Now.Month;
+                    date = date * 100 + DateTime.Now.Day;
+                    date = date * 100 + DateTime.Now.Hour;
+                    date = date * 100 + DateTime.Now.Minute;
+                    date = date * 100 + DateTime.Now.Second;
+                    date = date * 1000 + DateTime.Now.Millisecond;
                     vEvaluator.RESULT = date;//17桁。2京くらい。
-                    vEvaluator.RESULTS = now.ToString("yyyy/MM/dd HH:mm:ss");
+                    vEvaluator.RESULTS = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss");
                 }
                 break;
             case FunctionCode.SETCOLOR:

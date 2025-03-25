@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using MinorShift.Emuera.UI.Framework;
-using System.Diagnostics;
 
 namespace MinorShift.Emuera.UI.Game.Image;
 
@@ -283,16 +282,16 @@ internal sealed class SpriteAnime : ASprite
     /// </summary>
     internal void ResetTime()
     {
-        startTime = Stopwatch.GetTimestamp();
-        lastFrameTime = startTime;
+        StartTime = DateTime.Now;
+        lastFrameTime = DateTime.Now;
         lastFrame = -1;
     }
 
     /// <summary>
     /// 開始時間調整用の値。ミリ秒でUInt32の範囲まで想定。
     /// </summary>
-    long startTime;
-    long lastFrameTime;
+    DateTime StartTime;
+    DateTime lastFrameTime;
     int lastFrame = -1;
     private AnimeFrame GetCurrentFrame()
     {
@@ -304,25 +303,23 @@ internal sealed class SpriteAnime : ASprite
         if (lastFrame >= FrameList.Count)
             throw new ExeEE(LocalizationManager.Error.OoRLasframe);
 #endif
-        var now = Stopwatch.GetTimestamp();
-
         //一度もフレーム取得したことがない場合は現在時間を記録して最初のフレームを返す。
         if (lastFrame == -1)
         {
-            startTime = now;
+            StartTime = DateTime.Now;
             lastFrame = 0;
             return FrameList[0];
         }
-
-        //あまりに短い時間で複数回呼ばれた場合はさっき返したフレームをもう一度返す。
-        if (Stopwatch.GetElapsedTime(lastFrameTime, now).TotalMilliseconds < 1 && lastFrame >= 0)
+        //時間経過なしに複数回呼ばれた場合はさっき返したフレームをもう一度返す。
+        if (DateTime.Now == lastFrameTime && lastFrame >= 0)
             return FrameList[lastFrame];
+        //StartTimeからの経過時間(ms)をtotaltimeで剰余計算
+        var elapsedTime = (DateTime.Now - StartTime).TotalMilliseconds % totaltime;
 
-        var elapsedMs = Stopwatch.GetElapsedTime(startTime, now).Milliseconds;
-        foreach (var frame in FrameList)
+        foreach (AnimeFrame frame in FrameList)
         {
-            elapsedMs -= frame.DelayTimeMs;
-            if (elapsedMs <= 0)
+            elapsedTime -= frame.DelayTimeMs;
+            if (elapsedTime <= 0)
             {
                 lastFrame = frame.index;
                 return frame;
