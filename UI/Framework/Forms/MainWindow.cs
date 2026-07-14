@@ -381,6 +381,30 @@ internal sealed partial class MainWindow : Form
             return;
         }
         bool isBacklog = vScrollBar.Value != vScrollBar.Maximum;
+
+        if (e.Button == MouseButtons.XButton1 || e.Button == MouseButtons.XButton2)
+        {
+            if (isBacklog)
+            {
+                vScrollBar.Value = vScrollBar.Maximum;
+                console.RefreshStrings(true);
+                return;
+            }
+
+            string targetText = e.Button == MouseButtons.XButton1
+                ? JSONConfig.User.MouseXButton1ButtonText
+                : JSONConfig.User.MouseXButton2ButtonText;
+            if (console.TryGetCurrentButtonInputByText(targetText, out string input))
+            {
+                changeTextbyMouse = console.IsWaintingOnePhrase;
+                richTextBox1.Text = input;
+                if (console.IsWaintingOnePhrase)
+                    last_inputed = "";
+                PressEnterKey(false, true);
+            }
+            return;
+        }
+
         string str = console.SelectedString;
 
         if (isBacklog)

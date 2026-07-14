@@ -63,8 +63,14 @@ static partial class Preload
                         }
                     }
 
-                    var lines = new List<string>();
                     var n = (byte)'\n';
+                    int lineCount = 1;
+                    foreach (byte value in bytes)
+                    {
+                        if (value == n)
+                            lineCount++;
+                    }
+                    var lines = new List<string>(lineCount);
 
                     foreach (var range in ((ReadOnlySpan<byte>)bytes[..]).Split(n))
                     {

@@ -20,16 +20,15 @@ internal sealed class LabelDictionary
     /// <summary>
     /// 本体。全てのFunctionLabelLineを記録
     /// </summary>
-    ConcurrentDictionary<string, List<FunctionLabelLine>> labelAtDic = new(Config.Config.StrComper);
-    ConcurrentBag<FunctionLabelLine> invalidList = [];
-    ConcurrentDictionary<string, Dictionary<FunctionLabelLine, GotoLabelLine>> labelDollarList = new(Config.Config.StrComper);
+    readonly ConcurrentDictionary<string, List<FunctionLabelLine>> labelAtDic = new(Config.Config.StrComper);
+    readonly ConcurrentBag<FunctionLabelLine> invalidList = [];
+    readonly ConcurrentDictionary<string, ConcurrentDictionary<FunctionLabelLine, GotoLabelLine>> labelDollarList = new(Config.Config.StrComper);
     int count;
 
-    ConcurrentDictionary<string, bool> loadedFileSet = [];
-    int currentFileCount;
-    int totalFileCount;
+    readonly ConcurrentDictionary<string, int> loadedFileSet = new(Config.Config.StrComper);
+    readonly object fileRegistrationLock = new();
 
-    public int Count { get { return count; } }
+    public int Count { get { return Volatile.Read(ref count); } }
 
     /// <summary>
     /// これがfalseである間は式中関数は呼べない
@@ -45,9 +44,12 @@ internal sealed class LabelDictionary
         if (point.IsError)
             return null;
         List<FunctionLabelLine> labelList = value;
-        if (labelList.Count <= 1)
-            return null;
-        return labelList[0];
+        lock (labelList)
+        {
+            if (labelList.Count <= 1)
+                return null;
+            return labelList[0];
+        }
     }
 
 
@@ -130,16 +132,10 @@ internal sealed class LabelDictionary
         eventLabelDic.Clear();
         noneventLabelDic.Clear();
 
-        foreach ((_, var value) in labelAtDic)
-            value.Clear();
         labelAtDic.Clear();
-        foreach ((_, var value) in labelDollarList)
-            value.Clear();
         labelDollarList.Clear();
         loadedFileSet.Clear();
         invalidList.Clear();
-        currentFileCount = 0;
-        totalFileCount = 0;
     }
 
     //ファイル名に基づき、そのファイルに紐づくラベルを削除する
@@ -148,9 +144,11 @@ internal sealed class LabelDictionary
         List<string> removeFunctions = [];
         foreach (var (functionName, functions) in labelAtDic)
         {
-            var removeCount = functions.RemoveAll(line => IsMatch(fname, line));
+            int removeCount;
+            lock (functions)
+                removeCount = functions.RemoveAll(line => IsMatch(fname, line));
 
-            count -= removeCount;
+            Interlocked.Add(ref count, -removeCount);
 
             if (functions.Count == 0)
                 removeFunctions.Add(functionName);
@@ -172,42 +170,36 @@ internal sealed class LabelDictionary
     /// <summary>
     /// ファイルの重複をチェックし、重複していたらすでにあるそのファイルに関連するラベルを消去する
     /// </summary>
-    public void RemoveDuplicationFileData(string filename)
+    public int RegisterFile(string filename, int fileIndex)
     {
-        if (loadedFileSet.ContainsKey(filename))
+        lock (fileRegistrationLock)
         {
-            currentFileCount = loadedFileSet.Count;
-            RemoveLabelWithPath(filename);
-            return;
+            if (loadedFileSet.TryGetValue(filename, out int registeredIndex))
+            {
+                RemoveLabelWithPath(filename);
+                return registeredIndex;
+            }
+            loadedFileSet.TryAdd(filename, fileIndex);
+            return fileIndex;
         }
-        totalFileCount++;
-        currentFileCount = totalFileCount;
-        loadedFileSet.TryAdd(filename, true);
     }
-    public void AddLabel(FunctionLabelLine point)
+    public void AddLabel(FunctionLabelLine point, int fileIndex)
     {
-        point.FileIndex = currentFileCount;
-        count++;
+        point.FileIndex = fileIndex;
+        Interlocked.Increment(ref count);
         string id = point.LabelName;
-        if (labelAtDic.TryGetValue(id, out List<FunctionLabelLine> labelList))
-        {
+        if (!labelAtDic.TryGetValue(id, out List<FunctionLabelLine> labelList))
+            labelList = labelAtDic.GetOrAdd(id, static _ => []);
+        lock (labelList)
             labelList.Add(point);
-        }
-        else
-        {
-            labelAtDic.TryAdd(id, [point]);
-        }
     }
 
     public bool AddLabelDollar(GotoLabelLine point)
     {
         string id = point.LabelName;
-        if (labelDollarList.TryGetValue(id, out var label))
-        {
-            return label.TryAdd(point.ParentLabelLine, point);
-        }
-        labelDollarList.TryAdd(id, new() { { point.ParentLabelLine, point }, });
-        return true;
+        if (!labelDollarList.TryGetValue(id, out var labels))
+            labels = labelDollarList.GetOrAdd(id, static _ => new());
+        return labels.TryAdd(point.ParentLabelLine, point);
     }
 
     #endregion

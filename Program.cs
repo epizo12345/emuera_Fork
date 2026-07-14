@@ -70,6 +70,12 @@ static partial class Program
         debugModeOption.AddAlias("-DEBUG");
         rootCommand.AddOption(debugModeOption);
 
+        var startupTestOption = new Option<bool>(
+            name: "--StartupTest",
+            description: "起動完了後に画面ログをstartup-test.logへ保存して自動終了する"
+        );
+        rootCommand.AddOption(startupTestOption);
+
         var filesArg = new Argument<string[]>(
             LocalizationManager.Parameters.HelpfilesArg
         )
@@ -87,6 +93,7 @@ static partial class Program
 
         var debugMode = result.GetValueForOption(debugModeOption);
         DebugMode = debugMode;
+        StartupTestMode = result.GetValueForOption(startupTestOption);
 
         var fileArgs = result.GetValueForArgument(filesArg);
         var analysisRequestPaths = fileArgs;
@@ -221,6 +228,8 @@ static partial class Program
     public static List<string> AnalysisFiles = [];
 
     public static bool DebugMode { get; private set; }
+
+    public static bool StartupTestMode { get; private set; }
 
     static Program()
     {

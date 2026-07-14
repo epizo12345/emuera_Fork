@@ -368,6 +368,38 @@ internal sealed partial class EmueraConsole : IDisposable
         }
     }
 
+    internal bool TryGetCurrentButtonInputByText(string targetTexts, out string input)
+    {
+        input = null;
+        if (state != ConsoleState.WaitInput || !inputReq.NeedValue || string.IsNullOrWhiteSpace(targetTexts))
+            return false;
+
+        string[] targets = targetTexts.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (targets.Length == 0)
+            return false;
+
+        for (int lineIndex = displayLineList.Count - 1; lineIndex >= 0; lineIndex--)
+        {
+            ConsoleButtonString[] buttons = displayLineList[lineIndex].Buttons;
+            for (int buttonIndex = buttons.Length - 1; buttonIndex >= 0; buttonIndex--)
+            {
+                ConsoleButtonString button = buttons[buttonIndex];
+                if (button == null || !button.IsButton || button.Generation != lastButtonGeneration)
+                    continue;
+                if (inputReq.InputType == InputType.IntValue && !button.IsInteger)
+                    continue;
+
+                string buttonText = button.ToString();
+                if (!Array.Exists(targets, target => buttonText.Contains(target, StringComparison.OrdinalIgnoreCase)))
+                    continue;
+
+                input = inputReq.InputType == InputType.IntValue ? button.Input.ToString() : button.Inputs;
+                return true;
+            }
+        }
+        return false;
+    }
+
     public async Task Initialize()
     {
         var boottimeDebugStopwatch = Stopwatch.StartNew();
@@ -384,7 +416,9 @@ internal sealed partial class EmueraConsole : IDisposable
 
         logWriter.WriteLine("File:Preload:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
 
+        logWriter.WriteLine("Font:Load:Start " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
         FontFactory.LoadFontFolder();
+        logWriter.WriteLine("Font:Load:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
 
         GlobalStatic.Console = this;
         // GlobalStatic.MainWindow = window;
@@ -396,21 +430,49 @@ internal sealed partial class EmueraConsole : IDisposable
             window.Focus();
         }
         ClearDisplay();
+        logWriter.WriteLine("Process:Initialize:Start " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
         if (!await process.Initialize(logWriter))
         {
             state = ConsoleState.Error;
             OutputLog(null);
             PrintFlush(false);
             RefreshStrings(true);
+            if (Program.StartupTestMode)
+                window.BeginInvoke(window.Close);
             return;
         }
+        logWriter.WriteLine("Process:Initialize:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
+        logWriter.WriteLine("MacroNames:Start " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
         window.SetMacroGroupNames();
-        RunEmueraProgram("");
+        logWriter.WriteLine("MacroNames:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
+        logWriter.WriteLine("RunProgram:Start " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
+        suppressInitialPaint = true;
+        try
+        {
+            RunEmueraProgram("");
+        }
+        finally
+        {
+            suppressInitialPaint = false;
+        }
+        logWriter.WriteLine("RunProgram:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
+        logWriter.WriteLine("RunProgram:Lines " + process.ExecutedLineCount);
+        logWriter.WriteLine("Refresh:Start " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
         RefreshStrings(true);
+        logWriter.WriteLine("Refresh:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
 
+        logWriter.WriteLine("Preload:Clear:Start " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
         Preload.Clear();
+        logWriter.WriteLine("Preload:Clear:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
 
         logWriter.WriteLine("Init:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
+        logWriter.Flush();
+
+        if (Program.StartupTestMode)
+        {
+            OutputLog(Program.ExeDir + "startup-test.log");
+            window.BeginInvoke(window.Close);
+        }
 
         Debug.WriteLine($"GC:{GC.GetTotalMemory(true):N0}");
         Debug.WriteLine($"WorkingSet:{Environment.WorkingSet:N0}");
@@ -1225,6 +1287,7 @@ internal sealed partial class EmueraConsole : IDisposable
     Stopwatch _frameDeltaTimer = Stopwatch.StartNew();
     uint msPerFrame = 1000 / 60;//60FPS
     ConsoleRedraw redraw = ConsoleRedraw.Normal;
+    bool suppressInitialPaint;
     public ConsoleRedraw Redraw { get { return redraw; } }
     public void SetRedraw(Int64 i)
     {
@@ -1266,6 +1329,8 @@ internal sealed partial class EmueraConsole : IDisposable
     /// </summary>
     public void RefreshStrings(bool force_Paint)
     {
+        if (suppressInitialPaint)
+            return;
         bool isBackLog = window.ScrollBar.Value != window.ScrollBar.Maximum;
         //ログ表示はREDRAWの設定に関係なく行うようにする
         if ((redraw == ConsoleRedraw.None) && (!force_Paint) && (!isBackLog))

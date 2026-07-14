@@ -42,6 +42,7 @@ internal sealed partial class Process(EmueraConsole view)
     /// </summary>
     private VariableEvaluator vEvaluator;
     public VariableEvaluator VEvaluator { get { return vEvaluator; } }
+    public int ExecutedLineCount => state?.lineCount ?? 0;
     private ExpressionMediator exm;
     private GameBase gamebase;
     readonly EmueraConsole console = view;
@@ -214,6 +215,9 @@ internal sealed partial class Process(EmueraConsole view)
                 noError = await loader.LoadErbList(Program.AnalysisFiles, labelDic);
             else
                 noError = await loader.LoadErbDir(Program.ErbDir, Config.DisplayReport, labelDic);
+            logWriter.WriteLine($"Proc:Init:ERB:PrimaryParse {loader.PrimaryParseMilliseconds}ms");
+            logWriter.WriteLine($"Proc:Init:ERB:LabelSetup {loader.LabelSetupMilliseconds}ms");
+            logWriter.WriteLine($"Proc:Init:ERB:ScriptParse {loader.ScriptParseMilliseconds}ms");
             logWriter.WriteLine($"Proc:Init:ERB:End {stopWatch.ElapsedMilliseconds}ms");
 
             SQL.SetUpTempDB();
@@ -512,7 +516,28 @@ internal sealed partial class Process(EmueraConsole view)
 					return state.Scope;
 				}
 		*/
-    public LogicalLine scaningLine;
+    [ThreadStatic]
+    private static LogicalLine parallelScanningLine;
+    private LogicalLine sequentialScanningLine;
+    private volatile bool useThreadLocalScanningLine;
+    public LogicalLine scaningLine
+    {
+        get => useThreadLocalScanningLine ? parallelScanningLine : sequentialScanningLine;
+        set
+        {
+            if (useThreadLocalScanningLine)
+                parallelScanningLine = value;
+            else
+                sequentialScanningLine = value;
+        }
+    }
+
+    internal void SetParallelScanning(bool enabled)
+    {
+        useThreadLocalScanningLine = enabled;
+        if (!enabled)
+            parallelScanningLine = null;
+    }
     internal LogicalLine GetScaningLine()
     {
         if (scaningLine != null)

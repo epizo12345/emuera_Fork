@@ -39,6 +39,11 @@ sealed class JSONUserConfigData
 {
     public int[] WatchListWidth { get; set; } = [-2, -2];
 
+    //マウスの「戻る」「進む」ボタンで、現在の選択肢からこの文言を含むボタンを押す。
+    //複数候補は | で区切る。空文字にすると無効。
+    public string MouseXButton1ButtonText { get; set; } = "前のページ|前ページ";
+    public string MouseXButton2ButtonText { get; set; } = "次のページ|次ページ|後ろのページ";
+
     public bool CBUseClipboard { get; set; }
     public bool CBIgnoreTags { get; set; } = true;
     public string CBReplaceTags { get; set; } = ".";

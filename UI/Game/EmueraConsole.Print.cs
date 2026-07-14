@@ -39,8 +39,11 @@ internal sealed partial class EmueraConsole : IDisposable
         logicalLineCount = 0;
         lineNo = 0;
         lastDrawnLineNo = -1;
-        verticalScrollBarUpdate();
-        window.MainPicBox.Refresh();//OnPaint発行
+        if (!suppressInitialPaint)
+        {
+            verticalScrollBarUpdate();
+            window.MainPicBox.Refresh();//OnPaint発行
+        }
     }
 
 
@@ -95,6 +98,8 @@ internal sealed partial class EmueraConsole : IDisposable
     {
         this.bgColor = color.ToSKColor();
         forceTextBoxColor = true;
+        if (suppressInitialPaint)
+            return;
         //REDRAWされない場合はTextBoxの色は変えずにフラグだけ立てる
         //最初の再描画時に現在の背景色に合わせる
         if (redraw == ConsoleRedraw.None && window.ScrollBar.Value == window.ScrollBar.Maximum)
@@ -626,16 +631,23 @@ internal sealed partial class EmueraConsole : IDisposable
 
     public string getStBar(string barStr)
     {
-        var builder = new StringBuilder();
-        builder.Append(barStr);
-        int width = 0;
+        int targetWidth = Config.DrawableWidth;
         var font = Config.DefaultFont;
-        while (width < Config.DrawableWidth)
+        int unitWidth = StringMeasure.GetDisplayLength(barStr, font);
+        var builder = new StringBuilder();
+
+        // 1文字ずつ追加して文字列全体を毎回測ると、横幅に対して二次的に遅くなる。
+        // まず必要数を見積もり、フォントの字間差だけを下のループで正確に補正する。
+        int repeatCount = unitWidth > 0 ? Math.Max(1, targetWidth / unitWidth + 1) : 1;
+        builder.AppendJoin(null, Enumerable.Repeat(barStr, repeatCount));
+        int width = StringMeasure.GetDisplayLength(builder.ToString(), font);
+
+        while (width < targetWidth)
         {//境界を越えるまで一文字ずつ増やす
             builder.Append(barStr);
             width = StringMeasure.GetDisplayLength(builder.ToString(), font);
         }
-        while (width > Config.DrawableWidth)
+        while (width > targetWidth)
         {//境界を越えたら、今度は超えなくなるまで一文字ずつ減らす（barStrに複数字の文字列がきた場合に対応するため）
             builder.Remove(builder.Length - 1, 1);
             width = StringMeasure.GetDisplayLength(builder.ToString(), font);

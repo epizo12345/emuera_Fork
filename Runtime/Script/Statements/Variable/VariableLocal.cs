@@ -1,4 +1,5 @@
 ﻿using MinorShift.Emuera.GameData.Variable;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace MinorShift.Emuera.Runtime.Script.Statements.Variable;
@@ -17,7 +18,7 @@ internal sealed class VariableLocal
     VariableCode varCode;
     //VariableData varData;
     CreateLocalVariableToken creater;
-    Dictionary<string, LocalVariableToken> localVarTokens = [];
+    readonly ConcurrentDictionary<string, LocalVariableToken> localVarTokens = [];
     public LocalVariableToken GetExistLocalVariableToken(string subKey)
     {
         if (localVarTokens.TryGetValue(subKey, out LocalVariableToken ret))
@@ -32,7 +33,6 @@ internal sealed class VariableLocal
 
     public LocalVariableToken GetNewLocalVariableToken(string subKey, FunctionLabelLine func)
     {
-        LocalVariableToken ret = null;
         int newSize = 0;
         if (varCode == VariableCode.LOCAL)
             newSize = func.LocalLength;
@@ -42,6 +42,13 @@ internal sealed class VariableLocal
             newSize = func.ArgLength;
         else if (varCode == VariableCode.ARGS)
             newSize = func.ArgsLength;
+
+        // 同じ関数のローカル変数は解析中に何度も参照される。
+        // 既存トークンがあれば、同一内容のトークンを生成して捨てる処理を避ける。
+        if (newSize >= 0 && localVarTokens.TryGetValue(subKey, out LocalVariableToken existing))
+            return existing;
+
+        LocalVariableToken ret;
         if (newSize > 0)
         {
             if (newSize < size && (varCode == VariableCode.ARG || varCode == VariableCode.ARGS))
@@ -61,10 +68,12 @@ internal sealed class VariableLocal
                 else
                     ParserMediator.Warn("システム関数" + func.LabelName + "中で\"" + varCode + "\"が使われています(関数の引数以外の用途に使うことは推奨されません。代わりに#DIMの使用を検討してください)", line, 1, false, false);
             }
+            // 警告は従来どおり参照ごとに出すが、トークン自体は再生成しない。
+            if (localVarTokens.TryGetValue(subKey, out existing))
+                return existing;
             //throw new CodeEE("この関数に引数変数\"" + varCode + "\"は定義されていません");
         }
-        localVarTokens.Add(subKey, ret);
-        return ret;
+        return localVarTokens.GetOrAdd(subKey, ret);
     }
 
     public void ResizeLocalVariableToken(string subKey, int newSize)
@@ -84,7 +93,7 @@ internal sealed class VariableLocal
                 ret = creater(varCode, subKey, size);
             else
                 return;
-            localVarTokens.Add(subKey, ret);
+            localVarTokens.TryAdd(subKey, ret);
         }
     }
 
