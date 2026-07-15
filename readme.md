@@ -1,13 +1,13 @@
 # Emuera.NET 
-著作者：VVII, MinorShift, 妊）|дﾟ)の中の人,epizo
-頒布者：epizo
+著作者：VVII, MinorShift, 妊）|дﾟ)の中の人,epizo  
+頒布者：epizo  
 連絡先：eraMegaten Discordサーバー（https://discord.gg/yQRYkNMuWr） epizo 宛  
 
 # 前書き
-https://gitlab.com/alnatiyan/EmueraDotNet/-/tree/BugFix_Test?ref_type=heads
-を独自にForkしたバージョンです。
-ChatGPTsolを使用して修正しているため動作は保証できません。
-個人用に作成しているため、使用は自己責任でお願いします。
+https://gitlab.com/alnatiyan/EmueraDotNet/-/tree/BugFix_Test?ref_type=heads  
+を独自にForkしたバージョンです。  
+ChatGPTsolを使用して修正しているため動作は保証できません。  
+個人用に作成しているため、使用は自己責任でお願いします。  
 
 # 動作環境
 .NET 9環境が必要です。
