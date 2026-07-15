@@ -13,6 +13,10 @@ namespace MinorShift.Emuera.Runtime.Script.Parser;
 
 internal static class LogicalLineParser
 {
+    // [Emuera改修:WARN-03]
+    // OnlyLabelは複数ERBから同時に#ONLY等を登録するため、並列対応Dictionaryを受け取る。
+    // 普通のDictionary/Listを共有すると登録途中の内容を別スレッドが誤読することがある。
+    // 参照: プロジェクト資料/06_コード案内.md
     public static bool ParseSharpLine(FunctionLabelLine label, CharStream st, ScriptPosition? position, ConcurrentDictionary<string, byte> OnlyLabel)
     {
         st.ShiftNext();//'#'を飛ばす

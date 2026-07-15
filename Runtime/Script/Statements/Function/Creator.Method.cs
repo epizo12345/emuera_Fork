@@ -2306,7 +2306,12 @@ internal static partial class FunctionMethodCreator
             {
                 throw new CodeEE("第2引数が正規表現として不正です：" + e.Message);
             }
-            return reg.Matches(arguments[0].GetStrValue(exm)).Count;
+            // [Emuera改修:HOT-01]
+            // Matches(...).Countは一致結果のオブジェクトを全部作る。
+            // Count(...)は個数だけを数えるため、ERBのSTRCOUNTを大量に呼ぶゲームでごみを減らせる。
+            // 正規表現の判定内容と返す件数は同じ。
+            // 参照: プロジェクト資料/06_コード案内.md
+            return reg.Count(arguments[0].GetStrValue(exm));
         }
     }
 

@@ -39,10 +39,13 @@ sealed class JSONUserConfigData
 {
     public int[] WatchListWidth { get; set; } = [-2, -2];
 
-    //マウスの「戻る」「進む」ボタンで、現在の選択肢からこの文言を含むボタンを押す。
-    //複数候補は | で区切る。空文字にすると無効。
-    public string MouseXButton1ButtonText { get; set; } = "前のページ|前ページ";
-    public string MouseXButton2ButtonText { get; set; } = "次のページ|次ページ|後ろのページ";
+    // [Emuera改修:MOUSE-01]
+    // マウスの「戻る」「進む」ボタンで、現在の選択肢からこの文言を含むボタンを押す。
+    // 例: "前のページ|1007|PREV" は、どれかの文言が見つかればよいという意味。
+    // 複数候補は | で区切る。空文字にすると無効。ゲーム側ERBの変更は不要。
+    // 参照: プロジェクト資料/06_コード案内.md
+    public string MouseXButton1ButtonText { get; set; } = "前のページ|前ページ|1007|PREV";
+    public string MouseXButton2ButtonText { get; set; } = "次のページ|次ページ|後ろのページ|1009|NEXT";
 
     public bool CBUseClipboard { get; set; }
     public bool CBIgnoreTags { get; set; } = true;

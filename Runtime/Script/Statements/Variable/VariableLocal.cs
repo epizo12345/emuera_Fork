@@ -18,6 +18,10 @@ internal sealed class VariableLocal
     VariableCode varCode;
     //VariableData varData;
     CreateLocalVariableToken creater;
+    // [Emuera改修:WARN-05]
+    // 並列ERB解析で同じ関数のLOCAL/ARG情報を同時に参照しても壊れない入れ物。
+    // 既存トークンを再利用するため、同じ内容を何度も作って捨てる処理も減る。
+    // 参照: プロジェクト資料/06_コード案内.md
     readonly ConcurrentDictionary<string, LocalVariableToken> localVarTokens = [];
     public LocalVariableToken GetExistLocalVariableToken(string subKey)
     {

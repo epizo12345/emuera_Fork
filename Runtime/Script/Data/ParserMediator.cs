@@ -121,6 +121,10 @@ internal static partial class ParserMediator
         //				console.PrintWarning(str, line.Position, level);
     }
 
+    // [Emuera改修:WARN-02]
+    // 並列解析中は複数スレッドから警告が届く。ConcurrentQueueなら警告を欠落・破損させず、
+    // 解析後に画面側の1か所から順に取り出せる。警告を隠すための変更ではない。
+    // 参照: プロジェクト資料/06_コード案内.md
     private static readonly ConcurrentQueue<ParserWarning> warningList = [];
 
     public static bool HasWarning { get { return !warningList.IsEmpty; } }

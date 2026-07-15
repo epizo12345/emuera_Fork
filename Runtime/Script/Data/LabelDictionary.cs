@@ -20,6 +20,11 @@ internal sealed class LabelDictionary
     /// <summary>
     /// 本体。全てのFunctionLabelLineを記録
     /// </summary>
+    // [Emuera改修:WARN-01]
+    // 複数のERBを同時に解析すると、複数の作業スレッドがここへ同時に登録する。
+    // 普通のDictionary/Listのままだと「あるはずのラベルが一瞬見えない」偽警告が出るため、
+    // 外側は並列対応の入れ物にし、内側のListを変更するときは lock で一人ずつ処理する。
+    // 参照: プロジェクト資料/06_コード案内.md
     readonly ConcurrentDictionary<string, List<FunctionLabelLine>> labelAtDic = new(Config.Config.StrComper);
     readonly ConcurrentBag<FunctionLabelLine> invalidList = [];
     readonly ConcurrentDictionary<string, ConcurrentDictionary<FunctionLabelLine, GotoLabelLine>> labelDollarList = new(Config.Config.StrComper);
@@ -172,6 +177,7 @@ internal sealed class LabelDictionary
     /// </summary>
     public int RegisterFile(string filename, int fileIndex)
     {
+        // 同じファイルが同時に登録・再読込されると順序が壊れるので、ここだけ一人ずつ行う。
         lock (fileRegistrationLock)
         {
             if (loadedFileSet.TryGetValue(filename, out int registeredIndex))
@@ -186,10 +192,12 @@ internal sealed class LabelDictionary
     public void AddLabel(FunctionLabelLine point, int fileIndex)
     {
         point.FileIndex = fileIndex;
+        // count++ は同時実行で加算を取りこぼすため、Interlockedで確実に1増やす。
         Interlocked.Increment(ref count);
         string id = point.LabelName;
         if (!labelAtDic.TryGetValue(id, out List<FunctionLabelLine> labelList))
             labelList = labelAtDic.GetOrAdd(id, static _ => []);
+        // ConcurrentDictionaryの中身であるList自体は並列対応ではないため、追加時は保護する。
         lock (labelList)
             labelList.Add(point);
     }

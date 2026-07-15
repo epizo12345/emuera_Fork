@@ -32,12 +32,17 @@ internal sealed class ErbLoader
     readonly Process parentProcess;
     readonly ExpressionMediator exm;
     readonly EmueraConsole output;
+    // [Emuera改修:WARN-06]
+    // 並列解析中に「同じファイルの未定義関数警告はまとめる」という情報を共有するための集合。
+    // 値のbyteには意味がなく、キーが存在するかだけを見る。
+    // 参照: プロジェクト資料/06_コード案内.md
     readonly ConcurrentDictionary<string, byte> ignoredFNFWarningFiles = new(StringComparer.OrdinalIgnoreCase);
     int ignoredFNFWarningCount;
 
     int enabledLineCount;
     LabelDictionary labelDic;
 
+    // 複数スレッドから更新するため、読み書きはInterlocked/Volatile経由で行う。
     int hasError;
     public long EnumerationMilliseconds { get; private set; }
     public long PrimaryParseMilliseconds { get; private set; }
@@ -69,6 +74,10 @@ internal sealed class ErbLoader
 
             ConcurrentQueue<string> logQueue = [];
 
+            // [Emuera改修:START-01]
+            // ERBは別々のファイルなので複数CPUで同時に読む。ただし完了順は毎回変わるため、
+            // 先に元の列挙順番号(FileIndex)を付け、同名関数の優先順が変わらないようにする。
+            // 参照: プロジェクト資料/06_コード案内.md
             var indexedErbFiles = erbFiles.Select((erb, index) => (Erb: erb, FileIndex: index + 1)).ToArray();
             var task = Task.Run(() => Parallel.ForEach(indexedErbFiles, item =>
             {
@@ -409,6 +418,7 @@ internal sealed class ErbLoader
                     continue;
                 }
                 if (!LogicalLineParser.ParseSharpLine(funcLine, st, position, isOnlyEvent))
+                    // 並列中の単純な hasError = 1 は競合し得るので、確実に1を書き込む。
                     Interlocked.Exchange(ref hasError, 1);
                 continue;
             }
@@ -536,6 +546,9 @@ internal sealed class ErbLoader
         }
         else
         {
+            // [Emuera改修:START-02]
+            // 各関数の「引数定義」は独立しているため同時解析できる。
+            // 解析中行はProcess側でスレッド別に保持し、偽の行番号・偽警告を防ぐ。
             parentProcess.SetParallelScanning(true);
             try
             {
@@ -723,6 +736,9 @@ internal sealed class ErbLoader
         int labelDepth = -1;
         List<FunctionLabelLine> labelList = labelDic.GetAllLabels(true);
         HashSet<FunctionLabelLine> parsedLabels = [];
+        // [Emuera改修:START-03]
+        // CALLFORM系があるゲームは、到達判定だけでは呼び先を絞れないため残りも解析する。
+        // その大量の残り関数だけを最後に並列解析し、通常の評価順や実行順は変えない。
         bool parseRemainingInParallel = false;
         while (true)
         {
@@ -767,6 +783,7 @@ internal sealed class ErbLoader
             List<FunctionLabelLine> remainingLabels = labelList.Where(label => !parsedLabels.Contains(label)).ToList();
             if (parseRemainingInParallel)
             {
+                // この並列化は起動時の構文解析だけ。ゲーム実行中の関数順序は変更しない。
                 parentProcess.SetParallelScanning(true);
                 try
                 {

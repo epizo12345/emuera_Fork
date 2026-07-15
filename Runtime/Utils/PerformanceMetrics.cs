@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -9,8 +10,12 @@ using System.Threading;
 namespace MinorShift.Emuera.Runtime.Utils;
 
 /// <summary>
-/// --BenchmarkLog 指定時のみ有効になる起動・マクロ計測。
-/// 通常実行ではファイルを作成せず、高頻度カウンタも更新しない。
+/// [Emuera改修:MEASURE-01]
+/// 起動やマクロの「どこに時間が掛かったか」を調べる開発用の計測器。
+/// --BenchmarkLog 指定時のみJSON Linesへ結果を書き、通常実行ではファイルを作成しない。
+/// PERFORMANCE_METRICSを付けない通常版では高頻度メソッドがコンパイル時に呼出側から消えるため、
+/// プレイヤーが使うEXEへ細かなStopwatch計測の負荷を持ち込まない。
+/// 参照: プロジェクト資料/06_コード案内.md
 /// </summary>
 internal static class PerformanceMetrics
 {
@@ -46,6 +51,8 @@ internal static class PerformanceMetrics
     private static long scrollTicks;
     private static long loopEventTicks;
     private static long refreshEventTicks;
+    private static long awaitTicks;
+    private static long awaitRequestedMilliseconds;
     private static long randomTraceHash;
     private static int expandedInputCount;
     private static int inputDispatchCount;
@@ -58,6 +65,7 @@ internal static class PerformanceMetrics
     private static int displayBuildCount;
     private static int measureTextCount;
     private static int randomCallCount;
+    private static int awaitCount;
 
     internal static bool Enabled => Volatile.Read(ref logPath) != null;
     internal static bool MacroActive => Volatile.Read(ref macroActive) != 0;
@@ -131,6 +139,8 @@ internal static class PerformanceMetrics
         scrollTicks = 0;
         loopEventTicks = 0;
         refreshEventTicks = 0;
+        awaitTicks = 0;
+        awaitRequestedMilliseconds = 0;
         randomTraceHash = unchecked((long)1469598103934665603UL);
         expandedInputCount = 0;
         inputDispatchCount = 0;
@@ -143,6 +153,7 @@ internal static class PerformanceMetrics
         displayBuildCount = 0;
         measureTextCount = 0;
         randomCallCount = 0;
+        awaitCount = 0;
         allocatedBytesBefore = GC.GetTotalAllocatedBytes(false);
         managedBytesBefore = GC.GetTotalMemory(false);
         workingSetBefore = Environment.WorkingSet;
@@ -180,6 +191,8 @@ internal static class PerformanceMetrics
             PaintMilliseconds = TicksToMilliseconds(paintTicks),
             ScrollMilliseconds = TicksToMilliseconds(scrollTicks),
             UiEventMilliseconds = TicksToMilliseconds(loopEventTicks + refreshEventTicks),
+            AwaitMilliseconds = TicksToMilliseconds(awaitTicks),
+            AwaitRequestedMilliseconds = awaitRequestedMilliseconds,
             ExpandedInputCount = expandedInputCount,
             InputDispatchCount = inputDispatchCount,
             ErbRunCount = erbRunCount,
@@ -191,6 +204,7 @@ internal static class PerformanceMetrics
             DisplayBuildCount = displayBuildCount,
             MeasureTextCount = measureTextCount,
             RandomCallCount = randomCallCount,
+            AwaitCount = awaitCount,
             RandomTraceHash = unchecked((ulong)randomTraceHash).ToString("X16"),
             AllocatedBytes = allocatedBytesAfter - allocatedBytesBefore,
             ManagedBytesBefore = managedBytesBefore,
@@ -213,60 +227,81 @@ internal static class PerformanceMetrics
         WriteRecord(result);
     }
 
-    internal static long StartTiming() => MacroActive ? Stopwatch.GetTimestamp() : 0;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static long StartTiming()
+    {
+#if PERFORMANCE_METRICS
+        return MacroActive ? Stopwatch.GetTimestamp() : 0;
+#else
+        return 0;
+#endif
+    }
 
+    [Conditional("PERFORMANCE_METRICS")]
     internal static void AddExpansion(long start) => AddTicks(ref expansionTicks, start);
+    [Conditional("PERFORMANCE_METRICS")]
     internal static void AddInputHandoff(long start) => AddTicks(ref inputHandoffTicks, start);
+    [Conditional("PERFORMANCE_METRICS")]
     internal static void AddInputLoop(long start) => AddTicks(ref inputLoopTicks, start);
+    [Conditional("PERFORMANCE_METRICS")]
     internal static void AddErb(long start)
     {
         AddTicks(ref erbTicks, start);
         if (start != 0)
             Interlocked.Increment(ref erbRunCount);
     }
+    [Conditional("PERFORMANCE_METRICS")]
     internal static void AddStringGeneration(long start)
     {
         AddTicks(ref strFormTicks, start);
         if (start != 0)
             Interlocked.Increment(ref strFormCount);
     }
+    [Conditional("PERFORMANCE_METRICS")]
     internal static void AddDisplayBuild(long start)
     {
         AddTicks(ref displayBuildTicks, start);
         if (start != 0)
             Interlocked.Increment(ref displayBuildCount);
     }
+    [Conditional("PERFORMANCE_METRICS")]
     internal static void AddDisplayAdd(long start) => AddTicks(ref displayAddTicks, start);
+    [Conditional("PERFORMANCE_METRICS")]
     internal static void AddMeasureText(long start)
     {
         AddTicks(ref measureTextTicks, start);
         if (start != 0)
             Interlocked.Increment(ref measureTextCount);
     }
+    [Conditional("PERFORMANCE_METRICS")]
     internal static void AddRefresh(long start)
     {
         AddTicks(ref refreshTicks, start);
         if (start != 0)
             Interlocked.Increment(ref refreshCount);
     }
+    [Conditional("PERFORMANCE_METRICS")]
     internal static void AddPaint(long start)
     {
         AddTicks(ref paintTicks, start);
         if (start != 0)
             Interlocked.Increment(ref paintCount);
     }
+    [Conditional("PERFORMANCE_METRICS")]
     internal static void AddScroll(long start)
     {
         AddTicks(ref scrollTicks, start);
         if (start != 0)
             Interlocked.Increment(ref scrollUpdateCount);
     }
+    [Conditional("PERFORMANCE_METRICS")]
     internal static void AddLoopEvent(long start)
     {
         AddTicks(ref loopEventTicks, start);
         if (start != 0)
             Interlocked.Increment(ref uiEventPumpCount);
     }
+    [Conditional("PERFORMANCE_METRICS")]
     internal static void AddRefreshEvent(long start)
     {
         AddTicks(ref refreshEventTicks, start);
@@ -274,13 +309,26 @@ internal static class PerformanceMetrics
             Interlocked.Increment(ref uiEventPumpCount);
     }
 
+    [Conditional("PERFORMANCE_METRICS")]
+    internal static void AddAwait(int requestedMilliseconds, long start)
+    {
+        if (!MacroActive)
+            return;
+        AddTicks(ref awaitTicks, start);
+        Interlocked.Add(ref awaitRequestedMilliseconds, requestedMilliseconds);
+        Interlocked.Increment(ref awaitCount);
+    }
+
+    [Conditional("PERFORMANCE_METRICS")]
     internal static void SetExpandedInputCount(int count) => expandedInputCount = count;
+    [Conditional("PERFORMANCE_METRICS")]
     internal static void RecordInputDispatch()
     {
         if (MacroActive)
             Interlocked.Increment(ref inputDispatchCount);
     }
 
+    [Conditional("PERFORMANCE_METRICS")]
     internal static void RecordRandom(long maximum, long value)
     {
         if (!MacroActive)
@@ -338,6 +386,8 @@ internal sealed class MacroResult
     public double PaintMilliseconds { get; set; }
     public double ScrollMilliseconds { get; set; }
     public double UiEventMilliseconds { get; set; }
+    public double AwaitMilliseconds { get; set; }
+    public long AwaitRequestedMilliseconds { get; set; }
     public int ExpandedInputCount { get; set; }
     public int InputDispatchCount { get; set; }
     public int ErbRunCount { get; set; }
@@ -349,6 +399,7 @@ internal sealed class MacroResult
     public int DisplayBuildCount { get; set; }
     public int MeasureTextCount { get; set; }
     public int RandomCallCount { get; set; }
+    public int AwaitCount { get; set; }
     public string RandomTraceHash { get; set; }
     public long AllocatedBytes { get; set; }
     public long ManagedBytesBefore { get; set; }

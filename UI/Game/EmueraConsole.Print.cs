@@ -40,6 +40,8 @@ internal sealed partial class EmueraConsole : IDisposable
         logicalLineCount = 0;
         lineNo = 0;
         lastDrawnLineNo = -1;
+        // [Emuera改修:START-06]
+        // 起動初期の描画を抑えている間はデータだけ消去し、重い画面更新は最後にまとめる。
         if (!suppressInitialPaint)
         {
             verticalScrollBarUpdate();
@@ -154,6 +156,10 @@ internal sealed partial class EmueraConsole : IDisposable
     Int64 logicalLineCount;
     public long LineCount { get { return logicalLineCount; } }
 
+    // [Emuera改修:MEASURE-05]
+    // 表示行をSHA-256にし、性能変更の前後で最終表示が変わっていないか調べる。
+    // 画面内容を書き換える処理ではなく、計測終了時に読むだけ。
+    // 参照: プロジェクト資料/06_コード案内.md
     internal (string Hash, int LineCount) GetBenchmarkDisplayState()
     {
         StringBuilder builder = new();
@@ -165,6 +171,7 @@ internal sealed partial class EmueraConsole : IDisposable
 
     private void addRangeDisplayLine(ConsoleDisplayLine[] lineList)
     {
+        // [Emuera改修:MEASURE-02] 表示行追加に掛かった時間を計測版だけで記録する。
         long displayAddStart = PerformanceMetrics.StartTiming();
         try
         {

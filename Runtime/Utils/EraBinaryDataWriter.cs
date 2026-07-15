@@ -14,6 +14,11 @@ namespace MinorShift.Emuera.Runtime.Utils;
 /// </summary>
 internal sealed class EraBinaryDataWriter : IDisposable
 {
+    // [Emuera改修:MEASURE-03]
+    // FileStream限定からStream全般へ広げ、通常のファイル保存に加えてMemoryStreamへも
+    // 同じ形式を書けるようにした。マクロ比較用の状態ハッシュ作成に利用する。
+    // 既存セーブの書式や書き込み内容は変わらない。
+    // 参照: プロジェクト資料/06_コード案内.md
     public EraBinaryDataWriter(Stream fs)
     {
         writer = new BinaryWriter(fs, Encoding.Unicode);

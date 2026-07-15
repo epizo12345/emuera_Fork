@@ -203,19 +203,23 @@ internal sealed class StrForm
     }
     public string GetString(ExpressionMediator exm)
     {
+        // [Emuera改修:MEASURE-02]
+        // マクロ中の「文字列を作る時間」を測る開発用計測。通常版では呼び出しごと消える。
+        // try/finally は途中でreturnしても計測終了を必ず記録するために使う。
+        // 参照: プロジェクト資料/06_コード案内.md
         long stringStart = PerformanceMetrics.StartTiming();
         try
         {
-        var handler = new DefaultInterpolatedStringHandler(strs.Length + terms.Length, 0);
         if (strs.Length == 1)
             return strs[0];
+        var handler = new DefaultInterpolatedStringHandler(strs.Length + terms.Length, 0);
         for (int i = 0; i < strs.Length - 1; i++)
         {
             handler.AppendLiteral(strs[i]);
             handler.AppendLiteral(terms[i].GetStrValue(exm));
         }
         handler.AppendLiteral(strs[^1]);
-        return handler.ToString();
+        return handler.ToStringAndClear();
         }
         finally
         {

@@ -1,3 +1,8 @@
+# [Emuera改修:TOOLS-02]
+# Emueraを指定回数起動し、「操作可能まで到達したか」「警告が出たか」「何ms掛かったか」を
+# CSVへまとめる自動試験。ゲームのERB・CSV・セーブは変更しない。
+# --StartupTestで起動したEmueraは、必要なログを出したあと自動終了する。
+# 使い方と結果の見方: プロジェクト資料/06_コード案内.md
 param(
     [string]$ExePath = (Join-Path $PSScriptRoot '..\artifacts\publish\Emuera\release_win-x64\Emuera.exe'),
     [string]$GameDir = (Join-Path $PSScriptRoot '..\eramegaten_p\Data'),

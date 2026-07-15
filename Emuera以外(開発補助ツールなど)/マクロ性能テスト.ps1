@@ -1,3 +1,8 @@
+# [Emuera改修:TOOLS-03]
+# save219.savをロードし、(H\e\nd\e\n)*N をWindowsの入力欄へ送って所要時間を測る。
+# N=10は画面確認、100は短い比較、1000は通常比較、5000は耐久試験に使う。
+# InternalMetrics付きではEmuera内部のERB・描画・GC等もJSON Linesへ記録する。
+# ゲームデータやセーブは書き換えない。使い方: プロジェクト資料/06_コード案内.md
 param(
     [string]$ExePath = (Join-Path $PSScriptRoot '..\artifacts\publish\Emuera\release_win-x64\Emuera.exe'),
     [string]$GameDir = (Join-Path $PSScriptRoot '..\eramegaten_p\Data'),
@@ -9,6 +14,10 @@ param(
     [int]$TimeoutSeconds = 300,
     [switch]$InternalMetrics,
     [switch]$CaptureScreenshots,
+    [switch]$CpuProfile,
+    [ValidateRange(10, 300)]
+    [int]$CpuProfileDurationSeconds = 20,
+    [string]$TraceToolPath = (Join-Path $PSScriptRoot '..\artifacts\tools\dotnet-trace.exe'),
     [string]$OutputDir = (Join-Path $PSScriptRoot '..\artifacts\macro-tests')
 )
 
@@ -70,6 +79,7 @@ public static class EmueraBenchmarkNative
 $ExePath = [IO.Path]::GetFullPath($ExePath)
 $GameDir = [IO.Path]::GetFullPath($GameDir)
 $OutputDir = [IO.Path]::GetFullPath($OutputDir)
+$TraceToolPath = [IO.Path]::GetFullPath($TraceToolPath)
 
 if ((Test-Path -LiteralPath (Join-Path $GameDir 'Data\erb') -PathType Container) -and
     -not (Test-Path -LiteralPath (Join-Path $GameDir 'erb') -PathType Container)) {
@@ -78,6 +88,9 @@ if ((Test-Path -LiteralPath (Join-Path $GameDir 'Data\erb') -PathType Container)
 
 if (-not (Test-Path -LiteralPath $ExePath -PathType Leaf)) {
     throw "Emuera.exeが見つかりません: $ExePath"
+}
+if ($CpuProfile -and -not (Test-Path -LiteralPath $TraceToolPath -PathType Leaf)) {
+    throw "dotnet-traceが見つかりません: $TraceToolPath"
 }
 if (-not (Test-Path -LiteralPath (Join-Path $GameDir 'sav\save219.sav') -PathType Leaf)) {
     throw "save219.savが見つかりません: $GameDir"
@@ -126,13 +139,20 @@ function Wait-ForStartupComplete(
     throw "Emueraの操作受付開始（time.logのInit:End）待ちがタイムアウトしました"
 }
 
-function Get-InputHandle([Diagnostics.Process]$Process) {
-    $Process.Refresh()
-    $handle = [EmueraBenchmarkNative]::FindRichEdit($Process.MainWindowHandle)
-    if ($handle -eq [IntPtr]::Zero) {
-        throw "Emueraの入力欄が見つかりません: PID=$($Process.Id)"
+function Wait-ForInputHandle([Diagnostics.Process]$Process, [int]$TimeoutMilliseconds) {
+    $stopwatch = [Diagnostics.Stopwatch]::StartNew()
+    while ($stopwatch.ElapsedMilliseconds -lt $TimeoutMilliseconds) {
+        if ($Process.HasExited) {
+            throw "Emueraが入力欄の準備中に終了しました: ExitCode=$($Process.ExitCode)"
+        }
+        $Process.Refresh()
+        $handle = [EmueraBenchmarkNative]::FindRichEdit($Process.MainWindowHandle)
+        if ($handle -ne [IntPtr]::Zero) {
+            return $handle
+        }
+        Start-Sleep -Milliseconds 25
     }
-    return $handle
+    throw "Emueraの入力欄が見つかりません: PID=$($Process.Id)"
 }
 
 function Set-InputText([IntPtr]$InputHandle, [string]$Text) {
@@ -255,7 +275,9 @@ $saveHash = (Get-FileHash -LiteralPath $savePath -Algorithm SHA256).Hash
 
 for ($iteration = 1; $iteration -le $Iterations; $iteration++) {
     $process = $null
+    $traceProcess = $null
     try {
+        Write-Host ("[{0}/{1}] Emueraを起動しています" -f $iteration, $Iterations)
         $startupWatch = [Diagnostics.Stopwatch]::StartNew()
         $processStartedAtUtc = [datetime]::UtcNow
         $benchmarkLogPath = Join-Path $runDir ("metrics-{0:D3}.jsonl" -f $iteration)
@@ -267,13 +289,15 @@ for ($iteration = 1; $iteration -le $Iterations; $iteration++) {
             -ArgumentList $processArguments `
             -WorkingDirectory ([IO.Path]::GetDirectoryName($ExePath)) `
             -PassThru
+        Write-Host ("[{0}/{1}] PID={2} のウィンドウを待っています" -f $iteration, $Iterations, $process.Id)
         Wait-ForWindow $process ($TimeoutSeconds * 1000)
         [void]$process.WaitForInputIdle($TimeoutSeconds * 1000)
         $timeLog = Wait-ForStartupComplete $process (Join-Path $GameDir 'time.log') `
             $processStartedAtUtc ($TimeoutSeconds * 1000)
         $startupWatch.Stop()
+        Write-Host ("[{0}/{1}] 起動完了、save219を読み込みます" -f $iteration, $Iterations)
 
-        $inputHandle = Get-InputHandle $process
+        $inputHandle = Wait-ForInputHandle $process ($TimeoutSeconds * 1000)
         if ($CaptureScreenshots) {
             Save-WindowScreenshot $process (Join-Path $runDir ("{0:D3}-title.png" -f $iteration))
         }
@@ -285,6 +309,23 @@ for ($iteration = 1; $iteration -le $Iterations; $iteration++) {
         Start-Sleep -Milliseconds 200
         if ($CaptureScreenshots) {
             Save-WindowScreenshot $process (Join-Path $runDir ("{0:D3}-loaded.png" -f $iteration))
+        }
+
+        if ($CpuProfile) {
+            $tracePath = Join-Path $runDir ("{0:D3}-macro-cpu.nettrace" -f $iteration)
+            $traceOutputPath = Join-Path $runDir ("{0:D3}-macro-cpu.stdout.log" -f $iteration)
+            $traceErrorPath = Join-Path $runDir ("{0:D3}-macro-cpu.stderr.log" -f $iteration)
+            $traceDuration = [TimeSpan]::FromSeconds($CpuProfileDurationSeconds).ToString('dd\:hh\:mm\:ss')
+            $traceProcess = Start-Process -FilePath $TraceToolPath `
+                -ArgumentList @('collect', '--providers',
+                    'Microsoft-DotNETCore-SampleProfiler,Microsoft-Windows-DotNETRuntime:0x1:5',
+                    '--process-id', $process.Id,
+                    '--duration', $traceDuration, '--output', $tracePath) `
+                -RedirectStandardOutput $traceOutputPath `
+                -RedirectStandardError $traceErrorPath `
+                -WindowStyle Hidden `
+                -PassThru
+            Start-Sleep -Milliseconds 1000
         }
 
         Set-InputText $inputHandle $macroText
@@ -309,6 +350,16 @@ for ($iteration = 1; $iteration -le $Iterations; $iteration++) {
         $process.Refresh()
         if ($CaptureScreenshots) {
             Save-WindowScreenshot $process (Join-Path $runDir ("{0:D3}-macro-end.png" -f $iteration))
+        }
+        if ($null -ne $traceProcess -and -not $traceProcess.WaitForExit(($CpuProfileDurationSeconds + 15) * 1000)) {
+            throw "dotnet-traceの終了待ちがタイムアウトしました: PID=$($traceProcess.Id)"
+        }
+        if ($null -ne $traceProcess -and ($traceProcess.ExitCode -ne 0 -or
+                -not (Test-Path -LiteralPath $tracePath -PathType Leaf))) {
+            $traceError = if (Test-Path -LiteralPath $traceErrorPath) {
+                Get-Content -LiteralPath $traceErrorPath -Raw
+            } else { '' }
+            throw "dotnet-traceに失敗しました: ExitCode=$($traceProcess.ExitCode) $traceError"
         }
 
         $result = [pscustomobject]@{
@@ -366,6 +417,10 @@ for ($iteration = 1; $iteration -le $Iterations; $iteration++) {
             $result.CpuMilliseconds, $result.Responding)
     }
     finally {
+        if ($null -ne $traceProcess -and -not $traceProcess.HasExited) {
+            Stop-Process -Id $traceProcess.Id -Force -ErrorAction SilentlyContinue
+            $traceProcess.WaitForExit()
+        }
         if ($null -ne $process -and -not $process.HasExited) {
             [void]$process.CloseMainWindow()
             if (-not $process.WaitForExit(3000)) {
