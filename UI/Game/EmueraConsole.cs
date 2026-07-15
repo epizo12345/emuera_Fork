@@ -460,6 +460,7 @@ internal sealed partial class EmueraConsole : IDisposable
         logWriter.WriteLine("Refresh:Start " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
         RefreshStrings(true);
         logWriter.WriteLine("Refresh:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
+        PerformanceMetrics.MarkStartup("TitleDisplayed");
 
         logWriter.WriteLine("Preload:Clear:Start " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
         Preload.Clear();
@@ -986,6 +987,7 @@ internal sealed partial class EmueraConsole : IDisposable
             throw new ExeEE("");
 #endif
         KillMacro = false;
+        long inputLoopStart = 0;
         try
         {
             string[] text;
@@ -1005,13 +1007,22 @@ internal sealed partial class EmueraConsole : IDisposable
                     stopTimer();
                 //if((inputReq.InputType == InputType.IntValue || inputReq.InputType == InputType.StrValue)
                 if (input.Contains('(', StringComparison.Ordinal))
+                {
+                    PerformanceMetrics.BeginMacro(input);
+                    long expansionStart = PerformanceMetrics.StartTiming();
                     input = parseInput(new CharStream(input), false);
+                    PerformanceMetrics.AddExpansion(expansionStart);
+                }
                 text = input.Split(spliter, StringSplitOptions.None);
+                PerformanceMetrics.SetExpandedInputCount(text.Length);
             }
 
             inProcess = true;
+            inputLoopStart = PerformanceMetrics.StartTiming();
             for (int i = 0; i < text.Length; i++)
             {
+                PerformanceMetrics.RecordInputDispatch();
+                long handoffStart = PerformanceMetrics.StartTiming();
                 string inputs = text[i];
                 if (inputs.Contains("\\e", StringComparison.Ordinal))
                 {
@@ -1028,7 +1039,10 @@ internal sealed partial class EmueraConsole : IDisposable
                     i--;
                     inputs = "";
                 }
+                PerformanceMetrics.AddInputHandoff(handoffStart);
+                long erbStart = PerformanceMetrics.StartTiming();
                 RunEmueraProgram(inputs);
+                PerformanceMetrics.AddErb(erbStart);
                 RefreshStrings(false);
                 while (MesSkip && state == ConsoleState.WaitInput)
                 {
@@ -1037,7 +1051,9 @@ internal sealed partial class EmueraConsole : IDisposable
                         break;
                     if (inputReq.StopMesskip)
                         break;
+                    erbStart = PerformanceMetrics.StartTiming();
                     RunEmueraProgram("");
+                    PerformanceMetrics.AddErb(erbStart);
                     RefreshStrings(false);
                     //EscがマクロストップかつEscがスキップ開始だからEscでスキップを止められても即開始しちゃったりするからあんまり意味ないよね
                     //if (KillMacro)
@@ -1047,20 +1063,22 @@ internal sealed partial class EmueraConsole : IDisposable
                 if (state != ConsoleState.WaitInput)
                     break;
                 //マクロループ時は待ち処理が起こらないのでここでシステムキューを捌く
+                long eventStart = PerformanceMetrics.StartTiming();
                 Application.DoEvents();
+                PerformanceMetrics.AddLoopEvent(eventStart);
 #if DEBUG
                 if (state != ConsoleState.WaitInput || inputReq == null)
                     throw new ExeEE("");
 #endif
                 if (KillMacro)
                 {
-                    endMacro();
-                    return;
+                    break;
                 }
             }
         }
         finally
         {
+            PerformanceMetrics.AddInputLoop(inputLoopStart);
             inProcess = false;
         }
 
@@ -1075,6 +1093,13 @@ internal sealed partial class EmueraConsole : IDisposable
                     MoveMouse(point);
             }
             RefreshStrings(true);
+            MacroResult result = PerformanceMetrics.FinishMacro(KillMacro);
+            if (result != null)
+            {
+                string stateHash = process.GetBenchmarkStateHash();
+                var displayState = GetBenchmarkDisplayState();
+                PerformanceMetrics.WriteMacro(result, stateHash, displayState.Hash, displayState.LineCount);
+            }
         }
     }
 
@@ -1329,6 +1354,9 @@ internal sealed partial class EmueraConsole : IDisposable
     /// </summary>
     public void RefreshStrings(bool force_Paint)
     {
+        long refreshStart = PerformanceMetrics.StartTiming();
+        try
+        {
         if (suppressInitialPaint)
             return;
         bool isBackLog = window.ScrollBar.Value != window.ScrollBar.Maximum;
@@ -1383,11 +1411,18 @@ internal sealed partial class EmueraConsole : IDisposable
         window.Invoke(() =>
         {
             //描画が重いと入力が処理できないので、描画毎に入力を捌く
+            long eventStart = PerformanceMetrics.StartTiming();
             Application.DoEvents();
+            PerformanceMetrics.AddRefreshEvent(eventStart);
 
             verticalScrollBarUpdate();
             window.MainPicBox.Refresh();//OnPaint発行
         });
+        }
+        finally
+        {
+            PerformanceMetrics.AddRefresh(refreshStart);
+        }
     }
 
 
@@ -1404,6 +1439,9 @@ internal sealed partial class EmueraConsole : IDisposable
         //OnPaintからgraphをもらった直後だから大丈夫だとは思うけど一応
         if (!this.Enabled)
             return;
+        long paintStart = PerformanceMetrics.StartTiming();
+        try
+        {
 
         //デバッグ用。描画が超重い環境を想定1
         //Task.Delay(100).Wait();
@@ -1532,6 +1570,11 @@ internal sealed partial class EmueraConsole : IDisposable
         {
             need_settimer = false;
             setTimer();
+        }
+        }
+        finally
+        {
+            PerformanceMetrics.AddPaint(paintStart);
         }
     }
 
@@ -1980,6 +2023,9 @@ internal sealed partial class EmueraConsole : IDisposable
 
     private void verticalScrollBarUpdate()
     {
+        long scrollStart = PerformanceMetrics.StartTiming();
+        try
+        {
         int max = displayLineList.Count;
         int move = max - window.ScrollBar.Maximum;
         if (move == 0)
@@ -1996,6 +2042,11 @@ internal sealed partial class EmueraConsole : IDisposable
             window.ScrollBar.Maximum = max;
         }
         window.ScrollBar.Enabled = max > 0;
+        }
+        finally
+        {
+            PerformanceMetrics.AddScroll(scrollStart);
+        }
     }
     #endregion
 

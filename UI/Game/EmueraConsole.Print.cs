@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
 using MinorShift.Emuera.UI.Framework;
@@ -152,10 +153,28 @@ internal sealed partial class EmueraConsole : IDisposable
     int lineNo;
     Int64 logicalLineCount;
     public long LineCount { get { return logicalLineCount; } }
+
+    internal (string Hash, int LineCount) GetBenchmarkDisplayState()
+    {
+        StringBuilder builder = new();
+        foreach (ConsoleDisplayLine line in displayLineList)
+            builder.Append(line).Append('\n');
+        byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(builder.ToString()));
+        return (Convert.ToHexString(hash), displayLineList.Count);
+    }
+
     private void addRangeDisplayLine(ConsoleDisplayLine[] lineList)
     {
-        for (int i = 0; i < lineList.Length; i++)
-            addDisplayLine(lineList[i], false);
+        long displayAddStart = PerformanceMetrics.StartTiming();
+        try
+        {
+            for (int i = 0; i < lineList.Length; i++)
+                addDisplayLine(lineList[i], false);
+        }
+        finally
+        {
+            PerformanceMetrics.AddDisplayAdd(displayAddStart);
+        }
     }
 
     private void addDisplayLine(ConsoleDisplayLine line, bool force_LEFT)
@@ -437,7 +456,9 @@ internal sealed partial class EmueraConsole : IDisposable
             ConsoleDisplayLine[] dispList = printBuffer.Flush(stringMeasure, force_temporary);
             addRangeDisplayLine(dispList);
         }
+        long displayBuildStart = PerformanceMetrics.StartTiming();
         addRangeDisplayLine(HtmlManager.Html2DisplayLine(str, stringMeasure, this, lineEnd));
+        PerformanceMetrics.AddDisplayBuild(displayBuildStart);
         RefreshStrings(false);
     }
 
@@ -553,7 +574,9 @@ internal sealed partial class EmueraConsole : IDisposable
             return null;
         if (force && printBuffer.IsEmpty)
             printBuffer.Append(" ", Style);
+        long displayBuildStart = PerformanceMetrics.StartTiming();
         ConsoleDisplayLine dispLine = printBuffer.FlushSingleLine(stringMeasure, temporary | force_temporary);
+        PerformanceMetrics.AddDisplayBuild(displayBuildStart);
         return dispLine;
     }
 
@@ -585,7 +608,9 @@ internal sealed partial class EmueraConsole : IDisposable
             return;
         if (force && printBuffer.IsEmpty)
             printBuffer.Append(" ", Style);
+        long displayBuildStart = PerformanceMetrics.StartTiming();
         ConsoleDisplayLine[] dispList = printBuffer.Flush(stringMeasure, force_temporary);
+        PerformanceMetrics.AddDisplayBuild(displayBuildStart);
         //ConsoleDisplayLine[] dispList = printBuffer.Flush(stringMeasure, temporary | force_temporary);
         addRangeDisplayLine(dispList);
         //1819描画命令は分離

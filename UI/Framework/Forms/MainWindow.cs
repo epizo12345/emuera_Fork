@@ -261,6 +261,8 @@ internal sealed partial class MainWindow : Form
     private async void Init(object sender, EventArgs e)
     {
         await console.Initialize();
+        PerformanceMetrics.MarkStartup("InputReady");
+        PerformanceMetrics.WriteStartup();
     }
 
     /// <summary>

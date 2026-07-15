@@ -48,6 +48,7 @@ static partial class Program
     [STAThread]
     static void Main(string[] args)
     {
+        PerformanceMetrics.MarkProcessStart();
         // memo: Shift-JISを扱うためのおまじない
         System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
@@ -76,6 +77,12 @@ static partial class Program
         );
         rootCommand.AddOption(startupTestOption);
 
+        var benchmarkLogOption = new Option<string>(
+            name: "--BenchmarkLog",
+            description: "起動・マクロ性能計測のJSON Lines出力先"
+        );
+        rootCommand.AddOption(benchmarkLogOption);
+
         var filesArg = new Argument<string[]>(
             LocalizationManager.Parameters.HelpfilesArg
         )
@@ -83,6 +90,7 @@ static partial class Program
         rootCommand.AddArgument(filesArg);
 
         var result = rootCommand.Parse(args);
+        PerformanceMetrics.Configure(result.GetValueForOption(benchmarkLogOption));
 
         //実行ディレクトリが引数で与えられた場合
         var exeDir = result.GetValueForOption(exeDirOption);
@@ -123,6 +131,7 @@ static partial class Program
 
         ConfigData.Instance.LoadConfig();
         JSONConfig.Load();
+        PerformanceMetrics.MarkStartup("SettingsLoaded");
 
 
         //二重起動の禁止かつ二重起動

@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using MinorShift.Emuera.UI.Framework;
@@ -53,14 +54,17 @@ internal sealed class VariableEvaluator : IDisposable
     }
     public long GetNextRand(long max)
     {
+        long value;
         if (JSONConfig.Game.UseNewRandom)
         {
-            return _newRand.NextInt64(max);
+            value = _newRand.NextInt64(max);
         }
         else
         {
-            return rand.NextInt64(max);
+            value = rand.NextInt64(max);
         }
+        PerformanceMetrics.RecordRandom(max, value);
+        return value;
     }
 
     public long getPalamLv(long pl, long maxlv)
@@ -2335,6 +2339,14 @@ internal sealed class VariableEvaluator : IDisposable
         }
         varData.SaveToStreamBinary(bWriter);
         bWriter.WriteEOF();
+    }
+
+    internal string GetBenchmarkStateHash()
+    {
+        using MemoryStream stream = new();
+        using (EraBinaryDataWriter writer = new(stream))
+            SaveToStreamBinary(writer, "");
+        return Convert.ToHexString(SHA256.HashData(stream.ToArray()));
     }
 
     public void LoadFromStreamBinary(EraBinaryDataReader bReader)

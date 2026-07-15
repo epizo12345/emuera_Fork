@@ -43,6 +43,7 @@ internal sealed partial class Process(EmueraConsole view)
     private VariableEvaluator vEvaluator;
     public VariableEvaluator VEvaluator { get { return vEvaluator; } }
     public int ExecutedLineCount => state?.lineCount ?? 0;
+    internal string GetBenchmarkStateHash() => vEvaluator.GetBenchmarkStateHash();
     private ExpressionMediator exm;
     private GameBase gamebase;
     readonly EmueraConsole console = view;
@@ -91,6 +92,7 @@ internal sealed partial class Process(EmueraConsole view)
             }
             ParserMediator.FlushWarningList();
             logWriter.WriteLine($"Proc:Init:Image:End {stopWatch.ElapsedMilliseconds}ms");
+            PerformanceMetrics.MarkStartup("ResourcesPrepared");
 
 
             logWriter.WriteLine($"Proc:Init:KeyMacro:Start {stopWatch.ElapsedMilliseconds}ms");
@@ -173,6 +175,7 @@ internal sealed partial class Process(EmueraConsole view)
             GlobalStatic.ConstantData = constant;
             TrainName = constant.GetCsvNameList(VariableCode.TRAINNAME);
             logWriter.WriteLine($"Proc:Init:EtcCSV:End {stopWatch.ElapsedMilliseconds}ms");
+            PerformanceMetrics.MarkStartup("CsvLoaded");
 
 
             vEvaluator = new VariableEvaluator(gamebase, constant);
@@ -204,6 +207,7 @@ internal sealed partial class Process(EmueraConsole view)
             }
             LexicalAnalyzer.UseMacro = idDic.UseMacro();
             logWriter.WriteLine($"Proc:Init:ERH:End {stopWatch.ElapsedMilliseconds}ms");
+            PerformanceMetrics.MarkStartup("ErhLoaded");
 
 
             //TODO:ユーザー定義変数用のcsvの適用
@@ -215,10 +219,12 @@ internal sealed partial class Process(EmueraConsole view)
                 noError = await loader.LoadErbList(Program.AnalysisFiles, labelDic);
             else
                 noError = await loader.LoadErbDir(Program.ErbDir, Config.DisplayReport, labelDic);
+            logWriter.WriteLine($"Proc:Init:ERB:Enumeration {loader.EnumerationMilliseconds}ms");
             logWriter.WriteLine($"Proc:Init:ERB:PrimaryParse {loader.PrimaryParseMilliseconds}ms");
             logWriter.WriteLine($"Proc:Init:ERB:LabelSetup {loader.LabelSetupMilliseconds}ms");
             logWriter.WriteLine($"Proc:Init:ERB:ScriptParse {loader.ScriptParseMilliseconds}ms");
             logWriter.WriteLine($"Proc:Init:ERB:End {stopWatch.ElapsedMilliseconds}ms");
+            PerformanceMetrics.MarkStartup("ErbParsed");
 
             SQL.SetUpTempDB();
 

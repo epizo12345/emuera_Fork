@@ -7,6 +7,7 @@ param(
     [int]$Iterations = 1,
     [ValidateRange(10, 1800)]
     [int]$TimeoutSeconds = 300,
+    [switch]$InternalMetrics,
     [switch]$CaptureScreenshots,
     [string]$OutputDir = (Join-Path $PSScriptRoot '..\artifacts\macro-tests')
 )
@@ -193,6 +194,34 @@ function Wait-ForMacroQuiescence(
     throw "Emueraのマクロ完了（CPU静止）待ちがタイムアウトしました"
 }
 
+function Wait-ForBenchmarkRecord(
+    [string]$Path,
+    [string]$Type,
+    [int]$TimeoutMilliseconds
+) {
+    $stopwatch = [Diagnostics.Stopwatch]::StartNew()
+    while ($stopwatch.ElapsedMilliseconds -lt $TimeoutMilliseconds) {
+        if (Test-Path -LiteralPath $Path -PathType Leaf) {
+            try {
+                foreach ($line in Get-Content -LiteralPath $Path -ErrorAction Stop) {
+                    if ([string]::IsNullOrWhiteSpace($line)) {
+                        continue
+                    }
+                    $record = $line | ConvertFrom-Json
+                    if ($record.type -eq $Type) {
+                        return $record
+                    }
+                }
+            }
+            catch [IO.IOException] {
+                # EmueraがJSON Linesを書き込み中。
+            }
+        }
+        Start-Sleep -Milliseconds 25
+    }
+    throw "Emueraの計測レコード待ちがタイムアウトしました: type=$Type"
+}
+
 function Save-WindowScreenshot([Diagnostics.Process]$Process, [string]$Path) {
     $rectangle = [EmueraBenchmarkNative+Rect]::new()
     if (-not [EmueraBenchmarkNative]::GetWindowRect($Process.MainWindowHandle, [ref]$rectangle)) {
@@ -229,8 +258,13 @@ for ($iteration = 1; $iteration -le $Iterations; $iteration++) {
     try {
         $startupWatch = [Diagnostics.Stopwatch]::StartNew()
         $processStartedAtUtc = [datetime]::UtcNow
+        $benchmarkLogPath = Join-Path $runDir ("metrics-{0:D3}.jsonl" -f $iteration)
+        $processArguments = @('--ExeDir', ('"{0}"' -f $GameDir))
+        if ($InternalMetrics) {
+            $processArguments += @('--BenchmarkLog', ('"{0}"' -f $benchmarkLogPath))
+        }
         $process = Start-Process -FilePath $ExePath `
-            -ArgumentList @('--ExeDir', ('"{0}"' -f $GameDir)) `
+            -ArgumentList $processArguments `
             -WorkingDirectory ([IO.Path]::GetDirectoryName($ExePath)) `
             -PassThru
         Wait-ForWindow $process ($TimeoutSeconds * 1000)
@@ -260,7 +294,17 @@ for ($iteration = 1; $iteration -le $Iterations; $iteration++) {
         $workingSetBefore = $process.WorkingSet64
         $macroWatch = [Diagnostics.Stopwatch]::StartNew()
         Send-EnterSynchronously $inputHandle
-        $completion = Wait-ForMacroQuiescence $process $macroWatch $cpuBefore ($TimeoutSeconds * 1000)
+        $metric = if ($InternalMetrics) {
+            Wait-ForBenchmarkRecord $benchmarkLogPath 'macro' ($TimeoutSeconds * 1000)
+        } else { $null }
+        $completion = if ($InternalMetrics) {
+            [pscustomobject]@{
+                EstimatedCompletionMilliseconds = [double]$metric.totalMilliseconds
+                ObservedUntilMilliseconds = $macroWatch.Elapsed.TotalMilliseconds
+            }
+        } else {
+            Wait-ForMacroQuiescence $process $macroWatch $cpuBefore ($TimeoutSeconds * 1000)
+        }
         $macroWatch.Stop()
         $process.Refresh()
         if ($CaptureScreenshots) {
@@ -278,6 +322,38 @@ for ($iteration = 1; $iteration -le $Iterations; $iteration++) {
             MacroMilliseconds = $completion.EstimatedCompletionMilliseconds
             MacroObservedUntilMilliseconds = $completion.ObservedUntilMilliseconds
             CpuMilliseconds = [math]::Round($process.TotalProcessorTime.TotalMilliseconds - $cpuBefore, 1)
+            ExpansionMilliseconds = if ($InternalMetrics) { $metric.expansionMilliseconds } else { $null }
+            InputHandoffMilliseconds = if ($InternalMetrics) { $metric.inputHandoffMilliseconds } else { $null }
+            InputLoopMilliseconds = if ($InternalMetrics) { $metric.inputLoopMilliseconds } else { $null }
+            ErbMilliseconds = if ($InternalMetrics) { $metric.erbMilliseconds } else { $null }
+            StringGenerationMilliseconds = if ($InternalMetrics) { $metric.stringGenerationMilliseconds } else { $null }
+            DisplayBuildMilliseconds = if ($InternalMetrics) { $metric.displayBuildMilliseconds } else { $null }
+            DisplayAddMilliseconds = if ($InternalMetrics) { $metric.displayAddMilliseconds } else { $null }
+            MeasureTextMilliseconds = if ($InternalMetrics) { $metric.measureTextMilliseconds } else { $null }
+            RefreshMilliseconds = if ($InternalMetrics) { $metric.refreshMilliseconds } else { $null }
+            PaintMilliseconds = if ($InternalMetrics) { $metric.paintMilliseconds } else { $null }
+            ScrollMilliseconds = if ($InternalMetrics) { $metric.scrollMilliseconds } else { $null }
+            UiEventMilliseconds = if ($InternalMetrics) { $metric.uiEventMilliseconds } else { $null }
+            ExpandedInputCount = if ($InternalMetrics) { $metric.expandedInputCount } else { $null }
+            InputDispatchCount = if ($InternalMetrics) { $metric.inputDispatchCount } else { $null }
+            ErbRunCount = if ($InternalMetrics) { $metric.erbRunCount } else { $null }
+            RefreshCount = if ($InternalMetrics) { $metric.refreshCount } else { $null }
+            PaintCount = if ($InternalMetrics) { $metric.paintCount } else { $null }
+            ScrollUpdateCount = if ($InternalMetrics) { $metric.scrollUpdateCount } else { $null }
+            UiEventPumpCount = if ($InternalMetrics) { $metric.uiEventPumpCount } else { $null }
+            StringGenerationCount = if ($InternalMetrics) { $metric.stringGenerationCount } else { $null }
+            DisplayBuildCount = if ($InternalMetrics) { $metric.displayBuildCount } else { $null }
+            MeasureTextCount = if ($InternalMetrics) { $metric.measureTextCount } else { $null }
+            AllocatedBytes = if ($InternalMetrics) { $metric.allocatedBytes } else { $null }
+            ManagedBytesBefore = if ($InternalMetrics) { $metric.managedBytesBefore } else { $null }
+            ManagedBytesAfter = if ($InternalMetrics) { $metric.managedBytesAfter } else { $null }
+            Gen0Collections = if ($InternalMetrics) { $metric.gen0Collections } else { $null }
+            Gen1Collections = if ($InternalMetrics) { $metric.gen1Collections } else { $null }
+            Gen2Collections = if ($InternalMetrics) { $metric.gen2Collections } else { $null }
+            StateSha256 = if ($InternalMetrics) { $metric.stateSha256 } else { $null }
+            DisplaySha256 = if ($InternalMetrics) { $metric.displaySha256 } else { $null }
+            RandomCallCount = if ($InternalMetrics) { $metric.randomCallCount } else { $null }
+            RandomTraceHash = if ($InternalMetrics) { $metric.randomTraceHash } else { $null }
             WorkingSetBeforeBytes = $workingSetBefore
             WorkingSetAfterBytes = $process.WorkingSet64
             PeakWorkingSetBytes = $process.PeakWorkingSet64

@@ -39,6 +39,7 @@ internal sealed class ErbLoader
     LabelDictionary labelDic;
 
     int hasError;
+    public long EnumerationMilliseconds { get; private set; }
     public long PrimaryParseMilliseconds { get; private set; }
     public long LabelSetupMilliseconds { get; private set; }
     public long ScriptParseMilliseconds { get; private set; }
@@ -52,7 +53,10 @@ internal sealed class ErbLoader
         //checkScript();の時点でExpressionPerserがProcess.instance.LabelDicを必要とするから。
         labelDic = labelDictionary;
         labelDic.Initialized = false;
+        var enumerationStopwatch = System.Diagnostics.Stopwatch.StartNew();
         var erbFiles = Config.Config.GetFiles(erbDir, "*.ERB");
+        EnumerationMilliseconds = enumerationStopwatch.ElapsedMilliseconds;
+        PerformanceMetrics.MarkStartup("ErbEnumerated");
         ConcurrentDictionary<string, byte> isOnlyEvent = new(Config.Config.StrComper);
         hasError = 0;
         var stageStopwatch = System.Diagnostics.Stopwatch.StartNew();

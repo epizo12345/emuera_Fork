@@ -3,6 +3,7 @@ using SkiaSharp;
 using System;
 using System.Drawing;
 using System.Windows.Forms;
+using MinorShift.Emuera.Runtime.Utils;
 
 namespace MinorShift.Emuera.UI.Game;
 
@@ -16,7 +17,10 @@ internal sealed class StringMeasure : IDisposable
 
     public static int GetDisplayLength(ReadOnlySpan<char> chars, SKFont f)
     {
-        return (int)f.MeasureText(chars);
+        long measureStart = PerformanceMetrics.StartTiming();
+        int length = (int)f.MeasureText(chars);
+        PerformanceMetrics.AddMeasureText(measureStart);
+        return length;
     }
 
 

@@ -203,6 +203,9 @@ internal sealed class StrForm
     }
     public string GetString(ExpressionMediator exm)
     {
+        long stringStart = PerformanceMetrics.StartTiming();
+        try
+        {
         var handler = new DefaultInterpolatedStringHandler(strs.Length + terms.Length, 0);
         if (strs.Length == 1)
             return strs[0];
@@ -213,6 +216,11 @@ internal sealed class StrForm
         }
         handler.AppendLiteral(strs[^1]);
         return handler.ToString();
+        }
+        finally
+        {
+            PerformanceMetrics.AddStringGeneration(stringStart);
+        }
     }
 
     #region FormattedStringMethod 書式付文字列の内部
