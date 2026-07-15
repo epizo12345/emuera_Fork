@@ -1420,7 +1420,12 @@ internal sealed partial class FunctionIdentifier
 
             SpVarSetArgument spvarsetarg = (SpVarSetArgument)func.Argument;
             VariableTerm var = spvarsetarg.VariableDest;
-            FixedVariableTerm p = var.GetFixedVariableTerm(exm);
+            // [Emuera改修:MACRO-05]
+            // VARSETは戦闘中にも頻繁に使われるため、添字を写した一時参照を処理中だけ借りる。
+            // usingの範囲を抜けると自動で返却される。評価順と実際の一括代入処理は従来どおり。
+            // 仕組みの本体は VariableTerm.RentFixedVariableTerm を参照。
+            using VariableTerm.FixedVariableTermLease fixedTermLease = var.RentFixedVariableTerm(exm);
+            FixedVariableTerm p = fixedTermLease.Term;
             int start = 0;
             int end = 0;
             //endを先に取って判定の処理変更
@@ -1460,7 +1465,9 @@ internal sealed partial class FunctionIdentifier
         public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
         {
             SpCVarSetArgument spvarsetarg = (SpCVarSetArgument)func.Argument;
-            FixedVariableTerm p = spvarsetarg.VariableDest.GetFixedVariableTerm(exm);
+            // [Emuera改修:MACRO-05] VARSETと同じく、CVARSETでも処理中だけ一時参照を借りる。
+            using VariableTerm.FixedVariableTermLease fixedTermLease = spvarsetarg.VariableDest.RentFixedVariableTerm(exm);
+            FixedVariableTerm p = fixedTermLease.Term;
             SingleTerm index = spvarsetarg.Index.GetValue(exm);
             int charaNum = (int)exm.VEvaluator.CHARANUM;
             int start = 0;

@@ -212,6 +212,20 @@ internal sealed class StrForm
         {
         if (strs.Length == 1)
             return strs[0];
+        // [Emuera改修:MACRO-06]
+        // 埋め込みが1個だけの文字列は、作業用バッファへ全体をコピーせず直接つなぐ。
+        // 埋め込み式は従来と同じ位置で1回だけ評価するため、関数呼出や乱数の順序は変わらない。
+        // 前後が空なら評価結果そのものを返す。文字列は変更不能なので、ゲームから違いは観測できない。
+        // 参照: プロジェクト資料/06_コード案内.md
+        if (strs.Length == 2)
+        {
+            string value = terms[0].GetStrValue(exm) ?? "";
+            if (strs[0].Length == 0)
+                return strs[1].Length == 0 ? value : string.Concat(value, strs[1]);
+            if (strs[1].Length == 0)
+                return string.Concat(strs[0], value);
+            return string.Concat(strs[0], value, strs[1]);
+        }
         var handler = new DefaultInterpolatedStringHandler(strs.Length + terms.Length, 0);
         for (int i = 0; i < strs.Length - 1; i++)
         {

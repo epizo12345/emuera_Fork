@@ -1327,7 +1327,12 @@ internal static partial class FunctionMethodCreator
             Int64 start = (arguments.Count > 2 && arguments[2] != null) ? arguments[2].GetIntValue(exm) : 0;
             Int64 end = (arguments.Count > 3 && arguments[3] != null) ? arguments[3].GetIntValue(exm) : (isCharaRange ? exm.VEvaluator.CHARANUM : varTerm.GetLength());
 
-            FixedVariableTerm p = varTerm.GetFixedVariableTerm(exm);
+            // [Emuera改修:MACRO-04]
+            // MATCH/CMATCHは戦闘中に非常に多く呼ばれるため、検索中だけ確定済み変数参照を借りる。
+            // usingを抜けるまで添字の写しは専有されるので、再帰関数や例外でも別処理と混ざらない。
+            // 配列の検索内容、引数評価順、乱数消費順は従来どおり。
+            using VariableTerm.FixedVariableTermLease fixedTermLease = varTerm.RentFixedVariableTerm(exm);
+            FixedVariableTerm p = fixedTermLease.Term;
             if (!isCharaRange)
             {
                 p.IsArrayRangeValid(start, end, "MATCH", 3L, 4L);
