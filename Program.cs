@@ -4,15 +4,12 @@ using MinorShift.Emuera.Runtime.Utils;
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
-using System.CommandLine.Parsing;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime;
 using System.Windows.Forms;
 using MinorShift.Emuera.UI.Framework;
 using System.Globalization;
-using System.Reflection;
-using System.Configuration;
 using System.Diagnostics;
 
 namespace MinorShift.Emuera;
@@ -57,38 +54,35 @@ static partial class Program
         var rootCommand = new RootCommand("Emuera");
 
         var exeDirOption = new Option<string>(
-            name: "--ExeDir",
-            description: LocalizationManager.Parameters.HelpExeDir
+            name: "--ExeDir"
         );
-        rootCommand.AddOption(exeDirOption);
+        rootCommand.Add(exeDirOption);
 
         var debugModeOption = new Option<bool>(
             name: "-Debug",
-            description: LocalizationManager.Parameters.HelpDebug
+            ["-debug","-DEBUG"]
         );
-        debugModeOption.AddAlias("-debug");
-        debugModeOption.AddAlias("-DEBUG");
-        rootCommand.AddOption(debugModeOption);
+        rootCommand.Add(debugModeOption);
 
         var filesArg = new Argument<string[]>(
             LocalizationManager.Parameters.HelpfilesArg
         )
         { Arity = ArgumentArity.ZeroOrMore };
-        rootCommand.AddArgument(filesArg);
+        rootCommand.Add(filesArg);
 
         var result = rootCommand.Parse(args);
 
         //実行ディレクトリが引数で与えられた場合
-        var exeDir = result.GetValueForOption(exeDirOption);
+        var exeDir = result.GetValue(exeDirOption);
         if (exeDir != null)
         {
             SetDirPaths(exeDir);
         }
 
-        var debugMode = result.GetValueForOption(debugModeOption);
+        var debugMode = result.GetValue(debugModeOption);
         DebugMode = debugMode;
 
-        var fileArgs = result.GetValueForArgument(filesArg);
+        var fileArgs = result.GetValue(filesArg) ?? [];
         var analysisRequestPaths = fileArgs;
         if (analysisRequestPaths.Length > 0)
         {
@@ -97,16 +91,16 @@ static partial class Program
         }
 
         //利用推奨の.NET Coreのバージョン
-        string targetVersion = "9.0.0";
+        var targetVersion = "10.0.0";
 
         //使用している端末の.NET Coreのバージョンを確認し、一定以下の場合はエラーとする
         if (Environment.Version.Build < new Version(targetVersion).Build)
         {
             //.Net Coreのバージョンが一定以下の場合はエラーメッセージを表示する
-            MessageBox.Show("ご使用の端末の「.NET Core」のバージョンは" + Environment.Version + "です。" + Environment.NewLine + targetVersion + "以上に更新してください。");
+            MessageBox.Show("ご使用の端末の「.NET」のバージョンは" + Environment.Version + "です。" + Environment.NewLine + targetVersion + "以上に更新してください。");
 
             //App.configに.Net Coreのインストール用ページを開く
-            String installUrl = "https://dotnet.microsoft.com/en-us/download/dotnet/9.0";
+            var installUrl = "https://dotnet.microsoft.com/en-us/download/dotnet/10.0";
             Process.Start(new ProcessStartInfo(installUrl) { UseShellExecute = true });
             return;
         }
@@ -182,6 +176,7 @@ static partial class Program
         }
 
         ApplicationConfiguration.Initialize();
+        Application.SetColorMode(SystemColorMode.Dark);
 
         using var win = new Forms.MainWindow(args);
 

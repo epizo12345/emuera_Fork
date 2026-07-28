@@ -33,26 +33,24 @@
             // 
             // textBox1
             // 
-            textBox1.BackColor = System.Drawing.SystemColors.Window;
+            textBox1.BorderStyle = System.Windows.Forms.BorderStyle.None;
             textBox1.Dock = System.Windows.Forms.DockStyle.Fill;
             textBox1.Location = new System.Drawing.Point(0, 0);
-            textBox1.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             textBox1.Multiline = true;
             textBox1.Name = "textBox1";
             textBox1.ReadOnly = true;
             textBox1.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            textBox1.Size = new System.Drawing.Size(1013, 800);
+            textBox1.Size = new System.Drawing.Size(810, 640);
             textBox1.TabIndex = 1;
             // 
             // ClipBoardDialog
             // 
-            AutoScaleDimensions = new System.Drawing.SizeF(120F, 120F);
+            AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
-            BackColor = System.Drawing.SystemColors.Window;
-            ClientSize = new System.Drawing.Size(1013, 800);
+            ClientSize = new System.Drawing.Size(810, 640);
             Controls.Add(textBox1);
             DoubleBuffered = true;
-            Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             Name = "ClipBoardDialog";
             Text = "ClipBoardDialog";
             ResumeLayout(false);

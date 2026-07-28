@@ -2306,7 +2306,7 @@ internal static partial class FunctionMethodCreator
             {
                 throw new CodeEE("第2引数が正規表現として不正です：" + e.Message);
             }
-            return reg.Matches(arguments[0].GetStrValue(exm)).Count;
+            return reg.Count(arguments[0].GetStrValue(exm));
         }
     }
 
