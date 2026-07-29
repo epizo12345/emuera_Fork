@@ -3,6 +3,7 @@ using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Script.Statements;
 using MinorShift.Emuera.Runtime.Utils;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -28,7 +29,7 @@ internal static partial class ParserMediator
     {
         if (level < Config.DisplayWarningLevel && !Program.AnalysisMode)
             return;
-        warningList.Add(new ParserWarning(str, pos, level, stack));
+        warningList.Enqueue(new ParserWarning(str, pos, level, stack));
     }
 
     static EmueraConsole console;
@@ -78,8 +79,6 @@ internal static partial class ParserMediator
     }
     #endregion
 
-    static object warningListLock = new();
-
     public static void Warn(string str, ScriptPosition? pos, int level)
     {
         Warn(str, pos, level, null);
@@ -91,10 +90,7 @@ internal static partial class ParserMediator
             return;
         if (console != null && !console.RunERBFromMemory)
         {
-            lock (warningListLock)
-            {
-                warningList.Add(new ParserWarning(str, pos, level, stack));
-            }
+            warningList.Enqueue(new ParserWarning(str, pos, level, stack));
         }
     }
 
@@ -121,23 +117,28 @@ internal static partial class ParserMediator
         if (isBackComp && !Config.WarnBackCompatibility)
             return;
         if (console != null && !console.RunERBFromMemory)
-            warningList.Add(new ParserWarning(str, line.Position, level, stack));
+            warningList.Enqueue(new ParserWarning(str, line.Position, level, stack));
         //				console.PrintWarning(str, line.Position, level);
     }
 
-    private static List<ParserWarning> warningList = [];
+    // [Emuera改修:WARN-02]
+    // 並列解析中は複数スレッドから警告が届く。ConcurrentQueueなら警告を欠落・破損させず、
+    // 解析後に画面側の1か所から順に取り出せる。警告を隠すための変更ではない。
+    // 参照: プロジェクト資料/06_コード案内.md
+    private static readonly ConcurrentQueue<ParserWarning> warningList = [];
 
-    public static bool HasWarning { get { return warningList.Count > 0; } }
+    public static bool HasWarning { get { return !warningList.IsEmpty; } }
     public static void ClearWarningList()
     {
-        warningList.Clear();
+        while (warningList.TryDequeue(out _))
+        {
+        }
     }
 
     public static void FlushWarningList()
     {
-        for (int i = 0; i < warningList.Count; i++)
+        while (warningList.TryDequeue(out ParserWarning warning))
         {
-            ParserWarning warning = warningList[i];
             console.PrintWarning(warning.WarningMes, warning.WarningPos, warning.WarningLevel);
             if (warning.StackTrace != null)
             {
@@ -148,7 +149,6 @@ internal static partial class ParserMediator
                 }
             }
         }
-        warningList.Clear();
     }
 
     private sealed class ParserWarning

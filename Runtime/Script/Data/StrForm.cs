@@ -203,16 +203,42 @@ internal sealed class StrForm
     }
     public string GetString(ExpressionMediator exm)
     {
-        var handler = new DefaultInterpolatedStringHandler(strs.Length + terms.Length, 0);
+        // [Emuera改修:MEASURE-02]
+        // マクロ中の「文字列を作る時間」を測る開発用計測。通常版では呼び出しごと消える。
+        // try/finally は途中でreturnしても計測終了を必ず記録するために使う。
+        // 参照: プロジェクト資料/06_コード案内.md
+        long stringStart = PerformanceMetrics.StartTiming();
+        try
+        {
         if (strs.Length == 1)
             return strs[0];
+        // [Emuera改修:MACRO-06]
+        // 埋め込みが1個だけの文字列は、作業用バッファへ全体をコピーせず直接つなぐ。
+        // 埋め込み式は従来と同じ位置で1回だけ評価するため、関数呼出や乱数の順序は変わらない。
+        // 前後が空なら評価結果そのものを返す。文字列は変更不能なので、ゲームから違いは観測できない。
+        // 参照: プロジェクト資料/06_コード案内.md
+        if (strs.Length == 2)
+        {
+            string value = terms[0].GetStrValue(exm) ?? "";
+            if (strs[0].Length == 0)
+                return strs[1].Length == 0 ? value : string.Concat(value, strs[1]);
+            if (strs[1].Length == 0)
+                return string.Concat(strs[0], value);
+            return string.Concat(strs[0], value, strs[1]);
+        }
+        var handler = new DefaultInterpolatedStringHandler(strs.Length + terms.Length, 0);
         for (int i = 0; i < strs.Length - 1; i++)
         {
             handler.AppendLiteral(strs[i]);
             handler.AppendLiteral(terms[i].GetStrValue(exm));
         }
         handler.AppendLiteral(strs[^1]);
-        return handler.ToString();
+        return handler.ToStringAndClear();
+        }
+        finally
+        {
+            PerformanceMetrics.AddStringGeneration(stringStart);
+        }
     }
 
     #region FormattedStringMethod 書式付文字列の内部

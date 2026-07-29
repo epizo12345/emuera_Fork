@@ -368,6 +368,83 @@ internal sealed partial class EmueraConsole : IDisposable
         }
     }
 
+    // [Emuera改修:MOUSE-02]
+    // 画面上の「現在有効なボタン」だけを探し、指定候補に合う最初の入力値を返す。
+    // 普通のボタンは表示文（「次のページ」「NEXT」など）で探す。
+    // HTMLボタンは表示文に番号が出ない場合があるため、実際にゲームへ渡す値（「1007」など）とも完全一致で比べる。
+    // 絶対位置へ描くHTML Island（調教画面など）は通常の表示行とは別に保存されるため、両方を検索する。
+    // 昔の画面に残ったボタンや、数値入力中の文字列ボタンは対象外にする。
+    // 参照: プロジェクト資料/06_コード案内.md
+    internal bool TryGetCurrentButtonInputByText(string targetTexts, out string input)
+    {
+        input = null;
+        if (state != ConsoleState.WaitInput || !inputReq.NeedValue || string.IsNullOrWhiteSpace(targetTexts))
+            return false;
+
+        string[] targets = targetTexts.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (targets.Length == 0)
+            return false;
+
+        // 通常のマウス選択と同じく、画面へ重ねて描くHTML Islandを先に探す。
+        foreach (var (_, islandLines) in _htmlElementListDict.Reverse())
+        {
+            for (int lineIndex = islandLines.Count - 1; lineIndex >= 0; lineIndex--)
+            {
+                ConsoleButtonString[] buttons = islandLines[lineIndex].Buttons;
+                for (int buttonIndex = buttons.Length - 1; buttonIndex >= 0; buttonIndex--)
+                    if (TryGetCurrentButtonInput(buttons[buttonIndex], targets, out input))
+                        return true;
+            }
+        }
+
+        // 普通のPRINT系で作られた表示行を、新しいものから順に探す。
+        for (int lineIndex = displayLineList.Count - 1; lineIndex >= 0; lineIndex--)
+        {
+            ConsoleButtonString[] buttons = displayLineList[lineIndex].Buttons;
+            for (int buttonIndex = buttons.Length - 1; buttonIndex >= 0; buttonIndex--)
+                if (TryGetCurrentButtonInput(buttons[buttonIndex], targets, out input))
+                    return true;
+        }
+        return false;
+    }
+
+    // HTMLのdiv内にさらにdivやbuttonが入るため、子要素も再帰的に調べる。
+    private bool TryGetCurrentButtonInput(AConsoleDisplayNode node, string[] targets, out string input)
+    {
+        input = null;
+        if (node == null)
+            return false;
+
+        if (node is ConsoleButtonString button)
+        {
+            if (button.IsButton && button.Generation == lastButtonGeneration
+                && (inputReq.InputType != InputType.IntValue || button.IsInteger))
+            {
+                string buttonText = button.ToString();
+                string buttonInput = inputReq.InputType == InputType.IntValue ? button.Input.ToString() : button.Inputs;
+                bool targetMatched = Array.Exists(targets, target =>
+                    buttonText.Contains(target, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(buttonInput, target, StringComparison.OrdinalIgnoreCase));
+                if (targetMatched)
+                {
+                    input = buttonInput;
+                    return true;
+                }
+            }
+
+            for (int childIndex = button.StrArray.Length - 1; childIndex >= 0; childIndex--)
+                if (TryGetCurrentButtonInput(button.StrArray[childIndex], targets, out input))
+                    return true;
+        }
+        else if (node is ConsoleDivElement div)
+        {
+            for (int childIndex = div._childNodes.Count - 1; childIndex >= 0; childIndex--)
+                if (TryGetCurrentButtonInput(div._childNodes[childIndex], targets, out input))
+                    return true;
+        }
+        return false;
+    }
+
     public async Task Initialize()
     {
         var boottimeDebugStopwatch = Stopwatch.StartNew();
@@ -384,7 +461,9 @@ internal sealed partial class EmueraConsole : IDisposable
 
         logWriter.WriteLine("File:Preload:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
 
+        logWriter.WriteLine("Font:Load:Start " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
         FontFactory.LoadFontFolder();
+        logWriter.WriteLine("Font:Load:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
 
         GlobalStatic.Console = this;
         // GlobalStatic.MainWindow = window;
@@ -396,21 +475,55 @@ internal sealed partial class EmueraConsole : IDisposable
             window.Focus();
         }
         ClearDisplay();
+        logWriter.WriteLine("Process:Initialize:Start " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
         if (!await process.Initialize(logWriter))
         {
             state = ConsoleState.Error;
             OutputLog(null);
             PrintFlush(false);
             RefreshStrings(true);
+            if (Program.StartupTestMode)
+                window.BeginInvoke(window.Close);
             return;
         }
+        logWriter.WriteLine("Process:Initialize:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
+        logWriter.WriteLine("MacroNames:Start " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
         window.SetMacroGroupNames();
-        RunEmueraProgram("");
+        logWriter.WriteLine("MacroNames:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
+        logWriter.WriteLine("RunProgram:Start " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
+        // [Emuera改修:START-06]
+        // タイトル作成用ERBの実行中は、途中経過を何度も画面へ描かず表示データだけ作る。
+        // ERB実行後にRefreshStrings(true)を1回呼び、完成したタイトル画面を必ず表示する。
+        // 普通のゲーム処理やタイトルの内容を省略するものではない。
+        // 参照: プロジェクト資料/06_コード案内.md
+        suppressInitialPaint = true;
+        try
+        {
+            RunEmueraProgram("");
+        }
+        finally
+        {
+            suppressInitialPaint = false;
+        }
+        logWriter.WriteLine("RunProgram:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
+        logWriter.WriteLine("RunProgram:Lines " + process.ExecutedLineCount);
+        logWriter.WriteLine("Refresh:Start " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
         RefreshStrings(true);
+        logWriter.WriteLine("Refresh:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
+        PerformanceMetrics.MarkStartup("TitleDisplayed");
 
+        logWriter.WriteLine("Preload:Clear:Start " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
         Preload.Clear();
+        logWriter.WriteLine("Preload:Clear:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
 
         logWriter.WriteLine("Init:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
+        logWriter.Flush();
+
+        // 自動起動試験では、完成した画面内容をログへ残して検査できるようにする。
+        if (Program.StartupTestMode)
+        {
+            OutputLog(Program.ExeDir + "startup-test.log");
+        }
 
         Debug.WriteLine($"GC:{GC.GetTotalMemory(true):N0}");
         Debug.WriteLine($"WorkingSet:{Environment.WorkingSet:N0}");
@@ -520,8 +633,10 @@ internal sealed partial class EmueraConsole : IDisposable
         state = ConsoleState.Sleep;
         process.UpdateCheckInfiniteLoopState();
         System.Windows.Forms.Application.DoEvents();
+        long awaitStart = PerformanceMetrics.StartTiming();
         if (time > 0)
             System.Threading.Thread.Sleep(time);
+        PerformanceMetrics.AddAwait(time, awaitStart);
         ////DoEvents()の間にウインドウが閉じられたらおしまい。
         //if (!Enabled || state != ConsoleState.Sleep)
         //{
@@ -800,6 +915,10 @@ internal sealed partial class EmueraConsole : IDisposable
 
     public bool MesSkip;
     private bool inProcess;
+    // [Emuera改修:MACRO-01]
+    // trueの間も入力・ERB・文字列・表示行はすべて処理し、実ウィンドウの再描画だけを間引く。
+    // 参照: プロジェクト資料/06_コード案内.md
+    private bool batchingMacroDisplay;
     volatile public bool KillMacro;
 
     internal void MouseWheel(Point point, int delta)
@@ -924,6 +1043,7 @@ internal sealed partial class EmueraConsole : IDisposable
             throw new ExeEE("");
 #endif
         KillMacro = false;
+        long inputLoopStart = 0;
         try
         {
             string[] text;
@@ -943,13 +1063,24 @@ internal sealed partial class EmueraConsole : IDisposable
                     stopTimer();
                 //if((inputReq.InputType == InputType.IntValue || inputReq.InputType == InputType.StrValue)
                 if (input.Contains('(', StringComparison.Ordinal))
+                {
+                    PerformanceMetrics.BeginMacro(input);
+                    long expansionStart = PerformanceMetrics.StartTiming();
                     input = parseInput(new CharStream(input), false);
+                    PerformanceMetrics.AddExpansion(expansionStart);
+                }
                 text = input.Split(spliter, StringSplitOptions.None);
+                PerformanceMetrics.SetExpandedInputCount(text.Length);
             }
 
             inProcess = true;
+            // 展開結果が複数入力のときだけ描画集約を有効化。単発の手入力には影響させない。
+            batchingMacroDisplay = text.Length > 1;
+            inputLoopStart = PerformanceMetrics.StartTiming();
             for (int i = 0; i < text.Length; i++)
             {
+                PerformanceMetrics.RecordInputDispatch();
+                long handoffStart = PerformanceMetrics.StartTiming();
                 string inputs = text[i];
                 if (inputs.Contains("\\e", StringComparison.Ordinal))
                 {
@@ -966,7 +1097,10 @@ internal sealed partial class EmueraConsole : IDisposable
                     i--;
                     inputs = "";
                 }
+                PerformanceMetrics.AddInputHandoff(handoffStart);
+                long erbStart = PerformanceMetrics.StartTiming();
                 RunEmueraProgram(inputs);
+                PerformanceMetrics.AddErb(erbStart);
                 RefreshStrings(false);
                 while (MesSkip && state == ConsoleState.WaitInput)
                 {
@@ -975,7 +1109,9 @@ internal sealed partial class EmueraConsole : IDisposable
                         break;
                     if (inputReq.StopMesskip)
                         break;
+                    erbStart = PerformanceMetrics.StartTiming();
                     RunEmueraProgram("");
+                    PerformanceMetrics.AddErb(erbStart);
                     RefreshStrings(false);
                     //EscがマクロストップかつEscがスキップ開始だからEscでスキップを止められても即開始しちゃったりするからあんまり意味ないよね
                     //if (KillMacro)
@@ -985,20 +1121,26 @@ internal sealed partial class EmueraConsole : IDisposable
                 if (state != ConsoleState.WaitInput)
                     break;
                 //マクロループ時は待ち処理が起こらないのでここでシステムキューを捌く
+                long eventStart = PerformanceMetrics.StartTiming();
+                // [Emuera改修:MACRO-02]
+                // 描画をまとめても入力ごとにWindowsのイベントを処理し、Esc中断と応答性を維持する。
                 Application.DoEvents();
+                PerformanceMetrics.AddLoopEvent(eventStart);
 #if DEBUG
                 if (state != ConsoleState.WaitInput || inputReq == null)
                     throw new ExeEE("");
 #endif
                 if (KillMacro)
                 {
-                    endMacro();
-                    return;
+                    break;
                 }
             }
         }
         finally
         {
+            PerformanceMetrics.AddInputLoop(inputLoopStart);
+            // 例外や中断でも必ず通常描画へ戻すためfinally内で解除する。
+            batchingMacroDisplay = false;
             inProcess = false;
         }
 
@@ -1012,7 +1154,15 @@ internal sealed partial class EmueraConsole : IDisposable
                 if (window.MainPicBox.ClientRectangle.Contains(point))
                     MoveMouse(point);
             }
+            // マクロ終了時は必ず最終画面を描く。途中描画を集約しても最終表示は欠けない。
             RefreshStrings(true);
+            MacroResult result = PerformanceMetrics.FinishMacro(KillMacro);
+            if (result != null)
+            {
+                string stateHash = process.GetBenchmarkStateHash();
+                var displayState = GetBenchmarkDisplayState();
+                PerformanceMetrics.WriteMacro(result, stateHash, displayState.Hash, displayState.LineCount);
+            }
         }
     }
 
@@ -1223,8 +1373,12 @@ internal sealed partial class EmueraConsole : IDisposable
 
     #region 描画系
     Stopwatch _frameDeltaTimer = Stopwatch.StartNew();
+    // [Emuera改修:MACRO-03]
+    // 複数入力マクロ中の実画面更新上限。ゲーム処理回数ではなく、見た目の更新回数だけを制限する。
+    const uint MacroMaxFramesPerSecond = 30;
     uint msPerFrame = 1000 / 60;//60FPS
     ConsoleRedraw redraw = ConsoleRedraw.Normal;
+    bool suppressInitialPaint;
     public ConsoleRedraw Redraw { get { return redraw; } }
     public void SetRedraw(Int64 i)
     {
@@ -1266,6 +1420,12 @@ internal sealed partial class EmueraConsole : IDisposable
     /// </summary>
     public void RefreshStrings(bool force_Paint)
     {
+        long refreshStart = PerformanceMetrics.StartTiming();
+        try
+        {
+        // 起動試験で初期描画を止めている間は、重いスクロール・OnPaintへ進まない。
+        if (suppressInitialPaint)
+            return;
         bool isBackLog = window.ScrollBar.Value != window.ScrollBar.Maximum;
         //ログ表示はREDRAWの設定に関係なく行うようにする
         if ((redraw == ConsoleRedraw.None) && (!force_Paint) && (!isBackLog))
@@ -1290,9 +1450,12 @@ internal sealed partial class EmueraConsole : IDisposable
          //履歴表示中でなく、最終行を表示済みであり、選択中ボタンが変更されていないなら更新不要
             if ((!isBackLog) && (lastDrawnLineNo == lineNo) && (lastSelectingButton == selectingButton))
                 return;
-            //まだ書き換えるタイミングでないなら次の更新を待ってみる
-            //ただし、入力待ちなど、しばらく更新のタイミングがない場合には強制的に書き換えてみる
-            if (_frameDeltaTimer.ElapsedMilliseconds < msPerFrame && (state == ConsoleState.Running || state == ConsoleState.Initializing))
+            //まだ書き換えるタイミングでないなら次の更新を待ってみる。
+            //複数入力マクロでは入力待ち状態も対象にし、設定FPSを尊重しつつ最大30FPSに抑える。
+            // 通常は設定FPS、マクロ中だけはそれより速くても最大30FPSに丸める。
+            uint refreshInterval = batchingMacroDisplay ? Math.Max(msPerFrame, 1000u / MacroMaxFramesPerSecond) : msPerFrame;
+            if (_frameDeltaTimer.ElapsedMilliseconds < refreshInterval &&
+                (batchingMacroDisplay || state == ConsoleState.Running || state == ConsoleState.Initializing))
                 return;
         }
 
@@ -1318,11 +1481,18 @@ internal sealed partial class EmueraConsole : IDisposable
         window.Invoke(() =>
         {
             //描画が重いと入力が処理できないので、描画毎に入力を捌く
+            long eventStart = PerformanceMetrics.StartTiming();
             Application.DoEvents();
+            PerformanceMetrics.AddRefreshEvent(eventStart);
 
             verticalScrollBarUpdate();
             window.MainPicBox.Refresh();//OnPaint発行
         });
+        }
+        finally
+        {
+            PerformanceMetrics.AddRefresh(refreshStart);
+        }
     }
 
 
@@ -1339,6 +1509,9 @@ internal sealed partial class EmueraConsole : IDisposable
         //OnPaintからgraphをもらった直後だから大丈夫だとは思うけど一応
         if (!this.Enabled)
             return;
+        long paintStart = PerformanceMetrics.StartTiming();
+        try
+        {
 
         //デバッグ用。描画が超重い環境を想定1
         //Task.Delay(100).Wait();
@@ -1467,6 +1640,11 @@ internal sealed partial class EmueraConsole : IDisposable
         {
             need_settimer = false;
             setTimer();
+        }
+        }
+        finally
+        {
+            PerformanceMetrics.AddPaint(paintStart);
         }
     }
 
@@ -1915,6 +2093,9 @@ internal sealed partial class EmueraConsole : IDisposable
 
     private void verticalScrollBarUpdate()
     {
+        long scrollStart = PerformanceMetrics.StartTiming();
+        try
+        {
         int max = displayLineList.Count;
         int move = max - window.ScrollBar.Maximum;
         if (move == 0)
@@ -1931,6 +2112,11 @@ internal sealed partial class EmueraConsole : IDisposable
             window.ScrollBar.Maximum = max;
         }
         window.ScrollBar.Enabled = max > 0;
+        }
+        finally
+        {
+            PerformanceMetrics.AddScroll(scrollStart);
+        }
     }
     #endregion
 

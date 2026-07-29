@@ -14,6 +14,10 @@ using System.Threading.Tasks;
 namespace MinorShift.Emuera.Runtime.Utils;
 static partial class Preload
 {
+    // [Emuera改修:START-01]
+    // 複数ファイルを同時に読み込むため、読み込み結果の置き場も並列対応にする。
+    // キーはファイルパス、値はそのファイルを行ごとに分けた文字列配列。
+    // 参照: プロジェクト資料/06_コード案内.md
     static ConcurrentDictionary<string, string[]> files = new(StringComparer.OrdinalIgnoreCase);
 
     public static string[] GetFileLines(string path)
@@ -31,6 +35,7 @@ static partial class Preload
         {
             await Task.Run(() =>
             {
+                // CSV/ERH/ERBは互いに別ファイルなので、ディスクとCPUが許す範囲で同時に先読みする。
                 dir.EnumerateFiles("*", SearchOption.AllDirectories)
                 .AsParallel()
                 .Where(x =>
@@ -63,8 +68,15 @@ static partial class Preload
                         }
                     }
 
-                    var lines = new List<string>();
                     var n = (byte)'\n';
+                    // 先に改行数を数えてListの必要容量を確保し、拡張用配列の作り直しを減らす。
+                    int lineCount = 1;
+                    foreach (byte value in bytes)
+                    {
+                        if (value == n)
+                            lineCount++;
+                    }
+                    var lines = new List<string>(lineCount);
 
                     foreach (var range in ((ReadOnlySpan<byte>)bytes[..]).Split(n))
                     {

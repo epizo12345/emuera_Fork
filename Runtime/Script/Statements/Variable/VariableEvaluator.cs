@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using MinorShift.Emuera.UI.Framework;
@@ -53,14 +54,20 @@ internal sealed class VariableEvaluator : IDisposable
     }
     public long GetNextRand(long max)
     {
+        long value;
         if (JSONConfig.Game.UseNewRandom)
         {
-            return _newRand.NextInt64(max);
+            value = _newRand.NextInt64(max);
         }
         else
         {
-            return rand.NextInt64(max);
+            value = rand.NextInt64(max);
         }
+        // [Emuera改修:MEASURE-04]
+        // 比較試験で乱数の「呼ばれた回数と順序」を確認するために記録する。
+        // 新しい乱数は引かず、すでに得たmaxとvalueを見るだけ。通常版では空処理。
+        PerformanceMetrics.RecordRandom(max, value);
+        return value;
     }
 
     public long getPalamLv(long pl, long maxlv)
@@ -316,9 +323,12 @@ internal sealed class VariableEvaluator : IDisposable
     public static long GetMatch(FixedVariableTerm p, long target, long start, long end)
     {
         long ret = 0;
+        long[] array = p.Identifier.IsCharacterData
+            ? (long[])p.Identifier.GetArrayChara((int)p.Index1)
+            : (long[])p.Identifier.GetArray();
 
         for (int i = (int)start; i < (int)end; i++)
-            if (p.Identifier.GetIntValue(GlobalStatic.EMediator, p.Identifier.IsCharacterData ? [p.Index1, i] : [i]) == target)
+            if (array[i] == target)
                 ret++;
 
         return ret;
@@ -339,10 +349,12 @@ internal sealed class VariableEvaluator : IDisposable
     public static long GetMatchChara(FixedVariableTerm p, long target, long start, long end)
     {
         long ret = 0;
+        long[] indices = [0, p.Index2, p.Index3];
 
         for (int i = (int)start; i < (int)end; i++)
         {
-            if (p.Identifier.GetIntValue(GlobalStatic.EMediator, [i, p.Index2, p.Index3]) == target)
+            indices[0] = i;
+            if (p.Identifier.GetIntValue(GlobalStatic.EMediator, indices) == target)
                 ret++;
         }
 
@@ -2335,6 +2347,17 @@ internal sealed class VariableEvaluator : IDisposable
         }
         varData.SaveToStreamBinary(bWriter);
         bWriter.WriteEOF();
+    }
+
+    internal string GetBenchmarkStateHash()
+    {
+        // [Emuera改修:MEASURE-03]
+        // 実際のセーブと同じ書き出し処理をメモリ上だけで行い、SHA-256を作る。
+        // これによりマクロ前後の変数差を検出できる。ディスク上のセーブは変更しない。
+        using MemoryStream stream = new();
+        using (EraBinaryDataWriter writer = new(stream))
+            SaveToStreamBinary(writer, "");
+        return Convert.ToHexString(SHA256.HashData(stream.ToArray()));
     }
 
     public void LoadFromStreamBinary(EraBinaryDataReader bReader)

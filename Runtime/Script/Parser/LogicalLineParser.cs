@@ -5,6 +5,7 @@ using MinorShift.Emuera.Runtime.Script.Statements;
 using MinorShift.Emuera.Runtime.Script.Statements.Expression;
 using MinorShift.Emuera.Runtime.Utils;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using MinorShift.Emuera.UI.Framework;
 
@@ -12,7 +13,11 @@ namespace MinorShift.Emuera.Runtime.Script.Parser;
 
 internal static class LogicalLineParser
 {
-    public static bool ParseSharpLine(FunctionLabelLine label, CharStream st, ScriptPosition? position, List<string> OnlyLabel)
+    // [Emuera改修:WARN-03]
+    // OnlyLabelは複数ERBから同時に#ONLY等を登録するため、並列対応Dictionaryを受け取る。
+    // 普通のDictionary/Listを共有すると登録途中の内容を別スレッドが誤読することがある。
+    // 参照: プロジェクト資料/06_コード案内.md
+    public static bool ParseSharpLine(FunctionLabelLine label, CharStream st, ScriptPosition? position, ConcurrentDictionary<string, byte> OnlyLabel)
     {
         st.ShiftNext();//'#'を飛ばす
         var token = LexicalAnalyzer.ReadSingleIdentifier(st);//#～自体にはマクロ非適用
@@ -115,9 +120,8 @@ internal static class LogicalLineParser
                         ParserMediator.Warn(LocalizationManager.Error.DuplicateOnly, position, 1);
                         break;
                     }
-                    else if (OnlyLabel.Contains(label.LabelName))
+                    else if (!OnlyLabel.TryAdd(label.LabelName, 0))
                         ParserMediator.Warn("このイベント関数\"@" + label.LabelName + "\"にはすでに#ONLYが宣言されています（この関数は実行されません）", position, 1);
-                    OnlyLabel.Add(label.LabelName);
                     label.IsOnly = true;
                     if (label.IsPri)
                     {

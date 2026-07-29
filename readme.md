@@ -1,12 +1,18 @@
 # Emuera.NET 
-著作者：VVII, MinorShift, 妊）|дﾟ)の中の人  
-頒布者：VVII  
-連絡先：eraMegaten Discordサーバー（https://discord.gg/yQRYkNMuWr） VVII 宛  
+著作者：VVII, MinorShift, 妊）|дﾟ)の中の人,epizo  
+頒布者：epizo  
+連絡先：eraMegaten Discordサーバー（https://discord.gg/yQRYkNMuWr） epizo 宛  
+
+# 前書き
+https://gitlab.com/alnatiyan/EmueraDotNet/-/tree/BugFix_Test?ref_type=heads  
+を独自にForkしたバージョンです。  
+ChatGPTsolを使用して修正しているため動作は保証できません。  
+個人用に作成しているため、使用は自己責任でお願いします。  
 
 # 動作環境
-.NET 8環境が必要です。
+.NET 9環境が必要です。
 
-起動時に.NET 8のインストールが確認できなかった場合
+起動時に.NET 9のインストールが確認できなかった場合
 自動でインストーラーが立ち上がりますので
 画面の指示に従ってインストールしてください。
 
@@ -22,6 +28,6 @@
 複数ファイルがある場合はファイル名順に書き出します。
 
 # 不具合等連絡先
-eraMegaten Discordサーバー（https://discord.gg/yQRYkNMuWr） にて、VVII宛にメッセージを送ってください。
+eraMegaten Discordサーバー（https://discord.gg/yQRYkNMuWr） にて、epizo宛にメッセージを送ってください。
 
-※MinorShift氏、 妊）|дﾟ)の中の人氏は本バージョンの開発には携わっておりません
+※MinorShift氏、 妊）|дﾟ)の中の人氏、VVII氏は本バージョンの開発には携わっておりません

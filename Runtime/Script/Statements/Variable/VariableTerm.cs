@@ -3,6 +3,7 @@ using MinorShift.Emuera.Runtime.Script.Statements.Expression;
 using MinorShift.Emuera.Runtime.Utils;
 using MinorShift.Emuera.Sub;
 using System;
+using System.Collections.Generic;
 
 namespace MinorShift.Emuera.Runtime.Script.Statements.Variable;
 
@@ -34,6 +35,18 @@ internal class VariableTerm : AExpression
     private readonly AExpression[] arguments;
     protected long[] transporter;
     protected bool allArgIsConst;
+
+    // [Emuera改修:MACRO-04]
+    // MATCHなどの配列検索は、検索するたびに「確定した変数参照」と3要素の添字配列を作っていた。
+    // 大量マクロではこの小さな一時物が何百万個にもなるため、同じスレッド内で使い終えた物を再利用する。
+    // 値型（整数）と文字列型ではAExpressionの型情報が異なるので、混ぜずに別々のプールへ保管する。
+    // Leaseをusingで使うことで、例外やERBエラーが起きても必ず返却され、再帰呼び出し中は別の個体を借りる。
+    // 参照: プロジェクト資料/06_コード案内.md
+    [ThreadStatic]
+    private static Stack<FixedVariableTerm> fixedLongTermPool;
+    [ThreadStatic]
+    private static Stack<FixedVariableTerm> fixedStringTermPool;
+    private const int FixedTermPoolLimit = 64;
 
     public long GetElementInt(int i, ExpressionMediator exm)
     {
@@ -223,6 +236,53 @@ internal class VariableTerm : AExpression
         return fp;
     }
 
+    /// <summary>
+    /// 短い処理の間だけ使う確定済み変数参照を借りる。
+    /// 戻り値は必ずusingで囲み、処理後にプールへ返すこと。
+    /// </summary>
+    public FixedVariableTermLease RentFixedVariableTerm(ExpressionMediator exm)
+    {
+        // 添字の評価位置と順序は従来のGetFixedVariableTermと同じままにする。
+        // RAND等を添字に使うERBでも乱数の消費順を変えないため、先に全添字を確定する。
+        if (!allArgIsConst)
+            for (int i = 0; i < arguments.Length; i++)
+                transporter[i] = arguments[i].GetIntValue(exm);
+
+        Stack<FixedVariableTerm> pool;
+        if (Identifier.VariableType == typeof(long))
+            pool = fixedLongTermPool ??= new Stack<FixedVariableTerm>();
+        else
+            pool = fixedStringTermPool ??= new Stack<FixedVariableTerm>();
+
+        FixedVariableTerm term = pool.Count > 0 ? pool.Pop() : new FixedVariableTerm(Identifier);
+        term.Reset(Identifier, transporter);
+        return new FixedVariableTermLease(term, pool);
+    }
+
+    internal ref struct FixedVariableTermLease
+    {
+        private FixedVariableTerm term;
+        private readonly Stack<FixedVariableTerm> pool;
+
+        internal FixedVariableTermLease(FixedVariableTerm term, Stack<FixedVariableTerm> pool)
+        {
+            this.term = term;
+            this.pool = pool;
+        }
+
+        public readonly FixedVariableTerm Term => term!;
+
+        public void Dispose()
+        {
+            FixedVariableTerm value = term;
+            if (value == null)
+                return;
+            term = null;
+            if (pool.Count < FixedTermPoolLimit)
+                pool.Push(value);
+        }
+    }
+
     public override AExpression Restructure(ExpressionMediator exm)
     {
         bool[] canCheck = new bool[arguments.Length];
@@ -314,6 +374,14 @@ internal sealed class FixedVariableTerm : VariableTerm
     public long Index1 { get { return transporter[0]; } set { transporter[0] = value; } }
     public long Index2 { get { return transporter[1]; } set { transporter[1] = value; } }
     public long Index3 { get { return transporter[2]; } set { transporter[2] = value; } }
+
+    internal void Reset(VariableToken token, long[] args)
+    {
+        Identifier = token;
+        transporter[0] = args.Length >= 1 ? args[0] : 0;
+        transporter[1] = args.Length >= 2 ? args[1] : 0;
+        transporter[2] = args.Length >= 3 ? args[2] : 0;
+    }
 
 
     public override long GetIntValue(ExpressionMediator exm)

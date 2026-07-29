@@ -42,6 +42,11 @@ internal sealed partial class Process(EmueraConsole view)
     /// </summary>
     private VariableEvaluator vEvaluator;
     public VariableEvaluator VEvaluator { get { return vEvaluator; } }
+    public int ExecutedLineCount => state?.lineCount ?? 0;
+    // [Emuera改修:MEASURE-03]
+    // マクロ後の変数状態を保存形式と同じ並びでハッシュ化し、比較試験に使う入口。
+    // セーブファイル自体は作成・変更しない。通常プレイからは呼ばれない。
+    internal string GetBenchmarkStateHash() => vEvaluator.GetBenchmarkStateHash();
     private ExpressionMediator exm;
     private GameBase gamebase;
     readonly EmueraConsole console = view;
@@ -90,6 +95,8 @@ internal sealed partial class Process(EmueraConsole view)
             }
             ParserMediator.FlushWarningList();
             logWriter.WriteLine($"Proc:Init:Image:End {stopWatch.ElapsedMilliseconds}ms");
+            // [Emuera改修:MEASURE-01] 起動時間を区間別に調べる目印。通常版では空処理。
+            PerformanceMetrics.MarkStartup("ResourcesPrepared");
 
 
             logWriter.WriteLine($"Proc:Init:KeyMacro:Start {stopWatch.ElapsedMilliseconds}ms");
@@ -172,6 +179,7 @@ internal sealed partial class Process(EmueraConsole view)
             GlobalStatic.ConstantData = constant;
             TrainName = constant.GetCsvNameList(VariableCode.TRAINNAME);
             logWriter.WriteLine($"Proc:Init:EtcCSV:End {stopWatch.ElapsedMilliseconds}ms");
+            PerformanceMetrics.MarkStartup("CsvLoaded"); // CSV読込完了の目印
 
 
             vEvaluator = new VariableEvaluator(gamebase, constant);
@@ -203,6 +211,7 @@ internal sealed partial class Process(EmueraConsole view)
             }
             LexicalAnalyzer.UseMacro = idDic.UseMacro();
             logWriter.WriteLine($"Proc:Init:ERH:End {stopWatch.ElapsedMilliseconds}ms");
+            PerformanceMetrics.MarkStartup("ErhLoaded"); // ERH読込完了の目印
 
 
             //TODO:ユーザー定義変数用のcsvの適用
@@ -214,7 +223,12 @@ internal sealed partial class Process(EmueraConsole view)
                 noError = await loader.LoadErbList(Program.AnalysisFiles, labelDic);
             else
                 noError = await loader.LoadErbDir(Program.ErbDir, Config.DisplayReport, labelDic);
+            logWriter.WriteLine($"Proc:Init:ERB:Enumeration {loader.EnumerationMilliseconds}ms");
+            logWriter.WriteLine($"Proc:Init:ERB:PrimaryParse {loader.PrimaryParseMilliseconds}ms");
+            logWriter.WriteLine($"Proc:Init:ERB:LabelSetup {loader.LabelSetupMilliseconds}ms");
+            logWriter.WriteLine($"Proc:Init:ERB:ScriptParse {loader.ScriptParseMilliseconds}ms");
             logWriter.WriteLine($"Proc:Init:ERB:End {stopWatch.ElapsedMilliseconds}ms");
+            PerformanceMetrics.MarkStartup("ErbParsed"); // ERB解析完了の目印
 
             SQL.SetUpTempDB();
 
@@ -512,7 +526,33 @@ internal sealed partial class Process(EmueraConsole view)
 					return state.Scope;
 				}
 		*/
-    public LogicalLine scaningLine;
+    // [Emuera改修:WARN-04]
+    // 並列解析中の「今どの行を解析しているか」を作業スレッドごとに分ける。
+    // 1つの共有変数だと、別スレッドの行番号を使って誤警告を出すことがある。
+    // 通常の逐次実行時は従来どおりsequentialScanningLineを使う。
+    // 参照: プロジェクト資料/06_コード案内.md
+    [ThreadStatic]
+    private static LogicalLine parallelScanningLine;
+    private LogicalLine sequentialScanningLine;
+    private volatile bool useThreadLocalScanningLine;
+    public LogicalLine scaningLine
+    {
+        get => useThreadLocalScanningLine ? parallelScanningLine : sequentialScanningLine;
+        set
+        {
+            if (useThreadLocalScanningLine)
+                parallelScanningLine = value;
+            else
+                sequentialScanningLine = value;
+        }
+    }
+
+    internal void SetParallelScanning(bool enabled)
+    {
+        useThreadLocalScanningLine = enabled;
+        if (!enabled)
+            parallelScanningLine = null;
+    }
     internal LogicalLine GetScaningLine()
     {
         if (scaningLine != null)

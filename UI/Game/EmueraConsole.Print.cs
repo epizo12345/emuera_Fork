@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
 using MinorShift.Emuera.UI.Framework;
@@ -39,8 +40,13 @@ internal sealed partial class EmueraConsole : IDisposable
         logicalLineCount = 0;
         lineNo = 0;
         lastDrawnLineNo = -1;
-        verticalScrollBarUpdate();
-        window.MainPicBox.Refresh();//OnPaint発行
+        // [Emuera改修:START-06]
+        // 起動初期の描画を抑えている間はデータだけ消去し、重い画面更新は最後にまとめる。
+        if (!suppressInitialPaint)
+        {
+            verticalScrollBarUpdate();
+            window.MainPicBox.Refresh();//OnPaint発行
+        }
     }
 
 
@@ -95,6 +101,8 @@ internal sealed partial class EmueraConsole : IDisposable
     {
         this.bgColor = color.ToSKColor();
         forceTextBoxColor = true;
+        if (suppressInitialPaint)
+            return;
         //REDRAWされない場合はTextBoxの色は変えずにフラグだけ立てる
         //最初の再描画時に現在の背景色に合わせる
         if (redraw == ConsoleRedraw.None && window.ScrollBar.Value == window.ScrollBar.Maximum)
@@ -147,10 +155,33 @@ internal sealed partial class EmueraConsole : IDisposable
     int lineNo;
     Int64 logicalLineCount;
     public long LineCount { get { return logicalLineCount; } }
+
+    // [Emuera改修:MEASURE-05]
+    // 表示行をSHA-256にし、性能変更の前後で最終表示が変わっていないか調べる。
+    // 画面内容を書き換える処理ではなく、計測終了時に読むだけ。
+    // 参照: プロジェクト資料/06_コード案内.md
+    internal (string Hash, int LineCount) GetBenchmarkDisplayState()
+    {
+        StringBuilder builder = new();
+        foreach (ConsoleDisplayLine line in displayLineList)
+            builder.Append(line).Append('\n');
+        byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(builder.ToString()));
+        return (Convert.ToHexString(hash), displayLineList.Count);
+    }
+
     private void addRangeDisplayLine(ConsoleDisplayLine[] lineList)
     {
-        for (int i = 0; i < lineList.Length; i++)
-            addDisplayLine(lineList[i], false);
+        // [Emuera改修:MEASURE-02] 表示行追加に掛かった時間を計測版だけで記録する。
+        long displayAddStart = PerformanceMetrics.StartTiming();
+        try
+        {
+            for (int i = 0; i < lineList.Length; i++)
+                addDisplayLine(lineList[i], false);
+        }
+        finally
+        {
+            PerformanceMetrics.AddDisplayAdd(displayAddStart);
+        }
     }
 
     private void addDisplayLine(ConsoleDisplayLine line, bool force_LEFT)
@@ -432,7 +463,9 @@ internal sealed partial class EmueraConsole : IDisposable
             ConsoleDisplayLine[] dispList = printBuffer.Flush(stringMeasure, force_temporary);
             addRangeDisplayLine(dispList);
         }
+        long displayBuildStart = PerformanceMetrics.StartTiming();
         addRangeDisplayLine(HtmlManager.Html2DisplayLine(str, stringMeasure, this, lineEnd));
+        PerformanceMetrics.AddDisplayBuild(displayBuildStart);
         RefreshStrings(false);
     }
 
@@ -548,7 +581,9 @@ internal sealed partial class EmueraConsole : IDisposable
             return null;
         if (force && printBuffer.IsEmpty)
             printBuffer.Append(" ", Style);
+        long displayBuildStart = PerformanceMetrics.StartTiming();
         ConsoleDisplayLine dispLine = printBuffer.FlushSingleLine(stringMeasure, temporary | force_temporary);
+        PerformanceMetrics.AddDisplayBuild(displayBuildStart);
         return dispLine;
     }
 
@@ -580,7 +615,9 @@ internal sealed partial class EmueraConsole : IDisposable
             return;
         if (force && printBuffer.IsEmpty)
             printBuffer.Append(" ", Style);
+        long displayBuildStart = PerformanceMetrics.StartTiming();
         ConsoleDisplayLine[] dispList = printBuffer.Flush(stringMeasure, force_temporary);
+        PerformanceMetrics.AddDisplayBuild(displayBuildStart);
         //ConsoleDisplayLine[] dispList = printBuffer.Flush(stringMeasure, temporary | force_temporary);
         addRangeDisplayLine(dispList);
         //1819描画命令は分離
@@ -626,16 +663,23 @@ internal sealed partial class EmueraConsole : IDisposable
 
     public string getStBar(string barStr)
     {
-        var builder = new StringBuilder();
-        builder.Append(barStr);
-        int width = 0;
+        int targetWidth = Config.DrawableWidth;
         var font = Config.DefaultFont;
-        while (width < Config.DrawableWidth)
+        int unitWidth = StringMeasure.GetDisplayLength(barStr, font);
+        var builder = new StringBuilder();
+
+        // 1文字ずつ追加して文字列全体を毎回測ると、横幅に対して二次的に遅くなる。
+        // まず必要数を見積もり、フォントの字間差だけを下のループで正確に補正する。
+        int repeatCount = unitWidth > 0 ? Math.Max(1, targetWidth / unitWidth + 1) : 1;
+        builder.AppendJoin(null, Enumerable.Repeat(barStr, repeatCount));
+        int width = StringMeasure.GetDisplayLength(builder.ToString(), font);
+
+        while (width < targetWidth)
         {//境界を越えるまで一文字ずつ増やす
             builder.Append(barStr);
             width = StringMeasure.GetDisplayLength(builder.ToString(), font);
         }
-        while (width > Config.DrawableWidth)
+        while (width > targetWidth)
         {//境界を越えたら、今度は超えなくなるまで一文字ずつ減らす（barStrに複数字の文字列がきた場合に対応するため）
             builder.Remove(builder.Length - 1, 1);
             width = StringMeasure.GetDisplayLength(builder.ToString(), font);

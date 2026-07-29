@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Runtime;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using MinorShift.Emuera.UI.Framework;
@@ -261,6 +262,29 @@ internal sealed partial class MainWindow : Form
     private async void Init(object sender, EventArgs e)
     {
         await console.Initialize();
+#if STARTUP_MEMORY_TRIM
+        BeginInvoke(CompleteStartup);
+#else
+        CompleteStartup();
+#endif
+    }
+
+    private void CompleteStartup()
+    {
+        // [Emuera改修:START-04]
+        // 強制GCはメモリ比較用スイッチを付けたビルドだけで実行する。
+        // 通常版は起動を遅くしないよう、このブロック自体がコンパイルされない。
+        // 参照: プロジェクト資料/06_コード案内.md
+#if STARTUP_MEMORY_TRIM
+        PerformanceMetrics.MarkStartup("MemoryTrimStart");
+        GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, blocking: true, compacting: true);
+        PerformanceMetrics.MarkStartup("MemoryTrimEnd");
+#endif
+        PerformanceMetrics.MarkStartup("InputReady");
+        PerformanceMetrics.WriteStartup();
+        if (Program.StartupTestMode)
+            BeginInvoke(Close);
     }
 
     /// <summary>
@@ -381,6 +405,35 @@ internal sealed partial class MainWindow : Form
             return;
         }
         bool isBacklog = vScrollBar.Value != vScrollBar.Maximum;
+
+        // [Emuera改修:MOUSE-01]
+        // サイドボタンを「指定文言を含む現在のゲーム内ボタンを押す」操作へ変換する。
+        // ゲーム画面を直接めくるのではなく、通常クリックと同じ入力を渡すので互換性を保てる。
+        // 過去ログ表示中は誤選択を避け、まず最新行へ戻すだけにする。
+        // 参照: プロジェクト資料/06_コード案内.md
+        if (e.Button == MouseButtons.XButton1 || e.Button == MouseButtons.XButton2)
+        {
+            if (isBacklog)
+            {
+                vScrollBar.Value = vScrollBar.Maximum;
+                console.RefreshStrings(true);
+                return;
+            }
+
+            string targetText = e.Button == MouseButtons.XButton1
+                ? JSONConfig.User.MouseXButton1ButtonText
+                : JSONConfig.User.MouseXButton2ButtonText;
+            if (console.TryGetCurrentButtonInputByText(targetText, out string input))
+            {
+                changeTextbyMouse = console.IsWaintingOnePhrase;
+                richTextBox1.Text = input;
+                if (console.IsWaintingOnePhrase)
+                    last_inputed = "";
+                PressEnterKey(false, true);
+            }
+            return;
+        }
+
         string str = console.SelectedString;
 
         if (isBacklog)

@@ -45,6 +45,10 @@ static partial class Program
     [STAThread]
     static void Main(string[] args)
     {
+        // [Emuera改修:MEASURE-01]
+        // EXEが動き始めた瞬間を記録する。通常版では空処理になるため速度に影響しない。
+        // 参照: プロジェクト資料/06_コード案内.md
+        PerformanceMetrics.MarkProcessStart();
         // memo: Shift-JISを扱うためのおまじない
         System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
@@ -64,6 +68,22 @@ static partial class Program
         );
         rootCommand.Add(debugModeOption);
 
+        // [Emuera改修:TOOLS-01]
+        // 自動テスト用の入口。ゲーム操作用の通常オプションではない。
+        // --StartupTest は操作可能になった時点でログを保存して自動終了する。
+        var startupTestOption = new Option<bool>(
+            name: "--StartupTest",
+            description: "起動完了後に画面ログをstartup-test.logへ保存して自動終了する"
+        );
+        rootCommand.AddOption(startupTestOption);
+
+        // --BenchmarkLog は計測版だけが使うJSON Linesの保存先を受け取る。
+        var benchmarkLogOption = new Option<string>(
+            name: "--BenchmarkLog",
+            description: "起動・マクロ性能計測のJSON Lines出力先"
+        );
+        rootCommand.AddOption(benchmarkLogOption);
+
         var filesArg = new Argument<string[]>(
             LocalizationManager.Parameters.HelpfilesArg
         )
@@ -71,6 +91,7 @@ static partial class Program
         rootCommand.Add(filesArg);
 
         var result = rootCommand.Parse(args);
+        PerformanceMetrics.Configure(result.GetValueForOption(benchmarkLogOption));
 
         //実行ディレクトリが引数で与えられた場合
         var exeDir = result.GetValue(exeDirOption);
@@ -81,6 +102,7 @@ static partial class Program
 
         var debugMode = result.GetValue(debugModeOption);
         DebugMode = debugMode;
+        StartupTestMode = result.GetValueForOption(startupTestOption);
 
         var fileArgs = result.GetValue(filesArg) ?? [];
         var analysisRequestPaths = fileArgs;
@@ -110,6 +132,8 @@ static partial class Program
 
         ConfigData.Instance.LoadConfig();
         JSONConfig.Load();
+        // [Emuera改修:MEASURE-01] 設定読込区間の終点。通常版では空処理。
+        PerformanceMetrics.MarkStartup("SettingsLoaded");
 
 
         //二重起動の禁止かつ二重起動
@@ -216,6 +240,8 @@ static partial class Program
     public static List<string> AnalysisFiles = [];
 
     public static bool DebugMode { get; private set; }
+
+    public static bool StartupTestMode { get; private set; }
 
     static Program()
     {

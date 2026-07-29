@@ -32,13 +32,22 @@ internal sealed class ErbLoader
     readonly Process parentProcess;
     readonly ExpressionMediator exm;
     readonly EmueraConsole output;
-    readonly HashSet<string> ignoredFNFWarningFiles = new(StringComparer.OrdinalIgnoreCase);
+    // [Emuera改修:WARN-06]
+    // 並列解析中に「同じファイルの未定義関数警告はまとめる」という情報を共有するための集合。
+    // 値のbyteには意味がなく、キーが存在するかだけを見る。
+    // 参照: プロジェクト資料/06_コード案内.md
+    readonly ConcurrentDictionary<string, byte> ignoredFNFWarningFiles = new(StringComparer.OrdinalIgnoreCase);
     int ignoredFNFWarningCount;
 
     int enabledLineCount;
     LabelDictionary labelDic;
 
-    bool noError = true;
+    // 複数スレッドから更新するため、読み書きはInterlocked/Volatile経由で行う。
+    int hasError;
+    public long EnumerationMilliseconds { get; private set; }
+    public long PrimaryParseMilliseconds { get; private set; }
+    public long LabelSetupMilliseconds { get; private set; }
+    public long ScriptParseMilliseconds { get; private set; }
     /// <summary>
     /// 複数のファイルを読む
     /// </summary>
@@ -49,9 +58,13 @@ internal sealed class ErbLoader
         //checkScript();の時点でExpressionPerserがProcess.instance.LabelDicを必要とするから。
         labelDic = labelDictionary;
         labelDic.Initialized = false;
+        var enumerationStopwatch = System.Diagnostics.Stopwatch.StartNew();
         var erbFiles = Config.Config.GetFiles(erbDir, "*.ERB");
-        List<string> isOnlyEvent = [];
-        noError = true;
+        EnumerationMilliseconds = enumerationStopwatch.ElapsedMilliseconds;
+        PerformanceMetrics.MarkStartup("ErbEnumerated");
+        ConcurrentDictionary<string, byte> isOnlyEvent = new(Config.Config.StrComper);
+        hasError = 0;
+        var stageStopwatch = System.Diagnostics.Stopwatch.StartNew();
 #if DEBUG
         var starttime = System.Diagnostics.Stopwatch.StartNew();
 #endif
@@ -61,11 +74,17 @@ internal sealed class ErbLoader
 
             ConcurrentQueue<string> logQueue = [];
 
-            var task = Task.Run(() => erbFiles.AsParallel().ForAll(erb =>
+            // [Emuera改修:START-01]
+            // ERBは別々のファイルなので複数CPUで同時に読む。ただし完了順は毎回変わるため、
+            // 先に元の列挙順番号(FileIndex)を付け、同名関数の優先順が変わらないようにする。
+            // 参照: プロジェクト資料/06_コード案内.md
+            var indexedErbFiles = erbFiles.Select((erb, index) => (Erb: erb, FileIndex: index + 1)).ToArray();
+            var task = Task.Run(() => Parallel.ForEach(indexedErbFiles, item =>
             {
+                var erb = item.Erb;
                 string filename = erb.Key;
                 string file = erb.Value;
-                loadErb(file, filename, isOnlyEvent);
+                loadErb(file, filename, item.FileIndex, isOnlyEvent);
 #if DEBUG
                 if (displayReport)
                     logQueue.Enqueue(string.Format(LocalizationManager.SystemLine.ElapsedTimeLoad, starttime.ElapsedMilliseconds, filename));
@@ -95,6 +114,7 @@ internal sealed class ErbLoader
             }
             await task;
             source.Cancel();
+            PrimaryParseMilliseconds = stageStopwatch.ElapsedMilliseconds;
 
 
             ParserMediator.FlushWarningList();
@@ -103,7 +123,9 @@ internal sealed class ErbLoader
 #endif
             if (displayReport)
                 output.PrintSystemLine(LocalizationManager.SystemLine.BuildingUserFunc);
+            stageStopwatch.Restart();
             setLabelsArg();
+            LabelSetupMilliseconds = stageStopwatch.ElapsedMilliseconds;
             ParserMediator.FlushWarningList();
             labelDic.Initialized = true;
 #if DEBUG
@@ -112,7 +134,9 @@ internal sealed class ErbLoader
             if (displayReport)
                 output.PrintSystemLine(LocalizationManager.SystemLine.CheckingSyntax);
 
+            stageStopwatch.Restart();
             await Task.Run(() => ParseScript());
+            ScriptParseMilliseconds = stageStopwatch.ElapsedMilliseconds;
 
             ParserMediator.FlushWarningList();
 
@@ -135,7 +159,7 @@ internal sealed class ErbLoader
             parentProcess.scaningLine = null;
         }
         isOnlyEvent.Clear();
-        return noError;
+        return Volatile.Read(ref hasError) == 0;
     }
 
     /// <summary>
@@ -145,14 +169,16 @@ internal sealed class ErbLoader
     public async Task<bool> LoadErbList(IEnumerable<string> paths, LabelDictionary labelDictionary)
     {
         string fname;
-        List<string> isOnlyEvent = [];
-        noError = true;
+        ConcurrentDictionary<string, byte> isOnlyEvent = new(Config.Config.StrComper);
+        hasError = 0;
         labelDic = labelDictionary;
         labelDic.Initialized = false;
 
 
+        int fileIndex = 0;
         foreach (var fpath in paths)
         {
+            fileIndex++;
             if (fpath.StartsWith(Program.ErbDir, Config.Config.SCIgnoreCase) && !Program.AnalysisMode)
                 fname = Path.GetRelativePath(Program.ErbDir, fpath);
             else
@@ -163,7 +189,7 @@ internal sealed class ErbLoader
             }
             await Task.Run(() =>
             {
-                loadErb(fpath, fname, isOnlyEvent);
+                loadErb(fpath, fname, fileIndex, isOnlyEvent);
             });
         }
 
@@ -179,7 +205,7 @@ internal sealed class ErbLoader
         ParserMediator.FlushWarningList();
         parentProcess.scaningLine = null;
         isOnlyEvent.Clear();
-        return noError;
+        return Volatile.Read(ref hasError) == 0;
     }
 
     private sealed class PPState
@@ -340,10 +366,10 @@ internal sealed class ErbLoader
     /// ファイル一つを読む
     /// </summary>
     /// <param name="filepath"></param>
-    private void loadErb(string filepath, string filename, List<string> isOnlyEvent)
+    private void loadErb(string filepath, string filename, int fileIndex, ConcurrentDictionary<string, byte> isOnlyEvent)
     {
         //一部ファイルの再読み込み時の処理用
-        labelDic.RemoveDuplicationFileData(filename);
+        fileIndex = labelDic.RegisterFile(filename, fileIndex);
         using var eReader = new EraStreamReader(Config.Config.UseRenameFile && ParserMediator.RenameDic != null);
 
         if (!eReader.OpenOnCache(filepath, filename))
@@ -392,7 +418,8 @@ internal sealed class ErbLoader
                     continue;
                 }
                 if (!LogicalLineParser.ParseSharpLine(funcLine, st, position, isOnlyEvent))
-                    noError = false;
+                    // 並列中の単純な hasError = 1 は競合し得るので、確実に1を書き込む。
+                    Interlocked.Exchange(ref hasError, 1);
                 continue;
             }
             if (st.Current == '$' || st.Current == '@')
@@ -405,13 +432,13 @@ internal sealed class ErbLoader
                     lastLabelLine = label;
                     if (label is InvalidLabelLine)
                     {
-                        noError = false;
+                        Interlocked.Exchange(ref hasError, 1);
                         ParserMediator.Warn(nextLine.ErrMes, position, 2);
                         labelDic.AddInvalidLabel(label);
                     }
                     else// if (label is FunctionLabelLine)
                     {
-                        labelDic.AddLabel(label);
+                        labelDic.AddLabel(label, fileIndex);
                         if (!label.IsEvent && (Config.Config.WarnNormalFunctionOverloading || Program.AnalysisMode))
                         {
                             FunctionLabelLine seniorLabel = labelDic.GetSameNameLabel(label);
@@ -444,7 +471,7 @@ internal sealed class ErbLoader
                 }
                 if (nextLine is InvalidLine)
                 {
-                    noError = false;
+                    Interlocked.Exchange(ref hasError, 1);
                     ParserMediator.Warn(nextLine.ErrMes, position, 2);
                 }
             }
@@ -467,7 +494,7 @@ internal sealed class ErbLoader
                     continue;
                 if (nextLine is InvalidLine)
                 {
-                    noError = false;
+                    Interlocked.Exchange(ref hasError, 1);
                     ParserMediator.Warn(nextLine.ErrMes, position, 2);
                 }
                 else if (JSONConfig.Game.UseNewRandom &&
@@ -504,7 +531,7 @@ internal sealed class ErbLoader
     {
         if (nextLine == null)
             return null;
-        enabledLineCount++;
+        Interlocked.Increment(ref enabledLineCount);
         lastLine.NextLine = nextLine;
         return nextLine;
     }
@@ -512,31 +539,52 @@ internal sealed class ErbLoader
     private void setLabelsArg()
     {
         List<FunctionLabelLine> labelList = labelDic.GetAllLabels(false);
-        foreach (FunctionLabelLine label in labelList)
+        if (Program.AnalysisMode || labelList.Count < 2)
         {
+            foreach (FunctionLabelLine label in labelList)
+                ParseLabelWithCatch(label);
+        }
+        else
+        {
+            // [Emuera改修:START-02]
+            // 各関数の「引数定義」は独立しているため同時解析できる。
+            // 解析中行はProcess側でスレッド別に保持し、偽の行番号・偽警告を防ぐ。
+            parentProcess.SetParallelScanning(true);
             try
             {
-                if (label.Arg != null)
-                    continue;
-                parentProcess.scaningLine = label;
-                parseLabel(label);
-            }
-            catch (Exception exc)
-            {
-                System.Media.SystemSounds.Hand.Play();
-                string errmes = exc.Message;
-                if (!(exc is EmueraException))
-                    errmes = exc.GetType().ToString() + ":" + errmes;
-                ParserMediator.Warn(string.Format(LocalizationManager.Error.FuncArgError, label.LabelName, errmes), label, 2, true, false);
-                label.ErrMes = LocalizationManager.Error.CalledFailedFunc;
-                label.IsError = true;
+                Parallel.ForEach(labelList, ParseLabelWithCatch);
             }
             finally
             {
-                parentProcess.scaningLine = null;
+                parentProcess.SetParallelScanning(false);
             }
         }
         labelDic.SortLabels();
+    }
+
+    private void ParseLabelWithCatch(FunctionLabelLine label)
+    {
+        try
+        {
+            if (label.Arg != null)
+                return;
+            parentProcess.scaningLine = label;
+            parseLabel(label);
+        }
+        catch (Exception exc)
+        {
+            System.Media.SystemSounds.Hand.Play();
+            string errmes = exc.Message;
+            if (exc is not EmueraException)
+                errmes = exc.GetType().ToString() + ":" + errmes;
+            ParserMediator.Warn(string.Format(LocalizationManager.Error.FuncArgError, label.LabelName, errmes), label, 2, true, false);
+            label.ErrMes = LocalizationManager.Error.CalledFailedFunc;
+            label.IsError = true;
+        }
+        finally
+        {
+            parentProcess.scaningLine = null;
+        }
     }
 
     private void parseLabel(FunctionLabelLine label)
@@ -677,7 +725,7 @@ internal sealed class ErbLoader
     }
 
 
-    public bool useCallForm;
+    public volatile bool useCallForm;
 
     /// <summary>
     /// 事前処理したファイルをさらに解析し実行可能な状態にする
@@ -687,6 +735,11 @@ internal sealed class ErbLoader
         int usedLabelCount = 0;
         int labelDepth = -1;
         List<FunctionLabelLine> labelList = labelDic.GetAllLabels(true);
+        HashSet<FunctionLabelLine> parsedLabels = [];
+        // [Emuera改修:START-03]
+        // CALLFORM系があるゲームは、到達判定だけでは呼び先を絞れないため残りも解析する。
+        // その大量の残り関数だけを最後に並列解析し、通常の評価順や実行順は変えない。
+        bool parseRemainingInParallel = false;
         while (true)
         {
             labelDepth++;
@@ -695,12 +748,17 @@ internal sealed class ErbLoader
             {
                 if (label.Depth != labelDepth)
                     continue;
-                //1756beta003 なんで追加したんだろう デバグ中になんかやったのか とりあえずコメントアウトしておく
-                //if (label.LabelName == "EVENTTURNEND")
-                //    useCallForm = true;
                 usedLabelCount++;
                 countInDepth++;
                 ParseFunctionWithCatch(label);
+                parsedLabels.Add(label);
+            }
+            // 動的な関数呼び出しが見つかった時点で、未解析関数も全て解析対象になる。
+            // 現在の深さは従来どおり順番に解析し、残りだけを並列化する。
+            if (useCallForm && !Program.AnalysisMode)
+            {
+                parseRemainingInParallel = true;
+                break;
             }
             if (countInDepth == 0)
                 break;
@@ -722,11 +780,24 @@ internal sealed class ErbLoader
         {//callform系が使われたら全ての関数が呼び出されたとみなす。
             if (Program.AnalysisMode)
                 output.PrintSystemLine(LocalizationManager.Error.BeNotFuncCheckBecauseUseCallform);
-            foreach (FunctionLabelLine label in labelList)
+            List<FunctionLabelLine> remainingLabels = labelList.Where(label => !parsedLabels.Contains(label)).ToList();
+            if (parseRemainingInParallel)
             {
-                if (label.Depth != labelDepth)
-                    continue;
-                ParseFunctionWithCatch(label);
+                // この並列化は起動時の構文解析だけ。ゲーム実行中の関数順序は変更しない。
+                parentProcess.SetParallelScanning(true);
+                try
+                {
+                    Parallel.ForEach(remainingLabels, ParseFunctionWithCatch);
+                }
+                finally
+                {
+                    parentProcess.SetParallelScanning(false);
+                }
+            }
+            else
+            {
+                foreach (FunctionLabelLine label in remainingLabels)
+                    ParseFunctionWithCatch(label);
             }
         }
         else
@@ -829,7 +900,6 @@ internal sealed class ErbLoader
 
     }
 
-
     public Dictionary<string, long> warningDic = [];
     private void printFunctionNotFoundWarning(string str, LogicalLine line, int level, bool isError)
     {
@@ -860,20 +930,20 @@ internal sealed class ErbLoader
             string filename = line.Position.Value.Filename;
             if (!string.IsNullOrEmpty(filename))
             {
-                if (ignoredFNFWarningFiles.Contains(filename))
+                if (ignoredFNFWarningFiles.ContainsKey(filename))
                 {
                     ignore = true;
                 }
                 else
                 {
                     ignore = false;
-                    ignoredFNFWarningFiles.Add(filename);
+                    ignoredFNFWarningFiles.TryAdd(filename, 0);
                 }
             }
         }
         if (ignore && !Program.AnalysisMode)
         {
-            ignoredFNFWarningCount++;
+            Interlocked.Increment(ref ignoredFNFWarningCount);
             return;
         }
         ParserMediator.Warn(str, line, level, isError, false);
@@ -1506,7 +1576,10 @@ internal sealed class ErbLoader
                 string FunctionNotFoundName = null;
                 try
                 {
-                    func.Function.Instruction.SetJumpTo(ref useCallForm, func, depth, ref FunctionNotFoundName);
+                    bool localUseCallForm = false;
+                    func.Function.Instruction.SetJumpTo(ref localUseCallForm, func, depth, ref FunctionNotFoundName);
+                    if (localUseCallForm)
+                        useCallForm = true;
                 }
                 catch (CodeEE e)
                 {

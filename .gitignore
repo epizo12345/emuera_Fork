@@ -8,3 +8,7 @@ artifacts/*
 Emuera.csproj.user
 _release/*
 src.zip
+eramegaten_p/
+*.sav
+*.log
+プロジェクト資料/検証記録/

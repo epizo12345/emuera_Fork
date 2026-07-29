@@ -9,6 +9,13 @@ static partial class Rename
 
     public static string RenameString(string @string, ScriptPosition? position = null)
     {
+        // [Emuera改修:START-05]
+        // Rename対象は [[名前]] の形。まず安い文字検索を行い、"[["すらない普通の行では
+        // 重い正規表現を実行せずそのまま返す。置換結果や警告の意味は変わらない。
+        // 参照: プロジェクト資料/06_コード案内.md
+        if (!@string.Contains("[["))
+            return @string;
+
         var match = regexRenameIdentifer().Match(@string);
         while (match.Success)
         {
