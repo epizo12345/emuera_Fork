@@ -57,32 +57,27 @@ static partial class Program
 
         var rootCommand = new RootCommand("Emuera");
 
-        var exeDirOption = new Option<string>(
-            name: "--ExeDir"
-        );
+        var exeDirOption = new Option<string>(name: "--ExeDir");
         rootCommand.Add(exeDirOption);
 
-        var debugModeOption = new Option<bool>(
-            name: "-Debug",
-            ["-debug","-DEBUG"]
-        );
+        var debugModeOption = new Option<bool>("-Debug", "-debug", "-DEBUG");
         rootCommand.Add(debugModeOption);
 
         // [Emuera改修:TOOLS-01]
         // 自動テスト用の入口。ゲーム操作用の通常オプションではない。
         // --StartupTest は操作可能になった時点でログを保存して自動終了する。
-        var startupTestOption = new Option<bool>(
-            name: "--StartupTest",
-            description: "起動完了後に画面ログをstartup-test.logへ保存して自動終了する"
-        );
-        rootCommand.AddOption(startupTestOption);
+        var startupTestOption = new Option<bool>(name: "--StartupTest")
+        {
+            Description = "起動完了後に画面ログをstartup-test.logへ保存して自動終了する"
+        };
+        rootCommand.Add(startupTestOption);
 
         // --BenchmarkLog は計測版だけが使うJSON Linesの保存先を受け取る。
-        var benchmarkLogOption = new Option<string>(
-            name: "--BenchmarkLog",
-            description: "起動・マクロ性能計測のJSON Lines出力先"
-        );
-        rootCommand.AddOption(benchmarkLogOption);
+        var benchmarkLogOption = new Option<string>(name: "--BenchmarkLog")
+        {
+            Description = "起動・マクロ性能計測のJSON Lines出力先"
+        };
+        rootCommand.Add(benchmarkLogOption);
 
         var filesArg = new Argument<string[]>(
             LocalizationManager.Parameters.HelpfilesArg
@@ -91,7 +86,7 @@ static partial class Program
         rootCommand.Add(filesArg);
 
         var result = rootCommand.Parse(args);
-        PerformanceMetrics.Configure(result.GetValueForOption(benchmarkLogOption));
+        PerformanceMetrics.Configure(result.GetValue(benchmarkLogOption));
 
         //実行ディレクトリが引数で与えられた場合
         var exeDir = result.GetValue(exeDirOption);
@@ -102,7 +97,7 @@ static partial class Program
 
         var debugMode = result.GetValue(debugModeOption);
         DebugMode = debugMode;
-        StartupTestMode = result.GetValueForOption(startupTestOption);
+        StartupTestMode = result.GetValue(startupTestOption);
 
         var fileArgs = result.GetValue(filesArg) ?? [];
         var analysisRequestPaths = fileArgs;
