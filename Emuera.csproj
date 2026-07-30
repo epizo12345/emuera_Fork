@@ -1,6 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <!-- [Emuera改修:BUILD-02] 修正者: epizo
+         SkiaSharp.Views.WindowsForms 4.150.1には.NET 10向けの部品が用意されているが、
+         Windowsの対象版を省略すると旧.NET Framework向け部品が選ばれてしまう。
+         Windows 10 Version 2004（build 19041）以降を明示し、.NET 10向け部品を正しく使う。 -->
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
     <OutputType>WinExe</OutputType>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
 
@@ -77,13 +81,19 @@
     <PackageReference Include="AngleSharp" Version="1.6.0" />
     <PackageReference Include="Enums.NET" Version="5.0.0" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.10" />
+    <!-- [Emuera改修:SECURITY-01] 修正者: epizo
+         Microsoft.Data.Sqliteだけでは脆弱性のあるSQLitePCLRaw 2.1.11が選ばれることがある。
+         修正版の2.1.12を直接指定し、ERBからSQLを実行するときも古いSQLiteを使わせない。 -->
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.12" />
     <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.298">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="SkiaSharp" Version="4.150.1" />
     <PackageReference Include="SkiaSharp.Views.WindowsForms" Version="4.150.1" />
     <PackageReference Include="System.IO.Hashing" Version="10.0.10" />
-    <PackageReference Include="System.CommandLine" Version="3.0.0-preview.6.26359.118" />
+    <!-- [Emuera改修:DEPENDENCY-01] 修正者: epizo
+         コマンドライン解析はプレビュー版ではなく、公開済みの安定版を使用する。 -->
+    <PackageReference Include="System.CommandLine" Version="2.0.10" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Update="Properties\Resources.resx">

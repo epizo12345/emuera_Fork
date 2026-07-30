@@ -610,7 +610,7 @@ namespace MinorShift.Emuera.Forms
             mainPicBox.Size = new System.Drawing.Size(968, 706);
             mainPicBox.TabIndex = 0;
             mainPicBox.TabStop = false;
-            mainPicBox.VSync = true;
+            // [Emuera改修:BUILD-02] 垂直同期はOpenGL準備後にEraPictureBox側で設定する。
             mainPicBox.PaintSurface += mainPicBox_Paint;
             mainPicBox.MouseClick += mainPicBox_MouseClickCBCheck;
             mainPicBox.MouseDoubleClick += mainPicBox_MouseDoubleClickCBCheck;
@@ -714,4 +714,3 @@ namespace MinorShift.Emuera.Forms
         private System.Windows.Forms.ToolStripMenuItem クリップボードにコピーToolStripMenuItem;
     }
 }
-

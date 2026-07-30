@@ -58,10 +58,13 @@ static partial class Program
         var rootCommand = new RootCommand("Emuera");
 
         var exeDirOption = new Option<string>(name: "--ExeDir");
-        rootCommand.Add(exeDirOption);
+        // [Emuera改修:DEPENDENCY-01] 修正者: epizo
+        // 安定版System.CommandLine 2.0では、オプションと引数をそれぞれ専用の一覧へ登録する。
+        // 受け取る文字やゲーム側へ渡す値は従来と同じで、解析ライブラリだけを安定版に戻している。
+        rootCommand.Options.Add(exeDirOption);
 
         var debugModeOption = new Option<bool>("-Debug", "-debug", "-DEBUG");
-        rootCommand.Add(debugModeOption);
+        rootCommand.Options.Add(debugModeOption);
 
         // [Emuera改修:TOOLS-01]
         // 自動テスト用の入口。ゲーム操作用の通常オプションではない。
@@ -70,20 +73,20 @@ static partial class Program
         {
             Description = "起動完了後に画面ログをstartup-test.logへ保存して自動終了する"
         };
-        rootCommand.Add(startupTestOption);
+        rootCommand.Options.Add(startupTestOption);
 
         // --BenchmarkLog は計測版だけが使うJSON Linesの保存先を受け取る。
         var benchmarkLogOption = new Option<string>(name: "--BenchmarkLog")
         {
             Description = "起動・マクロ性能計測のJSON Lines出力先"
         };
-        rootCommand.Add(benchmarkLogOption);
+        rootCommand.Options.Add(benchmarkLogOption);
 
         var filesArg = new Argument<string[]>(
             LocalizationManager.Parameters.HelpfilesArg
         )
         { Arity = ArgumentArity.ZeroOrMore };
-        rootCommand.Add(filesArg);
+        rootCommand.Arguments.Add(filesArg);
 
         var result = rootCommand.Parse(args);
         PerformanceMetrics.Configure(result.GetValue(benchmarkLogOption));
