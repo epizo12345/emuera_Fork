@@ -1,11 +1,12 @@
 # Emuera.NET 
-著作者：VVII, MinorShift, 妊）|дﾟ)の中の人,epizo  
+著作者：VVII, MinorShift, 妊）|дﾟ)の中の人,epizo,CRER  
 頒布者：epizo  
 連絡先：eraMegaten Discordサーバー（https://discord.gg/yQRYkNMuWr） epizo 宛  
 
 # 前書き
 https://gitlab.com/alnatiyan/EmueraDotNet/-/tree/BugFix_Test?ref_type=heads  
 を独自にForkしたバージョンです。  
+上記にCRER氏がVVII氏のダークモードパッチや.NET10への更新などを取り込んだ版をForkしています。
 ChatGPTsolを使用して修正しているため動作は保証できません。  
 個人用に作成しているため、使用は自己責任でお願いします。  
 
@@ -25,16 +26,19 @@ Windows 11ではメニューや設定画面にダークモードが適用され�
 
 現在の配布用ビルドは必要なSkiaSharpの部品を『Emuera.exe』内にまとめるため、
 『libSkiaSharp.dll』を別に置く必要はありません。
+また、Windows API全体の大きな補助部品は同梱せず、SkiaSharpが必要とする
+『WinRT.Runtime』だけをEXE内へ残して、配布サイズを抑えています。
 
 デバッグモードでの起動には、同梱の『デバックモード起動.bat』を上記と同じフォルダに置いてダブルクリックしてください。
 
-# 主な独自修正
+# 主な修正
 - 起動時の不定期な偽警告を抑止
 - 大量のERBを使用するゲームの起動高速化
 - 複数入力マクロの描画集約・内部処理の高速化
 - マウスのサイドボタンによる前ページ・次ページ操作
-- .NET 10への更新とWindows 11向けダークモード
+- .NET 10への更新とWindows 11向けダークモード(VVII氏パッチをCRER氏が取り込み)
 - AngleSharpおよびSQLite関連の既知の脆弱性に対応
+- 必要なWinRT部品だけを残し、単一EXEのサイズを約47.2 MiBから約23.5 MiBへ削減
 
 # 配布フォルダについて
 『配布/Emuera.NET_最終通常版』には、2026-07-31時点の.NET 10対応・動作確認済みEXEを置いています。
@@ -57,4 +61,4 @@ Windows 11ではメニューや設定画面にダークモードが適用され�
 # 不具合等連絡先
 eraMegaten Discordサーバー（https://discord.gg/yQRYkNMuWr） にて、epizo宛にメッセージを送ってください。
 
-※MinorShift氏、 妊）|дﾟ)の中の人氏、VVII氏は本バージョンの開発には携わっておりません
+※MinorShift氏、 妊）|дﾟ)の中の人氏、VVII氏、CRER氏は本バージョンの開発には携わっておりません

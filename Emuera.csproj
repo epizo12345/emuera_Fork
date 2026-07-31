@@ -5,6 +5,11 @@
          Windowsの対象版を省略すると旧.NET Framework向け部品が選ばれてしまう。
          Windows 10 Version 2004（build 19041）以降を明示し、.NET 10向け部品を正しく使う。 -->
     <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <!-- [Emuera改修:BUILD-03] 修正者: epizo
+         Windows 19041を指定すると、Windows API全体をC#から使うための約24MBの部品も自動で付く。
+         Emueraはその大きな部品を直接使っていないため自動追加を止める。
+         SkiaSharpが必要とする小さなWinRT.Runtimeだけは、下のPackageReferenceで明示的に残す。 -->
+    <IncludeWindowsSDKRefFrameworkReferences>false</IncludeWindowsSDKRefFrameworkReferences>
     <OutputType>WinExe</OutputType>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
 
@@ -88,6 +93,13 @@
     <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.298">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <!-- [Emuera改修:BUILD-03] 修正者: epizo
+         Windows SDK全体を外しても、SkiaSharpのOpenGL初期化にはWinRT.Runtimeが必要になる。
+         従来同梱されていたものと同じ安定版2.2.0を直接参照し、必要な実行部品だけを残す。 -->
+    <PackageReference Include="Microsoft.Windows.CsWinRT" Version="2.2.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>compile;runtime</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="SkiaSharp" Version="4.150.1" />
     <PackageReference Include="SkiaSharp.Views.WindowsForms" Version="4.150.1" />
     <PackageReference Include="System.IO.Hashing" Version="10.0.10" />
@@ -115,4 +127,19 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
   </ItemGroup>
+  <!-- [Emuera改修:BUILD-03] 修正者: epizo
+       Microsoft.Windows.CsWinRTのWinRT.Runtime.dllには、通常は「発行先へコピーしない」という
+       印が付いている。そのままでは単一EXEにも入らないため、この小さなDLLだけ印を上書きする。
+       パッケージ名とDLL名を両方確認し、別のファイルを誤って追加しないよう対象を限定している。 -->
+  <Target Name="IncludeRequiredWinRTRuntimeInPublish"
+          AfterTargets="ResolvePackageAssets"
+          BeforeTargets="ResolveLockFileCopyLocalFiles">
+    <ItemGroup>
+      <RuntimeCopyLocalItems Update="@(RuntimeCopyLocalItems)"
+                             Condition="'%(RuntimeCopyLocalItems.NuGetPackageId)' == 'Microsoft.Windows.CsWinRT' and
+                                        '%(RuntimeCopyLocalItems.DestinationSubPath)' == 'WinRT.Runtime.dll'">
+        <CopyToPublishDirectory>true</CopyToPublishDirectory>
+      </RuntimeCopyLocalItems>
+    </ItemGroup>
+  </Target>
 </Project>

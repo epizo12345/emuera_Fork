@@ -5,15 +5,18 @@
 - 対象OS: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
-- `Emuera.exe` SHA-256: `47C94CD99027FF66385A26F4DCF32489685F072CB501604F25E2181DC909EACE`
+- `Emuera.exe` サイズ: 24,639,210バイト（約23.5 MiB）
+- `Emuera.exe` SHA-256: `DF543B25F0861ACE50FD853223E6A8121F20A40435D249C50C5378C86E7F30F9`
 
 この単一EXEにはSkiaSharpのネイティブライブラリも内包されています。別の`libSkiaSharp.dll`を同じフォルダへ追加する必要はありません。
+Windows API全体の大きな.NET投影DLLは含めず、SkiaSharpが必要とする`WinRT.Runtime.dll`だけを内包しています。
 
 ## 2026-07-31に反映した基盤更新
 
 - .NET 10へ更新
 - Windows 11のダークモード対応
 - SkiaSharp 4.150.1と現在のOpenTKに合うビルド・垂直同期設定
+- 必要なWinRT部品だけを残し、単一EXEのサイズを約47.2 MiBから約23.5 MiBへ削減
 - AngleSharp 1.6.0
 - SQLiteネイティブライブラリを含むパッケージを2.1.12へ固定
 - System.CommandLineを安定版2.0.10へ更新
