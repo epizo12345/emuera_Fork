@@ -28,7 +28,10 @@
         /// </summary>
         private void InitializeComponent()
         {
-            textBox1 = new System.Windows.Forms.TextBox();
+            // [Emuera改修:CLIPBOARD-01] 修正者: epizo
+            // 大量テキストの表示に向くRichTextBoxへ変更する。表示専用・縦スクロールという
+            // 利用者から見える動作は従来のTextBoxと同じままにする。
+            textBox1 = new System.Windows.Forms.RichTextBox();
             SuspendLayout();
             // 
             // textBox1
@@ -39,7 +42,7 @@
             textBox1.Multiline = true;
             textBox1.Name = "textBox1";
             textBox1.ReadOnly = true;
-            textBox1.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            textBox1.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
             textBox1.Size = new System.Drawing.Size(810, 640);
             textBox1.TabIndex = 1;
             // 
@@ -59,6 +62,6 @@
 
         #endregion
 
-        private System.Windows.Forms.TextBox textBox1;
+        private System.Windows.Forms.RichTextBox textBox1;
     }
 }

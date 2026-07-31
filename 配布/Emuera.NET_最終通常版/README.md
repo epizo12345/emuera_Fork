@@ -6,7 +6,7 @@
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
 - `Emuera.exe` サイズ: 24,639,210バイト（約23.5 MiB）
-- `Emuera.exe` SHA-256: `DF543B25F0861ACE50FD853223E6A8121F20A40435D249C50C5378C86E7F30F9`
+- `Emuera.exe` SHA-256: `C60F8B93E20BCB0D61C8086358F13E5C24856DAFBAF9DE492D9027BE187A5D7D`
 
 この単一EXEにはSkiaSharpのネイティブライブラリも内包されています。別の`libSkiaSharp.dll`を同じフォルダへ追加する必要はありません。
 Windows API全体の大きな.NET投影DLLは含めず、SkiaSharpが必要とする`WinRT.Runtime.dll`だけを内包しています。
@@ -28,6 +28,9 @@ Windows API全体の大きな.NET投影DLLは含めず、SkiaSharpが必要と�
 - 複数入力マクロの描画集約による高速化
 - `MATCH` / `CMATCH`、`VARSET` / `CVARSET`の一時参照再利用によるマクロ高速化
 - 単一の埋め込み式を持つ整形文字列の直接連結によるマクロ高速化
+- Ctrl+Cまたはメニューから大量ログを開く画面の表示高速化
+  - ログ内容は省略せず、テキスト設定中の途中再描画だけを止めます
+  - 閉じたログ画面はその場で破棄し、大きなログを不要に保持しません
 - マウスXButton1/XButton2による前ページ・次ページ選択
   - 日本語の「前のページ」「次のページ」系
   - 調教画面の`1007` / `1009`

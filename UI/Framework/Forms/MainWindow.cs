@@ -106,7 +106,9 @@ internal sealed partial class MainWindow : Form
         {
             if (string.IsNullOrEmpty(richTextBox1.SelectedText))
             {
-                ClipBoardDialog dialog = new()
+                // [Emuera改修:CLIPBOARD-02] 修正者: epizo
+                // 閉じたログ表示画面をその場で破棄し、大きなログと画面部品をメモリへ残さない。
+                using ClipBoardDialog dialog = new()
                 {
                     StartPosition = FormStartPosition.CenterParent
                 };
@@ -720,7 +722,9 @@ internal sealed partial class MainWindow : Form
     {
         try
         {
-            ClipBoardDialog dialog = new();
+            // [Emuera改修:CLIPBOARD-02] 修正者: epizo
+            // メニューから開いた場合もCtrl+Cの場合と同じく、閉じた直後に必ず破棄する。
+            using ClipBoardDialog dialog = new();
             dialog.Setup(console);
             dialog.ShowDialog();
         }
