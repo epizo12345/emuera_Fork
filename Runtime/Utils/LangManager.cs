@@ -6,11 +6,57 @@ namespace MinorShift.Emuera.Runtime.Utils;
 internal static class LangManager
 {
     static Encoding lang;
+    static Encoding japanese;
+    static bool isJapanese;
 
     public static void setEncode(int code)
     {
         lang = Encoding.GetEncoding(code);
+        japanese = Encoding.GetEncoding(932);
+        isJapanese = code == 932;
     }
+
+private static int GetByteCountLang(string str)
+{
+    if (isJapanese)
+        return lang.GetByteCount(str);
+
+    byte[] allBytes = lang.GetBytes(str);
+
+    if (lang.GetString(allBytes) == str)
+        return allBytes.Length;
+
+    if (str.Length == 1)
+    {
+        byte[] japaneseBytes = japanese.GetBytes(str);
+        if (japanese.GetString(japaneseBytes) == str)
+            return japaneseBytes.Length;
+        return allBytes.Length;
+    }
+
+    int length = 0;
+    foreach (char c in str)
+    {
+        string value = c.ToString();
+        byte[] bytes = lang.GetBytes(value);
+
+        if (lang.GetString(bytes) == value)
+        {
+            length += bytes.Length;
+            continue;
+        }
+
+        byte[] japaneseBytes = japanese.GetBytes(value);
+        if (japanese.GetString(japaneseBytes) == value)
+        {
+            length += japaneseBytes.Length;
+            continue;
+        }
+        length += bytes.Length;
+    }
+
+    return length;
+}
 
     public static int GetStrlenLang(string str)
     {
@@ -18,7 +64,7 @@ internal static class LangManager
         {
             return str.Length;
         }
-        return lang.GetByteCount(str);
+        return GetByteCountLang(str);
     }
     public static int GetUFTIndex(string str, int LangIndex)
     {
@@ -31,7 +77,7 @@ internal static class LangManager
         int JIScnt = 0;
         for (int i = 0; i < str.Length; i++)
         {
-            JIScnt += lang.GetByteCount(str[UTFcnt].ToString());
+            JIScnt += GetByteCountLang(str[UTFcnt].ToString());
             UTFcnt++;
             if (JIScnt >= LangIndex)
                 break;
@@ -60,7 +106,7 @@ internal static class LangManager
         {
             for (int i = 0; i < str.Length; i++)
             {
-                JIScnt += lang.GetByteCount(str[UTFcnt].ToString());
+                JIScnt += GetByteCountLang(str[UTFcnt].ToString());
                 UTFcnt++;
                 if (JIScnt >= startindex)
                     break;
@@ -73,7 +119,7 @@ internal static class LangManager
         while (true)
         {
             ret.Append(str[UTFcnt]);
-            JIScnt += lang.GetByteCount(str[UTFcnt].ToString());
+            JIScnt += GetByteCountLang(str[UTFcnt].ToString());
             UTFcnt++;
             if (JIScnt >= length)
                 break;
