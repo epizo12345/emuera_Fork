@@ -37,6 +37,9 @@ internal sealed partial class EmueraConsole : IDisposable
 
         displayLineList.Clear();
         _htmlElementListDict.Clear();
+        // [Emuera改修:GAMEPAD-V1]
+        // 表示要素が変わったときだけNavigation Graphを作り直す。
+        gamepadFocusTargetsDirty = true;
         logicalLineCount = 0;
         lineNo = 0;
         lastDrawnLineNo = -1;
@@ -126,6 +129,7 @@ internal sealed partial class EmueraConsole : IDisposable
     //完全に独立したHTML
     public void PrintHTMLIsland(string html, int depth = 0)
     {
+        gamepadFocusTargetsDirty = true;
         if (_htmlElementListDict.TryGetValue(depth, out var htmlElementList))
         {
 
@@ -140,10 +144,12 @@ internal sealed partial class EmueraConsole : IDisposable
     public void ClearHTMLIsland()
     {
         _htmlElementListDict.Clear();
+        gamepadFocusTargetsDirty = true;
     }
     public void ClearHTMLIsland(int depth = 0)
     {
         _htmlElementListDict[depth].Clear();
+        gamepadFocusTargetsDirty = true;
     }
 
 
@@ -464,7 +470,10 @@ internal sealed partial class EmueraConsole : IDisposable
             addRangeDisplayLine(dispList);
         }
         long displayBuildStart = PerformanceMetrics.StartTiming();
-        addRangeDisplayLine(HtmlManager.Html2DisplayLine(str, stringMeasure, this, lineEnd));
+        ConsoleDisplayLine[] htmlLines = HtmlManager.Html2DisplayLine(str, stringMeasure, this, lineEnd);
+        for (int i = 0; i < htmlLines.Length; i++)
+            htmlLines[i].IsHtml = true;
+        addRangeDisplayLine(htmlLines);
         PerformanceMetrics.AddDisplayBuild(displayBuildStart);
         RefreshStrings(false);
     }

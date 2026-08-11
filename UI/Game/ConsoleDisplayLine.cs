@@ -47,6 +47,10 @@ internal sealed class ConsoleDisplayLine
     ///論理行の最初となる場合だけtrue。表示の都合で改行された2行目以降はfalse
     readonly public bool IsLogicalLine = true;
     readonly public bool IsTemporary;
+    // [Emuera改修:GAMEPAD-V1]
+    // HTML_PRINT由来の行。HTML内のdiv等で見た目上の複数行を持てるため、
+    // ゲームパッドナビゲーションはLineNoではなく描画矩形を使用する。
+    public bool IsHtml { get; set; }
     public bool IsLineEnd = true;
     //EmueraConsole parent;
     ConsoleButtonString[] buttons;

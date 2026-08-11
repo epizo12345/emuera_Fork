@@ -1,4 +1,3 @@
-
 obj/*
 bin/*
 .vscode/*
@@ -11,4 +10,9 @@ src.zip
 eramegaten_p/
 *.sav
 *.log
-�v���W�F�N�g����/���؋L�^/
+プロジェクト資料/検証記録/
+
+# [Emuera改修:GAMEPAD-V1] Release成果物と引き継ぎ用ZIPはソースコミットへ含めない。
+GamepadBuild/
+GamepadBuildSingleFile/
+GamepadHandoff_*.zip

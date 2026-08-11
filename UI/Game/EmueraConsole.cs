@@ -559,8 +559,19 @@ internal sealed partial class EmueraConsole : IDisposable
     int newButtonGeneration;//次に追加される選択肢の世代。Input又はInputsごとに増加
                             //public int LastButtonGeneration { get { return lastButtonGeneration; } }
     public int NewButtonGeneration { get { return newButtonGeneration; } }
-    public void UpdateGeneration() { lastButtonGeneration = newButtonGeneration; updatedGeneration = true; }
-    public void forceUpdateGeneration() { newButtonGeneration++; lastButtonGeneration = newButtonGeneration; updatedGeneration = true; }
+    public void UpdateGeneration()
+    {
+        lastButtonGeneration = newButtonGeneration;
+        updatedGeneration = true;
+        gamepadFocusTargetsDirty = true;
+    }
+    public void forceUpdateGeneration()
+    {
+        newButtonGeneration++;
+        lastButtonGeneration = newButtonGeneration;
+        updatedGeneration = true;
+        gamepadFocusTargetsDirty = true;
+    }
     LogicalLine lastInputLine;
 
     private void newGeneration()
@@ -600,8 +611,903 @@ internal sealed partial class EmueraConsole : IDisposable
     /// </summary>
     ConsoleButtonString selectingButton;
     ConsoleButtonString lastSelectingButton;
+
+    // [Emuera改修:GAMEPAD-V1]
+    // 現在のInputRequestから選択可能要素を集め、画面更新時だけ上下左右リンクを
+    // 再構築する。入力時は構築済みTargetを既存の決定・クリック経路へ渡す。
+    private readonly List<GamepadFocusTarget> gamepadFocusTargets = [];
+    private readonly GamepadNavigationGraph gamepadNavigationGraph = new();
+    private bool gamepadFocusTargetsDirty = true;
+    private int gamepadFocusTargetGeneration = int.MinValue;
+    private long gamepadFocusTargetRequestId = -1;
+    private int gamepadFocusLoggedGeneration = int.MinValue;
+    private long gamepadFocusLoggedRequestId = -1;
+    private int gamepadFocusLoggedGeometryHash;
+    private bool hasGamepadFocusHistory;
+    private string lastGamepadFocusInputKey;
+    private long lastGamepadFocusRequestId = -1;
+    private Rectangle lastGamepadFocusBounds;
+    private GamepadFocusSourceType lastGamepadFocusSourceType;
+    private int lastGamepadFocusGroupId = int.MinValue;
+    private int lastGamepadFocusNavigationGroupId = int.MinValue;
+    private static bool gamepadSemanticBackSelfTestRun;
+    private static readonly string[] GamepadBackButtonLabels =
+    [
+        "戻る",
+        "帰る",
+        "キャンセル",
+        "CANCEL",
+        "BACK",
+        "RETURN",
+        "EXIT",
+        "QUIT",
+        "閉じる",
+        "やめる",
+        "店を出る",
+        "中止",
+        "取消",
+    ];
     public ConsoleButtonString SelectingButton { get { return selectingButton; } }
     public bool ButtonIsSelected(ConsoleButtonString button) { return selectingButton == button; }
+
+    /// <summary>
+    /// ゲームパッド用のフォーカスを現在の入力待ち画面へ合わせる。
+    /// マウスが既に有効なボタンを指している場合は、その選択を引き継ぐ。
+    /// </summary>
+    internal bool GamepadEnsureSelection()
+    {
+        if (state != ConsoleState.WaitInput || inputReq == null || !inputReq.NeedValue)
+            return false;
+        List<GamepadFocusTarget> targets = GetGamepadFocusTargets();
+        if (targets.Count == 0)
+            return false;
+
+        bool sameInputRequest = inputReq.ID == lastGamepadFocusRequestId;
+        GamepadFocusTarget current = gamepadNavigationGraph.Find(selectingButton);
+        if (sameInputRequest && current != null && CanSelectGamepadButton(selectingButton))
+        {
+            RememberGamepadFocus(current);
+            return false;
+        }
+
+        GamepadFocusTarget restored = null;
+        // Input値は画面をまたいで一意ではない。別のInputRequestでは、前画面の
+        // 0/1/2等を新画面のボタンへ復元してはいけない。
+        if (sameInputRequest && hasGamepadFocusHistory
+            && !string.IsNullOrEmpty(lastGamepadFocusInputKey))
+        {
+            restored = FindRestoredGamepadFocus(targets, true);
+            restored ??= FindRestoredGamepadFocus(targets, false);
+        }
+
+        // 同じ入力待ちの再描画では以前の位置も考慮する。別の入力要求へ
+        // 遷移した場合は前画面の座標で関係ない項目へ飛ばさず、先頭を使う。
+        if (restored == null && hasGamepadFocusHistory && inputReq.ID == lastGamepadFocusRequestId
+            && !lastGamepadFocusBounds.IsEmpty)
+        {
+            restored = FindNearestRememberedGamepadFocus(targets);
+        }
+
+        restored ??= FindInitialGamepadFocus(targets);
+
+        selectingCBGButtonInt = -1;
+        pointingString = null;
+        selectingButton = restored.Button;
+        RememberGamepadFocus(restored);
+        return true;
+    }
+
+    private static GamepadFocusTarget FindInitialGamepadFocus(List<GamepadFocusTarget> targets)
+    {
+        GamepadFocusTarget firstNormal = null;
+        GamepadFocusTarget firstEnabled = null;
+        for (int i = 0; i < targets.Count; i++)
+        {
+            GamepadFocusTarget target = targets[i];
+            if (!target.Enabled)
+                continue;
+            if (firstEnabled == null || CompareGamepadVisualOrder(target, firstEnabled) < 0)
+                firstEnabled = target;
+            if (target.IsBack)
+                continue;
+            if (firstNormal == null || CompareGamepadVisualOrder(target, firstNormal) < 0)
+                firstNormal = target;
+        }
+        return firstNormal ?? firstEnabled ?? targets[0];
+    }
+
+    private static int CompareGamepadVisualOrder(GamepadFocusTarget left, GamepadFocusTarget right)
+    {
+        int result = left.Bounds.Top.CompareTo(right.Bounds.Top);
+        if (result != 0)
+            return result;
+        result = left.Bounds.Left.CompareTo(right.Bounds.Left);
+        return result != 0 ? result : left.Order.CompareTo(right.Order);
+    }
+
+    /// <summary>
+    /// 実際のマウスヒット矩形を行へまとめた4方向ナビゲーション。
+    /// 上下は同じ縦レーンの候補が見つかるまで先行視覚行を探索し、左右は同じ行だけを候補にする。
+    /// </summary>
+    internal bool GamepadMove(GamepadDirection direction)
+    {
+        if (direction == GamepadDirection.None || state != ConsoleState.WaitInput || inputReq == null
+            || !inputReq.NeedValue
+            || window.ScrollBar.Value != window.ScrollBar.Maximum)
+            return false;
+
+        GamepadEnsureSelection();
+        List<GamepadFocusTarget> targets = GetGamepadFocusTargets();
+        GamepadFocusTarget current = gamepadNavigationGraph.Find(selectingButton);
+        if (current == null || !CanSelectGamepadButton(selectingButton))
+            return false;
+
+        GamepadFocusTarget best = current.GetNeighbor(direction);
+        if (best == null || best.Button == selectingButton)
+            return false;
+
+        selectingCBGButtonInt = -1;
+        pointingString = null;
+        LogGamepadMove(direction, current, best);
+        selectingButton = best.Button;
+        RememberGamepadFocus(best);
+        return true;
+    }
+
+    /// <summary>
+    /// 左スティックをUIフォーカスとは別の、ゲーム側の1文字移動入力として渡す。
+    /// Autoは現在表示中のボタンが方向記号付きのWASDまたは8462一式を公開している
+    /// 場合だけ有効になるため、数値キーパッドや通常メニューを誤作動させない。
+    /// </summary>
+    internal bool TryGamepadDirectInput(GamepadDirection direction)
+    {
+        if (direction == GamepadDirection.None || state != ConsoleState.WaitInput || inputReq == null
+            || !inputReq.NeedValue || !inputReq.OneInput)
+            return false;
+
+        GamepadDirectInputProfile profile = Program.GamepadDirectInput;
+        if (profile == GamepadDirectInputProfile.Disabled)
+            return false;
+        if (profile == GamepadDirectInputProfile.Auto)
+        {
+            profile = DetectGamepadDirectInputProfile();
+            if (profile == GamepadDirectInputProfile.Disabled)
+                return false;
+        }
+
+        if (profile == GamepadDirectInputProfile.ArrowKeys)
+        {
+            if (!IsWaitingPrimitive)
+                return false;
+            Keys key = direction switch
+            {
+                GamepadDirection.Up => Keys.Up,
+                GamepadDirection.Down => Keys.Down,
+                GamepadDirection.Left => Keys.Left,
+                GamepadDirection.Right => Keys.Right,
+                _ => Keys.None,
+            };
+            if (key == Keys.None)
+                return false;
+            WriteGamepadNavigationDiagnostic($"Direct input: profile={profile}, direction={direction}, key={key}");
+            InputMouseKey(3, (int)key, (int)key, 0, 0);
+            return true;
+        }
+
+        string input = profile switch
+        {
+            GamepadDirectInputProfile.Wasd => direction switch
+            {
+                GamepadDirection.Up => "w",
+                GamepadDirection.Down => "s",
+                GamepadDirection.Left => "a",
+                GamepadDirection.Right => "d",
+                _ => string.Empty,
+            },
+            GamepadDirectInputProfile.Numpad8462 => direction switch
+            {
+                GamepadDirection.Up => "8",
+                GamepadDirection.Down => "2",
+                GamepadDirection.Left => "4",
+                GamepadDirection.Right => "6",
+                _ => string.Empty,
+            },
+            _ => string.Empty,
+        };
+        if (input.Length == 0 || (inputReq.InputType != InputType.StrValue && inputReq.InputType != InputType.IntValue))
+            return false;
+
+        WriteGamepadNavigationDiagnostic($"Direct input: profile={profile}, direction={direction}, input={input}");
+        PressEnterKey(false, input, false);
+        return true;
+    }
+
+    private GamepadDirectInputProfile DetectGamepadDirectInputProfile()
+    {
+        List<GamepadFocusTarget> targets = GetGamepadFocusTargets();
+        if (HasDirectionalInputSet(targets, "w", "s", "a", "d"))
+            return GamepadDirectInputProfile.Wasd;
+        if (HasDirectionalInputSet(targets, "8", "2", "4", "6"))
+            return GamepadDirectInputProfile.Numpad8462;
+        return GamepadDirectInputProfile.Disabled;
+    }
+
+    private static bool HasDirectionalInputSet(List<GamepadFocusTarget> targets,
+        string up, string down, string left, string right)
+    {
+        bool hasUp = false;
+        bool hasDown = false;
+        bool hasLeft = false;
+        bool hasRight = false;
+        for (int i = 0; i < targets.Count; i++)
+        {
+            GamepadFocusTarget target = targets[i];
+            string input = GetGamepadButtonInput(target.Button);
+            string text = target.Button.ToString() ?? string.Empty;
+            if (!hasUp && string.Equals(input, up, StringComparison.OrdinalIgnoreCase)
+                && HasDirectionMarker(text, GamepadDirection.Up))
+                hasUp = true;
+            else if (!hasDown && string.Equals(input, down, StringComparison.OrdinalIgnoreCase)
+                && HasDirectionMarker(text, GamepadDirection.Down))
+                hasDown = true;
+            else if (!hasLeft && string.Equals(input, left, StringComparison.OrdinalIgnoreCase)
+                && HasDirectionMarker(text, GamepadDirection.Left))
+                hasLeft = true;
+            else if (!hasRight && string.Equals(input, right, StringComparison.OrdinalIgnoreCase)
+                && HasDirectionMarker(text, GamepadDirection.Right))
+                hasRight = true;
+        }
+        return hasUp && hasDown && hasLeft && hasRight;
+    }
+
+    private static bool HasDirectionMarker(string text, GamepadDirection direction)
+    {
+        return direction switch
+        {
+            GamepadDirection.Up => text.Contains('↑'),
+            GamepadDirection.Down => text.Contains('↓') || text.Contains('Ｖ') || text.Contains('▼'),
+            GamepadDirection.Left => text.Contains('←') || text.Contains('＜'),
+            GamepadDirection.Right => text.Contains('→') || text.Contains('＞'),
+            _ => false,
+        };
+    }
+
+    internal void GamepadConfirm()
+    {
+        if (ReturnFromGamepadBacklog())
+            return;
+        if (IsWaitingPrimitive)
+        {
+            GamepadFocusTarget current = GetCurrentGamepadFocusTarget();
+            if (current != null)
+            {
+                ExecuteGamepadFocusTarget(current, "virtual-left-click");
+            }
+            else
+            {
+                WriteGamepadNavigationDiagnostic(
+                    $"Confirm: input=<none> text=<none> request={inputReq?.ID ?? -1} action=keyboard-enter-fallback");
+                InputMouseKey(3, (int)Keys.Enter, (int)Keys.Enter, 0, 0);
+            }
+            return;
+        }
+        if (CanSelectGamepadButton(selectingButton))
+        {
+            string input = inputReq.InputType == InputType.IntValue
+                ? selectingButton.Input.ToString()
+                : selectingButton.Inputs;
+            GamepadFocusTarget current = gamepadNavigationGraph.Find(selectingButton);
+            if (current != null)
+            {
+                if (!ExecuteGamepadFocusTarget(current, "ConsoleButton confirm path"))
+                    PressEnterKey(false, input, true);
+            }
+            else
+            {
+                WriteGamepadNavigationDiagnostic(
+                    $"Confirm: input={input} text={SanitizeGamepadText(selectingButton.ToString())} request={inputReq.ID} action=PressEnterKey target=<unresolved>");
+                PressEnterKey(false, input, true);
+            }
+            return;
+        }
+        if (IsWaitingEnterKey)
+            PressEnterKey(false, "", false);
+    }
+
+    internal void GamepadStart()
+    {
+        if (ReturnFromGamepadBacklog())
+            return;
+        if (IsWaitingPrimitive)
+        {
+            GamepadFocusTarget current = GetCurrentGamepadFocusTarget();
+            if (current != null)
+                InputMouseKeyFromGamepad(current);
+            else
+                InputMouseKey(3, (int)Keys.Enter, (int)Keys.Enter, 0, 0);
+            return;
+        }
+        if (CanSelectGamepadButton(selectingButton))
+        {
+            GamepadConfirm();
+            return;
+        }
+        if (IsWaitingEnterKey)
+            PressEnterKey(false, "", false);
+    }
+
+    internal void GamepadCancel()
+    {
+        if (ReturnFromGamepadBacklog())
+            return;
+        if (state == ConsoleState.WaitInput && inputReq != null && inputReq.NeedValue)
+        {
+            GamepadEnsureSelection();
+            List<GamepadFocusTarget> targets = GetGamepadFocusTargets();
+            GamepadFocusTarget current = gamepadNavigationGraph.Find(selectingButton);
+            WriteGamepadNavigationDiagnostic(
+                $"Cancel requested: current input={GetGamepadButtonInput(current?.Button ?? selectingButton)} "
+                + $"current navigationGroup={current?.NavigationGroupId ?? -1} request={inputReq.ID} "
+                + $"source={current?.SourceName ?? "<none>"} baseGroup={current?.GroupId ?? -1}");
+            GamepadFocusTarget back = FindGamepadBackTarget(targets, current);
+            LogGamepadBackCandidates(targets, current, back);
+            if (back != null)
+            {
+                WriteGamepadNavigationDiagnostic(
+                    $"Selected semantic back: input={GetGamepadButtonInput(back.Button)} "
+                    + $"text=\"{SanitizeGamepadText(back.Button.ToString())}\" "
+                    + $"navigationGroup={back.NavigationGroupId} execution="
+                    + (IsWaitingPrimitive ? "virtual-left-click" : "ConsoleButton confirm path"));
+                ExecuteGamepadFocusTarget(back,
+                    IsWaitingPrimitive ? "virtual-left-click" : "ConsoleButton confirm path");
+                return;
+            }
+
+            if (IsWaitingPrimitive)
+            {
+                WriteGamepadNavigationDiagnostic("No semantic back target\nFallback = Escape (INPUTMOUSEKEY).");
+                InputMouseKey(3, (int)Keys.Escape, (int)Keys.Escape, 0, 0);
+                return;
+            }
+        }
+        WriteGamepadNavigationDiagnostic("No semantic back target\nFallback = RightClick/Escape.");
+        KillMacro = true;
+        PressEnterKey(true, "", false);
+    }
+
+    /// <summary>
+    /// Execute a visible gamepad target through the same ConsoleButtonString
+    /// path used by a focused target followed by GamepadConfirm.  Semantic
+    /// Back must not invent an input number or choose a different keyboard
+    /// shortcut based on the button label.
+    /// </summary>
+    private bool ExecuteGamepadFocusTarget(GamepadFocusTarget target, string diagnosticAction)
+    {
+        if (target == null || !CanSelectGamepadButton(target.Button))
+            return false;
+
+        selectingCBGButtonInt = -1;
+        pointingString = null;
+        selectingButton = target.Button;
+        RememberGamepadFocus(target);
+        LogGamepadConfirm(target, diagnosticAction);
+        if (IsWaitingPrimitive)
+            InputMouseKeyFromGamepad(target);
+        else
+            PressEnterKey(false, GetGamepadButtonInput(target.Button), true);
+        return true;
+    }
+
+    private bool ReturnFromGamepadBacklog()
+    {
+        if (window.ScrollBar.Value == window.ScrollBar.Maximum)
+            return false;
+        window.ScrollBar.Value = window.ScrollBar.Maximum;
+        RefreshStrings(true);
+        return true;
+    }
+
+    private bool CanSelectGamepadButton(ConsoleButtonString button)
+    {
+        if (button == null || !button.IsButton || button.Generation != lastButtonGeneration
+            || state != ConsoleState.WaitInput || inputReq == null || !inputReq.NeedValue)
+            return false;
+        return inputReq.InputType != InputType.IntValue || button.IsInteger;
+    }
+
+    private List<GamepadFocusTarget> GetGamepadFocusTargets()
+    {
+        if (Program.GamepadDebugMode)
+            RunGamepadSemanticBackSelfTest();
+        long requestId = inputReq?.ID ?? -1;
+        if (!gamepadFocusTargetsDirty && gamepadFocusTargetGeneration == lastButtonGeneration
+            && gamepadFocusTargetRequestId == requestId)
+            return gamepadFocusTargets;
+
+        gamepadFocusTargets.Clear();
+        gamepadFocusTargetGeneration = lastButtonGeneration;
+        gamepadFocusTargetRequestId = requestId;
+        gamepadFocusTargetsDirty = false;
+
+        if (state != ConsoleState.WaitInput || inputReq == null || !inputReq.NeedValue)
+        {
+            LogGamepadFocusTargets();
+            return gamepadFocusTargets;
+        }
+
+        Dictionary<(ConsoleButtonString Button, GamepadFocusSourceType SourceType, int GroupId), GamepadFocusTarget> byButton = [];
+        int order = 0;
+
+        // マウスと同じく、HTML Islandは通常表示より手前にあるものから収集する。
+        foreach (var pair in _htmlElementListDict.Reverse())
+        {
+            List<ConsoleDisplayLine> lines = pair.Value;
+            for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
+            {
+                ConsoleDisplayLine line = lines[lineIndex];
+                if (!IsGamepadLineVisible(line))
+                    continue;
+                CollectGamepadNodes(line?.Buttons, null, GamepadFocusSourceType.HtmlIsland,
+                    GamepadFocusLayoutType.Html, pair.Key, line, byButton, ref order);
+            }
+        }
+
+        for (int lineIndex = 0; lineIndex < displayLineList.Count; lineIndex++)
+        {
+            ConsoleDisplayLine line = displayLineList[lineIndex];
+            if (!IsGamepadLineVisible(line))
+                continue;
+            CollectGamepadNodes(line.Buttons, null, GamepadFocusSourceType.NormalDisplay,
+                line.IsHtml ? GamepadFocusLayoutType.Html : GamepadFocusLayoutType.Console,
+                0, line, byButton, ref order);
+        }
+
+        for (int i = 0; i < gamepadFocusTargets.Count; i++)
+            gamepadFocusTargets[i].IsBack = IsGamepadBackButton(gamepadFocusTargets[i]);
+        gamepadNavigationGraph.Build(gamepadFocusTargets,
+            Program.GamepadDebugMode ? WriteGamepadNavigationDiagnostic : null);
+        LogGamepadFocusTargets();
+        return gamepadFocusTargets;
+    }
+
+    private void CollectGamepadNodes(
+        AConsoleDisplayNode[] nodes,
+        ConsoleButtonString selectableButton,
+        GamepadFocusSourceType sourceType,
+        GamepadFocusLayoutType layoutType,
+        int groupId,
+        ConsoleDisplayLine parentLine,
+        Dictionary<(ConsoleButtonString Button, GamepadFocusSourceType SourceType, int GroupId), GamepadFocusTarget> byButton,
+        ref int order)
+    {
+        if (nodes == null)
+            return;
+        for (int i = 0; i < nodes.Length; i++)
+            CollectGamepadNode(nodes[i], selectableButton, sourceType, layoutType, groupId, parentLine, byButton, ref order);
+    }
+
+    private void CollectGamepadNode(
+        AConsoleDisplayNode node,
+        ConsoleButtonString selectableButton,
+        GamepadFocusSourceType sourceType,
+        GamepadFocusLayoutType layoutType,
+        int groupId,
+        ConsoleDisplayLine parentLine,
+        Dictionary<(ConsoleButtonString Button, GamepadFocusSourceType SourceType, int GroupId), GamepadFocusTarget> byButton,
+        ref int order)
+    {
+        if (node == null)
+            return;
+        if (node is ConsoleButtonString button)
+        {
+            if (button.IsButton || !string.IsNullOrEmpty(button.Title))
+                selectableButton = button;
+            parentLine ??= button.ParentLine;
+            CollectGamepadNodes(button.StrArray, selectableButton, sourceType, layoutType,
+                groupId, parentLine, byButton, ref order);
+        }
+        else if (node is ConsoleDivElement div)
+        {
+            for (int i = 0; i < div._childNodes.Count; i++)
+                CollectGamepadNode(div._childNodes[i], selectableButton, sourceType, GamepadFocusLayoutType.Html,
+                    groupId, parentLine, byButton, ref order);
+        }
+        else if (selectableButton != null && CanSelectGamepadButton(selectableButton))
+        {
+            if (!TryGetGamepadNodeBounds(node, out Rectangle bounds, out RectangleF rawBounds))
+                return;
+
+            var key = (selectableButton, sourceType, groupId);
+            ConsoleDisplayLine targetLine = selectableButton.ParentLine ?? parentLine;
+            if (byButton.TryGetValue(key, out GamepadFocusTarget target))
+            {
+                target.Bounds = Rectangle.Union(target.Bounds, bounds);
+                target.RawBounds = RectangleF.Union(target.RawBounds, rawBounds);
+                if (layoutType == GamepadFocusLayoutType.Html)
+                    target.LayoutType = GamepadFocusLayoutType.Html;
+            }
+            else
+            {
+                target = new GamepadFocusTarget(selectableButton, sourceType, layoutType, groupId, targetLine,
+                    bounds, rawBounds, order++);
+                byButton.Add(key, target);
+                gamepadFocusTargets.Add(target);
+            }
+        }
+    }
+
+    private static bool TryGetGamepadNodeBounds(AConsoleDisplayNode node, out Rectangle bounds, out RectangleF rawBounds)
+    {
+        rawBounds = new RectangleF(node.Point.X, node.Point.Y, node.Size.Width, node.Size.Height);
+        int width = Math.Max(0, (int)Math.Ceiling(node.Size.Width));
+        int height = Math.Max(0, (int)Math.Ceiling(node.Size.Height));
+        if (width <= 0 || height <= 0)
+        {
+            bounds = Rectangle.Empty;
+            return false;
+        }
+        bounds = new Rectangle((int)Math.Floor(node.Point.X), (int)Math.Floor(node.Point.Y), width, height);
+        return true;
+    }
+
+    private static bool IsSameNavigationGroup(GamepadFocusTarget left, GamepadFocusTarget right)
+    {
+        return left != null && right != null
+            && left.SourceType == right.SourceType
+            && left.GroupId == right.GroupId
+            && left.NavigationGroupId == right.NavigationGroupId;
+    }
+
+    private static bool IsSameNavigationGroup(GamepadFocusTarget target,
+        GamepadFocusSourceType sourceType, int groupId, int navigationGroupId)
+    {
+        return target != null && target.SourceType == sourceType && target.GroupId == groupId
+            && target.NavigationGroupId == navigationGroupId;
+    }
+
+    private GamepadFocusTarget FindRestoredGamepadFocus(List<GamepadFocusTarget> targets, bool sameGroupOnly)
+    {
+        for (int i = 0; i < targets.Count; i++)
+        {
+            GamepadFocusTarget target = targets[i];
+            if (sameGroupOnly && !IsSameNavigationGroup(target, lastGamepadFocusSourceType,
+                lastGamepadFocusGroupId, lastGamepadFocusNavigationGroupId))
+                continue;
+            if (string.Equals(GetGamepadInputKey(target.Button), lastGamepadFocusInputKey, StringComparison.Ordinal))
+                return target;
+        }
+        return null;
+    }
+
+    private GamepadFocusTarget FindNearestRememberedGamepadFocus(List<GamepadFocusTarget> targets)
+    {
+        GamepadFocusTarget best = null;
+        long bestDistance = long.MaxValue;
+        for (int i = 0; i < targets.Count; i++)
+        {
+            GamepadFocusTarget target = targets[i];
+            if (!IsSameNavigationGroup(target, lastGamepadFocusSourceType,
+                lastGamepadFocusGroupId, lastGamepadFocusNavigationGroupId))
+                continue;
+            long distance = DistanceSquared(target, lastGamepadFocusBounds);
+            if (best == null || distance < bestDistance
+                || (distance == bestDistance && target.Order < best.Order))
+            {
+                best = target;
+                bestDistance = distance;
+            }
+        }
+        return best;
+    }
+
+    private GamepadFocusTarget GetCurrentGamepadFocusTarget()
+    {
+        GetGamepadFocusTargets();
+        GamepadFocusTarget current = gamepadNavigationGraph.Find(selectingButton);
+        if (current == null)
+        {
+            GamepadEnsureSelection();
+            current = gamepadNavigationGraph.Find(selectingButton);
+        }
+        return current != null && CanSelectGamepadButton(current.Button) ? current : null;
+    }
+
+    private GamepadFocusTarget FindGamepadBackTarget(List<GamepadFocusTarget> targets, GamepadFocusTarget current)
+    {
+        GamepadFocusTarget best = null;
+        int bestPriority = int.MaxValue;
+        long bestDistance = long.MaxValue;
+        int bestOrder = int.MaxValue;
+        for (int i = 0; i < targets.Count; i++)
+        {
+            GamepadFocusTarget target = targets[i];
+            if (!target.IsBack || !target.Enabled || !CanSelectGamepadButton(target.Button))
+                continue;
+
+            int priority = GetGamepadBackPriority(target, current);
+            long distance = current == null ? long.MaxValue : DistanceSquared(target, current.Bounds);
+            if (best == null || priority < bestPriority
+                || (priority == bestPriority && distance < bestDistance)
+                || (priority == bestPriority && distance == bestDistance && target.Order < bestOrder))
+            {
+                best = target;
+                bestPriority = priority;
+                bestDistance = distance;
+                bestOrder = target.Order;
+            }
+        }
+        return best;
+    }
+
+    private static int GetGamepadBackPriority(GamepadFocusTarget target, GamepadFocusTarget current)
+    {
+        if (current == null)
+            return 2;
+        if (IsSameNavigationGroup(target, current))
+            return 0;
+        if (target.SourceType == current.SourceType && target.GroupId == current.GroupId)
+            return 1;
+        return 2;
+    }
+
+    private void LogGamepadBackCandidates(List<GamepadFocusTarget> targets,
+        GamepadFocusTarget current, GamepadFocusTarget selected)
+    {
+        if (!Program.GamepadDebugMode)
+            return;
+
+        WriteGamepadNavigationDiagnostic("Back candidates:");
+        bool found = false;
+        for (int i = 0; i < targets.Count; i++)
+        {
+            GamepadFocusTarget target = targets[i];
+            if (!target.IsBack || !target.Enabled || !CanSelectGamepadButton(target.Button))
+                continue;
+            found = true;
+            WriteGamepadNavigationDiagnostic(
+                $"Back candidate: input={GetGamepadButtonInput(target.Button)} "
+                + $"text=\"{SanitizeGamepadText(target.Button.ToString())}\" "
+                + $"navigationGroup={target.NavigationGroupId} source={target.SourceName} "
+                + $"baseGroup={target.GroupId} priority={GetGamepadBackPriority(target, current)} "
+                + $"distance={(current == null ? "n/a" : DistanceSquared(target, current.Bounds).ToString())} "
+                + $"selected={ReferenceEquals(target, selected)}");
+        }
+        if (!found)
+            WriteGamepadNavigationDiagnostic("Back candidates: <none>");
+    }
+
+    private static bool IsGamepadBackButton(GamepadFocusTarget target)
+    {
+        if (target?.Button == null)
+            return false;
+
+        string text = NormalizeGamepadSemanticText(target.Button.ToString());
+        string title = NormalizeGamepadSemanticText(target.Button.Title);
+        string input = NormalizeGamepadSemanticText(GetGamepadButtonInput(target.Button));
+        if (IsGamepadBackSemanticToken(input))
+            return true;
+        return IsGamepadBackSemanticText(text) || IsGamepadBackSemanticText(title);
+    }
+
+    private static bool IsGamepadBackSemanticToken(string text)
+    {
+        return string.Equals(text, "CANCEL", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(text, "BACK", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(text, "RETURN", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(text, "EXIT", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(text, "QUIT", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsGamepadBackSemanticText(string text)
+    {
+        string normalized = NormalizeGamepadSemanticText(text);
+        if (IsGamepadBackSemanticToken(normalized))
+            return true;
+        foreach (string label in GamepadBackButtonLabels)
+        {
+            if (normalized.Contains(label, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Back判定専用の文字列正規化。表示文字列は変更せず、互換文字とボタン番号の
+    /// 装飾だけを比較用に取り除く。これにより全角英字のCANCEL等も判定できる。
+    /// </summary>
+    private static string NormalizeGamepadSemanticText(string text)
+    {
+        string normalized = (text ?? string.Empty)
+            .Normalize(NormalizationForm.FormKC)
+            .Replace('\r', ' ')
+            .Replace('\n', ' ')
+            .Trim();
+
+        if (normalized.StartsWith('['))
+        {
+            int closeBracket = normalized.IndexOf(']');
+            if (closeBracket > 1)
+            {
+                string prefix = normalized.Substring(1, closeBracket - 1).Trim();
+                bool isButtonNumber = prefix.Length > 0;
+                for (int i = 0; isButtonNumber && i < prefix.Length; i++)
+                    isButtonNumber = prefix[i] >= '0' && prefix[i] <= '9';
+                if (isButtonNumber)
+                    normalized = normalized.Substring(closeBracket + 1).Trim();
+            }
+        }
+        return normalized;
+    }
+
+    private static void RunGamepadSemanticBackSelfTest()
+    {
+        if (gamepadSemanticBackSelfTestRun)
+            return;
+        gamepadSemanticBackSelfTestRun = true;
+
+        (string Text, bool Expected)[] cases =
+        [
+            ("CANCEL", true),
+            ("ＣＡＮＣＥＬ", true),
+            ("[9]CANCEL", true),
+            ("[9]ＣＡＮＣＥＬ", true),
+            ("[ 0] ＣＡＮＣＥＬ", true),
+            ("BACK", true),
+            ("ＢＡＣＫ", true),
+            ("RETURN", true),
+            ("ＲＥＴＵＲＮ", true),
+            ("キャンセル", true),
+            ("戻る", true),
+            ("[0] NEW GAME", false),
+        ];
+
+        bool passed = true;
+        foreach ((string text, bool expected) in cases)
+        {
+            bool actual = IsGamepadBackSemanticText(text);
+            if (actual != expected)
+            {
+                passed = false;
+                WriteGamepadNavigationDiagnostic(
+                    $"Gamepad semantic Back self-test FAILED: text=\"{text}\" expected={expected} actual={actual}");
+            }
+        }
+        if (passed)
+            WriteGamepadNavigationDiagnostic("Gamepad semantic Back self-test: PASS");
+    }
+
+    private static string SanitizeGamepadText(string text)
+    {
+        return (text ?? string.Empty).Replace('\r', ' ').Replace('\n', ' ').Trim();
+    }
+
+    private static string GetGamepadButtonInput(ConsoleButtonString button)
+    {
+        if (button == null)
+            return string.Empty;
+        return button.IsInteger ? button.Input.ToString() : button.Inputs ?? string.Empty;
+    }
+
+    private static long DistanceSquared(GamepadFocusTarget target, Rectangle bounds)
+    {
+        long dx = target.CenterX - (bounds.Left + bounds.Width / 2);
+        long dy = target.CenterY - (bounds.Top + bounds.Height / 2);
+        return dx * dx + dy * dy;
+    }
+
+    private void RememberGamepadFocus(GamepadFocusTarget target)
+    {
+        if (target == null || inputReq == null)
+            return;
+        hasGamepadFocusHistory = true;
+        lastGamepadFocusInputKey = GetGamepadInputKey(target.Button);
+        lastGamepadFocusRequestId = inputReq.ID;
+        lastGamepadFocusBounds = target.Bounds;
+        lastGamepadFocusSourceType = target.SourceType;
+        lastGamepadFocusGroupId = target.GroupId;
+        lastGamepadFocusNavigationGroupId = target.NavigationGroupId;
+    }
+
+    private static string GetGamepadInputKey(ConsoleButtonString button)
+    {
+        return button.IsInteger ? "I:" + button.Input : "S:" + (button.Inputs ?? string.Empty);
+    }
+
+    private void LogGamepadFocusTargets()
+    {
+        if (!Program.GamepadDebugMode)
+            return;
+
+        int geometryHash = GetGamepadFocusGeometryHash();
+        if (gamepadFocusLoggedGeneration == gamepadFocusTargetGeneration
+            && gamepadFocusLoggedRequestId == gamepadFocusTargetRequestId
+            && gamepadFocusLoggedGeometryHash == geometryHash)
+            return;
+
+        gamepadFocusLoggedGeneration = gamepadFocusTargetGeneration;
+        gamepadFocusLoggedRequestId = gamepadFocusTargetRequestId;
+        gamepadFocusLoggedGeometryHash = geometryHash;
+        WriteGamepadNavigationDiagnostic($"Gamepad focus targets: generation={gamepadFocusTargetGeneration}, request={gamepadFocusTargetRequestId}, count={gamepadFocusTargets.Count}");
+        for (int i = 0; i < gamepadFocusTargets.Count; i++)
+        {
+            GamepadFocusTarget target = gamepadFocusTargets[i];
+            string text = SanitizeGamepadText(target.Button.ToString());
+            WriteGamepadNavigationDiagnostic(
+                $"{i}: input={GetGamepadButtonInput(target.Button)}, text={text}, source={target.SourceName}, layout={target.LayoutType}, baseGroup={target.GroupId}, group={target.NavigationGroupId}, line={target.LineNo}, rawPoint={FormatGamepadRawRectangle(target.RawBounds)}, rect={FormatGamepadRectangle(target.Bounds)}, row={target.Row}, column={target.Column}, enabled={target.Enabled}, back={target.IsBack}, links=[U:{DescribeGamepadLink(target.Up)},D:{DescribeGamepadLink(target.Down)},L:{DescribeGamepadLink(target.Left)},R:{DescribeGamepadLink(target.Right)}]");
+        }
+    }
+
+    private int GetGamepadFocusGeometryHash()
+    {
+        HashCode hash = new();
+        for (int i = 0; i < gamepadFocusTargets.Count; i++)
+        {
+            GamepadFocusTarget target = gamepadFocusTargets[i];
+            hash.Add(target.SourceType);
+            hash.Add(target.GroupId);
+            hash.Add(target.LineNo);
+            hash.Add(target.Bounds);
+            hash.Add(target.RawBounds);
+        }
+        return hash.ToHashCode();
+    }
+
+    private void LogGamepadMove(GamepadDirection direction, GamepadFocusTarget from, GamepadFocusTarget to)
+    {
+        if (!Program.GamepadDebugMode)
+            return;
+        WriteGamepadNavigationDiagnostic(
+            $"Move {direction}: from input={GetGamepadButtonInput(from.Button)} line={from.LineNo} source={from.SourceName} islandId={from.GroupId} rect={FormatGamepadRectangle(from.Bounds)} to input={GetGamepadButtonInput(to.Button)} line={to.LineNo} source={to.SourceName} islandId={to.GroupId} rect={FormatGamepadRectangle(to.Bounds)}");
+    }
+
+    private void LogGamepadConfirm(GamepadFocusTarget target, string action)
+    {
+        if (!Program.GamepadDebugMode)
+            return;
+        WriteGamepadNavigationDiagnostic(
+            $"Confirm: input={GetGamepadButtonInput(target.Button)} text={SanitizeGamepadText(target.Button.ToString())} request={inputReq?.ID ?? -1} source={target.SourceName} islandId={target.GroupId} line={target.LineNo} row={target.Row} column={target.Column} action={action}");
+    }
+
+    private static string DescribeGamepadLink(GamepadFocusTarget target)
+    {
+        return target == null ? "-" : $"{GetGamepadButtonInput(target.Button)}@{target.Row},{target.Column}";
+    }
+
+    private static string FormatGamepadRectangle(Rectangle bounds)
+    {
+        return $"({bounds.X},{bounds.Y},{bounds.Width},{bounds.Height})";
+    }
+
+    private static string FormatGamepadRawRectangle(RectangleF bounds)
+    {
+        return $"({bounds.X:0.##},{bounds.Y:0.##},{bounds.Width:0.##},{bounds.Height:0.##})";
+    }
+
+    private static void WriteGamepadNavigationDiagnostic(string message)
+    {
+        if (!Program.GamepadDebugMode)
+            return;
+        try
+        {
+            string path = Path.Combine(AppContext.BaseDirectory, "gamepad-debug.log");
+            File.AppendAllText(path, $"{DateTime.Now:O} {message}{Environment.NewLine}");
+        }
+        catch
+        {
+            // 診断ログの失敗はゲーム入力を止めない。
+        }
+    }
+
+    private bool IsGamepadLineVisible(ConsoleDisplayLine line)
+    {
+        if (line == null || line.LineNo < 0)
+            return true;
+        int bottom = window.ScrollBar.Value - 1;
+        int top = bottom - (window.MainPicBox.Height / Config.LineHeight + 1);
+        if (top < 0)
+            top = 0;
+        return line.LineNo >= top && line.LineNo <= bottom;
+    }
 
     /// <summary>
     /// ToolTip表示したフラグ
@@ -656,6 +1562,7 @@ internal sealed partial class EmueraConsole : IDisposable
 
         state = ConsoleState.WaitInput;
         inputReq = req;
+        gamepadFocusTargetsDirty = true;
         if (req.Timelimit > 0)
         {
             if (req.OneInput)
@@ -1010,6 +1917,43 @@ internal sealed partial class EmueraConsole : IDisposable
                         MoveMouse(point);
                 });
             }
+        }
+        finally
+        {
+            inProcess = false;
+        }
+        RefreshStrings(true);
+    }
+
+    /// <summary>
+    /// ゲームパッドの仮想フォーカスを、実マウスカーソルを動かさずに
+    /// INPUTMOUSEKEYの左クリックとしてERBへ渡す。
+    /// </summary>
+    private void InputMouseKeyFromGamepad(GamepadFocusTarget target)
+    {
+        if (!IsWaitingPrimitive || target == null || !CanSelectGamepadButton(target.Button))
+            return;
+
+        selectingButton = target.Button;
+        Point center = new(target.CenterX, target.CenterY);
+
+        process.SetResultArray(0, 5);
+        process.SetResultsArray("", 5);
+        if (target.Button.IsInteger)
+            process.SetResultArray(target.Button.Input, 5);
+        else
+            process.SetResultsArray(target.Button.Inputs, 5);
+
+        // MouseDown()と同じRESULT座標系（Yは画面下端基準）を使用する。
+        int resultY = center.Y - ClientHeight;
+        process.InputResult5(1, (int)MouseButtons.Left, center.X, resultY, -1);
+        WriteGamepadNavigationDiagnostic(
+            $"Gamepad virtual left click: input={GetGamepadButtonInput(target.Button)} source={target.SourceName} islandId={target.GroupId} line={target.LineNo} center=({center.X},{center.Y})");
+
+        inProcess = true;
+        try
+        {
+            RunEmueraProgram(null);
         }
         finally
         {
@@ -1420,6 +2364,10 @@ internal sealed partial class EmueraConsole : IDisposable
     /// </summary>
     public void RefreshStrings(bool force_Paint)
     {
+        // 選択ハイライトだけの再描画では座標グラフを作り直さない。
+        // 表示行が増減した場合と、新しい入力要求／ボタン世代では別途再構築される。
+        if (lastDrawnLineNo != lineNo)
+            gamepadFocusTargetsDirty = true;
         long refreshStart = PerformanceMetrics.StartTiming();
         try
         {

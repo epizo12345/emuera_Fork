@@ -9,6 +9,7 @@ using System.IO;
 using System.Runtime;
 using System.Windows.Forms;
 using MinorShift.Emuera.UI.Framework;
+using MinorShift.Emuera.GameView;
 using System.Globalization;
 using System.Diagnostics;
 
@@ -75,6 +76,21 @@ static partial class Program
         };
         rootCommand.Options.Add(startupTestOption);
 
+        // [Emuera改修:GAMEPAD-V1]
+        // ゲームパッド機能の診断と、左スティック直接入力の選択だけを公開する。
+        // 通常のデバイス自動選択・UI操作はオプションなしで有効になる。
+        var gamepadDebugOption = new Option<bool>(name: "--GamepadDebug")
+        {
+            Description = "ゲームパッドの認識状態と入力診断をgamepad-debug.logへ保存する"
+        };
+        rootCommand.Options.Add(gamepadDebugOption);
+
+        var gamepadDirectInputOption = new Option<string>(name: "--GamepadDirectInput")
+        {
+            Description = "左スティック直入力: Auto / Disabled / Wasd / Numpad8462 / ArrowKeys"
+        };
+        rootCommand.Options.Add(gamepadDirectInputOption);
+
         // --BenchmarkLog は計測版だけが使うJSON Linesの保存先を受け取る。
         var benchmarkLogOption = new Option<string>(name: "--BenchmarkLog")
         {
@@ -101,6 +117,13 @@ static partial class Program
         var debugMode = result.GetValue(debugModeOption);
         DebugMode = debugMode;
         StartupTestMode = result.GetValue(startupTestOption);
+        GamepadDebugMode = result.GetValue(gamepadDebugOption)
+            || string.Equals(Environment.GetEnvironmentVariable("EMUERA_GAMEPAD_DEBUG"), "1", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(Environment.GetEnvironmentVariable("EMUERA_GAMEPAD_DEBUG"), "true", StringComparison.OrdinalIgnoreCase);
+        string directInputProfile = result.GetValue(gamepadDirectInputOption)
+            ?? Environment.GetEnvironmentVariable("EMUERA_GAMEPAD_DIRECT_INPUT")
+            ?? "Auto";
+        GamepadDirectInput = ParseGamepadDirectInputProfile(directInputProfile);
 
         var fileArgs = result.GetValue(filesArg) ?? [];
         var analysisRequestPaths = fileArgs;
@@ -240,6 +263,27 @@ static partial class Program
     public static bool DebugMode { get; private set; }
 
     public static bool StartupTestMode { get; private set; }
+
+    public static bool GamepadDebugMode { get; private set; }
+
+    public static GamepadDirectInputProfile GamepadDirectInput { get; private set; } = GamepadDirectInputProfile.Auto;
+
+    private static GamepadDirectInputProfile ParseGamepadDirectInputProfile(string value)
+    {
+        if (string.Equals(value, "WASD", StringComparison.OrdinalIgnoreCase))
+            return GamepadDirectInputProfile.Wasd;
+        if (string.Equals(value, "8462", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(value, "Numpad", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(value, "Numpad8462", StringComparison.OrdinalIgnoreCase))
+            return GamepadDirectInputProfile.Numpad8462;
+        if (string.Equals(value, "Arrows", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(value, "ArrowKeys", StringComparison.OrdinalIgnoreCase))
+            return GamepadDirectInputProfile.ArrowKeys;
+        if (string.Equals(value, "Off", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(value, "Disabled", StringComparison.OrdinalIgnoreCase))
+            return GamepadDirectInputProfile.Disabled;
+        return GamepadDirectInputProfile.Auto;
+    }
 
     static Program()
     {

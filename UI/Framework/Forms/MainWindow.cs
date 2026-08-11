@@ -24,7 +24,6 @@ namespace MinorShift.Emuera.Forms;
 
 internal sealed partial class MainWindow : Form
 {
-
     public MainWindow(string[] args)
     {
         InitializeComponent();
@@ -85,6 +84,70 @@ internal sealed partial class MainWindow : Form
     public RichTextBox TextBox { get { return richTextBox1; } }
     public ToolTip ToolTip { get { return toolTipButton; } }
     private EmueraConsole console;
+
+    // [Emuera改修:GAMEPAD-V1]
+    // Windows入力層は初回ゲーム画面の描画完了後に生成する。コンストラクタや
+    // 初回Handle生成中にポーリング・Raw Input登録を始めると起動表示を変えるため。
+    private GamepadManager? gamepadManager;
+    private System.Windows.Forms.Timer? gamepadTimer;
+    private bool gamepadProcessing;
+    private bool gamepadManagerReady;
+    private bool gamepadWindowActive = true;
+    private nint gamepadRawInputHandle;
+
+    private bool RegisterGamepadRawInput(bool force = false)
+    {
+        GamepadManager? manager = gamepadManager;
+        if (!gamepadManagerReady || manager == null || !IsHandleCreated)
+            return false;
+
+        nint handle = Handle;
+        if (!force && gamepadRawInputHandle == handle)
+            return true;
+
+        bool success = manager.RegisterRawInput(handle);
+        if (success)
+            gamepadRawInputHandle = handle;
+        return success;
+    }
+
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        // 初回表示前はgamepadManagerReadyがfalseなので、既存のWinForms起動順を
+        // 変えない。後のHandle再作成時だけRaw Inputを再登録する。
+        RegisterGamepadRawInput();
+    }
+
+    protected override void OnHandleDestroyed(EventArgs e)
+    {
+        gamepadRawInputHandle = nint.Zero;
+        base.OnHandleDestroyed(e);
+    }
+
+    protected override void OnDeactivate(EventArgs e)
+    {
+        gamepadWindowActive = false;
+        if (gamepadManagerReady && gamepadManager is GamepadManager manager)
+            manager.OnWindowDeactivated();
+        base.OnDeactivate(e);
+    }
+
+    protected override void OnActivated(EventArgs e)
+    {
+        base.OnActivated(e);
+        gamepadWindowActive = true;
+        if (!gamepadManagerReady || gamepadManager is not GamepadManager manager)
+            return;
+
+        manager.OnWindowActivated();
+        bool rawInputRegistered = RegisterGamepadRawInput(force: true);
+        if (gamepadTimer != null && !gamepadTimer.Enabled)
+            gamepadTimer.Start();
+        manager.LogLifecycleDiagnostic($"Window Activated recovery: backend={manager.ActiveBackend}, "
+            + $"connected={manager.IsConnected}, timerEnabled={gamepadTimer?.Enabled == true}, "
+            + $"Raw Input re-registration={(rawInputRegistered ? "SUCCESS" : "SKIPPED/FAILED")}.");
+    }
 
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
     {
@@ -191,10 +254,18 @@ internal sealed partial class MainWindow : Form
 
     protected override void WndProc(ref Message m)
     {
+        const int WM_INPUT = 0x00FF;
+        const int WM_INPUT_DEVICE_CHANGE = 0x00FE;
         const int WM_SYSCOMMAND = 0x112;
         //const int WM_MOUSEWHEEL = 0x020A;
         const int SC_MOVE = 0xf010;
         const int SC_MAXIMIZE = 0xf030;
+
+        GamepadManager? manager = gamepadManager;
+        if (m.Msg == WM_INPUT && gamepadManagerReady && manager != null)
+            manager.ProcessRawInput(m.LParam);
+        else if (m.Msg == WM_INPUT_DEVICE_CHANGE && gamepadManagerReady && manager != null)
+            manager.NotifyRawInputDeviceChange(unchecked((uint)m.WParam.ToInt64()), m.LParam);
 
         // WM_SYSCOMMAND (SC_MOVE) を無視することでフォームを移動できないようにする
         switch (m.Msg)
@@ -285,8 +356,36 @@ internal sealed partial class MainWindow : Form
 #endif
         PerformanceMetrics.MarkStartup("InputReady");
         PerformanceMetrics.WriteStartup();
+
+        // [Emuera改修:GAMEPAD-V1]
+        // 元Emueraの初回表示・描画完了後に、メッセージキューを一度戻してから
+        // ゲームパッド入力層を始動する。これにより起動中のフォームHandle生成や
+        // 子コントロール描画をゲームパッド処理が先行して変えない。
+        if (!Program.StartupTestMode)
+            BeginInvoke(InitializeGamepadAfterStartup);
         if (Program.StartupTestMode)
             BeginInvoke(Close);
+    }
+
+    private void InitializeGamepadAfterStartup()
+    {
+        if (gamepadManagerReady || IsDisposed || Disposing)
+            return;
+
+        GamepadManager manager = new(Program.GamepadDebugMode);
+        gamepadManager = manager;
+        gamepadManagerReady = true;
+
+        if (!manager.IsAvailable)
+            return;
+
+        RegisterGamepadRawInput();
+        gamepadTimer = new System.Windows.Forms.Timer
+        {
+            Interval = 33,
+        };
+        gamepadTimer.Tick += gamepadTimer_Tick;
+        gamepadTimer.Start();
     }
 
     /// <summary>
@@ -634,6 +733,75 @@ internal sealed partial class MainWindow : Form
             console.LeaveMouse();
     }
 
+    private void gamepadTimer_Tick(object? sender, EventArgs e)
+    {
+        GamepadManager? manager = gamepadManager;
+        if (gamepadProcessing || console == null || manager == null)
+            return;
+
+        GamepadAction action = manager.Poll();
+        if (!gamepadWindowActive)
+            return;
+        if (manager.IsConnected && console.GamepadEnsureSelection())
+            console.RefreshStrings(true);
+        if (action.Kind == GamepadActionKind.None || console.IsInProcess)
+            return;
+
+        gamepadProcessing = true;
+        try
+        {
+            switch (action.Kind)
+            {
+                case GamepadActionKind.Direction:
+                    if (action.DirectionSource == GamepadDirectionSource.LeftStick
+                        && console.TryGamepadDirectInput(action.Direction))
+                        break;
+                    if (console.GamepadMove(action.Direction))
+                        console.RefreshStrings(true);
+                    break;
+                case GamepadActionKind.Confirm:
+                    console.GamepadConfirm();
+                    break;
+                case GamepadActionKind.Cancel:
+                    console.GamepadCancel();
+                    break;
+                case GamepadActionKind.Start:
+                    console.GamepadStart();
+                    break;
+                case GamepadActionKind.ScrollUp:
+                    ScrollLogByGamepad(-1);
+                    break;
+                case GamepadActionKind.ScrollDown:
+                    ScrollLogByGamepad(1);
+                    break;
+            }
+        }
+        finally
+        {
+            gamepadProcessing = false;
+        }
+    }
+
+    private void ScrollLogByGamepad(int direction)
+    {
+        if (!vScrollBar.Enabled || direction == 0)
+            return;
+
+        int move = direction * vScrollBar.SmallChange * Config.ScrollHeight;
+        if ((vScrollBar.Value == vScrollBar.Maximum && move > 0)
+            || (vScrollBar.Value == vScrollBar.Minimum && move < 0))
+            return;
+
+        int value = vScrollBar.Value + move;
+        if (value >= vScrollBar.Maximum)
+            vScrollBar.Value = vScrollBar.Maximum;
+        else if (value <= vScrollBar.Minimum)
+            vScrollBar.Value = vScrollBar.Minimum;
+        else
+            vScrollBar.Value = value;
+        console.RefreshStrings(vScrollBar.Value == vScrollBar.Maximum || vScrollBar.Value == vScrollBar.Minimum);
+    }
+
     private void コンフィグCToolStripMenuItem_Click(object sender, EventArgs e)
     {
         ShowConfigDialog();
@@ -771,6 +939,9 @@ internal sealed partial class MainWindow : Form
 
     private void MainWindow_FormClosing(object sender, FormClosingEventArgs e)
     {
+        gamepadTimer?.Stop();
+        gamepadTimer?.Dispose();
+        gamepadManager?.Dispose();
         if (Config.UseKeyMacro)
             KeyMacro.SaveMacro();
         if (console != null)
