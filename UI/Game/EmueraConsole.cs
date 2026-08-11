@@ -630,7 +630,11 @@ internal sealed partial class EmueraConsole : IDisposable
     private GamepadFocusSourceType lastGamepadFocusSourceType;
     private int lastGamepadFocusGroupId = int.MinValue;
     private int lastGamepadFocusNavigationGroupId = int.MinValue;
+    // [Emuera改修:GAMEPAD-V1] Confirm直後の同一画面再描画だけに使う一時Anchor。
+    // 通常のFocus履歴とは分け、別InputRequestへの無条件復元を防ぐ。
+    private PostConfirmFocusAnchor postConfirmFocusAnchor;
     private static bool gamepadSemanticBackSelfTestRun;
+    private static bool gamepadFocusPersistenceSelfTestRun;
     private static readonly string[] GamepadBackButtonLabels =
     [
         "戻る",
@@ -647,6 +651,43 @@ internal sealed partial class EmueraConsole : IDisposable
         "中止",
         "取消",
     ];
+
+    private sealed class PostConfirmFocusAnchor
+    {
+        internal string InputKey;
+        internal long RequestId;
+        internal int ButtonGeneration;
+        internal GamepadFocusSourceType SourceType;
+        internal int GroupId;
+        internal int NavigationGroupId;
+        internal Rectangle Bounds;
+        internal int Row;
+        internal int Column;
+        internal bool IsBack;
+        internal List<PostConfirmFocusSnapshot> Targets = [];
+    }
+
+    private readonly struct PostConfirmFocusSnapshot
+    {
+        internal PostConfirmFocusSnapshot(GamepadFocusTarget target)
+        {
+            InputKey = GetGamepadInputKey(target.Button);
+            SourceType = target.SourceType;
+            GroupId = target.GroupId;
+            Bounds = target.Bounds;
+            Row = target.Row;
+            Column = target.Column;
+            IsBack = target.IsBack;
+        }
+
+        internal string InputKey { get; }
+        internal GamepadFocusSourceType SourceType { get; }
+        internal int GroupId { get; }
+        internal Rectangle Bounds { get; }
+        internal int Row { get; }
+        internal int Column { get; }
+        internal bool IsBack { get; }
+    }
     public ConsoleButtonString SelectingButton { get { return selectingButton; } }
     public bool ButtonIsSelected(ConsoleButtonString button) { return selectingButton == button; }
 
@@ -660,7 +701,35 @@ internal sealed partial class EmueraConsole : IDisposable
             return false;
         List<GamepadFocusTarget> targets = GetGamepadFocusTargets();
         if (targets.Count == 0)
+        {
+            if (postConfirmFocusAnchor != null)
+            {
+                WriteGamepadNavigationDiagnostic(
+                    $"Next request: request={inputReq.ID} (anchor request={postConfirmFocusAnchor.RequestId})");
+                WriteGamepadNavigationDiagnostic(
+                    "Post-confirm focus restore rejected: reason=UI structure changed (no focus targets)");
+                postConfirmFocusAnchor = null;
+            }
             return false;
+        }
+
+        // Confirm may legitimately create a new InputRequest while redrawing
+        // the same toggle/options screen. Try the short-lived Confirm anchor
+        // before the ordinary same-request history; Cancel never creates this
+        // anchor, so the existing Back behavior remains unchanged.
+        if (postConfirmFocusAnchor != null)
+        {
+            if (TryRestorePostConfirmFocus(targets, out GamepadFocusTarget postConfirmRestored))
+            {
+                selectingCBGButtonInt = -1;
+                pointingString = null;
+                selectingButton = postConfirmRestored.Button;
+                RememberGamepadFocus(postConfirmRestored);
+                postConfirmFocusAnchor = null;
+                return true;
+            }
+            postConfirmFocusAnchor = null;
+        }
 
         bool sameInputRequest = inputReq.ID == lastGamepadFocusRequestId;
         GamepadFocusTarget current = gamepadNavigationGraph.Find(selectingButton);
@@ -714,6 +783,219 @@ internal sealed partial class EmueraConsole : IDisposable
                 firstNormal = target;
         }
         return firstNormal ?? firstEnabled ?? targets[0];
+    }
+
+    private void CapturePostConfirmFocusAnchor(GamepadFocusTarget target)
+    {
+        if (target == null || inputReq == null)
+            return;
+
+        PostConfirmFocusAnchor anchor = new()
+        {
+            InputKey = GetGamepadInputKey(target.Button),
+            RequestId = inputReq.ID,
+            ButtonGeneration = lastButtonGeneration,
+            SourceType = target.SourceType,
+            GroupId = target.GroupId,
+            NavigationGroupId = target.NavigationGroupId,
+            Bounds = target.Bounds,
+            Row = target.Row,
+            Column = target.Column,
+            IsBack = target.IsBack,
+        };
+        for (int i = 0; i < gamepadFocusTargets.Count; i++)
+            anchor.Targets.Add(new PostConfirmFocusSnapshot(gamepadFocusTargets[i]));
+        postConfirmFocusAnchor = anchor;
+
+        WriteGamepadNavigationDiagnostic(
+            $"Confirm focus anchor: input={GetGamepadButtonInput(target.Button)} request={anchor.RequestId} "
+            + $"rect={FormatGamepadRectangle(anchor.Bounds)} row={anchor.Row} column={anchor.Column} "
+            + $"source={target.SourceName} baseGroup={anchor.GroupId} navigationGroup={anchor.NavigationGroupId} "
+            + $"generation={anchor.ButtonGeneration} targetCount={anchor.Targets.Count}");
+    }
+
+    private bool TryRestorePostConfirmFocus(List<GamepadFocusTarget> targets,
+        out GamepadFocusTarget restored)
+    {
+        restored = null;
+        PostConfirmFocusAnchor anchor = postConfirmFocusAnchor;
+        if (anchor == null || inputReq == null)
+            return false;
+
+        bool sameScreen = IsPostConfirmSameScreen(anchor, targets, out int matchCount);
+        GamepadFocusTarget exact = FindPostConfirmExactTarget(anchor, targets);
+        bool targetMatch = exact != null;
+
+        WriteGamepadNavigationDiagnostic(
+            $"Next request: request={inputReq.ID} (anchor request={anchor.RequestId})");
+        WriteGamepadNavigationDiagnostic(
+            $"Post-confirm redraw comparison: same-screen={sameScreen} target-match={targetMatch} "
+            + $"matches={matchCount}/{Math.Min(anchor.Targets.Count, targets.Count)} "
+            + $"oldCount={anchor.Targets.Count} newCount={targets.Count}");
+
+        if (!sameScreen)
+        {
+            WriteGamepadNavigationDiagnostic(
+                "Post-confirm focus restore rejected: reason=UI structure changed");
+            return false;
+        }
+
+        if (exact != null)
+        {
+            restored = exact;
+            WriteGamepadNavigationDiagnostic(
+                $"Focus restored: input={GetGamepadButtonInput(exact.Button)} "
+                + "reason=same input/source/baseGroup and near-identical bounds");
+            return true;
+        }
+
+        restored = FindPostConfirmLaneFallback(anchor, targets);
+        if (restored == null)
+        {
+            WriteGamepadNavigationDiagnostic(
+                "Post-confirm focus restore rejected: reason=anchor target disappeared and no lane fallback exists");
+            return false;
+        }
+
+        WriteGamepadNavigationDiagnostic(
+            $"Focus restored: input={GetGamepadButtonInput(restored.Button)} "
+            + "reason=same-screen redraw, anchor target disappeared, nearest vertical lane fallback");
+        return true;
+    }
+
+    private static bool IsPostConfirmSameScreen(PostConfirmFocusAnchor anchor,
+        List<GamepadFocusTarget> targets, out int matchCount)
+    {
+        matchCount = CountPostConfirmMatches(anchor, targets);
+        bool sameTargetListSize = Math.Abs(anchor.Targets.Count - targets.Count)
+            <= Math.Max(2, Math.Max(anchor.Targets.Count, targets.Count) / 3);
+        int requiredMatches = Math.Max(1, (Math.Min(anchor.Targets.Count, targets.Count) * 3 + 3) / 4);
+        return anchor.Targets.Count > 0 && targets.Count > 0
+            && sameTargetListSize && matchCount >= requiredMatches;
+    }
+
+    private static int CountPostConfirmMatches(PostConfirmFocusAnchor anchor,
+        List<GamepadFocusTarget> targets)
+    {
+        if (anchor.Targets.Count == 0 || targets.Count == 0)
+            return 0;
+
+        bool[] used = new bool[targets.Count];
+        int matchCount = 0;
+        for (int oldIndex = 0; oldIndex < anchor.Targets.Count; oldIndex++)
+        {
+            PostConfirmFocusSnapshot oldTarget = anchor.Targets[oldIndex];
+            for (int newIndex = 0; newIndex < targets.Count; newIndex++)
+            {
+                GamepadFocusTarget newTarget = targets[newIndex];
+                if (used[newIndex] || !IsPostConfirmTargetMatch(oldTarget, newTarget))
+                    continue;
+                used[newIndex] = true;
+                matchCount++;
+                break;
+            }
+        }
+        return matchCount;
+    }
+
+    private static GamepadFocusTarget FindPostConfirmExactTarget(PostConfirmFocusAnchor anchor,
+        List<GamepadFocusTarget> targets)
+    {
+        GamepadFocusTarget best = null;
+        long bestDistance = long.MaxValue;
+        for (int i = 0; i < targets.Count; i++)
+        {
+            GamepadFocusTarget target = targets[i];
+            if (!string.Equals(GetGamepadInputKey(target.Button), anchor.InputKey, StringComparison.Ordinal)
+                || target.SourceType != anchor.SourceType
+                || target.GroupId != anchor.GroupId
+                || target.IsBack != anchor.IsBack
+                || !ArePostConfirmBoundsNear(target.Bounds, anchor.Bounds))
+                continue;
+            long distance = DistanceSquared(target, anchor.Bounds);
+            if (best == null || distance < bestDistance
+                || (distance == bestDistance && target.Order < best.Order))
+            {
+                best = target;
+                bestDistance = distance;
+            }
+        }
+        return best;
+    }
+
+    private static GamepadFocusTarget FindPostConfirmLaneFallback(PostConfirmFocusAnchor anchor,
+        List<GamepadFocusTarget> targets)
+    {
+        int laneTolerance = Math.Max(12, anchor.Bounds.Width / 2);
+        GamepadFocusTarget below = null;
+        GamepadFocusTarget above = null;
+        long belowDistance = long.MaxValue;
+        long aboveDistance = long.MaxValue;
+        for (int i = 0; i < targets.Count; i++)
+        {
+            GamepadFocusTarget target = targets[i];
+            if (target.SourceType != anchor.SourceType || target.GroupId != anchor.GroupId
+                || target.IsBack != anchor.IsBack
+                || Math.Abs(target.CenterX - (anchor.Bounds.Left + anchor.Bounds.Width / 2)) > laneTolerance)
+                continue;
+            long verticalDistance = Math.Abs((long)target.CenterY
+                - (anchor.Bounds.Top + anchor.Bounds.Height / 2));
+            if (target.CenterY > anchor.Bounds.Top + anchor.Bounds.Height / 2
+                && (below == null || verticalDistance < belowDistance
+                    || (verticalDistance == belowDistance && target.Order < below.Order)))
+            {
+                below = target;
+                belowDistance = verticalDistance;
+            }
+            else if (target.CenterY < anchor.Bounds.Top + anchor.Bounds.Height / 2
+                && (above == null || verticalDistance < aboveDistance
+                    || (verticalDistance == aboveDistance && target.Order < above.Order)))
+            {
+                above = target;
+                aboveDistance = verticalDistance;
+            }
+        }
+        if (below != null)
+            return below;
+        if (above != null)
+            return above;
+
+        GamepadFocusTarget nearest = null;
+        long nearestDistance = long.MaxValue;
+        for (int i = 0; i < targets.Count; i++)
+        {
+            GamepadFocusTarget target = targets[i];
+            if (target.SourceType != anchor.SourceType || target.GroupId != anchor.GroupId
+                || target.IsBack != anchor.IsBack)
+                continue;
+            long distance = DistanceSquared(target, anchor.Bounds);
+            if (nearest == null || distance < nearestDistance
+                || (distance == nearestDistance && target.Order < nearest.Order))
+            {
+                nearest = target;
+                nearestDistance = distance;
+            }
+        }
+        return nearest;
+    }
+
+    private static bool IsPostConfirmTargetMatch(PostConfirmFocusSnapshot oldTarget,
+        GamepadFocusTarget newTarget)
+    {
+        return string.Equals(oldTarget.InputKey, GetGamepadInputKey(newTarget.Button), StringComparison.Ordinal)
+            && oldTarget.SourceType == newTarget.SourceType
+            && oldTarget.GroupId == newTarget.GroupId
+            && oldTarget.IsBack == newTarget.IsBack
+            && ArePostConfirmBoundsNear(oldTarget.Bounds, newTarget.Bounds);
+    }
+
+    private static bool ArePostConfirmBoundsNear(Rectangle left, Rectangle right)
+    {
+        const int tolerance = 12;
+        return Math.Abs(left.Left - right.Left) <= tolerance
+            && Math.Abs(left.Top - right.Top) <= tolerance
+            && Math.Abs(left.Width - right.Width) <= tolerance
+            && Math.Abs(left.Height - right.Height) <= tolerance;
     }
 
     private static int CompareGamepadVisualOrder(GamepadFocusTarget left, GamepadFocusTarget right)
@@ -881,7 +1163,9 @@ internal sealed partial class EmueraConsole : IDisposable
             GamepadFocusTarget current = GetCurrentGamepadFocusTarget();
             if (current != null)
             {
-                ExecuteGamepadFocusTarget(current, "virtual-left-click");
+                CapturePostConfirmFocusAnchor(current);
+                if (!ExecuteGamepadFocusTarget(current, "virtual-left-click"))
+                    postConfirmFocusAnchor = null;
             }
             else
             {
@@ -899,8 +1183,12 @@ internal sealed partial class EmueraConsole : IDisposable
             GamepadFocusTarget current = gamepadNavigationGraph.Find(selectingButton);
             if (current != null)
             {
+                CapturePostConfirmFocusAnchor(current);
                 if (!ExecuteGamepadFocusTarget(current, "ConsoleButton confirm path"))
+                {
+                    postConfirmFocusAnchor = null;
                     PressEnterKey(false, input, true);
+                }
             }
             else
             {
@@ -1018,7 +1306,10 @@ internal sealed partial class EmueraConsole : IDisposable
     private List<GamepadFocusTarget> GetGamepadFocusTargets()
     {
         if (Program.GamepadDebugMode)
+        {
             RunGamepadSemanticBackSelfTest();
+            RunGamepadFocusPersistenceSelfTest();
+        }
         long requestId = inputReq?.ID ?? -1;
         if (!gamepadFocusTargetsDirty && gamepadFocusTargetGeneration == lastButtonGeneration
             && gamepadFocusTargetRequestId == requestId)
@@ -1374,6 +1665,76 @@ internal sealed partial class EmueraConsole : IDisposable
         }
         if (passed)
             WriteGamepadNavigationDiagnostic("Gamepad semantic Back self-test: PASS");
+    }
+
+    private static void RunGamepadFocusPersistenceSelfTest()
+    {
+        if (gamepadFocusPersistenceSelfTestRun)
+            return;
+        gamepadFocusPersistenceSelfTestRun = true;
+
+        List<GamepadFocusTarget> before = CreatePostConfirmSelfTestTargets(8, 0, false);
+        PostConfirmFocusAnchor anchor = CreatePostConfirmSelfTestAnchor(before[5], before);
+        List<GamepadFocusTarget> toggled = CreatePostConfirmSelfTestTargets(8, 0, false);
+        bool caseA = IsPostConfirmSameScreen(anchor, toggled, out _)
+            && FindPostConfirmExactTarget(anchor, toggled) == toggled[5];
+
+        PostConfirmFocusAnchor secondAnchor = CreatePostConfirmSelfTestAnchor(toggled[5], toggled);
+        List<GamepadFocusTarget> toggledAgain = CreatePostConfirmSelfTestTargets(8, 0, false);
+        bool caseB = IsPostConfirmSameScreen(secondAnchor, toggledAgain, out _)
+            && FindPostConfirmExactTarget(secondAnchor, toggledAgain) == toggledAgain[5];
+
+        List<GamepadFocusTarget> differentScreen = CreatePostConfirmSelfTestTargets(3, 1, false);
+        bool caseC = !IsPostConfirmSameScreen(anchor, differentScreen, out _)
+            && FindPostConfirmExactTarget(anchor, differentScreen) == null;
+
+        List<GamepadFocusTarget> oldZero = CreatePostConfirmSelfTestTargets(1, 0, false, 0);
+        List<GamepadFocusTarget> sameInputDifferentScreen = CreatePostConfirmSelfTestTargets(1, 1, true, 0);
+        PostConfirmFocusAnchor zeroAnchor = CreatePostConfirmSelfTestAnchor(oldZero[0], oldZero);
+        bool caseD = !IsPostConfirmSameScreen(zeroAnchor, sameInputDifferentScreen, out _)
+            && FindPostConfirmExactTarget(zeroAnchor, sameInputDifferentScreen) == null;
+
+        bool passed = caseA && caseB && caseC && caseD;
+        WriteGamepadNavigationDiagnostic(
+            $"Gamepad post-confirm focus self-test: {(passed ? "PASS" : "WARNING")} "
+            + $"(A=toggle:{caseA}, B=repeat:{caseB}, C=screen-change:{caseC}, D=same-input-screen-change:{caseD})");
+    }
+
+    private static List<GamepadFocusTarget> CreatePostConfirmSelfTestTargets(int count,
+        int groupId, bool lastIsBack, int firstInput = 1)
+    {
+        List<GamepadFocusTarget> targets = [];
+        for (int i = 0; i < count; i++)
+        {
+            ConsoleButtonString button = new(null, [], (firstInput + i).ToString());
+            Rectangle bounds = new(220, 20 + i * 24, 160, 18);
+            GamepadFocusTarget target = new(button, GamepadFocusSourceType.NormalDisplay,
+                GamepadFocusLayoutType.Console, groupId, null, bounds, bounds, i);
+            target.IsBack = lastIsBack && i == count - 1;
+            targets.Add(target);
+        }
+        return targets;
+    }
+
+    private static PostConfirmFocusAnchor CreatePostConfirmSelfTestAnchor(
+        GamepadFocusTarget target, List<GamepadFocusTarget> targets)
+    {
+        PostConfirmFocusAnchor anchor = new()
+        {
+            InputKey = GetGamepadInputKey(target.Button),
+            RequestId = 1,
+            ButtonGeneration = 1,
+            SourceType = target.SourceType,
+            GroupId = target.GroupId,
+            NavigationGroupId = target.NavigationGroupId,
+            Bounds = target.Bounds,
+            Row = target.Row,
+            Column = target.Column,
+            IsBack = target.IsBack,
+        };
+        for (int i = 0; i < targets.Count; i++)
+            anchor.Targets.Add(new PostConfirmFocusSnapshot(targets[i]));
+        return anchor;
     }
 
     private static string SanitizeGamepadText(string text)

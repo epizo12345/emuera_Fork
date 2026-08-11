@@ -28,6 +28,7 @@ framework-dependent単一ファイル版のため、Emuera本体のDLLを別途�
 - ホットプラグ、Alt+Tab復帰
 - Raw Inputでも十字キーと左スティックを別々に扱う
 - 複数パッド接続時も、選択中デバイス単位でボタン配列を判定
+- ON/OFF切替後の同一画面再描画で、決定直前のフォーカスを安全に復元
 
 PS4系の既定は×が決定、○がキャンセルです。
 
@@ -63,7 +64,7 @@ EXEと同じフォルダへ`gamepad-debug.log`を出力します。
 - Runtime: win-x64
 - Self-contained: false
 - Single-file: true
-- Emuera.exe: 24,708,842 bytes
-- SHA-256: `5111B9FE59FC0A944BC08FE3563F440CE066E69814704DE9DD60AE040BEBA218`
+- Emuera.exe: 24,717,034 bytes
+- SHA-256: `22599F2C4D4E1CCA592E92ED272E44599C15CD551A5581E9AD0E58C2D1174699`
 
 詳細仕様はリポジトリの`プロジェクト資料/07_ゲームパッド対応_v1_仕様書.md`、変更説明は`今回の修正説明_2026-08-11_ゲームパッド対応_v1.md`を参照してください。
