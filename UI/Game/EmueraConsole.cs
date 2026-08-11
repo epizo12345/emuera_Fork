@@ -630,6 +630,15 @@ internal sealed partial class EmueraConsole : IDisposable
     private GamepadFocusSourceType lastGamepadFocusSourceType;
     private int lastGamepadFocusGroupId = int.MinValue;
     private int lastGamepadFocusNavigationGroupId = int.MinValue;
+    // [Emuera改修:GAMEPAD-V1] 別InputRequestへ遷移してから戻る画面用の履歴。
+    // PostConfirmの同一画面再描画とは用途を分離し、上限を持つ短いstack/cacheだけを保持する。
+    private const int GamepadReturnFocusStackCapacity = 24;
+    private const int GamepadLastFocusCacheCapacity = 48;
+    private readonly List<GamepadFocusHistoryEntry> gamepadReturnFocusStack = [];
+    private readonly List<GamepadFocusHistoryEntry> gamepadLastFocusCache = [];
+    private GamepadFocusHistoryEntry pendingGamepadFocusTransition;
+    private GamepadFocusHistoryEntry pendingReturnFocusRestore;
+    private long gamepadFocusHistoryOrder;
     // [Emuera改修:GAMEPAD-V1] Confirm直後の同一画面再描画だけに使う一時Anchor。
     // 通常のFocus履歴とは分け、別InputRequestへの無条件復元を防ぐ。
     private PostConfirmFocusAnchor postConfirmFocusAnchor;
@@ -639,6 +648,7 @@ internal sealed partial class EmueraConsole : IDisposable
     private static bool gamepadLogicalButtonSelfTestRun;
     private static bool gamepadHtmlModalSelfTestRun;
     private static bool gamepadPageNavigationSelfTestRun;
+    private static bool gamepadReturnFocusHistorySelfTestRun;
     private enum GamepadPageNavigationMode
     {
         Indexed,
@@ -706,6 +716,70 @@ internal sealed partial class EmueraConsole : IDisposable
         internal bool IsBack { get; }
     }
 
+    private enum GamepadFocusTransitionKind
+    {
+        Confirm,
+        Back,
+    }
+
+    /// <summary>
+    /// 入力要求IDに依存しない、現在のゲームパッドNavigation画面の軽量な構造指紋。
+    /// 表示中のHPや名前などを同一性の必須条件にはせず、Interactive Targetの
+    /// Input/Source/Group/Layout/Back性とおおまかな配置だけで照合する。
+    /// </summary>
+    private sealed class GamepadScreenFingerprint
+    {
+        internal bool HasModalScope;
+        internal List<GamepadScreenTargetSnapshot> Targets = [];
+        internal string DebugId;
+    }
+
+    private readonly struct GamepadScreenTargetSnapshot
+    {
+        internal GamepadScreenTargetSnapshot(GamepadFocusTarget target)
+        {
+            InputKey = GetGamepadInputKey(target.Button);
+            NormalizedLabel = NormalizeGamepadSemanticText(target.Button?.ToString());
+            SourceType = target.SourceType;
+            LayoutType = target.LayoutType;
+            GroupId = target.GroupId;
+            NavigationGroupId = target.NavigationGroupId;
+            Bounds = target.Bounds;
+            Row = target.Row;
+            Column = target.Column;
+            IsBack = target.IsBack;
+        }
+
+        internal string InputKey { get; }
+        internal string NormalizedLabel { get; }
+        internal GamepadFocusSourceType SourceType { get; }
+        internal GamepadFocusLayoutType LayoutType { get; }
+        internal int GroupId { get; }
+        internal int NavigationGroupId { get; }
+        internal Rectangle Bounds { get; }
+        internal int Row { get; }
+        internal int Column { get; }
+        internal bool IsBack { get; }
+    }
+
+    private sealed class GamepadFocusHistoryEntry
+    {
+        internal GamepadScreenFingerprint Fingerprint;
+        internal string InputKey;
+        internal string NormalizedLabel;
+        internal GamepadFocusSourceType SourceType;
+        internal GamepadFocusLayoutType LayoutType;
+        internal int GroupId;
+        internal int NavigationGroupId;
+        internal Rectangle Bounds;
+        internal int Row;
+        internal int Column;
+        internal bool IsBack;
+        internal long RequestId;
+        internal long Order;
+        internal GamepadFocusTransitionKind TransitionKind;
+    }
+
     // [Emuera改修:GAMEPAD-V1]
     // PAGE.0 / PAGE.1、または「前のページ」「次のページ」のような表示済み
     // ボタン群を、ゲーム固有の入力番号を知らずにLB/RBで選ぶための一時的な
@@ -759,6 +833,12 @@ internal sealed partial class EmueraConsole : IDisposable
             return false;
         }
 
+        // InputRequest IDは画面再表示で変わるため、Confirm/Back直後にだけ前画面と
+        // 現在画面のInteractive構造を照合する。ここではまだFocusを決めず、
+        // PostConfirm → Return Stack → Last Focus Cacheの優先順位で後段へ渡す。
+        GamepadScreenFingerprint currentScreen = CreateGamepadScreenFingerprint(targets);
+        ResolvePendingGamepadFocusTransition(currentScreen);
+
         // Confirm may legitimately create a new InputRequest while redrawing
         // the same toggle/options screen. Try the short-lived Confirm anchor
         // before the ordinary same-request history; Cancel never creates this
@@ -767,9 +847,7 @@ internal sealed partial class EmueraConsole : IDisposable
         {
             if (TryRestorePostConfirmFocus(targets, out GamepadFocusTarget postConfirmRestored))
             {
-                selectingCBGButtonInt = -1;
-                pointingString = null;
-                selectingButton = postConfirmRestored.Button;
+                ApplyGamepadFocusSelection(postConfirmRestored);
                 RememberGamepadFocus(postConfirmRestored);
                 postConfirmFocusAnchor = null;
                 return true;
@@ -803,6 +881,43 @@ internal sealed partial class EmueraConsole : IDisposable
             restored = FindNearestRememberedGamepadFocus(targets);
         }
 
+        // Back/CancelによってReturn Stackの最上段へ戻った場合は、同じ論理画面と
+        // 確認済みのEntryだけを使う。別画面の同じinput値だけでは復元しない。
+        if (restored == null && pendingReturnFocusRestore != null)
+        {
+            GamepadFocusHistoryEntry returnEntry = pendingReturnFocusRestore;
+            pendingReturnFocusRestore = null;
+            if (TryRestoreGamepadFocusHistory(returnEntry, targets, out restored, out string restoreReason))
+            {
+                WriteGamepadNavigationDiagnostic(
+                    $"Focus restored from return history: input={GetGamepadButtonInput(restored.Button)} "
+                    + $"reason={restoreReason}");
+            }
+            else
+            {
+                WriteGamepadNavigationDiagnostic(
+                    "Focus history target unavailable: source=return-stack fallback=initial-focus");
+            }
+        }
+
+        // Return Stackに該当しない再訪問は、構造照合済みの小型Last Focus Cacheを
+        // 利用する。キャッシュは同一画面らしい場合だけ照合し、初回表示には使わない。
+        if (restored == null && TryFindGamepadLastFocusHistory(currentScreen,
+                out GamepadFocusHistoryEntry cachedEntry, out int cacheSimilarity))
+        {
+            if (TryRestoreGamepadFocusHistory(cachedEntry, targets, out restored, out string cacheReason))
+            {
+                WriteGamepadNavigationDiagnostic(
+                    $"Focus restored from screen history: input={GetGamepadButtonInput(restored.Button)} "
+                    + $"similarity={cacheSimilarity}% reason={cacheReason}");
+            }
+            else
+            {
+                WriteGamepadNavigationDiagnostic(
+                    "Focus history target unavailable: source=last-focus-cache fallback=initial-focus");
+            }
+        }
+
         restored ??= FindInitialGamepadFocus(targets);
 
         if (restored.IsModalForeground)
@@ -812,11 +927,16 @@ internal sealed partial class EmueraConsole : IDisposable
                 + $"text={SanitizeGamepadText(restored.Button.ToString())}");
         }
 
-        selectingCBGButtonInt = -1;
-        pointingString = null;
-        selectingButton = restored.Button;
+        ApplyGamepadFocusSelection(restored);
         RememberGamepadFocus(restored);
         return true;
+    }
+
+    private void ApplyGamepadFocusSelection(GamepadFocusTarget target)
+    {
+        selectingCBGButtonInt = -1;
+        pointingString = null;
+        selectingButton = target?.Button;
     }
 
     private static GamepadFocusTarget FindInitialGamepadFocus(List<GamepadFocusTarget> targets)
@@ -1165,7 +1285,8 @@ internal sealed partial class EmueraConsole : IDisposable
         // Post-confirm anchorを残さず、ページボタン自体もFocus履歴にしない。
         postConfirmFocusAnchor = null;
         bool executed = ExecuteGamepadFocusTarget(target,
-            nextPage ? "shoulder-page-next" : "shoulder-page-previous", rememberFocus: false);
+            nextPage ? "shoulder-page-next" : "shoulder-page-previous", rememberFocus: false,
+            captureReturnFocus: false);
         // Directional型として認識できた操作は、実行対象が再描画競合で消えても
         // Log Scrollへフォールバックさせない。ページUIの肩ボタン操作を消費する。
         return executed || pageSet.Mode == GamepadPageNavigationMode.Directional;
@@ -1422,6 +1543,7 @@ internal sealed partial class EmueraConsole : IDisposable
             LogGamepadBackCandidates(targets, current, back);
             if (back != null)
             {
+                CaptureGamepadReturnFocus(current, GamepadFocusTransitionKind.Back, "semantic-back");
                 if (back.IsModalBackdrop)
                     WriteGamepadNavigationDiagnostic(
                         $"Modal Cancel: input={GetGamepadButtonInput(back.Button)}");
@@ -1431,16 +1553,22 @@ internal sealed partial class EmueraConsole : IDisposable
                     + $"navigationGroup={back.NavigationGroupId} execution="
                     + (IsWaitingPrimitive ? "virtual-left-click" : "ConsoleButton confirm path"));
                 ExecuteGamepadFocusTarget(back,
-                    IsWaitingPrimitive ? "virtual-left-click" : "ConsoleButton confirm path");
+                    IsWaitingPrimitive ? "virtual-left-click" : "ConsoleButton confirm path",
+                    captureReturnFocus: false);
                 return;
             }
 
             if (IsWaitingPrimitive)
             {
+                CaptureGamepadReturnFocus(current, GamepadFocusTransitionKind.Back,
+                    "fallback-escape-inputmousekey");
                 WriteGamepadNavigationDiagnostic("No semantic back target\nFallback = Escape (INPUTMOUSEKEY).");
                 InputMouseKey(3, (int)Keys.Escape, (int)Keys.Escape, 0, 0);
                 return;
             }
+
+            CaptureGamepadReturnFocus(current, GamepadFocusTransitionKind.Back,
+                "fallback-right-click-escape");
         }
         WriteGamepadNavigationDiagnostic("No semantic back target\nFallback = RightClick/Escape.");
         KillMacro = true;
@@ -1454,11 +1582,13 @@ internal sealed partial class EmueraConsole : IDisposable
     /// shortcut based on the button label.
     /// </summary>
     private bool ExecuteGamepadFocusTarget(GamepadFocusTarget target, string diagnosticAction,
-        bool rememberFocus = true)
+        bool rememberFocus = true, bool captureReturnFocus = true)
     {
         if (target == null || !CanSelectGamepadButton(target.Button))
             return false;
 
+        if (captureReturnFocus)
+            CaptureGamepadReturnFocus(target, GamepadFocusTransitionKind.Confirm, diagnosticAction);
         selectingCBGButtonInt = -1;
         pointingString = null;
         selectingButton = target.Button;
@@ -1508,6 +1638,7 @@ internal sealed partial class EmueraConsole : IDisposable
             RunGamepadLogicalButtonSelfTest();
             RunGamepadHtmlModalSelfTest();
             RunGamepadPageNavigationSelfTest();
+            RunGamepadReturnFocusHistorySelfTest();
         }
         long requestId = inputReq?.ID ?? -1;
         if (!gamepadFocusTargetsDirty && gamepadFocusTargetGeneration == lastButtonGeneration
@@ -2583,6 +2714,158 @@ internal sealed partial class EmueraConsole : IDisposable
         return anchor;
     }
 
+    private static void RunGamepadReturnFocusHistorySelfTest()
+    {
+        if (gamepadReturnFocusHistorySelfTestRun)
+            return;
+        gamepadReturnFocusHistorySelfTestRun = true;
+
+        // A: A → B → Back → A。Aで最後に選んだ5番へ戻る。
+        List<GamepadFocusTarget> screenA = CreateReturnFocusHistorySelfTestTargets(
+            ["0", "1", "2", "3", "4", "5", "6"], groupId: 10);
+        GamepadFocusHistoryEntry entryA = CreateReturnFocusHistorySelfTestEntry(screenA[5], screenA);
+        List<GamepadFocusTarget> screenAReturned = CreateReturnFocusHistorySelfTestTargets(
+            ["0", "1", "2", "3", "4", "5", "6"], groupId: 10);
+        bool caseA = TryMatchGamepadScreenFingerprints(entryA.Fingerprint,
+                CreateGamepadScreenFingerprint(screenAReturned), out _, out _)
+            && TryRestoreGamepadFocusHistory(entryA, screenAReturned, out GamepadFocusTarget restoredA,
+                out _)
+            && restoredA == screenAReturned[5];
+
+        // B: A → B → C → Back → B → Back → A。stack最上段から順に復元する。
+        List<GamepadFocusTarget> screenB = CreateReturnFocusHistorySelfTestTargets(
+            ["10", "11", "12", "13", "14"], groupId: 20);
+        GamepadFocusHistoryEntry entryB = CreateReturnFocusHistorySelfTestEntry(screenB[3], screenB);
+        List<GamepadFocusHistoryEntry> returnStack = [entryA, entryB];
+        List<GamepadFocusTarget> screenBReturned = CreateReturnFocusHistorySelfTestTargets(
+            ["10", "11", "12", "13", "14"], groupId: 20);
+        bool caseBFirst = TryMatchGamepadScreenFingerprints(returnStack[^1].Fingerprint,
+                CreateGamepadScreenFingerprint(screenBReturned), out _, out _)
+            && TryRestoreGamepadFocusHistory(returnStack[^1], screenBReturned,
+                out GamepadFocusTarget restoredB, out _)
+            && restoredB == screenBReturned[3];
+        if (caseBFirst)
+            returnStack.RemoveAt(returnStack.Count - 1);
+        bool caseBSecond = returnStack.Count == 1
+            && TryMatchGamepadScreenFingerprints(returnStack[^1].Fingerprint,
+                CreateGamepadScreenFingerprint(screenAReturned), out _, out _)
+            && TryRestoreGamepadFocusHistory(returnStack[^1], screenAReturned,
+                out GamepadFocusTarget restoredAAgain, out _)
+            && restoredAAgain == screenAReturned[5];
+        bool caseB = caseBFirst && caseBSecond;
+
+        // C: 同じinput=0でも、Back性・ラベル・構造が異なる画面へは適用しない。
+        List<GamepadFocusTarget> sameInputDifferentScreen = CreateReturnFocusHistorySelfTestTargets(
+            ["CANCEL"], groupId: 30, firstIsBack: true);
+        bool caseC = !TryMatchGamepadScreenFingerprints(
+            CreateReturnFocusHistorySelfTestEntry(
+                CreateReturnFocusHistorySelfTestTargets(["通常項目"], groupId: 30)[0],
+                CreateReturnFocusHistorySelfTestTargets(["通常項目"], groupId: 30)).Fingerprint,
+            CreateGamepadScreenFingerprint(sameInputDifferentScreen), out _, out _);
+
+        // D: 同一画面のConfirm再描画は既存PostConfirmの同一画面判定が優先される。
+        List<GamepadFocusTarget> toggleBefore = CreatePostConfirmSelfTestTargets(6, 40, false);
+        PostConfirmFocusAnchor toggleAnchor = CreatePostConfirmSelfTestAnchor(toggleBefore[4], toggleBefore);
+        List<GamepadFocusTarget> toggleAfter = CreatePostConfirmSelfTestTargets(6, 40, false);
+        bool caseD = IsPostConfirmSameScreen(toggleAnchor, toggleAfter, out _)
+            && FindPostConfirmExactTarget(toggleAnchor, toggleAfter) == toggleAfter[4];
+
+        // E: modalの0/1は背景screenと別fingerprint。Cancel後は背景Entryだけを復元する。
+        List<GamepadFocusTarget> modalTargets = CreateReturnFocusHistorySelfTestTargets(
+            ["はい", "いいえ"], groupId: 90, modalForeground: true);
+        bool caseE = !TryMatchGamepadScreenFingerprints(entryA.Fingerprint,
+                CreateGamepadScreenFingerprint(modalTargets), out _, out _)
+            && TryRestoreGamepadFocusHistory(entryA, screenAReturned,
+                out GamepadFocusTarget modalReturn, out _)
+            && modalReturn == screenAReturned[5];
+
+        // F: 元の6が消えても、同じ縦レーンで近い7へフォールバックする。
+        List<GamepadFocusTarget> disappearBefore = CreateReturnFocusHistorySelfTestTargets(
+            ["5", "6", "7", "8"], groupId: 50);
+        GamepadFocusHistoryEntry disappearEntry = CreateReturnFocusHistorySelfTestEntry(disappearBefore[1],
+            disappearBefore);
+        List<GamepadFocusTarget> disappearAfter = CreateReturnFocusHistorySelfTestTargets(
+            ["5", "7", "8"], groupId: 50);
+        bool caseF = TryMatchGamepadScreenFingerprints(disappearEntry.Fingerprint,
+                CreateGamepadScreenFingerprint(disappearAfter), out _, out _)
+            && TryRestoreGamepadFocusHistory(disappearEntry, disappearAfter,
+                out GamepadFocusTarget disappearedFallback, out string disappearedReason)
+            && disappearedFallback == disappearAfter[1]
+            && disappearedReason.Contains("vertical lane", StringComparison.Ordinal);
+
+        // G: 履歴がない初回表示では従来のInitial Focusを使う。
+        List<GamepadFocusTarget> firstVisit = CreateReturnFocusHistorySelfTestTargets(
+            ["0", "1", "戻る"], groupId: 60, lastIsBack: true);
+        bool caseG = FindInitialGamepadFocus(firstVisit) == firstVisit[0];
+
+        // H: 1件程度の増減は、共通するInteractive構造が十分なら同一screenとみなす。
+        List<GamepadFocusTarget> dynamicBefore = CreateReturnFocusHistorySelfTestTargets(
+            ["0", "1", "2", "3", "4", "5"], groupId: 70);
+        List<GamepadFocusTarget> dynamicAfter = CreateReturnFocusHistorySelfTestTargets(
+            ["0", "1", "2", "3", "4", "5", "6"], groupId: 70);
+        bool caseH = TryMatchGamepadScreenFingerprints(
+            CreateReturnFocusHistorySelfTestEntry(dynamicBefore[4], dynamicBefore).Fingerprint,
+            CreateGamepadScreenFingerprint(dynamicAfter), out _, out _);
+
+        // I: 入力構造が大きく違う別screenには履歴を適用しない。
+        List<GamepadFocusTarget> unrelatedScreen = CreateReturnFocusHistorySelfTestTargets(
+            ["20", "21", "22", "23", "24", "25"], groupId: 80);
+        bool caseI = !TryMatchGamepadScreenFingerprints(
+            CreateReturnFocusHistorySelfTestEntry(dynamicBefore[4], dynamicBefore).Fingerprint,
+            CreateGamepadScreenFingerprint(unrelatedScreen), out _, out _);
+
+        bool passed = caseA && caseB && caseC && caseD && caseE && caseF && caseG && caseH && caseI;
+        WriteGamepadNavigationDiagnostic(
+            $"Gamepad return focus history self-test: {(passed ? "PASS" : "WARNING")} "
+            + $"(A=return:{caseA}, B=nested-stack:{caseB}, C=same-input-rejected:{caseC}, "
+            + $"D=post-confirm-priority:{caseD}, E=modal-background:{caseE}, F=target-disappeared:{caseF}, "
+            + $"G=first-visit:{caseG}, H=dynamic-screen:{caseH}, I=structure-mismatch:{caseI})");
+    }
+
+    private static List<GamepadFocusTarget> CreateReturnFocusHistorySelfTestTargets(string[] labels,
+        int groupId, bool lastIsBack = false, bool firstIsBack = false, bool modalForeground = false)
+    {
+        List<GamepadFocusTarget> targets = [];
+        for (int i = 0; i < labels.Length; i++)
+        {
+            ConsoleStyledString styled = new(labels[i],
+                new StringStyle(Config.ForeColor, FontStyle.Regular, null));
+            long input = long.TryParse(labels[i], out long numericInput) ? numericInput : i;
+            ConsoleButtonString button = new(null, [styled], input);
+            Rectangle bounds = new(160, 40 + i * 24, 180, 18);
+            GamepadFocusTarget target = new(button, GamepadFocusSourceType.NormalDisplay,
+                GamepadFocusLayoutType.Console, groupId, null, bounds, bounds, i)
+            {
+                NavigationGroupId = 0,
+                IsBack = (firstIsBack && i == 0) || (lastIsBack && i == labels.Length - 1),
+                IsModalForeground = modalForeground,
+            };
+            targets.Add(target);
+        }
+        return targets;
+    }
+
+    private static GamepadFocusHistoryEntry CreateReturnFocusHistorySelfTestEntry(
+        GamepadFocusTarget target, List<GamepadFocusTarget> targets)
+    {
+        return new GamepadFocusHistoryEntry
+        {
+            Fingerprint = CreateGamepadScreenFingerprint(targets),
+            InputKey = GetGamepadInputKey(target.Button),
+            NormalizedLabel = NormalizeGamepadSemanticText(target.Button.ToString()),
+            SourceType = target.SourceType,
+            LayoutType = target.LayoutType,
+            GroupId = target.GroupId,
+            NavigationGroupId = target.NavigationGroupId,
+            Bounds = target.Bounds,
+            Row = target.Row,
+            Column = target.Column,
+            IsBack = target.IsBack,
+            RequestId = 1,
+            Order = 1,
+        };
+    }
+
     private static void RunGamepadInteractiveTargetSelfTest()
     {
         if (gamepadInteractiveTargetSelfTestRun)
@@ -2963,6 +3246,466 @@ internal sealed partial class EmueraConsole : IDisposable
         lastGamepadFocusSourceType = target.SourceType;
         lastGamepadFocusGroupId = target.GroupId;
         lastGamepadFocusNavigationGroupId = target.NavigationGroupId;
+    }
+
+    private void CaptureGamepadReturnFocus(GamepadFocusTarget target,
+        GamepadFocusTransitionKind transitionKind, string action)
+    {
+        if (target == null || inputReq == null || gamepadFocusTargets.Count == 0)
+            return;
+
+        GamepadFocusHistoryEntry entry = CreateGamepadFocusHistoryEntry(target, transitionKind);
+        if (entry == null || entry.Fingerprint.Targets.Count == 0)
+            return;
+
+        pendingGamepadFocusTransition = entry;
+        StoreGamepadLastFocusEntry(entry);
+        WriteGamepadNavigationDiagnostic(
+            $"Leaving screen: fingerprint={entry.Fingerprint.DebugId} focusInput={GetGamepadButtonInput(target.Button)} "
+            + $"rect={FormatGamepadRectangle(target.Bounds)} action={action}");
+        if (transitionKind == GamepadFocusTransitionKind.Back)
+            WriteGamepadNavigationDiagnostic("Back/Cancel transition detected");
+    }
+
+    private GamepadFocusHistoryEntry CreateGamepadFocusHistoryEntry(GamepadFocusTarget target,
+        GamepadFocusTransitionKind transitionKind)
+    {
+        if (target?.Button == null || inputReq == null)
+            return null;
+
+        return new GamepadFocusHistoryEntry
+        {
+            Fingerprint = CreateGamepadScreenFingerprint(gamepadFocusTargets),
+            InputKey = GetGamepadInputKey(target.Button),
+            NormalizedLabel = NormalizeGamepadSemanticText(target.Button.ToString()),
+            SourceType = target.SourceType,
+            LayoutType = target.LayoutType,
+            GroupId = target.GroupId,
+            NavigationGroupId = target.NavigationGroupId,
+            Bounds = target.Bounds,
+            Row = target.Row,
+            Column = target.Column,
+            IsBack = target.IsBack,
+            RequestId = inputReq.ID,
+            Order = ++gamepadFocusHistoryOrder,
+            TransitionKind = transitionKind,
+        };
+    }
+
+    private void ResolvePendingGamepadFocusTransition(GamepadScreenFingerprint currentScreen)
+    {
+        GamepadFocusHistoryEntry pending = pendingGamepadFocusTransition;
+        if (pending == null || currentScreen == null || currentScreen.Targets.Count == 0)
+            return;
+
+        pendingGamepadFocusTransition = null;
+        bool sameScreen = TryMatchGamepadScreenFingerprints(pending.Fingerprint, currentScreen,
+            out int similarity, out _);
+        if (sameScreen)
+        {
+            WriteGamepadNavigationDiagnostic(
+                $"Focus history transition ignored: reason=same-screen redraw fingerprint={currentScreen.DebugId} "
+                + $"similarity={similarity}%");
+            return;
+        }
+
+        if (pending.TransitionKind == GamepadFocusTransitionKind.Back)
+        {
+            if (gamepadReturnFocusStack.Count > 0)
+            {
+                GamepadFocusHistoryEntry returnEntry = gamepadReturnFocusStack[^1];
+                if (TryMatchGamepadScreenFingerprints(returnEntry.Fingerprint, currentScreen,
+                        out int returnSimilarity, out _))
+                {
+                    gamepadReturnFocusStack.RemoveAt(gamepadReturnFocusStack.Count - 1);
+                    pendingReturnFocusRestore = returnEntry;
+                    WriteGamepadNavigationDiagnostic(
+                        $"Screen history match: fingerprint={currentScreen.DebugId} similarity={returnSimilarity}% "
+                        + "returnEntry=True");
+                    return;
+                }
+            }
+
+            WriteGamepadNavigationDiagnostic(
+                $"Focus history rejected: reason=return-stack structure mismatch fingerprint={currentScreen.DebugId}");
+            return;
+        }
+
+        PushGamepadReturnFocusEntry(pending);
+    }
+
+    private void PushGamepadReturnFocusEntry(GamepadFocusHistoryEntry entry)
+    {
+        if (entry == null)
+            return;
+        gamepadReturnFocusStack.Add(entry);
+        while (gamepadReturnFocusStack.Count > GamepadReturnFocusStackCapacity)
+            gamepadReturnFocusStack.RemoveAt(0);
+        WriteGamepadNavigationDiagnostic(
+            $"Return history push: depth={gamepadReturnFocusStack.Count} screen={entry.Fingerprint.DebugId} "
+            + $"focusInput={GetGamepadButtonInputKeyForDiagnostic(entry.InputKey)}");
+    }
+
+    private void StoreGamepadLastFocusEntry(GamepadFocusHistoryEntry entry)
+    {
+        if (entry?.Fingerprint == null || entry.Fingerprint.Targets.Count == 0)
+            return;
+
+        for (int i = gamepadLastFocusCache.Count - 1; i >= 0; i--)
+        {
+            if (!TryMatchGamepadScreenFingerprints(gamepadLastFocusCache[i].Fingerprint,
+                    entry.Fingerprint, out _, out _))
+            {
+                continue;
+            }
+            gamepadLastFocusCache.RemoveAt(i);
+            break;
+        }
+        gamepadLastFocusCache.Add(entry);
+        while (gamepadLastFocusCache.Count > GamepadLastFocusCacheCapacity)
+            gamepadLastFocusCache.RemoveAt(0);
+    }
+
+    private bool TryFindGamepadLastFocusHistory(GamepadScreenFingerprint currentScreen,
+        out GamepadFocusHistoryEntry entry, out int similarity)
+    {
+        entry = null;
+        similarity = 0;
+        for (int i = gamepadLastFocusCache.Count - 1; i >= 0; i--)
+        {
+            GamepadFocusHistoryEntry candidate = gamepadLastFocusCache[i];
+            if (!TryMatchGamepadScreenFingerprints(candidate.Fingerprint, currentScreen,
+                    out int candidateSimilarity, out _))
+            {
+                continue;
+            }
+            if (entry == null || candidateSimilarity > similarity
+                || (candidateSimilarity == similarity && candidate.Order > entry.Order))
+            {
+                entry = candidate;
+                similarity = candidateSimilarity;
+            }
+        }
+        return entry != null;
+    }
+
+    private static GamepadScreenFingerprint CreateGamepadScreenFingerprint(
+        List<GamepadFocusTarget> targets)
+    {
+        GamepadScreenFingerprint fingerprint = new();
+        List<GamepadFocusTarget> scope = GetGamepadFocusHistoryScope(targets, out bool hasModalScope);
+        fingerprint.HasModalScope = hasModalScope;
+        scope.Sort(CompareGamepadVisualOrder);
+        for (int i = 0; i < scope.Count; i++)
+            fingerprint.Targets.Add(new GamepadScreenTargetSnapshot(scope[i]));
+        fingerprint.DebugId = CreateGamepadScreenFingerprintDebugId(fingerprint);
+        return fingerprint;
+    }
+
+    private static List<GamepadFocusTarget> GetGamepadFocusHistoryScope(
+        List<GamepadFocusTarget> targets, out bool hasModalScope)
+    {
+        hasModalScope = targets != null && targets.Any(target => target.IsModalForeground);
+        List<GamepadFocusTarget> scope = [];
+        if (targets == null)
+            return scope;
+        for (int i = 0; i < targets.Count; i++)
+        {
+            GamepadFocusTarget target = targets[i];
+            if (target?.Button == null || !target.Enabled)
+                continue;
+            if (hasModalScope ? !target.IsModalForeground : target.IsDirectionalFocusExcluded)
+                continue;
+            scope.Add(target);
+        }
+        return scope;
+    }
+
+    private static string CreateGamepadScreenFingerprintDebugId(GamepadScreenFingerprint fingerprint)
+    {
+        uint hash = 2166136261;
+        for (int i = 0; i < fingerprint.Targets.Count; i++)
+        {
+            GamepadScreenTargetSnapshot target = fingerprint.Targets[i];
+            hash = AddGamepadFingerprintHash(hash, target.InputKey);
+            hash = AddGamepadFingerprintHash(hash, ((int)target.SourceType).ToString());
+            hash = AddGamepadFingerprintHash(hash, ((int)target.LayoutType).ToString());
+            hash = AddGamepadFingerprintHash(hash, target.GroupId.ToString());
+            hash = AddGamepadFingerprintHash(hash, target.NavigationGroupId.ToString());
+            hash = AddGamepadFingerprintHash(hash, target.IsBack ? "B" : "N");
+        }
+        return $"m={(fingerprint.HasModalScope ? 1 : 0)}:n={fingerprint.Targets.Count}:h={hash:X8}";
+    }
+
+    private static uint AddGamepadFingerprintHash(uint hash, string value)
+    {
+        string text = value ?? string.Empty;
+        for (int i = 0; i < text.Length; i++)
+        {
+            hash ^= text[i];
+            hash *= 16777619;
+        }
+        return hash;
+    }
+
+    private static bool TryMatchGamepadScreenFingerprints(GamepadScreenFingerprint previous,
+        GamepadScreenFingerprint current, out int similarity, out int matchCount)
+    {
+        similarity = 0;
+        matchCount = 0;
+        if (previous == null || current == null || previous.Targets.Count == 0 || current.Targets.Count == 0
+            || previous.HasModalScope != current.HasModalScope)
+        {
+            return false;
+        }
+
+        int previousCount = previous.Targets.Count;
+        int currentCount = current.Targets.Count;
+        int minCount = Math.Min(previousCount, currentCount);
+        int maxCount = Math.Max(previousCount, currentCount);
+        if (Math.Abs(previousCount - currentCount) > Math.Max(2, maxCount * 2 / 5))
+            return false;
+
+        bool[] used = new bool[currentCount];
+        int labelMatches = 0;
+        int geometryMatches = 0;
+        for (int oldIndex = 0; oldIndex < previousCount; oldIndex++)
+        {
+            GamepadScreenTargetSnapshot oldTarget = previous.Targets[oldIndex];
+            for (int newIndex = 0; newIndex < currentCount; newIndex++)
+            {
+                GamepadScreenTargetSnapshot newTarget = current.Targets[newIndex];
+                if (used[newIndex] || !IsGamepadScreenStructureTargetMatch(oldTarget, newTarget))
+                    continue;
+                used[newIndex] = true;
+                matchCount++;
+                if (string.Equals(oldTarget.NormalizedLabel, newTarget.NormalizedLabel,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    labelMatches++;
+                }
+                if (AreGamepadFingerprintBoundsCompatible(oldTarget.Bounds, newTarget.Bounds))
+                    geometryMatches++;
+                break;
+            }
+        }
+
+        similarity = matchCount * 100 / minCount;
+        // 表示条件で1項目程度が増減しても同一論理画面を見失わないよう、3項目
+        // 以上では概ね2/3以上の構造一致を要求する。1～2項目画面は下の補助一致を
+        // 必須にして、同じinputだけの誤一致を防ぐ。
+        int requiredMatches = minCount <= 2 ? minCount : Math.Max(2, (minCount * 2 + 2) / 3);
+        if (matchCount < requiredMatches)
+            return false;
+
+        // 1～2ボタン画面はInputだけの偶然一致を特に避ける。3ボタン以上は
+        // Input/Source/Groupの高い一致率に加え、ラベルまたは配置の補助一致を求める。
+        if (minCount <= 2)
+            return labelMatches > 0 || geometryMatches > 0;
+        return labelMatches > 0 || geometryMatches >= Math.Min(2, matchCount);
+    }
+
+    private static bool IsGamepadScreenStructureTargetMatch(GamepadScreenTargetSnapshot left,
+        GamepadScreenTargetSnapshot right)
+    {
+        return string.Equals(left.InputKey, right.InputKey, StringComparison.Ordinal)
+            && left.SourceType == right.SourceType
+            && left.LayoutType == right.LayoutType
+            && left.GroupId == right.GroupId
+            && left.NavigationGroupId == right.NavigationGroupId
+            && left.IsBack == right.IsBack;
+    }
+
+    private static bool AreGamepadFingerprintBoundsCompatible(Rectangle left, Rectangle right)
+    {
+        int horizontalTolerance = Math.Max(24, Math.Max(left.Width, right.Width) / 2);
+        int verticalTolerance = Math.Max(72, Math.Max(left.Height, right.Height) * 4);
+        return Math.Abs(left.Left - right.Left) <= horizontalTolerance
+            && Math.Abs(left.Top - right.Top) <= verticalTolerance
+            && Math.Abs(left.Width - right.Width) <= horizontalTolerance
+            && Math.Abs(left.Height - right.Height) <= Math.Max(12, Math.Max(left.Height, right.Height));
+    }
+
+    private static string GetGamepadButtonInputKeyForDiagnostic(string inputKey)
+    {
+        if (string.IsNullOrEmpty(inputKey) || inputKey.Length < 3)
+            return inputKey ?? string.Empty;
+        return inputKey[2..];
+    }
+
+    private static bool TryRestoreGamepadFocusHistory(GamepadFocusHistoryEntry entry,
+        List<GamepadFocusTarget> targets, out GamepadFocusTarget restored, out string reason)
+    {
+        restored = null;
+        reason = string.Empty;
+        if (entry == null)
+            return false;
+
+        List<GamepadFocusTarget> scope = GetGamepadFocusHistoryScope(targets, out _);
+        restored = FindGamepadHistoryInputTarget(entry, scope);
+        if (restored != null)
+        {
+            reason = "same input/source/baseGroup and near bounds";
+            return true;
+        }
+
+        restored = FindGamepadHistoryLabelTarget(entry, scope);
+        if (restored != null)
+        {
+            reason = "same normalized label/source/baseGroup and near bounds";
+            return true;
+        }
+
+        restored = FindGamepadHistoryLaneFallback(entry, scope);
+        if (restored != null)
+        {
+            reason = "history target disappeared; nearest same vertical lane";
+            return true;
+        }
+
+        restored = FindGamepadHistoryNearestTarget(entry, scope);
+        if (restored != null)
+        {
+            reason = "history target disappeared; nearest target in the same panel";
+            return true;
+        }
+        return false;
+    }
+
+    private static GamepadFocusTarget FindGamepadHistoryInputTarget(GamepadFocusHistoryEntry entry,
+        List<GamepadFocusTarget> targets)
+    {
+        GamepadFocusTarget best = null;
+        int bestNavigationPriority = int.MaxValue;
+        long bestDistance = long.MaxValue;
+        for (int i = 0; i < targets.Count; i++)
+        {
+            GamepadFocusTarget target = targets[i];
+            if (!IsGamepadHistoryPanelMatch(entry, target)
+                || !string.Equals(entry.InputKey, GetGamepadInputKey(target.Button), StringComparison.Ordinal)
+                || !AreGamepadFingerprintBoundsCompatible(entry.Bounds, target.Bounds))
+            {
+                continue;
+            }
+            int navigationPriority = target.NavigationGroupId == entry.NavigationGroupId ? 0 : 1;
+            long distance = DistanceSquared(target, entry.Bounds);
+            if (best == null || navigationPriority < bestNavigationPriority
+                || (navigationPriority == bestNavigationPriority && distance < bestDistance)
+                || (navigationPriority == bestNavigationPriority && distance == bestDistance
+                    && target.Order < best.Order))
+            {
+                best = target;
+                bestNavigationPriority = navigationPriority;
+                bestDistance = distance;
+            }
+        }
+        return best;
+    }
+
+    private static GamepadFocusTarget FindGamepadHistoryLabelTarget(GamepadFocusHistoryEntry entry,
+        List<GamepadFocusTarget> targets)
+    {
+        if (string.IsNullOrEmpty(entry.NormalizedLabel))
+            return null;
+
+        GamepadFocusTarget best = null;
+        int bestNavigationPriority = int.MaxValue;
+        long bestDistance = long.MaxValue;
+        for (int i = 0; i < targets.Count; i++)
+        {
+            GamepadFocusTarget target = targets[i];
+            if (!IsGamepadHistoryPanelMatch(entry, target)
+                || !string.Equals(entry.NormalizedLabel,
+                    NormalizeGamepadSemanticText(target.Button.ToString()), StringComparison.OrdinalIgnoreCase)
+                || !AreGamepadFingerprintBoundsCompatible(entry.Bounds, target.Bounds))
+            {
+                continue;
+            }
+            int navigationPriority = target.NavigationGroupId == entry.NavigationGroupId ? 0 : 1;
+            long distance = DistanceSquared(target, entry.Bounds);
+            if (best == null || navigationPriority < bestNavigationPriority
+                || (navigationPriority == bestNavigationPriority && distance < bestDistance)
+                || (navigationPriority == bestNavigationPriority && distance == bestDistance
+                    && target.Order < best.Order))
+            {
+                best = target;
+                bestNavigationPriority = navigationPriority;
+                bestDistance = distance;
+            }
+        }
+        return best;
+    }
+
+    private static GamepadFocusTarget FindGamepadHistoryLaneFallback(GamepadFocusHistoryEntry entry,
+        List<GamepadFocusTarget> targets)
+    {
+        int laneTolerance = Math.Max(16, entry.Bounds.Width / 2);
+        int anchorCenterY = entry.Bounds.Top + entry.Bounds.Height / 2;
+        GamepadFocusTarget below = null;
+        GamepadFocusTarget above = null;
+        long belowDistance = long.MaxValue;
+        long aboveDistance = long.MaxValue;
+        for (int i = 0; i < targets.Count; i++)
+        {
+            GamepadFocusTarget target = targets[i];
+            if (!IsGamepadHistoryPanelMatch(entry, target)
+                || Math.Abs(target.CenterX - (entry.Bounds.Left + entry.Bounds.Width / 2)) > laneTolerance)
+            {
+                continue;
+            }
+            long distance = Math.Abs((long)target.CenterY - anchorCenterY);
+            if (target.CenterY >= anchorCenterY
+                && (below == null || distance < belowDistance
+                    || (distance == belowDistance && target.Order < below.Order)))
+            {
+                below = target;
+                belowDistance = distance;
+            }
+            else if (target.CenterY < anchorCenterY
+                && (above == null || distance < aboveDistance
+                    || (distance == aboveDistance && target.Order < above.Order)))
+            {
+                above = target;
+                aboveDistance = distance;
+            }
+        }
+        return below ?? above;
+    }
+
+    private static GamepadFocusTarget FindGamepadHistoryNearestTarget(GamepadFocusHistoryEntry entry,
+        List<GamepadFocusTarget> targets)
+    {
+        GamepadFocusTarget best = null;
+        int bestNavigationPriority = int.MaxValue;
+        long bestDistance = long.MaxValue;
+        for (int i = 0; i < targets.Count; i++)
+        {
+            GamepadFocusTarget target = targets[i];
+            if (!IsGamepadHistoryPanelMatch(entry, target))
+                continue;
+            int navigationPriority = target.NavigationGroupId == entry.NavigationGroupId ? 0 : 1;
+            long distance = DistanceSquared(target, entry.Bounds);
+            if (best == null || navigationPriority < bestNavigationPriority
+                || (navigationPriority == bestNavigationPriority && distance < bestDistance)
+                || (navigationPriority == bestNavigationPriority && distance == bestDistance
+                    && target.Order < best.Order))
+            {
+                best = target;
+                bestNavigationPriority = navigationPriority;
+                bestDistance = distance;
+            }
+        }
+        return best;
+    }
+
+    private static bool IsGamepadHistoryPanelMatch(GamepadFocusHistoryEntry entry,
+        GamepadFocusTarget target)
+    {
+        return target != null && !target.IsDirectionalFocusExcluded && target.Enabled
+            && target.SourceType == entry.SourceType
+            && target.LayoutType == entry.LayoutType
+            && target.GroupId == entry.GroupId
+            && target.IsBack == entry.IsBack;
     }
 
     private static string GetGamepadInputKey(ConsoleButtonString button)

@@ -29,6 +29,7 @@ framework-dependent単一ファイル版のため、Emuera本体のDLLを別途�
 - Raw Inputでも十字キーと左スティックを別々に扱う
 - 複数パッド接続時も、選択中デバイス単位でボタン配列を判定
 - ON/OFF切替後の同一画面再描画で、決定直前のフォーカスを安全に復元
+- 別画面から○で戻る時は、Return Focus Historyにより遷移前のフォーカスを安全に復元（modal、入れ子画面、Target消失時の代替を含む）
 - 通常Consoleの説明文・装飾文をFocus Targetから除外し、Input=0の実ボタンは保持
 - 複数行に分割された同一論理ボタンのクリック可能断片を1Targetへ統合し、遠い同番号ボタンは分離保持
 - HTML確認ポップアップの背面Cancel overlayをDirectional Focusから除外し、前面の0/1選択肢を初期Focus・上下移動対象にする
@@ -68,7 +69,7 @@ EXEと同じフォルダへ`gamepad-debug.log`を出力します。
 - Runtime: win-x64
 - Self-contained: false
 - Single-file: true
-- Emuera.exe: 24,741,610 bytes
-- SHA-256: `65C0AD524F627655CE8E3CFDAE99BE6AEA2EC3067916890F525E72B42F13970C`
+- Emuera.exe: 24,753,898 bytes
+- SHA-256: `7DCFA38C8C6ADABA31D26A7C1AE05488C9427286F3ECC1C05B7B2644AB3CABAC`
 
 詳細仕様はリポジトリの`プロジェクト資料/07_ゲームパッド対応_v1_仕様書.md`、変更説明は`今回の修正説明_2026-08-11_ゲームパッド対応_v1.md`を参照してください。
