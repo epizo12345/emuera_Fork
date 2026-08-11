@@ -31,6 +31,8 @@ framework-dependent単一ファイル版のため、Emuera本体のDLLを別途�
 - ON/OFF切替後の同一画面再描画で、決定直前のフォーカスを安全に復元
 - 通常Consoleの説明文・装飾文をFocus Targetから除外し、Input=0の実ボタンは保持
 - 複数行に分割された同一論理ボタンのクリック可能断片を1Targetへ統合し、遠い同番号ボタンは分離保持
+- HTML確認ポップアップの背面Cancel overlayをDirectional Focusから除外し、前面の0/1選択肢を初期Focus・上下移動対象にする
+- modalでない巨大HTML Buttonと独立したHTML Islandは自動除外しない
 
 PS4系の既定は×が決定、○がキャンセルです。
 
@@ -66,7 +68,7 @@ EXEと同じフォルダへ`gamepad-debug.log`を出力します。
 - Runtime: win-x64
 - Self-contained: false
 - Single-file: true
-- Emuera.exe: 24,721,130 bytes
-- SHA-256: `AD88C344970D4EAD5114854309E4890742A4BE17BD948ED67BC50F59FBB58543`
+- Emuera.exe: 24,729,322 bytes
+- SHA-256: `EB4F8E7AE96C8D517531AA1C1F8E6C43FD8CBC3470A0407DDF9DAA03C3D22E33`
 
 詳細仕様はリポジトリの`プロジェクト資料/07_ゲームパッド対応_v1_仕様書.md`、変更説明は`今回の修正説明_2026-08-11_ゲームパッド対応_v1.md`を参照してください。

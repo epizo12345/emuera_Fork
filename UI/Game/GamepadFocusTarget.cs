@@ -57,6 +57,11 @@ internal sealed class GamepadFocusTarget
     internal int NavigationGroupId { get; set; }
     internal bool Enabled { get; set; } = true;
     internal bool IsBack { get; set; }
+    // HTML modalのbackdropはマウスヒットとsemantic Back候補には残すが、
+    // ゲームパッドの通常Directional Focusには入れない。
+    internal bool IsDirectionalFocusExcluded { get; set; }
+    internal bool IsModalForeground { get; set; }
+    internal bool IsModalBackdrop { get; set; }
     internal GamepadFocusTarget Up { get; set; }
     internal GamepadFocusTarget Down { get; set; }
     internal GamepadFocusTarget Left { get; set; }

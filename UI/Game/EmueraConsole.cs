@@ -637,6 +637,7 @@ internal sealed partial class EmueraConsole : IDisposable
     private static bool gamepadFocusPersistenceSelfTestRun;
     private static bool gamepadInteractiveTargetSelfTestRun;
     private static bool gamepadLogicalButtonSelfTestRun;
+    private static bool gamepadHtmlModalSelfTestRun;
     private static readonly string[] GamepadBackButtonLabels =
     [
         "戻る",
@@ -761,6 +762,13 @@ internal sealed partial class EmueraConsole : IDisposable
 
         restored ??= FindInitialGamepadFocus(targets);
 
+        if (restored.IsModalForeground)
+        {
+            WriteGamepadNavigationDiagnostic(
+                $"Initial modal focus: input={GetGamepadButtonInput(restored.Button)} "
+                + $"text={SanitizeGamepadText(restored.Button.ToString())}");
+        }
+
         selectingCBGButtonInt = -1;
         pointingString = null;
         selectingButton = restored.Button;
@@ -775,7 +783,7 @@ internal sealed partial class EmueraConsole : IDisposable
         for (int i = 0; i < targets.Count; i++)
         {
             GamepadFocusTarget target = targets[i];
-            if (!target.Enabled)
+            if (!target.Enabled || target.IsDirectionalFocusExcluded)
                 continue;
             if (firstEnabled == null || CompareGamepadVisualOrder(target, firstEnabled) < 0)
                 firstEnabled = target;
@@ -890,7 +898,8 @@ internal sealed partial class EmueraConsole : IDisposable
             for (int newIndex = 0; newIndex < targets.Count; newIndex++)
             {
                 GamepadFocusTarget newTarget = targets[newIndex];
-                if (used[newIndex] || !IsPostConfirmTargetMatch(oldTarget, newTarget))
+                if (used[newIndex] || newTarget.IsDirectionalFocusExcluded
+                    || !IsPostConfirmTargetMatch(oldTarget, newTarget))
                     continue;
                 used[newIndex] = true;
                 matchCount++;
@@ -908,7 +917,8 @@ internal sealed partial class EmueraConsole : IDisposable
         for (int i = 0; i < targets.Count; i++)
         {
             GamepadFocusTarget target = targets[i];
-            if (!string.Equals(GetGamepadInputKey(target.Button), anchor.InputKey, StringComparison.Ordinal)
+            if (target.IsDirectionalFocusExcluded
+                || !string.Equals(GetGamepadInputKey(target.Button), anchor.InputKey, StringComparison.Ordinal)
                 || target.SourceType != anchor.SourceType
                 || target.GroupId != anchor.GroupId
                 || target.IsBack != anchor.IsBack
@@ -936,7 +946,8 @@ internal sealed partial class EmueraConsole : IDisposable
         for (int i = 0; i < targets.Count; i++)
         {
             GamepadFocusTarget target = targets[i];
-            if (target.SourceType != anchor.SourceType || target.GroupId != anchor.GroupId
+            if (target.IsDirectionalFocusExcluded
+                || target.SourceType != anchor.SourceType || target.GroupId != anchor.GroupId
                 || target.IsBack != anchor.IsBack
                 || Math.Abs(target.CenterX - (anchor.Bounds.Left + anchor.Bounds.Width / 2)) > laneTolerance)
                 continue;
@@ -967,7 +978,8 @@ internal sealed partial class EmueraConsole : IDisposable
         for (int i = 0; i < targets.Count; i++)
         {
             GamepadFocusTarget target = targets[i];
-            if (target.SourceType != anchor.SourceType || target.GroupId != anchor.GroupId
+            if (target.IsDirectionalFocusExcluded
+                || target.SourceType != anchor.SourceType || target.GroupId != anchor.GroupId
                 || target.IsBack != anchor.IsBack)
                 continue;
             long distance = DistanceSquared(target, anchor.Bounds);
@@ -1243,6 +1255,9 @@ internal sealed partial class EmueraConsole : IDisposable
             LogGamepadBackCandidates(targets, current, back);
             if (back != null)
             {
+                if (back.IsModalBackdrop)
+                    WriteGamepadNavigationDiagnostic(
+                        $"Modal Cancel: input={GetGamepadButtonInput(back.Button)}");
                 WriteGamepadNavigationDiagnostic(
                     $"Selected semantic back: input={GetGamepadButtonInput(back.Button)} "
                     + $"text=\"{SanitizeGamepadText(back.Button.ToString())}\" "
@@ -1322,6 +1337,7 @@ internal sealed partial class EmueraConsole : IDisposable
             RunGamepadFocusPersistenceSelfTest();
             RunGamepadInteractiveTargetSelfTest();
             RunGamepadLogicalButtonSelfTest();
+            RunGamepadHtmlModalSelfTest();
         }
         long requestId = inputReq?.ID ?? -1;
         if (!gamepadFocusTargetsDirty && gamepadFocusTargetGeneration == lastButtonGeneration
@@ -1375,6 +1391,7 @@ internal sealed partial class EmueraConsole : IDisposable
 
         for (int i = 0; i < gamepadFocusTargets.Count; i++)
             gamepadFocusTargets[i].IsBack = IsGamepadBackButton(gamepadFocusTargets[i]);
+        ApplyGamepadHtmlModalNavigationScope(gamepadFocusTargets);
         gamepadNavigationGraph.Build(gamepadFocusTargets,
             Program.GamepadDebugMode ? WriteGamepadNavigationDiagnostic : null);
         LogGamepadFocusTargets();
@@ -1475,6 +1492,111 @@ internal sealed partial class EmueraConsole : IDisposable
             byButton.Add(key, target);
             gamepadFocusTargets.Add(target);
         }
+    }
+
+    private void ApplyGamepadHtmlModalNavigationScope(List<GamepadFocusTarget> targets)
+    {
+        Size viewport = new(window.MainPicBox.Width, window.MainPicBox.Height);
+        ApplyGamepadHtmlModalNavigationScope(targets, viewport,
+            Program.GamepadDebugMode ? WriteGamepadNavigationDiagnostic : null);
+    }
+
+    private static void ApplyGamepadHtmlModalNavigationScope(
+        List<GamepadFocusTarget> targets, Size viewport, Action<string> diagnostic)
+    {
+        if (targets == null || targets.Count == 0)
+            return;
+
+        for (int i = 0; i < targets.Count; i++)
+        {
+            targets[i].IsDirectionalFocusExcluded = false;
+            targets[i].IsModalForeground = false;
+            targets[i].IsModalBackdrop = false;
+        }
+
+        List<IGrouping<int, GamepadFocusTarget>> islandGroups = targets
+            .Where(target => target.SourceType == GamepadFocusSourceType.HtmlIsland)
+            .GroupBy(target => target.GroupId)
+            .ToList();
+        GamepadFocusTarget selectedBackdrop = null;
+        List<GamepadFocusTarget> selectedForegroundTargets = null;
+        int selectedForegroundGroup = int.MinValue;
+
+        for (int i = 0; i < targets.Count; i++)
+        {
+            GamepadFocusTarget backdrop = targets[i];
+            if (!IsHtmlModalBackdropCandidate(backdrop, viewport))
+                continue;
+
+            IGrouping<int, GamepadFocusTarget> foregroundGroup = islandGroups
+                .Where(group => group.Key > backdrop.GroupId)
+                .OrderByDescending(group => group.Key)
+                .FirstOrDefault(group =>
+                {
+                    List<GamepadFocusTarget> choices = group
+                        .Where(target => target.Enabled && !target.IsBack)
+                        .ToList();
+                    return choices.Count > 0
+                        && choices.Any(target => !IsLargeHtmlTarget(target, viewport));
+                });
+            if (foregroundGroup == null)
+                continue;
+
+            List<GamepadFocusTarget> foregroundTargets = foregroundGroup.ToList();
+            if (selectedBackdrop == null || foregroundGroup.Key > selectedForegroundGroup)
+            {
+                selectedBackdrop = backdrop;
+                selectedForegroundTargets = foregroundTargets;
+                selectedForegroundGroup = foregroundGroup.Key;
+            }
+        }
+
+        if (selectedBackdrop == null || selectedForegroundTargets == null)
+            return;
+
+        HashSet<GamepadFocusTarget> foregroundSet = new(selectedForegroundTargets);
+        for (int i = 0; i < targets.Count; i++)
+        {
+            GamepadFocusTarget target = targets[i];
+            bool isForeground = foregroundSet.Contains(target);
+            target.IsModalForeground = isForeground;
+            target.IsDirectionalFocusExcluded = !isForeground;
+            target.IsModalBackdrop = ReferenceEquals(target, selectedBackdrop);
+        }
+
+        if (diagnostic == null)
+            return;
+
+        int foregroundChoiceCount = selectedForegroundTargets.Count(target => !target.IsBack);
+        diagnostic(
+            $"Modal navigation scope detected: foreground baseGroup={selectedForegroundGroup} "
+            + $"background overlay baseGroup={selectedBackdrop.GroupId} "
+            + $"foregroundTargets={foregroundChoiceCount}");
+        diagnostic(
+            $"Background target excluded from directional focus: "
+            + $"input={GetGamepadButtonInput(selectedBackdrop.Button)} "
+            + $"reason=modal backdrop");
+    }
+
+    private static bool IsHtmlModalBackdropCandidate(GamepadFocusTarget target, Size viewport)
+    {
+        return target != null
+            && target.SourceType == GamepadFocusSourceType.HtmlIsland
+            && target.IsBack
+            && IsLargeHtmlTarget(target, viewport);
+    }
+
+    private static bool IsLargeHtmlTarget(GamepadFocusTarget target, Size viewport)
+    {
+        if (target == null)
+            return false;
+
+        int viewportWidth = Math.Max(1, viewport.Width);
+        int viewportHeight = Math.Max(1, viewport.Height);
+        int widthThreshold = Math.Max(256, viewportWidth * 3 / 4);
+        int heightThreshold = Math.Max(256, viewportHeight * 3 / 4);
+        return target.Bounds.Width >= widthThreshold
+            && target.Bounds.Height >= heightThreshold;
     }
 
     private static void CollapseGamepadLogicalButtonFragments(
@@ -1753,7 +1875,7 @@ internal sealed partial class EmueraConsole : IDisposable
         string text = NormalizeGamepadSemanticText(target.Button.ToString());
         string title = NormalizeGamepadSemanticText(target.Button.Title);
         string input = NormalizeGamepadSemanticText(GetGamepadButtonInput(target.Button));
-        if (IsGamepadBackSemanticToken(input))
+        if (IsGamepadBackSemanticToken(input) || IsGamepadBackSemanticText(input))
             return true;
         return IsGamepadBackSemanticText(text) || IsGamepadBackSemanticText(title);
     }
@@ -2041,6 +2163,71 @@ internal sealed partial class EmueraConsole : IDisposable
             GamepadFocusLayoutType.Console, 0, line, bounds, bounds, order);
     }
 
+    private static void RunGamepadHtmlModalSelfTest()
+    {
+        if (gamepadHtmlModalSelfTestRun)
+            return;
+        gamepadHtmlModalSelfTestRun = true;
+
+        List<GamepadFocusTarget> modalTargets =
+        [
+            CreateHtmlModalSelfTestTarget(new(null, [], "キャンセル"), 98, 0, 0, 1000, 600, 10, 0),
+            CreateHtmlModalSelfTestTarget(new(null, [], 0), 99, 450, 200, 100, 20, 11, 1),
+            CreateHtmlModalSelfTestTarget(new(null, [], 1), 99, 450, 230, 100, 20, 12, 2),
+        ];
+        for (int i = 0; i < modalTargets.Count; i++)
+            modalTargets[i].IsBack = IsGamepadBackButton(modalTargets[i]);
+        ApplyGamepadHtmlModalNavigationScope(modalTargets, new Size(1000, 600), null);
+        GamepadNavigationGraph modalGraph = new();
+        modalGraph.Build(modalTargets, null);
+        GamepadFocusTarget initial = FindInitialGamepadFocus(modalTargets);
+        bool caseA = initial == modalTargets[1]
+            && modalTargets[1].Down == modalTargets[2]
+            && modalTargets[2].Up == modalTargets[1]
+            && modalGraph.Find(modalTargets[1].Button) == modalTargets[1];
+        bool caseB = modalTargets[0].IsModalBackdrop
+            && modalTargets[0].IsDirectionalFocusExcluded
+            && modalTargets[0].IsBack
+            && GetGamepadButtonInput(modalTargets[0].Button) == "キャンセル";
+
+        List<GamepadFocusTarget> largeButtonOnly =
+        [
+            CreateHtmlModalSelfTestTarget(new(null, [], 7), 10, 0, 0, 1000, 600, 20, 0),
+        ];
+        for (int i = 0; i < largeButtonOnly.Count; i++)
+            largeButtonOnly[i].IsBack = IsGamepadBackButton(largeButtonOnly[i]);
+        ApplyGamepadHtmlModalNavigationScope(largeButtonOnly, new Size(1000, 600), null);
+        bool caseC = !largeButtonOnly[0].IsDirectionalFocusExcluded;
+
+        List<GamepadFocusTarget> independentIslands =
+        [
+            CreateHtmlModalSelfTestTarget(new(null, [], 2), 20, 100, 100, 120, 20, 30, 0),
+            CreateHtmlModalSelfTestTarget(new(null, [], 3), 21, 400, 100, 120, 20, 31, 1),
+        ];
+        for (int i = 0; i < independentIslands.Count; i++)
+            independentIslands[i].IsBack = IsGamepadBackButton(independentIslands[i]);
+        ApplyGamepadHtmlModalNavigationScope(independentIslands, new Size(1000, 600), null);
+        bool caseD = independentIslands.All(target =>
+            !target.IsDirectionalFocusExcluded && !target.IsModalForeground);
+
+        bool passed = caseA && caseB && caseC && caseD;
+        WriteGamepadNavigationDiagnostic(
+            $"Gamepad HTML modal self-test: {(passed ? "PASS" : "WARNING")} "
+            + $"(A=foreground-focus-links:{caseA}, B=modal-cancel-preserved:{caseB}, "
+            + $"C=large-button-preserved:{caseC}, D=independent-islands-preserved:{caseD})");
+    }
+
+    private static GamepadFocusTarget CreateHtmlModalSelfTestTarget(
+        ConsoleButtonString button, int groupId, int x, int y, int width, int height,
+        int lineNo, int order)
+    {
+        ConsoleDisplayLine line = new([button], true, false);
+        line.LineNo = lineNo;
+        Rectangle bounds = new(x, y, width, height);
+        return new GamepadFocusTarget(button, GamepadFocusSourceType.HtmlIsland,
+            GamepadFocusLayoutType.Html, groupId, line, bounds, bounds, order);
+    }
+
     private static string SanitizeGamepadText(string text)
     {
         return (text ?? string.Empty).Replace('\r', ' ').Replace('\n', ' ').Trim();
@@ -2098,7 +2285,7 @@ internal sealed partial class EmueraConsole : IDisposable
             GamepadFocusTarget target = gamepadFocusTargets[i];
             string text = SanitizeGamepadText(target.Button.ToString());
             WriteGamepadNavigationDiagnostic(
-                $"{i}: input={GetGamepadButtonInput(target.Button)}, text={text}, source={target.SourceName}, layout={target.LayoutType}, baseGroup={target.GroupId}, group={target.NavigationGroupId}, line={target.LineNo}, rawPoint={FormatGamepadRawRectangle(target.RawBounds)}, rect={FormatGamepadRectangle(target.Bounds)}, row={target.Row}, column={target.Column}, enabled={target.Enabled}, back={target.IsBack}, links=[U:{DescribeGamepadLink(target.Up)},D:{DescribeGamepadLink(target.Down)},L:{DescribeGamepadLink(target.Left)},R:{DescribeGamepadLink(target.Right)}]");
+                $"{i}: input={GetGamepadButtonInput(target.Button)}, text={text}, source={target.SourceName}, layout={target.LayoutType}, baseGroup={target.GroupId}, group={target.NavigationGroupId}, line={target.LineNo}, rawPoint={FormatGamepadRawRectangle(target.RawBounds)}, rect={FormatGamepadRectangle(target.Bounds)}, row={target.Row}, column={target.Column}, enabled={target.Enabled}, back={target.IsBack}, directionalExcluded={target.IsDirectionalFocusExcluded}, modalForeground={target.IsModalForeground}, modalBackdrop={target.IsModalBackdrop}, links=[U:{DescribeGamepadLink(target.Up)},D:{DescribeGamepadLink(target.Down)},L:{DescribeGamepadLink(target.Left)},R:{DescribeGamepadLink(target.Right)}]");
         }
     }
 

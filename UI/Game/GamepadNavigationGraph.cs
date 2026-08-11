@@ -36,6 +36,8 @@ internal sealed class GamepadNavigationGraph
             target.Row = 0;
             target.Column = 0;
             target.NavigationGroupId = -1;
+            if (target.IsDirectionalFocusExcluded)
+                continue;
             byButton.TryAdd(target.Button, target);
 
             var key = (target.SourceType, target.GroupId);
@@ -360,6 +362,8 @@ internal sealed class GamepadNavigationGraph
         for (int i = 0; i < targets.Count; i++)
         {
             GamepadFocusTarget target = targets[i];
+            if (target.IsDirectionalFocusExcluded)
+                continue;
             regions.Add((target.SourceType, target.GroupId, target.NavigationGroupId));
             warningCount += ValidateLink(target, target.Left, GamepadDirection.Left, diagnostic);
             warningCount += ValidateLink(target, target.Right, GamepadDirection.Right, diagnostic);
