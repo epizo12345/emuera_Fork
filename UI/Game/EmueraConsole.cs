@@ -635,6 +635,8 @@ internal sealed partial class EmueraConsole : IDisposable
     private PostConfirmFocusAnchor postConfirmFocusAnchor;
     private static bool gamepadSemanticBackSelfTestRun;
     private static bool gamepadFocusPersistenceSelfTestRun;
+    private static bool gamepadInteractiveTargetSelfTestRun;
+    private static bool gamepadLogicalButtonSelfTestRun;
     private static readonly string[] GamepadBackButtonLabels =
     [
         "戻る",
@@ -1297,10 +1299,19 @@ internal sealed partial class EmueraConsole : IDisposable
 
     private bool CanSelectGamepadButton(ConsoleButtonString button)
     {
-        if (button == null || !button.IsButton || button.Generation != lastButtonGeneration
+        if (!IsGamepadInteractiveConsoleButton(button) || button.Generation != lastButtonGeneration
             || state != ConsoleState.WaitInput || inputReq == null || !inputReq.NeedValue)
             return false;
         return inputReq.InputType != InputType.IntValue || button.IsInteger;
+    }
+
+    // [Emuera改修:GAMEPAD-V1]
+    // Input=0などの値ではなく、Emuera自身がクリック・決定対象として生成した
+    // ConsoleButtonString.IsButtonだけを通常ConsoleのInteractive判定に使う。
+    // 説明用のConsoleButtonString（IsButton=false）やTitleだけの非ボタンは除外する。
+    private static bool IsGamepadInteractiveConsoleButton(ConsoleButtonString button)
+    {
+        return button != null && button.IsButton;
     }
 
     private List<GamepadFocusTarget> GetGamepadFocusTargets()
@@ -1309,6 +1320,8 @@ internal sealed partial class EmueraConsole : IDisposable
         {
             RunGamepadSemanticBackSelfTest();
             RunGamepadFocusPersistenceSelfTest();
+            RunGamepadInteractiveTargetSelfTest();
+            RunGamepadLogicalButtonSelfTest();
         }
         long requestId = inputReq?.ID ?? -1;
         if (!gamepadFocusTargetsDirty && gamepadFocusTargetGeneration == lastButtonGeneration
@@ -1353,6 +1366,13 @@ internal sealed partial class EmueraConsole : IDisposable
                 0, line, byButton, ref order);
         }
 
+        // A wrapped logical button can be represented by several distinct
+        // ConsoleButtonString instances.  AddGamepadTarget already coalesces
+        // repeated visits to the same instance; this second pass handles only
+        // adjacent fragments that still carry the same logical input identity.
+        CollapseGamepadLogicalButtonFragments(gamepadFocusTargets,
+            Program.GamepadDebugMode ? WriteGamepadNavigationDiagnostic : null);
+
         for (int i = 0; i < gamepadFocusTargets.Count; i++)
             gamepadFocusTargets[i].IsBack = IsGamepadBackButton(gamepadFocusTargets[i]);
         gamepadNavigationGraph.Build(gamepadFocusTargets,
@@ -1389,9 +1409,24 @@ internal sealed partial class EmueraConsole : IDisposable
     {
         if (node == null)
             return;
+
+        // 通常ConsoleはConsoleButtonString自体がクリック単位である。
+        // 子のConsoleStyledStringを1つずつ収集すると、ボタン下の説明文まで
+        // ボタンのFocus Boundsへ混入し、見た目の行数だけNavigationが増える。
+        // Input=0もIsButton=trueなら正規の選択肢なので、値では判定しない。
+        if (layoutType == GamepadFocusLayoutType.Console && node is ConsoleButtonString consoleButton)
+        {
+            if (!CanSelectGamepadButton(consoleButton)
+                || !TryGetGamepadButtonBounds(consoleButton, out Rectangle buttonBounds, out RectangleF buttonRawBounds))
+                return;
+            AddGamepadTarget(consoleButton, sourceType, layoutType, groupId, parentLine,
+                buttonBounds, buttonRawBounds, byButton, ref order);
+            return;
+        }
+
         if (node is ConsoleButtonString button)
         {
-            if (button.IsButton || !string.IsNullOrEmpty(button.Title))
+            if (button.IsButton)
                 selectableButton = button;
             parentLine ??= button.ParentLine;
             CollectGamepadNodes(button.StrArray, selectableButton, sourceType, layoutType,
@@ -1408,23 +1443,137 @@ internal sealed partial class EmueraConsole : IDisposable
             if (!TryGetGamepadNodeBounds(node, out Rectangle bounds, out RectangleF rawBounds))
                 return;
 
-            var key = (selectableButton, sourceType, groupId);
-            ConsoleDisplayLine targetLine = selectableButton.ParentLine ?? parentLine;
-            if (byButton.TryGetValue(key, out GamepadFocusTarget target))
-            {
-                target.Bounds = Rectangle.Union(target.Bounds, bounds);
-                target.RawBounds = RectangleF.Union(target.RawBounds, rawBounds);
-                if (layoutType == GamepadFocusLayoutType.Html)
-                    target.LayoutType = GamepadFocusLayoutType.Html;
-            }
-            else
-            {
-                target = new GamepadFocusTarget(selectableButton, sourceType, layoutType, groupId, targetLine,
-                    bounds, rawBounds, order++);
-                byButton.Add(key, target);
-                gamepadFocusTargets.Add(target);
-            }
+            AddGamepadTarget(selectableButton, sourceType, layoutType, groupId, parentLine,
+                bounds, rawBounds, byButton, ref order);
         }
+    }
+
+    private void AddGamepadTarget(
+        ConsoleButtonString button,
+        GamepadFocusSourceType sourceType,
+        GamepadFocusLayoutType layoutType,
+        int groupId,
+        ConsoleDisplayLine parentLine,
+        Rectangle bounds,
+        RectangleF rawBounds,
+        Dictionary<(ConsoleButtonString Button, GamepadFocusSourceType SourceType, int GroupId), GamepadFocusTarget> byButton,
+        ref int order)
+    {
+        var key = (button, sourceType, groupId);
+        ConsoleDisplayLine targetLine = button.ParentLine ?? parentLine;
+        if (byButton.TryGetValue(key, out GamepadFocusTarget target))
+        {
+            target.Bounds = Rectangle.Union(target.Bounds, bounds);
+            target.RawBounds = RectangleF.Union(target.RawBounds, rawBounds);
+            if (layoutType == GamepadFocusLayoutType.Html)
+                target.LayoutType = GamepadFocusLayoutType.Html;
+        }
+        else
+        {
+            target = new GamepadFocusTarget(button, sourceType, layoutType, groupId, targetLine,
+                bounds, rawBounds, order++);
+            byButton.Add(key, target);
+            gamepadFocusTargets.Add(target);
+        }
+    }
+
+    private static void CollapseGamepadLogicalButtonFragments(
+        List<GamepadFocusTarget> targets, Action<string> diagnostic)
+    {
+        if (targets == null || targets.Count < 2)
+            return;
+
+        List<GamepadFocusTarget> logicalTargets = [];
+        int index = 0;
+        while (index < targets.Count)
+        {
+            GamepadFocusTarget representative = targets[index];
+            List<GamepadFocusTarget> fragments = [representative];
+            int next = index + 1;
+            GamepadFocusTarget previous = representative;
+            while (next < targets.Count
+                && IsAdjacentLogicalButtonFragment(previous, targets[next]))
+            {
+                GamepadFocusTarget fragment = targets[next];
+                representative.Bounds = Rectangle.Union(representative.Bounds, fragment.Bounds);
+                representative.RawBounds = RectangleF.Union(representative.RawBounds, fragment.RawBounds);
+                fragments.Add(fragment);
+                previous = fragment;
+                next++;
+            }
+
+            logicalTargets.Add(representative);
+            if (fragments.Count > 1)
+                LogLogicalButtonFragmentGroup(fragments, diagnostic);
+            index = next;
+        }
+
+        if (logicalTargets.Count == targets.Count)
+            return;
+        targets.Clear();
+        targets.AddRange(logicalTargets);
+    }
+
+    private static bool IsAdjacentLogicalButtonFragment(
+        GamepadFocusTarget previous, GamepadFocusTarget candidate)
+    {
+        // HTML has its own DOM/Island identity and navigation rules.  The
+        // heuristic is intentionally limited to the normal Console renderer.
+        if (previous == null || candidate == null
+            || previous.SourceType != GamepadFocusSourceType.NormalDisplay
+            || candidate.SourceType != GamepadFocusSourceType.NormalDisplay
+            || previous.LayoutType != GamepadFocusLayoutType.Console
+            || candidate.LayoutType != GamepadFocusLayoutType.Console
+            || previous.GroupId != candidate.GroupId)
+            return false;
+
+        ConsoleButtonString previousButton = previous.Button;
+        ConsoleButtonString candidateButton = candidate.Button;
+        if (previousButton == null || candidateButton == null
+            || previousButton.Generation != candidateButton.Generation
+            || GetGamepadInputKey(previousButton) != GetGamepadInputKey(candidateButton))
+            return false;
+
+        bool hasLineNumbers = previous.LineNo >= 0 && candidate.LineNo >= 0;
+        if (hasLineNumbers
+            && (candidate.LineNo < previous.LineNo
+                || candidate.LineNo - previous.LineNo > 2))
+            return false;
+
+        int lineHeight = Math.Max(1, Config.LineHeight);
+        if (candidate.Bounds.Top <= previous.Bounds.Top)
+            return false;
+
+        int verticalGap = candidate.Bounds.Top - previous.Bounds.Bottom;
+        if (verticalGap > lineHeight * 2 || verticalGap < -lineHeight)
+            return false;
+
+        int xTolerance = Math.Max(12, lineHeight * 2);
+        int widthTolerance = Math.Max(24, lineHeight * 4);
+        bool similarLeft = Math.Abs(candidate.Bounds.Left - previous.Bounds.Left) <= xTolerance;
+        bool similarWidth = Math.Abs(candidate.Bounds.Width - previous.Bounds.Width) <= widthTolerance;
+        bool horizontallyOverlaps = candidate.Bounds.Left < previous.Bounds.Right
+            && previous.Bounds.Left < candidate.Bounds.Right;
+        return similarLeft && (similarWidth || horizontallyOverlaps);
+    }
+
+    private static void LogLogicalButtonFragmentGroup(
+        List<GamepadFocusTarget> fragments, Action<string> diagnostic)
+    {
+        if (diagnostic == null || fragments == null || fragments.Count < 2)
+            return;
+
+        GamepadFocusTarget representative = fragments[0];
+        StringBuilder lines = new();
+        for (int i = 0; i < fragments.Count; i++)
+        {
+            if (i > 0)
+                lines.Append(',');
+            lines.Append(fragments[i].LineNo);
+        }
+        diagnostic(
+            $"Logical button group: input={GetGamepadButtonInput(representative.Button)} "
+            + $"fragments={fragments.Count} representativeLine={representative.LineNo} lines={lines}");
     }
 
     private static bool TryGetGamepadNodeBounds(AConsoleDisplayNode node, out Rectangle bounds, out RectangleF rawBounds)
@@ -1439,6 +1588,35 @@ internal sealed partial class EmueraConsole : IDisposable
         }
         bounds = new Rectangle((int)Math.Floor(node.Point.X), (int)Math.Floor(node.Point.Y), width, height);
         return true;
+    }
+
+    private static bool TryGetGamepadButtonBounds(ConsoleButtonString button,
+        out Rectangle bounds, out RectangleF rawBounds)
+    {
+        bounds = Rectangle.Empty;
+        rawBounds = RectangleF.Empty;
+        if (button?.StrArray == null)
+            return false;
+
+        bool found = false;
+        for (int i = 0; i < button.StrArray.Length; i++)
+        {
+            AConsoleDisplayNode child = button.StrArray[i];
+            if (!TryGetGamepadNodeBounds(child, out Rectangle childBounds, out RectangleF childRawBounds))
+                continue;
+            if (!found)
+            {
+                bounds = childBounds;
+                rawBounds = childRawBounds;
+                found = true;
+            }
+            else
+            {
+                bounds = Rectangle.Union(bounds, childBounds);
+                rawBounds = RectangleF.Union(rawBounds, childRawBounds);
+            }
+        }
+        return found;
     }
 
     private static bool IsSameNavigationGroup(GamepadFocusTarget left, GamepadFocusTarget right)
@@ -1735,6 +1913,132 @@ internal sealed partial class EmueraConsole : IDisposable
         for (int i = 0; i < targets.Count; i++)
             anchor.Targets.Add(new PostConfirmFocusSnapshot(targets[i]));
         return anchor;
+    }
+
+    private static void RunGamepadInteractiveTargetSelfTest()
+    {
+        if (gamepadInteractiveTargetSelfTestRun)
+            return;
+        gamepadInteractiveTargetSelfTestRun = true;
+
+        ConsoleButtonString button0 = new(null, [], 0);
+        ConsoleButtonString description1 = new(null, []);
+        ConsoleButtonString description2 = new(null, []);
+        ConsoleButtonString description3 = new(null, []);
+        ConsoleButtonString button1 = new(null, [], 1);
+
+        List<GamepadFocusTarget> consoleTargets = [];
+        AddInteractiveSelfTestTarget(consoleTargets, button0, GamepadFocusLayoutType.Console, 0);
+        if (IsGamepadInteractiveConsoleButton(description1))
+            AddInteractiveSelfTestTarget(consoleTargets, description1, GamepadFocusLayoutType.Console, 1);
+        if (IsGamepadInteractiveConsoleButton(description2))
+            AddInteractiveSelfTestTarget(consoleTargets, description2, GamepadFocusLayoutType.Console, 2);
+        if (IsGamepadInteractiveConsoleButton(description3))
+            AddInteractiveSelfTestTarget(consoleTargets, description3, GamepadFocusLayoutType.Console, 3);
+        AddInteractiveSelfTestTarget(consoleTargets, button1, GamepadFocusLayoutType.Console, 4);
+
+        GamepadNavigationGraph consoleGraph = new();
+        consoleGraph.Build(consoleTargets, null);
+        bool caseA = consoleTargets.Count == 2
+            && consoleTargets[0].Down == consoleTargets[1]
+            && consoleTargets[1].Up == consoleTargets[0];
+        bool caseB = IsGamepadInteractiveConsoleButton(button0);
+        bool caseC = !IsGamepadInteractiveConsoleButton(description1)
+            && !IsGamepadInteractiveConsoleButton(description2)
+            && !IsGamepadInteractiveConsoleButton(description3);
+
+        ConsoleButtonString htmlButton0 = new(null, [], 0);
+        ConsoleButtonString htmlText = new(null, []);
+        ConsoleButtonString htmlButton1 = new(null, [], 1);
+        List<GamepadFocusTarget> htmlTargets = [];
+        AddInteractiveSelfTestTarget(htmlTargets, htmlButton0, GamepadFocusLayoutType.Html, 0);
+        if (IsGamepadInteractiveConsoleButton(htmlText))
+            AddInteractiveSelfTestTarget(htmlTargets, htmlText, GamepadFocusLayoutType.Html, 1);
+        AddInteractiveSelfTestTarget(htmlTargets, htmlButton1, GamepadFocusLayoutType.Html, 2);
+        GamepadNavigationGraph htmlGraph = new();
+        htmlGraph.Build(htmlTargets, null);
+        bool caseD = htmlTargets.Count == 2
+            && htmlTargets[0].Down == htmlTargets[1]
+            && htmlTargets[1].Up == htmlTargets[0];
+
+        bool passed = caseA && caseB && caseC && caseD;
+        WriteGamepadNavigationDiagnostic(
+            $"Gamepad interactive target self-test: {(passed ? "PASS" : "WARNING")} "
+            + $"(A=console-description-skip:{caseA}, B=input-zero-button:{caseB}, "
+            + $"C=plain-text-skip:{caseC}, D=html-text-skip:{caseD})");
+    }
+
+    private static void AddInteractiveSelfTestTarget(List<GamepadFocusTarget> targets,
+        ConsoleButtonString button, GamepadFocusLayoutType layoutType, int row)
+    {
+        Rectangle bounds = new(120, row * 24, 180, 18);
+        targets.Add(new GamepadFocusTarget(button, GamepadFocusSourceType.NormalDisplay,
+            layoutType, 0, null, bounds, bounds, targets.Count));
+    }
+
+    private static void RunGamepadLogicalButtonSelfTest()
+    {
+        if (gamepadLogicalButtonSelfTestRun)
+            return;
+        gamepadLogicalButtonSelfTestRun = true;
+
+        // Each block mirrors a wrapped Console button: one input header plus
+        // three description fragments.  The fragments are separate objects,
+        // but DivideAt() preserves their input/generation identity.
+        List<GamepadFocusTarget> blocks = [];
+        ConsoleButtonString firstFragment = null;
+        int order = 0;
+        for (int input = 0; input < 3; input++)
+        {
+            for (int fragment = 0; fragment < 4; fragment++)
+            {
+                int lineNo = 201 + input * 5 + fragment;
+                ConsoleButtonString button = new(null, [], input);
+                if (firstFragment == null)
+                    firstFragment = button;
+                blocks.Add(CreateLogicalButtonSelfTestTarget(button, lineNo,
+                    120, input * 100 + fragment * 18, order++));
+            }
+        }
+
+        CollapseGamepadLogicalButtonFragments(blocks, null);
+        GamepadNavigationGraph graph = new();
+        graph.Build(blocks, null);
+        bool blocksCollapsed = blocks.Count == 3;
+        bool linksCorrect = blocksCollapsed
+            && blocks[0].Down == blocks[1]
+            && blocks[1].Up == blocks[0]
+            && blocks[1].Down == blocks[2]
+            && blocks[2].Up == blocks[1];
+        bool representativePreserved = blocksCollapsed
+            && blocks[0].Button == firstFragment
+            && GetGamepadButtonInput(blocks[0].Button) == "0";
+
+        // The same input in a distant region must remain two targets.  This
+        // guards against the forbidden global "same Input = same target" rule.
+        List<GamepadFocusTarget> distantSameInput =
+        [
+            CreateLogicalButtonSelfTestTarget(new(null, [], 5), 300, 120, 0, 0),
+            CreateLogicalButtonSelfTestTarget(new(null, [], 5), 330, 500, 400, 1),
+        ];
+        CollapseGamepadLogicalButtonFragments(distantSameInput, null);
+        bool distantPreserved = distantSameInput.Count == 2;
+
+        bool passed = blocksCollapsed && linksCorrect && representativePreserved && distantPreserved;
+        WriteGamepadNavigationDiagnostic(
+            $"Gamepad logical button fragment self-test: {(passed ? "PASS" : "WARNING")} "
+            + $"(blocks={blocks.Count}, links={linksCorrect}, representative={representativePreserved}, "
+            + $"distant-same-input-preserved={distantPreserved})");
+    }
+
+    private static GamepadFocusTarget CreateLogicalButtonSelfTestTarget(
+        ConsoleButtonString button, int lineNo, int x, int y, int order)
+    {
+        ConsoleDisplayLine line = new([button], true, false);
+        line.LineNo = lineNo;
+        Rectangle bounds = new(x, y, 180, 16);
+        return new GamepadFocusTarget(button, GamepadFocusSourceType.NormalDisplay,
+            GamepadFocusLayoutType.Console, 0, line, bounds, bounds, order);
     }
 
     private static string SanitizeGamepadText(string text)
