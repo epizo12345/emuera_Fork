@@ -769,10 +769,12 @@ internal sealed partial class MainWindow : Form
                     console.GamepadStart();
                     break;
                 case GamepadActionKind.ScrollUp:
-                    ScrollLogByGamepad(-1);
+                    if (!console.GamepadShoulderNavigatePage(nextPage: false))
+                        ScrollLogByGamepad(-1);
                     break;
                 case GamepadActionKind.ScrollDown:
-                    ScrollLogByGamepad(1);
+                    if (!console.GamepadShoulderNavigatePage(nextPage: true))
+                        ScrollLogByGamepad(1);
                     break;
             }
         }

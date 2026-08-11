@@ -638,6 +638,20 @@ internal sealed partial class EmueraConsole : IDisposable
     private static bool gamepadInteractiveTargetSelfTestRun;
     private static bool gamepadLogicalButtonSelfTestRun;
     private static bool gamepadHtmlModalSelfTestRun;
+    private static bool gamepadPageNavigationSelfTestRun;
+    private enum GamepadPageNavigationMode
+    {
+        Indexed,
+        Directional,
+    }
+
+    private enum GamepadDirectionalPageTargetKind
+    {
+        None,
+        Previous,
+        Next,
+    }
+
     private static readonly string[] GamepadBackButtonLabels =
     [
         "戻る",
@@ -690,6 +704,35 @@ internal sealed partial class EmueraConsole : IDisposable
         internal int Row { get; }
         internal int Column { get; }
         internal bool IsBack { get; }
+    }
+
+    // [Emuera改修:GAMEPAD-V1]
+    // PAGE.0 / PAGE.1、または「前のページ」「次のページ」のような表示済み
+    // ボタン群を、ゲーム固有の入力番号を知らずにLB/RBで選ぶための一時的な
+    // 解析結果。入力要求ごとに再構築する。
+    private sealed class GamepadPageNavigationSet
+    {
+        internal GamepadPageNavigationMode Mode;
+        internal GamepadFocusSourceType SourceType;
+        internal int GroupId;
+        internal int NavigationGroupId;
+        internal List<GamepadPageTarget> Targets = [];
+        internal int CurrentPageIndex;
+        internal GamepadFocusTarget PreviousTarget;
+        internal GamepadFocusTarget NextTarget;
+        internal bool HasAmbiguousDirectionalTarget;
+    }
+
+    private readonly struct GamepadPageTarget
+    {
+        internal GamepadPageTarget(int pageIndex, GamepadFocusTarget target)
+        {
+            PageIndex = pageIndex;
+            Target = target;
+        }
+
+        internal int PageIndex { get; }
+        internal GamepadFocusTarget Target { get; }
     }
     public ConsoleButtonString SelectingButton { get { return selectingButton; } }
     public bool ButtonIsSelected(ConsoleButtonString button) { return selectingButton == button; }
@@ -1051,6 +1094,130 @@ internal sealed partial class EmueraConsole : IDisposable
     }
 
     /// <summary>
+    /// LB/RBで現在表示中のPAGE.nボタン群を前後移動する。現在ページを
+    /// 視覚状態から一意に判断できない画面は、呼び出し元で従来のログ
+    /// スクロールへフォールバックする。
+    /// </summary>
+    /// <param name="nextPage">trueなら次ページ(RB)、falseなら前ページ(LB)。</param>
+    internal bool GamepadShoulderNavigatePage(bool nextPage)
+    {
+        if (state != ConsoleState.WaitInput || inputReq == null || !inputReq.NeedValue
+            || window.ScrollBar.Value != window.ScrollBar.Maximum)
+        {
+            LogGamepadPageNavigationUnavailable("not at an active input screen");
+            return false;
+        }
+
+        List<GamepadFocusTarget> targets = GetGamepadFocusTargets();
+        GamepadFocusTarget currentFocus = gamepadNavigationGraph.Find(selectingButton);
+        if (!TryFindGamepadPageNavigationSet(targets, currentFocus, out GamepadPageNavigationSet pageSet,
+                out string unavailableReason))
+        {
+            LogGamepadPageNavigationUnavailable(unavailableReason);
+            return false;
+        }
+
+        LogGamepadPageNavigationSet(pageSet);
+        string direction = nextPage ? "Next" : "Previous";
+        GamepadFocusTarget target;
+        int targetPageIndex = -1;
+        if (pageSet.Mode == GamepadPageNavigationMode.Directional)
+        {
+            target = nextPage ? pageSet.NextTarget : pageSet.PreviousTarget;
+            if (target == null)
+            {
+                WriteGamepadNavigationDiagnostic(
+                    $"Shoulder page navigation: mode=Directional direction={direction} "
+                    + "target=<none> action=consume-no-op");
+                // Directional Page UIの端では、従来のログスクロールへ流さない。
+                return true;
+            }
+
+            WriteGamepadNavigationDiagnostic(
+                $"Shoulder page navigation: mode=Directional direction={direction} "
+                + $"targetInput={GetGamepadButtonInput(target.Button)} "
+                + $"text={SanitizeGamepadText(target.Button.ToString())}");
+        }
+        else
+        {
+            target = FindGamepadAdjacentPageTarget(pageSet, nextPage, out targetPageIndex);
+        }
+
+        if (target == null)
+        {
+            WriteGamepadNavigationDiagnostic(
+                $"Shoulder page navigation: mode=Indexed direction={direction} "
+                + $"currentPage={pageSet.CurrentPageIndex} "
+                + "targetPage=<none> boundary=True");
+            // Indexed Page UIの端では、従来のログスクロールへ流さない。
+            return true;
+        }
+
+        if (pageSet.Mode == GamepadPageNavigationMode.Indexed)
+        {
+            WriteGamepadNavigationDiagnostic(
+                $"Shoulder page navigation: mode=Indexed direction={direction} "
+                + $"currentPage={pageSet.CurrentPageIndex} targetPage={targetPageIndex} "
+                + $"targetInput={GetGamepadButtonInput(target.Button)}");
+        }
+
+        // ページ遷移はON/OFFトグルの同一画面再描画ではない。旧ページの
+        // Post-confirm anchorを残さず、ページボタン自体もFocus履歴にしない。
+        postConfirmFocusAnchor = null;
+        bool executed = ExecuteGamepadFocusTarget(target,
+            nextPage ? "shoulder-page-next" : "shoulder-page-previous", rememberFocus: false);
+        // Directional型として認識できた操作は、実行対象が再描画競合で消えても
+        // Log Scrollへフォールバックさせない。ページUIの肩ボタン操作を消費する。
+        return executed || pageSet.Mode == GamepadPageNavigationMode.Directional;
+    }
+
+    private void LogGamepadPageNavigationUnavailable(string reason)
+    {
+        WriteGamepadNavigationDiagnostic(
+            $"Shoulder page navigation: mode=None fallback=log-scroll reason={reason}");
+    }
+
+    private void LogGamepadPageNavigationSet(GamepadPageNavigationSet pageSet)
+    {
+        if (!Program.GamepadDebugMode || pageSet == null)
+            return;
+
+        if (pageSet.Mode == GamepadPageNavigationMode.Directional)
+        {
+            WriteGamepadNavigationDiagnostic(
+                $"Directional page navigation detected: request={inputReq?.ID ?? -1} "
+                + $"source={pageSet.SourceType} baseGroup={pageSet.GroupId} "
+                + $"navigationGroup={pageSet.NavigationGroupId} "
+                + $"previous={FormatGamepadDirectionalPageTarget(pageSet.PreviousTarget)} "
+                + $"next={FormatGamepadDirectionalPageTarget(pageSet.NextTarget)}");
+            return;
+        }
+
+        WriteGamepadNavigationDiagnostic(
+            $"Page navigation detected: request={inputReq?.ID ?? -1} targets={pageSet.Targets.Count} "
+            + $"source={pageSet.SourceType} baseGroup={pageSet.GroupId} "
+            + $"navigationGroup={pageSet.NavigationGroupId}");
+        for (int i = 0; i < pageSet.Targets.Count; i++)
+        {
+            GamepadPageTarget page = pageSet.Targets[i];
+            WriteGamepadNavigationDiagnostic(
+                $"Page target: page={page.PageIndex} input={GetGamepadButtonInput(page.Target.Button)} "
+                + $"text={SanitizeGamepadText(page.Target.Button.ToString())}");
+        }
+        WriteGamepadNavigationDiagnostic(
+            $"Page navigation currentPage={pageSet.CurrentPageIndex} "
+                + "reason=unique non-default visual style among PAGE targets");
+    }
+
+    private static string FormatGamepadDirectionalPageTarget(GamepadFocusTarget target)
+    {
+        if (target?.Button == null)
+            return "<none>";
+        return $"input={GetGamepadButtonInput(target.Button)} "
+            + $"text={SanitizeGamepadText(target.Button.ToString())}";
+    }
+
+    /// <summary>
     /// 左スティックをUIフォーカスとは別の、ゲーム側の1文字移動入力として渡す。
     /// Autoは現在表示中のボタンが方向記号付きのWASDまたは8462一式を公開している
     /// 場合だけ有効になるため、数値キーパッドや通常メニューを誤作動させない。
@@ -1286,7 +1453,8 @@ internal sealed partial class EmueraConsole : IDisposable
     /// Back must not invent an input number or choose a different keyboard
     /// shortcut based on the button label.
     /// </summary>
-    private bool ExecuteGamepadFocusTarget(GamepadFocusTarget target, string diagnosticAction)
+    private bool ExecuteGamepadFocusTarget(GamepadFocusTarget target, string diagnosticAction,
+        bool rememberFocus = true)
     {
         if (target == null || !CanSelectGamepadButton(target.Button))
             return false;
@@ -1294,7 +1462,8 @@ internal sealed partial class EmueraConsole : IDisposable
         selectingCBGButtonInt = -1;
         pointingString = null;
         selectingButton = target.Button;
-        RememberGamepadFocus(target);
+        if (rememberFocus)
+            RememberGamepadFocus(target);
         LogGamepadConfirm(target, diagnosticAction);
         if (IsWaitingPrimitive)
             InputMouseKeyFromGamepad(target);
@@ -1338,6 +1507,7 @@ internal sealed partial class EmueraConsole : IDisposable
             RunGamepadInteractiveTargetSelfTest();
             RunGamepadLogicalButtonSelfTest();
             RunGamepadHtmlModalSelfTest();
+            RunGamepadPageNavigationSelfTest();
         }
         long requestId = inputReq?.ID ?? -1;
         if (!gamepadFocusTargetsDirty && gamepadFocusTargetGeneration == lastButtonGeneration
@@ -1930,6 +2100,382 @@ internal sealed partial class EmueraConsole : IDisposable
         return normalized;
     }
 
+    private static bool TryFindGamepadPageNavigationSet(List<GamepadFocusTarget> targets,
+        GamepadFocusTarget currentFocus, out GamepadPageNavigationSet result, out string unavailableReason)
+    {
+        // Indexed型を先に評価する。既存のPAGE.N画面とDirectional型が同一の
+        // InputRequestに混在しても、既存動作を優先する。
+        if (TryFindGamepadIndexedPageNavigationSet(targets, currentFocus, out result,
+                out string indexedReason))
+        {
+            unavailableReason = string.Empty;
+            return true;
+        }
+
+        if (TryFindGamepadDirectionalPageNavigationSet(targets, currentFocus, out result,
+                out string directionalReason))
+        {
+            unavailableReason = string.Empty;
+            return true;
+        }
+
+        unavailableReason = directionalReason == "no interactive directional page targets"
+            ? indexedReason
+            : directionalReason;
+        return false;
+    }
+
+    private static bool TryFindGamepadIndexedPageNavigationSet(List<GamepadFocusTarget> targets,
+        GamepadFocusTarget currentFocus, out GamepadPageNavigationSet result, out string unavailableReason)
+    {
+        result = null;
+        unavailableReason = "no interactive PAGE targets";
+        if (targets == null || targets.Count == 0)
+            return false;
+
+        // HTML modal表示中はforegroundだけを候補にする。背後のPAGEボタンを
+        // 押してmodalを壊さないことを、Directional Focus scopeと同じ基準で保証する。
+        bool hasModalScope = targets.Any(target => target.IsModalForeground);
+        IEnumerable<GamepadFocusTarget> scopedTargets = hasModalScope
+            ? targets.Where(target => target.IsModalForeground)
+            : targets.Where(target => !target.IsDirectionalFocusExcluded);
+
+        Dictionary<(GamepadFocusSourceType SourceType, int GroupId, int NavigationGroupId),
+            GamepadPageNavigationSet> sets = [];
+        foreach (GamepadFocusTarget target in scopedTargets)
+        {
+            if (!target.Enabled || !TryGetGamepadPageIndex(target, out int pageIndex))
+                continue;
+
+            var key = (target.SourceType, target.GroupId, target.NavigationGroupId);
+            if (!sets.TryGetValue(key, out GamepadPageNavigationSet pageSet))
+            {
+                pageSet = new GamepadPageNavigationSet
+                {
+                    Mode = GamepadPageNavigationMode.Indexed,
+                    SourceType = target.SourceType,
+                    GroupId = target.GroupId,
+                    NavigationGroupId = target.NavigationGroupId,
+                };
+                sets.Add(key, pageSet);
+            }
+            pageSet.Targets.Add(new GamepadPageTarget(pageIndex, target));
+        }
+
+        List<GamepadPageNavigationSet> eligibleSets = [];
+        foreach (GamepadPageNavigationSet pageSet in sets.Values)
+        {
+            if (pageSet.Targets.Count < 2)
+                continue;
+
+            pageSet.Targets.Sort((left, right) => left.PageIndex.CompareTo(right.PageIndex));
+            bool hasDuplicateIndex = false;
+            for (int i = 1; i < pageSet.Targets.Count; i++)
+            {
+                if (pageSet.Targets[i - 1].PageIndex == pageSet.Targets[i].PageIndex)
+                {
+                    hasDuplicateIndex = true;
+                    break;
+                }
+            }
+            if (hasDuplicateIndex)
+                continue;
+
+            if (!TryResolveCurrentGamepadPage(pageSet, out int currentPageIndex))
+                continue;
+            pageSet.CurrentPageIndex = currentPageIndex;
+            eligibleSets.Add(pageSet);
+        }
+
+        if (eligibleSets.Count == 0)
+        {
+            unavailableReason = hasModalScope
+                ? "modal foreground has no uniquely marked PAGE set"
+                : "no PAGE set with a unique current-page visual marker";
+            return false;
+        }
+
+        if (currentFocus != null)
+        {
+            List<GamepadPageNavigationSet> focusScopedSets = eligibleSets
+                .Where(pageSet => pageSet.SourceType == currentFocus.SourceType
+                    && pageSet.GroupId == currentFocus.GroupId
+                    && pageSet.NavigationGroupId == currentFocus.NavigationGroupId)
+                .ToList();
+            if (focusScopedSets.Count == 1)
+            {
+                result = focusScopedSets[0];
+                return true;
+            }
+            if (focusScopedSets.Count > 1)
+            {
+                unavailableReason = "multiple PAGE sets in the current navigation group";
+                return false;
+            }
+        }
+
+        if (eligibleSets.Count == 1)
+        {
+            result = eligibleSets[0];
+            return true;
+        }
+
+        unavailableReason = "multiple PAGE sets with no focused navigation-group match";
+        return false;
+    }
+
+    private static bool TryFindGamepadDirectionalPageNavigationSet(List<GamepadFocusTarget> targets,
+        GamepadFocusTarget currentFocus, out GamepadPageNavigationSet result, out string unavailableReason)
+    {
+        result = null;
+        unavailableReason = "no interactive directional page targets";
+        if (targets == null || targets.Count == 0)
+            return false;
+
+        // Indexed型と同じforeground scopeを使う。Modal中は背後のConsole/HTMLを
+        // 混ぜず、modal内のDirectional Targetだけを候補にする。
+        bool hasModalScope = targets.Any(target => target.IsModalForeground);
+        IEnumerable<GamepadFocusTarget> scopedTargets = hasModalScope
+            ? targets.Where(target => target.IsModalForeground)
+            : targets.Where(target => !target.IsDirectionalFocusExcluded);
+
+        Dictionary<(GamepadFocusSourceType SourceType, int GroupId, int NavigationGroupId),
+            GamepadPageNavigationSet> sets = [];
+        foreach (GamepadFocusTarget target in scopedTargets)
+        {
+            if (!target.Enabled || target.Button == null)
+                continue;
+
+            GamepadDirectionalPageTargetKind kind =
+                GetGamepadDirectionalPageTargetKind(target);
+            if (kind == GamepadDirectionalPageTargetKind.None)
+                continue;
+
+            var key = (target.SourceType, target.GroupId, target.NavigationGroupId);
+            if (!sets.TryGetValue(key, out GamepadPageNavigationSet pageSet))
+            {
+                pageSet = new GamepadPageNavigationSet
+                {
+                    Mode = GamepadPageNavigationMode.Directional,
+                    SourceType = target.SourceType,
+                    GroupId = target.GroupId,
+                    NavigationGroupId = target.NavigationGroupId,
+                };
+                sets.Add(key, pageSet);
+            }
+
+            if (kind == GamepadDirectionalPageTargetKind.Previous)
+            {
+                if (pageSet.PreviousTarget != null)
+                    pageSet.HasAmbiguousDirectionalTarget = true;
+                else
+                    pageSet.PreviousTarget = target;
+            }
+            else
+            {
+                if (pageSet.NextTarget != null)
+                    pageSet.HasAmbiguousDirectionalTarget = true;
+                else
+                    pageSet.NextTarget = target;
+            }
+        }
+
+        List<GamepadPageNavigationSet> eligibleSets = sets.Values
+            .Where(pageSet => !pageSet.HasAmbiguousDirectionalTarget
+                && (pageSet.PreviousTarget != null || pageSet.NextTarget != null))
+            .ToList();
+        if (eligibleSets.Count == 0)
+        {
+            unavailableReason = hasModalScope
+                ? "modal foreground has no directional page targets"
+                : "no interactive directional page targets";
+            return false;
+        }
+
+        if (currentFocus != null)
+        {
+            List<GamepadPageNavigationSet> focusScopedSets = eligibleSets
+                .Where(pageSet => pageSet.SourceType == currentFocus.SourceType
+                    && pageSet.GroupId == currentFocus.GroupId
+                    && pageSet.NavigationGroupId == currentFocus.NavigationGroupId)
+                .ToList();
+            if (focusScopedSets.Count == 1)
+            {
+                result = focusScopedSets[0];
+                return true;
+            }
+            if (focusScopedSets.Count > 1)
+            {
+                unavailableReason = "multiple directional page sets in the current navigation group";
+                return false;
+            }
+        }
+
+        if (eligibleSets.Count == 1)
+        {
+            result = eligibleSets[0];
+            return true;
+        }
+
+        unavailableReason = "multiple directional page sets with no focused navigation-group match";
+        return false;
+    }
+
+    private static GamepadDirectionalPageTargetKind GetGamepadDirectionalPageTargetKind(
+        GamepadFocusTarget target)
+    {
+        string normalized = NormalizeGamepadSemanticText(target?.Button?.ToString());
+        if (normalized.Length == 0)
+            return GamepadDirectionalPageTargetKind.None;
+
+        // 表示ラベル全体を比較する。これにより「戻る」「次へ」などの通常ボタンや
+        // 説明文中の語を、ページ移動ボタンとして誤認しない。
+        if (normalized.Equals("前のページ", StringComparison.Ordinal)
+            || normalized.Equals("前ページ", StringComparison.Ordinal)
+            || normalized.Equals("PREVIOUS PAGE", StringComparison.OrdinalIgnoreCase)
+            || normalized.Equals("PREV PAGE", StringComparison.OrdinalIgnoreCase))
+        {
+            return GamepadDirectionalPageTargetKind.Previous;
+        }
+
+        // 「後ろのページ」は参照ゲームの実際のHELP画面で使われている表記。
+        if (normalized.Equals("次のページ", StringComparison.Ordinal)
+            || normalized.Equals("次ページ", StringComparison.Ordinal)
+            || normalized.Equals("後ろのページ", StringComparison.Ordinal)
+            || normalized.Equals("NEXT PAGE", StringComparison.OrdinalIgnoreCase)
+            || normalized.Equals("NEXT", StringComparison.OrdinalIgnoreCase))
+        {
+            return GamepadDirectionalPageTargetKind.Next;
+        }
+
+        return GamepadDirectionalPageTargetKind.None;
+    }
+
+    private static bool TryGetGamepadPageIndex(GamepadFocusTarget target, out int pageIndex)
+    {
+        pageIndex = -1;
+        if (target?.Button == null)
+            return false;
+
+        // PAGE Navigationは画面に見えているButtonラベルだけを読む。Title/tooltipは
+        // 説明用metadataなので、そこにPAGEという語があっても誤認しない。
+        return TryParseGamepadPageLabel(NormalizeGamepadSemanticText(target.Button.ToString()), out pageIndex);
+    }
+
+    private static bool TryParseGamepadPageLabel(string normalizedText, out int pageIndex)
+    {
+        pageIndex = -1;
+        const string pagePrefix = "PAGE";
+        if (string.IsNullOrEmpty(normalizedText)
+            || !normalizedText.StartsWith(pagePrefix, StringComparison.OrdinalIgnoreCase)
+            || normalizedText.Length == pagePrefix.Length)
+            return false;
+
+        int index = pagePrefix.Length;
+        if (normalizedText[index] == '.')
+        {
+            index++;
+        }
+        else if (char.IsWhiteSpace(normalizedText[index]))
+        {
+            while (index < normalizedText.Length && char.IsWhiteSpace(normalizedText[index]))
+                index++;
+        }
+        else
+        {
+            // "PAGE"を含む説明文やPAGE0のような別ラベルは対象にしない。
+            return false;
+        }
+
+        string pageNumber = normalizedText[index..].Trim();
+        return pageNumber.Length > 0 && int.TryParse(pageNumber, out pageIndex) && pageIndex >= 0;
+    }
+
+    private static bool TryResolveCurrentGamepadPage(GamepadPageNavigationSet pageSet,
+        out int currentPageIndex)
+    {
+        currentPageIndex = -1;
+        int markedTargetCount = 0;
+        for (int i = 0; i < pageSet.Targets.Count; i++)
+        {
+            GamepadPageTarget page = pageSet.Targets[i];
+            if (!TryGetGamepadPageVisualMarker(page.Target.Button, out bool isMarked))
+                return false;
+            if (!isMarked)
+                continue;
+            markedTargetCount++;
+            currentPageIndex = page.PageIndex;
+        }
+
+        // 元ゲームはcurrent pageだけSETCOLOR(aqua)、他はGETDEFCOLOR()で描画する。
+        // 色名を固定せず、Config.ForeColorとの差があるPAGEターゲットが唯一の時だけ採用する。
+        return markedTargetCount == 1;
+    }
+
+    private static bool TryGetGamepadPageVisualMarker(ConsoleButtonString button, out bool isMarked)
+    {
+        bool hasStyledText = false;
+        isMarked = false;
+        CollectGamepadPageVisualMarker(button, ref hasStyledText, ref isMarked);
+        return hasStyledText;
+    }
+
+    private static void CollectGamepadPageVisualMarker(AConsoleDisplayNode node,
+        ref bool hasStyledText, ref bool isMarked)
+    {
+        if (node == null)
+            return;
+        if (node is ConsoleStyledString styled)
+        {
+            if (!string.IsNullOrWhiteSpace(styled.Text))
+            {
+                hasStyledText = true;
+                if (styled.StringStyle.Color != Config.ForeColor)
+                    isMarked = true;
+            }
+            return;
+        }
+        if (node is ConsoleButtonString button)
+        {
+            for (int i = 0; i < button.StrArray.Length; i++)
+                CollectGamepadPageVisualMarker(button.StrArray[i], ref hasStyledText, ref isMarked);
+            return;
+        }
+        if (node is ConsoleDivElement div)
+        {
+            for (int i = 0; i < div._childNodes.Count; i++)
+                CollectGamepadPageVisualMarker(div._childNodes[i], ref hasStyledText, ref isMarked);
+        }
+    }
+
+    private static GamepadFocusTarget FindGamepadAdjacentPageTarget(GamepadPageNavigationSet pageSet,
+        bool nextPage, out int targetPageIndex)
+    {
+        targetPageIndex = -1;
+        if (pageSet == null || pageSet.Targets.Count == 0)
+            return null;
+
+        int currentPosition = -1;
+        for (int i = 0; i < pageSet.Targets.Count; i++)
+        {
+            if (pageSet.Targets[i].PageIndex == pageSet.CurrentPageIndex)
+            {
+                currentPosition = i;
+                break;
+            }
+        }
+        if (currentPosition < 0)
+            return null;
+
+        int targetPosition = currentPosition + (nextPage ? 1 : -1);
+        if (targetPosition < 0 || targetPosition >= pageSet.Targets.Count)
+            return null;
+
+        GamepadPageTarget target = pageSet.Targets[targetPosition];
+        targetPageIndex = target.PageIndex;
+        return target.Target;
+    }
+
     private static void RunGamepadSemanticBackSelfTest()
     {
         if (gamepadSemanticBackSelfTestRun)
@@ -2215,6 +2761,165 @@ internal sealed partial class EmueraConsole : IDisposable
             $"Gamepad HTML modal self-test: {(passed ? "PASS" : "WARNING")} "
             + $"(A=foreground-focus-links:{caseA}, B=modal-cancel-preserved:{caseB}, "
             + $"C=large-button-preserved:{caseC}, D=independent-islands-preserved:{caseD})");
+    }
+
+    private static void RunGamepadPageNavigationSelfTest()
+    {
+        if (gamepadPageNavigationSelfTestRun)
+            return;
+        gamepadPageNavigationSelfTestRun = true;
+
+        // A: PAGE.0/PAGE.1 とヒント。選択されたPAGEだけが非デフォルト色になる
+        // 実ゲームのSETCOLOR(... aqua ...)構造を、色名を固定せずに再現する。
+        List<GamepadFocusTarget> twoPagesAtZero =
+        [
+            CreateGamepadPageSelfTestTarget("[100] PAGE.0", 100, 0, 0, marked: true),
+            CreateGamepadPageSelfTestTarget("[101] PAGE.1", 101, 100, 1),
+            CreateGamepadPageSelfTestTarget("[200] ヒント", 200, 200, 2),
+        ];
+        bool caseA0 = TryFindGamepadPageNavigationSet(twoPagesAtZero, null, out GamepadPageNavigationSet setAtZero,
+            out _) && setAtZero.CurrentPageIndex == 0
+            && FindGamepadAdjacentPageTarget(setAtZero, true, out int nextPageAtZero) == twoPagesAtZero[1]
+            && nextPageAtZero == 1;
+
+        List<GamepadFocusTarget> twoPagesAtOne =
+        [
+            CreateGamepadPageSelfTestTarget("[100] PAGE.0", 100, 0, 0),
+            CreateGamepadPageSelfTestTarget("[101] PAGE.1", 101, 100, 1, marked: true),
+            CreateGamepadPageSelfTestTarget("[200] ヒント", 200, 200, 2),
+        ];
+        bool caseA1 = TryFindGamepadPageNavigationSet(twoPagesAtOne, null, out GamepadPageNavigationSet setAtOne,
+            out _) && setAtOne.CurrentPageIndex == 1
+            && FindGamepadAdjacentPageTarget(setAtOne, false, out int previousPageAtOne) == twoPagesAtOne[0]
+            && previousPageAtOne == 0;
+
+        // B: 3ページ以上ではソート済みの隣接ページだけを選択する。
+        List<GamepadFocusTarget> threePages =
+        [
+            CreateGamepadPageSelfTestTarget("PAGE.0", 10, 0, 0),
+            CreateGamepadPageSelfTestTarget("PAGE 1", 11, 100, 1, marked: true),
+            CreateGamepadPageSelfTestTarget("PAGE.2", 12, 200, 2),
+        ];
+        bool caseB = TryFindGamepadPageNavigationSet(threePages, null, out GamepadPageNavigationSet threePageSet,
+            out _) && threePageSet.CurrentPageIndex == 1
+            && FindGamepadAdjacentPageTarget(threePageSet, false, out int previousPage) == threePages[0]
+            && previousPage == 0
+            && FindGamepadAdjacentPageTarget(threePageSet, true, out int nextPage) == threePages[2]
+            && nextPage == 2;
+
+        // C: 端はページ実行を返さず、呼び出し元にもログスクロールへ渡さない。
+        bool caseC = caseA0
+            && FindGamepadAdjacentPageTarget(setAtZero, false, out _) == null
+            && TryFindGamepadPageNavigationSet(
+                [
+                    CreateGamepadPageSelfTestTarget("PAGE.0", 10, 0, 0),
+                    CreateGamepadPageSelfTestTarget("PAGE.1", 11, 100, 1),
+                    CreateGamepadPageSelfTestTarget("PAGE.2", 12, 200, 2, marked: true),
+                ], null, out GamepadPageNavigationSet setAtLastPage, out _)
+            && FindGamepadAdjacentPageTarget(setAtLastPage, true, out _) == null;
+
+        // D/E: Indexed型では、説明文や単発ボタンを有効化しない。
+        bool caseD = !TryFindGamepadPageNavigationSet(
+            [CreateGamepadPageSelfTestTarget("[1] メニュー", 1, 0, 0)], null, out _, out _);
+        bool caseE = !TryFindGamepadPageNavigationSet(
+            [
+                CreateGamepadPageSelfTestTarget("[1] PAGE HELP", 1, 0, 0),
+                CreateGamepadPageSelfTestTarget("[2] PAGEについて", 2, 100, 1, marked: true),
+            ], null, out _, out _);
+
+        // Directional A/D: ページ端では片方向しかなくても有効。戻るはPreviousにしない。
+        List<GamepadFocusTarget> directionalFirstPage =
+        [
+            CreateGamepadPageSelfTestTarget("[1000] 戻る", 1000, 0, 0),
+            CreateGamepadPageSelfTestTarget("[1009] 次のページ", 1009, 100, 1),
+        ];
+        bool directionalA = TryFindGamepadPageNavigationSet(directionalFirstPage, null,
+                out GamepadPageNavigationSet directionalFirstSet, out _)
+            && directionalFirstSet.Mode == GamepadPageNavigationMode.Directional
+            && directionalFirstSet.PreviousTarget == null
+            && directionalFirstSet.NextTarget == directionalFirstPage[1];
+
+        // Directional B: 前後が同時に見える中間ページ。
+        List<GamepadFocusTarget> directionalMiddlePage =
+        [
+            CreateGamepadPageSelfTestTarget("[1000] 前のページ", 1000, 0, 0),
+            CreateGamepadPageSelfTestTarget("[1001] 戻る", 1001, 100, 1),
+            CreateGamepadPageSelfTestTarget("[1009] 次のページ", 1009, 200, 2),
+        ];
+        bool directionalB = TryFindGamepadPageNavigationSet(directionalMiddlePage, null,
+                out GamepadPageNavigationSet directionalMiddleSet, out _)
+            && directionalMiddleSet.Mode == GamepadPageNavigationMode.Directional
+            && directionalMiddleSet.PreviousTarget == directionalMiddlePage[0]
+            && directionalMiddleSet.NextTarget == directionalMiddlePage[2];
+
+        // Directional C: 最終ページではPreviousだけが存在する。
+        List<GamepadFocusTarget> directionalLastPage =
+        [
+            CreateGamepadPageSelfTestTarget("[1000] 前のページ", 1000, 0, 0),
+            CreateGamepadPageSelfTestTarget("[1001] 戻る", 1001, 100, 1),
+        ];
+        bool directionalC = TryFindGamepadPageNavigationSet(directionalLastPage, null,
+                out GamepadPageNavigationSet directionalLastSet, out _)
+            && directionalLastSet.Mode == GamepadPageNavigationMode.Directional
+            && directionalLastSet.PreviousTarget == directionalLastPage[0]
+            && directionalLastSet.NextTarget == null;
+
+        // Directional E: 通常画面の「次へ」や「戻る」だけはページUIにしない。
+        bool directionalE = !TryFindGamepadPageNavigationSet(
+            [
+                CreateGamepadPageSelfTestTarget("[1] 次へ", 1, 0, 0),
+                CreateGamepadPageSelfTestTarget("[2] 戻る", 2, 100, 1),
+            ], null, out _, out _);
+
+        // F: modal foregroundがある時、背後のPAGE群は探索対象から除外する。
+        List<GamepadFocusTarget> modalTargets =
+        [
+            CreateGamepadPageSelfTestTarget("PAGE.0", 100, 0, 0, marked: true),
+            CreateGamepadPageSelfTestTarget("PAGE.1", 101, 100, 1),
+            CreateGamepadPageSelfTestTarget("Yes", 1, 400, 2, modalForeground: true, groupId: 99),
+            CreateGamepadPageSelfTestTarget("No", 2, 500, 3, modalForeground: true, groupId: 99),
+        ];
+        bool caseF = !TryFindGamepadPageNavigationSet(modalTargets, modalTargets[2], out _, out _);
+
+        // Directional H: modalの背後にあるDirectional Targetも探索対象外にする。
+        List<GamepadFocusTarget> modalDirectionalTargets =
+        [
+            CreateGamepadPageSelfTestTarget("前のページ", 1000, 0, 0),
+            CreateGamepadPageSelfTestTarget("次のページ", 1009, 100, 1),
+            CreateGamepadPageSelfTestTarget("Yes", 1, 400, 2, modalForeground: true, groupId: 99),
+            CreateGamepadPageSelfTestTarget("No", 2, 500, 3, modalForeground: true, groupId: 99),
+        ];
+        bool directionalH = !TryFindGamepadPageNavigationSet(modalDirectionalTargets,
+            modalDirectionalTargets[2], out _, out _);
+
+        bool passed = caseA0 && caseA1 && caseB && caseC && caseD && caseE && caseF
+            && directionalA && directionalB && directionalC && directionalE && directionalH;
+        WriteGamepadNavigationDiagnostic(
+            $"Gamepad page navigation self-test: {(passed ? "PASS" : "WARNING")} "
+            + $"(A=two-pages-hint:{caseA0 && caseA1}, B=three-pages:{caseB}, C=boundaries:{caseC}, "
+            + $"D=no-pages:{caseD}, E=page-word-only:{caseE}, F=modal-background-excluded:{caseF}, "
+            + $"DirectionalA=first-page:{directionalA}, DirectionalB=middle-page:{directionalB}, "
+            + $"DirectionalC=last-page:{directionalC}, DirectionalE=ambiguous-labels:{directionalE}, "
+            + $"DirectionalH=modal-background-excluded:{directionalH})");
+    }
+
+    private static GamepadFocusTarget CreateGamepadPageSelfTestTarget(string text, long input, int x,
+        int order, bool marked = false, bool modalForeground = false, int groupId = 0)
+    {
+        Color markerColor = Config.ForeColor == Color.Aqua ? Color.Fuchsia : Color.Aqua;
+        ConsoleStyledString styled = new(text,
+            new StringStyle(marked ? markerColor : Config.ForeColor, FontStyle.Regular, null));
+        ConsoleButtonString button = new(null, [styled], input);
+        ConsoleDisplayLine line = new([button], true, false);
+        line.LineNo = 600 + order;
+        Rectangle bounds = new(x, 400, 90, 18);
+        GamepadFocusTarget target = new(button, GamepadFocusSourceType.NormalDisplay,
+            GamepadFocusLayoutType.Console, groupId, line, bounds, bounds, order)
+        {
+            NavigationGroupId = 0,
+            IsModalForeground = modalForeground,
+        };
+        return target;
     }
 
     private static GamepadFocusTarget CreateHtmlModalSelfTestTarget(

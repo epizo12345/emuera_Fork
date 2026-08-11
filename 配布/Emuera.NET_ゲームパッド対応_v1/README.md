@@ -24,7 +24,7 @@ framework-dependent単一ファイル版のため、Emuera本体のDLLを別途�
 - 通常Console、HTML UI、HTML Island、INPUTMOUSEKEY
 - 十字キー・左スティック移動
 - ×決定、○semantic CANCEL
-- L1/R1ログ、OPTIONS/Start
+- L1/R1は、`PAGE.0`型または「前のページ」「次のページ」型のPage UIでは前/次ページ、それ以外では従来のログ操作。Directional型のページ端では反対方向を消費して何もしません。OPTIONS/Start
 - ホットプラグ、Alt+Tab復帰
 - Raw Inputでも十字キーと左スティックを別々に扱う
 - 複数パッド接続時も、選択中デバイス単位でボタン配列を判定
@@ -68,7 +68,7 @@ EXEと同じフォルダへ`gamepad-debug.log`を出力します。
 - Runtime: win-x64
 - Self-contained: false
 - Single-file: true
-- Emuera.exe: 24,729,322 bytes
-- SHA-256: `EB4F8E7AE96C8D517531AA1C1F8E6C43FD8CBC3470A0407DDF9DAA03C3D22E33`
+- Emuera.exe: 24,741,610 bytes
+- SHA-256: `65C0AD524F627655CE8E3CFDAE99BE6AEA2EC3067916890F525E72B42F13970C`
 
 詳細仕様はリポジトリの`プロジェクト資料/07_ゲームパッド対応_v1_仕様書.md`、変更説明は`今回の修正説明_2026-08-11_ゲームパッド対応_v1.md`を参照してください。
