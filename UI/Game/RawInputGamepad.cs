@@ -19,10 +19,12 @@ internal readonly struct RawInputGamepadSample
         ushort usagePage,
         ushort usage,
         uint buttonMask,
-        GamepadDirection direction,
+        GamepadDirection dpadDirection,
+        GamepadDirection leftStickDirection,
         int x,
         int y,
-        uint pov)
+        uint pov,
+        bool isPlayStationCompatible)
     {
         DeviceName = deviceName;
         DevicePath = devicePath;
@@ -31,10 +33,12 @@ internal readonly struct RawInputGamepadSample
         UsagePage = usagePage;
         Usage = usage;
         ButtonMask = buttonMask;
-        Direction = direction;
+        DPadDirection = dpadDirection;
+        LeftStickDirection = leftStickDirection;
         X = x;
         Y = y;
         Pov = pov;
+        IsPlayStationCompatible = isPlayStationCompatible;
     }
 
     internal string DeviceName { get; }
@@ -44,10 +48,54 @@ internal readonly struct RawInputGamepadSample
     internal ushort UsagePage { get; }
     internal ushort Usage { get; }
     internal uint ButtonMask { get; }
-    internal GamepadDirection Direction { get; }
+    internal GamepadDirection DPadDirection { get; }
+    internal GamepadDirection LeftStickDirection { get; }
     internal int X { get; }
     internal int Y { get; }
     internal uint Pov { get; }
+    internal bool IsPlayStationCompatible { get; }
+}
+
+/// <summary>
+/// Raw Inputが列挙した個々のHIDゲームパッドの識別情報。WinMMとの対応付けは
+/// この情報を別デバイスへ流用せず、明示的に一意と判断できる場合だけ使用する。
+/// </summary>
+internal readonly struct RawInputDeviceIdentity
+{
+    internal RawInputDeviceIdentity(string deviceName, string devicePath, uint vendorId, uint productId,
+        ushort usagePage, ushort usage, bool isPlayStationCompatible)
+    {
+        DeviceName = deviceName;
+        DevicePath = devicePath;
+        VendorId = vendorId;
+        ProductId = productId;
+        UsagePage = usagePage;
+        Usage = usage;
+        IsPlayStationCompatible = isPlayStationCompatible;
+    }
+
+    internal string DeviceName { get; }
+    internal string DevicePath { get; }
+    internal uint VendorId { get; }
+    internal uint ProductId { get; }
+    internal ushort UsagePage { get; }
+    internal ushort Usage { get; }
+    internal bool IsPlayStationCompatible { get; }
+}
+
+internal readonly struct RawInputCandidateSummary
+{
+    internal RawInputCandidateSummary(int candidateCount, int playStationCandidateCount,
+        RawInputDeviceIdentity? singlePlayStationCandidate)
+    {
+        CandidateCount = candidateCount;
+        PlayStationCandidateCount = playStationCandidateCount;
+        SinglePlayStationCandidate = singlePlayStationCandidate;
+    }
+
+    internal int CandidateCount { get; }
+    internal int PlayStationCandidateCount { get; }
+    internal RawInputDeviceIdentity? SinglePlayStationCandidate { get; }
 }
 
 /// <summary>
@@ -81,7 +129,6 @@ internal sealed class RawInputGamepad : IDisposable
     private const uint FILE_SHARE_READ = 0x00000001;
     private const uint FILE_SHARE_WRITE = 0x00000002;
     private const int INVALID_HANDLE_VALUE = -1;
-    private const int DeadZone = 8000;
 
     private readonly bool diagnosticsEnabled;
     private readonly Action<string> log;
@@ -108,22 +155,26 @@ internal sealed class RawInputGamepad : IDisposable
     // polling timer alive permits controllers to be attached after startup.
     internal bool IsAvailable => OperatingSystem.IsWindows();
 
-    /// <summary>
-    /// WinMM may expose the same physical DS4 as the generic Microsoft
-    /// joystick driver. Keep the HID identity discovered during enumeration
-    /// available to the WinMM mapping layer.
-    /// </summary>
-    internal bool HasDs4CompatibleDevice
+    internal RawInputCandidateSummary GetCandidateSummary()
     {
-        get
+        int candidateCount = 0;
+        int playStationCandidateCount = 0;
+        RawInputDeviceIdentity? singlePlayStationCandidate = null;
+        foreach (RawInputDeviceInfo device in devices.Values)
         {
-            foreach (RawInputDeviceInfo device in devices.Values)
+            if (!device.IsCandidate)
+                continue;
+            candidateCount++;
+            bool playStationCompatible = IsDs4Compatible(device.VendorId, device.ProductId, device.ProductName);
+            if (playStationCompatible)
             {
-                if (device.IsCandidate && IsDs4Compatible(device.VendorId, device.ProductId, device.ProductName))
-                    return true;
+                playStationCandidateCount++;
+                singlePlayStationCandidate = new RawInputDeviceIdentity(device.ProductName, device.DevicePath,
+                    device.VendorId, device.ProductId, device.UsagePage, device.Usage, true);
             }
-            return false;
         }
+        return new RawInputCandidateSummary(candidateCount, playStationCandidateCount,
+            playStationCandidateCount == 1 ? singlePlayStationCandidate : null);
     }
 
     internal bool Register(nint windowHandle)
@@ -505,9 +556,15 @@ internal sealed class RawInputGamepad : IDisposable
         bool hasHat = TryGetUsageValue(device, HID_USAGE_HAT_SWITCH, report, out uint rawHat);
         int x = hasX ? NormalizeHidAxis(rawX) : 0;
         int y = hasY ? -NormalizeHidAxis(rawY) : 0;
-        GamepadDirection direction = hasHat && rawHat <= 7
+        // D-pad/POV and the left stick stay separate through the input layer.
+        // A Raw Input left-stick movement must not be promoted into a D-pad
+        // action, otherwise MainWindow cannot route it to Direct Gameplay Input.
+        GamepadDirection dpadDirection = hasHat && rawHat <= 7
             ? GetHatDirection(rawHat)
-            : GetStickDirection(x, y);
+            : GamepadDirection.None;
+        GamepadDirection leftStickDirection = hasX || hasY
+            ? GamepadManager.GetStickDirection(x, y)
+            : GamepadDirection.None;
 
         if (buttonMask == 0 && !hasX && !hasY && !hasHat)
             return false;
@@ -520,10 +577,12 @@ internal sealed class RawInputGamepad : IDisposable
             device.UsagePage,
             device.Usage,
             buttonMask,
-            direction,
+            dpadDirection,
+            leftStickDirection,
             x,
             y,
-            hasHat ? rawHat : uint.MaxValue);
+            hasHat ? rawHat : uint.MaxValue,
+            IsDs4Compatible(device.VendorId, device.ProductId, device.ProductName));
         return true;
     }
 
@@ -550,7 +609,7 @@ internal sealed class RawInputGamepad : IDisposable
         lastLoggedX = sample.X;
         lastLoggedY = sample.Y;
         lastLoggedPov = sample.Pov;
-        Log($"Raw Input report: device={sample.DeviceName}, Buttons=0x{sample.ButtonMask:X8}, X={sample.X}, Y={sample.Y}, POV={sample.Pov}, direction={sample.Direction}");
+        Log($"Raw Input report: device={sample.DeviceName}, Buttons=0x{sample.ButtonMask:X8}, X={sample.X}, Y={sample.Y}, POV={sample.Pov}, DPad={sample.DPadDirection}, LeftStick={sample.LeftStickDirection}");
     }
 
     private void Log(string message)
@@ -617,17 +676,6 @@ internal sealed class RawInputGamepad : IDisposable
             5 or 6 => GamepadDirection.Left,
             _ => GamepadDirection.None,
         };
-    }
-
-    private static GamepadDirection GetStickDirection(int x, int y)
-    {
-        int absX = Math.Abs(x);
-        int absY = Math.Abs(y);
-        if (absX <= DeadZone && absY <= DeadZone)
-            return GamepadDirection.None;
-        if (absX >= absY)
-            return x >= 0 ? GamepadDirection.Right : GamepadDirection.Left;
-        return y >= 0 ? GamepadDirection.Up : GamepadDirection.Down;
     }
 
     public void Dispose()

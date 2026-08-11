@@ -91,6 +91,12 @@ static partial class Program
         };
         rootCommand.Options.Add(gamepadDirectInputOption);
 
+        var gamepadLayoutOption = new Option<string>(name: "--GamepadLayout")
+        {
+            Description = "非XInputパッドのボタン配列: Auto / Xbox / PlayStationWinMM"
+        };
+        rootCommand.Options.Add(gamepadLayoutOption);
+
         // --BenchmarkLog は計測版だけが使うJSON Linesの保存先を受け取る。
         var benchmarkLogOption = new Option<string>(name: "--BenchmarkLog")
         {
@@ -124,6 +130,10 @@ static partial class Program
             ?? Environment.GetEnvironmentVariable("EMUERA_GAMEPAD_DIRECT_INPUT")
             ?? "Auto";
         GamepadDirectInput = ParseGamepadDirectInputProfile(directInputProfile);
+        string gamepadLayout = result.GetValue(gamepadLayoutOption)
+            ?? Environment.GetEnvironmentVariable("EMUERA_GAMEPAD_LAYOUT")
+            ?? "Auto";
+        GamepadFaceButtonLayoutOverride = ParseGamepadFaceButtonLayout(gamepadLayout);
 
         var fileArgs = result.GetValue(filesArg) ?? [];
         var analysisRequestPaths = fileArgs;
@@ -268,6 +278,12 @@ static partial class Program
 
     public static GamepadDirectInputProfile GamepadDirectInput { get; private set; } = GamepadDirectInputProfile.Auto;
 
+    /// <summary>
+    /// Non-XInput face-button layout override. Auto preserves per-device
+    /// detection; XInput always uses the Xbox layout regardless of this value.
+    /// </summary>
+    public static GamepadFaceButtonLayout GamepadFaceButtonLayoutOverride { get; private set; } = GamepadFaceButtonLayout.Auto;
+
     private static GamepadDirectInputProfile ParseGamepadDirectInputProfile(string value)
     {
         if (string.Equals(value, "WASD", StringComparison.OrdinalIgnoreCase))
@@ -283,6 +299,17 @@ static partial class Program
             || string.Equals(value, "Disabled", StringComparison.OrdinalIgnoreCase))
             return GamepadDirectInputProfile.Disabled;
         return GamepadDirectInputProfile.Auto;
+    }
+
+    private static GamepadFaceButtonLayout ParseGamepadFaceButtonLayout(string value)
+    {
+        if (string.Equals(value, "Xbox", StringComparison.OrdinalIgnoreCase))
+            return GamepadFaceButtonLayout.Xbox;
+        if (string.Equals(value, "PlayStation", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(value, "PS4", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(value, "PlayStationWinMM", StringComparison.OrdinalIgnoreCase))
+            return GamepadFaceButtonLayout.PlayStationWinMM;
+        return GamepadFaceButtonLayout.Auto;
     }
 
     static Program()

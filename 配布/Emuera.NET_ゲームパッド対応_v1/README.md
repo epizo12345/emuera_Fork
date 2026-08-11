@@ -26,6 +26,8 @@ framework-dependent単一ファイル版のため、Emuera本体のDLLを別途�
 - ×決定、○semantic CANCEL
 - L1/R1ログ、OPTIONS/Start
 - ホットプラグ、Alt+Tab復帰
+- Raw Inputでも十字キーと左スティックを別々に扱う
+- 複数パッド接続時も、選択中デバイス単位でボタン配列を判定
 
 PS4系の既定は×が決定、○がキャンセルです。
 
@@ -45,13 +47,23 @@ EXEと同じフォルダへ`gamepad-debug.log`を出力します。
 
 `Auto`、`Disabled`、`Wasd`、`Numpad8462`、`ArrowKeys`を指定できます。
 
+通常は自動判定です。非XInputパッドの配列を明示する必要がある場合だけ、次を指定できます。
+
+```powershell
+.\Emuera.exe --GamepadLayout Auto
+.\Emuera.exe --GamepadLayout Xbox
+.\Emuera.exe --GamepadLayout PlayStationWinMM
+```
+
+環境変数`EMUERA_GAMEPAD_LAYOUT`でも指定できます。XInputは常にXbox配列です。
+
 ## ビルド情報
 
 - Configuration: Release
 - Runtime: win-x64
 - Self-contained: false
 - Single-file: true
-- Emuera.exe: 24,700,650 bytes
-- SHA-256: `7F05C995C5DBE00964E51E56CF4822F7112BF80960C5F152F7157D522FD3717C`
+- Emuera.exe: 24,708,842 bytes
+- SHA-256: `5111B9FE59FC0A944BC08FE3563F440CE066E69814704DE9DD60AE040BEBA218`
 
 詳細仕様はリポジトリの`プロジェクト資料/07_ゲームパッド対応_v1_仕様書.md`、変更説明は`今回の修正説明_2026-08-11_ゲームパッド対応_v1.md`を参照してください。

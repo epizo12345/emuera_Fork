@@ -35,6 +35,18 @@ internal enum GamepadDirectInputProfile
     ArrowKeys,
 }
 
+/// <summary>
+/// Face button arrangement for non-XInput controllers. Auto is only a
+/// configuration preference; an active backend always resolves to Xbox or
+/// PlayStationWinMM before buttons are read.
+/// </summary>
+internal enum GamepadFaceButtonLayout
+{
+    Auto = 0,
+    Xbox,
+    PlayStationWinMM,
+}
+
 internal enum GamepadActionKind
 {
     None = 0,
@@ -226,6 +238,7 @@ internal sealed class GamepadManager
     private bool xinputDiagnosticInitialized;
     private bool winmmDiagnosticLogged;
     private uint winmmDiagnosticDeviceCount;
+    private uint winmmLiveDeviceCount;
     private WinmmButtonMapping rawInputButtonMapping;
     private bool firstPollAfterActivation;
 
@@ -233,8 +246,8 @@ internal sealed class GamepadManager
     {
         this.diagnosticsEnabled = diagnosticsEnabled;
         diagnosticLogPath = Path.Combine(AppContext.BaseDirectory, "gamepad-debug.log");
-        winmmButtonMapping = WinmmButtonMapping.Create(string.Empty);
-        rawInputButtonMapping = WinmmButtonMapping.Create(string.Empty);
+        winmmButtonMapping = WinmmButtonMapping.Create(GamepadFaceButtonLayout.Xbox);
+        rawInputButtonMapping = WinmmButtonMapping.Create(GamepadFaceButtonLayout.Xbox);
         rawInputGamepad = new RawInputGamepad(diagnosticsEnabled, WriteDiagnostic);
         LoadXInput();
         winmmAvailable = ProbeWinmm();
@@ -243,6 +256,8 @@ internal sealed class GamepadManager
         WriteDiagnostic("Gamepad input initialized. XInput=" + (getState != null ? "available" : "unavailable")
             + ", WinMM=" + (winmmAvailable ? "available" : "unavailable"));
         WriteDiagnostic(Status);
+        if (diagnosticsEnabled)
+            RunGamepadInputSelfTests();
     }
 
     internal bool IsAvailable => getState != null || winmmAvailable || rawInputGamepad.IsAvailable;
@@ -363,8 +378,8 @@ internal sealed class GamepadManager
         {
             if (backend != GamepadBackend.RawInput)
                 ConnectRawInput(rawSample);
-            return ProcessSample(GetRawInputButtons(rawSample.ButtonMask), rawSample.Direction,
-                GamepadDirection.None, now, GamepadDirectionSource.Unknown);
+            return ProcessSample(GetRawInputButtons(rawSample.ButtonMask), rawSample.DPadDirection,
+                rawSample.LeftStickDirection, now);
         }
 
         if (firstPollAfterActivation)
@@ -509,6 +524,7 @@ internal sealed class GamepadManager
         }
         uint capsSize = (uint)Marshal.SizeOf<WinmmJoyCaps>();
         bool found = false;
+        winmmLiveDeviceCount = 0;
         for (uint i = 0; i < maxDevice; i++)
         {
             uint capsResult;
@@ -556,6 +572,9 @@ internal sealed class GamepadManager
                 joyId = i;
                 caps = candidate;
             }
+            if (capsResult == 0 && positionSuccess
+                && (candidate.wNumButtons > 0 || candidate.wNumAxes >= 2))
+                winmmLiveDeviceCount++;
         }
         if (logEnumeration)
             winmmDiagnosticLogged = true;
@@ -622,6 +641,7 @@ internal sealed class GamepadManager
         ResetInputState();
         SetStatus($"Gamepad: XInput #{userIndex}");
         WriteDiagnostic("XInput mapping: A=Confirm, B=Cancel, LB/RB=Scroll, Start=Enter.");
+        WriteDiagnostic($"Gamepad layout: Backend=XInput; XInputIndex={userIndex}; FaceButtonLayout=Xbox; LayoutReason=XInput backend.");
     }
 
     private void ConnectWinmm(uint joyId, WinmmJoyCaps caps)
@@ -630,13 +650,16 @@ internal sealed class GamepadManager
         xinputIndex = -1;
         winmmId = joyId;
         winmmCaps = caps;
-        winmmButtonMapping = WinmmButtonMapping.Create(caps.szPname, rawInputGamepad.HasDs4CompatibleDevice);
+        GamepadFaceButtonLayout layout = ResolveWinmmFaceButtonLayout(caps, out string layoutReason);
+        winmmButtonMapping = WinmmButtonMapping.Create(layout);
         connected = true;
         ResetInputState();
         string name = string.IsNullOrWhiteSpace(caps.szPname) ? "Generic Joystick" : caps.szPname.Trim();
+        RawInputCandidateSummary rawSummary = rawInputGamepad.GetCandidateSummary();
         SetStatus($"Gamepad: WinMM / {name}");
         WriteDiagnostic($"WinMM #{joyId} selected as active gamepad.");
-        WriteDiagnostic($"WinMM joystick #{joyId}: {name}; axes={caps.wNumAxes}, buttons={caps.wNumButtons}, caps=0x{caps.wCaps:X8}");
+        WriteDiagnostic($"WinMM joystick #{joyId}: {name}; axes={caps.wNumAxes}, buttons={caps.wNumButtons}, caps=0x{caps.wCaps:X8}; MID=0x{caps.wMid:X4}, PID=0x{caps.wPid:X4}, RegKey={FormatWinmmIdentity(caps.szRegKey)}, OEM={FormatWinmmIdentity(caps.szOEMVxD)}");
+        WriteDiagnostic($"Gamepad layout: Backend=WinMM; JoyId={joyId}; DeviceName={name}; RawCandidateCount={rawSummary.CandidateCount}; RawPlayStationCandidateCount={rawSummary.PlayStationCandidateCount}; FaceButtonLayout={DescribeFaceButtonLayout(layout)}; LayoutReason={layoutReason}");
         WriteDiagnostic("WinMM mapping: " + winmmButtonMapping.Describe());
     }
 
@@ -644,13 +667,206 @@ internal sealed class GamepadManager
     {
         backend = GamepadBackend.RawInput;
         xinputIndex = -1;
-        rawInputButtonMapping = WinmmButtonMapping.Create(sample.DeviceName,
-            sample.VendorId == 0x054C && (sample.ProductId == 0x09CC || sample.ProductId == 0x05C4 || sample.ProductId == 0x0BA0));
+        GamepadFaceButtonLayout layout = ResolveRawInputFaceButtonLayout(sample, out string layoutReason);
+        rawInputButtonMapping = WinmmButtonMapping.Create(layout);
         connected = true;
         ResetInputState();
         SetStatus($"Gamepad: Raw Input / {sample.DeviceName}");
         WriteDiagnostic($"Raw Input device: path={sample.DevicePath}, VID=0x{sample.VendorId:X4}, PID=0x{sample.ProductId:X4}, usagePage=0x{sample.UsagePage:X4}, usage=0x{sample.Usage:X4}");
+        WriteDiagnostic($"Gamepad layout: Backend=RawInput; DeviceName={sample.DeviceName}; VID=0x{sample.VendorId:X4}; PID=0x{sample.ProductId:X4}; FaceButtonLayout={DescribeFaceButtonLayout(layout)}; LayoutReason={layoutReason}");
         WriteDiagnostic("Raw Input mapping: " + rawInputButtonMapping.Describe());
+    }
+
+    private GamepadFaceButtonLayout ResolveWinmmFaceButtonLayout(WinmmJoyCaps caps, out string reason)
+    {
+        return ResolveWinmmFaceButtonLayout(caps, winmmLiveDeviceCount,
+            rawInputGamepad.GetCandidateSummary(), Program.GamepadFaceButtonLayoutOverride, out reason);
+    }
+
+    /// <summary>
+    /// Resolves a WinMM mapping only from the selected device's own identity and
+    /// a uniquely attributable Raw Input counterpart.  A globally detected PS
+    /// device must never alter an unrelated WinMM/Xbox controller.
+    /// </summary>
+    private static GamepadFaceButtonLayout ResolveWinmmFaceButtonLayout(WinmmJoyCaps caps,
+        uint liveWinmmDeviceCount, RawInputCandidateSummary rawSummary,
+        GamepadFaceButtonLayout layoutOverride, out string reason)
+    {
+        if (layoutOverride != GamepadFaceButtonLayout.Auto)
+        {
+            reason = "GamepadLayout override";
+            return layoutOverride;
+        }
+
+        if (HasExplicitPlayStationWinmmIdentity(caps))
+        {
+            reason = "WinMM device name/registry identity identifies a PlayStation controller";
+            return GamepadFaceButtonLayout.PlayStationWinMM;
+        }
+
+        if (rawSummary.SinglePlayStationCandidate is RawInputDeviceIdentity rawIdentity)
+        {
+            if (MatchesRawInputIdentity(caps, rawIdentity))
+            {
+                reason = "WinMM identity matched the unique Raw Input PlayStation device";
+                return GamepadFaceButtonLayout.PlayStationWinMM;
+            }
+
+            // WinMM's generic Microsoft joystick driver does not expose a device path.
+            // The known DS4-compatible driver profile is accepted only when both APIs
+            // have exactly one candidate, so another Raw Input device cannot change a
+            // selected WinMM controller's mapping merely by being present.
+            if (liveWinmmDeviceCount == 1 && rawSummary.CandidateCount == 1
+                && HasKnownMicrosoftDs4WinmmProfile(caps))
+            {
+                reason = "unique WinMM/Raw Input pair with the known Microsoft DS4-compatible 6-axis/14-button profile";
+                return GamepadFaceButtonLayout.PlayStationWinMM;
+            }
+        }
+
+        reason = rawSummary.PlayStationCandidateCount > 0
+            ? "no safe WinMM-to-Raw Input identity match; retained Xbox layout"
+            : "WinMM device has no PlayStation identity";
+        return GamepadFaceButtonLayout.Xbox;
+    }
+
+    private static GamepadFaceButtonLayout ResolveRawInputFaceButtonLayout(RawInputGamepadSample sample,
+        out string reason)
+    {
+        if (Program.GamepadFaceButtonLayoutOverride != GamepadFaceButtonLayout.Auto)
+        {
+            reason = "GamepadLayout override";
+            return Program.GamepadFaceButtonLayoutOverride;
+        }
+        if (sample.IsPlayStationCompatible)
+        {
+            reason = "Raw Input device VID/PID or product identity identifies a PlayStation controller";
+            return GamepadFaceButtonLayout.PlayStationWinMM;
+        }
+        reason = "Raw Input device has no PlayStation identity";
+        return GamepadFaceButtonLayout.Xbox;
+    }
+
+    private static bool HasExplicitPlayStationWinmmIdentity(WinmmJoyCaps caps)
+    {
+        return ContainsPlayStationName(caps.szPname)
+            || ContainsPlayStationName(caps.szRegKey)
+            || ContainsPlayStationName(caps.szOEMVxD);
+    }
+
+    private static bool ContainsPlayStationName(string? value)
+    {
+        return value?.IndexOf("DualShock", StringComparison.OrdinalIgnoreCase) >= 0
+            || value?.IndexOf("PlayStation", StringComparison.OrdinalIgnoreCase) >= 0
+            || value?.IndexOf("PS4", StringComparison.OrdinalIgnoreCase) >= 0
+            || value?.IndexOf("Wireless Controller", StringComparison.OrdinalIgnoreCase) >= 0;
+    }
+
+    private static bool MatchesRawInputIdentity(WinmmJoyCaps caps, RawInputDeviceIdentity raw)
+    {
+        if (caps.wMid == raw.VendorId && caps.wPid == raw.ProductId
+            && caps.wMid != 0 && caps.wPid != 0)
+            return true;
+
+        string combined = $"{caps.szPname} {caps.szRegKey} {caps.szOEMVxD}";
+        string vid = $"VID_{raw.VendorId:X4}";
+        string pid = $"PID_{raw.ProductId:X4}";
+        if (combined.IndexOf(vid, StringComparison.OrdinalIgnoreCase) >= 0
+            && combined.IndexOf(pid, StringComparison.OrdinalIgnoreCase) >= 0)
+            return true;
+
+        return HasSpecificNameMatch(caps.szPname, raw.DeviceName)
+            || HasSpecificNameMatch(caps.szRegKey, raw.DeviceName);
+    }
+
+    private static bool HasSpecificNameMatch(string? winmmName, string rawName)
+    {
+        if (string.IsNullOrWhiteSpace(winmmName) || string.IsNullOrWhiteSpace(rawName)
+            || IsGenericMicrosoftJoystickDriver(winmmName))
+            return false;
+        string left = winmmName.Trim();
+        string right = rawName.Trim();
+        return left.Length >= 4 && right.Length >= 4
+            && (string.Equals(left, right, StringComparison.OrdinalIgnoreCase)
+                || left.IndexOf(right, StringComparison.OrdinalIgnoreCase) >= 0
+                || right.IndexOf(left, StringComparison.OrdinalIgnoreCase) >= 0);
+    }
+
+    private static bool HasKnownMicrosoftDs4WinmmProfile(WinmmJoyCaps caps)
+    {
+        return IsGenericMicrosoftJoystickDriver(caps.szPname)
+            && caps.wNumAxes >= 6 && caps.wNumButtons >= 14;
+    }
+
+    private static bool IsGenericMicrosoftJoystickDriver(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return false;
+        string name = value.Trim();
+        return string.Equals(name, "Microsoft PC ジョイスティック ドライバー", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(name, "Microsoft PC Joystick Driver", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string FormatWinmmIdentity(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "(empty)" : value.Trim();
+    }
+
+    private static string DescribeFaceButtonLayout(GamepadFaceButtonLayout layout)
+    {
+        return layout == GamepadFaceButtonLayout.PlayStationWinMM ? "PlayStation" : "Xbox";
+    }
+
+    /// <summary>
+    /// Diagnostic-only regression checks for the two device-layer guarantees:
+    /// Raw Input keeps D-pad and left-stick sources distinct, and a PS device
+    /// seen by Raw Input cannot globally rewrite a generic WinMM controller.
+    /// </summary>
+    private void RunGamepadInputSelfTests()
+    {
+        RawInputDeviceIdentity ds4 = new("Wireless Controller", "\\\\?\\HID#VID_054C&PID_09CC",
+            0x054C, 0x09CC, 0x0001, 0x0005, true);
+        RawInputCandidateSummary onlyDs4 = new(1, 1, ds4);
+        WinmmJoyCaps genericXboxCaps = new()
+        {
+            szPname = "Generic USB Joystick",
+            wNumAxes = 6,
+            wNumButtons = 14,
+        };
+        WinmmJoyCaps genericMicrosoftDs4Caps = new()
+        {
+            szPname = "Microsoft PC ジョイスティック ドライバー",
+            wNumAxes = 6,
+            wNumButtons = 14,
+        };
+
+        GamepadFaceButtonLayout genericXboxLayout = ResolveWinmmFaceButtonLayout(genericXboxCaps,
+            1, onlyDs4, GamepadFaceButtonLayout.Auto, out _);
+        GamepadFaceButtonLayout genericMicrosoftDs4Layout = ResolveWinmmFaceButtonLayout(
+            genericMicrosoftDs4Caps, 1, onlyDs4, GamepadFaceButtonLayout.Auto, out _);
+        WinmmButtonMapping xboxMapping = WinmmButtonMapping.Create(GamepadFaceButtonLayout.Xbox);
+        WinmmButtonMapping psMapping = WinmmButtonMapping.Create(GamepadFaceButtonLayout.PlayStationWinMM);
+        bool layouts = xboxMapping.Confirm == 0 && xboxMapping.Cancel == 1
+            && psMapping.Confirm == 1 && psMapping.Cancel == 2
+            && genericXboxLayout == GamepadFaceButtonLayout.Xbox
+            && genericMicrosoftDs4Layout == GamepadFaceButtonLayout.PlayStationWinMM;
+
+        ResetInputState();
+        ProcessSample(LogicalButtons.None, GamepadDirection.None, GamepadDirection.None, 0);
+        GamepadAction dpadAction = ProcessSample(LogicalButtons.None, GamepadDirection.Up,
+            GamepadDirection.None, 1);
+        ResetInputState();
+        ProcessSample(LogicalButtons.None, GamepadDirection.None, GamepadDirection.None, 0);
+        GamepadAction stickAction = ProcessSample(LogicalButtons.None, GamepadDirection.None,
+            GamepadDirection.Up, 1);
+        bool directionSources = dpadAction.Kind == GamepadActionKind.Direction
+            && dpadAction.DirectionSource == GamepadDirectionSource.DPad
+            && stickAction.Kind == GamepadActionKind.Direction
+            && stickAction.DirectionSource == GamepadDirectionSource.LeftStick;
+        ResetInputState();
+
+        WriteDiagnostic("Gamepad input self-test (per-device layout / Raw D-pad-stick split): "
+            + (layouts && directionSources ? "PASS" : "WARNING"));
     }
 
     private void Disconnect()
@@ -840,7 +1056,7 @@ internal sealed class GamepadManager
         return GamepadDirection.Left;
     }
 
-    private static GamepadDirection GetStickDirection(int x, int y)
+    internal static GamepadDirection GetStickDirection(int x, int y)
     {
         int absX = Math.Abs(x);
         int absY = Math.Abs(y);
@@ -938,12 +1154,9 @@ internal sealed class GamepadManager
             Start = start;
         }
 
-        internal static WinmmButtonMapping Create(string? deviceName, bool ds4Identity = false)
+        internal static WinmmButtonMapping Create(GamepadFaceButtonLayout layout)
         {
-            bool ps4Layout = ds4Identity
-                || deviceName?.IndexOf("DualShock", StringComparison.OrdinalIgnoreCase) >= 0
-                || deviceName?.IndexOf("PS4", StringComparison.OrdinalIgnoreCase) >= 0
-                || deviceName?.IndexOf("Wireless Controller", StringComparison.OrdinalIgnoreCase) >= 0;
+            bool ps4Layout = layout == GamepadFaceButtonLayout.PlayStationWinMM;
             return new WinmmButtonMapping(
                 ReadOverride("EMUERA_GAMEPAD_CONFIRM_BUTTON", ps4Layout ? 1 : 0),
                 ReadOverride("EMUERA_GAMEPAD_CANCEL_BUTTON", ps4Layout ? 2 : 1),

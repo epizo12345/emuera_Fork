@@ -167,32 +167,50 @@ internal sealed class GamepadNavigationGraph
         diagnostic("Navigation graph self-test (list/grid/keypad): "
             + (keypad && horizontal && rowsCorrect ? "PASS" : "WARNING"));
 
-        // Deliberately leave gaps between the three visual lanes.  B1/B2/B3
-        // must skip unrelated rows from A and C while continuing the forward
-        // row scan, and C1/C2 verifies that a sparse right lane is retained.
+        // Deliberately interleave three visual lanes. B1/B2/B3 occupy rows
+        // 1/5/8, so vertical navigation must skip unrelated A/C rows while
+        // continuing the forward row scan. C1/C2 verifies a sparse right lane.
         List<GamepadFocusTarget> panelTargets =
         [
-            CreateSelfTestTarget("A1", 10, 30, 0),
-            CreateSelfTestTarget("A2", 10, 50, 1),
-            CreateSelfTestTarget("A3", 10, 80, 2),
-            CreateSelfTestTarget("B1", 220, 20, 3),
-            CreateSelfTestTarget("B2", 220, 70, 4),
-            CreateSelfTestTarget("B3", 220, 100, 5),
-            CreateSelfTestTarget("C1", 900, 40, 6),
-            CreateSelfTestTarget("C2", 900, 150, 7),
+            CreateSelfTestTarget("B1", 220, 10, 0),
+            CreateSelfTestTarget("A1", 10, 35, 1),
+            CreateSelfTestTarget("C1", 900, 60, 2),
+            CreateSelfTestTarget("A2", 10, 85, 3),
+            CreateSelfTestTarget("B2", 220, 110, 4),
+            CreateSelfTestTarget("A3", 10, 135, 5),
+            CreateSelfTestTarget("C2", 900, 160, 6),
+            CreateSelfTestTarget("B3", 220, 185, 7),
         ];
         GamepadNavigationGraph panelGraph = new();
-        panelGraph.Build(panelTargets, null);
-        GamepadFocusTarget b1 = panelTargets[3];
+        List<string> panelDiagnostics = [];
+        panelGraph.Build(panelTargets, panelDiagnostics.Add);
+        GamepadFocusTarget b1 = panelTargets[0];
         GamepadFocusTarget b2 = panelTargets[4];
-        GamepadFocusTarget b3 = panelTargets[5];
-        GamepadFocusTarget c1 = panelTargets[6];
-        GamepadFocusTarget c2 = panelTargets[7];
+        GamepadFocusTarget b3 = panelTargets[7];
+        GamepadFocusTarget c1 = panelTargets[2];
+        GamepadFocusTarget c2 = panelTargets[6];
+        bool skippedRows = b2.Row > b1.Row + 1 && b3.Row > b2.Row + 1;
         bool panelLanes = b1.Down == b2 && b2.Down == b3 && c1.Down == c2
-            && b1.Down != panelTargets[0] && b1.Down != panelTargets[1]
-            && b1.Down != panelTargets[2];
-        diagnostic("Navigation graph self-test (independent vertical lanes): "
-            + (panelLanes ? "PASS" : "WARNING"));
+            && b1.Down != panelTargets[1] && b1.Down != panelTargets[2]
+            && b1.Down != panelTargets[3];
+        bool rowSkipAccepted = true;
+        for (int i = 0; i < panelDiagnostics.Count; i++)
+        {
+            if (panelDiagnostics[i].Contains("invalid Up link", StringComparison.Ordinal)
+                || panelDiagnostics[i].Contains("invalid Down link", StringComparison.Ordinal))
+            {
+                rowSkipAccepted = false;
+                break;
+            }
+        }
+
+        // This is intentionally inverted: it must be detected as invalid.
+        GamepadFocusTarget? originalDown = b2.Down;
+        b2.Down = b1;
+        bool reverseDetected = ValidateLink(b2, b2.Down, GamepadDirection.Down, _ => { }) == 1;
+        b2.Down = originalDown;
+        diagnostic("Navigation graph self-test (independent vertical lanes / row skip validation): "
+            + (panelLanes && skippedRows && rowSkipAccepted && reverseDetected ? "PASS" : "WARNING"));
     }
 
     private static GamepadFocusTarget CreateSelfTestTarget(string input, int x, int y, int order)
@@ -380,8 +398,15 @@ internal sealed class GamepadNavigationGraph
         {
             GamepadDirection.Left => to.Row == from.Row && to.CenterX < from.CenterX,
             GamepadDirection.Right => to.Row == from.Row && to.CenterX > from.CenterX,
-            GamepadDirection.Up => to.Row == from.Row - 1 && to.CenterY < from.CenterY,
-            GamepadDirection.Down => to.Row == from.Row + 1 && to.CenterY > from.CenterY,
+            // FindVerticalCandidate deliberately scans beyond adjacent visual
+            // rows when an intervening row has no candidate in this lane.
+            // Validation must preserve that legitimate row skip.
+            // Normal Console targets can share a display rectangle even when
+            // their structured LineNo rows differ. Row is the canonical
+            // vertical ordering for this graph, so do not reintroduce a
+            // drawing-coordinate requirement in diagnostics.
+            GamepadDirection.Up => to.Row < from.Row,
+            GamepadDirection.Down => to.Row > from.Row,
             _ => true,
         };
         if (validGroup && validGeometry)
