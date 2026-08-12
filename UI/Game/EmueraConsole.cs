@@ -688,39 +688,10 @@ internal sealed partial class EmueraConsole : IDisposable
 
     private sealed class PostConfirmFocusAnchor
     {
-        internal string InputKey;
+        internal GamepadScreenTargetSnapshot Focus;
         internal long RequestId;
         internal int ButtonGeneration;
-        internal GamepadFocusSourceType SourceType;
-        internal int GroupId;
-        internal int NavigationGroupId;
-        internal Rectangle Bounds;
-        internal int Row;
-        internal int Column;
-        internal bool IsBack;
-        internal List<PostConfirmFocusSnapshot> Targets = [];
-    }
-
-    private readonly struct PostConfirmFocusSnapshot
-    {
-        internal PostConfirmFocusSnapshot(GamepadFocusTarget target)
-        {
-            InputKey = GetGamepadInputKey(target.Button);
-            SourceType = target.SourceType;
-            GroupId = target.GroupId;
-            Bounds = target.Bounds;
-            Row = target.Row;
-            Column = target.Column;
-            IsBack = target.IsBack;
-        }
-
-        internal string InputKey { get; }
-        internal GamepadFocusSourceType SourceType { get; }
-        internal int GroupId { get; }
-        internal Rectangle Bounds { get; }
-        internal int Row { get; }
-        internal int Column { get; }
-        internal bool IsBack { get; }
+        internal List<GamepadScreenTargetSnapshot> Targets = [];
     }
 
     private enum GamepadFocusTransitionKind
@@ -772,16 +743,7 @@ internal sealed partial class EmueraConsole : IDisposable
     private sealed class GamepadFocusHistoryEntry
     {
         internal GamepadScreenFingerprint Fingerprint;
-        internal string InputKey;
-        internal string NormalizedLabel;
-        internal GamepadFocusSourceType SourceType;
-        internal GamepadFocusLayoutType LayoutType;
-        internal int GroupId;
-        internal int NavigationGroupId;
-        internal Rectangle Bounds;
-        internal int Row;
-        internal int Column;
-        internal bool IsBack;
+        internal GamepadScreenTargetSnapshot Focus;
         internal long RequestId;
         internal long Order;
         internal GamepadFocusTransitionKind TransitionKind;
@@ -972,25 +934,17 @@ internal sealed partial class EmueraConsole : IDisposable
 
         PostConfirmFocusAnchor anchor = new()
         {
-            InputKey = GetGamepadInputKey(target.Button),
+            Focus = new GamepadScreenTargetSnapshot(target),
             RequestId = inputReq.ID,
             ButtonGeneration = lastButtonGeneration,
-            SourceType = target.SourceType,
-            GroupId = target.GroupId,
-            NavigationGroupId = target.NavigationGroupId,
-            Bounds = target.Bounds,
-            Row = target.Row,
-            Column = target.Column,
-            IsBack = target.IsBack,
+            Targets = CreateGamepadFocusSnapshots(gamepadFocusTargets),
         };
-        for (int i = 0; i < gamepadFocusTargets.Count; i++)
-            anchor.Targets.Add(new PostConfirmFocusSnapshot(gamepadFocusTargets[i]));
         postConfirmFocusAnchor = anchor;
 
         WriteGamepadNavigationDiagnostic(
             $"Confirm focus anchor: input={GetGamepadButtonInput(target.Button)} request={anchor.RequestId} "
-            + $"rect={FormatGamepadRectangle(anchor.Bounds)} row={anchor.Row} column={anchor.Column} "
-            + $"source={target.SourceName} baseGroup={anchor.GroupId} navigationGroup={anchor.NavigationGroupId} "
+            + $"rect={FormatGamepadRectangle(anchor.Focus.Bounds)} row={anchor.Focus.Row} column={anchor.Focus.Column} "
+            + $"source={target.SourceName} baseGroup={anchor.Focus.GroupId} navigationGroup={anchor.Focus.NavigationGroupId} "
             + $"generation={anchor.ButtonGeneration} targetCount={anchor.Targets.Count}");
     }
 
@@ -1064,7 +1018,7 @@ internal sealed partial class EmueraConsole : IDisposable
         int matchCount = 0;
         for (int oldIndex = 0; oldIndex < anchor.Targets.Count; oldIndex++)
         {
-            PostConfirmFocusSnapshot oldTarget = anchor.Targets[oldIndex];
+            GamepadScreenTargetSnapshot oldTarget = anchor.Targets[oldIndex];
             for (int newIndex = 0; newIndex < targets.Count; newIndex++)
             {
                 GamepadFocusTarget newTarget = targets[newIndex];
@@ -1082,88 +1036,29 @@ internal sealed partial class EmueraConsole : IDisposable
     private static GamepadFocusTarget FindPostConfirmExactTarget(PostConfirmFocusAnchor anchor,
         List<GamepadFocusTarget> targets)
     {
-        GamepadFocusTarget best = null;
-        long bestDistance = long.MaxValue;
-        for (int i = 0; i < targets.Count; i++)
-        {
-            GamepadFocusTarget target = targets[i];
-            if (target.IsDirectionalFocusExcluded
-                || !string.Equals(GetGamepadInputKey(target.Button), anchor.InputKey, StringComparison.Ordinal)
-                || target.SourceType != anchor.SourceType
-                || target.GroupId != anchor.GroupId
-                || target.IsBack != anchor.IsBack
-                || !ArePostConfirmBoundsNear(target.Bounds, anchor.Bounds))
-                continue;
-            long distance = DistanceSquared(target, anchor.Bounds);
-            if (best == null || distance < bestDistance
-                || (distance == bestDistance && target.Order < best.Order))
-            {
-                best = target;
-                bestDistance = distance;
-            }
-        }
-        return best;
+        return FindGamepadNearestTarget(targets, anchor.Focus.Bounds, target =>
+            !target.IsDirectionalFocusExcluded
+                && string.Equals(GetGamepadInputKey(target.Button), anchor.Focus.InputKey,
+                    StringComparison.Ordinal)
+                && target.SourceType == anchor.Focus.SourceType
+                && target.GroupId == anchor.Focus.GroupId
+                && target.IsBack == anchor.Focus.IsBack
+                && ArePostConfirmBoundsNear(target.Bounds, anchor.Focus.Bounds));
     }
 
     private static GamepadFocusTarget FindPostConfirmLaneFallback(PostConfirmFocusAnchor anchor,
         List<GamepadFocusTarget> targets)
     {
-        int laneTolerance = Math.Max(12, anchor.Bounds.Width / 2);
-        GamepadFocusTarget below = null;
-        GamepadFocusTarget above = null;
-        long belowDistance = long.MaxValue;
-        long aboveDistance = long.MaxValue;
-        for (int i = 0; i < targets.Count; i++)
-        {
-            GamepadFocusTarget target = targets[i];
-            if (target.IsDirectionalFocusExcluded
-                || target.SourceType != anchor.SourceType || target.GroupId != anchor.GroupId
-                || target.IsBack != anchor.IsBack
-                || Math.Abs(target.CenterX - (anchor.Bounds.Left + anchor.Bounds.Width / 2)) > laneTolerance)
-                continue;
-            long verticalDistance = Math.Abs((long)target.CenterY
-                - (anchor.Bounds.Top + anchor.Bounds.Height / 2));
-            if (target.CenterY > anchor.Bounds.Top + anchor.Bounds.Height / 2
-                && (below == null || verticalDistance < belowDistance
-                    || (verticalDistance == belowDistance && target.Order < below.Order)))
-            {
-                below = target;
-                belowDistance = verticalDistance;
-            }
-            else if (target.CenterY < anchor.Bounds.Top + anchor.Bounds.Height / 2
-                && (above == null || verticalDistance < aboveDistance
-                    || (verticalDistance == aboveDistance && target.Order < above.Order)))
-            {
-                above = target;
-                aboveDistance = verticalDistance;
-            }
-        }
-        if (below != null)
-            return below;
-        if (above != null)
-            return above;
-
-        GamepadFocusTarget nearest = null;
-        long nearestDistance = long.MaxValue;
-        for (int i = 0; i < targets.Count; i++)
-        {
-            GamepadFocusTarget target = targets[i];
-            if (target.IsDirectionalFocusExcluded
-                || target.SourceType != anchor.SourceType || target.GroupId != anchor.GroupId
-                || target.IsBack != anchor.IsBack)
-                continue;
-            long distance = DistanceSquared(target, anchor.Bounds);
-            if (nearest == null || distance < nearestDistance
-                || (distance == nearestDistance && target.Order < nearest.Order))
-            {
-                nearest = target;
-                nearestDistance = distance;
-            }
-        }
-        return nearest;
+        Func<GamepadFocusTarget, bool> isCandidate = target => !target.IsDirectionalFocusExcluded
+            && target.SourceType == anchor.Focus.SourceType
+            && target.GroupId == anchor.Focus.GroupId
+            && target.IsBack == anchor.Focus.IsBack;
+        return FindGamepadVerticalLaneTarget(targets, anchor.Focus.Bounds,
+                Math.Max(12, anchor.Focus.Bounds.Width / 2), isCandidate, false)
+            ?? FindGamepadNearestTarget(targets, anchor.Focus.Bounds, isCandidate);
     }
 
-    private static bool IsPostConfirmTargetMatch(PostConfirmFocusSnapshot oldTarget,
+    private static bool IsPostConfirmTargetMatch(GamepadScreenTargetSnapshot oldTarget,
         GamepadFocusTarget newTarget)
     {
         return string.Equals(oldTarget.InputKey, GetGamepadInputKey(newTarget.Button), StringComparison.Ordinal)
@@ -2684,12 +2579,33 @@ internal sealed partial class EmueraConsole : IDisposable
         bool caseD = !IsPostConfirmSameScreen(zeroAnchor, sameInputDifferentScreen, out _)
             && FindPostConfirmExactTarget(zeroAnchor, sameInputDifferentScreen) == null;
 
+        List<GamepadFocusTarget> disappearingBefore = CreatePostConfirmSelfTestTargets(4, 0, false);
+        PostConfirmFocusAnchor disappearingAnchor = CreatePostConfirmSelfTestAnchor(
+            disappearingBefore[1], disappearingBefore);
+        List<GamepadFocusTarget> disappearingAfter = CreatePostConfirmSelfTestTargets(4, 0, false);
+        disappearingAfter.RemoveAt(1);
+        bool caseE = IsPostConfirmSameScreen(disappearingAnchor, disappearingAfter, out _)
+            && FindPostConfirmExactTarget(disappearingAnchor, disappearingAfter) == null
+            && FindPostConfirmLaneFallback(disappearingAnchor, disappearingAfter) == disappearingAfter[1];
+
+        List<GamepadFocusTarget> dynamicBefore = CreatePostConfirmSelfTestTargets(6, 2, false);
+        PostConfirmFocusAnchor dynamicAnchor = CreatePostConfirmSelfTestAnchor(dynamicBefore[4], dynamicBefore);
+        List<GamepadFocusTarget> dynamicAfter = CreatePostConfirmSelfTestTargets(6, 2, false);
+        for (int i = 0; i < dynamicAfter.Count; i++)
+            dynamicAfter[i].Bounds = new Rectangle(dynamicAfter[i].Bounds.X + 24,
+                dynamicAfter[i].Bounds.Y, dynamicAfter[i].Bounds.Width, dynamicAfter[i].Bounds.Height);
+        bool caseF = !IsPostConfirmSameScreen(dynamicAnchor, dynamicAfter, out _)
+            && TryMatchGamepadScreenFingerprints(CreateGamepadScreenFingerprint(dynamicBefore),
+                CreateGamepadScreenFingerprint(dynamicAfter), out _, out _);
+
         return
         [
             new("toggle", caseA),
             new("repeat", caseB),
             new("screen-change", caseC),
             new("same-input-screen-change", caseD),
+            new("target-disappeared-lane", caseE),
+            new("dynamic-screen-rejected", caseF),
         ];
     }
 
@@ -2714,19 +2630,11 @@ internal sealed partial class EmueraConsole : IDisposable
     {
         PostConfirmFocusAnchor anchor = new()
         {
-            InputKey = GetGamepadInputKey(target.Button),
+            Focus = new GamepadScreenTargetSnapshot(target),
             RequestId = 1,
             ButtonGeneration = 1,
-            SourceType = target.SourceType,
-            GroupId = target.GroupId,
-            NavigationGroupId = target.NavigationGroupId,
-            Bounds = target.Bounds,
-            Row = target.Row,
-            Column = target.Column,
-            IsBack = target.IsBack,
+            Targets = CreateGamepadFocusSnapshots(targets),
         };
-        for (int i = 0; i < targets.Count; i++)
-            anchor.Targets.Add(new PostConfirmFocusSnapshot(targets[i]));
         return anchor;
     }
 
@@ -2869,16 +2777,7 @@ internal sealed partial class EmueraConsole : IDisposable
         return new GamepadFocusHistoryEntry
         {
             Fingerprint = CreateGamepadScreenFingerprint(targets),
-            InputKey = GetGamepadInputKey(target.Button),
-            NormalizedLabel = NormalizeGamepadSemanticText(target.Button.ToString()),
-            SourceType = target.SourceType,
-            LayoutType = target.LayoutType,
-            GroupId = target.GroupId,
-            NavigationGroupId = target.NavigationGroupId,
-            Bounds = target.Bounds,
-            Row = target.Row,
-            Column = target.Column,
-            IsBack = target.IsBack,
+            Focus = new GamepadScreenTargetSnapshot(target),
             RequestId = 1,
             Order = 1,
         };
@@ -3249,6 +3148,68 @@ internal sealed partial class EmueraConsole : IDisposable
         return dx * dx + dy * dy;
     }
 
+    private static GamepadFocusTarget FindGamepadVerticalLaneTarget(List<GamepadFocusTarget> targets,
+        Rectangle anchorBounds, int laneTolerance, Func<GamepadFocusTarget, bool> isCandidate,
+        bool includeAnchorRowInBelow)
+    {
+        int anchorCenterX = anchorBounds.Left + anchorBounds.Width / 2;
+        int anchorCenterY = anchorBounds.Top + anchorBounds.Height / 2;
+        GamepadFocusTarget below = null;
+        GamepadFocusTarget above = null;
+        long belowDistance = long.MaxValue;
+        long aboveDistance = long.MaxValue;
+        for (int i = 0; i < targets.Count; i++)
+        {
+            GamepadFocusTarget target = targets[i];
+            if (!isCandidate(target) || Math.Abs(target.CenterX - anchorCenterX) > laneTolerance)
+                continue;
+            long distance = Math.Abs((long)target.CenterY - anchorCenterY);
+            if ((includeAnchorRowInBelow ? target.CenterY >= anchorCenterY : target.CenterY > anchorCenterY)
+                && (below == null || distance < belowDistance
+                    || (distance == belowDistance && target.Order < below.Order)))
+            {
+                below = target;
+                belowDistance = distance;
+            }
+            else if (target.CenterY < anchorCenterY
+                && (above == null || distance < aboveDistance
+                    || (distance == aboveDistance && target.Order < above.Order)))
+            {
+                above = target;
+                aboveDistance = distance;
+            }
+        }
+        return below ?? above;
+    }
+
+    private static GamepadFocusTarget FindGamepadNearestTarget(List<GamepadFocusTarget> targets,
+        Rectangle anchorBounds, Func<GamepadFocusTarget, bool> isCandidate,
+        int? preferredNavigationGroupId = null)
+    {
+        GamepadFocusTarget best = null;
+        int bestNavigationPriority = int.MaxValue;
+        long bestDistance = long.MaxValue;
+        for (int i = 0; i < targets.Count; i++)
+        {
+            GamepadFocusTarget target = targets[i];
+            if (!isCandidate(target))
+                continue;
+            int navigationPriority = preferredNavigationGroupId.HasValue
+                && target.NavigationGroupId != preferredNavigationGroupId.Value ? 1 : 0;
+            long distance = DistanceSquared(target, anchorBounds);
+            if (best == null || navigationPriority < bestNavigationPriority
+                || (navigationPriority == bestNavigationPriority && distance < bestDistance)
+                || (navigationPriority == bestNavigationPriority && distance == bestDistance
+                    && target.Order < best.Order))
+            {
+                best = target;
+                bestNavigationPriority = navigationPriority;
+                bestDistance = distance;
+            }
+        }
+        return best;
+    }
+
     private void RememberGamepadFocus(GamepadFocusTarget target)
     {
         if (target == null || inputReq == null)
@@ -3290,16 +3251,7 @@ internal sealed partial class EmueraConsole : IDisposable
         return new GamepadFocusHistoryEntry
         {
             Fingerprint = CreateGamepadScreenFingerprint(gamepadFocusTargets),
-            InputKey = GetGamepadInputKey(target.Button),
-            NormalizedLabel = NormalizeGamepadSemanticText(target.Button.ToString()),
-            SourceType = target.SourceType,
-            LayoutType = target.LayoutType,
-            GroupId = target.GroupId,
-            NavigationGroupId = target.NavigationGroupId,
-            Bounds = target.Bounds,
-            Row = target.Row,
-            Column = target.Column,
-            IsBack = target.IsBack,
+            Focus = new GamepadScreenTargetSnapshot(target),
             RequestId = inputReq.ID,
             Order = ++gamepadFocusHistoryOrder,
             TransitionKind = transitionKind,
@@ -3357,7 +3309,7 @@ internal sealed partial class EmueraConsole : IDisposable
             gamepadReturnFocusStack.RemoveAt(0);
         WriteGamepadNavigationDiagnostic(
             $"Return history push: depth={gamepadReturnFocusStack.Count} screen={entry.Fingerprint.DebugId} "
-            + $"focusInput={GetGamepadButtonInputKeyForDiagnostic(entry.InputKey)}");
+            + $"focusInput={GetGamepadButtonInputKeyForDiagnostic(entry.Focus.InputKey)}");
     }
 
     private void StoreGamepadLastFocusEntry(GamepadFocusHistoryEntry entry)
@@ -3410,10 +3362,18 @@ internal sealed partial class EmueraConsole : IDisposable
         List<GamepadFocusTarget> scope = GetGamepadFocusHistoryScope(targets, out bool hasModalScope);
         fingerprint.HasModalScope = hasModalScope;
         scope.Sort(CompareGamepadVisualOrder);
-        for (int i = 0; i < scope.Count; i++)
-            fingerprint.Targets.Add(new GamepadScreenTargetSnapshot(scope[i]));
+        fingerprint.Targets = CreateGamepadFocusSnapshots(scope);
         fingerprint.DebugId = CreateGamepadScreenFingerprintDebugId(fingerprint);
         return fingerprint;
+    }
+
+    private static List<GamepadScreenTargetSnapshot> CreateGamepadFocusSnapshots(
+        List<GamepadFocusTarget> targets)
+    {
+        List<GamepadScreenTargetSnapshot> snapshots = [];
+        for (int i = 0; i < targets.Count; i++)
+            snapshots.Add(new GamepadScreenTargetSnapshot(targets[i]));
+        return snapshots;
     }
 
     private static List<GamepadFocusTarget> GetGamepadFocusHistoryScope(
@@ -3589,137 +3549,51 @@ internal sealed partial class EmueraConsole : IDisposable
     private static GamepadFocusTarget FindGamepadHistoryInputTarget(GamepadFocusHistoryEntry entry,
         List<GamepadFocusTarget> targets)
     {
-        GamepadFocusTarget best = null;
-        int bestNavigationPriority = int.MaxValue;
-        long bestDistance = long.MaxValue;
-        for (int i = 0; i < targets.Count; i++)
-        {
-            GamepadFocusTarget target = targets[i];
-            if (!IsGamepadHistoryPanelMatch(entry, target)
-                || !string.Equals(entry.InputKey, GetGamepadInputKey(target.Button), StringComparison.Ordinal)
-                || !AreGamepadFingerprintBoundsCompatible(entry.Bounds, target.Bounds))
-            {
-                continue;
-            }
-            int navigationPriority = target.NavigationGroupId == entry.NavigationGroupId ? 0 : 1;
-            long distance = DistanceSquared(target, entry.Bounds);
-            if (best == null || navigationPriority < bestNavigationPriority
-                || (navigationPriority == bestNavigationPriority && distance < bestDistance)
-                || (navigationPriority == bestNavigationPriority && distance == bestDistance
-                    && target.Order < best.Order))
-            {
-                best = target;
-                bestNavigationPriority = navigationPriority;
-                bestDistance = distance;
-            }
-        }
-        return best;
+        return FindGamepadNearestTarget(targets, entry.Focus.Bounds, target =>
+            IsGamepadHistoryPanelMatch(entry, target)
+                && string.Equals(entry.Focus.InputKey, GetGamepadInputKey(target.Button),
+                    StringComparison.Ordinal)
+                && AreGamepadFingerprintBoundsCompatible(entry.Focus.Bounds, target.Bounds),
+            entry.Focus.NavigationGroupId);
     }
 
     private static GamepadFocusTarget FindGamepadHistoryLabelTarget(GamepadFocusHistoryEntry entry,
         List<GamepadFocusTarget> targets)
     {
-        if (string.IsNullOrEmpty(entry.NormalizedLabel))
+        if (string.IsNullOrEmpty(entry.Focus.NormalizedLabel))
             return null;
 
-        GamepadFocusTarget best = null;
-        int bestNavigationPriority = int.MaxValue;
-        long bestDistance = long.MaxValue;
-        for (int i = 0; i < targets.Count; i++)
-        {
-            GamepadFocusTarget target = targets[i];
-            if (!IsGamepadHistoryPanelMatch(entry, target)
-                || !string.Equals(entry.NormalizedLabel,
+        return FindGamepadNearestTarget(targets, entry.Focus.Bounds, target =>
+            IsGamepadHistoryPanelMatch(entry, target)
+                && string.Equals(entry.Focus.NormalizedLabel,
                     NormalizeGamepadSemanticText(target.Button.ToString()), StringComparison.OrdinalIgnoreCase)
-                || !AreGamepadFingerprintBoundsCompatible(entry.Bounds, target.Bounds))
-            {
-                continue;
-            }
-            int navigationPriority = target.NavigationGroupId == entry.NavigationGroupId ? 0 : 1;
-            long distance = DistanceSquared(target, entry.Bounds);
-            if (best == null || navigationPriority < bestNavigationPriority
-                || (navigationPriority == bestNavigationPriority && distance < bestDistance)
-                || (navigationPriority == bestNavigationPriority && distance == bestDistance
-                    && target.Order < best.Order))
-            {
-                best = target;
-                bestNavigationPriority = navigationPriority;
-                bestDistance = distance;
-            }
-        }
-        return best;
+                && AreGamepadFingerprintBoundsCompatible(entry.Focus.Bounds, target.Bounds),
+            entry.Focus.NavigationGroupId);
     }
 
     private static GamepadFocusTarget FindGamepadHistoryLaneFallback(GamepadFocusHistoryEntry entry,
         List<GamepadFocusTarget> targets)
     {
-        int laneTolerance = Math.Max(16, entry.Bounds.Width / 2);
-        int anchorCenterY = entry.Bounds.Top + entry.Bounds.Height / 2;
-        GamepadFocusTarget below = null;
-        GamepadFocusTarget above = null;
-        long belowDistance = long.MaxValue;
-        long aboveDistance = long.MaxValue;
-        for (int i = 0; i < targets.Count; i++)
-        {
-            GamepadFocusTarget target = targets[i];
-            if (!IsGamepadHistoryPanelMatch(entry, target)
-                || Math.Abs(target.CenterX - (entry.Bounds.Left + entry.Bounds.Width / 2)) > laneTolerance)
-            {
-                continue;
-            }
-            long distance = Math.Abs((long)target.CenterY - anchorCenterY);
-            if (target.CenterY >= anchorCenterY
-                && (below == null || distance < belowDistance
-                    || (distance == belowDistance && target.Order < below.Order)))
-            {
-                below = target;
-                belowDistance = distance;
-            }
-            else if (target.CenterY < anchorCenterY
-                && (above == null || distance < aboveDistance
-                    || (distance == aboveDistance && target.Order < above.Order)))
-            {
-                above = target;
-                aboveDistance = distance;
-            }
-        }
-        return below ?? above;
+        return FindGamepadVerticalLaneTarget(targets, entry.Focus.Bounds,
+            Math.Max(16, entry.Focus.Bounds.Width / 2),
+            target => IsGamepadHistoryPanelMatch(entry, target), true);
     }
 
     private static GamepadFocusTarget FindGamepadHistoryNearestTarget(GamepadFocusHistoryEntry entry,
         List<GamepadFocusTarget> targets)
     {
-        GamepadFocusTarget best = null;
-        int bestNavigationPriority = int.MaxValue;
-        long bestDistance = long.MaxValue;
-        for (int i = 0; i < targets.Count; i++)
-        {
-            GamepadFocusTarget target = targets[i];
-            if (!IsGamepadHistoryPanelMatch(entry, target))
-                continue;
-            int navigationPriority = target.NavigationGroupId == entry.NavigationGroupId ? 0 : 1;
-            long distance = DistanceSquared(target, entry.Bounds);
-            if (best == null || navigationPriority < bestNavigationPriority
-                || (navigationPriority == bestNavigationPriority && distance < bestDistance)
-                || (navigationPriority == bestNavigationPriority && distance == bestDistance
-                    && target.Order < best.Order))
-            {
-                best = target;
-                bestNavigationPriority = navigationPriority;
-                bestDistance = distance;
-            }
-        }
-        return best;
+        return FindGamepadNearestTarget(targets, entry.Focus.Bounds,
+            target => IsGamepadHistoryPanelMatch(entry, target), entry.Focus.NavigationGroupId);
     }
 
     private static bool IsGamepadHistoryPanelMatch(GamepadFocusHistoryEntry entry,
         GamepadFocusTarget target)
     {
         return target != null && !target.IsDirectionalFocusExcluded && target.Enabled
-            && target.SourceType == entry.SourceType
-            && target.LayoutType == entry.LayoutType
-            && target.GroupId == entry.GroupId
-            && target.IsBack == entry.IsBack;
+            && target.SourceType == entry.Focus.SourceType
+            && target.LayoutType == entry.Focus.LayoutType
+            && target.GroupId == entry.Focus.GroupId
+            && target.IsBack == entry.Focus.IsBack;
     }
 
     private static string GetGamepadInputKey(ConsoleButtonString button)
