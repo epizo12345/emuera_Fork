@@ -34,12 +34,6 @@
          普通に配るEXEでは false のため、細かな計時処理は呼び出しごと消える。 -->
     <EnablePerformanceMetrics Condition="'$(EnablePerformanceMetrics)' == ''">false</EnablePerformanceMetrics>
     <DefineConstants Condition="'$(EnablePerformanceMetrics)' == 'true'">$(DefineConstants);PERFORMANCE_METRICS</DefineConstants>
-    <!-- [Emuera改修:START-04]
-         起動直後の強制メモリ整理を比較試験できるようにしたスイッチ。
-         起動が遅くなるため通常版は false のまま。 -->
-    <EnableStartupMemoryTrim Condition="'$(EnableStartupMemoryTrim)' == ''">false</EnableStartupMemoryTrim>
-    <DefineConstants Condition="'$(EnableStartupMemoryTrim)' == 'true'">$(DefineConstants);STARTUP_MEMORY_TRIM</DefineConstants>
-
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisMode>Minimum</AnalysisMode>
     
