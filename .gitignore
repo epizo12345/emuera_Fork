@@ -16,3 +16,10 @@ eramegaten_p/
 GamepadBuild/
 GamepadBuildSingleFile/
 GamepadHandoff_*.zip
+
+# 配布フォルダのEXEは利用者向けの最新配布物としてGitに残す。
+# README.md と SHA256SUMS.txt も配布手順・整合性確認用として追跡する。
+/配布/**/*.zip
+
+# 固定原本のアーカイブはローカル参照用で、ソース管理対象ではない。
+/プロジェクト資料/参照原本/*.zip
