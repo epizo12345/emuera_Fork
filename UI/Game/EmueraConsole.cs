@@ -642,13 +642,20 @@ internal sealed partial class EmueraConsole : IDisposable
     // [Emuera改修:GAMEPAD-V1] Confirm直後の同一画面再描画だけに使う一時Anchor。
     // 通常のFocus履歴とは分け、別InputRequestへの無条件復元を防ぐ。
     private PostConfirmFocusAnchor postConfirmFocusAnchor;
-    private static bool gamepadSemanticBackSelfTestRun;
-    private static bool gamepadFocusPersistenceSelfTestRun;
-    private static bool gamepadInteractiveTargetSelfTestRun;
-    private static bool gamepadLogicalButtonSelfTestRun;
-    private static bool gamepadHtmlModalSelfTestRun;
-    private static bool gamepadPageNavigationSelfTestRun;
-    private static bool gamepadReturnFocusHistorySelfTestRun;
+    private static bool gamepadSelfTestsRun;
+    private static readonly GamepadSelfTestSuite[] GamepadSelfTestSuites =
+    [
+        new("semantic Back", GetGamepadSemanticBackSelfTestCases),
+        new("post-confirm focus", GetGamepadFocusPersistenceSelfTestCases),
+        new("interactive target", GetGamepadInteractiveTargetSelfTestCases),
+        new("logical button fragment", GetGamepadLogicalButtonSelfTestCases),
+        new("HTML modal", GetGamepadHtmlModalSelfTestCases),
+        new("page navigation", GetGamepadPageNavigationSelfTestCases),
+        new("return focus history", GetGamepadReturnFocusHistorySelfTestCases),
+    ];
+
+    private readonly record struct GamepadSelfTestCase(string Name, bool Actual, bool Expected = true);
+    private readonly record struct GamepadSelfTestSuite(string Name, Func<GamepadSelfTestCase[]> GetCases);
     private enum GamepadPageNavigationMode
     {
         Indexed,
@@ -1631,15 +1638,7 @@ internal sealed partial class EmueraConsole : IDisposable
     private List<GamepadFocusTarget> GetGamepadFocusTargets()
     {
         if (Program.GamepadDebugMode)
-        {
-            RunGamepadSemanticBackSelfTest();
-            RunGamepadFocusPersistenceSelfTest();
-            RunGamepadInteractiveTargetSelfTest();
-            RunGamepadLogicalButtonSelfTest();
-            RunGamepadHtmlModalSelfTest();
-            RunGamepadPageNavigationSelfTest();
-            RunGamepadReturnFocusHistorySelfTest();
-        }
+            RunGamepadSelfTests();
         long requestId = inputReq?.ID ?? -1;
         if (!gamepadFocusTargetsDirty && gamepadFocusTargetGeneration == lastButtonGeneration
             && gamepadFocusTargetRequestId == requestId)
@@ -2607,12 +2606,35 @@ internal sealed partial class EmueraConsole : IDisposable
         return target.Target;
     }
 
-    private static void RunGamepadSemanticBackSelfTest()
+    private static void RunGamepadSelfTests()
     {
-        if (gamepadSemanticBackSelfTestRun)
+        if (gamepadSelfTestsRun)
             return;
-        gamepadSemanticBackSelfTestRun = true;
+        gamepadSelfTestsRun = true;
 
+        for (int suiteIndex = 0; suiteIndex < GamepadSelfTestSuites.Length; suiteIndex++)
+        {
+            GamepadSelfTestSuite suite = GamepadSelfTestSuites[suiteIndex];
+            GamepadSelfTestCase[] cases = suite.GetCases();
+            bool passed = true;
+            for (int caseIndex = 0; caseIndex < cases.Length; caseIndex++)
+            {
+                GamepadSelfTestCase testCase = cases[caseIndex];
+                if (testCase.Actual == testCase.Expected)
+                    continue;
+
+                passed = false;
+                WriteGamepadNavigationDiagnostic(
+                    $"Gamepad self-test FAILED: suite={suite.Name} case={testCase.Name} "
+                    + $"expected={testCase.Expected} actual={testCase.Actual}");
+            }
+            WriteGamepadNavigationDiagnostic($"Gamepad {suite.Name} self-test: "
+                + (passed ? "PASS" : "WARNING"));
+        }
+    }
+
+    private static GamepadSelfTestCase[] GetGamepadSemanticBackSelfTestCases()
+    {
         (string Text, bool Expected)[] cases =
         [
             ("CANCEL", true),
@@ -2629,27 +2651,18 @@ internal sealed partial class EmueraConsole : IDisposable
             ("[0] NEW GAME", false),
         ];
 
-        bool passed = true;
-        foreach ((string text, bool expected) in cases)
+        GamepadSelfTestCase[] results = new GamepadSelfTestCase[cases.Length];
+        for (int i = 0; i < cases.Length; i++)
         {
+            (string text, bool expected) = cases[i];
             bool actual = IsGamepadBackSemanticText(text);
-            if (actual != expected)
-            {
-                passed = false;
-                WriteGamepadNavigationDiagnostic(
-                    $"Gamepad semantic Back self-test FAILED: text=\"{text}\" expected={expected} actual={actual}");
-            }
+            results[i] = new GamepadSelfTestCase($"text=\"{text}\"", actual, expected);
         }
-        if (passed)
-            WriteGamepadNavigationDiagnostic("Gamepad semantic Back self-test: PASS");
+        return results;
     }
 
-    private static void RunGamepadFocusPersistenceSelfTest()
+    private static GamepadSelfTestCase[] GetGamepadFocusPersistenceSelfTestCases()
     {
-        if (gamepadFocusPersistenceSelfTestRun)
-            return;
-        gamepadFocusPersistenceSelfTestRun = true;
-
         List<GamepadFocusTarget> before = CreatePostConfirmSelfTestTargets(8, 0, false);
         PostConfirmFocusAnchor anchor = CreatePostConfirmSelfTestAnchor(before[5], before);
         List<GamepadFocusTarget> toggled = CreatePostConfirmSelfTestTargets(8, 0, false);
@@ -2671,10 +2684,13 @@ internal sealed partial class EmueraConsole : IDisposable
         bool caseD = !IsPostConfirmSameScreen(zeroAnchor, sameInputDifferentScreen, out _)
             && FindPostConfirmExactTarget(zeroAnchor, sameInputDifferentScreen) == null;
 
-        bool passed = caseA && caseB && caseC && caseD;
-        WriteGamepadNavigationDiagnostic(
-            $"Gamepad post-confirm focus self-test: {(passed ? "PASS" : "WARNING")} "
-            + $"(A=toggle:{caseA}, B=repeat:{caseB}, C=screen-change:{caseC}, D=same-input-screen-change:{caseD})");
+        return
+        [
+            new("toggle", caseA),
+            new("repeat", caseB),
+            new("screen-change", caseC),
+            new("same-input-screen-change", caseD),
+        ];
     }
 
     private static List<GamepadFocusTarget> CreatePostConfirmSelfTestTargets(int count,
@@ -2714,12 +2730,8 @@ internal sealed partial class EmueraConsole : IDisposable
         return anchor;
     }
 
-    private static void RunGamepadReturnFocusHistorySelfTest()
+    private static GamepadSelfTestCase[] GetGamepadReturnFocusHistorySelfTestCases()
     {
-        if (gamepadReturnFocusHistorySelfTestRun)
-            return;
-        gamepadReturnFocusHistorySelfTestRun = true;
-
         // A: A → B → Back → A。Aで最後に選んだ5番へ戻る。
         List<GamepadFocusTarget> screenA = CreateReturnFocusHistorySelfTestTargets(
             ["0", "1", "2", "3", "4", "5", "6"], groupId: 10);
@@ -2814,12 +2826,18 @@ internal sealed partial class EmueraConsole : IDisposable
             CreateReturnFocusHistorySelfTestEntry(dynamicBefore[4], dynamicBefore).Fingerprint,
             CreateGamepadScreenFingerprint(unrelatedScreen), out _, out _);
 
-        bool passed = caseA && caseB && caseC && caseD && caseE && caseF && caseG && caseH && caseI;
-        WriteGamepadNavigationDiagnostic(
-            $"Gamepad return focus history self-test: {(passed ? "PASS" : "WARNING")} "
-            + $"(A=return:{caseA}, B=nested-stack:{caseB}, C=same-input-rejected:{caseC}, "
-            + $"D=post-confirm-priority:{caseD}, E=modal-background:{caseE}, F=target-disappeared:{caseF}, "
-            + $"G=first-visit:{caseG}, H=dynamic-screen:{caseH}, I=structure-mismatch:{caseI})");
+        return
+        [
+            new("return", caseA),
+            new("nested-stack", caseB),
+            new("same-input-rejected", caseC),
+            new("post-confirm-priority", caseD),
+            new("modal-background", caseE),
+            new("target-disappeared", caseF),
+            new("first-visit", caseG),
+            new("dynamic-screen", caseH),
+            new("structure-mismatch", caseI),
+        ];
     }
 
     private static List<GamepadFocusTarget> CreateReturnFocusHistorySelfTestTargets(string[] labels,
@@ -2866,12 +2884,8 @@ internal sealed partial class EmueraConsole : IDisposable
         };
     }
 
-    private static void RunGamepadInteractiveTargetSelfTest()
+    private static GamepadSelfTestCase[] GetGamepadInteractiveTargetSelfTestCases()
     {
-        if (gamepadInteractiveTargetSelfTestRun)
-            return;
-        gamepadInteractiveTargetSelfTestRun = true;
-
         ConsoleButtonString button0 = new(null, [], 0);
         ConsoleButtonString description1 = new(null, []);
         ConsoleButtonString description2 = new(null, []);
@@ -2912,11 +2926,13 @@ internal sealed partial class EmueraConsole : IDisposable
             && htmlTargets[0].Down == htmlTargets[1]
             && htmlTargets[1].Up == htmlTargets[0];
 
-        bool passed = caseA && caseB && caseC && caseD;
-        WriteGamepadNavigationDiagnostic(
-            $"Gamepad interactive target self-test: {(passed ? "PASS" : "WARNING")} "
-            + $"(A=console-description-skip:{caseA}, B=input-zero-button:{caseB}, "
-            + $"C=plain-text-skip:{caseC}, D=html-text-skip:{caseD})");
+        return
+        [
+            new("console-description-skip", caseA),
+            new("input-zero-button", caseB),
+            new("plain-text-skip", caseC),
+            new("html-text-skip", caseD),
+        ];
     }
 
     private static void AddInteractiveSelfTestTarget(List<GamepadFocusTarget> targets,
@@ -2927,12 +2943,8 @@ internal sealed partial class EmueraConsole : IDisposable
             layoutType, 0, null, bounds, bounds, targets.Count));
     }
 
-    private static void RunGamepadLogicalButtonSelfTest()
+    private static GamepadSelfTestCase[] GetGamepadLogicalButtonSelfTestCases()
     {
-        if (gamepadLogicalButtonSelfTestRun)
-            return;
-        gamepadLogicalButtonSelfTestRun = true;
-
         // Each block mirrors a wrapped Console button: one input header plus
         // three description fragments.  The fragments are separate objects,
         // but DivideAt() preserves their input/generation identity.
@@ -2975,11 +2987,13 @@ internal sealed partial class EmueraConsole : IDisposable
         CollapseGamepadLogicalButtonFragments(distantSameInput, null);
         bool distantPreserved = distantSameInput.Count == 2;
 
-        bool passed = blocksCollapsed && linksCorrect && representativePreserved && distantPreserved;
-        WriteGamepadNavigationDiagnostic(
-            $"Gamepad logical button fragment self-test: {(passed ? "PASS" : "WARNING")} "
-            + $"(blocks={blocks.Count}, links={linksCorrect}, representative={representativePreserved}, "
-            + $"distant-same-input-preserved={distantPreserved})");
+        return
+        [
+            new("blocks-collapsed", blocksCollapsed),
+            new("links", linksCorrect),
+            new("representative", representativePreserved),
+            new("distant-same-input-preserved", distantPreserved),
+        ];
     }
 
     private static GamepadFocusTarget CreateLogicalButtonSelfTestTarget(
@@ -2992,12 +3006,8 @@ internal sealed partial class EmueraConsole : IDisposable
             GamepadFocusLayoutType.Console, 0, line, bounds, bounds, order);
     }
 
-    private static void RunGamepadHtmlModalSelfTest()
+    private static GamepadSelfTestCase[] GetGamepadHtmlModalSelfTestCases()
     {
-        if (gamepadHtmlModalSelfTestRun)
-            return;
-        gamepadHtmlModalSelfTestRun = true;
-
         List<GamepadFocusTarget> modalTargets =
         [
             CreateHtmlModalSelfTestTarget(new(null, [], "キャンセル"), 98, 0, 0, 1000, 600, 10, 0),
@@ -3039,19 +3049,17 @@ internal sealed partial class EmueraConsole : IDisposable
         bool caseD = independentIslands.All(target =>
             !target.IsDirectionalFocusExcluded && !target.IsModalForeground);
 
-        bool passed = caseA && caseB && caseC && caseD;
-        WriteGamepadNavigationDiagnostic(
-            $"Gamepad HTML modal self-test: {(passed ? "PASS" : "WARNING")} "
-            + $"(A=foreground-focus-links:{caseA}, B=modal-cancel-preserved:{caseB}, "
-            + $"C=large-button-preserved:{caseC}, D=independent-islands-preserved:{caseD})");
+        return
+        [
+            new("foreground-focus-links", caseA),
+            new("modal-cancel-preserved", caseB),
+            new("large-button-preserved", caseC),
+            new("independent-islands-preserved", caseD),
+        ];
     }
 
-    private static void RunGamepadPageNavigationSelfTest()
+    private static GamepadSelfTestCase[] GetGamepadPageNavigationSelfTestCases()
     {
-        if (gamepadPageNavigationSelfTestRun)
-            return;
-        gamepadPageNavigationSelfTestRun = true;
-
         // A: PAGE.0/PAGE.1 とヒント。選択されたPAGEだけが非デフォルト色になる
         // 実ゲームのSETCOLOR(... aqua ...)構造を、色名を固定せずに再現する。
         List<GamepadFocusTarget> twoPagesAtZero =
@@ -3175,15 +3183,21 @@ internal sealed partial class EmueraConsole : IDisposable
         bool directionalH = !TryFindGamepadPageNavigationSet(modalDirectionalTargets,
             modalDirectionalTargets[2], out _, out _);
 
-        bool passed = caseA0 && caseA1 && caseB && caseC && caseD && caseE && caseF
-            && directionalA && directionalB && directionalC && directionalE && directionalH;
-        WriteGamepadNavigationDiagnostic(
-            $"Gamepad page navigation self-test: {(passed ? "PASS" : "WARNING")} "
-            + $"(A=two-pages-hint:{caseA0 && caseA1}, B=three-pages:{caseB}, C=boundaries:{caseC}, "
-            + $"D=no-pages:{caseD}, E=page-word-only:{caseE}, F=modal-background-excluded:{caseF}, "
-            + $"DirectionalA=first-page:{directionalA}, DirectionalB=middle-page:{directionalB}, "
-            + $"DirectionalC=last-page:{directionalC}, DirectionalE=ambiguous-labels:{directionalE}, "
-            + $"DirectionalH=modal-background-excluded:{directionalH})");
+        return
+        [
+            new("indexed-first-page", caseA0),
+            new("indexed-second-page", caseA1),
+            new("indexed-three-pages", caseB),
+            new("indexed-boundaries", caseC),
+            new("indexed-no-pages", caseD),
+            new("indexed-page-word-only", caseE),
+            new("indexed-modal-background-excluded", caseF),
+            new("directional-first-page", directionalA),
+            new("directional-middle-page", directionalB),
+            new("directional-last-page", directionalC),
+            new("directional-ambiguous-labels", directionalE),
+            new("directional-modal-background-excluded", directionalH),
+        ];
     }
 
     private static GamepadFocusTarget CreateGamepadPageSelfTestTarget(string text, long input, int x,
