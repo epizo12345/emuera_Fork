@@ -113,8 +113,6 @@ internal sealed class GamepadManager
         None = 0,
         Confirm = 1 << 0,
         Cancel = 1 << 1,
-        AuxiliaryX = 1 << 2,
-        AuxiliaryY = 1 << 3,
         LeftShoulder = 1 << 4,
         RightShoulder = 1 << 5,
         Start = 1 << 6,
@@ -995,8 +993,6 @@ internal sealed class GamepadManager
         LogicalButtons result = LogicalButtons.None;
         if ((buttons & XInputButtons.A) != 0) result |= LogicalButtons.Confirm;
         if ((buttons & XInputButtons.B) != 0) result |= LogicalButtons.Cancel;
-        if ((buttons & XInputButtons.X) != 0) result |= LogicalButtons.AuxiliaryX;
-        if ((buttons & XInputButtons.Y) != 0) result |= LogicalButtons.AuxiliaryY;
         if ((buttons & XInputButtons.LeftShoulder) != 0) result |= LogicalButtons.LeftShoulder;
         if ((buttons & XInputButtons.RightShoulder) != 0) result |= LogicalButtons.RightShoulder;
         if ((buttons & XInputButtons.Start) != 0) result |= LogicalButtons.Start;
@@ -1008,8 +1004,6 @@ internal sealed class GamepadManager
         LogicalButtons result = LogicalButtons.None;
         if (IsButtonDown(buttons, winmmButtonMapping.Confirm)) result |= LogicalButtons.Confirm;
         if (IsButtonDown(buttons, winmmButtonMapping.Cancel)) result |= LogicalButtons.Cancel;
-        if (IsButtonDown(buttons, winmmButtonMapping.AuxiliaryX)) result |= LogicalButtons.AuxiliaryX;
-        if (IsButtonDown(buttons, winmmButtonMapping.AuxiliaryY)) result |= LogicalButtons.AuxiliaryY;
         if (IsButtonDown(buttons, winmmButtonMapping.LeftShoulder)) result |= LogicalButtons.LeftShoulder;
         if (IsButtonDown(buttons, winmmButtonMapping.RightShoulder)) result |= LogicalButtons.RightShoulder;
         if (IsButtonDown(buttons, winmmButtonMapping.Start)) result |= LogicalButtons.Start;
@@ -1021,8 +1015,6 @@ internal sealed class GamepadManager
         LogicalButtons result = LogicalButtons.None;
         if (IsButtonDown(buttons, rawInputButtonMapping.Confirm)) result |= LogicalButtons.Confirm;
         if (IsButtonDown(buttons, rawInputButtonMapping.Cancel)) result |= LogicalButtons.Cancel;
-        if (IsButtonDown(buttons, rawInputButtonMapping.AuxiliaryX)) result |= LogicalButtons.AuxiliaryX;
-        if (IsButtonDown(buttons, rawInputButtonMapping.AuxiliaryY)) result |= LogicalButtons.AuxiliaryY;
         if (IsButtonDown(buttons, rawInputButtonMapping.LeftShoulder)) result |= LogicalButtons.LeftShoulder;
         if (IsButtonDown(buttons, rawInputButtonMapping.RightShoulder)) result |= LogicalButtons.RightShoulder;
         if (IsButtonDown(buttons, rawInputButtonMapping.Start)) result |= LogicalButtons.Start;
@@ -1137,18 +1129,14 @@ internal sealed class GamepadManager
     {
         internal readonly int Confirm;
         internal readonly int Cancel;
-        internal readonly int AuxiliaryX;
-        internal readonly int AuxiliaryY;
         internal readonly int LeftShoulder;
         internal readonly int RightShoulder;
         internal readonly int Start;
 
-        private WinmmButtonMapping(int confirm, int cancel, int auxiliaryX, int auxiliaryY, int leftShoulder, int rightShoulder, int start)
+        private WinmmButtonMapping(int confirm, int cancel, int leftShoulder, int rightShoulder, int start)
         {
             Confirm = confirm;
             Cancel = cancel;
-            AuxiliaryX = auxiliaryX;
-            AuxiliaryY = auxiliaryY;
             LeftShoulder = leftShoulder;
             RightShoulder = rightShoulder;
             Start = start;
@@ -1160,8 +1148,6 @@ internal sealed class GamepadManager
             return new WinmmButtonMapping(
                 ReadOverride("EMUERA_GAMEPAD_CONFIRM_BUTTON", ps4Layout ? 1 : 0),
                 ReadOverride("EMUERA_GAMEPAD_CANCEL_BUTTON", ps4Layout ? 2 : 1),
-                ReadOverride("EMUERA_GAMEPAD_X_BUTTON", ps4Layout ? 0 : 2),
-                ReadOverride("EMUERA_GAMEPAD_Y_BUTTON", 3),
                 ReadOverride("EMUERA_GAMEPAD_LB_BUTTON", 4),
                 ReadOverride("EMUERA_GAMEPAD_RB_BUTTON", 5),
                 ReadOverride("EMUERA_GAMEPAD_START_BUTTON", ps4Layout ? 9 : 7));
@@ -1169,7 +1155,7 @@ internal sealed class GamepadManager
 
         internal string Describe()
         {
-            return $"Confirm=button {Confirm}, Cancel=button {Cancel}, X=button {AuxiliaryX}, Y=button {AuxiliaryY}, LB=button {LeftShoulder}, RB=button {RightShoulder}, Start=button {Start}";
+            return $"Confirm=button {Confirm}, Cancel=button {Cancel}, LB=button {LeftShoulder}, RB=button {RightShoulder}, Start=button {Start}";
         }
 
         private static int ReadOverride(string variableName, int defaultValue)
