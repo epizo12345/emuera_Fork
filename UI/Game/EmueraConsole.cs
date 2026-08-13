@@ -983,6 +983,16 @@ internal sealed partial class EmueraConsole : IDisposable
             return true;
         }
 
+        GamepadFocusTarget sameInput = FindPostConfirmSameInputTarget(anchor, targets);
+        if (sameInput != null)
+        {
+            restored = sameInput;
+            WriteGamepadNavigationDiagnostic(
+                $"Focus restored: input={GetGamepadButtonInput(sameInput.Button)} "
+                + "reason=same input/source/layout/baseGroup after redraw");
+            return true;
+        }
+
         restored = FindPostConfirmLaneFallback(anchor, targets);
         if (restored == null)
         {
@@ -1056,6 +1066,20 @@ internal sealed partial class EmueraConsole : IDisposable
         return FindGamepadVerticalLaneTarget(targets, anchor.Focus.Bounds,
                 Math.Max(12, anchor.Focus.Bounds.Width / 2), isCandidate, false)
             ?? FindGamepadNearestTarget(targets, anchor.Focus.Bounds, isCandidate);
+    }
+
+    private static GamepadFocusTarget FindPostConfirmSameInputTarget(PostConfirmFocusAnchor anchor,
+        List<GamepadFocusTarget> targets)
+    {
+        return FindGamepadNearestTarget(targets, anchor.Focus.Bounds, target =>
+            !target.IsDirectionalFocusExcluded
+                && string.Equals(GetGamepadInputKey(target.Button), anchor.Focus.InputKey,
+                    StringComparison.Ordinal)
+                && target.SourceType == anchor.Focus.SourceType
+                && target.LayoutType == anchor.Focus.LayoutType
+                && target.GroupId == anchor.Focus.GroupId
+                && target.IsBack == anchor.Focus.IsBack,
+            anchor.Focus.NavigationGroupId);
     }
 
     private static bool IsPostConfirmTargetMatch(GamepadScreenTargetSnapshot oldTarget,
@@ -2598,6 +2622,17 @@ internal sealed partial class EmueraConsole : IDisposable
             && TryMatchGamepadScreenFingerprints(CreateGamepadScreenFingerprint(dynamicBefore),
                 CreateGamepadScreenFingerprint(dynamicAfter), out _, out _);
 
+        List<GamepadFocusTarget> sameInputBefore = CreatePostConfirmSelfTestTargets(8, 3, false, 0);
+        PostConfirmFocusAnchor sameInputAnchor = CreatePostConfirmSelfTestAnchor(
+            sameInputBefore[6], sameInputBefore);
+        List<GamepadFocusTarget> sameInputAfter = CreatePostConfirmSelfTestTargets(8, 3, false, 0);
+        sameInputAfter[6] = CreatePostConfirmSelfTestTarget("6", 3, 20, 6);
+        sameInputAfter[7] = CreatePostConfirmSelfTestTarget("+", 3, 188, 7);
+        bool caseG = IsPostConfirmSameScreen(sameInputAnchor, sameInputAfter, out _)
+            && FindPostConfirmExactTarget(sameInputAnchor, sameInputAfter) == null
+            && FindPostConfirmSameInputTarget(sameInputAnchor, sameInputAfter) == sameInputAfter[6]
+            && FindPostConfirmLaneFallback(sameInputAnchor, sameInputAfter) == sameInputAfter[7];
+
         return
         [
             new("toggle", caseA),
@@ -2606,6 +2641,7 @@ internal sealed partial class EmueraConsole : IDisposable
             new("same-input-screen-change", caseD),
             new("target-disappeared-lane", caseE),
             new("dynamic-screen-rejected", caseF),
+            new("same-input-before-position-fallback", caseG),
         ];
     }
 
@@ -2623,6 +2659,15 @@ internal sealed partial class EmueraConsole : IDisposable
             targets.Add(target);
         }
         return targets;
+    }
+
+    private static GamepadFocusTarget CreatePostConfirmSelfTestTarget(string input, int groupId,
+        int y, int order)
+    {
+        ConsoleButtonString button = new(null, [], input);
+        Rectangle bounds = new(220, y, 160, 18);
+        return new GamepadFocusTarget(button, GamepadFocusSourceType.NormalDisplay,
+            GamepadFocusLayoutType.Console, groupId, null, bounds, bounds, order);
     }
 
     private static PostConfirmFocusAnchor CreatePostConfirmSelfTestAnchor(
