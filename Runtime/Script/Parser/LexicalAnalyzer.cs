@@ -823,7 +823,7 @@ internal static partial class LexicalAnalyzer
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public static WordCollection Analyse(CharStream st, LexEndWith endWith, LexAnalyzeFlag flag)
     {
-        var ret = new WordCollection();
+        var ret = WordCollection.CreateLexerResult();
         int nestBracketS = 0;
         //int nestBracketM = 0;
         int nestBracketL = 0;
@@ -1024,7 +1024,10 @@ internal static partial class LexicalAnalyzer
                 throw new CodeEE(LocalizationManager.Error.UnexpectedSBrackets);
         }
         if (UseMacro)
-            return expandMacro(ret);
+        {
+            ret = expandMacro(ret);
+            return ret;
+        }
         return ret;
 
     }
@@ -1110,7 +1113,7 @@ internal static partial class LexicalAnalyzer
                 args[i].Add(wc.Current);
             }
         exitwhile:
-            if (args[i].Collection.Count == 0)
+            if (args[i].Count == 0)
                 throw new CodeEE(string.Format(LocalizationManager.Error.CanNotOmitMacroArg, macro.Keyword));
             continue;
         }
@@ -1138,7 +1141,7 @@ internal static partial class LexicalAnalyzer
             }
             macroWC.Remove();
             macroWC.InsertRange(args[w.Number]);
-            for (int i = 0; i < args[w.Number].Collection.Count; i++)
+            for (int i = 0; i < args[w.Number].Count; i++)
             {
                 macroWC.Pointer = macroWC.Pointer.Next;
             }

@@ -51,7 +51,7 @@ internal static class ExpressionParser
     {
         if (wc == null)
             throw new ExeEE(LocalizationManager.Error.EmptyStream);
-        var terms = new LinkedList<AExpression>();
+        var terms = new List<AExpression>();
         TermEndWith termEndWith = TermEndWith.EoL;
         switch (endWith)
         {
@@ -95,11 +95,11 @@ internal static class ExpressionParser
                         throw new CodeEE(LocalizationManager.Error.UnexpectedSBrackets);
                 }
                 if (!isDefine)
-                    terms.AddLast(ReduceExpressionTerm(wc, termEndWith));
+                    terms.Add(ReduceExpressionTerm(wc, termEndWith));
                 else
                 {
-                    terms.AddLast(ReduceExpressionTerm(wc, termEndWith_Assignment));
-                    if (terms.Last == null)
+                    terms.Add(ReduceExpressionTerm(wc, termEndWith_Assignment));
+                    if (terms.Count == 0)
                         throw new CodeEE(LocalizationManager.Error.CannotOmitFuncArg);
                     if (wc.Current is OperatorWord)
                     {//=がある
@@ -107,16 +107,16 @@ internal static class ExpressionParser
                         AExpression term = reduceTerm(wc, false, termEndWith, VariableCode.__NULL__);
                         if (term == null)
                             throw new CodeEE(LocalizationManager.Error.NoExpressionAfterEqual);
-                        if (term.GetOperandType() != terms.Last.Value.GetOperandType())
+                        if (term.GetOperandType() != terms[^1].GetOperandType())
                             throw new CodeEE(LocalizationManager.Error.DoesNotMatchEqual);
-                        terms.AddLast(term);
+                        terms.Add(term);
                     }
                     else
                     {
-                        if (terms.Last.Value.GetOperandType() == typeof(long))
-                            terms.AddLast(new NullTerm(0));
+                        if (terms[^1].GetOperandType() == typeof(long))
+                            terms.Add(new NullTerm(0));
                         else
-                            terms.AddLast(new NullTerm(""));
+                            terms.Add(new NullTerm(""));
                     }
                 }
                 if (wc.Current.Type == ',')
@@ -124,7 +124,7 @@ internal static class ExpressionParser
             }
         }
         local();
-        return [.. terms];
+        return terms;
     }
 
 
