@@ -1,6 +1,6 @@
-# ArgumentParser / INT_EXPRESSION 性能設計（Phase 3 - Phase 6-C2.1 Analysis）
+# ArgumentParser / INT_EXPRESSION 性能設計（Phase 3 - Phase 6-E Production Adoption）
 
-最終更新: 2026-08-13（Phase 6-C2.1）。これは `07_ERB起動詳細Profiling.md` の Phase 3〜6 詳細資料であり、過去の測定値と現在の採用状態を併記する調査記録である。Phase 4-Aの`ReduceArguments` List化とPhase 5-C3のWordCollection Compact RepresentationはADOPT、Strict Decimal Fast PathはLOW VALUE / not implemented、Phase 6-C2のcapacity戦略はPROMISINGだが現在のfield実装はHOLD、速度はUNPROVENである。
+最終更新: 2026-08-14（Phase 6-E）。これは `07_ERB起動詳細Profiling.md` の Phase 3〜6 詳細資料であり、過去の測定値と現在の採用状態を併記する調査記録である。Phase 4-Aの`ReduceArguments` List化、Phase 5-C3のWordCollection Compact Representation、Phase 6-C2.2のzero-overhead Lexer-only Lazy Capacity 8、Phase 6-EのArgument / argprimitive One-Reference化はADOPT済みである。Strict Decimal Fast PathはLOW VALUE / not implemented、旧Phase 6-C2 field実装はHOLD / superseded、速度はUNPROVENである。
 
 ## Clean Release trace
 
@@ -503,6 +503,12 @@ capacity 8戦略そのものは、4→8 resize 1,241,760回・copied refs 4,967,
 ### Formal baseline / focused compatibility
 
 Formal BEFOREはC2 capacity optimizationを除いた既存採用状態（Phase 4-A、WordCollection C3/self-add、Macro Fix、WARN対策、C1 metrics）とし、既存`_phase6c2_before` snapshotを使った。Focused matrixはFormal BEFOREとCandidate AFTERの双方でPASS。CandidateではpendingのCount/Current/EOL/ShiftNext/PointerReset/Pointer/Collection、0/1/4/5/8/9/17 token、normal collection、Add(WordCollection)、Clone、self-add、promotion後Insert/Removeを確認した。Normal/KojoのCandidate Release StartupTestは各1回、exit 0、Parser exceptionなし、Lv2 warning 0だった。
+
+## Phase 6-E: InstructionLine Argument / argprimitive One-Reference Production Adoption（2026-08-14）
+
+`InstructionLine` の `Argument` と `CharStream argprimitive` を追加fieldなしの `object argumentStorage` へ統合した。getter/setterと `PopArgumentPrimitive` の既存null・clear・CharStream保持 semanticsを維持し、変更対象は `LogicalLine.cs` のみである。Prototypeのfocused semantic、DEBUG null、PopArgumentPrimitive、targeted runtime smoke、Normal/Kojo startupを再確認済みとし、Release／PERFORMANCE_METRICS buildはいずれも0 errors（既存warning 70件）だった。
+
+既往の測定では `InstructionLine` object size 176→168 bytes、allocationはNormal約-9.8 MB、Kojo約-28.8 MB。既存macroおよびPRINT/FORM、IF/ELSE、CALL、CALLFORM、FOR、REPEATのruntime smokeで挙動一致、Parser error/Lv2/Exceptionは0。速度効果は単発値から断定しないため、判定は**ADOPT**とする。次の候補は `LoopEnd` / `LoopCounter` / `LoopStep` のfeasibility/design分析だけであり、今回それらは変更しない。
 
 ### Metrics growth（Kojo各1回）
 

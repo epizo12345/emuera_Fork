@@ -96,7 +96,7 @@ internal sealed class InstructionLine : LogicalLine
     {
         scriptPosition = thePosition;
         func = theFunc;
-        argprimitive = theArgPrimitive;
+        argumentStorage = theArgPrimitive;
     }
 
     public InstructionLine(ScriptPosition? thePosition, FunctionIdentifier functionIdentifier, OperatorCode assignOP, WordCollection dest, CharStream theArgPrimitive)
@@ -105,10 +105,10 @@ internal sealed class InstructionLine : LogicalLine
         func = functionIdentifier;
         AssignOperator = assignOP;
         assigndest = dest;
-        argprimitive = theArgPrimitive;
+        argumentStorage = theArgPrimitive;
     }
     readonly FunctionIdentifier func;
-    CharStream argprimitive;
+    object argumentStorage;
 
     WordCollection assigndest;
     public OperatorCode AssignOperator { get; private set; }
@@ -121,11 +121,22 @@ internal sealed class InstructionLine : LogicalLine
     {
         get { return func; }
     }
-    public Argument Argument { get; set; }
+    public Argument Argument
+    {
+        get => argumentStorage as Argument;
+        set
+        {
+            if (value != null)
+                argumentStorage = value;
+            else if (argumentStorage is Argument)
+                argumentStorage = null;
+        }
+    }
     public CharStream PopArgumentPrimitive()
     {
-        CharStream ret = argprimitive;
-        argprimitive = null;
+        if (argumentStorage is not CharStream ret)
+            return null;
+        argumentStorage = null;
         return ret;
     }
     public WordCollection PopAssignmentDestStr()
