@@ -541,3 +541,7 @@ Phase 6-C1〜C2.2で役目を終えたWordCollectionのresize/capacity専用計�
 ## CharStream Candidate A Production Adoption（2026-08-15）
 
 `EraStreamReader.ReadEnabledLine` 内で、外部へ返す前の一時 `CharStream` を `Reset` して再利用する最適化をProductionへ採用した。共有pool/cacheは使用していない。Normal allocationは約-71.1MB（-3.04%）、Kojoは約-244.1MB（-3.86%）、CharStream sampled allocationはNormal約-55.1%、Kojo約-62.5%だった。Normal/Kojo互換性はPASSで、Startupでは明確な性能退行を確認しなかった。速度向上や完全同速とは断定しない。
+
+## ReadString Candidate B Production Adoption（2026-08-15）
+
+`LexicalAnalyzer.ReadString` のno-escape fast pathをProductionへ採用した。escape無し文字列では`StringBuilder`生成を回避し、escape有りでは従来相当の経路へfallbackする。共有cache/pool/static mutable stateは使用していない。既知のallocation削減はNormal約-383.2MB（-16.91%）、Kojo約-404.8MB（-6.66%）で、GC pressureも改善した。focused compatibility、Normal/Kojo startupはPASS。Balanced startupではNormal ERBにノイズを含む+9.12%中央値差があったが、Kojoでは再現せず、Startup全体で明確な一貫した性能退行は確認されなかった。高速化や完全同速とは断定しない。

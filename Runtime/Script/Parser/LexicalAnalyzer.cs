@@ -471,56 +471,92 @@ internal static partial class LexicalAnalyzer
     /// <returns></returns>
     public static string ReadString(CharStream st, StrEndWith endWith)
     {
-        var buffer = new StringBuilder(st.RowString.Length - st.CurrentPosition);
-        void loop()
-        {
-            while (true)
-            {
-                switch (st.Current)
-                {
-                    case '\0':
-                        return;
-                    case '\"':
-                        if (endWith == StrEndWith.DoubleQuotation)
-                            return;
-                        break;
-                    case '\'':
-                        if (endWith == StrEndWith.SingleQuotation)
-                            return;
-                        break;
-                    case ',':
-                        if (endWith == StrEndWith.Comma || endWith == StrEndWith.LeftParenthesis_Bracket_Comma_Semicolon)
-                            return;
-                        break;
-                    case '(':
-                    case '[':
-                    case ';':
-                        if (endWith == StrEndWith.LeftParenthesis_Bracket_Comma_Semicolon)
-                            return;
-                        break;
-                    case '\\'://エスケープ処理
-                        st.ShiftNext();//\を読み飛ばす
-                        switch (st.Current)
-                        {
-                            case CharStream.EndOfString:
-                                throw new CodeEE(LocalizationManager.Error.MissingCharacterAfterEscape);
-                            case '\n': break;
-                            case 's': buffer.Append(' '); break;
-                            case 'S': buffer.Append('　'); break;
-                            case 't': buffer.Append('\t'); break;
-                            case 'n': buffer.Append('\n'); break;
-                            default: buffer.Append(st.Current); break;
-                        }
-                        st.ShiftNext();//\の次の文字を読み飛ばす
-                        continue;
-                }
-                buffer.Append(st.Current);
-                st.ShiftNext();
-            }
-        }
-        loop();
+        int start = st.CurrentPosition;
+        int capacity = st.RowString.Length - start;
+        // 既存実装ではStringBuilder constructorで負のcapacityが例外になる。
+        // 通常経路では到達しないが、無効なpointerに対する既存挙動も維持する。
+        if (capacity < 0)
+            _ = new StringBuilder(capacity);
 
-        return buffer.ToString();
+        // エスケープが無い文字列はStringBuilderを作らず、
+        // 終端まで走査した範囲から結果文字列だけを生成する。
+        while (true)
+        {
+            char current = st.Current;
+            if (current == '\\')
+                break;
+            switch (current)
+            {
+                case '\0':
+                    return st.SubstringROS(start, st.CurrentPosition - start).ToString();
+                case '\"':
+                    if (endWith == StrEndWith.DoubleQuotation)
+                        return st.SubstringROS(start, st.CurrentPosition - start).ToString();
+                    break;
+                case '\'':
+                    if (endWith == StrEndWith.SingleQuotation)
+                        return st.SubstringROS(start, st.CurrentPosition - start).ToString();
+                    break;
+                case ',':
+                    if (endWith == StrEndWith.Comma || endWith == StrEndWith.LeftParenthesis_Bracket_Comma_Semicolon)
+                        return st.SubstringROS(start, st.CurrentPosition - start).ToString();
+                    break;
+                case '(':
+                case '[':
+                case ';':
+                    if (endWith == StrEndWith.LeftParenthesis_Bracket_Comma_Semicolon)
+                        return st.SubstringROS(start, st.CurrentPosition - start).ToString();
+                    break;
+            }
+            st.ShiftNext();
+        }
+
+        var buffer = new StringBuilder(capacity);
+        buffer.Append(st.SubstringROS(start, st.CurrentPosition - start));
+
+        while (true)
+        {
+            switch (st.Current)
+            {
+                case '\0':
+                    return buffer.ToString();
+                case '\"':
+                    if (endWith == StrEndWith.DoubleQuotation)
+                        return buffer.ToString();
+                    break;
+                case '\'':
+                    if (endWith == StrEndWith.SingleQuotation)
+                        return buffer.ToString();
+                    break;
+                case ',':
+                    if (endWith == StrEndWith.Comma || endWith == StrEndWith.LeftParenthesis_Bracket_Comma_Semicolon)
+                        return buffer.ToString();
+                    break;
+                case '(':
+                case '[':
+                case ';':
+                    if (endWith == StrEndWith.LeftParenthesis_Bracket_Comma_Semicolon)
+                        return buffer.ToString();
+                    break;
+                case '\\'://エスケープ処理
+                    st.ShiftNext();//\を読み飛ばす
+                    switch (st.Current)
+                    {
+                        case CharStream.EndOfString:
+                            throw new CodeEE(LocalizationManager.Error.MissingCharacterAfterEscape);
+                        case '\n': break;
+                        case 's': buffer.Append(' '); break;
+                        case 'S': buffer.Append('　'); break;
+                        case 't': buffer.Append('\t'); break;
+                        case 'n': buffer.Append('\n'); break;
+                        default: buffer.Append(st.Current); break;
+                    }
+                    st.ShiftNext();//\の次の文字を読み飛ばす
+                    continue;
+            }
+            buffer.Append(st.Current);
+            st.ShiftNext();
+        }
     }
 
     /// <summary>
