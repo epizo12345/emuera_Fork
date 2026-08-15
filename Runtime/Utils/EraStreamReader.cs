@@ -108,7 +108,7 @@ internal sealed partial class EraStreamReader : IDisposable
     public CharStream ReadEnabledLine(bool disabled = false)
     {
         string line;
-        CharStream st;
+        CharStream st = null;
         while (true)
         {
             line = ReadLine();
@@ -117,13 +117,16 @@ internal sealed partial class EraStreamReader : IDisposable
             if (line.Length == 0)
                 continue;
 
-            st = new CharStream(line);
+            if (st == null)
+                st = new CharStream(line);
+            else
+                st.Reset(line);
             LexicalAnalyzer.SkipWhiteSpace(st);
 
             if (useRename)
             {
                 line = Rename.RenameString(st.Substring(), new ScriptPosition(filename, LineNo));
-                st = new CharStream(line);
+                st.Reset(line);
                 LexicalAnalyzer.SkipWhiteSpace(st);
             }
 
@@ -176,7 +179,7 @@ internal sealed partial class EraStreamReader : IDisposable
             b.Append(line);
             b.Append(' ');
         }
-        st = new CharStream(b.ToString());
+        st.Reset(b.ToString());
         LexicalAnalyzer.SkipWhiteSpace(st);
         return st;
     }

@@ -537,3 +537,7 @@ Candidate Aは、追加instance fieldなし、Lexer 0-tokenでList/Word[]を生�
 Phase 6-C1〜C2.2で役目を終えたWordCollectionのresize/capacity専用計測（`RecordWordCollectionAdd` / `RecordWordCollectionFinal`、growth集計、`wordcollection-growth.txt`）を撤去した。C2.2のpending state、初回capacity 8、compact→Linked promotion、cursor/Count、self-add互換は変更していない。`firstAddCapacityHint` は本体に存在しないままである。
 
 汎用 `ErbStartupProfiler` と `PERFORMANCE_METRICS` の `SetArgumentToCalls`、`ForceSetArgumentCalls`、FunctionCode別件数、Labels/Remaining/ParallelRemaining、PrimaryParse/file/function情報は残した。cleanup後のRelease/metrics buildは各0 errors（既存warningsのみ）、Normal/Kojo StartupTestは各モード1回ともexit 0・Lv2 warning 0、generic countersも取得できた。metrics出力にcapacity専用ファイル・resize/copy/unused/final-capacity項目は生成されなかった。C2.2既往のallocation差分（-47,101,928 bytes / -0.72%、Word[] -25,710,096 bytes / -6.90%、copied references -4,967,040 / -38.11%）は履歴値として保持し、速度改善は未証明のままとする。
+
+## CharStream Candidate A Production Adoption（2026-08-15）
+
+`EraStreamReader.ReadEnabledLine` 内で、外部へ返す前の一時 `CharStream` を `Reset` して再利用する最適化をProductionへ採用した。共有pool/cacheは使用していない。Normal allocationは約-71.1MB（-3.04%）、Kojoは約-244.1MB（-3.86%）、CharStream sampled allocationはNormal約-55.1%、Kojo約-62.5%だった。Normal/Kojo互換性はPASSで、Startupでは明確な性能退行を確認しなかった。速度向上や完全同速とは断定しない。
