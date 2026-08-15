@@ -425,10 +425,8 @@ internal static class LogicalLineParser
                 {
                     if (func.Code == FunctionCode.VARI || func.Code == FunctionCode.VARS)
                     {
-                        var line = new InstructionLine(position, func, stream)
-                        {
-                            ParentLabelLine = parentLine
-                        };
+                        var line = InstructionLine.Create(position, func, stream);
+                        line.ParentLabelLine = parentLine;
                         var statementsSpan = stream.SubstringROS();
                         var commentIndex = statementsSpan.IndexOf(';');
                         if (commentIndex != -1)
@@ -514,7 +512,7 @@ internal static class LogicalLineParser
 
 
                     if (stream.EOS) //引数の無い関数
-                        return new InstructionLine(position, func, stream);
+                        return InstructionLine.Create(position, func, stream);
                     var current = stream.Current;
                     if (current != ';' && current != ' ' && current != '\t' && (!Config.Config.SystemAllowFullSpace || current != '　'))
                     {
@@ -528,7 +526,7 @@ internal static class LogicalLineParser
                         };
                     }
                     stream.ShiftNext();
-                    return new InstructionLine(position, func, stream);
+                    return InstructionLine.Create(position, func, stream);
                 }
             }
             LexicalAnalyzer.SkipWhiteSpace(stream);

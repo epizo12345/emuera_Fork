@@ -90,7 +90,7 @@ internal sealed class InvalidLine : LogicalLine
 /// <summary>
 /// 命令文
 /// </summary>
-internal sealed class InstructionLine : LogicalLine
+internal class InstructionLine : LogicalLine
 {
     public InstructionLine(ScriptPosition? thePosition, FunctionIdentifier theFunc, CharStream theArgPrimitive)
     {
@@ -107,12 +107,18 @@ internal sealed class InstructionLine : LogicalLine
         assigndest = dest;
         argumentStorage = theArgPrimitive;
     }
+    public static InstructionLine Create(ScriptPosition? thePosition, FunctionIdentifier theFunc, CharStream theArgPrimitive)
+    {
+        if (theFunc.Code is FunctionCode.FOR or FunctionCode.REPEAT)
+            return new LoopInstructionLine(thePosition, theFunc, theArgPrimitive);
+        return new InstructionLine(thePosition, theFunc, theArgPrimitive);
+    }
+
     readonly FunctionIdentifier func;
     object argumentStorage;
 
     WordCollection assigndest;
     public OperatorCode AssignOperator { get; private set; }
-    long subData;
     public FunctionCode FunctionCode
     {
         get { return func.Code; }
@@ -146,35 +152,6 @@ internal sealed class InstructionLine : LogicalLine
         return ret;
     }
 
-    /// <summary>
-    /// 繰り返しの終了を記憶する
-    /// </summary>
-    public long LoopEnd
-    {
-        get { return subData; }
-        set { subData = value; }
-    }
-
-    VariableTerm cnt;
-    /// <summary>
-    /// 繰り返しにつかう変数を記憶する
-    /// </summary>
-    public VariableTerm LoopCounter
-    {
-        get { return cnt; }
-        set { cnt = value; }
-    }
-
-    long step;
-    /// <summary>
-    /// 繰り返しのたびに増加する値を記憶する
-    /// </summary>
-    public long LoopStep
-    {
-        get { return step; }
-        set { step = value; }
-    }
-
     private LogicalLine jumpto;
     private LogicalLine jumptoendcatch;
     //IF文とSELECT文のみが使う。
@@ -196,6 +173,16 @@ internal sealed class InstructionLine : LogicalLine
         set { jumptoendcatch = value; }
     }
 
+}
+
+internal sealed class LoopInstructionLine : InstructionLine
+{
+    public LoopInstructionLine(ScriptPosition? thePosition, FunctionIdentifier theFunc, CharStream theArgPrimitive)
+        : base(thePosition, theFunc, theArgPrimitive) { }
+
+    internal long LoopEnd;
+    internal VariableTerm LoopCounter;
+    internal long LoopStep;
 }
 
 /// <summary>
