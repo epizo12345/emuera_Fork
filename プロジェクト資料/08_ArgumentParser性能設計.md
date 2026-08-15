@@ -1,6 +1,12 @@
-# ArgumentParser / INT_EXPRESSION 性能設計（Phase 3 - Phase 6-E Production Adoption）
+# ArgumentParser / INT_EXPRESSION 性能設計（Phase 3 - Phase 7 ReadFirstIdentifier Candidate D Production Adoption）
 
-最終更新: 2026-08-14（Phase 6-E）。これは `07_ERB起動詳細Profiling.md` の Phase 3〜6 詳細資料であり、過去の測定値と現在の採用状態を併記する調査記録である。Phase 4-Aの`ReduceArguments` List化、Phase 5-C3のWordCollection Compact Representation、Phase 6-C2.2のzero-overhead Lexer-only Lazy Capacity 8、Phase 6-EのArgument / argprimitive One-Reference化はADOPT済みである。Strict Decimal Fast PathはLOW VALUE / not implemented、旧Phase 6-C2 field実装はHOLD / superseded、速度はUNPROVENである。
+最終更新: 2026-08-15（ReadFirstIdentifier Candidate D Production Adoption）。これは `07_ERB起動詳細Profiling.md` の Phase 3〜7 詳細資料であり、過去の測定値と現在の採用状態を併記する調査記録である。Phase 4-Aの`ReduceArguments` List化、Phase 5-C3のWordCollection Compact Representation、Phase 6-C2.2のzero-overhead Lexer-only Lazy Capacity 8、Phase 6-EのArgument / argprimitive One-Reference化、ReadFirstIdentifier Candidate DはADOPT済みである。Strict Decimal Fast PathはLOW VALUE / not implemented、旧Phase 6-C2 field実装はHOLD / superseded、速度はUNPROVENである。
+
+## ReadFirstIdentifier Candidate D Production Adoption（2026-08-15）
+
+行頭命令名解析で、`LogicalLineParser` が `.Code` だけを必要とする経路の一時 `IdentifierWord` wrapper生成を除去した。`ReadFirstIdentifierWord` は他の呼出しのため残し、共有cache・pool・static mutable stateは追加していない。Release build、Normal/Kojo startup compatibilityはPASSした。
+
+既存allocation測定では、Normalが約 -30.0MB（-1.59%）、Kojoが約 -138.5MB（-2.44%）となり、両構成で明確な削減を確認したためSTRONG PASSと判定した。GC countは構成ごとに混在したため改善とは主張しない。startup時間の単発値から速度向上または完全同速とは断定しない。
 
 ## Clean Release trace
 

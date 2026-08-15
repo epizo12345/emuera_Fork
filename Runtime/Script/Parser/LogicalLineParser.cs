@@ -415,10 +415,10 @@ internal static class LogicalLineParser
             }
             #endregion
 
-            IdentifierWord idWT = LexicalAnalyzer.ReadFirstIdentifierWord(stream);
-            if (idWT != null)
+            string firstIdentifier = LexicalAnalyzer.ReadFirstIdentifier(stream);
+            if (firstIdentifier != null)
             {
-                FunctionIdentifier func = GlobalStatic.IdentifierDictionary.GetFunctionIdentifier(idWT.Code);
+                FunctionIdentifier func = GlobalStatic.IdentifierDictionary.GetFunctionIdentifier(firstIdentifier);
 
                 //命令文
                 if (func != null)//関数文

@@ -375,6 +375,14 @@ internal static partial class LexicalAnalyzer
     /// </summary>
     /// <param name="st"></param>
     /// <returns></returns>
+    public static string ReadFirstIdentifier(CharStream st)
+    {
+        var str = ReadSingleIdentifierROS(st);
+        if (str.IsEmpty)
+            throw new CodeEE(LocalizationManager.Error.LineBeginsIllegalCharacter);
+        return str.ToString();
+    }
+
     public static IdentifierWord ReadFirstIdentifierWord(CharStream st)
     {
         //int startpos = st.CurrentPosition;
