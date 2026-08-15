@@ -1,6 +1,6 @@
-# ArgumentParser / INT_EXPRESSION 性能設計（Phase 3 - Phase 7 ReadFirstIdentifier Candidate D Production Adoption）
+# ArgumentParser / INT_EXPRESSION 性能設計（Phase 3 - Phase 8 Candidate K Production Adoption）
 
-最終更新: 2026-08-15（ReadFirstIdentifier Candidate D Production Adoption）。これは `07_ERB起動詳細Profiling.md` の Phase 3〜7 詳細資料であり、過去の測定値と現在の採用状態を併記する調査記録である。Phase 4-Aの`ReduceArguments` List化、Phase 5-C3のWordCollection Compact Representation、Phase 6-C2.2のzero-overhead Lexer-only Lazy Capacity 8、Phase 6-EのArgument / argprimitive One-Reference化、ReadFirstIdentifier Candidate DはADOPT済みである。Strict Decimal Fast PathはLOW VALUE / not implemented、旧Phase 6-C2 field実装はHOLD / superseded、速度はUNPROVENである。
+最終更新: 2026-08-15（Candidate K Conditional Aggressive Startup Trim Production Adoption）。これは `07_ERB起動詳細Profiling.md` の Phase 3〜8 詳細資料であり、過去の測定値と現在の採用状態を併記する調査記録である。Phase 4-Aの`ReduceArguments` List化、Phase 5-C3のWordCollection Compact Representation、Phase 6-C2.2のzero-overhead Lexer-only Lazy Capacity 8、Phase 6-EのArgument / argprimitive One-Reference化、ReadFirstIdentifier Candidate D、Candidate KはADOPT済みである。Strict Decimal Fast PathはLOW VALUE / not implemented、旧Phase 6-C2 field実装はHOLD / superseded、速度はUNPROVENである。
 
 ## ReadFirstIdentifier Candidate D Production Adoption（2026-08-15）
 
@@ -551,3 +551,11 @@ Phase 6-C1〜C2.2で役目を終えたWordCollectionのresize/capacity専用計�
 ## ReadString Candidate B Production Adoption（2026-08-15）
 
 `LexicalAnalyzer.ReadString` のno-escape fast pathをProductionへ採用した。escape無し文字列では`StringBuilder`生成を回避し、escape有りでは従来相当の経路へfallbackする。共有cache/pool/static mutable stateは使用していない。既知のallocation削減はNormal約-383.2MB（-16.91%）、Kojo約-404.8MB（-6.66%）で、GC pressureも改善した。focused compatibility、Normal/Kojo startupはPASS。Balanced startupではNormal ERBにノイズを含む+9.12%中央値差があったが、Kojoでは再現せず、Startup全体で明確な一貫した性能退行は確認されなかった。高速化や完全同速とは断定しない。
+
+## Phase 8: Candidate K Conditional Aggressive Startup Trim Production Adoption（2026-08-15）
+
+起動完了時に`GC.GetTotalMemory(false)`を確認し、2GiB未満では`MemoryTrimSkipped`として強制GCを行わず、2GiB以上では`GCCollectionMode.Aggressive`・blocking・compactingのfull GCを1回だけ実行する条件付き経路を採用した。明示的なLOH `CompactOnce` は使用しない。`EnableStartupMemoryTrim` のMSBuild既定値を`true`へ変更し、`EnablePerformanceMetrics` は`false`のまま、必要ならpropertyでtrimを無効化できる。
+
+Production defaultのmetrics確認ではNormalが1回ともSKIP、Kojoが1回ともTRIMで、両方ExitCode 0・Parser error 0・Lv2 0・Exception 0だった。検証済みの同一条件3回比較では、NormalのWorking Setは約-49.8MB（-3.39%）でInputReadyに明確な退行はなく、Kojoの今回の大規模fixtureではWorking Set約-1.502GB（-36.30%）、Managed約-987MB（-30.46%）を確認した。一方、KojoのInputReadyは約+0.99秒、trim medianは約1.036秒である。
+
+したがって小規模構成は速度優先、大規模構成は約1秒の起動時tradeoffと引き換えに起動後メモリを整理する仕様とする。「常に1.5GB減る」「すべてのゲームで2.6GBになる」「起動が高速化した」とは記載しない。今回の大規模fixtureで約1.5GB削減を確認した、という範囲に限定する。

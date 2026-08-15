@@ -274,14 +274,21 @@ internal sealed partial class MainWindow : Form
     private void CompleteStartup()
     {
         // [Emuera改修:START-04]
-        // 強制GCはメモリ比較用スイッチを付けたビルドだけで実行する。
-        // 通常版は起動を遅くしないよう、このブロック自体がコンパイルされない。
+        // 起動完了時のmanaged memoryが2GiB以上の大規模構成だけ整理する。
+        // 2GiB未満ではskipし、必要ならMSBuild propertyで無効化できる。
         // 参照: プロジェクト資料/06_コード案内.md
 #if STARTUP_MEMORY_TRIM
-        PerformanceMetrics.MarkStartup("MemoryTrimStart");
-        GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
-        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, blocking: true, compacting: true);
-        PerformanceMetrics.MarkStartup("MemoryTrimEnd");
+        const long startupMemoryTrimThresholdBytes = 2L * 1024 * 1024 * 1024;
+        if (GC.GetTotalMemory(false) >= startupMemoryTrimThresholdBytes)
+        {
+            PerformanceMetrics.MarkStartup("MemoryTrimStart");
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, blocking: true, compacting: true);
+            PerformanceMetrics.MarkStartup("MemoryTrimEnd");
+        }
+        else
+        {
+            PerformanceMetrics.MarkStartup("MemoryTrimSkipped");
+        }
 #endif
         PerformanceMetrics.MarkStartup("InputReady");
         PerformanceMetrics.WriteStartup();
