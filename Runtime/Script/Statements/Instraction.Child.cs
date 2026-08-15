@@ -2131,15 +2131,16 @@ internal sealed partial class FunctionIdentifier
         }
         public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
         {
+            LoopInstructionLine loop = (LoopInstructionLine)func;
             SpForNextArgment forArg = (SpForNextArgment)func.Argument;
-            func.LoopCounter = forArg.Cnt;
+            loop.LoopCounter = forArg.Cnt;
             //1.725 順序変更。REPEATにならう。
-            func.LoopCounter.SetValue(forArg.Start.GetIntValue(exm), exm);
-            func.LoopEnd = forArg.End.GetIntValue(exm);
-            func.LoopStep = forArg.Step.GetIntValue(exm);
-            if ((func.LoopStep > 0) && (func.LoopEnd > func.LoopCounter.GetIntValue(exm)))//まだ回数が残っているなら、
+            loop.LoopCounter.SetValue(forArg.Start.GetIntValue(exm), exm);
+            loop.LoopEnd = forArg.End.GetIntValue(exm);
+            loop.LoopStep = forArg.Step.GetIntValue(exm);
+            if ((loop.LoopStep > 0) && (loop.LoopEnd > loop.LoopCounter.GetIntValue(exm)))//まだ回数が残っているなら、
                 return;//そのまま次の行へ
-            else if ((func.LoopStep < 0) && (func.LoopEnd < func.LoopCounter.GetIntValue(exm)))//まだ回数が残っているなら、
+            else if ((loop.LoopStep < 0) && (loop.LoopEnd < loop.LoopCounter.GetIntValue(exm)))//まだ回数が残っているなら、
                 return;//そのまま次の行へ
             state.JumpTo(func.JumpTo);
         }
@@ -2471,9 +2472,10 @@ internal sealed partial class FunctionIdentifier
             //WHILEとDOはカウンタがないので、即ジャンプ
             if (jumpTo.FunctionCode != FunctionCode.WHILE && jumpTo.FunctionCode != FunctionCode.DO)
             {
+                LoopInstructionLine loop = (LoopInstructionLine)jumpTo;
                 unchecked
                 {//eramakerではBREAK時にCOUNTが回る
-                    jumpTo.LoopCounter.ChangeValue(jumpTo.LoopStep, exm);
+                    loop.LoopCounter.ChangeValue(loop.LoopStep, exm);
                 }
             }
             state.JumpTo(iLine);
@@ -2492,20 +2494,21 @@ internal sealed partial class FunctionIdentifier
             InstructionLine jumpTo = (InstructionLine)func.JumpTo;
             if ((jumpTo.FunctionCode == FunctionCode.REPEAT) || (jumpTo.FunctionCode == FunctionCode.FOR))
             {
+                LoopInstructionLine loop = (LoopInstructionLine)jumpTo;
                 //ループ変数が不明(REPEAT、FORを経由せずにループしようとした場合は無視してループを抜ける(eramakerがこういう仕様だったりする))
-                if (jumpTo.LoopCounter == null)
+                if (loop.LoopCounter == null)
                 {
                     state.JumpTo(jumpTo.JumpTo);
                     return;
                 }
                 unchecked
                 {
-                    jumpTo.LoopCounter.ChangeValue(jumpTo.LoopStep, exm);
+                    loop.LoopCounter.ChangeValue(loop.LoopStep, exm);
                 }
-                Int64 counter = jumpTo.LoopCounter.GetIntValue(exm);
+                Int64 counter = loop.LoopCounter.GetIntValue(exm);
                 //まだ回数が残っているなら、
-                if (((jumpTo.LoopStep > 0) && (jumpTo.LoopEnd > counter))
-                    || ((jumpTo.LoopStep < 0) && (jumpTo.LoopEnd < counter)))
+                if (((loop.LoopStep > 0) && (loop.LoopEnd > counter))
+                    || ((loop.LoopStep < 0) && (loop.LoopEnd < counter)))
                     state.JumpTo(func.JumpTo);
                 else
                     state.JumpTo(jumpTo.JumpTo);
@@ -2545,7 +2548,7 @@ internal sealed partial class FunctionIdentifier
         }
         public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
         {
-            InstructionLine jumpTo = (InstructionLine)func.JumpTo;
+            LoopInstructionLine jumpTo = (LoopInstructionLine)func.JumpTo;
             //ループ変数が不明(REPEAT、FORを経由せずにループしようとした場合は無視してループを抜ける(eramakerがこういう仕様だったりする))
             if (jumpTo.LoopCounter == null)
             {

@@ -39,14 +39,13 @@ Windows 11ではメニューや設定画面にダークモードが適用され�
 - マウスのサイドボタンによる前ページ・次ページ操作
 - Controller / Gamepad対応（XInput、WinMM、Raw Input/HID、PS4系・Xbox系）
 - ゲームパッドの× / A決定、○ / B戻る・キャンセル、△ / Y高速送り、D-pad / Left Stick操作、LB / RBページ移動、Start / OPTIONSのEnter相当
+- Virtual Gamepad Focusによる通常Console、HTML / INPUTMOUSEKEY、Modal popupの操作、Alt+Tab後・画面遷移後のFocus復帰、複数行Buttonの論理Target統合
 - .NET 10への更新とWindows 11向けダークモード(VVII氏パッチをCRER氏が取り込み)
 - AngleSharpおよびSQLite関連の既知の脆弱性に対応
 - 必要なWinRT部品だけを残し、単一EXEのサイズを約47.2 MiBから約23.5 MiBへ削減
 
 # 配布フォルダについて
-『配布/Emuera.NET_最終通常版』には、2026-07-31時点の.NET 10対応・動作確認済みEXEを置いています。
-
-『配布/Emuera.NET_ゲームパッド対応_v1』には、Controller/Gamepad対応を含む最新のRelease単一EXEを置いています。標準操作は、× / Aが決定、○ / Bが戻る・キャンセル、△ / YがESC・マウス右クリック相当の高速送り、□ / Xが未使用、D-pad / Left Stickが移動、LB / RBがページ移動、Start / OPTIONSがEnter相当です。
+『配布/Emuera.NET_最終通常版』には、2026-08-16時点の最新mainの最適化とController/Gamepad対応を統合したRelease Publish単一EXEを置いています。標準操作は、× / Aが決定、○ / Bが戻る・キャンセル、△ / YがESC・マウス右クリック相当の高速送り、□ / Xが未使用、D-pad / Left Stickが移動、LB / RBがページ移動、Start / OPTIONSがEnter相当です。
 
 - 対象: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）

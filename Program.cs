@@ -104,6 +104,19 @@ static partial class Program
         };
         rootCommand.Options.Add(benchmarkLogOption);
 
+#if PERFORMANCE_METRICS
+        var erbStartupProfileOption = new Option<string>(name: "--ErbStartupProfile")
+        {
+            Description = "ERB詳細計測の出力フォルダ（計測ビルド専用）"
+        };
+        rootCommand.Options.Add(erbStartupProfileOption);
+        var erbStartupProfileModeOption = new Option<string>(name: "--ErbStartupProfileMode")
+        {
+            Description = "ERB詳細計測モード: timing または counters"
+        };
+        rootCommand.Options.Add(erbStartupProfileModeOption);
+#endif
+
         var filesArg = new Argument<string[]>(
             LocalizationManager.Parameters.HelpfilesArg
         )
@@ -112,6 +125,9 @@ static partial class Program
 
         var result = rootCommand.Parse(args);
         PerformanceMetrics.Configure(result.GetValue(benchmarkLogOption));
+#if PERFORMANCE_METRICS
+        ErbStartupProfiler.Configure(result.GetValue(erbStartupProfileOption), result.GetValue(erbStartupProfileModeOption));
+#endif
 
         //実行ディレクトリが引数で与えられた場合
         var exeDir = result.GetValue(exeDirOption);

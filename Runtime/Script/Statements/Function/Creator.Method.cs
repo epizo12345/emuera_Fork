@@ -17,7 +17,6 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Runtime.InteropServices;
 using MinorShift.Emuera.UI.Framework;
 using System.Globalization;
 
@@ -4187,9 +4186,6 @@ internal static partial class FunctionMethodCreator
         }
     }
 
-    [LibraryImport("user32.dll", EntryPoint = "GetKeyState")]
-    private static partial short GetKeyState(int virtualKey);
-
     static readonly short[] keytoggle = new short[256];
     private sealed class GetKeyStateMethod : FunctionMethod
     {
@@ -4207,7 +4203,7 @@ internal static partial class FunctionMethodCreator
             var keycode = arguments[0].GetIntValue(exm);
             if (keycode < 0 || keycode > 255)
                 return 0;
-            var s = GetKeyState((int)keycode);
+            var s = Windows.Win32.PInvoke.GetKeyState((int)keycode);
             var toggle = keytoggle[keycode];
             keytoggle[keycode] = (short)((s & 1) + 1);//初期値0、トグル状態に応じて1か2を代入。
             switch (Name)

@@ -5,7 +5,20 @@ using System.Text;
 
 namespace MinorShift.Emuera.GameProc.Function;
 
-public class CircularBuffer<T> : IEnumerable<T>
+public interface ICircularBuffer<T>
+{
+    int Count { get; }
+    int Capacity { get; set; }
+    T Enqueue(T item);
+    T Dequeue();
+    void Clear();
+    T this[int index] { get; set; }
+    int IndexOf(T item);
+    void Insert(int index, T item);
+    void RemoveAt(int index);
+}
+
+public class CircularBuffer<T> : ICircularBuffer<T>, IEnumerable<T>
 
 {
     private T[] _buffer;

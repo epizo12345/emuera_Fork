@@ -1,6 +1,6 @@
 # Emuera.NET ゲームパッド対応 v1
 
-作成日: 2026-08-11
+作成日: 2026-08-16
 
 このフォルダの`Emuera.exe`は、ゲームパッド対応v1を含むWindows x64向けRelease単一EXEです。
 
@@ -78,6 +78,6 @@ EXEと同じフォルダへ`gamepad-debug.log`を出力します。
 - Self-contained: false
 - Single-file: true
 - Emuera.exe: 24,757,994 bytes
-- SHA-256: `F87DE2AA22E85EFA2027F7AE78C6958B461BE9A6ED84E6611A1E2870958A9332`
+- SHA-256: `DFFB2C2E805516AFC2014C8E20E756C49DD24F13CE1BB040EE0263F0C769BE22`
 
 詳細仕様はリポジトリの`プロジェクト資料/07_ゲームパッド対応_v1_仕様書.md`、変更説明は`今回の修正説明_2026-08-11_ゲームパッド対応_v1.md`を参照してください。

@@ -1,12 +1,12 @@
 # Emuera.NET 最終通常版
 
-- 更新日: 2026-07-31
+- 更新日: 2026-08-16
 - 基礎: BugFix_Test `7b7dd3bf240eff4fdfc7094f4175de0e014532b7`
 - 対象OS: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
-- `Emuera.exe` サイズ: 24,639,210バイト（約23.5 MiB）
-- `Emuera.exe` SHA-256: `C60F8B93E20BCB0D61C8086358F13E5C24856DAFBAF9DE492D9027BE187A5D7D`
+- `Emuera.exe` サイズ: 24,757,994バイト（約23.6 MiB）
+- `Emuera.exe` SHA-256: `DFFB2C2E805516AFC2014C8E20E756C49DD24F13CE1BB040EE0263F0C769BE22`
 
 この単一EXEにはSkiaSharpのネイティブライブラリも内包されています。別の`libSkiaSharp.dll`を同じフォルダへ追加する必要はありません。
 Windows API全体の大きな.NET投影DLLは含めず、SkiaSharpが必要とする`WinRT.Runtime.dll`だけを内包しています。
@@ -50,6 +50,22 @@ Windows API全体の大きな.NET投影DLLは含めず、SkiaSharpが必要と�
 ```
 
 実際の設定ファイルで日本語が`\u524D...`のように見える場合も正常です。Shift-JIS誤判定による文字化けを避けるJSON表記で、Emuera内では同じ日本語として扱われます。
+
+## Controller / Gamepad
+
+- XInput、WinMM、Raw Input/HIDによるXbox系・PS4系ゲームパッドに対応
+- × / A: 決定
+- ○ / B: 戻る・キャンセル
+- △ / Y: 高速送り（ESC / マウス右クリック相当）
+- □ / X: 現在未使用
+- D-pad: UI選択移動
+- Left Stick: ゲーム操作 / UI移動
+- LB / RB: ページ移動
+- Start / OPTIONS: Enter相当
+
+△ / Yは会話や戦闘中の表示・待機を高速処理し、次の入力が必要な地点まで進みます。Virtual Gamepad Focusにより通常Console、HTML、INPUTMOUSEKEY、確認ポップアップを操作でき、画面遷移後やAlt+Tab後のFocus復帰にも対応します。
+
+診断時は`Emuera.exe --GamepadDebug`で`gamepad-debug.log`を出力できます。
 
 ## 入れ替え方
 
