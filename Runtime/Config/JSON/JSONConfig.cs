@@ -12,6 +12,12 @@ static class JSONConfig
     public static JSONGameConfigData Game;
     public static JSONUserConfigData User;
 
+    static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        WriteIndented = true,
+        IndentSize = 4,
+    };
+
     const string _gameConfigFileName = "setting.json";
     static string _gameConfigFilePath = Program.ExeDir + _gameConfigFileName;
     const string _userConfigFileName = "setting_user.json";
@@ -35,7 +41,7 @@ static class JSONConfig
             if (!File.Exists(_gameConfigFilePath))
             {
                 var defaultData = new JSONGameConfigData();
-                var defaultJson = JsonSerializer.Serialize(defaultData);
+                var defaultJson = JsonSerializer.Serialize(defaultData, _jsonOptions);
                 File.WriteAllText(_gameConfigFilePath, defaultJson);
             }
 
@@ -50,7 +56,7 @@ static class JSONConfig
             if (!File.Exists(_userConfigFilePath))
             {
                 var defaultData = new JSONUserConfigData();
-                var defaultJson = JsonSerializer.Serialize(defaultData);
+                var defaultJson = JsonSerializer.Serialize(defaultData, _jsonOptions);
                 File.WriteAllText(_userConfigFilePath, defaultJson);
             }
 
@@ -67,11 +73,11 @@ static class JSONConfig
     public static void Save()
     {
         {
-            var json = JsonSerializer.Serialize(Game);
+            var json = JsonSerializer.Serialize(Game, _jsonOptions);
             File.WriteAllText(_gameConfigFilePath, json);
         }
         {
-            var json = JsonSerializer.Serialize(User);
+            var json = JsonSerializer.Serialize(User, _jsonOptions);
             File.WriteAllText(_userConfigFilePath, json);
         }
     }
