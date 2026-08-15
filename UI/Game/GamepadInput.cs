@@ -53,6 +53,7 @@ internal enum GamepadActionKind
     Direction,
     Confirm,
     Cancel,
+    Escape,
     Start,
     ScrollUp,
     ScrollDown,
@@ -113,6 +114,7 @@ internal sealed class GamepadManager
         None = 0,
         Confirm = 1 << 0,
         Cancel = 1 << 1,
+        Escape = 1 << 2,
         LeftShoulder = 1 << 4,
         RightShoulder = 1 << 5,
         Start = 1 << 6,
@@ -638,7 +640,7 @@ internal sealed class GamepadManager
         connected = true;
         ResetInputState();
         SetStatus($"Gamepad: XInput #{userIndex}");
-        WriteDiagnostic("XInput mapping: A=Confirm, B=Cancel, LB/RB=Scroll, Start=Enter.");
+        WriteDiagnostic("XInput mapping: A=Confirm, B=Cancel, Y=Escape, LB/RB=Scroll, Start=Enter.");
         WriteDiagnostic($"Gamepad layout: Backend=XInput; XInputIndex={userIndex}; FaceButtonLayout=Xbox; LayoutReason=XInput backend.");
     }
 
@@ -846,6 +848,7 @@ internal sealed class GamepadManager
         WinmmButtonMapping psMapping = WinmmButtonMapping.Create(GamepadFaceButtonLayout.PlayStationWinMM);
         bool layouts = xboxMapping.Confirm == 0 && xboxMapping.Cancel == 1
             && psMapping.Confirm == 1 && psMapping.Cancel == 2
+            && xboxMapping.Escape == 3 && psMapping.Escape == 3
             && genericXboxLayout == GamepadFaceButtonLayout.Xbox
             && genericMicrosoftDs4Layout == GamepadFaceButtonLayout.PlayStationWinMM;
 
@@ -924,6 +927,8 @@ internal sealed class GamepadManager
             return new(GamepadActionKind.Cancel);
         if ((pressed & LogicalButtons.Confirm) != 0)
             return new(GamepadActionKind.Confirm);
+        if ((pressed & LogicalButtons.Escape) != 0)
+            return new(GamepadActionKind.Escape);
         if ((pressed & LogicalButtons.Start) != 0)
             return new(GamepadActionKind.Start);
         if (shoulderAction.Kind != GamepadActionKind.None)
@@ -993,6 +998,7 @@ internal sealed class GamepadManager
         LogicalButtons result = LogicalButtons.None;
         if ((buttons & XInputButtons.A) != 0) result |= LogicalButtons.Confirm;
         if ((buttons & XInputButtons.B) != 0) result |= LogicalButtons.Cancel;
+        if ((buttons & XInputButtons.Y) != 0) result |= LogicalButtons.Escape;
         if ((buttons & XInputButtons.LeftShoulder) != 0) result |= LogicalButtons.LeftShoulder;
         if ((buttons & XInputButtons.RightShoulder) != 0) result |= LogicalButtons.RightShoulder;
         if ((buttons & XInputButtons.Start) != 0) result |= LogicalButtons.Start;
@@ -1004,6 +1010,7 @@ internal sealed class GamepadManager
         LogicalButtons result = LogicalButtons.None;
         if (IsButtonDown(buttons, winmmButtonMapping.Confirm)) result |= LogicalButtons.Confirm;
         if (IsButtonDown(buttons, winmmButtonMapping.Cancel)) result |= LogicalButtons.Cancel;
+        if (IsButtonDown(buttons, winmmButtonMapping.Escape)) result |= LogicalButtons.Escape;
         if (IsButtonDown(buttons, winmmButtonMapping.LeftShoulder)) result |= LogicalButtons.LeftShoulder;
         if (IsButtonDown(buttons, winmmButtonMapping.RightShoulder)) result |= LogicalButtons.RightShoulder;
         if (IsButtonDown(buttons, winmmButtonMapping.Start)) result |= LogicalButtons.Start;
@@ -1015,6 +1022,7 @@ internal sealed class GamepadManager
         LogicalButtons result = LogicalButtons.None;
         if (IsButtonDown(buttons, rawInputButtonMapping.Confirm)) result |= LogicalButtons.Confirm;
         if (IsButtonDown(buttons, rawInputButtonMapping.Cancel)) result |= LogicalButtons.Cancel;
+        if (IsButtonDown(buttons, rawInputButtonMapping.Escape)) result |= LogicalButtons.Escape;
         if (IsButtonDown(buttons, rawInputButtonMapping.LeftShoulder)) result |= LogicalButtons.LeftShoulder;
         if (IsButtonDown(buttons, rawInputButtonMapping.RightShoulder)) result |= LogicalButtons.RightShoulder;
         if (IsButtonDown(buttons, rawInputButtonMapping.Start)) result |= LogicalButtons.Start;
@@ -1129,14 +1137,16 @@ internal sealed class GamepadManager
     {
         internal readonly int Confirm;
         internal readonly int Cancel;
+        internal readonly int Escape;
         internal readonly int LeftShoulder;
         internal readonly int RightShoulder;
         internal readonly int Start;
 
-        private WinmmButtonMapping(int confirm, int cancel, int leftShoulder, int rightShoulder, int start)
+        private WinmmButtonMapping(int confirm, int cancel, int escape, int leftShoulder, int rightShoulder, int start)
         {
             Confirm = confirm;
             Cancel = cancel;
+            Escape = escape;
             LeftShoulder = leftShoulder;
             RightShoulder = rightShoulder;
             Start = start;
@@ -1148,6 +1158,7 @@ internal sealed class GamepadManager
             return new WinmmButtonMapping(
                 ReadOverride("EMUERA_GAMEPAD_CONFIRM_BUTTON", ps4Layout ? 1 : 0),
                 ReadOverride("EMUERA_GAMEPAD_CANCEL_BUTTON", ps4Layout ? 2 : 1),
+                ReadOverride("EMUERA_GAMEPAD_ESCAPE_BUTTON", 3),
                 ReadOverride("EMUERA_GAMEPAD_LB_BUTTON", 4),
                 ReadOverride("EMUERA_GAMEPAD_RB_BUTTON", 5),
                 ReadOverride("EMUERA_GAMEPAD_START_BUTTON", ps4Layout ? 9 : 7));
@@ -1155,7 +1166,7 @@ internal sealed class GamepadManager
 
         internal string Describe()
         {
-            return $"Confirm=button {Confirm}, Cancel=button {Cancel}, LB=button {LeftShoulder}, RB=button {RightShoulder}, Start=button {Start}";
+            return $"Confirm=button {Confirm}, Cancel=button {Cancel}, Escape=button {Escape}, LB=button {LeftShoulder}, RB=button {RightShoulder}, Start=button {Start}";
         }
 
         private static int ReadOverride(string variableName, int defaultValue)

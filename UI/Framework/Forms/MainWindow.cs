@@ -487,7 +487,7 @@ internal sealed partial class MainWindow : Form
         if (console.IsWaitingPrimitive)
         //			if (console.IsWaitingPrimitiveMouse)
         {
-            console.MouseDown(e.Location, e.Button);
+            ProcessPrimitiveMouseInput(e.Location, e.Button);
             return;
         }
         bool isBacklog = vScrollBar.Value != vScrollBar.Maximum;
@@ -729,7 +729,9 @@ internal sealed partial class MainWindow : Form
             return;
         if (manager.IsConnected && console.GamepadEnsureSelection())
             console.RefreshStrings(true);
-        if (action.Kind == GamepadActionKind.None || console.IsInProcess)
+        if (action.Kind == GamepadActionKind.None)
+            return;
+        if (console.IsInProcess && action.Kind != GamepadActionKind.Escape)
             return;
 
         gamepadProcessing = true;
@@ -749,6 +751,9 @@ internal sealed partial class MainWindow : Form
                     break;
                 case GamepadActionKind.Cancel:
                     console.GamepadCancel();
+                    break;
+                case GamepadActionKind.Escape:
+                    ProcessEscapeInput();
                     break;
                 case GamepadActionKind.Start:
                     console.GamepadStart();
@@ -1050,6 +1055,27 @@ internal sealed partial class MainWindow : Form
         textBox_flag = true;
     }
 
+    private void ProcessEscapeInput()
+    {
+        if (console == null)
+            return;
+        if (console.IsWaitingPrimitive)
+        {
+            ProcessPrimitiveMouseInput(mainPicBox.PointToClient(Cursor.Position), MouseButtons.Right);
+            return;
+        }
+        console.KillMacro = true;
+        if (!console.IsInProcess)
+            PressEnterKey(true, false);
+    }
+
+    private void ProcessPrimitiveMouseInput(Point point, MouseButtons button)
+    {
+        if (console == null || console.IsInProcess || !console.IsWaitingPrimitive)
+            return;
+        console.MouseDown(point, button);
+    }
+
     private void richTextBox1_KeyDown(object? sender, KeyEventArgs e)
     {
         //1823 INPUTMOUSEKEY Key入力全てを捕まえてERB側で処理する
@@ -1095,9 +1121,7 @@ internal sealed partial class MainWindow : Form
         if (e.KeyCode == Keys.Escape)
         {
             e.SuppressKeyPress = true;
-            console.KillMacro = true;
-            if (!console.IsInProcess)
-                PressEnterKey(true, false);
+            ProcessEscapeInput();
             return;
         }
         if (e.KeyCode == Keys.Left || e.KeyCode == Keys.Home || e.KeyCode == Keys.Back)

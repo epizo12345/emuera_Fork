@@ -22,20 +22,28 @@ framework-dependent単一ファイル版のため、Emuera本体のDLLを別途�
 - WinMM joystick API
 - Raw Input / HIDフォールバック
 - 通常Console、HTML UI、HTML Island、INPUTMOUSEKEY
-- 十字キー・左スティック移動
-- ×決定、○semantic CANCEL
-- L1/R1は、`PAGE.0`型または「前のページ」「次のページ」型のPage UIでは前/次ページ、それ以外では従来のログ操作。Directional型のページ端では反対方向を消費して何もしません。OPTIONS/Start
 - ホットプラグ、Alt+Tab復帰
 - Raw Inputでも十字キーと左スティックを別々に扱う
 - 複数パッド接続時も、選択中デバイス単位でボタン配列を判定
-- ON/OFF切替後の同一画面再描画で、決定直前のフォーカスを安全に復元
-- 別画面から○で戻る時は、Return Focus Historyにより遷移前のフォーカスを安全に復元（modal、入れ子画面、Target消失時の代替を含む）
-- 通常Consoleの説明文・装飾文をFocus Targetから除外し、Input=0の実ボタンは保持
-- 複数行に分割された同一論理ボタンのクリック可能断片を1Targetへ統合し、遠い同番号ボタンは分離保持
-- HTML確認ポップアップの背面Cancel overlayをDirectional Focusから除外し、前面の0/1選択肢を初期Focus・上下移動対象にする
-- modalでない巨大HTML Buttonと独立したHTML Islandは自動除外しない
 
-PS4系の既定は×が決定、○がキャンセルです。
+### 標準操作
+
+| 操作 | 機能 |
+|---|---|
+| × / A | 決定 |
+| ○ / B | 戻る・キャンセル |
+| △ / Y | 高速送り（ESC / マウス右クリック相当） |
+| □ / X | 現在未使用 |
+| D-pad | UI選択移動 |
+| Left Stick | ゲーム操作 / UI移動 |
+| LB / RB | ページ移動（対象ページがない場合は従来のログ操作） |
+| Start / OPTIONS | Enter相当 |
+
+△ / Yは、会話や戦闘中の表示・待機を高速で処理し、次の入力が必要な地点まで進みます。`INPUTMOUSEKEY`待機中も既存のマウス右クリック相当として扱います。
+
+ゲームパッドのVirtual Focusにより、通常Consoleの選択肢、HTML、HTML Island、INPUTMOUSEKEY、確認ポップアップを操作できます。ON/OFF切替後や別画面から戻った場合のFocus復帰、複数行に分割された同一論理ボタンの統合にも対応しています。
+
+PS4系の既定は×が決定、○がキャンセルです。XInputはXbox配列、WinMM / Raw Input(HID)は接続デバイスを確認してXbox系またはPS4系の配列を選択します。
 
 ## 診断
 
@@ -69,7 +77,7 @@ EXEと同じフォルダへ`gamepad-debug.log`を出力します。
 - Runtime: win-x64
 - Self-contained: false
 - Single-file: true
-- Emuera.exe: 24,753,898 bytes
-- SHA-256: `7DCFA38C8C6ADABA31D26A7C1AE05488C9427286F3ECC1C05B7B2644AB3CABAC`
+- Emuera.exe: 24,757,994 bytes
+- SHA-256: `F87DE2AA22E85EFA2027F7AE78C6958B461BE9A6ED84E6611A1E2870958A9332`
 
 詳細仕様はリポジトリの`プロジェクト資料/07_ゲームパッド対応_v1_仕様書.md`、変更説明は`今回の修正説明_2026-08-11_ゲームパッド対応_v1.md`を参照してください。
