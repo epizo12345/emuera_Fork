@@ -385,20 +385,6 @@ internal sealed class ConfigData
         return true;
     }
 
-    public bool ReLoadConfig()
-    {
-        //_fixed.configの中身が変わった場合、非固定になったものが保持されてしまうので、ここで一旦すべて解除
-        foreach ((_, var item) in configArray)
-        {
-            if (item == null)
-                continue;
-            if (item.Fixed)
-                item.Fixed = false;
-        }
-        LoadConfig();
-        return true;
-    }
-
     public bool LoadConfig()
     {
         string defaultConfigPath = Program.CsvDir + "_default.config";

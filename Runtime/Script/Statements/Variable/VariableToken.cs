@@ -133,11 +133,6 @@ internal abstract class VariableToken
         throw new CodeEE(string.Format(LocalizationManager.Error.GetSize0DVar, varName));
     }
 
-    public void throwOutOfRangeException(Int64[] arguments, Exception e)
-    {
-        CheckElement(arguments, [true, true, true]);
-        throw e;
-    }
     public virtual void CheckElement(Int64[] arguments, bool[] doCheck) { }
     public void CheckElement(Int64[] arguments)
     {
@@ -543,16 +538,14 @@ internal abstract class ReferenceToken : UserDefinedVariableToken
 
 internal abstract class LocalVariableToken : VariableToken
 {
-    public LocalVariableToken(VariableCode varCode, VariableData varData, string subId, int size)
+    public LocalVariableToken(VariableCode varCode, VariableData varData, int size)
         : base(varCode, varData)
     {
         CanRestructure = false;
-        this.subID = subId;
         this.size = size;
     }
     public abstract void SetDefault();
     public abstract void resize(int newSize);
-    protected string subID;
     protected int size;
     public override Int32 GetLength()
     {
@@ -1520,8 +1513,8 @@ internal sealed partial class VariableData
 
     private sealed class LocalInt1DVariableToken : LocalVariableToken
     {
-        public LocalInt1DVariableToken(VariableCode varCode, VariableData varData, string subId, int size)
-            : base(varCode, varData, subId, size)
+        public LocalInt1DVariableToken(VariableCode varCode, VariableData varData, int size)
+            : base(varCode, varData, size)
         {
         }
         Int64[] array;
@@ -1588,8 +1581,8 @@ internal sealed partial class VariableData
 
     private sealed class LocalStr1DVariableToken : LocalVariableToken
     {
-        public LocalStr1DVariableToken(VariableCode varCode, VariableData varData, string subId, int size)
-            : base(varCode, varData, subId, size)
+        public LocalStr1DVariableToken(VariableCode varCode, VariableData varData, int size)
+            : base(varCode, varData, size)
         {
         }
         string[] array;

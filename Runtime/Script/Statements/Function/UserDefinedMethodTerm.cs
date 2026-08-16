@@ -135,12 +135,6 @@ internal sealed class UserDefinedRefMethodNoArgTerm : SuperUserDefinedMethodTerm
     { get { throw new CodeEE("引数のない関数参照" + reffunc.Name + "を呼び出しました"); } }
     public override CalledFunction Call
     { get { throw new CodeEE("引数のない関数参照" + reffunc.Name + "を呼び出しました"); } }
-    public string GetRefName()
-    {
-        if (reffunc.CalledFunction == null)
-            return "";
-        return reffunc.CalledFunction.TopLabel.LabelName;
-    }
     public override long GetIntValue(ExpressionMediator exm)
     { throw new CodeEE("引数のない関数参照" + reffunc.Name + "を呼び出しました"); }
     public override string GetStrValue(ExpressionMediator exm)

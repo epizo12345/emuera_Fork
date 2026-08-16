@@ -112,13 +112,6 @@ internal sealed partial class ConfigDialog : Form
         colorBox.SelectingColor = item.Value;
         colorBox.Enabled = !item.Fixed;
     }
-    /*		void setTextBox(TextBox textBox, ConfigCode code)
-				{
-					ConfigItem<string> item = (ConfigItem<string>)ConfigData.Instance.GetConfigItem(code);
-					textBox.Text = item.Value;
-					textBox.Enabled = !item.Fixed;
-				}
-		*/
     MainWindow parent;
     public void SetConfig(MainWindow mainWindow)
     {
@@ -444,29 +437,6 @@ internal sealed partial class ConfigDialog : Form
     }
 
 
-    private void comboBoxReduceArgumentOnLoad_SelectedIndexChanged(object sender, EventArgs e)
-    {
-        //いちいち切り替えるのが面倒なのでまとめて却下
-        /*if (comboBoxReduceArgumentOnLoad.SelectedIndex == 0)
-			{
-				comboBox3.Enabled = false;
-				comboBox4.Enabled = false;
-				comboBox5.Enabled = false;
-				checkBox12.Enabled = false;
-				checkBox11.Enabled = false;
-			}
-			else
-			{
-				comboBox3.Enabled = true;
-				comboBox4.Enabled = true;
-				comboBox5.Enabled = true;
-				checkBox12.Enabled = true;
-				checkBox11.Enabled = true;
-			}*/
-
-
-    }
-
 
     private void button1_Click(object sender, EventArgs e)
     {
@@ -625,15 +595,6 @@ internal sealed partial class ConfigDialog : Form
         textBox2.Enabled = ((ComboBox)sender).SelectedIndex == 3;
     }
 
-    private void numericUpDown5_ValueChanged(object sender, EventArgs e)
-    {
-
-    }
-
-    private void tableLayoutPanel1_Paint(object sender, PaintEventArgs e)
-    {
-
-    }
 
     private void UseButtonFocusColor_CheckedChanged(object sender, EventArgs e)
     {
@@ -650,10 +611,6 @@ internal sealed partial class ConfigDialog : Form
         JSONConfig.Game.UseScopedVariableInstruction = _useScopedVariableInstruction.Checked;
     }
 
-    private void checkBox27_CheckedChanged(object sender, EventArgs e)
-    {
-
-    }
 
     internal void Localize()
     {

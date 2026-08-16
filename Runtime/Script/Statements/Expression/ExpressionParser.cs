@@ -626,11 +626,6 @@ internal static class ExpressionParser
             stack.Push(newTerm);
         }
 
-        /*			SingleTerm GetSingle(AExpression oprand)
-						{
-							return (SingleTerm)oprand;
-						}
-			*/
     }
 
 }

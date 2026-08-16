@@ -42,7 +42,6 @@ namespace MinorShift.Emuera.UI.Game;
 /// </summary>
 internal static partial class HtmlManager
 {
-    static readonly char[] rep = ['&', '>', '<', '\"', '\''];
     static readonly Dictionary<char, string> repDic = new()
     {
         { '&', "&amp;" },
@@ -51,27 +50,6 @@ internal static partial class HtmlManager
         { '\"', "&quot;" },
         { '\'', "&apos;" }
     };
-
-    private sealed class HtmlAnalzeStateFontTag
-    {
-        public int Color = -1;
-        public int BColor = -1;
-        public string FontName;
-        //public int PointX = 0;
-        //public bool PointXisLocked = false;
-    }
-
-    private sealed class HtmlAnalzeStateButtonTag
-    {
-        public bool IsButton = true;
-        public bool IsButtonTag = true;
-        public long ButtonValueInt;
-        public string ButtonValueStr;
-        public string ButtonTitle;
-        public bool ButtonIsInteger;
-        public int PointX;
-        public bool PointXisLocked;
-    }
 
     class DivState
     {
@@ -88,57 +66,6 @@ internal static partial class HtmlManager
         public int BorderWidth;
         public SKColor BorderColor;
         public SKRect? Padding;
-    }
-
-    private sealed class HtmlAnalzeState
-    {
-        public bool LineHead = true;//行頭フラグ。一度もテキストが出てきてない状態
-        public FontStyle FontStyle = FontStyle.Regular;
-        public List<HtmlAnalzeStateFontTag> FonttagList = [];
-        public bool FlagNobr;//falseの時に</nobr>するとエラー
-        public bool FlagP;//falseの時に</p>するとエラー
-        public bool FlagNobrClosed;//trueの時に</nobr>するとエラー
-        public bool FlagPClosed;//trueの時に</p>するとエラー
-        public DisplayLineAlignment Alignment = DisplayLineAlignment.LEFT;
-
-        /// <summary>
-        /// 今まで追加された文字列についてのボタンタグ情報
-        /// </summary>
-        public HtmlAnalzeStateButtonTag LastButtonTag;
-        /// <summary>
-        /// 最新のボタンタグ情報
-        /// </summary>
-        public HtmlAnalzeStateButtonTag CurrentButtonTag;
-
-        public bool FlagBr;//<br>による強制改行の予約
-        public bool FlagButton;//<button></button>によるボタン化の予約
-
-        public DivState DivState;
-        public bool OpenDiv;
-        public bool CloseDiv;
-
-        public StringStyle GetSS()
-        {
-            Color c = Config.ForeColor;
-            Color b = Config.FocusColor;
-            string fontname = null;
-            bool colorChanged = false;
-            if (FonttagList.Count > 0)
-            {
-                HtmlAnalzeStateFontTag font = FonttagList[^1];
-                fontname = font.FontName;
-                if (font.Color >= 0)
-                {
-                    colorChanged = true;
-                    c = Color.FromArgb(font.Color >> 16, font.Color >> 8 & 0xFF, font.Color & 0xFF);
-                }
-                if (font.BColor >= 0)
-                {
-                    b = Color.FromArgb(font.BColor >> 16, font.BColor >> 8 & 0xFF, font.BColor & 0xFF);
-                }
-            }
-            return new StringStyle(c, colorChanged, b, FontStyle, fontname);
-        }
     }
 
     /// <summary>
@@ -802,45 +729,6 @@ internal static partial class HtmlManager
     public static string Unescape(string str)
     {
         return System.Web.HttpUtility.HtmlDecode(str);
-    }
-
-    /// <summary>
-    /// ここまでのcssをボタン化。発生原因はbrタグ、行末、ボタンタグ
-    /// </summary>
-    /// <param name="cssList"></param>
-    /// <param name="isbutton"></param>
-    /// <param name="state"></param>
-    /// <param name="console"></param>
-    /// <returns></returns>
-    private static ConsoleButtonString cssToButton(List<AConsoleDisplayNode> cssList, HtmlAnalzeState state, EmueraConsole console)
-    {
-        AConsoleDisplayNode[] css = new AConsoleDisplayNode[cssList.Count];
-        cssList.CopyTo(css);
-        cssList.Clear();
-        ConsoleButtonString ret;
-        if (state.LastButtonTag != null && state.LastButtonTag.IsButton)
-        {
-            if (state.LastButtonTag.ButtonIsInteger)
-                ret = new ConsoleButtonString(console, css, state.LastButtonTag.ButtonValueInt, state.LastButtonTag.ButtonValueStr);
-            else
-                ret = new ConsoleButtonString(console, css, state.LastButtonTag.ButtonValueStr);
-        }
-        else
-        {
-            ret = new ConsoleButtonString(console, css)
-            {
-                Title = null
-            };
-        }
-        if (state.LastButtonTag != null)
-        {
-            ret.Title = state.LastButtonTag.ButtonTitle;
-            if (state.LastButtonTag.PointXisLocked)
-            {
-                ret.LockPointX(state.LastButtonTag.PointX);
-            }
-        }
-        return ret;
     }
 
     public static string GetColorToString(Color color)

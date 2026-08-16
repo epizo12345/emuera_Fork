@@ -510,22 +510,6 @@ internal sealed partial class Process(EmueraConsole view)
         return methodStack;
     }
 
-    public ScriptPosition? GetRunningPosition()
-    {
-        LogicalLine line = state.ErrorLine;
-        if (line == null)
-            return default;
-        return line.Position;
-    }
-    /*
-				private readonly string scaningScope = null;
-				private string GetScaningScope()
-				{
-					if (scaningScope != null)
-						return scaningScope;
-					return state.Scope;
-				}
-		*/
     // [Emuera改修:WARN-04]
     // 並列解析中の「今どの行を解析しているか」を作業スレッドごとに分ける。
     // 1つの共有変数だと、別スレッドの行番号を使って誤警告を出すことがある。

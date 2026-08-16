@@ -116,7 +116,6 @@ internal sealed partial class IdentifierDictionary
     readonly Dictionary<string, FunctionIdentifier> instructionDic;
     readonly Dictionary<string, FunctionMethod> methodDic;
     readonly Dictionary<string, UserDefinedRefMethod> refmethodDic;
-    public List<UserDefinedCharaVariableToken> CharaDimList = [];
     #region initialize
     public IdentifierDictionary(VariableData varData)
     {

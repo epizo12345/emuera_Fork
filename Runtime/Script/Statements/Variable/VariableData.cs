@@ -336,13 +336,13 @@ internal sealed partial class VariableData : IDisposable
 
     }
 
-    private LocalInt1DVariableToken CreateLocalInt(VariableCode varCode, string subKey, int size)
+    private LocalInt1DVariableToken CreateLocalInt(VariableCode varCode, int size)
     {
-        return new LocalInt1DVariableToken(varCode, this, subKey, size);
+        return new LocalInt1DVariableToken(varCode, this, size);
     }
-    private LocalStr1DVariableToken CreateLocalStr(VariableCode varCode, string subKey, int size)
+    private LocalStr1DVariableToken CreateLocalStr(VariableCode varCode, int size)
     {
-        return new LocalStr1DVariableToken(varCode, this, subKey, size);
+        return new LocalStr1DVariableToken(varCode, this, size);
     }
     public Dictionary<string, VariableToken> GetVarTokenDicClone()
     {
