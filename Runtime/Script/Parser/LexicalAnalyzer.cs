@@ -371,7 +371,7 @@ internal static partial class LexicalAnalyzer
     }
 
     /// <summary>
-    /// 行頭の単語の取得。マクロ展開あり。ただし単語でないマクロ展開はしない。
+    /// 行頭の単語を取得する。
     /// </summary>
     /// <param name="st"></param>
     /// <returns></returns>
@@ -381,36 +381,6 @@ internal static partial class LexicalAnalyzer
         if (str.IsEmpty)
             throw new CodeEE(LocalizationManager.Error.LineBeginsIllegalCharacter);
         return str.ToString();
-    }
-
-    public static IdentifierWord ReadFirstIdentifierWord(CharStream st)
-    {
-        //int startpos = st.CurrentPosition;
-        var str = ReadSingleIdentifierROS(st);
-        if (str.IsEmpty)
-            throw new CodeEE(LocalizationManager.Error.LineBeginsIllegalCharacter);
-        //1808a3 先頭1単語の展開をやめる。－命令の置換を禁止。
-        //if (UseMacro)
-        //{
-        //    int i = 0;
-        //    while (true)
-        //    {
-        //        DefineMacro macro = GlobalStatic.IdentifierDictionary.GetMacro(str);
-        //        i++;
-        //        if (i > MAX_EXPAND_MACRO)
-        //            throw new CodeEE("マクロの展開数が1文あたりの上限を超えました(自己参照・循環参照のおそれ)");
-        //        if (macro == null)
-        //            break;
-        //        //単語（識別子一個）でないマクロが出現したらここでは処理しない
-        //        if (macro.IDWord == null)
-        //        {
-        //            st.CurrentPosition = startpos;
-        //            return null;//変数処理に任せる。
-        //        }
-        //        str = macro.IDWord.Code;
-        //    }
-        //}
-        return new IdentifierWord(str.ToString());
     }
 
     /// <summary>
