@@ -257,6 +257,19 @@ public static class LocalizationManager
         public static string Check_UTF8withBOM => FormLocalization.ConfigDialog_CheckUTF8BOM;
         public static string ImageSampling => FormLocalization.ConfigDialog_ImageSampling;
         public static string FontAntialias => FormLocalization.ConfigDialog_FontAntialias;
+
+        public static string Macro => FormLocalization.ConfigDialog_Macro;
+        public static string Macro_EditGroup => FormLocalization.ConfigDialog_Macro_EditGroup;
+        public static string Macro_GamepadTargets => FormLocalization.ConfigDialog_Macro_GamepadTargets;
+        public static string Macro_Group => FormLocalization.ConfigDialog_Macro_Group;
+        public static string Macro_Key => FormLocalization.ConfigDialog_Macro_Key;
+        public static string Macro_Execute1 => FormLocalization.ConfigDialog_Macro_Execute1;
+        public static string Macro_Execute2 => FormLocalization.ConfigDialog_Macro_Execute2;
+        public static string Macro_Execute3 => FormLocalization.ConfigDialog_Macro_Execute3;
+        public static string Macro_Immediate => FormLocalization.ConfigDialog_Macro_Immediate;
+        public static string Macro_ImmediateOff => FormLocalization.ConfigDialog_Macro_ImmediateOff;
+        public static string Macro_ImmediateOn => FormLocalization.ConfigDialog_Macro_ImmediateOn;
+        public static string Macro_ApplyImmediately => FormLocalization.ConfigDialog_Macro_ApplyImmediately;
     }
 
     public static class DebugConfigDialog

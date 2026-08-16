@@ -2,6 +2,7 @@
 
 using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Config.JSON;
+using MinorShift.Emuera.Runtime.Script;
 using MinorShift.Emuera.GameView;
 using System;
 using System.Drawing;
@@ -44,6 +45,24 @@ internal sealed partial class ConfigDialog : Form
     private GamepadCaptureState gamepadCaptureState;
     private int gamepadCaptureActionIndex;
     private string? gamepadCaptureStatus;
+    private TabPage? macroTabPage;
+    private ComboBox? macroGroupComboBox;
+    private Label? macroEditGroupLabel;
+    private Label? macroTargetsLabel;
+    private Label? macroGroupHeaderLabel;
+    private Label? macroKeyHeaderLabel;
+    private Label[] macroTargetLabels = [];
+    private Label? macroApplyNoteLabel;
+    private Label? macroImmediateOffLabel;
+    private Label? macroImmediateOnLabel;
+    private TextBox[] macroTextBoxes = [];
+    private ComboBox[] macroTargetGroupComboBoxes = new ComboBox[3];
+    private ComboBox[] macroTargetFKeyComboBoxes = new ComboBox[3];
+    private CheckBox? macroImmediateCheckBox;
+    private string[] macroEditingValues = new string[KeyMacro.MaxMacro];
+    private int macroEditingGroup;
+    private bool macroControlsUpdating;
+    private bool macroEditorEnabled;
 
     private static string GetGamepadFocusText(string text, bool selected)
     {
@@ -55,6 +74,8 @@ internal sealed partial class ConfigDialog : Form
         this.gamepadManager = gamepadManager;
         InitializeComponent();
         InitializeGamepadTab();
+        InitializeMacroTab();
+        tabControl.SelectedIndexChanged += (_, _) => UpdateConfigRestartNoticeVisibility();
         numericUpDown1.Minimum = 1;//PrintCPerLine
         numericUpDown1.Maximum = 100;
         numericUpDown2.Minimum = 128;//ConfigCode.WindowX(Width)
@@ -211,6 +232,224 @@ internal sealed partial class ConfigDialog : Form
         tabControl.Controls.Add(gamepadTabPage);
     }
 
+    private void InitializeMacroTab()
+    {
+        macroTabPage = new TabPage(LocalizationManager.ConfigDialog.Macro)
+        {
+            BackColor = SystemColors.Control,
+            Padding = new Padding(8),
+        };
+        TableLayoutPanel table = new()
+        {
+            ColumnCount = 2,
+            Dock = DockStyle.Fill,
+            AutoScroll = true,
+        };
+        table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42));
+        table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58));
+
+        macroApplyNoteLabel = new Label
+        {
+            AutoSize = true,
+            Margin = new Padding(3, 3, 3, 3),
+        };
+        table.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
+        table.Controls.Add(macroApplyNoteLabel, 0, 0);
+        table.SetColumnSpan(macroApplyNoteLabel, 2);
+
+        macroEditGroupLabel = new Label { Anchor = AnchorStyles.Left, AutoSize = true };
+        table.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
+        table.Controls.Add(macroEditGroupLabel, 0, 1);
+        macroGroupComboBox = new ComboBox
+        {
+            Dock = DockStyle.Fill,
+            DropDownStyle = ComboBoxStyle.DropDownList,
+        };
+        for (int group = 0; group < KeyMacro.MaxGroup; group++)
+            macroGroupComboBox.Items.Add($"{group}: {KeyMacro.GetGroupName(group)}");
+        macroGroupComboBox.SelectedIndexChanged += MacroGroupComboBox_SelectedIndexChanged;
+        table.Controls.Add(macroGroupComboBox, 1, 1);
+
+        macroTargetsLabel = new Label { Anchor = AnchorStyles.Left, AutoSize = true };
+        table.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
+        table.Controls.Add(macroTargetsLabel, 0, 2);
+        table.SetColumnSpan(macroTargetsLabel, 2);
+
+        FlowLayoutPanel headers = new() { Dock = DockStyle.Fill, WrapContents = false, AutoSize = true };
+        macroGroupHeaderLabel = new Label { AutoSize = false, Width = 90, TextAlign = ContentAlignment.MiddleLeft };
+        macroKeyHeaderLabel = new Label { AutoSize = false, Width = 65, TextAlign = ContentAlignment.MiddleLeft };
+        headers.Controls.Add(macroGroupHeaderLabel);
+        headers.Controls.Add(macroKeyHeaderLabel);
+        table.RowStyles.Add(new RowStyle(SizeType.Absolute, 24));
+        table.Controls.Add(headers, 1, 3);
+
+        macroTargetLabels = new Label[3];
+        for (int i = 0; i < macroTargetLabels.Length; i++)
+        {
+            table.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
+            macroTargetLabels[i] = new Label { Anchor = AnchorStyles.Left, AutoSize = true };
+            table.Controls.Add(macroTargetLabels[i], 0, i + 4);
+            FlowLayoutPanel target = new() { Dock = DockStyle.Fill, WrapContents = false, AutoSize = true };
+            ComboBox group = new() { Width = 90, DropDownStyle = ComboBoxStyle.DropDownList };
+            for (int value = 0; value < KeyMacro.MaxGroup; value++)
+                group.Items.Add(value.ToString());
+            ComboBox fkey = new() { Width = 65, DropDownStyle = ComboBoxStyle.DropDownList };
+            for (int value = 1; value <= KeyMacro.MaxFkey; value++)
+                fkey.Items.Add($"F{value}");
+            macroTargetGroupComboBoxes[i] = group;
+            macroTargetFKeyComboBoxes[i] = fkey;
+            target.Controls.Add(group);
+            target.Controls.Add(fkey);
+            table.Controls.Add(target, 1, i + 4);
+        }
+
+        macroImmediateCheckBox = new CheckBox
+        {
+            AutoSize = true,
+            Margin = new Padding(3, 6, 3, 3),
+        };
+        table.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
+        table.Controls.Add(macroImmediateCheckBox, 0, 7);
+        table.SetColumnSpan(macroImmediateCheckBox, 2);
+        macroImmediateOffLabel = new Label
+        {
+            Dock = DockStyle.Fill,
+            TextAlign = ContentAlignment.MiddleLeft,
+            Margin = new Padding(3, 0, 3, 0),
+        };
+        table.RowStyles.Add(new RowStyle(SizeType.Absolute, 28));
+        table.Controls.Add(macroImmediateOffLabel, 0, 8);
+        table.SetColumnSpan(macroImmediateOffLabel, 2);
+        macroImmediateOnLabel = new Label
+        {
+            Dock = DockStyle.Fill,
+            TextAlign = ContentAlignment.MiddleLeft,
+            Margin = new Padding(3, 0, 3, 0),
+        };
+        table.RowStyles.Add(new RowStyle(SizeType.Absolute, 28));
+        table.Controls.Add(macroImmediateOnLabel, 0, 9);
+        table.SetColumnSpan(macroImmediateOnLabel, 2);
+
+        macroTextBoxes = new TextBox[KeyMacro.MaxFkey];
+        for (int fkey = 0; fkey < KeyMacro.MaxFkey; fkey++)
+        {
+            int row = fkey + 10;
+            table.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
+            table.Controls.Add(new Label { Text = $"F{fkey + 1}", Anchor = AnchorStyles.Left, AutoSize = true }, 0, row);
+            TextBox textBox = new() { Dock = DockStyle.Fill, Multiline = false };
+            int capturedFkey = fkey;
+            textBox.TextChanged += (_, _) =>
+            {
+                if (!macroControlsUpdating && macroEditorEnabled)
+                    macroEditingValues[macroEditingGroup * KeyMacro.MaxFkey + capturedFkey] = textBox.Text;
+            };
+            macroTextBoxes[fkey] = textBox;
+            table.Controls.Add(textBox, 1, row);
+        }
+
+        macroTabPage.Controls.Add(table);
+        tabControl.Controls.Add(macroTabPage);
+    }
+
+    private void MacroGroupComboBox_SelectedIndexChanged(object? sender, EventArgs e)
+    {
+        if (macroControlsUpdating || macroGroupComboBox == null || macroGroupComboBox.SelectedIndex < 0)
+            return;
+        SaveMacroGroupEditor();
+        macroEditingGroup = macroGroupComboBox.SelectedIndex;
+        LoadMacroGroupEditor();
+    }
+
+    private void LoadMacroGroupEditor()
+    {
+        macroControlsUpdating = true;
+        try
+        {
+            for (int fkey = 0; fkey < macroTextBoxes.Length; fkey++)
+            {
+                macroTextBoxes[fkey].Text = macroEditingValues[macroEditingGroup * KeyMacro.MaxFkey + fkey];
+                macroTextBoxes[fkey].Enabled = macroEditorEnabled;
+            }
+        }
+        finally
+        {
+            macroControlsUpdating = false;
+        }
+    }
+
+    private void SaveMacroGroupEditor()
+    {
+        if (!macroEditorEnabled)
+            return;
+        for (int fkey = 0; fkey < macroTextBoxes.Length; fkey++)
+            macroEditingValues[macroEditingGroup * KeyMacro.MaxFkey + fkey] = macroTextBoxes[fkey].Text;
+    }
+
+    private void LoadMacroEditor()
+    {
+        macroEditorEnabled = Config.UseKeyMacro;
+        macroEditingValues = macroEditorEnabled ? KeyMacro.CopyMacros() : new string[KeyMacro.MaxMacro];
+        macroEditingGroup = 0;
+        macroControlsUpdating = true;
+        try
+        {
+            if (macroGroupComboBox != null)
+                macroGroupComboBox.SelectedIndex = 0;
+            if (macroImmediateCheckBox != null)
+                macroImmediateCheckBox.Checked = JSONConfig.User.GamepadMacroImmediateExecution;
+            for (int i = 0; i < macroTargetGroupComboBoxes.Length; i++)
+            {
+                macroTargetGroupComboBoxes[i].SelectedIndex = Math.Clamp(i switch
+                {
+                    0 => JSONConfig.User.GamepadMacro1Group,
+                    1 => JSONConfig.User.GamepadMacro2Group,
+                    _ => JSONConfig.User.GamepadMacro3Group,
+                }, 0, KeyMacro.MaxGroup - 1);
+                macroTargetFKeyComboBoxes[i].SelectedIndex = Math.Clamp(i switch
+                {
+                    0 => JSONConfig.User.GamepadMacro1FKey,
+                    1 => JSONConfig.User.GamepadMacro2FKey,
+                    _ => JSONConfig.User.GamepadMacro3FKey,
+                } - 1, 0, KeyMacro.MaxFkey - 1);
+                macroTargetGroupComboBoxes[i].Enabled = macroEditorEnabled;
+                macroTargetFKeyComboBoxes[i].Enabled = macroEditorEnabled;
+            }
+        }
+        finally
+        {
+            macroControlsUpdating = false;
+        }
+        LoadMacroGroupEditor();
+        if (macroGroupComboBox != null)
+            macroGroupComboBox.Enabled = macroEditorEnabled;
+        if (macroImmediateCheckBox != null)
+            macroImmediateCheckBox.Enabled = macroEditorEnabled;
+    }
+
+    private void SaveMacroSettings()
+    {
+        SaveMacroGroupEditor();
+        JSONUserConfigData user = JSONConfig.User;
+        user.GamepadMacro1Group = macroTargetGroupComboBoxes[0].SelectedIndex;
+        user.GamepadMacro2Group = macroTargetGroupComboBoxes[1].SelectedIndex;
+        user.GamepadMacro3Group = macroTargetGroupComboBoxes[2].SelectedIndex;
+        user.GamepadMacro1FKey = macroTargetFKeyComboBoxes[0].SelectedIndex + 1;
+        user.GamepadMacro2FKey = macroTargetFKeyComboBoxes[1].SelectedIndex + 1;
+        user.GamepadMacro3FKey = macroTargetFKeyComboBoxes[2].SelectedIndex + 1;
+        user.GamepadMacroImmediateExecution = macroImmediateCheckBox?.Checked == true;
+
+        if (!macroEditorEnabled || !Config.UseKeyMacro || !checkBox18.Checked)
+            return;
+        for (int group = 0; group < KeyMacro.MaxGroup; group++)
+            for (int fkey = 0; fkey < KeyMacro.MaxFkey; fkey++)
+            {
+                string value = macroEditingValues[group * KeyMacro.MaxFkey + fkey];
+                if (!string.Equals(value, KeyMacro.GetMacro(fkey, group), StringComparison.Ordinal))
+                    KeyMacro.SetMacro(fkey, group, value);
+            }
+        KeyMacro.SaveMacro();
+    }
+
     private static string GetGamepadActionName(GamepadActionKind action)
     {
         return action switch
@@ -222,6 +461,9 @@ internal sealed partial class ConfigDialog : Form
             GamepadActionKind.ScrollDown => LocalizationManager.ConfigDialog.Gamepad_NextPage,
             GamepadActionKind.Start => LocalizationManager.ConfigDialog.Gamepad_Start,
             GamepadActionKind.OpenSettings => LocalizationManager.ConfigDialog.Gamepad_OpenSettings,
+            GamepadActionKind.Macro1 => LocalizationManager.ConfigDialog.Macro_Execute1,
+            GamepadActionKind.Macro2 => LocalizationManager.ConfigDialog.Macro_Execute2,
+            GamepadActionKind.Macro3 => LocalizationManager.ConfigDialog.Macro_Execute3,
             _ => action.ToString(),
         };
     }
@@ -243,6 +485,42 @@ internal sealed partial class ConfigDialog : Form
             gamepadOverrideNoteLabel.Visible = GamepadManager.HasActiveRawButtonOverride();
         }
         UpdateGamepadFocusDisplay();
+    }
+
+    private void LocalizeMacroTab()
+    {
+        if (macroTabPage == null)
+            return;
+        macroTabPage.Text = LocalizationManager.ConfigDialog.Macro;
+        if (macroApplyNoteLabel != null)
+            macroApplyNoteLabel.Text = LocalizationManager.ConfigDialog.Macro_ApplyImmediately;
+        if (macroEditGroupLabel != null)
+            macroEditGroupLabel.Text = LocalizationManager.ConfigDialog.Macro_EditGroup;
+        if (macroTargetsLabel != null)
+            macroTargetsLabel.Text = LocalizationManager.ConfigDialog.Macro_GamepadTargets;
+        if (macroGroupHeaderLabel != null)
+            macroGroupHeaderLabel.Text = LocalizationManager.ConfigDialog.Macro_Group;
+        if (macroKeyHeaderLabel != null)
+            macroKeyHeaderLabel.Text = LocalizationManager.ConfigDialog.Macro_Key;
+        string[] names =
+        [
+            LocalizationManager.ConfigDialog.Macro_Execute1,
+            LocalizationManager.ConfigDialog.Macro_Execute2,
+            LocalizationManager.ConfigDialog.Macro_Execute3,
+        ];
+        for (int i = 0; i < macroTargetLabels.Length; i++)
+            macroTargetLabels[i].Text = names[i];
+        if (macroImmediateCheckBox != null)
+            macroImmediateCheckBox.Text = LocalizationManager.ConfigDialog.Macro_Immediate;
+        if (macroImmediateOffLabel != null)
+            macroImmediateOffLabel.Text = LocalizationManager.ConfigDialog.Macro_ImmediateOff;
+        if (macroImmediateOnLabel != null)
+            macroImmediateOnLabel.Text = LocalizationManager.ConfigDialog.Macro_ImmediateOn;
+    }
+
+    private void UpdateConfigRestartNoticeVisibility()
+    {
+        label16.Visible = tabControl.SelectedTab != gamepadTabPage && tabControl.SelectedTab != macroTabPage;
     }
 
     private void UpdateGamepadFocusDisplay()
@@ -785,6 +1063,7 @@ internal sealed partial class ConfigDialog : Form
         _fontAntialias.SelectedIndex = (int)JSONConfig.Game.FontAntialias;
         _imageSampling.SelectedIndex = (int)JSONConfig.Game.ImageSamplingOption;
         LoadGamepadBindings(openGamepadTab);
+        LoadMacroEditor();
     }
 
     private void SaveConfig()
@@ -921,6 +1200,7 @@ internal sealed partial class ConfigDialog : Form
         config.GetConfigItem(ConfigCode.EditorArgument).SetValue<string>(textBox2.Text);
 
         gamepadEditingBindings.SaveTo(JSONConfig.User);
+        SaveMacroSettings();
         config.SaveConfig();
 
         JSONConfig.Save();
@@ -1311,6 +1591,8 @@ internal sealed partial class ConfigDialog : Form
         _fontAntialiasLabel.Text = LocalizationManager.ConfigDialog.FontAntialias;
         _imageSamplingLabel.Text = LocalizationManager.ConfigDialog.ImageSampling;
         LocalizeGamepadTab();
+        LocalizeMacroTab();
+        UpdateConfigRestartNoticeVisibility();
     }
 
     private void checkBoxCBIgnoreTags_CheckedChanged(object sender, EventArgs e)

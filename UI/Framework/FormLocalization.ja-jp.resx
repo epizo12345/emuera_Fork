@@ -321,6 +321,18 @@
   <data name="ConfigDialog_Gamepad_ApplyImmediately" xml:space="preserve">
     <value>※ゲームパッドのボタン割り当ては［保存］後、再起動せずに反映されます。</value>
   </data>
+  <data name="ConfigDialog_Macro" xml:space="preserve"><value>マクロ</value></data>
+  <data name="ConfigDialog_Macro_EditGroup" xml:space="preserve"><value>編集グループ</value></data>
+  <data name="ConfigDialog_Macro_GamepadTargets" xml:space="preserve"><value>ゲームパッドから呼び出すマクロ</value></data>
+  <data name="ConfigDialog_Macro_Group" xml:space="preserve"><value>グループ</value></data>
+  <data name="ConfigDialog_Macro_Key" xml:space="preserve"><value>マクロ</value></data>
+  <data name="ConfigDialog_Macro_Execute1" xml:space="preserve"><value>マクロ実行1</value></data>
+  <data name="ConfigDialog_Macro_Execute2" xml:space="preserve"><value>マクロ実行2</value></data>
+  <data name="ConfigDialog_Macro_Execute3" xml:space="preserve"><value>マクロ実行3</value></data>
+  <data name="ConfigDialog_Macro_Immediate" xml:space="preserve"><value>ゲームパッドから呼び出したマクロを即時実行する</value></data>
+  <data name="ConfigDialog_Macro_ImmediateOff" xml:space="preserve"><value>OFF：入力欄へ展開し、決定ボタンで実行します。</value></data>
+  <data name="ConfigDialog_Macro_ImmediateOn" xml:space="preserve"><value>ON ：ボタンを押した時点で実行します。</value></data>
+  <data name="ConfigDialog_Macro_ApplyImmediately" xml:space="preserve"><value>※マクロ設定は［保存］後、再起動せずに反映されます。</value></data>
   <data name="ConfigDialog_Environment" xml:space="preserve">
     <value>環境</value>
   </data>

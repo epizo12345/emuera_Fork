@@ -239,6 +239,54 @@ namespace MinorShift.Emuera.UI.Framework {
                 return ResourceManager.GetString("ConfigDialog_Gamepad_ApplyImmediately", resourceCulture);
             }
         }
+
+        internal static string ConfigDialog_Macro {
+            get { return ResourceManager.GetString("ConfigDialog_Macro", resourceCulture); }
+        }
+
+        internal static string ConfigDialog_Macro_EditGroup {
+            get { return ResourceManager.GetString("ConfigDialog_Macro_EditGroup", resourceCulture); }
+        }
+
+        internal static string ConfigDialog_Macro_GamepadTargets {
+            get { return ResourceManager.GetString("ConfigDialog_Macro_GamepadTargets", resourceCulture); }
+        }
+
+        internal static string ConfigDialog_Macro_Group {
+            get { return ResourceManager.GetString("ConfigDialog_Macro_Group", resourceCulture); }
+        }
+
+        internal static string ConfigDialog_Macro_Key {
+            get { return ResourceManager.GetString("ConfigDialog_Macro_Key", resourceCulture); }
+        }
+
+        internal static string ConfigDialog_Macro_Execute1 {
+            get { return ResourceManager.GetString("ConfigDialog_Macro_Execute1", resourceCulture); }
+        }
+
+        internal static string ConfigDialog_Macro_Execute2 {
+            get { return ResourceManager.GetString("ConfigDialog_Macro_Execute2", resourceCulture); }
+        }
+
+        internal static string ConfigDialog_Macro_Execute3 {
+            get { return ResourceManager.GetString("ConfigDialog_Macro_Execute3", resourceCulture); }
+        }
+
+        internal static string ConfigDialog_Macro_Immediate {
+            get { return ResourceManager.GetString("ConfigDialog_Macro_Immediate", resourceCulture); }
+        }
+
+        internal static string ConfigDialog_Macro_ImmediateOff {
+            get { return ResourceManager.GetString("ConfigDialog_Macro_ImmediateOff", resourceCulture); }
+        }
+
+        internal static string ConfigDialog_Macro_ImmediateOn {
+            get { return ResourceManager.GetString("ConfigDialog_Macro_ImmediateOn", resourceCulture); }
+        }
+
+        internal static string ConfigDialog_Macro_ApplyImmediately {
+            get { return ResourceManager.GetString("ConfigDialog_Macro_ApplyImmediately", resourceCulture); }
+        }
         
         /// <summary>
         ///   ※Changes won&apos;t take effect until restart に類似しているローカライズされた文字列を検索します。

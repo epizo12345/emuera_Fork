@@ -81,6 +81,20 @@ sealed class JSONUserConfigData
     [JsonConverter(typeof(GamepadBindingJsonConverter))]
     public string GamepadOpenSettings { get; set; } = "FaceWest";
 
+    [JsonConverter(typeof(GamepadBindingJsonConverter))]
+    public string GamepadMacro1 { get; set; } = "None";
+    [JsonConverter(typeof(GamepadBindingJsonConverter))]
+    public string GamepadMacro2 { get; set; } = "None";
+    [JsonConverter(typeof(GamepadBindingJsonConverter))]
+    public string GamepadMacro3 { get; set; } = "None";
+    public int GamepadMacro1Group { get; set; }
+    public int GamepadMacro2Group { get; set; }
+    public int GamepadMacro3Group { get; set; }
+    public int GamepadMacro1FKey { get; set; } = 1;
+    public int GamepadMacro2FKey { get; set; } = 2;
+    public int GamepadMacro3FKey { get; set; } = 3;
+    public bool GamepadMacroImmediateExecution { get; set; }
+
     public bool CBUseClipboard { get; set; }
     public bool CBIgnoreTags { get; set; } = true;
     public string CBReplaceTags { get; set; } = ".";

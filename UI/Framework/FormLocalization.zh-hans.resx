@@ -194,6 +194,18 @@
     <data name="ConfigDialog_Gamepad_ApplyImmediately" xml:space="preserve">
 		<value>※游戏手柄按钮分配在保存后无需重启即可生效。</value>
 	</data>
+    <data name="ConfigDialog_Macro" xml:space="preserve"><value>宏</value></data>
+    <data name="ConfigDialog_Macro_EditGroup" xml:space="preserve"><value>编辑组</value></data>
+    <data name="ConfigDialog_Macro_GamepadTargets" xml:space="preserve"><value>通过游戏手柄调用的宏</value></data>
+    <data name="ConfigDialog_Macro_Group" xml:space="preserve"><value>组</value></data>
+    <data name="ConfigDialog_Macro_Key" xml:space="preserve"><value>宏</value></data>
+    <data name="ConfigDialog_Macro_Execute1" xml:space="preserve"><value>执行宏1</value></data>
+    <data name="ConfigDialog_Macro_Execute2" xml:space="preserve"><value>执行宏2</value></data>
+    <data name="ConfigDialog_Macro_Execute3" xml:space="preserve"><value>执行宏3</value></data>
+    <data name="ConfigDialog_Macro_Immediate" xml:space="preserve"><value>立即执行通过游戏手柄调用的宏</value></data>
+    <data name="ConfigDialog_Macro_ImmediateOff" xml:space="preserve"><value>关闭：展开到输入框后，用确认键执行。</value></data>
+    <data name="ConfigDialog_Macro_ImmediateOn" xml:space="preserve"><value>开启：按下按钮时立即执行。</value></data>
+    <data name="ConfigDialog_Macro_ApplyImmediately" xml:space="preserve"><value>※宏设置保存后无需重新启动即可生效。</value></data>
     <data name="ConfigDialog_Environment" xml:space="preserve">
 		<value>环境</value>
 	</data>

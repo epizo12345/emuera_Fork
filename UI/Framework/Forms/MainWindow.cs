@@ -482,6 +482,10 @@ internal sealed partial class MainWindow : Form
     }
 
     bool changeTextbyMouse;
+    private bool gamepadMacroPending;
+    private string? gamepadMacroPendingOriginalText;
+    private string? gamepadMacroPendingOriginalLastInput;
+    private bool settingGamepadMacroText;
 
     #region EE_AnchorのCB機能移植
     private void mainPicBox_MouseClickCBCheck(object sender, System.Windows.Forms.MouseEventArgs e)
@@ -600,6 +604,7 @@ internal sealed partial class MainWindow : Form
     {
         if (console == null || console.IsInProcess)
             return;
+        ClearGamepadMacroPending(restore: false);
         //if (console.inProcess)
         //{
         //	richTextBox1.Text = "";
@@ -772,10 +777,16 @@ internal sealed partial class MainWindow : Form
                         console.RefreshStrings(true);
                     break;
                 case GamepadActionKind.Confirm:
-                    console.GamepadConfirm();
+                    if (gamepadMacroPending)
+                        ExecuteGamepadMacroPending();
+                    else
+                        console.GamepadConfirm();
                     break;
                 case GamepadActionKind.Cancel:
-                    console.GamepadCancel();
+                    if (gamepadMacroPending)
+                        ClearGamepadMacroPending(restore: true);
+                    else
+                        console.GamepadCancel();
                     break;
                 case GamepadActionKind.Escape:
                     ProcessEscapeInput();
@@ -793,6 +804,15 @@ internal sealed partial class MainWindow : Form
                 case GamepadActionKind.ScrollDown:
                     if (!console.GamepadShoulderNavigatePage(nextPage: true))
                         ScrollLogByGamepad(1);
+                    break;
+                case GamepadActionKind.Macro1:
+                    HandleGamepadMacro(0);
+                    break;
+                case GamepadActionKind.Macro2:
+                    HandleGamepadMacro(1);
+                    break;
+                case GamepadActionKind.Macro3:
+                    HandleGamepadMacro(2);
                     break;
             }
         }
@@ -1070,6 +1090,8 @@ internal sealed partial class MainWindow : Form
 
     private void richTextBox1_TextChanged(object? sender, EventArgs e)
     {
+        if (settingGamepadMacroText)
+            return;
         if (console == null || console.IsInProcess)
             return;
         if (!textBox_flag)
@@ -1110,6 +1132,84 @@ internal sealed partial class MainWindow : Form
         console.KillMacro = true;
         if (!console.IsInProcess)
             PressEnterKey(true, false);
+    }
+
+    private void HandleGamepadMacro(int macroIndex)
+    {
+        if (!Config.UseKeyMacro || console == null || console.IsInProcess || console.IsWaitingPrimitive)
+            return;
+
+        JSONUserConfigData user = JSONConfig.User;
+        int group = Math.Clamp(macroIndex switch
+        {
+            0 => user.GamepadMacro1Group,
+            1 => user.GamepadMacro2Group,
+            _ => user.GamepadMacro3Group,
+        }, 0, KeyMacro.MaxGroup - 1);
+        int fkey = Math.Clamp(macroIndex switch
+        {
+            0 => user.GamepadMacro1FKey,
+            1 => user.GamepadMacro2FKey,
+            _ => user.GamepadMacro3FKey,
+        }, 1, KeyMacro.MaxFkey);
+        string macro = KeyMacro.GetMacro(fkey - 1, group);
+        if (macro.Length == 0)
+            return;
+
+        if (!gamepadMacroPending)
+        {
+            gamepadMacroPendingOriginalText = richTextBox1.Text;
+            gamepadMacroPendingOriginalLastInput = last_inputed;
+        }
+        last_inputed = string.Empty;
+        settingGamepadMacroText = true;
+        try
+        {
+            richTextBox1.Text = macro;
+            richTextBox1.SelectionStart = richTextBox1.Text.Length;
+        }
+        finally
+        {
+            settingGamepadMacroText = false;
+        }
+
+        if (user.GamepadMacroImmediateExecution)
+            PressEnterKey(false, false);
+        else
+            gamepadMacroPending = true;
+    }
+
+    private void ExecuteGamepadMacroPending()
+    {
+        if (!gamepadMacroPending)
+            return;
+        PressEnterKey(false, false);
+    }
+
+    private void ClearGamepadMacroPending(bool restore)
+    {
+        if (!gamepadMacroPending)
+            return;
+
+        string? originalText = gamepadMacroPendingOriginalText;
+        string? originalLastInput = gamepadMacroPendingOriginalLastInput;
+        gamepadMacroPending = false;
+        gamepadMacroPendingOriginalText = null;
+        gamepadMacroPendingOriginalLastInput = null;
+        if (!restore || originalText == null)
+            return;
+
+        settingGamepadMacroText = true;
+        try
+        {
+            richTextBox1.Text = originalText;
+            richTextBox1.SelectionStart = richTextBox1.Text.Length;
+            last_inputed = originalLastInput ?? string.Empty;
+        }
+        finally
+        {
+            settingGamepadMacroText = false;
+        }
     }
 
     private void ProcessPrimitiveMouseInput(Point point, MouseButtons button)

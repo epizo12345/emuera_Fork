@@ -113,6 +113,8 @@ internal static partial class KeyMacro
         return macro[FkeyNum + groupNum * MaxFkey];
     }
 
+    public static string[] CopyMacros() => (string[])macro.Clone();
+
     public static string GetGroupName(int groupNum)
     {
         return groupName[groupNum];

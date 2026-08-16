@@ -466,6 +466,18 @@ The drawing process cannot continue and will be terminated.</value>
   <data name="ConfigDialog_Gamepad_ApplyImmediately" xml:space="preserve">
     <value>Gamepad button assignments are applied after Save without restarting.</value>
   </data>
+  <data name="ConfigDialog_Macro" xml:space="preserve"><value>Macro</value></data>
+  <data name="ConfigDialog_Macro_EditGroup" xml:space="preserve"><value>Edit group</value></data>
+  <data name="ConfigDialog_Macro_GamepadTargets" xml:space="preserve"><value>Macros called by gamepad</value></data>
+  <data name="ConfigDialog_Macro_Group" xml:space="preserve"><value>Group</value></data>
+  <data name="ConfigDialog_Macro_Key" xml:space="preserve"><value>Macro</value></data>
+  <data name="ConfigDialog_Macro_Execute1" xml:space="preserve"><value>Macro 1</value></data>
+  <data name="ConfigDialog_Macro_Execute2" xml:space="preserve"><value>Macro 2</value></data>
+  <data name="ConfigDialog_Macro_Execute3" xml:space="preserve"><value>Macro 3</value></data>
+  <data name="ConfigDialog_Macro_Immediate" xml:space="preserve"><value>Execute called macros immediately</value></data>
+  <data name="ConfigDialog_Macro_ImmediateOff" xml:space="preserve"><value>OFF: Expand into the input box, then execute with the confirm button.</value></data>
+  <data name="ConfigDialog_Macro_ImmediateOn" xml:space="preserve"><value>ON: Execute when the button is pressed.</value></data>
+  <data name="ConfigDialog_Macro_ApplyImmediately" xml:space="preserve"><value>Macro settings take effect after Save without restarting.</value></data>
   <data name="ConfigDialog_Environment" xml:space="preserve">
     <value>Environment</value>
   </data>

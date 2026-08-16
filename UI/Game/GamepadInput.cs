@@ -90,6 +90,9 @@ internal enum GamepadActionKind
     Start,
     ScrollUp,
     ScrollDown,
+    Macro1,
+    Macro2,
+    Macro3,
 }
 
 internal sealed class GamepadBindings
@@ -103,6 +106,9 @@ internal sealed class GamepadBindings
         GamepadActionKind.ScrollDown,
         GamepadActionKind.Start,
         GamepadActionKind.OpenSettings,
+        GamepadActionKind.Macro1,
+        GamepadActionKind.Macro2,
+        GamepadActionKind.Macro3,
     ];
 
     internal static readonly GamepadPhysicalButton[] ConfigurableButtons =
@@ -126,6 +132,9 @@ internal sealed class GamepadBindings
     internal GamepadPhysicalButton NextPage { get; private set; }
     internal GamepadPhysicalButton Start { get; private set; }
     internal GamepadPhysicalButton OpenSettings { get; private set; }
+    internal GamepadPhysicalButton Macro1 { get; private set; }
+    internal GamepadPhysicalButton Macro2 { get; private set; }
+    internal GamepadPhysicalButton Macro3 { get; private set; }
 
     internal static GamepadBindings Default()
     {
@@ -138,6 +147,9 @@ internal sealed class GamepadBindings
             NextPage = GamepadPhysicalButton.RightShoulder,
             Start = GamepadPhysicalButton.Start,
             OpenSettings = GamepadPhysicalButton.FaceWest,
+            Macro1 = GamepadPhysicalButton.None,
+            Macro2 = GamepadPhysicalButton.None,
+            Macro3 = GamepadPhysicalButton.None,
         };
     }
 
@@ -154,6 +166,9 @@ internal sealed class GamepadBindings
             NextPage = Parse(user.GamepadNextPage, defaults.NextPage),
             Start = Parse(user.GamepadStart, defaults.Start),
             OpenSettings = Parse(user.GamepadOpenSettings, defaults.OpenSettings),
+            Macro1 = Parse(user.GamepadMacro1, defaults.Macro1),
+            Macro2 = Parse(user.GamepadMacro2, defaults.Macro2),
+            Macro3 = Parse(user.GamepadMacro3, defaults.Macro3),
         };
     }
 
@@ -168,6 +183,9 @@ internal sealed class GamepadBindings
             NextPage = NextPage,
             Start = Start,
             OpenSettings = OpenSettings,
+            Macro1 = Macro1,
+            Macro2 = Macro2,
+            Macro3 = Macro3,
         };
     }
 
@@ -182,6 +200,9 @@ internal sealed class GamepadBindings
             GamepadActionKind.ScrollDown => NextPage,
             GamepadActionKind.Start => Start,
             GamepadActionKind.OpenSettings => OpenSettings,
+            GamepadActionKind.Macro1 => Macro1,
+            GamepadActionKind.Macro2 => Macro2,
+            GamepadActionKind.Macro3 => Macro3,
             _ => GamepadPhysicalButton.None,
         };
     }
@@ -215,6 +236,9 @@ internal sealed class GamepadBindings
         user.GamepadNextPage = NextPage.ToString();
         user.GamepadStart = Start.ToString();
         user.GamepadOpenSettings = OpenSettings.ToString();
+        user.GamepadMacro1 = Macro1.ToString();
+        user.GamepadMacro2 = Macro2.ToString();
+        user.GamepadMacro3 = Macro3.ToString();
     }
 
     internal static string GetDisplayName(GamepadPhysicalButton button)
@@ -245,6 +269,9 @@ internal sealed class GamepadBindings
             case GamepadActionKind.ScrollDown: NextPage = button; break;
             case GamepadActionKind.Start: Start = button; break;
             case GamepadActionKind.OpenSettings: OpenSettings = button; break;
+            case GamepadActionKind.Macro1: Macro1 = button; break;
+            case GamepadActionKind.Macro2: Macro2 = button; break;
+            case GamepadActionKind.Macro3: Macro3 = button; break;
         }
     }
 
@@ -333,6 +360,9 @@ internal sealed class GamepadManager
         LeftShoulder = 1 << 4,
         RightShoulder = 1 << 5,
         Start = 1 << 6,
+        Macro1 = 1 << 7,
+        Macro2 = 1 << 8,
+        Macro3 = 1 << 9,
     }
 
     private enum GamepadBackend
@@ -946,7 +976,10 @@ internal sealed class GamepadManager
             + $"OpenSettings={GamepadBindings.GetDisplayName(bindings.OpenSettings)}, "
             + $"PreviousPage={GamepadBindings.GetDisplayName(bindings.PreviousPage)}, "
             + $"NextPage={GamepadBindings.GetDisplayName(bindings.NextPage)}, "
-            + $"Start={GamepadBindings.GetDisplayName(bindings.Start)}";
+            + $"Start={GamepadBindings.GetDisplayName(bindings.Start)}, "
+            + $"Macro1={GamepadBindings.GetDisplayName(bindings.Macro1)}, "
+            + $"Macro2={GamepadBindings.GetDisplayName(bindings.Macro2)}, "
+            + $"Macro3={GamepadBindings.GetDisplayName(bindings.Macro3)}";
     }
 
     private GamepadFaceButtonLayout ResolveWinmmFaceButtonLayout(WinmmJoyCaps caps, out string reason)
@@ -1122,6 +1155,8 @@ internal sealed class GamepadManager
         GamepadBindings noneBindings = defaultBindings.Clone();
         foreach (GamepadActionKind action in GamepadBindings.ConfigurableActions)
             noneBindings.Assign(action, GamepadPhysicalButton.None);
+        GamepadBindings macroBindings = defaultBindings.Clone();
+        macroBindings.Assign(GamepadActionKind.Macro1, GamepadPhysicalButton.FaceWest);
         WinmmButtonMapping xboxMapping = WinmmButtonMapping.Create(GamepadFaceButtonLayout.Xbox, defaultBindings);
         WinmmButtonMapping psMapping = WinmmButtonMapping.Create(GamepadFaceButtonLayout.PlayStationWinMM, defaultBindings);
         WinmmButtonMapping rawInputPsMapping = WinmmButtonMapping.Create(
@@ -1141,7 +1176,10 @@ internal sealed class GamepadManager
             && defaultBindings.PreviousPage == GamepadPhysicalButton.LeftShoulder
             && defaultBindings.NextPage == GamepadPhysicalButton.RightShoulder
             && defaultBindings.Start == GamepadPhysicalButton.Start
-            && defaultBindings.OpenSettings == GamepadPhysicalButton.FaceWest;
+            && defaultBindings.OpenSettings == GamepadPhysicalButton.FaceWest
+            && defaultBindings.Macro1 == GamepadPhysicalButton.None
+            && defaultBindings.Macro2 == GamepadPhysicalButton.None
+            && defaultBindings.Macro3 == GamepadPhysicalButton.None;
         bool candidateOrder = Array.IndexOf(GamepadBindings.ConfigurableButtons,
                 GamepadPhysicalButton.LeftTrigger) == 7
             && Array.IndexOf(GamepadBindings.ConfigurableButtons,
@@ -1153,6 +1191,20 @@ internal sealed class GamepadManager
         bool allActionsCanBeUnassigned = true;
         foreach (GamepadActionKind action in GamepadBindings.ConfigurableActions)
             allActionsCanBeUnassigned &= noneBindings.Get(action) == GamepadPhysicalButton.None;
+        GamepadBindings savedBindings = bindings;
+        bindings = macroBindings;
+        bool macroLogicalMapping = (GetLogicalButtons(GamepadPhysicalButton.FaceWest)
+            & LogicalButtons.Macro1) != 0;
+        bindings = savedBindings;
+        bool macroAssignment = macroBindings.Macro1 == GamepadPhysicalButton.FaceWest
+            && macroBindings.OpenSettings == GamepadPhysicalButton.None;
+        ResetInputState();
+        ProcessSample(LogicalButtons.None, GamepadPhysicalButtonMask.None,
+            GamepadDirection.None, GamepadDirection.None, 0);
+        GamepadAction macroAction = ProcessSample(LogicalButtons.Macro1,
+            GamepadPhysicalButtonMask.FaceWest, GamepadDirection.None, GamepadDirection.None, 1);
+        bool macroDispatch = macroAction.Kind == GamepadActionKind.Macro1
+            && macroAction.PressedPhysicalButtons == GamepadPhysicalButtonMask.FaceWest;
 
         GamepadBindings triggerBindings = defaultBindings.Clone();
         triggerBindings.Assign(GamepadActionKind.Escape, GamepadPhysicalButton.LeftTrigger);
@@ -1232,7 +1284,8 @@ internal sealed class GamepadManager
         ResetInputState();
 
         WriteDiagnostic("Gamepad input self-test (layout / binding swap / capture / Raw D-pad-stick split): "
-            + (layouts && defaultsUnchanged && candidateOrder && bindingSwap && allActionsCanBeUnassigned && directionSources
+            + (layouts && defaultsUnchanged && candidateOrder && bindingSwap && allActionsCanBeUnassigned
+                && macroLogicalMapping && macroAssignment && macroDispatch && directionSources
                 && triggerEscape && triggerSettings && triggerSwap && triggerNone && triggerThresholds
                 && captureEdges && captureButtons && captureRejectsMultiple && captureLeavesLiveBindings
                 ? "PASS" : "WARNING"));
@@ -1327,6 +1380,12 @@ internal sealed class GamepadManager
             action = new(GamepadActionKind.Escape);
         else if ((pressed & LogicalButtons.OpenSettings) != 0)
             action = new(GamepadActionKind.OpenSettings);
+        else if ((pressed & LogicalButtons.Macro1) != 0)
+            action = new(GamepadActionKind.Macro1);
+        else if ((pressed & LogicalButtons.Macro2) != 0)
+            action = new(GamepadActionKind.Macro2);
+        else if ((pressed & LogicalButtons.Macro3) != 0)
+            action = new(GamepadActionKind.Macro3);
         else if ((pressed & LogicalButtons.Start) != 0)
             action = new(GamepadActionKind.Start);
         else if (shoulderAction.Kind != GamepadActionKind.None)
@@ -1471,6 +1530,9 @@ internal sealed class GamepadManager
         if (bindings.PreviousPage == physicalButton) result |= LogicalButtons.LeftShoulder;
         if (bindings.NextPage == physicalButton) result |= LogicalButtons.RightShoulder;
         if (bindings.Start == physicalButton) result |= LogicalButtons.Start;
+        if (bindings.Macro1 == physicalButton) result |= LogicalButtons.Macro1;
+        if (bindings.Macro2 == physicalButton) result |= LogicalButtons.Macro2;
+        if (bindings.Macro3 == physicalButton) result |= LogicalButtons.Macro3;
         return result;
     }
 
@@ -1489,6 +1551,12 @@ internal sealed class GamepadManager
         if (IsButtonDown(buttons, winmmButtonMapping.RightTrigger))
             result |= winmmButtonMapping.FilterOverridden(GetLogicalButtons(GamepadPhysicalButton.RightTrigger));
         if (IsButtonDown(buttons, winmmButtonMapping.Start)) result |= LogicalButtons.Start;
+        if (IsButtonDown(buttons, winmmButtonMapping.GetButtonIndex(bindings.Macro1)))
+            result |= LogicalButtons.Macro1;
+        if (IsButtonDown(buttons, winmmButtonMapping.GetButtonIndex(bindings.Macro2)))
+            result |= LogicalButtons.Macro2;
+        if (IsButtonDown(buttons, winmmButtonMapping.GetButtonIndex(bindings.Macro3)))
+            result |= LogicalButtons.Macro3;
         return result;
     }
 
@@ -1507,6 +1575,12 @@ internal sealed class GamepadManager
         if (IsButtonDown(buttons, rawInputButtonMapping.RightTrigger))
             result |= rawInputButtonMapping.FilterOverridden(GetLogicalButtons(GamepadPhysicalButton.RightTrigger));
         if (IsButtonDown(buttons, rawInputButtonMapping.Start)) result |= LogicalButtons.Start;
+        if (IsButtonDown(buttons, rawInputButtonMapping.GetButtonIndex(bindings.Macro1)))
+            result |= LogicalButtons.Macro1;
+        if (IsButtonDown(buttons, rawInputButtonMapping.GetButtonIndex(bindings.Macro2)))
+            result |= LogicalButtons.Macro2;
+        if (IsButtonDown(buttons, rawInputButtonMapping.GetButtonIndex(bindings.Macro3)))
+            result |= LogicalButtons.Macro3;
         return result;
     }
 
@@ -1786,6 +1860,9 @@ internal sealed class GamepadManager
                 result |= GamepadPhysicalButtonMask.Start;
             return result;
         }
+
+        internal int GetButtonIndex(GamepadPhysicalButton button)
+            => GetRawButtonIndex(layout, button, mapPlayStationTriggers);
 
         private static int GetRawButtonIndex(GamepadFaceButtonLayout layout, GamepadPhysicalButton button,
             bool mapPlayStationTriggers = true)
