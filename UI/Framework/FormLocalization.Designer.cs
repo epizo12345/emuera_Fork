@@ -108,12 +108,6 @@ namespace MinorShift.Emuera.UI.Framework {
             }
         }
 
-        internal static string ConfigDialog_Gamepad_Start {
-            get {
-                return ResourceManager.GetString("ConfigDialog_Gamepad_Start", resourceCulture);
-            }
-        }
-
         internal static string ConfigDialog_Gamepad_OpenSettings {
             get {
                 return ResourceManager.GetString("ConfigDialog_Gamepad_OpenSettings", resourceCulture);
@@ -201,12 +195,6 @@ namespace MinorShift.Emuera.UI.Framework {
         internal static string ConfigDialog_Gamepad_LeftStickNavigation {
             get {
                 return ResourceManager.GetString("ConfigDialog_Gamepad_LeftStickNavigation", resourceCulture);
-            }
-        }
-
-        internal static string ConfigDialog_Gamepad_CapturePrompt {
-            get {
-                return ResourceManager.GetString("ConfigDialog_Gamepad_CapturePrompt", resourceCulture);
             }
         }
 

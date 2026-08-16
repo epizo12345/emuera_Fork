@@ -255,9 +255,6 @@
   <data name="ConfigDialog_Gamepad_NextPage" xml:space="preserve">
     <value>次ページ</value>
   </data>
-  <data name="ConfigDialog_Gamepad_Start" xml:space="preserve">
-    <value>Enter相当</value>
-  </data>
   <data name="ConfigDialog_Gamepad_OpenSettings" xml:space="preserve">
     <value>ゲームパッド設定を開く</value>
   </data>
@@ -302,9 +299,6 @@
   </data>
   <data name="ConfigDialog_Gamepad_LeftStickNavigation" xml:space="preserve">
     <value>決定：ボタンを直接設定　戻る・キャンセル：キャンセル　OPTIONS / Start：保存</value>
-  </data>
-  <data name="ConfigDialog_Gamepad_CapturePrompt" xml:space="preserve">
-    <value>入力待ち：「{0}」に設定するボタンを押してください</value>
   </data>
   <data name="ConfigDialog_Gamepad_CaptureButtonPrompt" xml:space="preserve">
     <value>ボタンを押してください...</value>

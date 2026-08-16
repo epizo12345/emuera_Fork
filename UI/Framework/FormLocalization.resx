@@ -400,9 +400,6 @@ The drawing process cannot continue and will be terminated.</value>
   <data name="ConfigDialog_Gamepad_NextPage" xml:space="preserve">
     <value>Next page</value>
   </data>
-  <data name="ConfigDialog_Gamepad_Start" xml:space="preserve">
-    <value>Enter</value>
-  </data>
   <data name="ConfigDialog_Gamepad_OpenSettings" xml:space="preserve">
     <value>Open gamepad settings</value>
   </data>
@@ -447,9 +444,6 @@ The drawing process cannot continue and will be terminated.</value>
   </data>
   <data name="ConfigDialog_Gamepad_LeftStickNavigation" xml:space="preserve">
     <value>Confirm: Assign button   Back / Cancel: Cancel   OPTIONS / Start: Save</value>
-  </data>
-  <data name="ConfigDialog_Gamepad_CapturePrompt" xml:space="preserve">
-    <value>Waiting for input: Press the button to assign to "{0}"</value>
   </data>
   <data name="ConfigDialog_Gamepad_CaptureButtonPrompt" xml:space="preserve">
     <value>Press a button...</value>

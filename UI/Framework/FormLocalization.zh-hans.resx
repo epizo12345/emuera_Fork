@@ -128,9 +128,6 @@
     <data name="ConfigDialog_Gamepad_NextPage" xml:space="preserve">
 		<value>下一页</value>
 	</data>
-    <data name="ConfigDialog_Gamepad_Start" xml:space="preserve">
-		<value>Enter</value>
-	</data>
     <data name="ConfigDialog_Gamepad_OpenSettings" xml:space="preserve">
 		<value>打开游戏手柄设置</value>
 	</data>
@@ -175,9 +172,6 @@
 	</data>
     <data name="ConfigDialog_Gamepad_LeftStickNavigation" xml:space="preserve">
 		<value>确定：直接设置按钮　返回 / 取消：取消　OPTIONS / Start：保存</value>
-	</data>
-    <data name="ConfigDialog_Gamepad_CapturePrompt" xml:space="preserve">
-		<value>等待输入：请按下要分配给“{0}”的按钮</value>
 	</data>
     <data name="ConfigDialog_Gamepad_CaptureButtonPrompt" xml:space="preserve">
 		<value>请按下按钮...</value>

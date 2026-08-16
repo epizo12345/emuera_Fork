@@ -17,6 +17,13 @@ GamepadBuild/
 GamepadBuildSingleFile/
 GamepadHandoff_*.zip
 
+# 比較検証用の一時フォルダはリポジトリへ含めない。
+/emuera_fork_clean_main/
+/emuera_main_gamepad_merge_review/
+
+# PDBはbin/objやartifacts以外に出力される場合も追跡しない。
+*.pdb
+
 # 配布フォルダのEXEは利用者向けの最新配布物としてGitに残す。
 # README.md と SHA256SUMS.txt も配布手順・整合性確認用として追跡する。
 /配布/**/*.zip

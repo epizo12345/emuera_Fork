@@ -62,7 +62,6 @@ public static class LocalizationManager
         public static string Gamepad_Escape => FormLocalization.ConfigDialog_Gamepad_Escape;
         public static string Gamepad_PreviousPage => FormLocalization.ConfigDialog_Gamepad_PreviousPage;
         public static string Gamepad_NextPage => FormLocalization.ConfigDialog_Gamepad_NextPage;
-        public static string Gamepad_Start => FormLocalization.ConfigDialog_Gamepad_Start;
         public static string Gamepad_OpenSettings => FormLocalization.ConfigDialog_Gamepad_OpenSettings;
         public static string Gamepad_Reset => FormLocalization.ConfigDialog_Gamepad_Reset;
         public static string Gamepad_None => FormLocalization.ConfigDialog_Gamepad_None;
@@ -78,7 +77,6 @@ public static class LocalizationManager
         public static string Gamepad_FixedOperations => FormLocalization.ConfigDialog_Gamepad_FixedOperations;
         public static string Gamepad_DPadNavigation => FormLocalization.ConfigDialog_Gamepad_DPadNavigation;
         public static string Gamepad_LeftStickNavigation => FormLocalization.ConfigDialog_Gamepad_LeftStickNavigation;
-        public static string Gamepad_CapturePrompt => FormLocalization.ConfigDialog_Gamepad_CapturePrompt;
         public static string Gamepad_CaptureButtonPrompt => FormLocalization.ConfigDialog_Gamepad_CaptureButtonPrompt;
         public static string Gamepad_CaptureMultiple => FormLocalization.ConfigDialog_Gamepad_CaptureMultiple;
         public static string Gamepad_CaptureCancel => FormLocalization.ConfigDialog_Gamepad_CaptureCancel;
