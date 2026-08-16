@@ -78,6 +78,6 @@ EXEと同じフォルダへ`gamepad-debug.log`を出力します。
 - Self-contained: false
 - Single-file: true
 - Emuera.exe: 24,757,994 bytes
-- SHA-256: `DFFB2C2E805516AFC2014C8E20E756C49DD24F13CE1BB040EE0263F0C769BE22`
+- SHA-256: `FA2184F0B5B2518A75DA462F309EDACBE49413D627E514224B0883D2289E77BB`
 
 詳細仕様はリポジトリの`プロジェクト資料/07_ゲームパッド対応_v1_仕様書.md`、変更説明は`今回の修正説明_2026-08-11_ゲームパッド対応_v1.md`を参照してください。
