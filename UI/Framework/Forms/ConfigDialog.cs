@@ -459,7 +459,6 @@ internal sealed partial class ConfigDialog : Form
             GamepadActionKind.Escape => LocalizationManager.ConfigDialog.Gamepad_Escape,
             GamepadActionKind.ScrollUp => LocalizationManager.ConfigDialog.Gamepad_PreviousPage,
             GamepadActionKind.ScrollDown => LocalizationManager.ConfigDialog.Gamepad_NextPage,
-            GamepadActionKind.Start => LocalizationManager.ConfigDialog.Gamepad_Start,
             GamepadActionKind.OpenSettings => LocalizationManager.ConfigDialog.Gamepad_OpenSettings,
             GamepadActionKind.Macro1 => LocalizationManager.ConfigDialog.Macro_Execute1,
             GamepadActionKind.Macro2 => LocalizationManager.ConfigDialog.Macro_Execute2,
@@ -785,6 +784,11 @@ internal sealed partial class ConfigDialog : Form
             HandleGamepadCapture(action);
             return;
         }
+        if ((action.PressedPhysicalButtons & GamepadPhysicalButtonMask.Start) != GamepadPhysicalButtonMask.None)
+        {
+            buttonSave.PerformClick();
+            return;
+        }
         switch (action.Kind)
         {
             case GamepadActionKind.Direction:
@@ -801,9 +805,6 @@ internal sealed partial class ConfigDialog : Form
                 break;
             case GamepadActionKind.Cancel:
                 buttonCancel.PerformClick();
-                break;
-            case GamepadActionKind.Start:
-                buttonSave.PerformClick();
                 break;
         }
     }

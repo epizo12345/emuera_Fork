@@ -1430,28 +1430,6 @@ internal sealed partial class EmueraConsole : IDisposable
             PressEnterKey(false, "", false);
     }
 
-    internal void GamepadStart()
-    {
-        if (ReturnFromGamepadBacklog())
-            return;
-        if (IsWaitingPrimitive)
-        {
-            GamepadFocusTarget current = GetCurrentGamepadFocusTarget();
-            if (current != null)
-                InputMouseKeyFromGamepad(current);
-            else
-                InputMouseKey(3, (int)Keys.Enter, (int)Keys.Enter, 0, 0);
-            return;
-        }
-        if (CanSelectGamepadButton(selectingButton))
-        {
-            GamepadConfirm();
-            return;
-        }
-        if (IsWaitingEnterKey)
-            PressEnterKey(false, "", false);
-    }
-
     internal void GamepadCancel()
     {
         if (ReturnFromGamepadBacklog())

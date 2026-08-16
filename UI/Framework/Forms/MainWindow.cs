@@ -794,9 +794,6 @@ internal sealed partial class MainWindow : Form
                 case GamepadActionKind.OpenSettings:
                     ShowConfigDialog(openGamepadTab: true);
                     break;
-                case GamepadActionKind.Start:
-                    console.GamepadStart();
-                    break;
                 case GamepadActionKind.ScrollUp:
                     if (!console.GamepadShoulderNavigatePage(nextPage: false))
                         ScrollLogByGamepad(-1);

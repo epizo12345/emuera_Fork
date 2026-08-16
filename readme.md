@@ -38,8 +38,8 @@ Windows 11ではメニューや設定画面にダークモードが適用され�
 - 大量ログを開く画面の表示高速化と、閉じた後のメモリ解放
 - マウスのサイドボタンによる前ページ・次ページ操作
 - Controller / Gamepad対応（XInput、WinMM、Raw Input/HID、PS4系・Xbox系）
-- ゲームパッドの× / A決定、○ / B戻る・キャンセル、△ / Y高速送り、D-pad / Left Stick操作、LB / RBページ移動、Start / OPTIONSのEnter相当
-- 設定→ゲームパッドから、決定・戻る・高速送り・ページ移動・Start・設定を開く操作を物理ボタン単位で変更可能（全項目未割り当て可、初期設定へ復元可）。□ / Xの初期動作はゲームパッド設定を開く操作
+- ゲームパッドの× / A決定、○ / B戻る・キャンセル、△ / Y高速送り、D-pad / Left Stick操作、LB / RBページ移動に対応。OPTIONS / Startはゲーム中の初期状態では未割り当てです
+- 設定→ゲームパッドから、決定・戻る・高速送り・ページ移動・設定を開く・マクロ実行1～3を物理ボタン単位で変更可能（全項目未割り当て可、初期設定へ復元可）。OPTIONS / Startも任意のActionへ割り当てられます。□ / Xの初期動作はゲームパッド設定を開く操作
 - ゲームパッド設定は`setting_user.json`へPS/Xbox共通の物理位置名で保存し、D-pad / Left Stickは固定操作
 - Virtual Gamepad Focusによる通常Console、HTML / INPUTMOUSEKEY、Modal popupの操作、Alt+Tab後・画面遷移後のFocus復帰、複数行Buttonの論理Target統合
 - .NET 10への更新とWindows 11向けダークモード(VVII氏パッチをCRER氏が取り込み)
@@ -47,7 +47,7 @@ Windows 11ではメニューや設定画面にダークモードが適用され�
 - 必要なWinRT部品だけを残し、単一EXEのサイズを約47.2 MiBから約23.5 MiBへ削減
 
 # 配布フォルダについて
-『配布/Emuera.NET_最終通常版』には、2026-08-16時点の最新mainの最適化とController/Gamepad対応を統合したRelease Publish単一EXEを置いています。標準操作は、× / Aが決定、○ / Bが戻る・キャンセル、△ / YがESC・マウス右クリック相当の高速送り、□ / Xが未使用、D-pad / Left Stickが移動、LB / RBがページ移動、Start / OPTIONSがEnter相当です。
+『配布/Emuera.NET_最終通常版』には、2026-08-16時点の最新mainの最適化とController/Gamepad対応を統合したRelease Publish単一EXEを置いています。ソース側の標準操作は、× / Aが決定、○ / Bが戻る・キャンセル、△ / YがESC・マウス右クリック相当の高速送り、□ / Xが未使用、D-pad / Left Stickが移動、LB / RBがページ移動、OPTIONS / Startは初期未割り当てです。
 
 - 対象: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）

@@ -37,11 +37,13 @@ framework-dependent単一ファイル版のため、Emuera本体のDLLを別途�
 | D-pad | UI選択移動 |
 | Left Stick | ゲーム操作 / UI移動 |
 | LB / RB | ページ移動（対象ページがない場合は従来のログ操作） |
-| Start / OPTIONS | Enter相当 |
+| OPTIONS / Start | ゲーム中は初期未割り当て。設定で任意Actionへ割り当て可能 |
 
 △ / Yは、会話や戦闘中の表示・待機を高速で処理し、次の入力が必要な地点まで進みます。`INPUTMOUSEKEY`待機中も既存のマウス右クリック相当として扱います。
 
 ゲームパッドのVirtual Focusにより、通常Consoleの選択肢、HTML、HTML Island、INPUTMOUSEKEY、確認ポップアップを操作できます。ON/OFF切替後や別画面から戻った場合のFocus復帰、複数行に分割された同一論理ボタンの統合にも対応しています。
+
+ゲームパッド設定画面ではOPTIONS / Startが通常状態の保存ショートカットになります。Direct Button Capture中は保存せず、物理Startボタンを割り当て対象として捕捉します。
 
 PS4系の既定は×が決定、○がキャンセルです。XInputはXbox配列、WinMM / Raw Input(HID)は接続デバイスを確認してXbox系またはPS4系の配列を選択します。
 
