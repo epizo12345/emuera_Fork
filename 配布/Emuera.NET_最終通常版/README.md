@@ -1,12 +1,12 @@
 # Emuera.NET 最終通常版
 
-- 更新日: 2026-07-31
+- 更新日: 2026-08-15
 - 基礎: BugFix_Test `7b7dd3bf240eff4fdfc7094f4175de0e014532b7`
 - 対象OS: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
-- `Emuera.exe` サイズ: 24,639,210バイト（約23.5 MiB）
-- `Emuera.exe` SHA-256: `C60F8B93E20BCB0D61C8086358F13E5C24856DAFBAF9DE492D9027BE187A5D7D`
+- `Emuera.exe` サイズ: 24,643,306バイト（約23.5 MiB）
+- `Emuera.exe` SHA-256: `0F33A83A2FB963E32F4E8992550F7879B97388DBCABF903E3802C5E5A8455383`
 
 この単一EXEにはSkiaSharpのネイティブライブラリも内包されています。別の`libSkiaSharp.dll`を同じフォルダへ追加する必要はありません。
 Windows API全体の大きな.NET投影DLLは含めず、SkiaSharpが必要とする`WinRT.Runtime.dll`だけを内包しています。
@@ -35,6 +35,13 @@ Windows API全体の大きな.NET投影DLLは含めず、SkiaSharpが必要と�
   - 日本語の「前のページ」「次のページ」系
   - 調教画面の`1007` / `1009`
   - ショップ画面の`PREV` / `NEXT`
+
+## 起動後メモリ整理
+
+- 大規模ERB構成では、起動完了時のmanaged memoryが2 GiB以上の場合にmemory trimを行う場合があります。
+- 2 GiB未満ではtrimせず、2 GiB以上ではAggressive / blocking / compacting GCを1回実行します。
+- 大規模fixtureではWorking Set約1.50GB削減を確認しましたが、同fixtureでは起動完了まで約1秒増加しました。
+- 削減量はゲーム構成によって異なり、全ゲームで同じ削減量になるわけではありません。
 
 表示されている文字は部分一致で探します。調教画面のように`div`の内側へ入れ子になったHTMLボタンも再帰的に探し、ゲームへ渡す内部入力値が`1007` / `1009`と完全一致すれば選べます。
 
