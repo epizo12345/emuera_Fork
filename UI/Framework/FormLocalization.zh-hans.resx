@@ -110,6 +110,90 @@
     <data name="ConfigDialog_Cancel" xml:space="preserve">
 		<value>取消</value>
 	</data>
+    <data name="ConfigDialog_Gamepad" xml:space="preserve">
+		<value>游戏手柄</value>
+	</data>
+    <data name="ConfigDialog_Gamepad_Confirm" xml:space="preserve">
+		<value>确定</value>
+	</data>
+    <data name="ConfigDialog_Gamepad_Cancel" xml:space="preserve">
+		<value>返回 / 取消</value>
+	</data>
+    <data name="ConfigDialog_Gamepad_Escape" xml:space="preserve">
+		<value>快速推进</value>
+	</data>
+    <data name="ConfigDialog_Gamepad_PreviousPage" xml:space="preserve">
+		<value>上一页</value>
+	</data>
+    <data name="ConfigDialog_Gamepad_NextPage" xml:space="preserve">
+		<value>下一页</value>
+	</data>
+    <data name="ConfigDialog_Gamepad_Start" xml:space="preserve">
+		<value>Enter</value>
+	</data>
+    <data name="ConfigDialog_Gamepad_OpenSettings" xml:space="preserve">
+		<value>打开游戏手柄设置</value>
+	</data>
+    <data name="ConfigDialog_Gamepad_Reset" xml:space="preserve">
+		<value>恢复默认设置</value>
+	</data>
+    <data name="ConfigDialog_Gamepad_None" xml:space="preserve">
+		<value>未分配</value>
+	</data>
+    <data name="ConfigDialog_Gamepad_FaceSouth" xml:space="preserve">
+		<value>下方按钮（× / A）</value>
+	</data>
+    <data name="ConfigDialog_Gamepad_FaceEast" xml:space="preserve">
+		<value>右方按钮（○ / B）</value>
+	</data>
+    <data name="ConfigDialog_Gamepad_FaceWest" xml:space="preserve">
+		<value>左方按钮（□ / X）</value>
+	</data>
+    <data name="ConfigDialog_Gamepad_FaceNorth" xml:space="preserve">
+		<value>上方按钮（△ / Y）</value>
+	</data>
+    <data name="ConfigDialog_Gamepad_LeftShoulder" xml:space="preserve">
+		<value>L1 / LB</value>
+	</data>
+    <data name="ConfigDialog_Gamepad_RightShoulder" xml:space="preserve">
+		<value>R1 / RB</value>
+	</data>
+    <data name="ConfigDialog_Gamepad_LeftTrigger" xml:space="preserve">
+		<value>左扳机（L2 / LT）</value>
+	</data>
+    <data name="ConfigDialog_Gamepad_RightTrigger" xml:space="preserve">
+		<value>右扳机（R2 / RT）</value>
+	</data>
+    <data name="ConfigDialog_Gamepad_StartButton" xml:space="preserve">
+		<value>OPTIONS / Start</value>
+	</data>
+    <data name="ConfigDialog_Gamepad_FixedOperations" xml:space="preserve">
+		<value>操作</value>
+	</data>
+    <data name="ConfigDialog_Gamepad_DPadNavigation" xml:space="preserve">
+		<value>↑ / ↓：选择项目　← / →：更改按钮</value>
+	</data>
+    <data name="ConfigDialog_Gamepad_LeftStickNavigation" xml:space="preserve">
+		<value>确定：直接设置按钮　返回 / 取消：取消　OPTIONS / Start：保存</value>
+	</data>
+    <data name="ConfigDialog_Gamepad_CapturePrompt" xml:space="preserve">
+		<value>等待输入：请按下要分配给“{0}”的按钮</value>
+	</data>
+    <data name="ConfigDialog_Gamepad_CaptureButtonPrompt" xml:space="preserve">
+		<value>请按下按钮...</value>
+	</data>
+    <data name="ConfigDialog_Gamepad_CaptureMultiple" xml:space="preserve">
+		<value>请只按下一个按钮</value>
+	</data>
+    <data name="ConfigDialog_Gamepad_CaptureCancel" xml:space="preserve">
+		<value>十字键左：取消</value>
+	</data>
+    <data name="ConfigDialog_Gamepad_OverrideNote" xml:space="preserve">
+		<value>※外部按钮设置已启用，部分分配可能优先使用外部设置。</value>
+	</data>
+    <data name="ConfigDialog_Gamepad_ApplyImmediately" xml:space="preserve">
+		<value>※游戏手柄按钮分配在保存后无需重启即可生效。</value>
+	</data>
     <data name="ConfigDialog_Environment" xml:space="preserve">
 		<value>环境</value>
 	</data>

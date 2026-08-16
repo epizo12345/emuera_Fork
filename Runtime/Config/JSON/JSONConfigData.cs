@@ -1,3 +1,5 @@
+using System;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace MinorShift.Emuera.Runtime.Config.JSON;
@@ -14,6 +16,21 @@ enum FontAntialias
     None,
     Normal,
     Full,
+}
+
+sealed class GamepadBindingJsonConverter : JsonConverter<string>
+{
+    public override string Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.String)
+            return reader.GetString() ?? string.Empty;
+
+        reader.Skip();
+        return string.Empty;
+    }
+
+    public override void Write(Utf8JsonWriter writer, string value, JsonSerializerOptions options)
+        => writer.WriteStringValue(value ?? string.Empty);
 }
 
 sealed class JSONGameConfigData
@@ -46,6 +63,23 @@ sealed class JSONUserConfigData
     // 参照: プロジェクト資料/06_コード案内.md
     public string MouseXButton1ButtonText { get; set; } = "前のページ|前ページ|1007|PREV";
     public string MouseXButton2ButtonText { get; set; } = "次のページ|次ページ|後ろのページ|1009|NEXT";
+
+    // [Emuera改修:GAMEPAD-CONFIG-V1]
+    // GamepadPhysicalButtonの名前を保存する。backend固有のraw button番号は保存しない。
+    [JsonConverter(typeof(GamepadBindingJsonConverter))]
+    public string GamepadConfirm { get; set; } = "FaceSouth";
+    [JsonConverter(typeof(GamepadBindingJsonConverter))]
+    public string GamepadCancel { get; set; } = "FaceEast";
+    [JsonConverter(typeof(GamepadBindingJsonConverter))]
+    public string GamepadEscape { get; set; } = "FaceNorth";
+    [JsonConverter(typeof(GamepadBindingJsonConverter))]
+    public string GamepadPreviousPage { get; set; } = "LeftShoulder";
+    [JsonConverter(typeof(GamepadBindingJsonConverter))]
+    public string GamepadNextPage { get; set; } = "RightShoulder";
+    [JsonConverter(typeof(GamepadBindingJsonConverter))]
+    public string GamepadStart { get; set; } = "Start";
+    [JsonConverter(typeof(GamepadBindingJsonConverter))]
+    public string GamepadOpenSettings { get; set; } = "FaceWest";
 
     public bool CBUseClipboard { get; set; }
     public bool CBIgnoreTags { get; set; } = true;

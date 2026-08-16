@@ -382,6 +382,90 @@ The drawing process cannot continue and will be terminated.</value>
   <data name="ConfigDialog_Cancel" xml:space="preserve">
     <value>Cancel</value>
   </data>
+  <data name="ConfigDialog_Gamepad" xml:space="preserve">
+    <value>Gamepad</value>
+  </data>
+  <data name="ConfigDialog_Gamepad_Confirm" xml:space="preserve">
+    <value>Confirm</value>
+  </data>
+  <data name="ConfigDialog_Gamepad_Cancel" xml:space="preserve">
+    <value>Back / Cancel</value>
+  </data>
+  <data name="ConfigDialog_Gamepad_Escape" xml:space="preserve">
+    <value>Fast forward</value>
+  </data>
+  <data name="ConfigDialog_Gamepad_PreviousPage" xml:space="preserve">
+    <value>Previous page</value>
+  </data>
+  <data name="ConfigDialog_Gamepad_NextPage" xml:space="preserve">
+    <value>Next page</value>
+  </data>
+  <data name="ConfigDialog_Gamepad_Start" xml:space="preserve">
+    <value>Enter</value>
+  </data>
+  <data name="ConfigDialog_Gamepad_OpenSettings" xml:space="preserve">
+    <value>Open gamepad settings</value>
+  </data>
+  <data name="ConfigDialog_Gamepad_Reset" xml:space="preserve">
+    <value>Reset to defaults</value>
+  </data>
+  <data name="ConfigDialog_Gamepad_None" xml:space="preserve">
+    <value>Unassigned</value>
+  </data>
+  <data name="ConfigDialog_Gamepad_FaceSouth" xml:space="preserve">
+    <value>Bottom button (× / A)</value>
+  </data>
+  <data name="ConfigDialog_Gamepad_FaceEast" xml:space="preserve">
+    <value>Right button (○ / B)</value>
+  </data>
+  <data name="ConfigDialog_Gamepad_FaceWest" xml:space="preserve">
+    <value>Left button (□ / X)</value>
+  </data>
+  <data name="ConfigDialog_Gamepad_FaceNorth" xml:space="preserve">
+    <value>Top button (△ / Y)</value>
+  </data>
+  <data name="ConfigDialog_Gamepad_LeftShoulder" xml:space="preserve">
+    <value>L1 / LB</value>
+  </data>
+  <data name="ConfigDialog_Gamepad_RightShoulder" xml:space="preserve">
+    <value>R1 / RB</value>
+  </data>
+  <data name="ConfigDialog_Gamepad_LeftTrigger" xml:space="preserve">
+    <value>Left trigger (L2 / LT)</value>
+  </data>
+  <data name="ConfigDialog_Gamepad_RightTrigger" xml:space="preserve">
+    <value>Right trigger (R2 / RT)</value>
+  </data>
+  <data name="ConfigDialog_Gamepad_StartButton" xml:space="preserve">
+    <value>OPTIONS / Start</value>
+  </data>
+  <data name="ConfigDialog_Gamepad_FixedOperations" xml:space="preserve">
+    <value>Controls</value>
+  </data>
+  <data name="ConfigDialog_Gamepad_DPadNavigation" xml:space="preserve">
+    <value>Up / Down: Select item   Left / Right: Change button</value>
+  </data>
+  <data name="ConfigDialog_Gamepad_LeftStickNavigation" xml:space="preserve">
+    <value>Confirm: Assign button   Back / Cancel: Cancel   OPTIONS / Start: Save</value>
+  </data>
+  <data name="ConfigDialog_Gamepad_CapturePrompt" xml:space="preserve">
+    <value>Waiting for input: Press the button to assign to "{0}"</value>
+  </data>
+  <data name="ConfigDialog_Gamepad_CaptureButtonPrompt" xml:space="preserve">
+    <value>Press a button...</value>
+  </data>
+  <data name="ConfigDialog_Gamepad_CaptureMultiple" xml:space="preserve">
+    <value>Press one button only</value>
+  </data>
+  <data name="ConfigDialog_Gamepad_CaptureCancel" xml:space="preserve">
+    <value>D-pad Left: Cancel</value>
+  </data>
+  <data name="ConfigDialog_Gamepad_OverrideNote" xml:space="preserve">
+    <value>Note: external button settings are active. Some assignments may take precedence over this page.</value>
+  </data>
+  <data name="ConfigDialog_Gamepad_ApplyImmediately" xml:space="preserve">
+    <value>Gamepad button assignments are applied after Save without restarting.</value>
+  </data>
   <data name="ConfigDialog_Environment" xml:space="preserve">
     <value>Environment</value>
   </data>

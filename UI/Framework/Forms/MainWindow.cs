@@ -93,6 +93,7 @@ internal sealed partial class MainWindow : Form
     private bool gamepadProcessing;
     private bool gamepadManagerReady;
     private bool gamepadWindowActive = true;
+    private bool gamepadDialogActive;
     private nint gamepadRawInputHandle;
 
     private bool RegisterGamepadRawInput(bool force = false)
@@ -142,7 +143,7 @@ internal sealed partial class MainWindow : Form
 
         manager.OnWindowActivated();
         bool rawInputRegistered = RegisterGamepadRawInput(force: true);
-        if (gamepadTimer != null && !gamepadTimer.Enabled)
+        if (!gamepadDialogActive && gamepadTimer != null && !gamepadTimer.Enabled)
             gamepadTimer.Start();
         manager.LogLifecycleDiagnostic($"Window Activated recovery: backend={manager.ActiveBackend}, "
             + $"connected={manager.IsConnected}, timerEnabled={gamepadTimer?.Enabled == true}, "
@@ -753,7 +754,9 @@ internal sealed partial class MainWindow : Form
             console.RefreshStrings(true);
         if (action.Kind == GamepadActionKind.None)
             return;
-        if (console.IsInProcess && action.Kind != GamepadActionKind.Escape)
+        if (console.IsInProcess
+            && action.Kind != GamepadActionKind.Escape
+            && action.Kind != GamepadActionKind.OpenSettings)
             return;
 
         gamepadProcessing = true;
@@ -776,6 +779,9 @@ internal sealed partial class MainWindow : Form
                     break;
                 case GamepadActionKind.Escape:
                     ProcessEscapeInput();
+                    break;
+                case GamepadActionKind.OpenSettings:
+                    ShowConfigDialog(openGamepadTab: true);
                     break;
                 case GamepadActionKind.Start:
                     console.GamepadStart();
@@ -821,21 +827,36 @@ internal sealed partial class MainWindow : Form
         ShowConfigDialog();
     }
 
-    public void ShowConfigDialog()
+    public void ShowConfigDialog(bool openGamepadTab = false)
     {
 
         if (console == null || GlobalStatic.Console == null)
             return;
-        ConfigDialog dialog = new()
+        GamepadManager? manager = gamepadManager;
+        bool timerWasEnabled = gamepadTimer?.Enabled == true;
+        gamepadDialogActive = true;
+        gamepadTimer?.Stop();
+        manager?.ResetForConfiguration();
+        ConfigDialogResult result = ConfigDialogResult.Cancel;
+        try
         {
-            StartPosition = FormStartPosition.CenterParent
-        };
-        dialog.SetConfig(this);
-        dialog.ShowDialog();
-        if (dialog.Result == ConfigDialogResult.SaveReboot)
-        {
-            Reboot();
+            using ConfigDialog dialog = new(manager)
+            {
+                StartPosition = FormStartPosition.CenterParent
+            };
+            dialog.SetConfig(this, openGamepadTab);
+            dialog.ShowDialog(this);
+            result = dialog.Result;
         }
+        finally
+        {
+            manager?.ResetForConfiguration();
+            gamepadDialogActive = false;
+            if (timerWasEnabled && gamepadTimer != null && !gamepadTimer.Enabled)
+                gamepadTimer.Start();
+        }
+        if (result == ConfigDialogResult.SaveReboot)
+            Reboot();
     }
 
     private void タイトルへ戻るTToolStripMenuItem_Click(object sender, EventArgs e)

@@ -56,6 +56,34 @@ public static class LocalizationManager
     public static class ConfigDialog
     {
         public static string Title => FormLocalization.ConfigDialog_Title;
+        public static string Gamepad => FormLocalization.ConfigDialog_Gamepad;
+        public static string Gamepad_Confirm => FormLocalization.ConfigDialog_Gamepad_Confirm;
+        public static string Gamepad_Cancel => FormLocalization.ConfigDialog_Gamepad_Cancel;
+        public static string Gamepad_Escape => FormLocalization.ConfigDialog_Gamepad_Escape;
+        public static string Gamepad_PreviousPage => FormLocalization.ConfigDialog_Gamepad_PreviousPage;
+        public static string Gamepad_NextPage => FormLocalization.ConfigDialog_Gamepad_NextPage;
+        public static string Gamepad_Start => FormLocalization.ConfigDialog_Gamepad_Start;
+        public static string Gamepad_OpenSettings => FormLocalization.ConfigDialog_Gamepad_OpenSettings;
+        public static string Gamepad_Reset => FormLocalization.ConfigDialog_Gamepad_Reset;
+        public static string Gamepad_None => FormLocalization.ConfigDialog_Gamepad_None;
+        public static string Gamepad_FaceSouth => FormLocalization.ConfigDialog_Gamepad_FaceSouth;
+        public static string Gamepad_FaceEast => FormLocalization.ConfigDialog_Gamepad_FaceEast;
+        public static string Gamepad_FaceWest => FormLocalization.ConfigDialog_Gamepad_FaceWest;
+        public static string Gamepad_FaceNorth => FormLocalization.ConfigDialog_Gamepad_FaceNorth;
+        public static string Gamepad_LeftShoulder => FormLocalization.ConfigDialog_Gamepad_LeftShoulder;
+        public static string Gamepad_RightShoulder => FormLocalization.ConfigDialog_Gamepad_RightShoulder;
+        public static string Gamepad_LeftTrigger => FormLocalization.ConfigDialog_Gamepad_LeftTrigger;
+        public static string Gamepad_RightTrigger => FormLocalization.ConfigDialog_Gamepad_RightTrigger;
+        public static string Gamepad_StartButton => FormLocalization.ConfigDialog_Gamepad_StartButton;
+        public static string Gamepad_FixedOperations => FormLocalization.ConfigDialog_Gamepad_FixedOperations;
+        public static string Gamepad_DPadNavigation => FormLocalization.ConfigDialog_Gamepad_DPadNavigation;
+        public static string Gamepad_LeftStickNavigation => FormLocalization.ConfigDialog_Gamepad_LeftStickNavigation;
+        public static string Gamepad_CapturePrompt => FormLocalization.ConfigDialog_Gamepad_CapturePrompt;
+        public static string Gamepad_CaptureButtonPrompt => FormLocalization.ConfigDialog_Gamepad_CaptureButtonPrompt;
+        public static string Gamepad_CaptureMultiple => FormLocalization.ConfigDialog_Gamepad_CaptureMultiple;
+        public static string Gamepad_CaptureCancel => FormLocalization.ConfigDialog_Gamepad_CaptureCancel;
+        public static string Gamepad_ApplyImmediately => FormLocalization.ConfigDialog_Gamepad_ApplyImmediately;
+        public static string Gamepad_OverrideNote => FormLocalization.ConfigDialog_Gamepad_OverrideNote;
 
         public static string ChangeWontTakeEffectUntilRestart =>
             FormLocalization.ConfigDialog_ChangeWontTakeEffectUntilRestart;

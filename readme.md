@@ -39,6 +39,8 @@ Windows 11ではメニューや設定画面にダークモードが適用され�
 - マウスのサイドボタンによる前ページ・次ページ操作
 - Controller / Gamepad対応（XInput、WinMM、Raw Input/HID、PS4系・Xbox系）
 - ゲームパッドの× / A決定、○ / B戻る・キャンセル、△ / Y高速送り、D-pad / Left Stick操作、LB / RBページ移動、Start / OPTIONSのEnter相当
+- 設定→ゲームパッドから、決定・戻る・高速送り・ページ移動・Start・設定を開く操作を物理ボタン単位で変更可能（全項目未割り当て可、初期設定へ復元可）。□ / Xの初期動作はゲームパッド設定を開く操作
+- ゲームパッド設定は`setting_user.json`へPS/Xbox共通の物理位置名で保存し、D-pad / Left Stickは固定操作
 - Virtual Gamepad Focusによる通常Console、HTML / INPUTMOUSEKEY、Modal popupの操作、Alt+Tab後・画面遷移後のFocus復帰、複数行Buttonの論理Target統合
 - .NET 10への更新とWindows 11向けダークモード(VVII氏パッチをCRER氏が取り込み)
 - AngleSharpおよびSQLite関連の既知の脆弱性に対応

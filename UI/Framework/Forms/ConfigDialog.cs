@@ -1,5 +1,8 @@
-﻿using MinorShift.Emuera.Runtime.Config;
+#nullable enable
+
+using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Config.JSON;
+using MinorShift.Emuera.GameView;
 using System;
 using System.Drawing;
 using System.Drawing.Text;
@@ -18,9 +21,40 @@ internal enum ConfigDialogResult
 
 internal sealed partial class ConfigDialog : Form
 {
-    public ConfigDialog()
+    private enum GamepadCaptureState
     {
+        None,
+        AwaitNeutral,
+        Armed,
+    }
+
+    private readonly GamepadManager? gamepadManager;
+    private System.Windows.Forms.Timer? gamepadConfigTimer;
+    private TabPage? gamepadTabPage;
+    private ComboBox[] gamepadBindingComboBoxes = [];
+    private Label[] gamepadBindingLabels = [];
+    private Label[] gamepadCaptureOverlayLabels = [];
+    private Button? gamepadResetButton;
+    private Label? gamepadFixedOperationsLabel;
+    private Label? gamepadApplyNoteLabel;
+    private Label? gamepadOverrideNoteLabel;
+    private GamepadBindings gamepadEditingBindings = GamepadBindings.Default();
+    private bool updatingGamepadBindings;
+    private int gamepadFocusIndex;
+    private GamepadCaptureState gamepadCaptureState;
+    private int gamepadCaptureActionIndex;
+    private string? gamepadCaptureStatus;
+
+    private static string GetGamepadFocusText(string text, bool selected)
+    {
+        return (selected ? "▶ " : "  ") + text;
+    }
+
+    public ConfigDialog(GamepadManager? gamepadManager = null)
+    {
+        this.gamepadManager = gamepadManager;
         InitializeComponent();
+        InitializeGamepadTab();
         numericUpDown1.Minimum = 1;//PrintCPerLine
         numericUpDown1.Maximum = 100;
         numericUpDown2.Minimum = 128;//ConfigCode.WindowX(Width)
@@ -46,6 +80,8 @@ internal sealed partial class ConfigDialog : Form
         numericUpDownPosX.Maximum = 10000;//WindowPosX
         numericUpDownPosY.Maximum = 10000;
         Localize();
+        FormClosed += (_, _) => StopGamepadConfigTimer();
+        Deactivate += (_, _) => CancelGamepadCapture();
     }
 
     private void shown(object sender, EventArgs e)
@@ -54,6 +90,451 @@ internal sealed partial class ConfigDialog : Form
         {
             comboBox2.Items.Add(fontName);
         }
+        StartGamepadConfigTimer();
+    }
+
+    private void InitializeGamepadTab()
+    {
+        gamepadTabPage = new TabPage(LocalizationManager.ConfigDialog.Gamepad)
+        {
+            BackColor = SystemColors.Control,
+            Padding = new Padding(8),
+        };
+        TableLayoutPanel table = new()
+        {
+            ColumnCount = 2,
+            Dock = DockStyle.Fill,
+            AutoScroll = true,
+        };
+        table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 48));
+        table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 52));
+
+        GamepadActionKind[] actions = GamepadBindings.ConfigurableActions;
+        gamepadBindingComboBoxes = new ComboBox[actions.Length];
+        gamepadBindingLabels = new Label[actions.Length];
+        gamepadCaptureOverlayLabels = new Label[actions.Length];
+        table.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));
+        Label applyNote = new()
+        {
+            AutoSize = true,
+            Text = LocalizationManager.ConfigDialog.Gamepad_ApplyImmediately,
+            Margin = new Padding(3, 3, 3, 3),
+        };
+        gamepadApplyNoteLabel = applyNote;
+        table.Controls.Add(applyNote, 0, 0);
+        table.SetColumnSpan(applyNote, 2);
+        for (int i = 0; i < actions.Length; i++)
+        {
+            table.RowStyles.Add(new RowStyle(SizeType.Absolute, 35));
+            Label label = new()
+            {
+                Anchor = AnchorStyles.Left,
+                AutoSize = true,
+                Text = GetGamepadFocusText(GetGamepadActionName(actions[i]), i == gamepadFocusIndex),
+                Margin = new Padding(3, 8, 3, 3),
+            };
+            gamepadBindingLabels[i] = label;
+            ComboBox combo = new()
+            {
+                Dock = DockStyle.Fill,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                FormattingEnabled = true,
+            };
+            foreach (GamepadPhysicalButton button in GamepadBindings.ConfigurableButtons)
+                combo.Items.Add(new GamepadBindingOption(button));
+            combo.Format += GamepadBindingComboBox_Format;
+            combo.SelectedIndexChanged += GamepadBindingComboBox_SelectedIndexChanged;
+            Panel bindingCell = new()
+            {
+                Dock = DockStyle.Fill,
+                Padding = new Padding(3, 4, 3, 4),
+            };
+            Label captureOverlay = new()
+            {
+                BackColor = SystemColors.Window,
+                BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle,
+                Dock = DockStyle.Fill,
+                ForeColor = SystemColors.WindowText,
+                Padding = new Padding(3, 0, 3, 0),
+                TextAlign = ContentAlignment.MiddleLeft,
+                Visible = false,
+            };
+            gamepadBindingComboBoxes[i] = combo;
+            gamepadCaptureOverlayLabels[i] = captureOverlay;
+            table.Controls.Add(label, 0, i + 1);
+            bindingCell.Controls.Add(combo);
+            bindingCell.Controls.Add(captureOverlay);
+            table.Controls.Add(bindingCell, 1, i + 1);
+        }
+
+        int row = actions.Length + 1;
+        table.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));
+        Button reset = new()
+        {
+            AutoSize = true,
+            Text = LocalizationManager.ConfigDialog.Gamepad_Reset,
+            Anchor = AnchorStyles.Left,
+            Margin = new Padding(3, 5, 3, 5),
+        };
+        gamepadResetButton = reset;
+        reset.Click += ResetGamepadBindings_Click;
+        table.Controls.Add(reset, 0, row);
+
+        row++;
+        table.RowStyles.Add(new RowStyle(SizeType.Absolute, 55));
+        Label fixedOperations = new()
+        {
+            AutoSize = true,
+            Text = string.Join(Environment.NewLine,
+                LocalizationManager.ConfigDialog.Gamepad_FixedOperations,
+                LocalizationManager.ConfigDialog.Gamepad_DPadNavigation,
+                LocalizationManager.ConfigDialog.Gamepad_LeftStickNavigation),
+            Margin = new Padding(3, 5, 3, 3),
+        };
+        gamepadFixedOperationsLabel = fixedOperations;
+        table.Controls.Add(fixedOperations, 0, row);
+        table.SetColumnSpan(fixedOperations, 2);
+
+        row++;
+        table.RowStyles.Add(new RowStyle(SizeType.Absolute, 45));
+        Label overrideNote = new()
+        {
+            AutoSize = true,
+            Text = LocalizationManager.ConfigDialog.Gamepad_OverrideNote,
+            Margin = new Padding(3, 5, 3, 3),
+        };
+        gamepadOverrideNoteLabel = overrideNote;
+        table.Controls.Add(overrideNote, 0, row);
+        table.SetColumnSpan(overrideNote, 2);
+
+        gamepadTabPage.Controls.Add(table);
+        tabControl.Controls.Add(gamepadTabPage);
+    }
+
+    private static string GetGamepadActionName(GamepadActionKind action)
+    {
+        return action switch
+        {
+            GamepadActionKind.Confirm => LocalizationManager.ConfigDialog.Gamepad_Confirm,
+            GamepadActionKind.Cancel => LocalizationManager.ConfigDialog.Gamepad_Cancel,
+            GamepadActionKind.Escape => LocalizationManager.ConfigDialog.Gamepad_Escape,
+            GamepadActionKind.ScrollUp => LocalizationManager.ConfigDialog.Gamepad_PreviousPage,
+            GamepadActionKind.ScrollDown => LocalizationManager.ConfigDialog.Gamepad_NextPage,
+            GamepadActionKind.Start => LocalizationManager.ConfigDialog.Gamepad_Start,
+            GamepadActionKind.OpenSettings => LocalizationManager.ConfigDialog.Gamepad_OpenSettings,
+            _ => action.ToString(),
+        };
+    }
+
+    private void LocalizeGamepadTab()
+    {
+        if (gamepadTabPage == null)
+            return;
+        gamepadTabPage.Text = LocalizationManager.ConfigDialog.Gamepad;
+        for (int i = 0; i < gamepadBindingLabels.Length; i++)
+            gamepadBindingLabels[i].Text = GetGamepadFocusText(
+                GetGamepadActionName(GamepadBindings.ConfigurableActions[i]), i == gamepadFocusIndex);
+        UpdateGamepadCaptureDisplay();
+        if (gamepadApplyNoteLabel != null)
+            gamepadApplyNoteLabel.Text = LocalizationManager.ConfigDialog.Gamepad_ApplyImmediately;
+        if (gamepadOverrideNoteLabel != null)
+        {
+            gamepadOverrideNoteLabel.Text = LocalizationManager.ConfigDialog.Gamepad_OverrideNote;
+            gamepadOverrideNoteLabel.Visible = GamepadManager.HasActiveRawButtonOverride();
+        }
+        UpdateGamepadFocusDisplay();
+    }
+
+    private void UpdateGamepadFocusDisplay()
+    {
+        for (int i = 0; i < gamepadBindingLabels.Length; i++)
+            gamepadBindingLabels[i].Text = GetGamepadFocusText(
+                GetGamepadActionName(GamepadBindings.ConfigurableActions[i]), i == gamepadFocusIndex);
+        if (gamepadResetButton != null)
+            gamepadResetButton.Text = GetGamepadFocusText(
+                LocalizationManager.ConfigDialog.Gamepad_Reset,
+                gamepadFocusIndex == gamepadBindingComboBoxes.Length);
+    }
+
+    private static string GetGamepadOperationsText()
+    {
+        return string.Join(Environment.NewLine,
+            LocalizationManager.ConfigDialog.Gamepad_FixedOperations,
+            LocalizationManager.ConfigDialog.Gamepad_DPadNavigation,
+            LocalizationManager.ConfigDialog.Gamepad_LeftStickNavigation);
+    }
+
+    private void UpdateGamepadCaptureDisplay()
+    {
+        for (int i = 0; i < gamepadBindingComboBoxes.Length; i++)
+        {
+            bool capturing = gamepadCaptureState != GamepadCaptureState.None
+                && i == gamepadCaptureActionIndex;
+            ComboBox combo = gamepadBindingComboBoxes[i];
+            Label overlay = gamepadCaptureOverlayLabels[i];
+            combo.Enabled = !capturing;
+            overlay.Text = capturing
+                ? gamepadCaptureStatus
+                    ?? LocalizationManager.ConfigDialog.Gamepad_CaptureButtonPrompt
+                : string.Empty;
+            overlay.Visible = capturing;
+            if (capturing)
+                overlay.BringToFront();
+        }
+        if (gamepadFixedOperationsLabel == null)
+            return;
+        if (gamepadCaptureState == GamepadCaptureState.None)
+        {
+            gamepadFixedOperationsLabel.Text = GetGamepadOperationsText();
+            return;
+        }
+
+        gamepadFixedOperationsLabel.Text = LocalizationManager.ConfigDialog.Gamepad_CaptureCancel;
+    }
+
+    private void BeginGamepadCapture()
+    {
+        gamepadCaptureActionIndex = gamepadFocusIndex;
+        gamepadCaptureStatus = null;
+        gamepadCaptureState = GamepadCaptureState.AwaitNeutral;
+        UpdateGamepadCaptureDisplay();
+    }
+
+    private void CancelGamepadCapture()
+    {
+        if (gamepadCaptureState == GamepadCaptureState.None)
+            return;
+        gamepadCaptureState = GamepadCaptureState.None;
+        gamepadCaptureStatus = null;
+        gamepadManager?.ResetForConfiguration();
+        UpdateGamepadCaptureDisplay();
+    }
+
+    private void CompleteGamepadCapture(GamepadPhysicalButton button)
+    {
+        gamepadEditingBindings.Assign(
+            GamepadBindings.ConfigurableActions[gamepadCaptureActionIndex], button);
+        SyncGamepadBindingControls();
+        gamepadCaptureState = GamepadCaptureState.None;
+        gamepadCaptureStatus = null;
+        gamepadManager?.ResetForConfiguration();
+        UpdateGamepadCaptureDisplay();
+        SetGamepadFocus(gamepadCaptureActionIndex);
+    }
+
+    private void HandleGamepadCapture(GamepadAction action)
+    {
+        if (action.Kind == GamepadActionKind.Direction && action.Direction == GamepadDirection.Left)
+        {
+            CancelGamepadCapture();
+            return;
+        }
+
+        if (gamepadCaptureState == GamepadCaptureState.AwaitNeutral)
+        {
+            if (action.PhysicalButtons == GamepadPhysicalButtonMask.None)
+            {
+                gamepadCaptureState = GamepadCaptureState.Armed;
+                gamepadCaptureStatus = null;
+                UpdateGamepadCaptureDisplay();
+            }
+            return;
+        }
+
+        if (action.PressedPhysicalButtons == GamepadPhysicalButtonMask.None)
+            return;
+        if (!GamepadManager.TryGetSinglePhysicalButton(action.PressedPhysicalButtons,
+                out GamepadPhysicalButton button))
+        {
+            gamepadCaptureState = GamepadCaptureState.AwaitNeutral;
+            gamepadCaptureStatus = LocalizationManager.ConfigDialog.Gamepad_CaptureMultiple;
+            UpdateGamepadCaptureDisplay();
+            return;
+        }
+        CompleteGamepadCapture(button);
+    }
+
+    private void GamepadBindingComboBox_Format(object? sender, ListControlConvertEventArgs e)
+    {
+        if (e.ListItem is GamepadBindingOption option)
+            e.Value = GetGamepadButtonName(option.Button);
+    }
+
+    private static string GetGamepadButtonName(GamepadPhysicalButton button)
+    {
+        return button switch
+        {
+            GamepadPhysicalButton.None => LocalizationManager.ConfigDialog.Gamepad_None,
+            GamepadPhysicalButton.FaceSouth => LocalizationManager.ConfigDialog.Gamepad_FaceSouth,
+            GamepadPhysicalButton.FaceEast => LocalizationManager.ConfigDialog.Gamepad_FaceEast,
+            GamepadPhysicalButton.FaceWest => LocalizationManager.ConfigDialog.Gamepad_FaceWest,
+            GamepadPhysicalButton.FaceNorth => LocalizationManager.ConfigDialog.Gamepad_FaceNorth,
+            GamepadPhysicalButton.LeftShoulder => LocalizationManager.ConfigDialog.Gamepad_LeftShoulder,
+            GamepadPhysicalButton.RightShoulder => LocalizationManager.ConfigDialog.Gamepad_RightShoulder,
+            GamepadPhysicalButton.LeftTrigger => LocalizationManager.ConfigDialog.Gamepad_LeftTrigger,
+            GamepadPhysicalButton.RightTrigger => LocalizationManager.ConfigDialog.Gamepad_RightTrigger,
+            GamepadPhysicalButton.Start => LocalizationManager.ConfigDialog.Gamepad_StartButton,
+            _ => button.ToString(),
+        };
+    }
+
+    private void LoadGamepadBindings(bool openGamepadTab)
+    {
+        gamepadEditingBindings = gamepadManager?.GetBindingsForEditing()
+            ?? GamepadBindings.FromUserConfig();
+        updatingGamepadBindings = true;
+        try
+        {
+            for (int i = 0; i < gamepadBindingComboBoxes.Length; i++)
+                gamepadBindingComboBoxes[i].SelectedIndex = GetGamepadButtonIndex(
+                    gamepadEditingBindings.Get(GamepadBindings.ConfigurableActions[i]));
+        }
+        finally
+        {
+            updatingGamepadBindings = false;
+        }
+        SetGamepadFocus(0);
+        if (openGamepadTab && gamepadTabPage != null)
+            tabControl.SelectedTab = gamepadTabPage;
+    }
+
+    private void GamepadBindingComboBox_SelectedIndexChanged(object? sender, EventArgs e)
+    {
+        if (updatingGamepadBindings || sender is not ComboBox combo)
+            return;
+        int index = Array.IndexOf(gamepadBindingComboBoxes, combo);
+        if (index < 0 || combo.SelectedItem is not GamepadBindingOption option)
+            return;
+        gamepadEditingBindings.Assign(GamepadBindings.ConfigurableActions[index], option.Button);
+        SyncGamepadBindingControls();
+        SetGamepadFocus(index);
+    }
+
+    private void SyncGamepadBindingControls()
+    {
+        updatingGamepadBindings = true;
+        try
+        {
+            for (int i = 0; i < gamepadBindingComboBoxes.Length; i++)
+            {
+                gamepadBindingComboBoxes[i].SelectedIndex = GetGamepadButtonIndex(
+                    gamepadEditingBindings.Get(GamepadBindings.ConfigurableActions[i]));
+            }
+        }
+        finally
+        {
+            updatingGamepadBindings = false;
+        }
+    }
+
+    private void ResetGamepadBindings_Click(object? sender, EventArgs e)
+    {
+        CancelGamepadCapture();
+        gamepadEditingBindings = GamepadBindings.Default();
+        SyncGamepadBindingControls();
+        SetGamepadFocus(gamepadBindingComboBoxes.Length);
+    }
+
+    private static int GetGamepadButtonIndex(GamepadPhysicalButton button)
+    {
+        return Array.IndexOf(GamepadBindings.ConfigurableButtons, button);
+    }
+
+    private void SetGamepadFocus(int index)
+    {
+        int count = gamepadBindingComboBoxes.Length + 1;
+        if (count == 1)
+            return;
+        gamepadFocusIndex = Math.Clamp(index, 0, count - 1);
+        if (gamepadFocusIndex == gamepadBindingComboBoxes.Length)
+            gamepadResetButton?.Focus();
+        else
+            gamepadBindingComboBoxes[gamepadFocusIndex].Focus();
+        UpdateGamepadFocusDisplay();
+    }
+
+    private void MoveGamepadFocus(int delta)
+    {
+        int count = gamepadBindingComboBoxes.Length + 1;
+        SetGamepadFocus((gamepadFocusIndex + delta + count) % count);
+    }
+
+    private void ChangeGamepadSelection(int delta)
+    {
+        if (gamepadFocusIndex >= gamepadBindingComboBoxes.Length)
+            return;
+        ComboBox combo = gamepadBindingComboBoxes[gamepadFocusIndex];
+        int count = combo.Items.Count;
+        if (count == 0)
+            return;
+        int next = (combo.SelectedIndex + delta + count) % count;
+        combo.SelectedIndex = next;
+    }
+
+    private void StartGamepadConfigTimer()
+    {
+        if (gamepadManager == null || gamepadConfigTimer != null || IsDisposed)
+            return;
+        gamepadManager.ResetForConfiguration();
+        gamepadConfigTimer = new System.Windows.Forms.Timer { Interval = 33 };
+        gamepadConfigTimer.Tick += GamepadConfigTimer_Tick;
+        gamepadConfigTimer.Start();
+    }
+
+    private void StopGamepadConfigTimer()
+    {
+        gamepadCaptureState = GamepadCaptureState.None;
+        gamepadCaptureStatus = null;
+        if (gamepadConfigTimer == null)
+            return;
+        gamepadConfigTimer.Stop();
+        gamepadConfigTimer.Dispose();
+        gamepadConfigTimer = null;
+    }
+
+    private void GamepadConfigTimer_Tick(object? sender, EventArgs e)
+    {
+        if (gamepadManager == null)
+            return;
+        GamepadAction action = gamepadManager.Poll();
+        if (gamepadTabPage == null || tabControl.SelectedTab != gamepadTabPage)
+        {
+            CancelGamepadCapture();
+            return;
+        }
+        if (gamepadCaptureState != GamepadCaptureState.None)
+        {
+            HandleGamepadCapture(action);
+            return;
+        }
+        switch (action.Kind)
+        {
+            case GamepadActionKind.Direction:
+                if (action.Direction == GamepadDirection.Up) MoveGamepadFocus(-1);
+                else if (action.Direction == GamepadDirection.Down) MoveGamepadFocus(1);
+                else if (action.Direction == GamepadDirection.Left) ChangeGamepadSelection(-1);
+                else if (action.Direction == GamepadDirection.Right) ChangeGamepadSelection(1);
+                break;
+            case GamepadActionKind.Confirm:
+                if (gamepadFocusIndex == gamepadBindingComboBoxes.Length)
+                    gamepadResetButton?.PerformClick();
+                else
+                    BeginGamepadCapture();
+                break;
+            case GamepadActionKind.Cancel:
+                buttonCancel.PerformClick();
+                break;
+            case GamepadActionKind.Start:
+                buttonSave.PerformClick();
+                break;
+        }
+    }
+
+    private sealed class GamepadBindingOption
+    {
+        internal GamepadBindingOption(GamepadPhysicalButton button) => Button = button;
+        internal GamepadPhysicalButton Button { get; }
+        public override string ToString() => GamepadBindings.GetDisplayName(Button);
     }
 
     private void buttonSave_Click(object sender, EventArgs e)
@@ -119,8 +600,8 @@ internal sealed partial class ConfigDialog : Form
 					textBox.Enabled = !item.Fixed;
 				}
 		*/
-    MainWindow parent;
-    public void SetConfig(MainWindow mainWindow)
+    MainWindow? parent;
+    public void SetConfig(MainWindow mainWindow, bool openGamepadTab = false)
     {
         parent = mainWindow;
         //ConfigData config = ConfigData.Instance;
@@ -303,6 +784,7 @@ internal sealed partial class ConfigDialog : Form
         _checkUTF8withBOM.Checked = JSONConfig.Game.CheckUTF8withBOM;
         _fontAntialias.SelectedIndex = (int)JSONConfig.Game.FontAntialias;
         _imageSampling.SelectedIndex = (int)JSONConfig.Game.ImageSamplingOption;
+        LoadGamepadBindings(openGamepadTab);
     }
 
     private void SaveConfig()
@@ -367,7 +849,7 @@ internal sealed partial class ConfigDialog : Form
         config.GetConfigItem(ConfigCode.FontSize).SetValue<int>((int)numericUpDown5.Value);
         int nameIndex = comboBox2.SelectedIndex;
         if (nameIndex >= 0)
-            config.GetConfigItem(ConfigCode.FontName).SetValue<string>((string)comboBox2.SelectedItem);
+            config.GetConfigItem(ConfigCode.FontName).SetValue<string>(comboBox2.SelectedItem as string ?? comboBox2.Text);
         else
             config.GetConfigItem(ConfigCode.FontName).SetValue<string>(comboBox2.Text);
 
@@ -438,9 +920,11 @@ internal sealed partial class ConfigDialog : Form
         config.GetConfigItem(ConfigCode.TextEditor).SetValue<string>(textBox1.Text);
         config.GetConfigItem(ConfigCode.EditorArgument).SetValue<string>(textBox2.Text);
 
+        gamepadEditingBindings.SaveTo(JSONConfig.User);
         config.SaveConfig();
 
         JSONConfig.Save();
+        gamepadManager?.ReloadBindings();
     }
 
 
@@ -826,6 +1310,7 @@ internal sealed partial class ConfigDialog : Form
         _checkUTF8withBOM.Text = LocalizationManager.ConfigDialog.Check_UTF8withBOM;
         _fontAntialiasLabel.Text = LocalizationManager.ConfigDialog.FontAntialias;
         _imageSamplingLabel.Text = LocalizationManager.ConfigDialog.ImageSampling;
+        LocalizeGamepadTab();
     }
 
     private void checkBoxCBIgnoreTags_CheckedChanged(object sender, EventArgs e)

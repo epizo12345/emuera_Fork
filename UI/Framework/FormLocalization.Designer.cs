@@ -68,6 +68,177 @@ namespace MinorShift.Emuera.UI.Framework {
                 return ResourceManager.GetString("ConfigDialog_Cancel", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Gamepad に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string ConfigDialog_Gamepad {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Gamepad", resourceCulture);
+            }
+        }
+
+        internal static string ConfigDialog_Gamepad_Confirm {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Gamepad_Confirm", resourceCulture);
+            }
+        }
+
+        internal static string ConfigDialog_Gamepad_Cancel {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Gamepad_Cancel", resourceCulture);
+            }
+        }
+
+        internal static string ConfigDialog_Gamepad_Escape {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Gamepad_Escape", resourceCulture);
+            }
+        }
+
+        internal static string ConfigDialog_Gamepad_PreviousPage {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Gamepad_PreviousPage", resourceCulture);
+            }
+        }
+
+        internal static string ConfigDialog_Gamepad_NextPage {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Gamepad_NextPage", resourceCulture);
+            }
+        }
+
+        internal static string ConfigDialog_Gamepad_Start {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Gamepad_Start", resourceCulture);
+            }
+        }
+
+        internal static string ConfigDialog_Gamepad_OpenSettings {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Gamepad_OpenSettings", resourceCulture);
+            }
+        }
+
+        internal static string ConfigDialog_Gamepad_Reset {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Gamepad_Reset", resourceCulture);
+            }
+        }
+
+        internal static string ConfigDialog_Gamepad_None {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Gamepad_None", resourceCulture);
+            }
+        }
+
+        internal static string ConfigDialog_Gamepad_FaceSouth {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Gamepad_FaceSouth", resourceCulture);
+            }
+        }
+
+        internal static string ConfigDialog_Gamepad_FaceEast {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Gamepad_FaceEast", resourceCulture);
+            }
+        }
+
+        internal static string ConfigDialog_Gamepad_FaceWest {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Gamepad_FaceWest", resourceCulture);
+            }
+        }
+
+        internal static string ConfigDialog_Gamepad_FaceNorth {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Gamepad_FaceNorth", resourceCulture);
+            }
+        }
+
+        internal static string ConfigDialog_Gamepad_LeftShoulder {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Gamepad_LeftShoulder", resourceCulture);
+            }
+        }
+
+        internal static string ConfigDialog_Gamepad_RightShoulder {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Gamepad_RightShoulder", resourceCulture);
+            }
+        }
+
+        internal static string ConfigDialog_Gamepad_LeftTrigger {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Gamepad_LeftTrigger", resourceCulture);
+            }
+        }
+
+        internal static string ConfigDialog_Gamepad_RightTrigger {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Gamepad_RightTrigger", resourceCulture);
+            }
+        }
+
+        internal static string ConfigDialog_Gamepad_StartButton {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Gamepad_StartButton", resourceCulture);
+            }
+        }
+
+        internal static string ConfigDialog_Gamepad_FixedOperations {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Gamepad_FixedOperations", resourceCulture);
+            }
+        }
+
+        internal static string ConfigDialog_Gamepad_DPadNavigation {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Gamepad_DPadNavigation", resourceCulture);
+            }
+        }
+
+        internal static string ConfigDialog_Gamepad_LeftStickNavigation {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Gamepad_LeftStickNavigation", resourceCulture);
+            }
+        }
+
+        internal static string ConfigDialog_Gamepad_CapturePrompt {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Gamepad_CapturePrompt", resourceCulture);
+            }
+        }
+
+        internal static string ConfigDialog_Gamepad_CaptureButtonPrompt {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Gamepad_CaptureButtonPrompt", resourceCulture);
+            }
+        }
+
+        internal static string ConfigDialog_Gamepad_CaptureMultiple {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Gamepad_CaptureMultiple", resourceCulture);
+            }
+        }
+
+        internal static string ConfigDialog_Gamepad_CaptureCancel {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Gamepad_CaptureCancel", resourceCulture);
+            }
+        }
+
+        internal static string ConfigDialog_Gamepad_OverrideNote {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Gamepad_OverrideNote", resourceCulture);
+            }
+        }
+
+        internal static string ConfigDialog_Gamepad_ApplyImmediately {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Gamepad_ApplyImmediately", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   ※Changes won&apos;t take effect until restart に類似しているローカライズされた文字列を検索します。
