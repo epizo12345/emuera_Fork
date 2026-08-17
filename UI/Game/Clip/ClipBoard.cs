@@ -63,8 +63,10 @@ internal partial class ClipboardProcessor
     {
         if (Initialized)
             return;
-        lineBuffer = new CircularBuffer<string>(JSONConfig.User.CBBufferSize);
-        minTimer = new System.Timers.Timer(JSONConfig.User.CBMinTimer) { AutoReset = false };
+        int bufferSize = Math.Max(1, JSONConfig.User.CBBufferSize);
+        int minTimerInterval = Math.Max(1, JSONConfig.User.CBMinTimer);
+        lineBuffer = new CircularBuffer<string>(bufferSize);
+        minTimer = new System.Timers.Timer(minTimerInterval) { AutoReset = false };
         minTimer.Elapsed += MinTimerDone;
         OldText = "";
         Initialized = true;

@@ -45,6 +45,8 @@ internal sealed partial class ConfigDialog : Form
         numericUpDown11.Maximum = 80;
         numericUpDownPosX.Maximum = 10000;//WindowPosX
         numericUpDownPosY.Maximum = 10000;
+        numericUpDownCBBufferSize.Minimum = 1;
+        numericUpDownCBMinTimer.Minimum = 1;
         Localize();
     }
 
@@ -288,9 +290,9 @@ internal sealed partial class ConfigDialog : Form
         checkBoxCBTriggerAnyKeyWait.Checked = JSONConfig.User.CBTriggerAnyKeyWait;
         checkBoxCBTriggerInputWait.Checked = JSONConfig.User.CBTriggerInputWait;
         setNumericUpDown(numericUpDownCBMaxCB, JSONConfig.User.CBMaxCB);
-        setNumericUpDown(numericUpDownCBBufferSize, JSONConfig.User.CBBufferSize);
+        setNumericUpDown(numericUpDownCBBufferSize, Math.Max(1, JSONConfig.User.CBBufferSize));
         setNumericUpDown(numericUpDownCBScrollCount, JSONConfig.User.CBScrollCount);
-        setNumericUpDown(numericUpDownCBMinTimer, JSONConfig.User.CBMinTimer);
+        setNumericUpDown(numericUpDownCBMinTimer, Math.Max(1, JSONConfig.User.CBMinTimer));
         #endregion
 
         _checkUTF8withBOM.Checked = JSONConfig.Game.CheckUTF8withBOM;

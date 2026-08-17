@@ -27,7 +27,7 @@ public class CircularBuffer<T> : ICircularBuffer<T>, IEnumerable<T>
 
     public CircularBuffer(int capacity)
     {
-        if (capacity < 0)
+        if (capacity <= 0)
             throw new ArgumentOutOfRangeException(nameof(capacity), "must be positive");
         _buffer = new T[capacity];
         _head = capacity - 1;
@@ -40,7 +40,7 @@ public class CircularBuffer<T> : ICircularBuffer<T>, IEnumerable<T>
         get { return _buffer.Length; }
         set
         {
-            if (value < 0)
+            if (value <= 0)
                 throw new ArgumentOutOfRangeException(nameof(value), "must be positive");
 
             if (value == _buffer.Length)
