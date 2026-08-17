@@ -139,7 +139,7 @@ internal static partial class LexicalAnalyzer
     {
         long significand;
         int expBase = 0;
-        int exponent = 0;
+        long exponent = 0;
         int stStartPos = st.CurrentPosition;
         int stEndPos;
         int fromBase = 10;
@@ -180,7 +180,9 @@ internal static partial class LexicalAnalyzer
         if (expBase != 0)
         {
             st.ShiftNext();
-            unchecked { exponent = (int)readDigits(st, fromBase); }
+            if (st.EOS)
+                throw new CodeEE(LocalizationManager.Error.CanNotInterpretNum);
+            exponent = readDigits(st, fromBase);
         }
         stEndPos = st.CurrentPosition;
         if (expBase != 0 && exponent != 0)
@@ -199,9 +201,7 @@ internal static partial class LexicalAnalyzer
     {
         Int64 significand;
         int expBase = 0;
-        int exponent = 0;
-        int stStartPos = st.CurrentPosition;
-        int stEndPos;
+        long exponent = 0;
         int fromBase = 10;
         if (st.Current == '0')
         {
@@ -224,7 +224,7 @@ internal static partial class LexicalAnalyzer
             if (fromBase != 16)
                 return false;
             //else if (!hexadecimalDigits.Contains(st.Current))
-            else if (0 <= Array.IndexOf(hexadecimalDigits, st.Current))
+            else if (Array.IndexOf(hexadecimalDigits, st.Current) < 0)
                 return false;
         }
         // ここでエラーが発生する場合、そもそも文字列ではないのでfalseを返す
@@ -243,26 +243,41 @@ internal static partial class LexicalAnalyzer
         if (expBase != 0)
         {
             st.ShiftNext();
-            if (st.EOS || !char.IsDigit(st.Current))
+            if (st.EOS)
                 return false;
-            unchecked { exponent = (int)readDigits(st, fromBase); }
+            if (st.Current == '+' || st.Current == '-')
+            {
+                if (!char.IsDigit(st.Next))
+                    return false;
+            }
+            else if (!char.IsDigit(st.Current))
+                return false;
+            try
+            {
+                exponent = readDigits(st, fromBase);
+            }
+            catch (CodeEE)
+            {
+                return false;
+            }
         }
-        stEndPos = st.CurrentPosition;
         if ((expBase != 0) && (exponent != 0))
         {
 
             double d = significand * Math.Pow(expBase, exponent);
             if ((double.IsNaN(d)) || (double.IsInfinity(d)) || (d > Int64.MaxValue) || (d < Int64.MinValue))
-                throw new CodeEE("\"" + st.Substring(stStartPos, stEndPos) + "\"は64ビット符号付整数の範囲を超えています");
+                return false;
         }
 
         return true;
     }
 
 
-    static readonly SearchValues<char> digit = SearchValues.Create(['0','1','2','3','4','5','6','7','8','9',
+    static readonly SearchValues<char> decimalDigits = SearchValues.Create(['0','1','2','3','4','5','6','7','8','9']);
+    static readonly SearchValues<char> hexadecimalSearchDigits = SearchValues.Create(['0','1','2','3','4','5','6','7','8','9',
                                                         'a', 'b', 'c', 'd', 'e', 'f',
                                                         'A', 'B', 'C', 'D', 'E', 'F']);
+    static readonly SearchValues<char> binaryDigits = SearchValues.Create(['0', '1']);
     private static long readDigits(CharStream st, int fromBase)
     {
         var span = st.SubstringROS();
@@ -274,16 +289,17 @@ internal static partial class LexicalAnalyzer
             searchStart = 1;
         }
 
-        var end = span[searchStart..].IndexOfAnyExcept(digit);
-        if (end == -1)
+        SearchValues<char> validDigits = fromBase switch
         {
-            end = searchStart + span.Length;
-            // "+"、"-"の符号が先頭につく場合、符号以降の文字数を取得する、
-            if (span[0] == '-' || span[0] == '+')
-            {
-                end -= 1;
-            }
-        }
+            2 => binaryDigits,
+            16 => hexadecimalSearchDigits,
+            _ => decimalDigits,
+        };
+        var end = span[searchStart..].IndexOfAnyExcept(validDigits);
+        if (end == -1)
+            end = span.Length;
+        else
+            end += searchStart;
         st.Jump(end);
 
         var integerSpan = span[..end];

@@ -6,12 +6,13 @@
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
 - `Emuera.exe` サイズ: 24,639,210バイト（約23.5 MiB）
-- `Emuera.exe` SHA-256: `C71F3A700633F117E6422B67823888FD61B76D2BADCE839C582CAFCC622F4A2D`
+- `Emuera.exe` SHA-256: `6E82CFF83BF167CAD616A3723F506A56C97CEFECB313834712889C88912499F6`
 - Phase 4A/B/C warning cleanupを反映（Release warning 52件から37件、new warning 0、Normal/Kojo起動確認済み）
 - Phase 5A/B/C focused bugfixを反映（VARSIZE/macro、ARRAYMSORT、GGETCOLOR/GSETCOLOR、SPRITEGETCOLOR。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
 - Phase 6A/B focused bugfixを反映（SPRITEANIMEADDFRAMEの無効Sprite入力時NRE修正、ClipboardのBufferSize/MinTimer 0・負値の安全化、ConfigDialogの最小値1制限とruntime clamp。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
 - Phase 7A/B/C focused bugfixを反映（ClipboardメニューのON状態復元、Clipboard Ctrl+Up/Downの起動時null安全性、VariableSize.csvの2D/3D/CDFLAG要素数計算overflow、CircularBuffer.Clear()の内部参照解放。Release 0 errors、35 warnings、focused/Normal/Kojo確認済み）
 - Phase 8A/B focused bugfixを反映（単項マイナスのoperand二重評価と副作用式の余分な実行を修正、文字列`>=` / `<=`の比較条件を修正。Release 0 errors、35 warnings、focused/Normal/Kojo確認済み）
+- Phase 9A/B/C focused bugfixを反映（符号付き小数・16進・指数表記の数値判定、キャラクター入替え後の対象追随、極端なRAND範囲のエラー処理を改善。Release 0 errors、35 warnings、focused/Normal/Kojo確認済み）
 
 この単一EXEにはSkiaSharpのネイティブライブラリも内包されています。別の`libSkiaSharp.dll`を同じフォルダへ追加する必要はありません。
 Windows API全体の大きな.NET投影DLLは含めず、SkiaSharpが必要とする`WinRT.Runtime.dll`だけを内包しています。

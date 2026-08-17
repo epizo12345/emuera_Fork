@@ -973,7 +973,16 @@ internal static partial class FunctionMethodCreator
                 else
                     throw new CodeEE("RANDの最大値に最小値以下の値(" + max.ToString() + ")が指定されました");
             }
-            return exm.VEvaluator.GetNextRand(max - min) + min;
+            long range;
+            try
+            {
+                range = checked(max - min);
+            }
+            catch (OverflowException)
+            {
+                throw new CodeEE("RANDの最大値と最小値の差が64ビット符号付き整数の最大値を超えています");
+            }
+            return exm.VEvaluator.GetNextRand(range) + min;
         }
     }
 
