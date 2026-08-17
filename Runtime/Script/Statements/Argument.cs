@@ -34,7 +34,9 @@ internal sealed class ExpressionsArgument : Argument
 
 internal sealed class VoidArgument : Argument
 {
-    public VoidArgument() { }
+    public static readonly VoidArgument Instance = new();
+
+    private VoidArgument() { }
 }
 
 internal sealed class ExpressionArgument : Argument
