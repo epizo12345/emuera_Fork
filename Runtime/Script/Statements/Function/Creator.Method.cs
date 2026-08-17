@@ -1068,14 +1068,7 @@ internal static partial class FunctionMethodCreator
         {
             Int64 x = arguments[0].GetIntValue(exm);
             Int64 y = arguments[1].GetIntValue(exm);
-            double pow = Math.Pow(x, y);
-            if (double.IsNaN(pow))
-                throw new CodeEE(LocalizationManager.Error.PowerResultNonNumeric);
-            else if (double.IsInfinity(pow))
-                throw new CodeEE(LocalizationManager.Error.PowerResultInfinite);
-            else if ((pow >= Int64.MaxValue) || (pow <= Int64.MinValue))
-                throw new CodeEE("累乗結果(" + pow.ToString() + ")が64ビット符号付き整数の範囲外です");
-            return (long)pow;
+            return ExpressionMediator.CalculatePower(x, y);
         }
     }
 
