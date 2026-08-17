@@ -128,13 +128,6 @@ internal static partial class ParserMediator
     private static readonly ConcurrentQueue<ParserWarning> warningList = [];
 
     public static bool HasWarning { get { return !warningList.IsEmpty; } }
-    public static void ClearWarningList()
-    {
-        while (warningList.TryDequeue(out _))
-        {
-        }
-    }
-
     public static void FlushWarningList()
     {
         while (warningList.TryDequeue(out ParserWarning warning))

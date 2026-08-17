@@ -16,6 +16,18 @@ internal sealed class CharStream
         pointer = 0;
     }
 
+    /// <summary>
+    /// 外部へ返す前の一時ストリームを別の入力で再利用する。
+    /// コンストラクタ直後と同じ状態へ戻す。
+    /// </summary>
+    internal void Reset(string s)
+    {
+        source = s;
+        if (source == null)
+            source = "";
+        pointer = 0;
+    }
+
     string source;
     public const char EndOfString = '\0';
     int pointer;
@@ -40,13 +52,6 @@ internal sealed class CharStream
                 return EndOfString;
             return source[pointer];
         }
-    }
-
-    public void AppendString(string str)
-    {
-        if (pointer > source.Length)
-            pointer = source.Length;
-        source += " " + str;
     }
 
     /// <summary>

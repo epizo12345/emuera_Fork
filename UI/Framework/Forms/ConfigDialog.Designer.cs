@@ -180,7 +180,6 @@ namespace MinorShift.Emuera.Forms
             label16 = new System.Windows.Forms.Label();
             openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
             toolTip1 = new System.Windows.Forms.ToolTip(components);
-            fontDialog1 = new System.Windows.Forms.FontDialog();
             tabControl.SuspendLayout();
             tabEnvironment.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numericUpDown11).BeginInit();
@@ -966,7 +965,6 @@ namespace MinorShift.Emuera.Forms
             numericUpDown5.Name = "numericUpDown5";
             numericUpDown5.Size = new System.Drawing.Size(48, 23);
             numericUpDown5.TabIndex = 53;
-            numericUpDown5.ValueChanged += numericUpDown5_ValueChanged;
             // 
             // numericUpDown6
             // 
@@ -1203,7 +1201,6 @@ namespace MinorShift.Emuera.Forms
             checkBox27.TabIndex = 81;
             checkBox27.Text = "セーブデータをUTF-8で保存する(非バイナリ時のみ)";
             checkBox27.UseVisualStyleBackColor = true;
-            checkBox27.CheckedChanged += checkBox27_CheckedChanged;
             // 
             // checkBoxSystemTripleSymbol
             // 
@@ -1571,7 +1568,6 @@ namespace MinorShift.Emuera.Forms
             comboBoxReduceArgumentOnLoad.Name = "comboBoxReduceArgumentOnLoad";
             comboBoxReduceArgumentOnLoad.Size = new System.Drawing.Size(202, 23);
             comboBoxReduceArgumentOnLoad.TabIndex = 49;
-            comboBoxReduceArgumentOnLoad.SelectedIndexChanged += comboBoxReduceArgumentOnLoad_SelectedIndexChanged;
             // 
             // checkBox11
             // 
@@ -2106,7 +2102,6 @@ namespace MinorShift.Emuera.Forms
 		private System.Windows.Forms.ComboBox comboBox6;
 		private System.Windows.Forms.CheckBox checkBox9;
 		private System.Windows.Forms.CheckBox checkBox29;
-        private System.Windows.Forms.FontDialog fontDialog1;
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel1;
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel2;
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel3;

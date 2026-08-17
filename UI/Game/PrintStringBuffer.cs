@@ -272,17 +272,6 @@ internal sealed class PrintStringBuffer
         return [.. lineList];
     }
 
-    /// <summary>
-    /// 1810beta003新規 マークアップ用 Append とFlushを同時にやる
-    /// </summary>
-    /// <param name="str"></param>
-    /// <param name="stringMeasure"></param>
-    /// <returns></returns>
-    public ConsoleDisplayLine[] PrintHtml(string str, StringMeasure stringMeasure)
-    {
-        throw new NotImplementedException();
-    }
-
     #region Flush用privateメソッド
 
     private void clearBuffer()

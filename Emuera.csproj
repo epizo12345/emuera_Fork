@@ -35,9 +35,10 @@
     <EnablePerformanceMetrics Condition="'$(EnablePerformanceMetrics)' == ''">false</EnablePerformanceMetrics>
     <DefineConstants Condition="'$(EnablePerformanceMetrics)' == 'true'">$(DefineConstants);PERFORMANCE_METRICS</DefineConstants>
     <!-- [Emuera改修:START-04]
-         起動直後の強制メモリ整理を比較試験できるようにしたスイッチ。
-         起動が遅くなるため通常版は false のまま。 -->
-    <EnableStartupMemoryTrim Condition="'$(EnableStartupMemoryTrim)' == ''">false</EnableStartupMemoryTrim>
+         起動完了時のmanaged memoryが2GiB以上の大規模構成だけ、
+         Aggressive / blocking / compacting GCを1回実行する。
+         2GiB未満では整理を行わず、必要ならMSBuild propertyで無効化できる。 -->
+    <EnableStartupMemoryTrim Condition="'$(EnableStartupMemoryTrim)' == ''">true</EnableStartupMemoryTrim>
     <DefineConstants Condition="'$(EnableStartupMemoryTrim)' == 'true'">$(DefineConstants);STARTUP_MEMORY_TRIM</DefineConstants>
 
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
@@ -60,16 +61,6 @@
     </Compile>
     <Compile Update="Forms\EraPictureBox.cs">
       <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="Properties\Resources.Designer.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
-    <Compile Update="Properties\Settings.Designer.cs">
-      <DesignTimeSharedInput>True</DesignTimeSharedInput>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
     <Compile Update="UI\Framework\FormLocalization.Designer.cs">
       <DesignTime>True</DesignTime>
@@ -108,10 +99,6 @@
     <PackageReference Include="System.CommandLine" Version="2.0.10" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Update="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
     <EmbeddedResource Update="UI\Framework\FormLocalization.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>FormLocalization.Designer.cs</LastGenOutput>
@@ -120,12 +107,6 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>ConsoleLocalization.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <None Update="Properties\Settings.settings">
-      <Generator>SettingsSingleFileGenerator</Generator>
-      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
-    </None>
   </ItemGroup>
   <!-- [Emuera改修:BUILD-03] 修正者: epizo
        Microsoft.Windows.CsWinRTのWinRT.Runtime.dllには、通常は「発行先へコピーしない」という

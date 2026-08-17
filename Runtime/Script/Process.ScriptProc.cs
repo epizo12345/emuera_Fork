@@ -328,16 +328,9 @@ internal sealed partial class Process
             case FunctionCode.POWER:
                 {
                     SpPowerArgument powerArg = (SpPowerArgument)func.Argument;
-                    double x = powerArg.X.GetIntValue(exm);
-                    double y = powerArg.Y.GetIntValue(exm);
-                    double pow = Math.Pow(x, y);
-                    if (double.IsNaN(pow))
-                        throw new CodeEE(LocalizationManager.Error.PowerResultNonNumeric);
-                    else if (double.IsInfinity(pow))
-                        throw new CodeEE(LocalizationManager.Error.PowerResultInfinite);
-                    else if ((pow >= Int64.MaxValue) || (pow <= Int64.MinValue))
-                        throw new CodeEE("累乗結果(" + pow.ToString() + ")が64ビット符号付き整数の範囲外です");
-                    powerArg.VariableDest.SetValue((long)pow, exm);
+                    long x = powerArg.X.GetIntValue(exm);
+                    long y = powerArg.Y.GetIntValue(exm);
+                    powerArg.VariableDest.SetValue(ExpressionMediator.CalculatePower(x, y), exm);
                     break;
                 }
             case FunctionCode.SWAP:

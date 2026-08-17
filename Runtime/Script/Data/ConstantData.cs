@@ -337,7 +337,7 @@ internal sealed class ConstantData
                 ParserMediator.Warn(LocalizationManager.Error.VarSizeCanNotGreaterThan1M, position, 1);
                 return;
             }
-            if (length * length2 > 1000000)
+            if ((long)length * length2 > 1000000)
             {
                 ParserMediator.Warn("二次元配列の要素数は最大で100万個までです", position, 1);
                 return;
@@ -375,7 +375,7 @@ internal sealed class ConstantData
                 ParserMediator.Warn(LocalizationManager.Error.VarSizeCanNotGreaterThan1M, position, 1);
                 return;
             }
-            if (length * length2 * length3 > 10000000)
+            if ((long)length * length2 * length3 > 10000000)
             {
                 ParserMediator.Warn("三次元配列の要素数は最大で1000万個までです", position, 1);
                 return;
@@ -574,7 +574,7 @@ internal sealed class ConstantData
         {
             length1 = MaxDataList[cdflag1Index];
             length2 = MaxDataList[cdflag2Index];
-            if (length1 * length2 > 1000000)
+            if ((long)length1 * length2 > 1000000)
             {
                 //調整が面倒なので投げる
                 throw new CodeEE(LocalizationManager.Error.TooManyCdflagElements, position);

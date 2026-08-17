@@ -1129,9 +1129,9 @@ internal sealed class VariableEvaluator : IDisposable
     public void PickUpChara(long[] NoList)
     {
         List<long> pickList = [];
-        long oldTarget = TARGET;
-        long oldAssi = ASSI;
-        long oldMaster = MASTER;
+        CharacterData targetChara = TARGET >= 0 && TARGET < varData.CharacterList.Count ? varData.CharacterList[(int)TARGET] : null;
+        CharacterData assiChara = ASSI >= 0 && ASSI < varData.CharacterList.Count ? varData.CharacterList[(int)ASSI] : null;
+        CharacterData masterChara = MASTER >= 0 && MASTER < varData.CharacterList.Count ? varData.CharacterList[(int)MASTER] : null;
         TARGET = -1;
         ASSI = -1;
         MASTER = -1;
@@ -1149,18 +1149,15 @@ internal sealed class VariableEvaluator : IDisposable
                 if (pickList.IndexOf(i) > i)
                     pickList[pickList.IndexOf(i)] = pickList[i];
             }
-            if (TARGET < 0 && pickList[i] == oldTarget)
-                TARGET = i;
-            if (ASSI < 0 && pickList[i] == oldAssi)
-                ASSI = i;
-            if (MASTER < 0 && pickList[i] == oldMaster)
-                MASTER = i;
         }
         if (pickList.Count < varData.CharacterList.Count)
         {
             for (int i = varData.CharacterList.Count - 1; i >= pickList.Count; i--)
                 DelCharacter(i);
         }
+        TARGET = targetChara == null ? -1 : varData.CharacterList.IndexOf(targetChara);
+        ASSI = assiChara == null ? -1 : varData.CharacterList.IndexOf(assiChara);
+        MASTER = masterChara == null ? -1 : varData.CharacterList.IndexOf(masterChara);
     }
 
     public void ResetData()

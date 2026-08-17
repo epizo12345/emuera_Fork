@@ -148,7 +148,7 @@ internal sealed class ErhLoader
     {
         //LexicalAnalyzer.SkipWhiteSpace(st);呼び出し前に行う。
         string srcID = LexicalAnalyzer.ReadSingleIdentifier(st);
-        if (srcID == null)
+        if (string.IsNullOrEmpty(srcID))
             throw new CodeEE(LocalizationManager.Error.MissingReplacementSource, position);
 
         //ここで名称重複判定しないと、大変なことになる

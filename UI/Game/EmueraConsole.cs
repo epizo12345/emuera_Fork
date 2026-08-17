@@ -1402,10 +1402,6 @@ internal sealed partial class EmueraConsole : IDisposable
             window.Text = str;
     }
 
-    public void SetEmueraVersionInfo(string str)
-    {
-        window.TextBox.Text = str;
-    }
     public string GetWindowTitle()
     {
         if (Program.DebugMode && debugTitle != null)

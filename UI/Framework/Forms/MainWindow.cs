@@ -11,7 +11,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
-using System.Runtime;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using MinorShift.Emuera.UI.Framework;
@@ -59,6 +58,7 @@ internal sealed partial class MainWindow : Form
         EmuVerToolStripTextBox.Text = Emuera_verInfo;
 
         console = new EmueraConsole(this);
+        クリップボードにコピーToolStripMenuItem.Checked = JSONConfig.User.CBUseClipboard;
         macroMenuItems[0] = マクロ01ToolStripMenuItem;
         macroMenuItems[1] = マクロ02ToolStripMenuItem;
         macroMenuItems[2] = マクロ03ToolStripMenuItem;
@@ -142,11 +142,11 @@ internal sealed partial class MainWindow : Form
         #region EE_AnchorのCB機能移植
         else if (Keys.Up == (keyData & Keys.KeyCode) && ((keyData & Keys.Modifiers & Keys.Control) == Keys.Control))
         {
-            if (JSONConfig.User.CBUseClipboard && console.CBProc.ScrollUp(1)) return true;
+            if (console != null && JSONConfig.User.CBUseClipboard && console.CBProc.ScrollUp(1)) return true;
         }
         else if (Keys.Down == (keyData & Keys.KeyCode) && ((keyData & Keys.Modifiers & Keys.Control) == Keys.Control))
         {
-            if (JSONConfig.User.CBUseClipboard && console.CBProc.ScrollDown(1)) return true;
+            if (console != null && JSONConfig.User.CBUseClipboard && console.CBProc.ScrollDown(1)) return true;
         }
         #endregion
 
@@ -274,14 +274,21 @@ internal sealed partial class MainWindow : Form
     private void CompleteStartup()
     {
         // [Emuera改修:START-04]
-        // 強制GCはメモリ比較用スイッチを付けたビルドだけで実行する。
-        // 通常版は起動を遅くしないよう、このブロック自体がコンパイルされない。
+        // 起動完了時のmanaged memoryが2GiB以上の大規模構成だけ整理する。
+        // 2GiB未満ではskipし、必要ならMSBuild propertyで無効化できる。
         // 参照: プロジェクト資料/06_コード案内.md
 #if STARTUP_MEMORY_TRIM
-        PerformanceMetrics.MarkStartup("MemoryTrimStart");
-        GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
-        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, blocking: true, compacting: true);
-        PerformanceMetrics.MarkStartup("MemoryTrimEnd");
+        const long startupMemoryTrimThresholdBytes = 2L * 1024 * 1024 * 1024;
+        if (GC.GetTotalMemory(false) >= startupMemoryTrimThresholdBytes)
+        {
+            PerformanceMetrics.MarkStartup("MemoryTrimStart");
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, blocking: true, compacting: true);
+            PerformanceMetrics.MarkStartup("MemoryTrimEnd");
+        }
+        else
+        {
+            PerformanceMetrics.MarkStartup("MemoryTrimSkipped");
+        }
 #endif
         PerformanceMetrics.MarkStartup("InputReady");
         PerformanceMetrics.WriteStartup();

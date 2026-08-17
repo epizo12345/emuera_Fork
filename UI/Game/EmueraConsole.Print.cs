@@ -471,7 +471,6 @@ internal sealed partial class EmueraConsole : IDisposable
 
     private int printCWidth = -1;
     private int printCWidthL = -1;
-    private int printCWidthL2 = -1;
     public void PrintC(string str, bool alignmentRight)
     {
         if (string.IsNullOrEmpty(str))
@@ -488,9 +487,6 @@ internal sealed partial class EmueraConsole : IDisposable
 
         str += " ";
         printCWidthL = StringMeasure.GetDisplayLength(str, font);
-
-        str += " ";
-        printCWidthL2 = StringMeasure.GetDisplayLength(str, font);
     }
 
     private string CreateTypeCString(string str, bool alignmentRight)

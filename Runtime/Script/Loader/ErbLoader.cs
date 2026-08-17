@@ -137,6 +137,10 @@ internal sealed class ErbLoader
             stageStopwatch.Restart();
             await Task.Run(() => ParseScript());
             ScriptParseMilliseconds = stageStopwatch.ElapsedMilliseconds;
+#if PERFORMANCE_METRICS
+            ErbStartupProfiler.SetScriptWallMilliseconds(ScriptParseMilliseconds);
+            ErbStartupProfiler.Write();
+#endif
 
             ParserMediator.FlushWarningList();
 
@@ -368,9 +372,16 @@ internal sealed class ErbLoader
     /// <param name="filepath"></param>
     private void loadErb(string filepath, string filename, int fileIndex, ConcurrentDictionary<string, byte> isOnlyEvent)
     {
+#if PERFORMANCE_METRICS
+        ErbStartupFileProfile profile = ErbStartupProfiler.BeginFile(filename);
+#endif
         //一部ファイルの再読み込み時の処理用
         fileIndex = labelDic.RegisterFile(filename, fileIndex);
-        using var eReader = new EraStreamReader(Config.Config.UseRenameFile && ParserMediator.RenameDic != null);
+        using var eReader = new EraStreamReader(Config.Config.UseRenameFile && ParserMediator.RenameDic != null
+#if PERFORMANCE_METRICS
+            , profile
+#endif
+            );
 
         if (!eReader.OpenOnCache(filepath, filename))
         {
@@ -387,11 +398,19 @@ internal sealed class ErbLoader
             output.PrintSystemLine("　");
         while ((st = eReader.ReadEnabledLine(ppstate.Disabled)) != null)
         {
+#if PERFORMANCE_METRICS
+            if (profile != null)
+                profile.ReadEnabledLineReturns++;
+#endif
             position = new ScriptPosition(eReader.Filename, eReader.LineNo);
             //rename処理をEraStreamReaderに移管
             //変換できなかった[[～～]]についてはLexAnalyzerがエラーを投げる
             if (st.Current == '[' && st.Next != '[')
             {
+#if PERFORMANCE_METRICS
+                if (profile != null)
+                    profile.PreprocessorLines++;
+#endif
                 st.ShiftNext();
                 string token = LexicalAnalyzer.ReadSingleIdentifier(st);
                 LexicalAnalyzer.SkipWhiteSpace(st);
@@ -412,18 +431,27 @@ internal sealed class ErbLoader
 
             if (st.Current == '#')
             {
+#if PERFORMANCE_METRICS
+                if (profile != null)
+                    profile.SharpLines++;
+#endif
                 if (lastLine == null || lastLine is not FunctionLabelLine funcLine)
                 {
                     ParserMediator.Warn(LocalizationManager.Error.InvalidSharp, position, 1);
                     continue;
                 }
-                if (!LogicalLineParser.ParseSharpLine(funcLine, st, position, isOnlyEvent))
+                bool sharpResult = LogicalLineParser.ParseSharpLine(funcLine, st, position, isOnlyEvent);
+                if (!sharpResult)
                     // 並列中の単純な hasError = 1 は競合し得るので、確実に1を書き込む。
                     Interlocked.Exchange(ref hasError, 1);
                 continue;
             }
             if (st.Current == '$' || st.Current == '@')
             {
+#if PERFORMANCE_METRICS
+                if (profile != null)
+                    profile.LabelLines++;
+#endif
                 bool isFunction = st.Current == '@';
                 nextLine = LogicalLineParser.ParseLabelLine(st, position, output);
                 if (isFunction)
@@ -477,6 +505,10 @@ internal sealed class ErbLoader
             }
             else
             {
+#if PERFORMANCE_METRICS
+                if (profile != null)
+                    profile.ScriptLines++;
+#endif
                 //1808alpha006 処理位置変更
                 ////全置換はここで対応
                 ////1756beta1+++　最初に全置換してしまうと関数定義を_Renameでとか論外なことができてしまうので永久封印した
@@ -519,11 +551,18 @@ internal sealed class ErbLoader
 
             nextLine.ParentLabelLine = lastLabelLine;
 
+#if PERFORMANCE_METRICS
+            if (profile != null)
+                profile.LogicalLines++;
+#endif
             lastLine = addLine(nextLine, lastLine);
         }
         addLine(new NullLine(), lastLine);
         position = new ScriptPosition(eReader.Filename, -1);
         ppstate.FileEnd(position);
+#if PERFORMANCE_METRICS
+        ErbStartupProfiler.CompleteFile(profile);
+#endif
         return;
     }
 
@@ -740,6 +779,8 @@ internal sealed class ErbLoader
         // CALLFORM系があるゲームは、到達判定だけでは呼び先を絞れないため残りも解析する。
         // その大量の残り関数だけを最後に並列解析し、通常の評価順や実行順は変えない。
         bool parseRemainingInParallel = false;
+        int remainingLabelCount = 0;
+        int parallelLabelCount = 0;
         while (true)
         {
             labelDepth++;
@@ -781,8 +822,10 @@ internal sealed class ErbLoader
             if (Program.AnalysisMode)
                 output.PrintSystemLine(LocalizationManager.Error.BeNotFuncCheckBecauseUseCallform);
             List<FunctionLabelLine> remainingLabels = labelList.Where(label => !parsedLabels.Contains(label)).ToList();
+            remainingLabelCount = remainingLabels.Count;
             if (parseRemainingInParallel)
             {
+                parallelLabelCount = remainingLabels.Count;
                 // この並列化は起動時の構文解析だけ。ゲーム実行中の関数順序は変更しない。
                 parentProcess.SetParallelScanning(true);
                 try
@@ -876,6 +919,9 @@ internal sealed class ErbLoader
                 output.PrintError(string.Format(LocalizationManager.Error.IgnoredUndefinedFuncCall, ignoredFNFWarningCount));
         }
         ParserMediator.FlushWarningList();
+#if PERFORMANCE_METRICS
+        ErbStartupProfiler.SetScriptInfo(labelList.Count, parsedLabels.Count, remainingLabelCount, parallelLabelCount);
+#endif
         if (Config.Config.DisplayReport)
             output.PrintError(string.Format(LocalizationManager.Error.TotalFunc, enabledLineCount, labelDic.Count, usedLabelCount));
         if (Config.Config.AllowFunctionOverloading && Config.Config.WarnFunctionOverloading)
@@ -901,7 +947,7 @@ internal sealed class ErbLoader
     }
 
     public Dictionary<string, long> warningDic = [];
-    private void printFunctionNotFoundWarning(string str, LogicalLine line, int level, bool isError)
+    private void printFunctionNotFoundWarning(string str, InstructionLine line, int level, bool isError)
     {
         if (Program.AnalysisMode)
         {
@@ -951,6 +997,40 @@ internal sealed class ErbLoader
 
     private void ParseFunctionWithCatch(FunctionLabelLine label)
     {//ここでエラーを捕まえることは本来はないはず。ExeEE相当。
+#if PERFORMANCE_METRICS
+        if (ErbStartupProfiler.TimingEnabled)
+        {
+            ErbStartupFunctionProfile profile = new();
+            long totalStart = System.Diagnostics.Stopwatch.GetTimestamp();
+            try
+            {
+                long start = System.Diagnostics.Stopwatch.GetTimestamp();
+                setArgument(label, profile);
+                profile.SetArgumentTicks = System.Diagnostics.Stopwatch.GetTimestamp() - start;
+                start = System.Diagnostics.Stopwatch.GetTimestamp();
+                nestCheck(label, profile);
+                profile.NestCheckTicks = System.Diagnostics.Stopwatch.GetTimestamp() - start;
+                start = System.Diagnostics.Stopwatch.GetTimestamp();
+                setJumpTo(label, profile);
+                profile.SetJumpToTicks = System.Diagnostics.Stopwatch.GetTimestamp() - start;
+            }
+            catch (Exception exc)
+            {
+                System.Media.SystemSounds.Hand.Play();
+                string errmes = exc is EmueraException ? exc.Message : exc.GetType().ToString() + ":" + exc.Message;
+                ParserMediator.Warn("@" + label.LabelName + " の解析中にエラー:" + errmes, label, 2, true, false, exc is not EmueraException ? exc.StackTrace : null);
+                label.ErrMes = LocalizationManager.Error.CalledFailedFunc;
+                System.Windows.Forms.Application.DoEvents();
+            }
+            finally
+            {
+                profile.TotalTicks = System.Diagnostics.Stopwatch.GetTimestamp() - totalStart;
+                ErbStartupProfiler.RecordFunction(profile);
+                parentProcess.scaningLine = null;
+            }
+            return;
+        }
+#endif
         try
         {
             setArgument(label);
@@ -973,7 +1053,11 @@ internal sealed class ErbLoader
 
     }
 
-    private void setArgument(FunctionLabelLine label)
+    private void setArgument(FunctionLabelLine label
+#if PERFORMANCE_METRICS
+        , ErbStartupFunctionProfile profile = null
+#endif
+        )
     {
         //1周目/3周
         //引数の解析とか
@@ -997,12 +1081,22 @@ internal sealed class ErbLoader
                     continue;
                 }
             }
-            if (Config.Config.NeedReduceArgumentOnLoad || Program.AnalysisMode || func.Function.IsForceSetArg())
+            bool forceSetArgument = func.Function.IsForceSetArg();
+            if (Config.Config.NeedReduceArgumentOnLoad || Program.AnalysisMode || forceSetArgument)
+            {
+#if PERFORMANCE_METRICS
+                ErbStartupProfiler.RecordArgument(func.FunctionCode, forceSetArgument);
+#endif
                 ArgumentParser.SetArgumentTo(func);
+            }
         }
     }
 
-    private void nestCheck(FunctionLabelLine label)
+    private void nestCheck(FunctionLabelLine label
+#if PERFORMANCE_METRICS
+        , ErbStartupFunctionProfile profile = null
+#endif
+        )
     {
         //2周目/3周
         //IF-ELSEIF-ENDIF、REPEAT-RENDの対応チェックなど
@@ -1550,7 +1644,11 @@ internal sealed class ErbLoader
         SelectcaseStack.Clear();
     }
 
-    private void setJumpTo(FunctionLabelLine label)
+    private void setJumpTo(FunctionLabelLine label
+#if PERFORMANCE_METRICS
+        , ErbStartupFunctionProfile profile = null
+#endif
+        )
     {
         //3周目/3周
         //フロー制御命令のジャンプ先を設定

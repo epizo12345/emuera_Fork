@@ -12,14 +12,24 @@ namespace MinorShift.Emuera.Sub;
 
 internal sealed partial class EraStreamReader : IDisposable
 {
-    public EraStreamReader(bool useRename)
+    public EraStreamReader(bool useRename
+#if PERFORMANCE_METRICS
+        , ErbStartupFileProfile profile = null
+#endif
+        )
     {
         this.useRename = useRename;
+#if PERFORMANCE_METRICS
+        this.profile = profile;
+#endif
     }
 
     string filepath;
     string filename;
     readonly bool useRename;
+#if PERFORMANCE_METRICS
+    readonly ErbStartupFileProfile profile;
+#endif
     int curNo;
     int nextNo = 1;
     string[] _fileLines;
@@ -76,6 +86,18 @@ internal sealed partial class EraStreamReader : IDisposable
         {
             ret = _fileLines[curNo];
             nextNo++;
+#if PERFORMANCE_METRICS
+            if (profile != null)
+            {
+                profile.PhysicalLines++;
+                if (useRename)
+                {
+                    profile.RenameInputLines++;
+                    if (ret.Contains("[[", StringComparison.Ordinal))
+                        profile.RenameCandidates++;
+                }
+            }
+#endif
         }
         return ret;
     }
@@ -86,7 +108,7 @@ internal sealed partial class EraStreamReader : IDisposable
     public CharStream ReadEnabledLine(bool disabled = false)
     {
         string line;
-        CharStream st;
+        CharStream st = null;
         while (true)
         {
             line = ReadLine();
@@ -95,13 +117,16 @@ internal sealed partial class EraStreamReader : IDisposable
             if (line.Length == 0)
                 continue;
 
-            st = new CharStream(line);
+            if (st == null)
+                st = new CharStream(line);
+            else
+                st.Reset(line);
             LexicalAnalyzer.SkipWhiteSpace(st);
 
             if (useRename)
             {
                 line = Rename.RenameString(st.Substring(), new ScriptPosition(filename, LineNo));
-                st = new CharStream(line);
+                st.Reset(line);
                 LexicalAnalyzer.SkipWhiteSpace(st);
             }
 
@@ -154,7 +179,7 @@ internal sealed partial class EraStreamReader : IDisposable
             b.Append(line);
             b.Append(' ');
         }
-        st = new CharStream(b.ToString());
+        st.Reset(b.ToString());
         LexicalAnalyzer.SkipWhiteSpace(st);
         return st;
     }

@@ -1,12 +1,20 @@
 # Emuera.NET 最終通常版
 
-- 更新日: 2026-07-31
+- 更新日: 2026-08-18
 - 基礎: BugFix_Test `7b7dd3bf240eff4fdfc7094f4175de0e014532b7`
 - 対象OS: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
 - `Emuera.exe` サイズ: 24,639,210バイト（約23.5 MiB）
-- `Emuera.exe` SHA-256: `C60F8B93E20BCB0D61C8086358F13E5C24856DAFBAF9DE492D9027BE187A5D7D`
+- `Emuera.exe` SHA-256: `26F875B71C16AE69D705D788E8C5B6998415168928BDCC80B7D78C6A8627D46B`
+- Phase 4A/B/C warning cleanupを反映（Release warning 52件から37件、new warning 0、Normal/Kojo起動確認済み）
+- Phase 5A/B/C focused bugfixを反映（VARSIZE/macro、ARRAYMSORT、GGETCOLOR/GSETCOLOR、SPRITEGETCOLOR。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
+- Phase 6A/B focused bugfixを反映（SPRITEANIMEADDFRAMEの無効Sprite入力時NRE修正、ClipboardのBufferSize/MinTimer 0・負値の安全化、ConfigDialogの最小値1制限とruntime clamp。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
+- Phase 7A/B/C focused bugfixを反映（ClipboardメニューのON状態復元、Clipboard Ctrl+Up/Downの起動時null安全性、VariableSize.csvの2D/3D/CDFLAG要素数計算overflow、CircularBuffer.Clear()の内部参照解放。Release 0 errors、35 warnings、focused/Normal/Kojo確認済み）
+- Phase 8A/B focused bugfixを反映（単項マイナスのoperand二重評価と副作用式の余分な実行を修正、文字列`>=` / `<=`の比較条件を修正。Release 0 errors、35 warnings、focused/Normal/Kojo確認済み）
+- Phase 9A/B/C focused bugfixを反映（符号付き小数・16進・指数表記の数値判定、キャラクター入替え後の対象追随、極端なRAND範囲のエラー処理を改善。Release 0 errors、35 warnings、focused/Normal/Kojo確認済み）
+- Phase 10A focused bugfixを反映（POWERで大きな整数を扱った際の丸め誤差と、Int64上下限など本来有効な累乗結果がエラーになる問題を修正。Release 0 errors、35 warnings、focused/Normal/Kojo確認済み）
+- Phase 10B memory optimizationを反映（大規模ERB/口上を読み込んだ際の常駐メモリをさらに削減。実ゲーム大規模fixtureでmanaged memory約125MiBの削減を確認。測定環境依存の値です）
 
 この単一EXEにはSkiaSharpのネイティブライブラリも内包されています。別の`libSkiaSharp.dll`を同じフォルダへ追加する必要はありません。
 Windows API全体の大きな.NET投影DLLは含めず、SkiaSharpが必要とする`WinRT.Runtime.dll`だけを内包しています。
@@ -35,6 +43,13 @@ Windows API全体の大きな.NET投影DLLは含めず、SkiaSharpが必要と�
   - 日本語の「前のページ」「次のページ」系
   - 調教画面の`1007` / `1009`
   - ショップ画面の`PREV` / `NEXT`
+
+## 起動後メモリ整理
+
+- 大規模ERB構成では、起動完了時のmanaged memoryが2 GiB以上の場合にmemory trimを行う場合があります。
+- 2 GiB未満ではtrimせず、2 GiB以上ではAggressive / blocking / compacting GCを1回実行します。
+- 大規模fixtureではWorking Set約1.50GB削減を確認しましたが、同fixtureでは起動完了まで約1秒増加しました。
+- 削減量はゲーム構成によって異なり、全ゲームで同じ削減量になるわけではありません。
 
 表示されている文字は部分一致で探します。調教画面のように`div`の内側へ入れ子になったHTMLボタンも再帰的に探し、ゲームへ渡す内部入力値が`1007` / `1009`と完全一致すれば選べます。
 

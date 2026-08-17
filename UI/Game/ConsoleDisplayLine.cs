@@ -5,14 +5,6 @@ using System.Text;
 
 namespace MinorShift.Emuera.UI.Game;
 
-internal enum DisplayLineLastState
-{
-    None = 0,
-    Normal = 1,
-    Selected = 2,
-    BackLog = 3,
-}
-
 internal enum DisplayLineAlignment
 {
     LEFT = 0,

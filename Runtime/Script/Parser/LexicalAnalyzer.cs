@@ -139,7 +139,7 @@ internal static partial class LexicalAnalyzer
     {
         long significand;
         int expBase = 0;
-        int exponent = 0;
+        long exponent = 0;
         int stStartPos = st.CurrentPosition;
         int stEndPos;
         int fromBase = 10;
@@ -180,7 +180,9 @@ internal static partial class LexicalAnalyzer
         if (expBase != 0)
         {
             st.ShiftNext();
-            unchecked { exponent = (int)readDigits(st, fromBase); }
+            if (st.EOS)
+                throw new CodeEE(LocalizationManager.Error.CanNotInterpretNum);
+            exponent = readDigits(st, fromBase);
         }
         stEndPos = st.CurrentPosition;
         if (expBase != 0 && exponent != 0)
@@ -199,9 +201,7 @@ internal static partial class LexicalAnalyzer
     {
         Int64 significand;
         int expBase = 0;
-        int exponent = 0;
-        int stStartPos = st.CurrentPosition;
-        int stEndPos;
+        long exponent = 0;
         int fromBase = 10;
         if (st.Current == '0')
         {
@@ -224,7 +224,7 @@ internal static partial class LexicalAnalyzer
             if (fromBase != 16)
                 return false;
             //else if (!hexadecimalDigits.Contains(st.Current))
-            else if (0 <= Array.IndexOf(hexadecimalDigits, st.Current))
+            else if (Array.IndexOf(hexadecimalDigits, st.Current) < 0)
                 return false;
         }
         // ここでエラーが発生する場合、そもそも文字列ではないのでfalseを返す
@@ -243,26 +243,41 @@ internal static partial class LexicalAnalyzer
         if (expBase != 0)
         {
             st.ShiftNext();
-            if (st.EOS || !char.IsDigit(st.Current))
+            if (st.EOS)
                 return false;
-            unchecked { exponent = (int)readDigits(st, fromBase); }
+            if (st.Current == '+' || st.Current == '-')
+            {
+                if (!char.IsDigit(st.Next))
+                    return false;
+            }
+            else if (!char.IsDigit(st.Current))
+                return false;
+            try
+            {
+                exponent = readDigits(st, fromBase);
+            }
+            catch (CodeEE)
+            {
+                return false;
+            }
         }
-        stEndPos = st.CurrentPosition;
         if ((expBase != 0) && (exponent != 0))
         {
 
             double d = significand * Math.Pow(expBase, exponent);
             if ((double.IsNaN(d)) || (double.IsInfinity(d)) || (d > Int64.MaxValue) || (d < Int64.MinValue))
-                throw new CodeEE("\"" + st.Substring(stStartPos, stEndPos) + "\"は64ビット符号付整数の範囲を超えています");
+                return false;
         }
 
         return true;
     }
 
 
-    static readonly SearchValues<char> digit = SearchValues.Create(['0','1','2','3','4','5','6','7','8','9',
+    static readonly SearchValues<char> decimalDigits = SearchValues.Create(['0','1','2','3','4','5','6','7','8','9']);
+    static readonly SearchValues<char> hexadecimalSearchDigits = SearchValues.Create(['0','1','2','3','4','5','6','7','8','9',
                                                         'a', 'b', 'c', 'd', 'e', 'f',
                                                         'A', 'B', 'C', 'D', 'E', 'F']);
+    static readonly SearchValues<char> binaryDigits = SearchValues.Create(['0', '1']);
     private static long readDigits(CharStream st, int fromBase)
     {
         var span = st.SubstringROS();
@@ -274,16 +289,17 @@ internal static partial class LexicalAnalyzer
             searchStart = 1;
         }
 
-        var end = span[searchStart..].IndexOfAnyExcept(digit);
-        if (end == -1)
+        SearchValues<char> validDigits = fromBase switch
         {
-            end = searchStart + span.Length;
-            // "+"、"-"の符号が先頭につく場合、符号以降の文字数を取得する、
-            if (span[0] == '-' || span[0] == '+')
-            {
-                end -= 1;
-            }
-        }
+            2 => binaryDigits,
+            16 => hexadecimalSearchDigits,
+            _ => decimalDigits,
+        };
+        var end = span[searchStart..].IndexOfAnyExcept(validDigits);
+        if (end == -1)
+            end = span.Length;
+        else
+            end += searchStart;
         st.Jump(end);
 
         var integerSpan = span[..end];
@@ -371,38 +387,16 @@ internal static partial class LexicalAnalyzer
     }
 
     /// <summary>
-    /// 行頭の単語の取得。マクロ展開あり。ただし単語でないマクロ展開はしない。
+    /// 行頭の単語を取得する。
     /// </summary>
     /// <param name="st"></param>
     /// <returns></returns>
-    public static IdentifierWord ReadFirstIdentifierWord(CharStream st)
+    public static string ReadFirstIdentifier(CharStream st)
     {
-        //int startpos = st.CurrentPosition;
         var str = ReadSingleIdentifierROS(st);
         if (str.IsEmpty)
             throw new CodeEE(LocalizationManager.Error.LineBeginsIllegalCharacter);
-        //1808a3 先頭1単語の展開をやめる。－命令の置換を禁止。
-        //if (UseMacro)
-        //{
-        //    int i = 0;
-        //    while (true)
-        //    {
-        //        DefineMacro macro = GlobalStatic.IdentifierDictionary.GetMacro(str);
-        //        i++;
-        //        if (i > MAX_EXPAND_MACRO)
-        //            throw new CodeEE("マクロの展開数が1文あたりの上限を超えました(自己参照・循環参照のおそれ)");
-        //        if (macro == null)
-        //            break;
-        //        //単語（識別子一個）でないマクロが出現したらここでは処理しない
-        //        if (macro.IDWord == null)
-        //        {
-        //            st.CurrentPosition = startpos;
-        //            return null;//変数処理に任せる。
-        //        }
-        //        str = macro.IDWord.Code;
-        //    }
-        //}
-        return new IdentifierWord(str.ToString());
+        return str.ToString();
     }
 
     /// <summary>
@@ -421,12 +415,12 @@ internal static partial class LexicalAnalyzer
             while (true)
             {
                 DefineMacro macro = GlobalStatic.IdentifierDictionary.GetMacro(str);
+                if (macro == null)
+                    break;
                 i++;
                 if (i > MAX_EXPAND_MACRO)
                     throw new CodeEE(string.Format(LocalizationManager.Error.MacroOverLimit, MAX_EXPAND_MACRO.ToString()));
-                if (macro == null)
-                    break;
-                if (macro.IDWord != null)
+                if (macro.IDWord == null)
                     throw new CodeEE(string.Format(LocalizationManager.Error.MacroIsNotAvailable, macro.Keyword));
                 str = macro.IDWord.Code;
             }
@@ -471,56 +465,92 @@ internal static partial class LexicalAnalyzer
     /// <returns></returns>
     public static string ReadString(CharStream st, StrEndWith endWith)
     {
-        var buffer = new StringBuilder(st.RowString.Length - st.CurrentPosition);
-        void loop()
-        {
-            while (true)
-            {
-                switch (st.Current)
-                {
-                    case '\0':
-                        return;
-                    case '\"':
-                        if (endWith == StrEndWith.DoubleQuotation)
-                            return;
-                        break;
-                    case '\'':
-                        if (endWith == StrEndWith.SingleQuotation)
-                            return;
-                        break;
-                    case ',':
-                        if (endWith == StrEndWith.Comma || endWith == StrEndWith.LeftParenthesis_Bracket_Comma_Semicolon)
-                            return;
-                        break;
-                    case '(':
-                    case '[':
-                    case ';':
-                        if (endWith == StrEndWith.LeftParenthesis_Bracket_Comma_Semicolon)
-                            return;
-                        break;
-                    case '\\'://エスケープ処理
-                        st.ShiftNext();//\を読み飛ばす
-                        switch (st.Current)
-                        {
-                            case CharStream.EndOfString:
-                                throw new CodeEE(LocalizationManager.Error.MissingCharacterAfterEscape);
-                            case '\n': break;
-                            case 's': buffer.Append(' '); break;
-                            case 'S': buffer.Append('　'); break;
-                            case 't': buffer.Append('\t'); break;
-                            case 'n': buffer.Append('\n'); break;
-                            default: buffer.Append(st.Current); break;
-                        }
-                        st.ShiftNext();//\の次の文字を読み飛ばす
-                        continue;
-                }
-                buffer.Append(st.Current);
-                st.ShiftNext();
-            }
-        }
-        loop();
+        int start = st.CurrentPosition;
+        int capacity = st.RowString.Length - start;
+        // 既存実装ではStringBuilder constructorで負のcapacityが例外になる。
+        // 通常経路では到達しないが、無効なpointerに対する既存挙動も維持する。
+        if (capacity < 0)
+            _ = new StringBuilder(capacity);
 
-        return buffer.ToString();
+        // エスケープが無い文字列はStringBuilderを作らず、
+        // 終端まで走査した範囲から結果文字列だけを生成する。
+        while (true)
+        {
+            char current = st.Current;
+            if (current == '\\')
+                break;
+            switch (current)
+            {
+                case '\0':
+                    return st.SubstringROS(start, st.CurrentPosition - start).ToString();
+                case '\"':
+                    if (endWith == StrEndWith.DoubleQuotation)
+                        return st.SubstringROS(start, st.CurrentPosition - start).ToString();
+                    break;
+                case '\'':
+                    if (endWith == StrEndWith.SingleQuotation)
+                        return st.SubstringROS(start, st.CurrentPosition - start).ToString();
+                    break;
+                case ',':
+                    if (endWith == StrEndWith.Comma || endWith == StrEndWith.LeftParenthesis_Bracket_Comma_Semicolon)
+                        return st.SubstringROS(start, st.CurrentPosition - start).ToString();
+                    break;
+                case '(':
+                case '[':
+                case ';':
+                    if (endWith == StrEndWith.LeftParenthesis_Bracket_Comma_Semicolon)
+                        return st.SubstringROS(start, st.CurrentPosition - start).ToString();
+                    break;
+            }
+            st.ShiftNext();
+        }
+
+        var buffer = new StringBuilder(capacity);
+        buffer.Append(st.SubstringROS(start, st.CurrentPosition - start));
+
+        while (true)
+        {
+            switch (st.Current)
+            {
+                case '\0':
+                    return buffer.ToString();
+                case '\"':
+                    if (endWith == StrEndWith.DoubleQuotation)
+                        return buffer.ToString();
+                    break;
+                case '\'':
+                    if (endWith == StrEndWith.SingleQuotation)
+                        return buffer.ToString();
+                    break;
+                case ',':
+                    if (endWith == StrEndWith.Comma || endWith == StrEndWith.LeftParenthesis_Bracket_Comma_Semicolon)
+                        return buffer.ToString();
+                    break;
+                case '(':
+                case '[':
+                case ';':
+                    if (endWith == StrEndWith.LeftParenthesis_Bracket_Comma_Semicolon)
+                        return buffer.ToString();
+                    break;
+                case '\\'://エスケープ処理
+                    st.ShiftNext();//\を読み飛ばす
+                    switch (st.Current)
+                    {
+                        case CharStream.EndOfString:
+                            throw new CodeEE(LocalizationManager.Error.MissingCharacterAfterEscape);
+                        case '\n': break;
+                        case 's': buffer.Append(' '); break;
+                        case 'S': buffer.Append('　'); break;
+                        case 't': buffer.Append('\t'); break;
+                        case 'n': buffer.Append('\n'); break;
+                        default: buffer.Append(st.Current); break;
+                    }
+                    st.ShiftNext();//\の次の文字を読み飛ばす
+                    continue;
+            }
+            buffer.Append(st.Current);
+            st.ShiftNext();
+        }
     }
 
     /// <summary>
@@ -823,7 +853,7 @@ internal static partial class LexicalAnalyzer
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public static WordCollection Analyse(CharStream st, LexEndWith endWith, LexAnalyzeFlag flag)
     {
-        var ret = new WordCollection();
+        var ret = WordCollection.CreateLexerResult();
         int nestBracketS = 0;
         //int nestBracketM = 0;
         int nestBracketL = 0;
@@ -1024,7 +1054,10 @@ internal static partial class LexicalAnalyzer
                 throw new CodeEE(LocalizationManager.Error.UnexpectedSBrackets);
         }
         if (UseMacro)
-            return expandMacro(ret);
+        {
+            ret = expandMacro(ret);
+            return ret;
+        }
         return ret;
 
     }
@@ -1110,7 +1143,7 @@ internal static partial class LexicalAnalyzer
                 args[i].Add(wc.Current);
             }
         exitwhile:
-            if (args[i].Collection.Count == 0)
+            if (args[i].Count == 0)
                 throw new CodeEE(string.Format(LocalizationManager.Error.CanNotOmitMacroArg, macro.Keyword));
             continue;
         }
@@ -1138,7 +1171,7 @@ internal static partial class LexicalAnalyzer
             }
             macroWC.Remove();
             macroWC.InsertRange(args[w.Number]);
-            for (int i = 0; i < args[w.Number].Collection.Count; i++)
+            for (int i = 0; i < args[w.Number].Count; i++)
             {
                 macroWC.Pointer = macroWC.Pointer.Next;
             }

@@ -11,56 +11,145 @@ internal sealed class WordCollection
 {
     public WordCollection()
     {
-        Collection = new();
-        Pointer = Collection.First;
+        compactCollection = [];
     }
 
-    public LinkedList<Word> Collection;
-    public LinkedListNode<Word> Pointer;
+    private WordCollection(bool lexerPending) { }
+
+    internal static WordCollection CreateLexerResult() => new(true);
+
+    List<Word> compactCollection;
+    LinkedList<Word> linkedCollection;
+    LinkedListNode<Word> linkedPointer;
+    int compactPointer;
     int index = 0;
     private static Word nullToken = new NullWord();
+    public int Count => linkedCollection?.Count ?? compactCollection?.Count ?? 0;
+
+    public LinkedList<Word> Collection
+    {
+        get
+        {
+            EnsureLinked();
+            return linkedCollection;
+        }
+    }
+
+    public LinkedListNode<Word> Pointer
+    {
+        get
+        {
+            EnsureLinked();
+            return linkedPointer;
+        }
+        set
+        {
+            EnsureLinked();
+            linkedPointer = value;
+        }
+    }
 
     public void PointerReset()
     {
         index = 0;
-        Pointer = Collection.First;
+        if (linkedCollection != null)
+            linkedPointer = linkedCollection.First;
+        else
+            compactPointer = 0;
     }
 
     public void Add(Word token)
     {
-        Collection.AddLast(token);
-        Pointer ??= Collection.First;
+        if (linkedCollection != null)
+        {
+            linkedCollection.AddLast(token);
+            linkedPointer ??= linkedCollection.First;
+            return;
+        }
+
+        List<Word> compact = compactCollection;
+        if (compact == null)
+        {
+            compact = new List<Word>(8);
+            compactCollection = compact;
+        }
+        bool wasEol = compactPointer >= compact.Count;
+        compact.Add(token);
+        if (wasEol)
+            compactPointer = 0;
     }
     public void Add(WordCollection wc)
     {
-        foreach (var word in wc.Collection)
+        if (ReferenceEquals(this, wc))
         {
-            Collection.AddLast(word);
+            EnsureLinked();
+            foreach (var word in linkedCollection)
+                linkedCollection.AddLast(word);
+            linkedPointer ??= linkedCollection.First;
+            return;
         }
-        Pointer ??= Collection.First;
+
+        if (linkedCollection != null)
+        {
+            if (wc.linkedCollection != null)
+            {
+                foreach (var word in wc.linkedCollection)
+                    linkedCollection.AddLast(word);
+            }
+            else if (wc.compactCollection != null)
+            {
+                foreach (var word in wc.compactCollection)
+                    linkedCollection.AddLast(word);
+            }
+            linkedPointer ??= linkedCollection.First;
+            return;
+        }
+
+        int addCount = wc.Count;
+        if (addCount == 0 && compactCollection == null)
+            return;
+        List<Word> compact = compactCollection;
+        if (compact == null)
+        {
+            compact = new List<Word>(8);
+            compactCollection = compact;
+        }
+        bool wasEol = compactPointer >= compact.Count;
+        if (wc.linkedCollection != null)
+            compact.AddRange(wc.linkedCollection);
+        else if (wc.compactCollection != null)
+            compact.AddRange(wc.compactCollection);
+        if (wasEol)
+            compactPointer = 0;
     }
 
     public void Clear()
     {
-        Collection.Clear();
+        EnsureLinked();
+        linkedCollection.Clear();
     }
 
     public void ShiftNext()
     {
-        if (Pointer == null)
+        if (linkedCollection != null)
         {
-            if (index == 0)
+            if (linkedPointer == null)
             {
-                Pointer = Collection.First;
+                if (index == 0)
+                    linkedPointer = linkedCollection.First;
             }
             else
-            {
-            }
+                linkedPointer = linkedPointer.Next;
         }
         else
         {
-
-            Pointer = Pointer.Next;
+            if (compactPointer >= (compactCollection?.Count ?? 0))
+            {
+                if (index == 0)
+                    compactPointer = 0;
+            }
+            else
+                compactPointer++;
         }
 
         index++;
@@ -69,82 +158,83 @@ internal sealed class WordCollection
     {
         get
         {
-            if (Pointer == null)
+            if (linkedCollection != null)
+                return linkedPointer?.Value ?? nullToken;
+            if (compactPointer >= (compactCollection?.Count ?? 0))
                 return nullToken;
-            return Pointer.Value;
+            return compactCollection[compactPointer];
         }
     }
     public bool EOL
     {
         get
         {
-            return Pointer == null;
+            return linkedCollection != null ? linkedPointer == null : compactPointer >= (compactCollection?.Count ?? 0);
         }
     }
 
     public void Insert(Word w)
     {
-        if (Pointer == null)
+        EnsureLinked();
+        if (linkedPointer == null)
         {
-            if (Collection.Count == 0)
+            if (linkedCollection.Count == 0)
             {
-                Collection.AddFirst(w);
-                Pointer = Collection.First;
+                linkedCollection.AddFirst(w);
+                linkedPointer = linkedCollection.First;
             }
             else
             {
-                Collection.AddLast(w);
-                Pointer = Collection.Last;
+                linkedCollection.AddLast(w);
+                linkedPointer = linkedCollection.Last;
             }
         }
         else
         {
-            Collection.AddAfter(Pointer, w);
+            linkedCollection.AddAfter(linkedPointer, w);
         }
     }
     public void InsertRange(WordCollection wc)
     {
-
-        var pointer = Pointer?.Previous;
+        EnsureLinked();
+        var pointer = linkedPointer?.Previous;
         LinkedListNode<Word> lastPointer = null;
-        foreach (var word in wc.Collection)
+        if (wc.linkedCollection != null)
         {
-            if (pointer == null)
+            foreach (var word in wc.linkedCollection)
             {
-                if (index == 0)
-                {
-                    pointer = Collection.AddFirst(word);
-                }
-                else
-                {
-
-                    pointer = Collection.AddLast(word);
-                }
-                Pointer = pointer;
+                AddAfterPointer(word, ref pointer, ref lastPointer);
             }
-            else
+        }
+        else if (wc.compactCollection != null)
+        {
+            foreach (var word in wc.compactCollection)
             {
-
-                pointer = Collection.AddAfter(pointer, word);
+                AddAfterPointer(word, ref pointer, ref lastPointer);
             }
-
-            lastPointer ??= pointer;
         }
 
-        Pointer = lastPointer;
+        linkedPointer = lastPointer;
     }
     public void Remove()
     {
-        var next = Pointer.Next;
-        Collection.Remove(Pointer);
-        Pointer = next;
+        EnsureLinked();
+        var next = linkedPointer.Next;
+        linkedCollection.Remove(linkedPointer);
+        linkedPointer = next;
     }
 
     public void SetIsMacro()
     {
-        foreach (Word word in Collection)
+        if (linkedCollection != null)
         {
-            word.SetIsMacro();
+            foreach (Word word in linkedCollection)
+                word.SetIsMacro();
+        }
+        else if (compactCollection != null)
+        {
+            foreach (Word word in compactCollection)
+                word.SetIsMacro();
         }
     }
 
@@ -153,6 +243,44 @@ internal sealed class WordCollection
         var ret = new WordCollection();
         ret.Add(this);
         return ret;
+    }
+
+    void EnsureLinked()
+    {
+        if (linkedCollection != null)
+            return;
+
+        if (compactCollection == null)
+        {
+            linkedCollection = new LinkedList<Word>();
+            compactCollection = null;
+            return;
+        }
+
+        linkedCollection = new LinkedList<Word>(compactCollection);
+        if (compactPointer < compactCollection.Count)
+        {
+            linkedPointer = linkedCollection.First;
+            for (int i = 0; i < compactPointer; i++)
+                linkedPointer = linkedPointer.Next;
+        }
+        compactCollection = null;
+    }
+
+    void AddAfterPointer(Word word, ref LinkedListNode<Word> pointer, ref LinkedListNode<Word> lastPointer)
+    {
+        if (pointer == null)
+        {
+            if (index == 0)
+                pointer = linkedCollection.AddFirst(word);
+            else
+                pointer = linkedCollection.AddLast(word);
+            linkedPointer = pointer;
+        }
+        else
+            pointer = linkedCollection.AddAfter(pointer, word);
+
+        lastPointer ??= pointer;
     }
     // public WordCollection Clone(int start, int count)
     // {
@@ -170,18 +298,6 @@ internal sealed class WordCollection
     // }
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

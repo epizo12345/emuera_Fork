@@ -11,9 +11,9 @@ internal sealed class DefineMacro
         ArgCount = argcount;
         Statement.PointerReset();
         HasArguments = argcount != 0;
-        if (Statement.Collection.Count == 1)
+        if (Statement.Count == 1)
             IDWord = Statement.Current as IdentifierWord;
-        IsNull = wc.Collection.Count == 0;
+        IsNull = wc.Count == 0;
     }
     public readonly string Keyword;
     public readonly int ArgCount;

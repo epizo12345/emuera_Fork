@@ -90,13 +90,13 @@ internal sealed class InvalidLine : LogicalLine
 /// <summary>
 /// 命令文
 /// </summary>
-internal sealed class InstructionLine : LogicalLine
+internal class InstructionLine : LogicalLine
 {
     public InstructionLine(ScriptPosition? thePosition, FunctionIdentifier theFunc, CharStream theArgPrimitive)
     {
         scriptPosition = thePosition;
         func = theFunc;
-        argprimitive = theArgPrimitive;
+        argumentStorage = theArgPrimitive;
     }
 
     public InstructionLine(ScriptPosition? thePosition, FunctionIdentifier functionIdentifier, OperatorCode assignOP, WordCollection dest, CharStream theArgPrimitive)
@@ -105,14 +105,20 @@ internal sealed class InstructionLine : LogicalLine
         func = functionIdentifier;
         AssignOperator = assignOP;
         assigndest = dest;
-        argprimitive = theArgPrimitive;
+        argumentStorage = theArgPrimitive;
     }
+    public static InstructionLine Create(ScriptPosition? thePosition, FunctionIdentifier theFunc, CharStream theArgPrimitive)
+    {
+        if (theFunc.Code is FunctionCode.FOR or FunctionCode.REPEAT)
+            return new LoopInstructionLine(thePosition, theFunc, theArgPrimitive);
+        return new InstructionLine(thePosition, theFunc, theArgPrimitive);
+    }
+
     readonly FunctionIdentifier func;
-    CharStream argprimitive;
+    object argumentStorage;
 
     WordCollection assigndest;
     public OperatorCode AssignOperator { get; private set; }
-    long subData;
     public FunctionCode FunctionCode
     {
         get { return func.Code; }
@@ -121,11 +127,22 @@ internal sealed class InstructionLine : LogicalLine
     {
         get { return func; }
     }
-    public Argument Argument { get; set; }
+    public Argument Argument
+    {
+        get => argumentStorage as Argument;
+        set
+        {
+            if (value != null)
+                argumentStorage = value;
+            else if (argumentStorage is Argument)
+                argumentStorage = null;
+        }
+    }
     public CharStream PopArgumentPrimitive()
     {
-        CharStream ret = argprimitive;
-        argprimitive = null;
+        if (argumentStorage is not CharStream ret)
+            return null;
+        argumentStorage = null;
         return ret;
     }
     public WordCollection PopAssignmentDestStr()
@@ -135,43 +152,29 @@ internal sealed class InstructionLine : LogicalLine
         return ret;
     }
 
-    /// <summary>
-    /// 繰り返しの終了を記憶する
-    /// </summary>
-    public long LoopEnd
-    {
-        get { return subData; }
-        set { subData = value; }
-    }
-
-    VariableTerm cnt;
-    /// <summary>
-    /// 繰り返しにつかう変数を記憶する
-    /// </summary>
-    public VariableTerm LoopCounter
-    {
-        get { return cnt; }
-        set { cnt = value; }
-    }
-
-    long step;
-    /// <summary>
-    /// 繰り返しのたびに増加する値を記憶する
-    /// </summary>
-    public long LoopStep
-    {
-        get { return step; }
-        set { step = value; }
-    }
-
     private LogicalLine jumpto;
-    private LogicalLine jumptoendcatch;
+    // JumpToEndCatch / IfCaseList / dataList / callList are mutually exclusive by command type.
+    // Keep them in one reference slot to reduce the retained size of every InstructionLine.
+    private object auxiliaryData;
+
     //IF文とSELECT文のみが使う。
-    public LinkedList<InstructionLine> IfCaseList;
+    public LinkedList<InstructionLine> IfCaseList
+    {
+        get { return auxiliaryData as LinkedList<InstructionLine>; }
+        set { auxiliaryData = value; }
+    }
     //PRINTDATA文のみが使う。
-    public List<List<InstructionLine>> dataList;
+    public List<List<InstructionLine>> dataList
+    {
+        get { return auxiliaryData as List<List<InstructionLine>>; }
+        set { auxiliaryData = value; }
+    }
     //TRYCALLLIST系が使う
-    public List<InstructionLine> callList;
+    public List<InstructionLine> callList
+    {
+        get { return auxiliaryData as List<InstructionLine>; }
+        set { auxiliaryData = value; }
+    }
 
     public LogicalLine JumpTo
     {
@@ -181,10 +184,20 @@ internal sealed class InstructionLine : LogicalLine
 
     public LogicalLine JumpToEndCatch
     {
-        get { return jumptoendcatch; }
-        set { jumptoendcatch = value; }
+        get { return auxiliaryData as LogicalLine; }
+        set { auxiliaryData = value; }
     }
 
+}
+
+internal sealed class LoopInstructionLine : InstructionLine
+{
+    public LoopInstructionLine(ScriptPosition? thePosition, FunctionIdentifier theFunc, CharStream theArgPrimitive)
+        : base(thePosition, theFunc, theArgPrimitive) { }
+
+    internal long LoopEnd;
+    internal VariableTerm LoopCounter;
+    internal long LoopStep;
 }
 
 /// <summary>
@@ -280,9 +293,10 @@ internal class FunctionLabelLine : LogicalLine, IComparable<FunctionLabelLine>
     }
     #endregion
     #region private変数
-    readonly Dictionary<string, UserDefinedVariableToken> privateVar = new(Config.Config.StrComper);
+    Dictionary<string, UserDefinedVariableToken> privateVar;
     internal bool AddPrivateVariable(UserDefinedVariableData data)
     {
+        privateVar ??= new Dictionary<string, UserDefinedVariableToken>(Config.Config.StrComper);
         if (privateVar.ContainsKey(data.Name))
             return false;
         UserDefinedVariableToken var = GlobalStatic.VariableData.CreatePrivateVariable(data);
@@ -294,6 +308,8 @@ internal class FunctionLabelLine : LogicalLine, IComparable<FunctionLabelLine>
     }
     internal UserDefinedVariableToken GetPrivateVariable(string key)
     {
+        if (privateVar == null)
+            return null;
         privateVar.TryGetValue(key, out UserDefinedVariableToken var);
         return var;
     }
@@ -306,6 +322,8 @@ internal class FunctionLabelLine : LogicalLine, IComparable<FunctionLabelLine>
 #if DEBUG
         GlobalStatic.StackList.Add(this);
 #endif
+        if (privateVar == null)
+            return;
         foreach (UserDefinedVariableToken var in privateVar.Values)
             if (!var.IsStatic)
                 var.ScopeIn();
@@ -315,6 +333,8 @@ internal class FunctionLabelLine : LogicalLine, IComparable<FunctionLabelLine>
 #if DEBUG
         GlobalStatic.StackList.Remove(this);
 #endif
+        if (privateVar == null)
+            return;
         foreach (UserDefinedVariableToken var in privateVar.Values)
             if (!var.IsStatic)
                 var.ScopeOut();

@@ -83,10 +83,6 @@ internal sealed partial class DebugConfigDialog : Form
 
 
 
-    private void comboBoxReduceArgumentOnLoad_SelectedIndexChanged(object sender, EventArgs e)
-    {
-    }
-
     DebugDialog dd;
     private void button6_Click(object sender, EventArgs e)
     {

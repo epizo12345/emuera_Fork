@@ -116,7 +116,6 @@ internal sealed partial class IdentifierDictionary
     readonly Dictionary<string, FunctionIdentifier> instructionDic;
     readonly Dictionary<string, FunctionMethod> methodDic;
     readonly Dictionary<string, UserDefinedRefMethod> refmethodDic;
-    public List<UserDefinedCharaVariableToken> CharaDimList = [];
     #region initialize
     public IdentifierDictionary(VariableData varData)
     {
@@ -410,7 +409,7 @@ internal sealed partial class IdentifierDictionary
 
     #region header.erb
     //1807 ErbLoaderに移動
-    Dictionary<int, DefineMacro> macroDic = [];
+    Dictionary<string, DefineMacro> macroDic = new(Config.StrComper);
 
     internal void AddUseDefinedVariable(VariableToken var)
     {
@@ -424,16 +423,7 @@ internal sealed partial class IdentifierDictionary
     internal void AddMacro(DefineMacro mac)
     {
         nameDic.Add(mac.Keyword, DefinedNameType.UserMacro);
-        int key;
-        if (Config.IgnoreCase)
-        {
-            key = mac.Keyword.GetHashCode(StringComparison.OrdinalIgnoreCase);
-        }
-        else
-        {
-            key = mac.Keyword.GetHashCode(StringComparison.Ordinal);
-        }
-        macroDic.Add(key, mac);
+        macroDic.Add(mac.Keyword, mac);
     }
     internal void AddRefMethod(UserDefinedRefMethod refm)
     {
@@ -451,16 +441,7 @@ internal sealed partial class IdentifierDictionary
 
     public DefineMacro GetMacro(string key)
     {
-        int hash;
-        if (Config.IgnoreCase)
-        {
-            hash = key.GetHashCode(StringComparison.OrdinalIgnoreCase);
-        }
-        else
-        {
-            hash = key.GetHashCode(StringComparison.Ordinal);
-        }
-        if (macroDic.TryGetValue(hash, out var value))
+        if (macroDic.TryGetValue(key, out var value))
             return value;
         return null;
     }
