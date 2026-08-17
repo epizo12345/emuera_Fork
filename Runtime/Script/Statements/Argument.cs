@@ -584,5 +584,4 @@ internal sealed class HTML_PRINT_ISLAND_CLEARArgument : Argument
         TargetLayer = layer;
     }
     readonly public AExpression TargetLayer;
-    readonly public AExpression Term;
 }

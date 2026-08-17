@@ -59,7 +59,7 @@ static class AppContents
     static public void CreateSpriteG(string imgName, GraphicsImage parent, Rectangle rect)
     {
         if (string.IsNullOrEmpty(imgName))
-            throw new ArgumentOutOfRangeException();
+            throw new ArgumentOutOfRangeException(nameof(imgName));
         SpriteG newCImg = new(imgName, parent, rect);
         imageDictionary[imgName] = newCImg;
     }
@@ -67,7 +67,7 @@ static class AppContents
     internal static void CreateSpriteAnime(string imgName, int w, int h)
     {
         if (string.IsNullOrEmpty(imgName))
-            throw new ArgumentOutOfRangeException();
+            throw new ArgumentOutOfRangeException(nameof(imgName));
         SpriteAnime newCImg = new(imgName, new Size(w, h));
         imageDictionary[imgName] = newCImg;
     }

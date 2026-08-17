@@ -1,12 +1,13 @@
 # Emuera.NET 最終通常版
 
-- 更新日: 2026-08-15
+- 更新日: 2026-08-17
 - 基礎: BugFix_Test `7b7dd3bf240eff4fdfc7094f4175de0e014532b7`
 - 対象OS: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
 - `Emuera.exe` サイズ: 24,643,306バイト（約23.5 MiB）
-- `Emuera.exe` SHA-256: `0F33A83A2FB963E32F4E8992550F7879B97388DBCABF903E3802C5E5A8455383`
+- `Emuera.exe` SHA-256: `3C458C81EEE513072845664318451FCDB229687343BA4A519654C9CC461B52F8`
+- Phase 4A/B/C warning cleanupを反映（Release warning 52件から37件、new warning 0、Normal/Kojo起動確認済み）
 
 この単一EXEにはSkiaSharpのネイティブライブラリも内包されています。別の`libSkiaSharp.dll`を同じフォルダへ追加する必要はありません。
 Windows API全体の大きな.NET投影DLLは含めず、SkiaSharpが必要とする`WinRT.Runtime.dll`だけを内包しています。

@@ -947,7 +947,7 @@ internal sealed class ErbLoader
     }
 
     public Dictionary<string, long> warningDic = [];
-    private void printFunctionNotFoundWarning(string str, LogicalLine line, int level, bool isError)
+    private void printFunctionNotFoundWarning(string str, InstructionLine line, int level, bool isError)
     {
         if (Program.AnalysisMode)
         {
