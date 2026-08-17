@@ -399,12 +399,12 @@ internal static partial class LexicalAnalyzer
             while (true)
             {
                 DefineMacro macro = GlobalStatic.IdentifierDictionary.GetMacro(str);
+                if (macro == null)
+                    break;
                 i++;
                 if (i > MAX_EXPAND_MACRO)
                     throw new CodeEE(string.Format(LocalizationManager.Error.MacroOverLimit, MAX_EXPAND_MACRO.ToString()));
-                if (macro == null)
-                    break;
-                if (macro.IDWord != null)
+                if (macro.IDWord == null)
                     throw new CodeEE(string.Format(LocalizationManager.Error.MacroIsNotAvailable, macro.Keyword));
                 str = macro.IDWord.Code;
             }

@@ -1978,7 +1978,7 @@ internal static partial class FunctionMethodCreator
                     return string.Format("{0}関数:{1}番目の引数がキャラクタ変数です", name, i + 1);
                 if (i == 0 && !varTerm.Identifier.IsArray1D)
                     return string.Format("{0}関数:{1}番目の引数が一次元配列ではありません", name, i + 1);
-                if (!varTerm.Identifier.IsArray1D && !varTerm.Identifier.IsArray2D && !varTerm.Identifier.IsArray2D)
+                if (!varTerm.Identifier.IsArray1D && !varTerm.Identifier.IsArray2D && !varTerm.Identifier.IsArray3D)
                     return string.Format("{0}関数:{1}番目の引数が配列変数ではありません", name, i + 1);
             }
             return null;
@@ -1995,12 +1995,9 @@ internal static partial class FunctionMethodCreator
                 {
                     if (array[i] == 0)
                         break;
-                    if (array[i] < Int64.MinValue || array[i] > Int64.MaxValue)
-                        return 0;
                     sortList.Add(new KeyValuePair<long, int>(array[i], i));
                 }
-                //素ではintの範囲しか扱えないので一工夫
-                sortList.Sort((a, b) => { return Math.Sign(a.Key - b.Key); });
+                sortList.Sort((a, b) => a.Key.CompareTo(b.Key));
                 sortedArray = new int[sortList.Count];
                 for (int i = 0; i < sortedArray.Length; i++)
                     sortedArray[i] = sortList[i].Value;
@@ -3111,7 +3108,7 @@ internal static partial class FunctionMethodCreator
             if (!g.IsCreated)
                 return -1;
             Point p = ReadPoint(Name, exm, arguments, 1);
-            if (p.X < 0 || p.X >= g.Width || p.X < 0 || p.Y >= g.Height)
+            if (p.X < 0 || p.X >= g.Width || p.Y < 0 || p.Y >= g.Height)
                 return -1;
             var c = g.GGetColor(p.X, p.Y).ToDrawingColor();
             //Color.ToArgb()はInt32の負の値をとることがあり、Int64にうまく変換できない?（と思ったが気のせいだった
@@ -3136,7 +3133,7 @@ internal static partial class FunctionMethodCreator
                 return 0;
             Color c = ReadColor(Name, exm, arguments, 1);
             Point p = ReadPoint(Name, exm, arguments, 2);
-            if (p.X < 0 || p.X >= g.Width || p.X < 0 || p.Y >= g.Height)
+            if (p.X < 0 || p.X >= g.Width || p.Y < 0 || p.Y >= g.Height)
                 return 0;
             g.GSetColor(c, p.X, p.Y);
             return 1;
@@ -3300,7 +3297,10 @@ internal static partial class FunctionMethodCreator
                 return -1;
             var c = img.SpriteGetColor(p.X, p.Y);
             //Color.ToArgb()はInt32の負の値をとることがあり、Int64にうまく変換できない？（と思ったが気のせいだった
-            return ((Int64)c.Alpha) << 24 + c.Red << 16 + c.Green << 8 + c.Blue;
+            return ((Int64)c.Alpha << 24)
+                | ((Int64)c.Red << 16)
+                | ((Int64)c.Green << 8)
+                | c.Blue;
         }
     }
 
