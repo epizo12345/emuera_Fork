@@ -84,6 +84,7 @@ public class CircularBuffer<T> : ICircularBuffer<T>, IEnumerable<T>
 
     public void Clear()
     {
+        Array.Clear(_buffer);
         _head = Capacity - 1;
         _tail = 0;
         Count = 0;
