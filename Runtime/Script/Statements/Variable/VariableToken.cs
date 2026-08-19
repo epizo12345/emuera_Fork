@@ -2143,8 +2143,13 @@ internal sealed partial class VariableData
             IsStatic = false;
             arrayStack = [];
         }
+        // Retain only small/medium arrays between top-level calls.
+        // 32K Int64 elements are at most 256 KiB of payload.
+        // Larger private arrays return to the GC instead of becoming retained memory.
+        const int MaxReusableArrayElements = 32 * 1024;
         readonly Stack<long[,]> arrayStack;
         Int64[,] array;
+        Int64[,] spareArray;
         //int counter = 0;
         public override void SetDefault() { }
         public override Int64 GetIntValue(ExpressionMediator exm, Int64[] arguments)
@@ -2182,9 +2187,22 @@ internal sealed partial class VariableData
         public override void ScopeIn()
         {
             if (array != null)
+            {
                 arrayStack.Push(array);
-            //counter++;
-            array = new Int64[sizes[0], sizes[1]];
+                // Keep recursive/nested calls on the original allocation path.
+                array = new Int64[sizes[0], sizes[1]];
+                return;
+            }
+
+            if (spareArray == null)
+            {
+                array = new Int64[sizes[0], sizes[1]];
+                return;
+            }
+
+            array = spareArray;
+            spareArray = null;
+            Array.Clear(array);
         }
 
         public override void ScopeOut()
@@ -2194,9 +2212,16 @@ internal sealed partial class VariableData
             if (arrayStack.Count > 0)
             {
                 array = arrayStack.Pop();
+                return;
             }
+
+            // Keep at most one small/medium top-level array per token for the next call.
+            // Large one-shot arrays must remain collectible after the function returns.
+            if (array != null && array.Length <= MaxReusableArrayElements)
+                spareArray = array;
             else
-                array = null;
+                spareArray = null;
+            array = null;
         }
     }
     private sealed class PrivateInt3DVariableToken : UserDefinedVariableToken

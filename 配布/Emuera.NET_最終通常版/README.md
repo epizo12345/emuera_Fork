@@ -1,12 +1,12 @@
 # Emuera.NET 最終通常版
 
-- 更新日: 2026-08-18
+- 更新日: 2026-08-19
 - 基礎: BugFix_Test `7b7dd3bf240eff4fdfc7094f4175de0e014532b7`
 - 対象OS: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
 - `Emuera.exe` サイズ: 24,639,210バイト（約23.5 MiB）
-- `Emuera.exe` SHA-256: `26F875B71C16AE69D705D788E8C5B6998415168928BDCC80B7D78C6A8627D46B`
+- `Emuera.exe` SHA-256: `490A18439767811468D930D8D8E3A69DFEA5DDD7B7D904A65A47B04A8B8DAE33`
 - Phase 4A/B/C warning cleanupを反映（Release warning 52件から37件、new warning 0、Normal/Kojo起動確認済み）
 - Phase 5A/B/C focused bugfixを反映（VARSIZE/macro、ARRAYMSORT、GGETCOLOR/GSETCOLOR、SPRITEGETCOLOR。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
 - Phase 6A/B focused bugfixを反映（SPRITEANIMEADDFRAMEの無効Sprite入力時NRE修正、ClipboardのBufferSize/MinTimer 0・負値の安全化、ConfigDialogの最小値1制限とruntime clamp。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
@@ -15,6 +15,7 @@
 - Phase 9A/B/C focused bugfixを反映（符号付き小数・16進・指数表記の数値判定、キャラクター入替え後の対象追随、極端なRAND範囲のエラー処理を改善。Release 0 errors、35 warnings、focused/Normal/Kojo確認済み）
 - Phase 10A focused bugfixを反映（POWERで大きな整数を扱った際の丸め誤差と、Int64上下限など本来有効な累乗結果がエラーになる問題を修正。Release 0 errors、35 warnings、focused/Normal/Kojo確認済み）
 - Phase 10B memory optimizationを反映（大規模ERB/口上を読み込んだ際の常駐メモリをさらに削減。実ゲーム大規模fixtureでmanaged memory約125MiBの削減を確認。測定環境依存の値です）
+- Phase 12B1.1 runtime allocation削減を反映（private dynamic 2D整数配列を安全にbounded reuse。対象`System.Int64[,]` allocation rate約92.7%削減、再利用上限32,768要素、既存セーブsmoke済み）
 
 この単一EXEにはSkiaSharpのネイティブライブラリも内包されています。別の`libSkiaSharp.dll`を同じフォルダへ追加する必要はありません。
 Windows API全体の大きな.NET投影DLLは含めず、SkiaSharpが必要とする`WinRT.Runtime.dll`だけを内包しています。
