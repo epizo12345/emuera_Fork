@@ -40,6 +40,7 @@ Windows 11ではメニューや設定画面にダークモードが適用され�
 - 必要なWinRT部品だけを残し、単一EXEのサイズを約47.2 MiBから約23.5 MiBへ削減
 - ERB解析時の一時allocationを削減（CharStream、単純ReadString、行頭IdentifierWord）
 - 大規模構成だけ起動完了後のmemory trimを行い、小規模構成ではskip
+- HTMLのstrict color-only `FONT`入力を既存表示オブジェクトへ短絡し、対象外HTMLは従来どおりAngleSharpへfallback
 
 # 配布フォルダについて
 『配布/Emuera.NET_最終通常版』には、2026-08-15以降のmainに対応する.NET 10正式single-file EXEを置いています。
@@ -47,11 +48,11 @@ Windows 11ではメニューや設定画面にダークモードが適用され�
 - 対象: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 形式: フレームワーク依存・単一EXE
-- 『Emuera.exe』: 配布用実行ファイル（24,643,306バイト、SHA-256 `0F33A83A2FB963E32F4E8992550F7879B97388DBCABF903E3802C5E5A8455383`）
+- 『Emuera.exe』: 配布用実行ファイル（24,643,306バイト、SHA-256 `4CE75612E0A370DC6FFDD80F369E0E50F9F31F0CD81AA732F35F4FDBBFD6B271`）
 - 『README.md』: 導入方法と採用機能
 - 『SHA256SUMS.txt』: 配布物の改ざん確認用ハッシュ
 
-変更の流れは[更新履歴](更新履歴.md)、現在の変更理由と検証結果は`プロジェクト資料/修正履歴/#今回の修正説明_2026-08-15.md`を参照してください。
+変更の流れは[更新履歴](更新履歴.md)、現在の変更理由と検証結果は`プロジェクト資料/修正履歴/#今回の修正説明_2026-08-19.md`を参照してください。
 
 ## 起動後メモリ整理
 

@@ -221,6 +221,11 @@ internal static partial class HtmlManager
     static readonly AngleSharp.Html.Parser.HtmlParser parser = new();
     public static ConsoleDisplayLine[] Html2DisplayLine(string str, StringMeasure sm, EmueraConsole console, bool lineEnd)
     {
+        // [Emuera改修:HTML-01]
+        // The fast path accepts only a deliberately narrow color-only FONT grammar.
+        // Anything outside that grammar falls through to the existing AngleSharp path unchanged.
+        if (TryBuildColorOnlyFontFastPath(str, sm, console, lineEnd, out ConsoleDisplayLine[] fastResult))
+            return fastResult;
 
         {
             var doc = parser.ParseDocument($"<body>{str.ReplaceLineEndings("<br>")}</body>");
@@ -663,6 +668,279 @@ internal static partial class HtmlManager
 
             return ret;
         }
+    }
+
+
+    // [Emuera改修:HTML-01]
+    //
+    // This is intentionally narrower than the HTML syntax accepted by AngleSharp.
+    // It only handles text plus:
+    //   <font color = '#RRGGBB'>text</font>
+    // with ordinary ASCII-space variation around '=' and before '>'.
+    //
+    // Before allocating any Console display objects, the entire raw input is validated.
+    // If validation fails, the caller uses the original AngleSharp path.
+    private const string ColorOnlyFontClose = "</font>";
+
+    private static bool TryBuildColorOnlyFontFastPath(
+        string raw,
+        StringMeasure sm,
+        EmueraConsole console,
+        bool lineEnd,
+        out ConsoleDisplayLine[] result)
+    {
+        result = null;
+
+        if (!IsColorOnlyFontFastPathEligible(raw))
+            return false;
+
+        var defaultStyle = new StringStyle(Config.ForeColor, FontStyle.Regular, Config.FontName);
+        var nodes = new List<AConsoleDisplayNode>(32);
+        int position = 0;
+
+        while (position < raw.Length)
+        {
+            int nextTag = raw.IndexOf('<', position);
+            if (nextTag < 0)
+            {
+                ReadOnlySpan<char> tail = raw.AsSpan(position);
+                if (!tail.IsEmpty)
+                    nodes.Add(new ConsoleStyledString(tail.ToString(), defaultStyle));
+                break;
+            }
+
+            ReadOnlySpan<char> plain = raw.AsSpan(position, nextTag - position);
+            if (!plain.IsEmpty)
+                nodes.Add(new ConsoleStyledString(plain.ToString(), defaultStyle));
+
+            // Eligibility was validated in the first pass, so these cannot fail.
+            _ = TryReadColorOnlyFontOpening(
+                raw,
+                nextTag,
+                out int rgb,
+                out int textStart);
+
+            int closeStart = raw.IndexOf('<', textStart);
+            ReadOnlySpan<char> innerText = raw.AsSpan(textStart, closeStart - textStart);
+
+            if (!innerText.IsEmpty)
+            {
+                // Match the existing FONT branch for a color-only FONT.
+                // GetAttribute("face") is null, therefore the copied StringStyle's
+                // Fontname becomes null in the existing implementation as well.
+                var style = defaultStyle;
+                style.Fontname = null;
+                style.Color = new SKColor((uint)rgb)
+                    .WithAlpha(byte.MaxValue)
+                    .ToDrawingColor();
+                style.ButtonColor = defaultStyle.ButtonColor;
+                style.FontSize = Config.FontSize;
+
+                nodes.Add(new ConsoleStyledString(innerText.ToString(), style));
+            }
+
+            position = closeStart + ColorOnlyFontClose.Length;
+        }
+
+        if (nodes.Count == 0)
+        {
+            result = [];
+            return true;
+        }
+
+        var buttonList = new List<ConsoleButtonString>(1)
+        {
+            new ConsoleButtonString(console, [.. nodes])
+        };
+
+        result = PrintStringBuffer.ButtonsToDisplayLines(
+            buttonList,
+            sm,
+            false,
+            false);
+
+        if (result.Length > 0)
+            result[^1].IsLineEnd = lineEnd;
+
+        foreach (var line in result)
+            line.SetAlignment(DisplayLineAlignment.LEFT);
+
+        return true;
+    }
+
+    private static bool IsColorOnlyFontFastPathEligible(string raw)
+    {
+        if (string.IsNullOrEmpty(raw))
+            return false;
+
+        int fontCount = 0;
+        int position = 0;
+
+        while (position < raw.Length)
+        {
+            int nextTag = raw.IndexOf('<', position);
+
+            if (nextTag < 0)
+            {
+                return fontCount > 0 &&
+                    !ColorOnlyFontTextContainsUnsafeChar(raw.AsSpan(position));
+            }
+
+            if (ColorOnlyFontTextContainsUnsafeChar(
+                raw.AsSpan(position, nextTag - position)))
+            {
+                return false;
+            }
+
+            if (!TryReadColorOnlyFontOpening(
+                raw,
+                nextTag,
+                out _,
+                out int textStart))
+            {
+                return false;
+            }
+
+            int closeStart = raw.IndexOf('<', textStart);
+            if (closeStart < 0 ||
+                !raw.AsSpan(closeStart)
+                    .StartsWith(ColorOnlyFontClose.AsSpan(), StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            if (ColorOnlyFontTextContainsUnsafeChar(
+                raw.AsSpan(textStart, closeStart - textStart)))
+            {
+                return false;
+            }
+
+            fontCount++;
+            position = closeStart + ColorOnlyFontClose.Length;
+        }
+
+        return fontCount > 0;
+    }
+
+    private static bool TryReadColorOnlyFontOpening(
+        string raw,
+        int start,
+        out int rgb,
+        out int textStart)
+    {
+        rgb = 0;
+        textStart = 0;
+
+        int p = start;
+
+        if (p < 0 || p + 5 > raw.Length ||
+            !raw.AsSpan(p, 5).SequenceEqual("<font".AsSpan()))
+        {
+            return false;
+        }
+        p += 5;
+
+        if (p >= raw.Length || raw[p] != ' ')
+            return false;
+
+        while (p < raw.Length && raw[p] == ' ')
+            p++;
+
+        if (p + 5 > raw.Length ||
+            !raw.AsSpan(p, 5).SequenceEqual("color".AsSpan()))
+        {
+            return false;
+        }
+        p += 5;
+
+        while (p < raw.Length && raw[p] == ' ')
+            p++;
+
+        if (p >= raw.Length || raw[p] != '=')
+            return false;
+        p++;
+
+        while (p < raw.Length && raw[p] == ' ')
+            p++;
+
+        if (p + 9 > raw.Length ||
+            raw[p] != '\'' ||
+            raw[p + 1] != '#')
+        {
+            return false;
+        }
+
+        if (!TryParseColorOnlyFontHex(raw.AsSpan(p + 2, 6), out rgb))
+            return false;
+
+        if (raw[p + 8] != '\'')
+            return false;
+        p += 9;
+
+        while (p < raw.Length && raw[p] == ' ')
+            p++;
+
+        if (p >= raw.Length || raw[p] != '>')
+            return false;
+
+        textStart = p + 1;
+        return true;
+    }
+
+    private static bool TryParseColorOnlyFontHex(
+        ReadOnlySpan<char> text,
+        out int value)
+    {
+        value = 0;
+
+        if (text.Length != 6)
+            return false;
+
+        foreach (char ch in text)
+        {
+            int digit;
+
+            if (ch >= '0' && ch <= '9')
+                digit = ch - '0';
+            else if (ch >= 'A' && ch <= 'F')
+                digit = ch - 'A' + 10;
+            else if (ch >= 'a' && ch <= 'f')
+                digit = ch - 'a' + 10;
+            else
+                return false;
+
+            value = (value << 4) | digit;
+        }
+
+        return true;
+    }
+
+    private static bool ColorOnlyFontTextContainsUnsafeChar(
+        ReadOnlySpan<char> text)
+    {
+        foreach (char ch in text)
+        {
+            if (char.IsSurrogate(ch))
+                return true;
+
+            switch (ch)
+            {
+                case '&':
+                case '\0':
+                case '\r':
+                case '\n':
+                case '\f':
+                case '\u0085':
+                case '\u2028':
+                case '\u2029':
+                    return true;
+            }
+
+            if (ch < ' ' && ch != '\t')
+                return true;
+        }
+
+        return false;
     }
 
     private static SKColor ParseColor(string colorStr, SKColor def)
