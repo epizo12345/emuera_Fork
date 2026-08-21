@@ -17,6 +17,9 @@ namespace MinorShift.Emuera.Runtime.Script;
 
 internal sealed class UserDefinedFunctionArgument
 {
+    // [Emuera改修:PERF-13R27 2026-08-21]
+    // destination signatureに存在するcategoryだけtransporterを確保し、index位置はArguments.Lengthのまま維持する。
+    // isRef配列はdestination metadataを直接参照し、CALL/REF semanticsとpool非使用を維持する。
     public UserDefinedFunctionArgument(AExpression[] srcArgs, VariableTerm[] destArgs)
     {
         Arguments = srcArgs;
@@ -92,6 +95,9 @@ internal sealed class CalledFunction
     private CalledFunction(string label) { FunctionName = label; }
     public static CalledFunction CallEventFunction(Process parent, string label, LogicalLine retAddress)
     {
+        // [Emuera改修:PERF-13R26 2026-08-21]
+        // TRY系missing-targetで即破棄されるCalledFunctionを作らず、lookup成功後だけnewする。
+        // wrong-kind error semanticsは維持し、CalledFunction poolingではない。
         List<FunctionLabelLine>[] eventLabels = parent.LabelDictionary.GetEventLabels(label);
         if (eventLabels == null)
         {
@@ -118,6 +124,8 @@ internal sealed class CalledFunction
 
     public static CalledFunction CallFunction(Process parent, string label, LogicalLine retAddress)
     {
+        // [Emuera改修:PERF-13R26 2026-08-21]
+        // 通常CALLもlabel lookupとmethod/event判定後だけ生成し、成功時のfield設定を維持する。
         FunctionLabelLine labelline = parent.LabelDictionary.GetNonEventLabel(label);
         if (labelline == null)
         {

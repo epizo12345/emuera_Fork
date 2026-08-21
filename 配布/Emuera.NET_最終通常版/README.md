@@ -24,7 +24,6 @@
 - Phase 13R25 `SingleLongTerm`の-1〜255をimmutable共有し、`VariableTerm.GetValue` / `FunctionMethod.GetReturnValue`の短命integer allocationを削減しました。cache外は従来どおり新規instanceを生成し、整数semanticsは変更していません。
 - Phase 13R26 missing CALL / event lookupでは対象が存在する場合だけ`CalledFunction`を生成するよう変更し、TRY系missing-targetの一時allocationを削減しました。successful call semanticsは変更していません。
 - Phase 13R27 `UserDefinedFunctionArgument`のtransporterを引数category別に必要時のみ確保し、REF無しでは`TransporterRef`、該当categoryなしでは対応配列を生成しないようにしました。`isRef` bool[]も削減し、CALL/REF semanticsは変更していません。
-- Phase 13R27 `UserDefinedFunctionArgument`のtransporterを引数category別に必要時のみ確保し、REF無しでは`TransporterRef`、該当categoryなしでは対応配列を生成しないようにしました。`isRef` bool[]も削減し、CALL/REF semanticsは変更していません。
 
 この単一EXEにはSkiaSharpのネイティブライブラリも内包されています。別の`libSkiaSharp.dll`を同じフォルダへ追加する必要はありません。
 Windows API全体の大きな.NET投影DLLは含めず、SkiaSharpが必要とする`WinRT.Runtime.dll`だけを内包しています。

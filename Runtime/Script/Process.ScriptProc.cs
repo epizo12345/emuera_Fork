@@ -335,6 +335,8 @@ internal sealed partial class Process
                 }
             case FunctionCode.SWAP:
                 {
+                    // [Emuera改修:PERF-13R24 2026-08-21]
+                    // 短命termは既存lease/pool経路だけをusing scope内で使い、var1→var2評価順を変えない。
                     SpSwapVarArgument arg = (SpSwapVarArgument)func.Argument;
                     //1756beta2+v11
                     //値を読み出す前に添え字を確定させておかないと、RANDが添え字にある場合正しく処理できない

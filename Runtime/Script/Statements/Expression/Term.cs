@@ -69,6 +69,9 @@ internal sealed class SingleStrTerm : SingleTerm
 
 internal sealed class SingleLongTerm : SingleTerm
 {
+    // [Emuera改修:PERF-13R25 2026-08-21]
+    // runtimeで頻出する-1～255だけimmutable共有し、範囲外は従来どおりnewする。
+    // 共有instanceをmutable化してはいけない。
     private const int CacheMin = -1;
     private const int CacheMax = 255;
     private static readonly SingleLongTerm[] SmallValueCache = CreateSmallValueCache();

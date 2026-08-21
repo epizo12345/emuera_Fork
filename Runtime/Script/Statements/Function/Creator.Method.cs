@@ -54,6 +54,8 @@ internal static partial class FunctionMethodCreator
         }
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
+            // [Emuera改修:PERF-13R24 2026-08-21]
+            // 短命FixedVariableTermは既存lease経路をusing scope内だけで使い、添字評価順を維持する。
             Int64 integer = arguments[0].GetIntValue(exm);
             if (!Config.CompatiSPChara)
             {

@@ -221,7 +221,9 @@ internal static partial class HtmlManager
     static readonly AngleSharp.Html.Parser.HtmlParser parser = new();
     public static ConsoleDisplayLine[] Html2DisplayLine(string str, StringMeasure sm, EmueraConsole console, bool lineEnd)
     {
-        // [Emuera改修:HTML-01]
+        // [Emuera改修:HTML-01] Phase 12C / 2026-08-19
+        // strict color-only FONTだけをfast path対象とし、対象外は必ずAngleSharpへfallbackする。
+        // compatibility優先でgrammarを狭くした経路であり、表示意味論を拡張・変更しない。
         // The fast path accepts only a deliberately narrow color-only FONT grammar.
         // Anything outside that grammar falls through to the existing AngleSharp path unchanged.
         if (TryBuildColorOnlyFontFastPath(str, sm, console, lineEnd, out ConsoleDisplayLine[] fastResult))
@@ -671,7 +673,8 @@ internal static partial class HtmlManager
     }
 
 
-    // [Emuera改修:HTML-01]
+    // [Emuera改修:HTML-01] Phase 12C / 2026-08-19
+    // strict color-only FONT専用。対象外は従来parserへfallbackする。
     //
     // This is intentionally narrower than the HTML syntax accepted by AngleSharp.
     // It only handles text plus:
