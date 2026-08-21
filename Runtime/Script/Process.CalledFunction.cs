@@ -84,21 +84,21 @@ internal sealed class CalledFunction
     private CalledFunction(string label) { FunctionName = label; }
     public static CalledFunction CallEventFunction(Process parent, string label, LogicalLine retAddress)
     {
-        CalledFunction called = new(label)
-        {
-            //List<FunctionLabelLine> newLabelList = new List<FunctionLabelLine>();
-            Finished = false,
-            eventLabelList = parent.LabelDictionary.GetEventLabels(label)
-        };
-        if (called.eventLabelList == null)
+        List<FunctionLabelLine>[] eventLabels = parent.LabelDictionary.GetEventLabels(label);
+        if (eventLabels == null)
         {
             FunctionLabelLine line = parent.LabelDictionary.GetNonEventLabel(label);
-            if (parent.LabelDictionary.GetNonEventLabel(label) != null)
+            if (line != null)
             {
                 throw new CodeEE(string.Format(LocalizationManager.Error.CalleventToNonEventFunc, label, line.Position.Value.Filename, line.Position.Value.LineNo));
             }
             return null;
         }
+        CalledFunction called = new(label)
+        {
+            Finished = false,
+            eventLabelList = eventLabels
+        };
         called.counter = -1;
         called.group = 0;
         called.ShiftNext();
@@ -110,10 +110,6 @@ internal sealed class CalledFunction
 
     public static CalledFunction CallFunction(Process parent, string label, LogicalLine retAddress)
     {
-        CalledFunction called = new(label)
-        {
-            Finished = false
-        };
         FunctionLabelLine labelline = parent.LabelDictionary.GetNonEventLabel(label);
         if (labelline == null)
         {
@@ -127,6 +123,10 @@ internal sealed class CalledFunction
         {
             throw new CodeEE(string.Format(LocalizationManager.Error.CallToUserFunc, labelline.LabelName, labelline.Position.Value.Filename, labelline.Position.Value.LineNo.ToString()));
         }
+        CalledFunction called = new(label)
+        {
+            Finished = false
+        };
         called.TopLabel = labelline;
         called.CurrentLabel = labelline;
         called.returnAddress = retAddress;
