@@ -46,7 +46,7 @@ internal abstract class FunctionMethod
         if (ReturnType == typeof(long))
             return SingleLongTerm.FromValue(GetIntValue(exm, arguments));
         else
-            return new SingleStrTerm(GetStrValue(exm, arguments));
+            return SingleStrTerm.FromValue(GetStrValue(exm, arguments));
     }
 
     /// <summary>

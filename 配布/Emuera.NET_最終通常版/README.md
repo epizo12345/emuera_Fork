@@ -1,12 +1,12 @@
 # Emuera.NET 最終通常版
 
-- 更新日: 2026-08-21
+- 更新日: 2026-08-22
 - 基礎: BugFix_Test `7b7dd3bf240eff4fdfc7094f4175de0e014532b7`
 - 対象OS: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
 - `Emuera.exe` サイズ: 24,643,306バイト（約23.5 MiB）
-- `Emuera.exe` SHA-256: `4E5CC3368FB88D37543EB557C451F2692701DE7AB41AFCDDED8DD4824C740AE8`
+- `Emuera.exe` SHA-256: `DBECAA7077624A3C0EB70527C5580F6DB8CBE53368432ABCE8F009EAAE5A8F6F`
 - Phase 4A/B/C warning cleanupを反映（Release warning 52件から37件、new warning 0、Normal/Kojo起動確認済み）
 - Phase 5A/B/C focused bugfixを反映（VARSIZE/macro、ARRAYMSORT、GGETCOLOR/GSETCOLOR、SPRITEGETCOLOR。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
 - Phase 6A/B focused bugfixを反映（SPRITEANIMEADDFRAMEの無効Sprite入力時NRE修正、ClipboardのBufferSize/MinTimer 0・負値の安全化、ConfigDialogの最小値1制限とruntime clamp。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
@@ -24,6 +24,7 @@
 - Phase 13R25 `SingleLongTerm`の-1〜255をimmutable共有し、`VariableTerm.GetValue` / `FunctionMethod.GetReturnValue`の短命integer allocationを削減しました。cache外は従来どおり新規instanceを生成し、整数semanticsは変更していません。
 - Phase 13R26 missing CALL / event lookupでは対象が存在する場合だけ`CalledFunction`を生成するよう変更し、TRY系missing-targetの一時allocationを削減しました。successful call semanticsは変更していません。
 - Phase 13R27 `UserDefinedFunctionArgument`のtransporterを引数category別に必要時のみ確保し、REF無しでは`TransporterRef`、該当categoryなしでは対応配列を生成しないようにしました。`isRef` bool[]も削減し、CALL/REF semanticsは変更していません。
+- Phase 13R28 `SingleStrTerm`は空文字列だけをimmutable共有し、runtimeの短命empty wrapper allocationを削減しました。`null`と非empty文字列は従来どおり個別instanceで、任意文字列cacheは採用していません。
 
 この単一EXEにはSkiaSharpのネイティブライブラリも内包されています。別の`libSkiaSharp.dll`を同じフォルダへ追加する必要はありません。
 Windows API全体の大きな.NET投影DLLは含めず、SkiaSharpが必要とする`WinRT.Runtime.dll`だけを内包しています。

@@ -26,7 +26,7 @@ internal abstract class AExpression
         if (type == typeof(long))
             return new SingleLongTerm(0);
         else
-            return new SingleStrTerm("");
+            return SingleStrTerm.FromValue("");
     }
     public bool IsInteger
     {

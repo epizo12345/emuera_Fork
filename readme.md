@@ -48,7 +48,7 @@ Windows 11ではメニューや設定画面にダークモードが適用され�
 - 対象: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 形式: フレームワーク依存・単一EXE
-- 『Emuera.exe』: 配布用実行ファイル（24,643,306バイト、SHA-256 `4CE75612E0A370DC6FFDD80F369E0E50F9F31F0CD81AA732F35F4FDBBFD6B271`）
+- 『Emuera.exe』: 配布用実行ファイル（24,643,306バイト、SHA-256 `DBECAA7077624A3C0EB70527C5580F6DB8CBE53368432ABCE8F009EAAE5A8F6F`）
 - 『README.md』: 導入方法と採用機能
 - 『SHA256SUMS.txt』: 配布物の改ざん確認用ハッシュ
 
