@@ -16,6 +16,7 @@ namespace MinorShift.Emuera.GameData.Variable;
 //引数は整数しか受け付けない。*.csvを利用した置換はVariableTermの方で処理すること
 internal abstract class VariableToken
 {
+    private static readonly bool[] AllElementChecks = [true, true, true];
     protected VariableToken(VariableCode varCode, VariableData varData)
     {
         Code = varCode;
@@ -136,7 +137,7 @@ internal abstract class VariableToken
     public virtual void CheckElement(Int64[] arguments, bool[] doCheck) { }
     public void CheckElement(Int64[] arguments)
     {
-        CheckElement(arguments, [true, true, true]);
+        CheckElement(arguments, AllElementChecks);
     }
     public virtual void IsArrayRangeValid(Int64[] arguments, Int64 index1, Int64 index2, string funcName, Int64 i1, Int64 i2)
     {

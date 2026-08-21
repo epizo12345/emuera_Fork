@@ -3,6 +3,7 @@
 日付ごとの採用変更説明です。現在の仕様はルートの `更新履歴.md` と `プロジェクト資料/01_仕様書.md`〜`06_コード案内.md` を参照してください。
 
 - `#今回の修正説明_2026-08-21.md` — Phase 13R14 TermStack inline-one-element storage最適化
+- `#今回の修正説明_2026-08-21.md` — Phase 13R22 `VariableToken.CheckElement`共有maskによるallocation最適化
 - `#今回の修正説明_2026-08-19.md` — Phase 12B1.1 runtime allocation optimization（private dynamic 2D整数配列のbounded reuse）
 - `#今回の修正説明_2026-08-17.md` — repository cleanup / code cleanup / warning cleanup / focused bugfix / memory optimization（Phase 1〜10B）
 - `#今回の修正説明_2026-08-15.md` — 2026-08-15の性能・メモリ改善
