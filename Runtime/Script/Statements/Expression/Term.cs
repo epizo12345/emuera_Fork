@@ -36,12 +36,20 @@ internal class SingleTerm : AExpression
 
 internal sealed class SingleStrTerm : SingleTerm
 {
+    // [Emuera改修:PERF-13R28 2026-08-22]
+    // runtimeで頻出する空文字SingleStrTermの短命allocationを避けるため、空文字だけ共有する。
+    // nullと非empty文字列は従来どおり個別instanceとし、任意文字列cacheによるretained memory増加を避ける。
+    private static readonly SingleStrTerm EmptyTerm = new("");
+
+    public static SingleStrTerm FromValue(string value)
+        => value != null && value.Length == 0 ? EmptyTerm : new SingleStrTerm(value);
+
     public SingleStrTerm(string s)
         : base(typeof(string))
     {
         sValue = s;
     }
-    string sValue;
+    readonly string sValue;
     public override string GetStrValue(ExpressionMediator exm)
     {
         return sValue;
@@ -153,14 +161,14 @@ internal sealed class StrFormTerm : AExpression
     }
     public override SingleTerm GetValue(ExpressionMediator exm)
     {
-        return new SingleStrTerm(sfValue.GetString(exm));
+        return SingleStrTerm.FromValue(sfValue.GetString(exm));
     }
 
     public override AExpression Restructure(ExpressionMediator exm)
     {
         sfValue.Restructure(exm);
         if (sfValue.IsConst)
-            return new SingleStrTerm(sfValue.GetString(exm));
+            return SingleStrTerm.FromValue(sfValue.GetString(exm));
         AExpression term = sfValue.GetAExpression();
         if (term != null)
             return term;

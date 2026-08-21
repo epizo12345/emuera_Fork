@@ -35,7 +35,7 @@ internal abstract class SuperUserDefinedMethodTerm : AExpression
             if (GetOperandType() == typeof(long))
                 return SingleLongTerm.FromValue(0);
             else
-                return new SingleStrTerm("");
+                return SingleStrTerm.FromValue("");
         }
         return term;
     }

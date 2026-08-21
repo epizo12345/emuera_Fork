@@ -186,7 +186,7 @@ internal class VariableTerm : AExpression
         if (Identifier.VariableType == typeof(long))
             return SingleLongTerm.FromValue(GetIntValue(exm));
         else
-            return new SingleStrTerm(GetStrValue(exm));
+            return SingleStrTerm.FromValue(GetStrValue(exm));
     }
     public virtual void SetValue(SingleTerm value, ExpressionMediator exm)
     {
