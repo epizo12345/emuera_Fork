@@ -6,7 +6,7 @@
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
 - `Emuera.exe` サイズ: 24,643,306バイト（約23.5 MiB）
-- `Emuera.exe` SHA-256: `F7E145FB01E574A94C27221BE3B370EACFB3A130B7B60BD220A93B18BC034191`
+- `Emuera.exe` SHA-256: `001E0E4E6DB4C0D42EB56294194474A3BF017B38115EC4707FCA0A70CDB4B31D`
 - Phase 4A/B/C warning cleanupを反映（Release warning 52件から37件、new warning 0、Normal/Kojo起動確認済み）
 - Phase 5A/B/C focused bugfixを反映（VARSIZE/macro、ARRAYMSORT、GGETCOLOR/GSETCOLOR、SPRITEGETCOLOR。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
 - Phase 6A/B focused bugfixを反映（SPRITEANIMEADDFRAMEの無効Sprite入力時NRE修正、ClipboardのBufferSize/MinTimer 0・負値の安全化、ConfigDialogの最小値1制限とruntime clamp。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
@@ -20,6 +20,7 @@
 - Phase 13R14 ERB式解析のTermStack storage最適化を反映。1要素だけを扱う場合は従来の`Stack<object>`と初期配列を必要になるまで生成せず、大規模口上fixtureのScriptParse中の一時allocationを約251.4MB / 9.60%削減しました。Server / Workstationの起動速度は実質neutralで、Normal / Kojo / semantic validation済みです。セーブ形式・ERB評価順・演算子処理は変更していません。
 - Phase 13R22 `VariableToken.CheckElement`の全要素check maskを共有し、hot pathで毎回生成される3要素`bool[]` allocationを削減しました。Release buildとsave219ロード・短いmacro smokeで互換性を確認済みです。
 - Phase 13R23 `PrivateInt1DVariableToken`のtop-level private dynamic 1D整数配列を最大32,768要素までbounded reuseします。再利用前にclearし、default値を復元します。nested / recursive呼出しは独立配列経路を維持し、大きな配列は保持しません。Release buildとsave219ロード・短いmacro smokeで互換性を確認済みです。
+- Phase 13R24 `FixedVariableTerm`の短命runtime caller 10件を既存`RentFixedVariableTerm` lease/pool経路へ移行しました。添字評価順を維持し、lease lifetime外へ参照を出しません。Release buildとsave219ロード・短いmacro smokeで互換性を確認済みです。
 
 この単一EXEにはSkiaSharpのネイティブライブラリも内包されています。別の`libSkiaSharp.dll`を同じフォルダへ追加する必要はありません。
 Windows API全体の大きな.NET投影DLLは含めず、SkiaSharpが必要とする`WinRT.Runtime.dll`だけを内包しています。

@@ -338,8 +338,10 @@ internal sealed partial class Process
                     SpSwapVarArgument arg = (SpSwapVarArgument)func.Argument;
                     //1756beta2+v11
                     //値を読み出す前に添え字を確定させておかないと、RANDが添え字にある場合正しく処理できない
-                    FixedVariableTerm vTerm1 = arg.var1.GetFixedVariableTerm(exm);
-                    FixedVariableTerm vTerm2 = arg.var2.GetFixedVariableTerm(exm);
+                    using VariableTerm.FixedVariableTermLease lease1 = arg.var1.RentFixedVariableTerm(exm);
+                    using VariableTerm.FixedVariableTermLease lease2 = arg.var2.RentFixedVariableTerm(exm);
+                    FixedVariableTerm vTerm1 = lease1.Term;
+                    FixedVariableTerm vTerm2 = lease2.Term;
                     if (vTerm1.GetOperandType() != vTerm2.GetOperandType())
                         throw new CodeEE(LocalizationManager.Error.VarsTypeDifferent);
                     if (vTerm1.GetOperandType() == typeof(Int64))
@@ -583,7 +585,8 @@ internal sealed partial class Process
                     SpArrayShiftArgument arrayArg = (SpArrayShiftArgument)func.Argument;
                     if (!arrayArg.VarToken.Identifier.IsArray1D)
                         throw new CodeEE("ARRAYSHIFTは1次元配列および配列型キャラクタ変数のみに対応しています");
-                    FixedVariableTerm dest = arrayArg.VarToken.GetFixedVariableTerm(exm);
+                    using VariableTerm.FixedVariableTermLease lease = arrayArg.VarToken.RentFixedVariableTerm(exm);
+                    FixedVariableTerm dest = lease.Term;
                     int shift = (int)arrayArg.Num1.GetIntValue(exm);
                     if (shift == 0)
                         break;
@@ -618,7 +621,8 @@ internal sealed partial class Process
                     SpArrayControlArgument arrayArg = (SpArrayControlArgument)func.Argument;
                     if (!arrayArg.VarToken.Identifier.IsArray1D)
                         throw new CodeEE("ARRAYREMOVEは1次元配列および配列型キャラクタ変数のみに対応しています");
-                    FixedVariableTerm p = arrayArg.VarToken.GetFixedVariableTerm(exm);
+                    using VariableTerm.FixedVariableTermLease lease = arrayArg.VarToken.RentFixedVariableTerm(exm);
+                    FixedVariableTerm p = lease.Term;
                     int start = (int)arrayArg.Num1.GetIntValue(exm);
                     int num = (int)arrayArg.Num2.GetIntValue(exm);
                     if (start < 0)
@@ -635,7 +639,8 @@ internal sealed partial class Process
                     SpArraySortArgument arrayArg = (SpArraySortArgument)func.Argument;
                     if (!arrayArg.VarToken.Identifier.IsArray1D)
                         throw new CodeEE("ARRAYRESORTは1次元配列および配列型キャラクタ変数のみに対応しています");
-                    FixedVariableTerm p = arrayArg.VarToken.GetFixedVariableTerm(exm);
+                    using VariableTerm.FixedVariableTermLease lease = arrayArg.VarToken.RentFixedVariableTerm(exm);
+                    FixedVariableTerm p = lease.Term;
                     int start = (int)arrayArg.Num1.GetIntValue(exm);
                     if (start < 0)
                         throw new CodeEE("ARRAYSORTの第３引数が負の値(" + start.ToString() + ")です");

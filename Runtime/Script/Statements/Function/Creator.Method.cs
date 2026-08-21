@@ -1260,7 +1260,8 @@ internal static partial class FunctionMethodCreator
             Int64 index1 = (arguments.Count >= 2 && arguments[1] != null) ? arguments[1].GetIntValue(exm) : 0;
             Int64 index2 = (arguments.Count == 3 && arguments[2] != null) ? arguments[2].GetIntValue(exm) : (isCharaRange ? exm.VEvaluator.CHARANUM : varTerm.GetLastLength());
 
-            FixedVariableTerm p = varTerm.GetFixedVariableTerm(exm);
+            using VariableTerm.FixedVariableTermLease lease = varTerm.RentFixedVariableTerm(exm);
+            FixedVariableTerm p = lease.Term;
             if (!isCharaRange)
             {
                 p.IsArrayRangeValid(index1, index2, "SUMARRAY", 2L, 3L);
@@ -1594,7 +1595,8 @@ internal static partial class FunctionMethodCreator
             VariableTerm vTerm = (VariableTerm)arguments[0];
             Int64 start = (arguments.Count > 1 && arguments[1] != null) ? arguments[1].GetIntValue(exm) : 0;
             Int64 end = (arguments.Count > 2 && arguments[2] != null) ? arguments[2].GetIntValue(exm) : (isCharaRange ? exm.VEvaluator.CHARANUM : vTerm.GetLength());
-            FixedVariableTerm p = vTerm.GetFixedVariableTerm(exm);
+            using VariableTerm.FixedVariableTermLease lease = vTerm.RentFixedVariableTerm(exm);
+            FixedVariableTerm p = lease.Term;
             if (!isCharaRange)
             {
                 p.IsArrayRangeValid(start, end, funcName, 2L, 3L);
@@ -1824,7 +1826,8 @@ internal static partial class FunctionMethodCreator
             if (arguments.Count > 4 && arguments[4] != null)
                 isExact = arguments[4].GetIntValue(exm) != 0;
 
-            FixedVariableTerm p = varTerm.GetFixedVariableTerm(exm);
+            using VariableTerm.FixedVariableTermLease lease = varTerm.RentFixedVariableTerm(exm);
+            FixedVariableTerm p = lease.Term;
             p.IsArrayRangeValid(start, end, funcName, 3L, 4L);
 
             if (arguments[0].GetOperandType() == typeof(Int64))
@@ -1940,7 +1943,8 @@ internal static partial class FunctionMethodCreator
             Int64 start = (arguments.Count > 3 && arguments[3] != null) ? arguments[3].GetIntValue(exm) : 0;
             Int64 end = (arguments.Count > 4 && arguments[4] != null) ? arguments[4].GetIntValue(exm) : (isCharaRange ? exm.VEvaluator.CHARANUM : varTerm.GetLength());
 
-            FixedVariableTerm p = varTerm.GetFixedVariableTerm(exm);
+            using VariableTerm.FixedVariableTermLease lease = varTerm.RentFixedVariableTerm(exm);
+            FixedVariableTerm p = lease.Term;
 
             if (!isCharaRange)
             {
@@ -2788,7 +2792,8 @@ internal static partial class FunctionMethodCreator
             Int64 index1 = (arguments.Count >= 3 && arguments[2] != null) ? arguments[2].GetIntValue(exm) : 0;
             Int64 index2 = (arguments.Count == 4 && arguments[3] != null) ? arguments[3].GetIntValue(exm) : varTerm.GetLastLength() - index1;
 
-            FixedVariableTerm p = varTerm.GetFixedVariableTerm(exm);
+            using VariableTerm.FixedVariableTermLease lease = varTerm.RentFixedVariableTerm(exm);
+            FixedVariableTerm p = lease.Term;
 
             if (index2 < 0)
                 throw new CodeEE("STRJOINの第4引数(" + index2.ToString() + ")が負の値になっています");
@@ -3006,7 +3011,8 @@ internal static partial class FunctionMethodCreator
     private static float[][] ReadColormatrix(string Name, ExpressionMediator exm, List<AExpression> arguments, int argNo)
     {
         //数値型二次元以上配列変数のはず
-        FixedVariableTerm p = ((VariableTerm)arguments[argNo]).GetFixedVariableTerm(exm);
+        using VariableTerm.FixedVariableTermLease lease = ((VariableTerm)arguments[argNo]).RentFixedVariableTerm(exm);
+        FixedVariableTerm p = lease.Term;
         Int64 e1, e2;
         float[][] cm = new float[5][];
         if (p.Identifier.IsArray2D)
