@@ -104,7 +104,10 @@ internal class InstructionLine : LogicalLine
         scriptPosition = thePosition;
         func = functionIdentifier;
         AssignOperator = assignOP;
-        assigndest = dest;
+        // [Emuera改修:MEM-13R30 2026-08-22]
+        // 代入左辺はSET引数解析までだけ必要で、IF/PRINTDATA/TRYCALLLIST/EndCatch用データとは命令種別上共存しない。
+        // 遅延引数解析と左辺→右辺の解析順を維持したままauxiliaryDataを一時利用し、全InstructionLineの専用参照slotを持たせない。
+        auxiliaryData = dest;
         argumentStorage = theArgPrimitive;
     }
     public static InstructionLine Create(ScriptPosition? thePosition, FunctionIdentifier theFunc, CharStream theArgPrimitive)
@@ -117,7 +120,6 @@ internal class InstructionLine : LogicalLine
     readonly FunctionIdentifier func;
     object argumentStorage;
 
-    WordCollection assigndest;
     public OperatorCode AssignOperator { get; private set; }
     public FunctionCode FunctionCode
     {
@@ -147,8 +149,8 @@ internal class InstructionLine : LogicalLine
     }
     public WordCollection PopAssignmentDestStr()
     {
-        WordCollection ret = assigndest;
-        assigndest = null;
+        WordCollection ret = auxiliaryData as WordCollection;
+        auxiliaryData = null;
         return ret;
     }
 

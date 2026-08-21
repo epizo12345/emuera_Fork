@@ -3,7 +3,7 @@
 日付ごとの採用変更説明です。現在の仕様はルートの `更新履歴.md` と `プロジェクト資料/01_仕様書.md`〜`06_コード案内.md` を参照してください。
 
 - `#今回の修正説明_2026-08-22.md` — Phase 13R28 SingleStrTerm空文字共有
-- `#今回の修正説明_2026-08-22.md` — Phase 13R29 parsed AST小整数共有、およびPhase 13R28 SingleStrTerm空文字共有
+- `#今回の修正説明_2026-08-22.md` — Phase 13R30 InstructionLine代入左辺slot共有、Phase 13R29 parsed AST小整数共有、およびPhase 13R28 SingleStrTerm空文字共有
 - `#今回の修正説明_2026-08-21.md` — Phase 13R14 TermStack inline-one-element storage最適化
 - `#今回の修正説明_2026-08-21.md` — Phase 13R22〜R24 allocation最適化（CheckElement共有mask、PrivateInt1D bounded reuse、FixedVariableTerm lease化）
 - `#今回の修正説明_2026-08-21.md` — Phase 13R25 SingleLongTerm小整数共有
