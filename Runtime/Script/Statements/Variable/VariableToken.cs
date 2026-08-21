@@ -2079,7 +2079,9 @@ internal sealed partial class VariableData
             defArray = data.DefaultInt;
         }
         readonly Stack<long[]> arrayStack;
+        const int MaxReusableArrayElements = 32 * 1024;
         Int64[] array;
+        Int64[] spareArray;
         Int64[] defArray;
         //int counter = 0;
         public override void SetDefault()
@@ -2119,9 +2121,23 @@ internal sealed partial class VariableData
         public override void ScopeIn()
         {
             if (array != null)
+            {
                 arrayStack.Push(array);
-            //counter++;
-            array = new Int64[sizes[0]];
+                array = new Int64[sizes[0]];
+                if (defArray != null)
+                    defArray.AsSpan().CopyTo(array.AsSpan());
+                return;
+            }
+
+            if (spareArray == null)
+                array = new Int64[sizes[0]];
+            else
+            {
+                array = spareArray;
+                spareArray = null;
+                Array.Clear(array);
+            }
+
             if (defArray != null)
                 defArray.AsSpan().CopyTo(array.AsSpan());
         }
@@ -2131,9 +2147,14 @@ internal sealed partial class VariableData
             if (arrayStack.Count > 0)
             {
                 array = arrayStack.Pop();
+                return;
             }
+
+            if (array != null && array.Length <= MaxReusableArrayElements)
+                spareArray = array;
             else
-                array = null;
+                spareArray = null;
+            array = null;
         }
     }
     private sealed class PrivateInt2DVariableToken : UserDefinedVariableToken
