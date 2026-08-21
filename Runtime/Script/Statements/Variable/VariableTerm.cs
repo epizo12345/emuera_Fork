@@ -184,7 +184,7 @@ internal class VariableTerm : AExpression
     public override SingleTerm GetValue(ExpressionMediator exm)
     {
         if (Identifier.VariableType == typeof(long))
-            return new SingleLongTerm(GetIntValue(exm));
+            return SingleLongTerm.FromValue(GetIntValue(exm));
         else
             return new SingleStrTerm(GetStrValue(exm));
     }
