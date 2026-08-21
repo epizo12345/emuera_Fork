@@ -16,6 +16,8 @@ namespace MinorShift.Emuera.GameData.Variable;
 //引数は整数しか受け付けない。*.csvを利用した置換はVariableTermの方で処理すること
 internal abstract class VariableToken
 {
+    // [Emuera改修:PERF-13R22 2026-08-21]
+    // 全要素判定の共有mask。overrideはread-only参照し、この配列を書き換えない。
     private static readonly bool[] AllElementChecks = [true, true, true];
     protected VariableToken(VariableCode varCode, VariableData varData)
     {
@@ -2071,6 +2073,9 @@ internal sealed partial class VariableData
 
     private sealed class PrivateInt1DVariableToken : UserDefinedVariableToken
     {
+        // [Emuera改修:MEM-13R23 2026-08-21]
+        // top-level private dynamic 1D整数配列を最大32,768要素だけbounded reuseする。
+        // reuse前のclearとdefault復元を維持し、nested/recursiveと大きな配列は保持しない。
         public PrivateInt1DVariableToken(UserDefinedVariableData data)
             : base(VariableCode.VAR, data)
         {
@@ -2165,6 +2170,9 @@ internal sealed partial class VariableData
             IsStatic = false;
             arrayStack = [];
         }
+        // [Emuera改修:MEM-12B1.1 2026-08-19]
+        // top-level private dynamic 2D整数配列を最大32,768要素だけ保持し、payload約256KiBを上限にする。
+        // nested/recursiveは外側scopeの配列を保持し、上限超過配列はretained memory化させない。
         // Retain only small/medium arrays between top-level calls.
         // 32K Int64 elements are at most 256 KiB of payload.
         // Larger private arrays return to the GC instead of becoming retained memory.

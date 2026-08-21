@@ -456,6 +456,9 @@ internal static class ExpressionParser
     /// </summary>
     private sealed class TermStack
     {
+        // [Emuera改修:PERF-13R14 2026-08-21]
+        // 1要素だけではStack<object>を生成せず、2要素目で従来同等のStackへpromotionする。
+        // ERB評価順とoperator semanticsを変えず、ScriptParse一時allocationを削減する。
         /// <summary>
         /// 次に来るべきものの種類。
         /// (前置)単項演算子か値待ちなら0、二項・三項演算子待ちなら1、値待ちなら2、++、--、!に対応する値待ちの場合は3。
