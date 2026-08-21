@@ -20,27 +20,35 @@ internal sealed class UserDefinedFunctionArgument
     public UserDefinedFunctionArgument(AExpression[] srcArgs, VariableTerm[] destArgs)
     {
         Arguments = srcArgs;
-        TransporterInt = new long[Arguments.Length];
-        TransporterStr = new string[Arguments.Length];
-        TransporterRef = new Array[Arguments.Length];
-        isRef = new bool[Arguments.Length];
-        for (int i = 0; i < Arguments.Length; i++)
+        destinationArgs = destArgs;
+        bool needsInt = false;
+        bool needsStr = false;
+        bool needsRef = false;
+        for (int i = 0; i < destArgs.Length; i++)
         {
-            isRef[i] = destArgs[i].Identifier.IsReference;
+            if (destArgs[i].Identifier.IsReference)
+                needsRef = true;
+            else if (destArgs[i].GetOperandType() == typeof(long))
+                needsInt = true;
+            else
+                needsStr = true;
         }
+        TransporterInt = needsInt ? new long[Arguments.Length] : Array.Empty<long>();
+        TransporterStr = needsStr ? new string[Arguments.Length] : Array.Empty<string>();
+        TransporterRef = needsRef ? new Array[Arguments.Length] : Array.Empty<Array>();
     }
     public readonly AExpression[] Arguments;
+    private readonly VariableTerm[] destinationArgs;
     public readonly long[] TransporterInt;
     public readonly string[] TransporterStr;
     public readonly Array[] TransporterRef;
-    public readonly bool[] isRef;
     public void SetTransporter(ExpressionMediator exm)
     {
         for (int i = 0; i < Arguments.Length; i++)
         {
             if (Arguments[i] == null)
                 continue;
-            if (isRef[i])
+            if (destinationArgs[i].Identifier.IsReference)
             {
                 VariableTerm vTerm = (VariableTerm)Arguments[i];
                 if (vTerm.Identifier.IsCharacterData)
@@ -66,7 +74,7 @@ internal sealed class UserDefinedFunctionArgument
         {
             if (Arguments[i] == null)
                 continue;
-            if (isRef[i])
+            if (destinationArgs[i].Identifier.IsReference)
                 Arguments[i].Restructure(exm);
             else
                 Arguments[i] = Arguments[i].Restructure(exm);
