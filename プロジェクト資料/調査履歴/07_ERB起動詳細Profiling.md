@@ -1,6 +1,6 @@
 # ERB 起動詳細 Profiling
 
-最終更新: 2026-08-13（Parallel Warning Investigation Step 2A）
+最終更新: 2026-08-21（Phase 13R14 TermStack正式採用）
 
 ## 目的と背景
 
@@ -161,6 +161,28 @@ Step 2Cで観測されたcross-name warningの候補として、`IdentifierDicti
 現在の2 fixtureから抽出した`#DEFINE`は334件（異なる名前167件、hash group 167件）で、今回のプロセスのhash値では異なる名前同士の衝突は0組だった。これは理論上のhash-only問題を否定するものではない。専用テストframeworkは存在しないため、新規テストは追加せず、fixture内Macroを含む起動で互換性を確認した。Normal Releaseは通常fixture 1回・口上fixture 2回が全てOK、Diagnostic Releaseの口上fixture最大100回も100/100 OK、Lv2=0、ParserFailure=0、StartupFailure=0、ProcessFailure=0だった。平均・中央値などの性能評価は行っていない。
 
 Step 3ではFunctionLabelLine、LabelDictionary、VariableLocal、Parser並列方式、Phase 4-A、診断器を変更していない。`VariableLocal.localVarTokens`のownership候補と、今回のMacro修正後にも再現しなかったcross-name warningの別原因は、別Issueとして保持する。
+
+## Phase 10B～12C後の再baseline（2026-08-21）
+
+Phase 12C正式採用後の大規模口上fixtureを対象に、R10以降のallocation分布を再確認した。ScriptParseが主要なallocation hotspotであることを再確認し、HTML fast path導入後も次の候補はTermStack周辺へ絞った。
+
+R11の`reduceTerm` early-return fast pathは、通常の式形状で互換性FAIL（Lv2診断増加）となったためREJECTし、正式ソースへ残していない。
+
+## Phase 13R12 TermStack inline-one-element candidate（2026-08-21）
+
+`ExpressionParser.TermStack`の既存`Stack<object>` fieldを1つの`object storage`へ置換した。0要素はnull、1要素はinline object、2要素目でだけ`Stack<object>(5)`へpromotionする方式で、評価順・reduceTerm control flow・演算子処理は変更していない。Normal/Kojoとsemantic differentialはPASSだった。
+
+R12のcoverageではTermStack 3,656,271回のうち2,618,989回（71.63%）がpromotion不要だった。ScriptParse一時allocationはServer 251,424,792 bytes、Workstation 251,506,128 bytes（いずれも約9.60%）減少し、inline-only×96 bytesの理論値と0.04%以内で一致した。3-runではServerのwall差が確定しなかったため、採用判断はR13へ継続した。
+
+## Phase 13R13 Repeat Performance Validation（2026-08-21）
+
+Server / Workstation各GC modeでBaseline/Candidateを10回ずつ、`B-C-C-B`×5 blockのABBA順で再測定した。全40 runがInputReady到達・Lv2=0で、allocation削減はServer 251,430,450 bytes、Workstation 251,445,633 bytes（各9.60%）と再現した。Server ScriptParseは平均+26.5ms（ABBA差分の中央値-10.5ms）、Process.Initialize平均-3.4ms、InputReady平均-12.7msで、再現性のある起動退行は確認されなかった。Workstation ScriptParse平均-11.1ms、Process.Initialize平均-16.7msだった。判定はPASSとした。
+
+## Phase 13R14 TermStack正式採用（2026-08-21）
+
+R13でPASSした`ExpressionParser.cs`のTermStack storage変更だけをProductionへ採用した。Release buildは0 errors / 35 existing warnings、formal single-file publishとNormal/Kojo smokeはPASS。配布EXE、README、SHA256SUMS、引き継ぎ書、採用済み変更ファイル一覧を同一採用commitへ同期した。Workstation GC、GC policy、runtimeconfig、GC設定は変更していない。
+
+この変更の数値はScriptParse中の一時allocationに限定され、常駐memoryや通常プレイplateauが同じ量だけ減ることを意味しない。次の優先課題は、起動後約2.3GBから通常プレイ約3.3GBへ上昇してplateauするmemoryについて、allocation量ではなくlive / retained / committedの内訳を直接profilingすることである。
 
 ## Phase 4-A Final Adoption Review（2026-08-13）
 

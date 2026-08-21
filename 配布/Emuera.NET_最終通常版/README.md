@@ -1,12 +1,12 @@
 # Emuera.NET 最終通常版
 
-- 更新日: 2026-08-19
+- 更新日: 2026-08-21
 - 基礎: BugFix_Test `7b7dd3bf240eff4fdfc7094f4175de0e014532b7`
 - 対象OS: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
 - `Emuera.exe` サイズ: 24,643,306バイト（約23.5 MiB）
-- `Emuera.exe` SHA-256: `4CE75612E0A370DC6FFDD80F369E0E50F9F31F0CD81AA732F35F4FDBBFD6B271`
+- `Emuera.exe` SHA-256: `A6503D28B4E377D90C9070E10B87E0652FFE4795D6B2014E230C10DB46EFBA0D`
 - Phase 4A/B/C warning cleanupを反映（Release warning 52件から37件、new warning 0、Normal/Kojo起動確認済み）
 - Phase 5A/B/C focused bugfixを反映（VARSIZE/macro、ARRAYMSORT、GGETCOLOR/GSETCOLOR、SPRITEGETCOLOR。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
 - Phase 6A/B focused bugfixを反映（SPRITEANIMEADDFRAMEの無効Sprite入力時NRE修正、ClipboardのBufferSize/MinTimer 0・負値の安全化、ConfigDialogの最小値1制限とruntime clamp。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
@@ -17,6 +17,7 @@
 - Phase 10B memory optimizationを反映（大規模ERB/口上を読み込んだ際の常駐メモリをさらに削減。実ゲーム大規模fixtureでmanaged memory約125MiBの削減を確認。測定環境依存の値です）
 - Phase 12B1.1 runtime allocation削減を反映（private dynamic 2D整数配列を安全にbounded reuse。対象`System.Int64[,]` allocation rate約92.7%削減、再利用上限32,768要素、既存セーブsmoke済み）
 - Phase 12C HTML表示最適化を反映（strict color-only `FONT`入力だけを既存表示オブジェクトへ直接変換し、その他のHTMLはAngleSharpへfallback。C5同一入力測定で対象経路のallocation約80.839%削減、時間約87.346%削減。Release 0 errors / 35 warnings / new warning 0、Normal/Kojo smoke済み）
+- Phase 13R14 ERB式解析のTermStack storage最適化を反映。1要素だけを扱う場合は従来の`Stack<object>`と初期配列を必要になるまで生成せず、大規模口上fixtureのScriptParse中の一時allocationを約251.4MB / 9.60%削減しました。Server / Workstationの起動速度は実質neutralで、Normal / Kojo / semantic validation済みです。セーブ形式・ERB評価順・演算子処理は変更していません。
 
 この単一EXEにはSkiaSharpのネイティブライブラリも内包されています。別の`libSkiaSharp.dll`を同じフォルダへ追加する必要はありません。
 Windows API全体の大きな.NET投影DLLは含めず、SkiaSharpが必要とする`WinRT.Runtime.dll`だけを内包しています。
