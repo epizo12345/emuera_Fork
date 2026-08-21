@@ -69,6 +69,23 @@ internal sealed class SingleStrTerm : SingleTerm
 
 internal sealed class SingleLongTerm : SingleTerm
 {
+    private const int CacheMin = -1;
+    private const int CacheMax = 255;
+    private static readonly SingleLongTerm[] SmallValueCache = CreateSmallValueCache();
+
+    private static SingleLongTerm[] CreateSmallValueCache()
+    {
+        var cache = new SingleLongTerm[CacheMax - CacheMin + 1];
+        for (int i = 0; i < cache.Length; i++)
+            cache[i] = new SingleLongTerm(i + CacheMin);
+        return cache;
+    }
+
+    public static SingleLongTerm FromValue(long value)
+        => value >= CacheMin && value <= CacheMax
+            ? SmallValueCache[(int)(value - CacheMin)]
+            : new SingleLongTerm(value);
+
     public SingleLongTerm(long i)
         : base(typeof(long))
     {

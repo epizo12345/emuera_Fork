@@ -6,7 +6,7 @@
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
 - `Emuera.exe` サイズ: 24,643,306バイト（約23.5 MiB）
-- `Emuera.exe` SHA-256: `001E0E4E6DB4C0D42EB56294194474A3BF017B38115EC4707FCA0A70CDB4B31D`
+- `Emuera.exe` SHA-256: `581460C362A48833E8EE8A04E4490A7D1275AB706A7BE362767017381EBA2F23`
 - Phase 4A/B/C warning cleanupを反映（Release warning 52件から37件、new warning 0、Normal/Kojo起動確認済み）
 - Phase 5A/B/C focused bugfixを反映（VARSIZE/macro、ARRAYMSORT、GGETCOLOR/GSETCOLOR、SPRITEGETCOLOR。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
 - Phase 6A/B focused bugfixを反映（SPRITEANIMEADDFRAMEの無効Sprite入力時NRE修正、ClipboardのBufferSize/MinTimer 0・負値の安全化、ConfigDialogの最小値1制限とruntime clamp。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
@@ -21,6 +21,7 @@
 - Phase 13R22 `VariableToken.CheckElement`の全要素check maskを共有し、hot pathで毎回生成される3要素`bool[]` allocationを削減しました。Release buildとsave219ロード・短いmacro smokeで互換性を確認済みです。
 - Phase 13R23 `PrivateInt1DVariableToken`のtop-level private dynamic 1D整数配列を最大32,768要素までbounded reuseします。再利用前にclearし、default値を復元します。nested / recursive呼出しは独立配列経路を維持し、大きな配列は保持しません。Release buildとsave219ロード・短いmacro smokeで互換性を確認済みです。
 - Phase 13R24 `FixedVariableTerm`の短命runtime caller 10件を既存`RentFixedVariableTerm` lease/pool経路へ移行しました。添字評価順を維持し、lease lifetime外へ参照を出しません。Release buildとsave219ロード・短いmacro smokeで互換性を確認済みです。
+- Phase 13R25 `SingleLongTerm`の-1〜255をimmutable共有し、`VariableTerm.GetValue` / `FunctionMethod.GetReturnValue`の短命integer allocationを削減しました。cache外は従来どおり新規instanceを生成し、整数semanticsは変更していません。
 
 この単一EXEにはSkiaSharpのネイティブライブラリも内包されています。別の`libSkiaSharp.dll`を同じフォルダへ追加する必要はありません。
 Windows API全体の大きな.NET投影DLLは含めず、SkiaSharpが必要とする`WinRT.Runtime.dll`だけを内包しています。
@@ -71,6 +72,11 @@ Windows API全体の大きな.NET投影DLLは含めず、SkiaSharpが必要と�
 ```
 
 実際の設定ファイルで日本語が`\u524D...`のように見える場合も正常です。Shift-JIS誤判定による文字化けを避けるJSON表記で、Emuera内では同じ日本語として扱われます。
+
+## Phase 13R25
+
+- `SingleLongTerm`の-1〜255をimmutableに共有し、`VariableTerm.GetValue` / `FunctionMethod.GetReturnValue`の短命allocationを削減しました。
+- cache外の値は従来どおり新規instanceを生成し、整数の意味論は変更していません。
 
 ## 入れ替え方
 
