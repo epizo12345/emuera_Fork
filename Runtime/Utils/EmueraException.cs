@@ -94,9 +94,9 @@ internal sealed class FileEE : EmueraException
     { }
 }
 
-/// <summary>
-/// エラー箇所を表示するための位置データ。整形前のデータなのでエラー表示以外の理由で参照するべきではない。
-/// </summary>
+// [Emuera改修:MEM-13R37 2026-08-22]
+// LogicalLineごとにFilename参照を持たないため、process lifetimeでFilenameをcanonical fileIdへ集約する。
+// ID 0は「位置なし」sentinelに予約し、登録時だけlock、Filename復元はsnapshotからlockなしで行う。
 internal static class ScriptFileRegistry
 {
     static readonly object sync = new();
@@ -114,6 +114,7 @@ internal static class ScriptFileRegistry
             id = filenames.Count;
             ids.Add(filename, id);
             filenames.Add(filename);
+            // ファイル登録は低頻度なので配列copyを許容し、Position復元のread pathではlockを取らない。
             filenameSnapshot = filenames.ToArray();
             return id;
         }
@@ -125,6 +126,9 @@ internal static class ScriptFileRegistry
     }
 }
 
+/// <summary>
+/// エラー箇所を表示するための位置データ。整形前のデータなのでエラー表示以外の理由で参照するべきではない。
+/// </summary>
 readonly record struct ScriptPosition
 {
     public ScriptPosition()

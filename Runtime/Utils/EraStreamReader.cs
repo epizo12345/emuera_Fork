@@ -26,6 +26,9 @@ internal sealed partial class EraStreamReader : IDisposable
 
     string filepath;
     string filename;
+    // [Emuera改修:MEM-13R37 2026-08-22]
+    // Filename→fileIdはOpen/OpenOnCache時に1回だけ登録し、各行のScriptPosition生成でDictionary lookupを繰り返さない。
+    // reader lifetime中は同じIDを再利用し、Dispose時は「位置なし」sentinelの0へ戻す。
     int fileId;
     readonly bool useRename;
 #if PERFORMANCE_METRICS
