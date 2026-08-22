@@ -504,7 +504,7 @@ internal sealed class ConfigData
             {
                 if (line.Length == 0 || line[0] == ';')
                     continue;
-                pos = new ScriptPosition(eReader.Filename, eReader.LineNo);
+                pos = new ScriptPosition(eReader.FileId, eReader.LineNo);
                 string[] tokens = line.Split([',', ':']);
                 if (tokens.Length < 2)
                     continue;
@@ -574,7 +574,7 @@ internal sealed class ConfigData
             {
                 if (line.Length == 0 || line[0] == ';')
                     continue;
-                pos = new ScriptPosition(eReader.Filename, eReader.LineNo);
+                pos = new ScriptPosition(eReader.FileId, eReader.LineNo);
                 string[] tokens = line.Split([':']);
                 if (tokens.Length < 2)
                     continue;

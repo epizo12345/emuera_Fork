@@ -402,7 +402,7 @@ internal sealed class ErbLoader
             if (profile != null)
                 profile.ReadEnabledLineReturns++;
 #endif
-            position = new ScriptPosition(eReader.Filename, eReader.LineNo);
+            position = new ScriptPosition(eReader.FileId, eReader.LineNo);
             //rename処理をEraStreamReaderに移管
             //変換できなかった[[～～]]についてはLexAnalyzerがエラーを投げる
             if (st.Current == '[' && st.Next != '[')
@@ -558,7 +558,7 @@ internal sealed class ErbLoader
             lastLine = addLine(nextLine, lastLine);
         }
         addLine(new NullLine(), lastLine);
-        position = new ScriptPosition(eReader.Filename, -1);
+        position = new ScriptPosition(eReader.FileId, -1);
         ppstate.FileEnd(position);
 #if PERFORMANCE_METRICS
         ErbStartupProfiler.CompleteFile(profile);

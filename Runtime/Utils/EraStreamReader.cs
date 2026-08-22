@@ -26,6 +26,7 @@ internal sealed partial class EraStreamReader : IDisposable
 
     string filepath;
     string filename;
+    int fileId;
     readonly bool useRename;
 #if PERFORMANCE_METRICS
     readonly ErbStartupFileProfile profile;
@@ -51,6 +52,7 @@ internal sealed partial class EraStreamReader : IDisposable
         //    throw new ExeEE("使用中のオブジェクトを別用途に再利用しようとした");
         filepath = path;
         filename = name;
+        fileId = ScriptFileRegistry.GetId(filename);
         curNo = 0;
         nextNo = 0;
         try
@@ -75,6 +77,7 @@ internal sealed partial class EraStreamReader : IDisposable
     {
         filepath = path.ToString();
         filename = name.ToString();
+        fileId = ScriptFileRegistry.GetId(filename);
         curNo = 0;
         nextNo = 0;
         _fileLines = Preload.GetFileLines(path);
@@ -128,7 +131,7 @@ internal sealed partial class EraStreamReader : IDisposable
 
             if (useRename)
             {
-                line = Rename.RenameString(st.Substring(), new ScriptPosition(filename, LineNo));
+                line = Rename.RenameString(st.Substring(), new ScriptPosition(fileId, LineNo));
                 st.Reset(line);
                 LexicalAnalyzer.SkipWhiteSpace(st);
             }
@@ -139,11 +142,11 @@ internal sealed partial class EraStreamReader : IDisposable
             if (!disabled)
             {
                 if (st.Current == '}')
-                    throw new CodeEE(LocalizationManager.Error.UnexpectedContinuationEnd, new ScriptPosition(filename, curNo));
+                    throw new CodeEE(LocalizationManager.Error.UnexpectedContinuationEnd, new ScriptPosition(fileId, curNo));
                 if (st.Current == '{')
                 {
                     if (line.Trim() != "{")
-                        throw new CodeEE(LocalizationManager.Error.CharacterAfterContinuation, new ScriptPosition(filename, curNo));
+                        throw new CodeEE(LocalizationManager.Error.CharacterAfterContinuation, new ScriptPosition(fileId, curNo));
                     break;
                 }
             }
@@ -156,7 +159,7 @@ internal sealed partial class EraStreamReader : IDisposable
             line = ReadLine();
             if (line == null)
             {
-                throw new CodeEE(LocalizationManager.Error.NotCloseLineContinuation, new ScriptPosition(filename, curNo));
+                throw new CodeEE(LocalizationManager.Error.NotCloseLineContinuation, new ScriptPosition(fileId, curNo));
             }
 
             if (useRename)
@@ -169,7 +172,7 @@ internal sealed partial class EraStreamReader : IDisposable
                 if (test[0] == '}')
                 {
                     if (!test.TrimEnd().SequenceEqual("}"))
-                        throw new CodeEE(LocalizationManager.Error.CharacterAfterContinuationEnd, new ScriptPosition(filename, curNo));
+                        throw new CodeEE(LocalizationManager.Error.CharacterAfterContinuationEnd, new ScriptPosition(fileId, curNo));
                     break;
                 }
                 //行連結文字なら1字でないとおかしい、というか、こうしないとFORMの数値変数処理が誤爆する。
@@ -177,7 +180,7 @@ internal sealed partial class EraStreamReader : IDisposable
                 //A}
                 //みたいなどうしようもないコードは知ったこっちゃない
                 if (test.SequenceEqual("{"))
-                    throw new CodeEE(LocalizationManager.Error.UnexpectedContinuation, new ScriptPosition(filename, curNo));
+                    throw new CodeEE(LocalizationManager.Error.UnexpectedContinuation, new ScriptPosition(fileId, curNo));
             }
             b.Append(line);
             b.Append(' ');
@@ -199,6 +202,7 @@ internal sealed partial class EraStreamReader : IDisposable
             return filename;
         }
     }
+    internal int FileId { get { return fileId; } }
     //public string Filepath
     //{
     //    get
@@ -217,6 +221,7 @@ internal sealed partial class EraStreamReader : IDisposable
             return;
         filepath = null;
         filename = null;
+        fileId = 0;
         reusableCharStream = null;
         disposed = true;
         _fileLines = null;

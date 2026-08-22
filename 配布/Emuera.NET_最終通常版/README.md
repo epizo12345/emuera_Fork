@@ -6,7 +6,7 @@
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
 - `Emuera.exe` サイズ: 24,643,306バイト（約23.5 MiB）
-- `Emuera.exe` SHA-256: `20B14927B21AF4C38A5B99CB1CCBDC8C3F04208C74C13D3C0A16AB4D82F13701`
+- `Emuera.exe` SHA-256: `67AD3118932E09EDDABDDB48AE7E0FE0D6F59451FDB91C056A4393553FB6388A`
 - Phase 4A/B/C warning cleanupを反映（Release warning 52件から37件、new warning 0、Normal/Kojo起動確認済み）
 - Phase 5A/B/C focused bugfixを反映（VARSIZE/macro、ARRAYMSORT、GGETCOLOR/GSETCOLOR、SPRITEGETCOLOR。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
 - Phase 6A/B focused bugfixを反映（SPRITEANIMEADDFRAMEの無効Sprite入力時NRE修正、ClipboardのBufferSize/MinTimer 0・負値の安全化、ConfigDialogの最小値1制限とruntime clamp。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
@@ -29,6 +29,7 @@
 - Phase 13R30 `InstructionLine`のSET左辺専用slotを既存`auxiliaryData`へ統合し、同数のInstructionLineでshallow sizeを120 bytesから112 bytesへ削減しました。SETの解析順、lazy parsing、save形式は変更していません。
 - Phase 13R31 `LogicalLine`内部の`ScriptPosition?`専用slotを非nullable sentinelへ変更し、公開`Position` semantics、label/error/reload経路、save互換性を維持したままInstructionLine shallow sizeを112 bytesから104 bytesへ削減しました。
 - Phase 13R32 `LogicalLine`のerror flagとmessageを1参照slotへ統合し、正常行の`ErrMes`空文字、lazy parser、InvalidLine/InvalidLabelLine、CALL error伝播を維持したままInstructionLine shallow sizeを104 bytesから96 bytesへ削減しました。
+- Phase 13R37で`LogicalLine`内部の`ScriptPosition`をfileId/lineNoへ圧縮し、外部位置情報、default/new/null、reload、raw source、save互換性を維持したまま`InstructionLine` shallow sizeを80 bytesから72 bytesへ削減しました。
 - Phase 13R36で`InstructionLine`の`FunctionIdentifier`専用参照slotを削除し、`FunctionCode`とassignment `OperatorCode`をpackしました。built-in lookup、SET、method-as-instruction identity、lazy parsing、save互換性を維持し、shallow sizeを88 bytesから80 bytesへ削減しました。
 - Phase 13R34 lazy argument parsing前の`CharStream`保持をsource/offset snapshotへ変更し、InputReady時のreader由来`CharStream` retentionを除去しました。`InstructionLine` 96-byte layout、lazy parsing、save互換性は維持しています。
 - Phase 13R35 `InstructionLine`のerror messageをR34のargument storageへunionし、同数のInstructionLineでshallow sizeを96 bytesから88 bytesへ削減しました。非InstructionLineのerror semantics、lazy parsing、save互換性は維持しています。
