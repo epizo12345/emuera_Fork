@@ -109,7 +109,11 @@ internal class InstructionLine : LogicalLine
     {
         scriptPosition = thePosition ?? default;
         func = theFunc;
-        argumentStorage = theArgPrimitive;
+        // [Emuera改修:MEM-13R34 2026-08-22]
+        // lazy行はCharStream object identityを必要とせず、同じsourceとoffsetだけを必要とする。
+        // source / offsetをsnapshotし、初回lazy parse時だけCharStreamを復元することで、行がreaderの一時streamをretainedしない。
+        argumentStorage = theArgPrimitive?.RowString;
+        argumentPrimitivePosition = theArgPrimitive?.CurrentPosition ?? 0;
     }
 
     public InstructionLine(ScriptPosition? thePosition, FunctionIdentifier functionIdentifier, OperatorCode assignOP, WordCollection dest, CharStream theArgPrimitive)
@@ -121,7 +125,8 @@ internal class InstructionLine : LogicalLine
         // 代入左辺はSET引数解析までだけ必要で、IF/PRINTDATA/TRYCALLLIST/EndCatch用データとは命令種別上共存しない。
         // 遅延引数解析と左辺→右辺の解析順を維持したままauxiliaryDataを一時利用し、全InstructionLineの専用参照slotを持たせない。
         auxiliaryData = dest;
-        argumentStorage = theArgPrimitive;
+        argumentStorage = theArgPrimitive?.RowString;
+        argumentPrimitivePosition = theArgPrimitive?.CurrentPosition ?? 0;
     }
     public static InstructionLine Create(ScriptPosition? thePosition, FunctionIdentifier theFunc, CharStream theArgPrimitive)
     {
@@ -132,6 +137,7 @@ internal class InstructionLine : LogicalLine
 
     readonly FunctionIdentifier func;
     object argumentStorage;
+    int argumentPrimitivePosition;
 
     public OperatorCode AssignOperator { get; private set; }
     public FunctionCode FunctionCode
@@ -155,9 +161,11 @@ internal class InstructionLine : LogicalLine
     }
     public CharStream PopArgumentPrimitive()
     {
-        if (argumentStorage is not CharStream ret)
+        if (argumentStorage is not string source)
             return null;
         argumentStorage = null;
+        // Popで一度だけ復元・消費し、parse後は従来どおりArgumentを保持する。
+        var ret = new CharStream(source) { CurrentPosition = argumentPrimitivePosition };
         return ret;
     }
     public WordCollection PopAssignmentDestStr()
