@@ -115,12 +115,17 @@ internal sealed class InvalidLine : ErrorCapableLogicalLine
 /// </summary>
 internal class InstructionLine : LogicalLine
 {
+    const int OperatorBits = 20;
+    const int OperatorMask = (1 << OperatorBits) - 1;
+    const int FunctionCodeShift = OperatorBits;
     const int ErrorArgumentPosition = int.MinValue;
 
     public InstructionLine(ScriptPosition? thePosition, FunctionIdentifier theFunc, CharStream theArgPrimitive)
     {
         scriptPosition = thePosition ?? default;
-        func = theFunc;
+        packedInstructionData = Pack(theFunc.Code, OperatorCode.NULL);
+        if (theFunc.Code == FunctionCode.__NULL__)
+            auxiliaryData = theFunc;
         // [Emuera改修:MEM-13R34 2026-08-22]
         // lazy行はCharStream object identityを必要とせず、同じsourceとoffsetだけを必要とする。
         // source / offsetをsnapshotし、初回lazy parse時だけCharStreamを復元することで、行がreaderの一時streamをretainedしない。
@@ -131,8 +136,7 @@ internal class InstructionLine : LogicalLine
     public InstructionLine(ScriptPosition? thePosition, FunctionIdentifier functionIdentifier, OperatorCode assignOP, WordCollection dest, CharStream theArgPrimitive)
     {
         scriptPosition = thePosition ?? default;
-        func = functionIdentifier;
-        AssignOperator = assignOP;
+        packedInstructionData = Pack(functionIdentifier.Code, assignOP);
         // [Emuera改修:MEM-13R30 2026-08-22]
         // 代入左辺はSET引数解析までだけ必要で、IF/PRINTDATA/TRYCALLLIST/EndCatch用データとは命令種別上共存しない。
         // 遅延引数解析と左辺→右辺の解析順を維持したままauxiliaryDataを一時利用し、全InstructionLineの専用参照slotを持たせない。
@@ -147,7 +151,7 @@ internal class InstructionLine : LogicalLine
         return new InstructionLine(thePosition, theFunc, theArgPrimitive);
     }
 
-    readonly FunctionIdentifier func;
+    int packedInstructionData;
     object argumentStorage;
     int argumentPrimitivePosition;
 
@@ -184,14 +188,22 @@ internal class InstructionLine : LogicalLine
         }
     }
 
-    public OperatorCode AssignOperator { get; private set; }
+    static int Pack(FunctionCode code, OperatorCode assignOperator)
+    {
+        return ((int)code << FunctionCodeShift) | (int)assignOperator;
+    }
+
+    public OperatorCode AssignOperator
+    {
+        get { return (OperatorCode)((uint)packedInstructionData & OperatorMask); }
+    }
     public FunctionCode FunctionCode
     {
-        get { return func.Code; }
+        get { return (FunctionCode)((uint)packedInstructionData >> FunctionCodeShift); }
     }
     public FunctionIdentifier Function
     {
-        get { return func; }
+        get { return FunctionCode == FunctionCode.__NULL__ ? auxiliaryData as FunctionIdentifier : FunctionIdentifier.GetBuiltIn(FunctionCode); }
     }
     public Argument Argument
     {
