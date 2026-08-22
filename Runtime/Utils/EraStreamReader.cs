@@ -26,6 +26,10 @@ internal sealed partial class EraStreamReader : IDisposable
 
     string filepath;
     string filename;
+    // [Emuera改修:MEM-13R37 2026-08-22]
+    // Filename→fileIdはOpen/OpenOnCache時に1回だけ登録し、各行のScriptPosition生成でDictionary lookupを繰り返さない。
+    // reader lifetime中は同じIDを再利用し、Dispose時は「位置なし」sentinelの0へ戻す。
+    int fileId;
     readonly bool useRename;
 #if PERFORMANCE_METRICS
     readonly ErbStartupFileProfile profile;
@@ -33,6 +37,9 @@ internal sealed partial class EraStreamReader : IDisposable
     int curNo;
     int nextNo = 1;
     string[] _fileLines;
+    // [Emuera改修:MEM-13R34 2026-08-22]
+    // ReadEnabledLineの返却先はsource/offsetだけを保持し、次のReadまでCharStreamをescapeさせないため、reader単位で再利用する。
+    CharStream reusableCharStream;
 
     public bool Open(string path)
     {
@@ -48,6 +55,7 @@ internal sealed partial class EraStreamReader : IDisposable
         //    throw new ExeEE("使用中のオブジェクトを別用途に再利用しようとした");
         filepath = path;
         filename = name;
+        fileId = ScriptFileRegistry.GetId(filename);
         curNo = 0;
         nextNo = 0;
         try
@@ -72,6 +80,7 @@ internal sealed partial class EraStreamReader : IDisposable
     {
         filepath = path.ToString();
         filename = name.ToString();
+        fileId = ScriptFileRegistry.GetId(filename);
         curNo = 0;
         nextNo = 0;
         _fileLines = Preload.GetFileLines(path);
@@ -108,7 +117,7 @@ internal sealed partial class EraStreamReader : IDisposable
     public CharStream ReadEnabledLine(bool disabled = false)
     {
         string line;
-        CharStream st = null;
+        CharStream st = reusableCharStream;
         while (true)
         {
             line = ReadLine();
@@ -118,14 +127,14 @@ internal sealed partial class EraStreamReader : IDisposable
                 continue;
 
             if (st == null)
-                st = new CharStream(line);
+                st = reusableCharStream = new CharStream(line);
             else
                 st.Reset(line);
             LexicalAnalyzer.SkipWhiteSpace(st);
 
             if (useRename)
             {
-                line = Rename.RenameString(st.Substring(), new ScriptPosition(filename, LineNo));
+                line = Rename.RenameString(st.Substring(), new ScriptPosition(fileId, LineNo));
                 st.Reset(line);
                 LexicalAnalyzer.SkipWhiteSpace(st);
             }
@@ -136,11 +145,11 @@ internal sealed partial class EraStreamReader : IDisposable
             if (!disabled)
             {
                 if (st.Current == '}')
-                    throw new CodeEE(LocalizationManager.Error.UnexpectedContinuationEnd, new ScriptPosition(filename, curNo));
+                    throw new CodeEE(LocalizationManager.Error.UnexpectedContinuationEnd, new ScriptPosition(fileId, curNo));
                 if (st.Current == '{')
                 {
                     if (line.Trim() != "{")
-                        throw new CodeEE(LocalizationManager.Error.CharacterAfterContinuation, new ScriptPosition(filename, curNo));
+                        throw new CodeEE(LocalizationManager.Error.CharacterAfterContinuation, new ScriptPosition(fileId, curNo));
                     break;
                 }
             }
@@ -153,7 +162,7 @@ internal sealed partial class EraStreamReader : IDisposable
             line = ReadLine();
             if (line == null)
             {
-                throw new CodeEE(LocalizationManager.Error.NotCloseLineContinuation, new ScriptPosition(filename, curNo));
+                throw new CodeEE(LocalizationManager.Error.NotCloseLineContinuation, new ScriptPosition(fileId, curNo));
             }
 
             if (useRename)
@@ -166,7 +175,7 @@ internal sealed partial class EraStreamReader : IDisposable
                 if (test[0] == '}')
                 {
                     if (!test.TrimEnd().SequenceEqual("}"))
-                        throw new CodeEE(LocalizationManager.Error.CharacterAfterContinuationEnd, new ScriptPosition(filename, curNo));
+                        throw new CodeEE(LocalizationManager.Error.CharacterAfterContinuationEnd, new ScriptPosition(fileId, curNo));
                     break;
                 }
                 //行連結文字なら1字でないとおかしい、というか、こうしないとFORMの数値変数処理が誤爆する。
@@ -174,7 +183,7 @@ internal sealed partial class EraStreamReader : IDisposable
                 //A}
                 //みたいなどうしようもないコードは知ったこっちゃない
                 if (test.SequenceEqual("{"))
-                    throw new CodeEE(LocalizationManager.Error.UnexpectedContinuation, new ScriptPosition(filename, curNo));
+                    throw new CodeEE(LocalizationManager.Error.UnexpectedContinuation, new ScriptPosition(fileId, curNo));
             }
             b.Append(line);
             b.Append(' ');
@@ -196,6 +205,7 @@ internal sealed partial class EraStreamReader : IDisposable
             return filename;
         }
     }
+    internal int FileId { get { return fileId; } }
     //public string Filepath
     //{
     //    get
@@ -214,6 +224,8 @@ internal sealed partial class EraStreamReader : IDisposable
             return;
         filepath = null;
         filename = null;
+        fileId = 0;
+        reusableCharStream = null;
         disposed = true;
         _fileLines = null;
     }

@@ -528,7 +528,11 @@ internal static class ExpressionParser
             }
             throw new CodeEE(LocalizationManager.Error.UnrecognizedSyntax);
         }
-        public void Add(long i) { Add(new SingleLongTerm(i)); }
+        // [Emuera改修:MEM-13R29 2026-08-22]
+        // ERB integer literalは解析後もASTに長期保持されるため、
+        // -1～255だけ既存R25 immutable cacheを再利用してretained object数を減らす。
+        // cache外は従来どおり個別instanceとし、整数評価semanticsは変更しない。
+        public void Add(long i) { Add(SingleLongTerm.FromValue(i)); }
         public void Add(string s) { Add(new SingleStrTerm(s)); }
         public void Add(AExpression term)
         {

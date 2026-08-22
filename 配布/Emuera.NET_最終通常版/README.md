@@ -1,12 +1,12 @@
 # Emuera.NET 最終通常版
 
-- 更新日: 2026-08-22
+- 更新日: 2026-08-23
 - 基礎: BugFix_Test `7b7dd3bf240eff4fdfc7094f4175de0e014532b7`
 - 対象OS: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
-- `Emuera.exe` サイズ: 24,643,306バイト（約23.5 MiB）
-- `Emuera.exe` SHA-256: `DBECAA7077624A3C0EB70527C5580F6DB8CBE53368432ABCE8F009EAAE5A8F6F`
+- `Emuera.exe` サイズ: 24,651,498バイト（約23.5 MiB）
+- `Emuera.exe` SHA-256: `0E135D2773776B2528BC3DEB25A6B1BAD1922BFB4DFB7780CB58F97F75BC2C15`
 - Phase 4A/B/C warning cleanupを反映（Release warning 52件から37件、new warning 0、Normal/Kojo起動確認済み）
 - Phase 5A/B/C focused bugfixを反映（VARSIZE/macro、ARRAYMSORT、GGETCOLOR/GSETCOLOR、SPRITEGETCOLOR。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
 - Phase 6A/B focused bugfixを反映（SPRITEANIMEADDFRAMEの無効Sprite入力時NRE修正、ClipboardのBufferSize/MinTimer 0・負値の安全化、ConfigDialogの最小値1制限とruntime clamp。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
@@ -25,6 +25,16 @@
 - Phase 13R26 missing CALL / event lookupでは対象が存在する場合だけ`CalledFunction`を生成するよう変更し、TRY系missing-targetの一時allocationを削減しました。successful call semanticsは変更していません。
 - Phase 13R27 `UserDefinedFunctionArgument`のtransporterを引数category別に必要時のみ確保し、REF無しでは`TransporterRef`、該当categoryなしでは対応配列を生成しないようにしました。`isRef` bool[]も削減し、CALL/REF semanticsは変更していません。
 - Phase 13R28 `SingleStrTerm`は空文字列だけをimmutable共有し、runtimeの短命empty wrapper allocationを削減しました。`null`と非empty文字列は従来どおり個別instanceで、任意文字列cacheは採用していません。
+- Phase 13R29 parsed ASTのinteger literalでR25の-1〜255 immutable `SingleLongTerm` cacheを再利用し、同一fixtureのmanaged live heapを約63.2MB削減しました。cache外の値、評価順、save形式は変更していません。
+- Phase 13R30 `InstructionLine`のSET左辺専用slotを既存`auxiliaryData`へ統合し、同数のInstructionLineでshallow sizeを120 bytesから112 bytesへ削減しました。SETの解析順、lazy parsing、save形式は変更していません。
+- Phase 13R31 `LogicalLine`内部の`ScriptPosition?`専用slotを非nullable sentinelへ変更し、公開`Position` semantics、label/error/reload経路、save互換性を維持したままInstructionLine shallow sizeを112 bytesから104 bytesへ削減しました。
+- Phase 13R32 `LogicalLine`のerror flagとmessageを1参照slotへ統合し、正常行の`ErrMes`空文字、lazy parser、InvalidLine/InvalidLabelLine、CALL error伝播を維持したままInstructionLine shallow sizeを104 bytesから96 bytesへ削減しました。
+- Phase 13R37で`LogicalLine`内部の`ScriptPosition`をfileId/lineNoへ圧縮し、外部位置情報、default/new/null、reload、raw source、save互換性を維持したまま`InstructionLine` shallow sizeを80 bytesから72 bytesへ削減しました。
+- Phase 13R38で通常表示ログの`displayLineList`をring buffer化し、`MaxLog=50000`到達後の先頭破棄をO(1)にしました。論理index順、描画、バックログ、選択肢、save/ERB semanticsは維持しています。
+- Phase 13R39で`Data\ERB\口上\口上まとめ\`配下だけをLazy ERB Hydration化しました。起動時は関数stub／metadataを登録し、本文は初回実行直前にERBファイル単位でhydrateします。実fixtureでLazy 478、eager fallback 10、startup hydration 0、KOJO startup Managed `1,762,740,872 → 1,174,959,288 bytes`（-33.34%）を確認しました。通常ERB、AnalysisMode、DebugModeは従来どおりeagerです。
+- Phase 13R36で`InstructionLine`の`FunctionIdentifier`専用参照slotを削除し、`FunctionCode`とassignment `OperatorCode`をpackしました。built-in lookup、SET、method-as-instruction identity、lazy parsing、save互換性を維持し、shallow sizeを88 bytesから80 bytesへ削減しました。
+- Phase 13R34 lazy argument parsing前の`CharStream`保持をsource/offset snapshotへ変更し、InputReady時のreader由来`CharStream` retentionを除去しました。`InstructionLine` 96-byte layout、lazy parsing、save互換性は維持しています。
+- Phase 13R35 `InstructionLine`のerror messageをR34のargument storageへunionし、同数のInstructionLineでshallow sizeを96 bytesから88 bytesへ削減しました。非InstructionLineのerror semantics、lazy parsing、save互換性は維持しています。
 
 この単一EXEにはSkiaSharpのネイティブライブラリも内包されています。別の`libSkiaSharp.dll`を同じフォルダへ追加する必要はありません。
 Windows API全体の大きな.NET投影DLLは含めず、SkiaSharpが必要とする`WinRT.Runtime.dll`だけを内包しています。

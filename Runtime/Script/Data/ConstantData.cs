@@ -215,10 +215,10 @@ internal sealed class ConstantData
             CharStream st = null;
             while ((st = eReader.ReadEnabledLine()) != null)
             {
-                position = new ScriptPosition(eReader.Filename, eReader.LineNo);
+                position = new ScriptPosition(eReader.FileId, eReader.LineNo);
                 changeVariableSizeData(st.Substring(), position);
             }
-            position = new ScriptPosition(eReader.Filename, -1);
+            position = new ScriptPosition(eReader.FileId, -1);
         }
         catch
         {
@@ -1056,7 +1056,7 @@ internal sealed class ConstantData
             CharStream st = null;
             while ((st = eReader.ReadEnabledLine()) != null)
             {
-                position = new ScriptPosition(eReader.Filename, eReader.LineNo);
+                position = new ScriptPosition(eReader.FileId, eReader.LineNo);
                 string[] tokens = st.Substring().Split(',');
                 if (tokens.Length < 2)
                 {
@@ -1360,7 +1360,7 @@ internal sealed class ConstantData
             Span<Range> dest = stackalloc Range[5];
             while ((st = eReader.ReadEnabledLine()) != null)
             {
-                position = new ScriptPosition(eReader.Filename, eReader.LineNo);
+                position = new ScriptPosition(eReader.FileId, eReader.LineNo);
                 var ros = st.SubstringROS();
                 var length = ros.Split(dest, [',']);
                 if (length < 2)
