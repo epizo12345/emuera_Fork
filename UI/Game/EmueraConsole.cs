@@ -79,7 +79,7 @@ internal sealed partial class EmueraConsole : IDisposable
         state = ConsoleState.Initializing;
         if (Config.FPS > 0)
             msPerFrame = 1000 / (uint)Config.FPS;
-        displayLineList = [];
+        displayLineList = new();
         printBuffer = new PrintStringBuffer(this);
 
         genericTimer = new();

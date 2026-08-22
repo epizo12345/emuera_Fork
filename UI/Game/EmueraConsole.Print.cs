@@ -18,11 +18,108 @@ using MinorShift.Emuera.Runtime.Config.JSON;
 
 namespace MinorShift.Emuera.GameView;
 
+// [Emuera改修:PERF-13R38 2026-08-22]
+// MaxLog到達後にList.RemoveAt(0)で全表示行参照を毎回shiftしないため、
+// 論理index順を維持するring bufferで最古行をO(1)破棄する。
+internal sealed class DisplayLineBuffer
+{
+    private ConsoleDisplayLine[] items = [];
+    private int head;
+    private int count;
+
+    public int Count => count;
+
+    public ConsoleDisplayLine this[int index]
+    {
+        get
+        {
+            if ((uint)index >= (uint)count)
+                throw new ArgumentOutOfRangeException(nameof(index));
+            return items[(head + index) % items.Length];
+        }
+    }
+
+    public ConsoleDisplayLine this[Index index] => this[index.GetOffset(count)];
+
+    public void Add(ConsoleDisplayLine line)
+    {
+        EnsureCapacity(count + 1);
+        items[(head + count) % items.Length] = line;
+        count++;
+    }
+
+    public void RemoveFirst()
+    {
+        if (count == 0)
+            return;
+        items[head] = null;
+        head = (head + 1) % items.Length;
+        count--;
+        if (count == 0)
+            head = 0;
+    }
+
+    public void RemoveLast()
+    {
+        if (count == 0)
+            return;
+        int last = (head + count - 1) % items.Length;
+        items[last] = null;
+        count--;
+        if (count == 0)
+            head = 0;
+    }
+
+    public void Clear()
+    {
+        Array.Clear(items);
+        head = 0;
+        count = 0;
+    }
+
+    // 論理0=最古行を維持したままwrap後も古い順に走査する。
+    public Enumerator GetEnumerator() => new(this);
+
+    private void EnsureCapacity(int required)
+    {
+        if (items.Length >= required)
+            return;
+        int capacity = items.Length == 0 ? 16 : items.Length * 2;
+        if (capacity < required)
+            capacity = required;
+        ConsoleDisplayLine[] expanded = new ConsoleDisplayLine[capacity];
+        for (int i = 0; i < count; i++)
+            expanded[i] = this[i];
+        items = expanded;
+        head = 0;
+    }
+
+    public struct Enumerator
+    {
+        private readonly DisplayLineBuffer owner;
+        private int index;
+
+        internal Enumerator(DisplayLineBuffer owner)
+        {
+            this.owner = owner;
+            index = -1;
+        }
+
+        public ConsoleDisplayLine Current => owner[index];
+
+        public bool MoveNext()
+        {
+            index++;
+            return index < owner.count;
+        }
+    }
+}
+
 //1820 EmueraConsoleのうちdisplayLineListやprintBufferに触るもの
 //いつかEmueraConsoleから分離したい
 internal sealed partial class EmueraConsole : IDisposable
 {
-    private readonly List<ConsoleDisplayLine> displayLineList;
+    private readonly DisplayLineBuffer displayLineList;
     public bool noOutputLog;
     public SKColor bgColor = Config.BackColor.ToSKColor();
 
@@ -239,7 +336,7 @@ internal sealed partial class EmueraConsole : IDisposable
             logicalLineCount = 0;
         }
         if (displayLineList.Count > Config.MaxLog)
-            displayLineList.RemoveAt(0);
+            displayLineList.RemoveFirst();
     }
 
 
@@ -257,7 +354,7 @@ internal sealed partial class EmueraConsole : IDisposable
             if (displayLineList.Count == 0)
                 break;
             ConsoleDisplayLine line = displayLineList[^1];
-            displayLineList.RemoveAt(displayLineList.Count - 1);
+            displayLineList.RemoveLast();
             lineNo--;
             if (line.IsLogicalLine)
             {
