@@ -43,18 +43,27 @@ internal abstract class LogicalLine
         return string.Format("{0}:{1}:{2}", scriptPosition.Filename, scriptPosition.LineNo, Process.getRawTextFormFilewithLine(scriptPosition));
     }
 
-    protected bool isError;
-    protected string errMes = "";
+    // [Emuera改修:MEM-13R32 2026-08-22]
+    // productionではerror flagとmessageは独立した状態を保持せず、正常行はnull、
+    // error行は空文字または実メッセージを持つ。IsError=trueを先に設定する既存の
+    // lazy parse / warning / CALL伝播順を受けるため、true setterは空文字sentinelを作る。
+    protected string errMes;
 
     public virtual string ErrMes
     {
-        get { return errMes; }
+        get { return errMes ?? ""; }
         set { errMes = value; }
     }
     public virtual bool IsError
     {
-        get { return isError; }
-        set { isError = value; }
+        get { return errMes != null; }
+        set
+        {
+            if (value)
+                errMes ??= "";
+            else
+                errMes = null;
+        }
     }
 }
 
