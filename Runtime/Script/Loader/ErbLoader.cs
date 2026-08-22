@@ -42,6 +42,36 @@ internal sealed class ErbLoader
     int enabledLineCount;
     LabelDictionary labelDic;
 
+    // [Emuera改修:MEM-13R39 2026-08-22]
+    // 口上まとめだけは起動時に関数/$/宣言のstubを登録し、本文を実行直前まで生成しない。
+    // 通常ERBへper-lineの管理情報を追加せず、FunctionLabelLine identityはこの外部表で保持する。
+    readonly ConcurrentDictionary<FunctionLabelLine, LazyKojoFile> lazyKojoLabels = [];
+    readonly ConcurrentDictionary<string, LazyKojoFile> lazyKojoFiles = new(StringComparer.OrdinalIgnoreCase);
+    private int lazyKojoFileCount;
+    private int lazyKojoFallbackFileCount;
+    public int LazyKojoFileCount => Volatile.Read(ref lazyKojoFileCount);
+    public int LazyKojoFallbackFileCount => Volatile.Read(ref lazyKojoFallbackFileCount);
+
+    enum LazyKojoState
+    {
+        Unloaded,
+        Loading,
+        Loaded,
+        Failed,
+    }
+
+    sealed class LazyKojoFile
+    {
+        public required string FilePath;
+        public required string FileName;
+        public required int FileIndex;
+        public required long Length;
+        public required DateTime LastWriteTimeUtc;
+        public readonly Dictionary<int, FunctionLabelLine> Functions = [];
+        public readonly Dictionary<int, GotoLabelLine> GotoLabels = [];
+        public LazyKojoState State;
+    }
+
     // 複数スレッドから更新するため、読み書きはInterlocked/Volatile経由で行う。
     int hasError;
     public long EnumerationMilliseconds { get; private set; }
@@ -58,6 +88,10 @@ internal sealed class ErbLoader
         //checkScript();の時点でExpressionPerserがProcess.instance.LabelDicを必要とするから。
         labelDic = labelDictionary;
         labelDic.Initialized = false;
+        lazyKojoLabels.Clear();
+        lazyKojoFiles.Clear();
+        Volatile.Write(ref lazyKojoFileCount, 0);
+        Volatile.Write(ref lazyKojoFallbackFileCount, 0);
         var enumerationStopwatch = System.Diagnostics.Stopwatch.StartNew();
         var erbFiles = Config.Config.GetFiles(erbDir, "*.ERB");
         EnumerationMilliseconds = enumerationStopwatch.ElapsedMilliseconds;
@@ -366,12 +400,265 @@ internal sealed class ErbLoader
         }
     }
 
+    private static bool IsLazyKojoPath(string filename)
+    {
+        if (Program.AnalysisMode || Program.DebugMode)
+            return false;
+        string path = filename.Replace('\\', '/');
+        return path.StartsWith("口上/口上まとめ/", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsLazyKojoDangerousLine(string line)
+    {
+        string trimmed = line.TrimStart();
+        if (trimmed.StartsWith("#FUNCTION", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("#PRI", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("#LATER", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("#ONLY", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("#SINGLE", StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (!trimmed.StartsWith('@'))
+            return false;
+        try
+        {
+            CharStream stream = new(trimmed);
+            stream.ShiftNext();
+            string labelName = LexicalAnalyzer.ReadSingleIdentifier(stream);
+            return IdentifierDictionary.IsEventLabelName(labelName)
+                || IdentifierDictionary.IsSystemLabelName(labelName);
+        }
+        catch
+        {
+            return true;
+        }
+    }
+
+    private static bool IsLazyKojoSafe(string filepath)
+    {
+        try
+        {
+            using EraStreamReader reader = new(Config.Config.UseRenameFile && ParserMediator.RenameDic != null);
+            if (!reader.Open(filepath, Path.GetFileName(filepath)))
+                return false;
+            string line;
+            while ((line = reader.ReadLine()) != null)
+            {
+                if (IsLazyKojoDangerousLine(line))
+                    return false;
+            }
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private bool TryLoadLazyErb(string filepath, string filename, int fileIndex, ConcurrentDictionary<string, byte> isOnlyEvent)
+    {
+        // [Emuera改修:MEM-13R39 2026-08-22]
+        // Program.ErbDir基準の相対pathで口上まとめだけを選び、関数名・引数・#DIM等のmetadataを
+        // 起動時に既存parserでindexする。危険な構造は従来eagerへ戻し、通常ERBへper-line overheadを加えない。
+        if (!IsLazyKojoPath(filename))
+            return false;
+        if (!IsLazyKojoSafe(filepath))
+        {
+            Interlocked.Increment(ref lazyKojoFallbackFileCount);
+            return false;
+        }
+
+        LazyKojoFile file = new()
+        {
+            FilePath = filepath,
+            FileName = filename,
+            FileIndex = labelDic.RegisterFile(filename, fileIndex),
+            Length = new FileInfo(filepath).Length,
+            LastWriteTimeUtc = File.GetLastWriteTimeUtc(filepath),
+            State = LazyKojoState.Unloaded,
+        };
+        if (!BuildLazyIndex(file, isOnlyEvent))
+        {
+            Interlocked.Exchange(ref hasError, 1);
+            return true;
+        }
+        lazyKojoFiles[filename] = file;
+        Interlocked.Increment(ref lazyKojoFileCount);
+        return true;
+    }
+
+    private bool BuildLazyIndex(LazyKojoFile file, ConcurrentDictionary<string, byte> isOnlyEvent)
+    {
+        using var eReader = new EraStreamReader(Config.Config.UseRenameFile && ParserMediator.RenameDic != null);
+        if (!eReader.OpenOnCache(file.FilePath, file.FileName))
+            return false;
+
+        PPState ppstate = new();
+        LogicalLine nextLine = new NullLine();
+        LogicalLine lastLine = new NullLine();
+        FunctionLabelLine lastLabelLine = null;
+        CharStream st;
+        while ((st = eReader.ReadEnabledLine(ppstate.Disabled)) != null)
+        {
+            ScriptPosition position = new(eReader.FileId, eReader.LineNo);
+            if (st.Current == '[' && st.Next != '[')
+            {
+                st.ShiftNext();
+                string token = LexicalAnalyzer.ReadSingleIdentifier(st);
+                LexicalAnalyzer.SkipWhiteSpace(st);
+                string token2 = LexicalAnalyzer.ReadSingleIdentifier(st);
+                ppstate.AddKeyWord(token, token2, position);
+                continue;
+            }
+            if (ppstate.Disabled)
+                continue;
+            if (st.Current == '#')
+            {
+                if (lastLine is not FunctionLabelLine funcLine)
+                    return false;
+                if (!LogicalLineParser.ParseSharpLine(funcLine, st, position, isOnlyEvent))
+                    Interlocked.Exchange(ref hasError, 1);
+                continue;
+            }
+            if (st.Current == '$' || st.Current == '@')
+            {
+                bool isFunction = st.Current == '@';
+                nextLine = LogicalLineParser.ParseLabelLine(st, position, output);
+                if (isFunction)
+                {
+                    if (nextLine is not FunctionLabelLine label || label.IsEvent || label.IsSystem)
+                        return false;
+                    lastLabelLine = label;
+                    file.Functions[eReader.LineNo] = label;
+                    labelDic.AddLabel(label, file.FileIndex);
+                    lazyKojoLabels[label] = file;
+                }
+                else if (nextLine is GotoLabelLine gotoLabel)
+                {
+                    gotoLabel.ParentLabelLine = lastLabelLine;
+                    file.GotoLabels[eReader.LineNo] = gotoLabel;
+                    if (lastLabelLine != null && !labelDic.AddLabelDollar(gotoLabel))
+                        ParserMediator.Warn(LocalizationManager.Error.LabelIsAlreadyDefined, position, 2);
+                }
+                else
+                    return false;
+                nextLine.ParentLabelLine = lastLabelLine;
+                lastLine.NextLine = nextLine;
+                lastLine = nextLine;
+                continue;
+            }
+            // 本文InstructionLineは作らず、次のstub/ファイル終端へだけchainをつなぐ。
+        }
+        ppstate.FileEnd(new ScriptPosition(eReader.FileId, -1));
+        lastLine.NextLine = new NullLine();
+        return true;
+    }
+
+    public bool EnsureLazyLoaded(FunctionLabelLine label)
+    {
+        if (!lazyKojoLabels.TryGetValue(label, out LazyKojoFile file))
+            return true;
+        if (file.State == LazyKojoState.Loaded)
+            return true;
+        if (file.State == LazyKojoState.Loading || file.State == LazyKojoState.Failed)
+            return file.State == LazyKojoState.Loading;
+        file.State = LazyKojoState.Loading;
+        try
+        {
+            if (new FileInfo(file.FilePath).Length != file.Length
+                || File.GetLastWriteTimeUtc(file.FilePath) != file.LastWriteTimeUtc)
+                throw new CodeEE("口上まとめのLazy対象ERBが起動後に変更されました。コードを再読込してください。");
+            if (!HydrateLazyFile(file))
+                throw new CodeEE("口上まとめERBのLazy hydrationに失敗しました。");
+            file.State = LazyKojoState.Loaded;
+            return true;
+        }
+        catch (Exception e)
+        {
+            file.State = LazyKojoState.Failed;
+            ParserMediator.Warn(e.Message, label, 2, true, false);
+            return false;
+        }
+    }
+
+    private bool HydrateLazyFile(LazyKojoFile file)
+    {
+        // [Emuera改修:MEM-13R39 2026-08-22]
+        // 初回実行はERB 1ファイル単位で既存stubへ本文chainを接続する。Preload.Clear後も動くよう、
+        // 起動時cache(OpenOnCache)を使わず現ファイルを直接開き、index時の長さ・更新時刻と照合する。
+        using var eReader = new EraStreamReader(Config.Config.UseRenameFile && ParserMediator.RenameDic != null);
+        if (!eReader.Open(file.FilePath, file.FileName))
+            return false;
+        PPState ppstate = new();
+        LogicalLine lastLine = null;
+        FunctionLabelLine currentLabel = null;
+        CharStream st;
+        List<(LogicalLine From, LogicalLine To)> links = [];
+        List<(GotoLabelLine Label, FunctionLabelLine Parent)> gotoParents = [];
+        while ((st = eReader.ReadEnabledLine(ppstate.Disabled)) != null)
+        {
+            ScriptPosition position = new(eReader.FileId, eReader.LineNo);
+            if (st.Current == '[' && st.Next != '[')
+            {
+                st.ShiftNext();
+                string token = LexicalAnalyzer.ReadSingleIdentifier(st);
+                LexicalAnalyzer.SkipWhiteSpace(st);
+                string token2 = LexicalAnalyzer.ReadSingleIdentifier(st);
+                ppstate.AddKeyWord(token, token2, position);
+                continue;
+            }
+            if (ppstate.Disabled)
+                continue;
+            if (st.Current == '#')
+                continue;
+            LogicalLine nextLine;
+            if (st.Current == '@')
+            {
+                LogicalLine parsed = LogicalLineParser.ParseLabelLine(st, position, output);
+                if (parsed is not FunctionLabelLine || !file.Functions.TryGetValue(eReader.LineNo, out currentLabel))
+                    return false;
+                nextLine = currentLabel;
+            }
+            else if (st.Current == '$')
+            {
+                LogicalLine parsed = LogicalLineParser.ParseLabelLine(st, position, output);
+                if (parsed is not GotoLabelLine || !file.GotoLabels.TryGetValue(eReader.LineNo, out GotoLabelLine gotoLabel))
+                    return false;
+                nextLine = gotoLabel;
+                gotoParents.Add((gotoLabel, currentLabel));
+            }
+            else
+            {
+                nextLine = LogicalLineParser.ParseLine(st, position, output, currentLabel);
+                if (nextLine == null)
+                    continue;
+                nextLine.ParentLabelLine = currentLabel;
+            }
+            if (lastLine != null)
+                links.Add((lastLine, nextLine));
+            lastLine = nextLine;
+        }
+        if (lastLine == null)
+            return false;
+        links.Add((lastLine, new NullLine()));
+        foreach ((LogicalLine from, LogicalLine to) in links)
+            from.NextLine = to;
+        foreach ((GotoLabelLine label, FunctionLabelLine parent) in gotoParents)
+            label.ParentLabelLine = parent;
+        foreach (FunctionLabelLine function in file.Functions.Values)
+            ParseFunctionWithCatch(function);
+        return true;
+    }
+
+    private bool IsLazyLabel(FunctionLabelLine label) => lazyKojoLabels.ContainsKey(label);
+
     /// <summary>
     /// ファイル一つを読む
     /// </summary>
     /// <param name="filepath"></param>
     private void loadErb(string filepath, string filename, int fileIndex, ConcurrentDictionary<string, byte> isOnlyEvent)
     {
+        if (TryLoadLazyErb(filepath, filename, fileIndex, isOnlyEvent))
+            return;
 #if PERFORMANCE_METRICS
         ErbStartupFileProfile profile = ErbStartupProfiler.BeginFile(filename);
 #endif
@@ -789,6 +1076,11 @@ internal sealed class ErbLoader
             {
                 if (label.Depth != labelDepth)
                     continue;
+                if (IsLazyLabel(label))
+                {
+                    parsedLabels.Add(label);
+                    continue;
+                }
                 usedLabelCount++;
                 countInDepth++;
                 ParseFunctionWithCatch(label);
@@ -849,6 +1141,8 @@ internal sealed class ErbLoader
             foreach (FunctionLabelLine label in labelList)
             {
                 if (label.Depth != labelDepth)
+                    continue;
+                if (IsLazyLabel(label))
                     continue;
                 //解析モード時は呼ばれなかったものをここで解析
                 if (Program.AnalysisMode)

@@ -30,6 +30,7 @@ Windows 11ではメニューや設定画面にダークモードが適用され�
 『WinRT.Runtime』だけをEXE内へ残して、配布サイズを抑えています。
 
 # 主な修正
+- Phase 13R39で`Data\ERB\口上\口上まとめ\`配下だけをLazy ERB Hydration化しました。起動時は関数stub／metadataを登録し、本文は初回実行直前にERBファイル単位でhydrateします。KOJO startup Managedは`1,762,740,872`から`1,174,959,288 bytes`へ実測削減（-33.34%）。通常ERB、AnalysisMode、DebugModeは従来どおりeagerです。
 - Phase 13R37で`LogicalLine`内部の`ScriptPosition`をfileId/lineNoへ圧縮し、外部位置情報とsave互換性を維持したまま`InstructionLine` shallow sizeを80 bytesから72 bytesへ削減
 - Phase 13R38で通常表示ログの`displayLineList`をring buffer化し、`MaxLog=50000`到達後の先頭破棄をO(1)化。論理index順、描画、バックログ、選択肢、save/ERB semanticsを維持
 - Phase 13R36で`InstructionLine`の`FunctionIdentifier`専用参照slotを削除し、`FunctionCode`とassignment `OperatorCode`をpackしました。built-in lookup、SET、method-as-instruction identity、lazy parsing、save互換性を維持し、shallow sizeを88 bytesから80 bytesへ削減
@@ -52,16 +53,16 @@ Windows 11ではメニューや設定画面にダークモードが適用され�
 - `InstructionLine`のSET左辺専用slotを既存`auxiliaryData`へ統合し、retained shallow sizeを120 bytesから112 bytesへ削減
 
 # 配布フォルダについて
-『配布/Emuera.NET_最終通常版』には、2026-08-15以降のmainに対応する.NET 10正式single-file EXEを置いています。
+『配布/Emuera.NET_最終通常版』には、2026-08-23時点のmainに対応する.NET 10正式single-file EXEを置いています。
 
 - 対象: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 形式: フレームワーク依存・単一EXE
-- 『Emuera.exe』: 配布用実行ファイル（24,647,402バイト、SHA-256 `EE4D905209B241709AC69375FDA4747F4A52917D2EC47808D3A986FD712E1855`）
+- 『Emuera.exe』: 配布用実行ファイル（24,651,498バイト、SHA-256 `0E135D2773776B2528BC3DEB25A6B1BAD1922BFB4DFB7780CB58F97F75BC2C15`）
 - 『README.md』: 導入方法と採用機能
 - 『SHA256SUMS.txt』: 配布物の改ざん確認用ハッシュ
 
-変更の流れは[更新履歴](更新履歴.md)、現在の変更理由と検証結果は`プロジェクト資料/修正履歴/#今回の修正説明_2026-08-22.md`を参照してください。
+変更の流れは[更新履歴](更新履歴.md)、現在の変更理由と検証結果は`プロジェクト資料/修正履歴/#今回の修正説明_2026-08-23.md`および`プロジェクト資料/修正履歴/#今回の修正説明_2026-08-22.md`を参照してください。
 
 ## 起動後メモリ整理
 
