@@ -269,9 +269,12 @@ internal sealed partial class Process(EmueraConsole view)
     public async Task ReloadPartialErb(List<string> paths)
     {
         // [Emuera改修:MEM-13R39.1 2026-08-23]
-        // active erbLoaderは起動時の未hydrate stubとLazy対応表を所有するため、
+        // active erbLoaderは通常モードで起動時の未hydrate stubとLazy対応表を所有するため、
         // 口上まとめを含む再読込ではpartial loaderに置換せず、全体を一体で再構築する。
-        if (paths.Any(ErbLoader.IsLazyKojoPath))
+        // Debug/AnalysisではLazyが無効なので、従来どおりpartial reloadを維持する。
+        if (!Program.DebugMode
+            && !Program.AnalysisMode
+            && paths.Any(ErbLoader.IsLazyKojoPath))
         {
             await ReloadErbAll();
             return;
@@ -298,9 +301,11 @@ internal sealed partial class Process(EmueraConsole view)
             .Where(x => Path.GetExtension(x).Equals(".erb", StringComparison.OrdinalIgnoreCase))
             .ToArray();
         // [Emuera改修:MEM-13R39.1 2026-08-23]
-        // 対象一覧に口上まとめが1つでもあれば、stub identity・metadata・Lazy indexを
-        // 部分更新で分離させないためfull reloadへ昇格する。
-        if (erbFiles.Any(ErbLoader.IsLazyKojoPath))
+        // 通常モードで対象一覧に口上まとめが1つでもあれば、stub identity・metadata・Lazy indexを
+        // 部分更新で分離させないためfull reloadへ昇格する。Debug/Analysisでは従来のfolder reloadを維持する。
+        if (!Program.DebugMode
+            && !Program.AnalysisMode
+            && erbFiles.Any(ErbLoader.IsLazyKojoPath))
         {
             await ReloadErbAll();
             return;
