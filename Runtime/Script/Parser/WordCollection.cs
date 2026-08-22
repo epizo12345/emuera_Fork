@@ -18,6 +18,8 @@ internal sealed class WordCollection
 
     internal static WordCollection CreateLexerResult() => new(true);
 
+    // ERB解析の通常経路では短い字句列をListで保持し、LinkedList/Nodeのallocationを避ける。
+    // Insert/Pointer/Collectionなど旧APIが必要になった時だけLinkedListへ昇格し、compactPointerと語順を維持する。
     List<Word> compactCollection;
     LinkedList<Word> linkedCollection;
     LinkedListNode<Word> linkedPointer;
@@ -298,7 +300,6 @@ internal sealed class WordCollection
     // }
 
 }
-
 
 
 

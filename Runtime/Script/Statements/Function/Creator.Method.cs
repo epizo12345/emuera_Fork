@@ -978,6 +978,7 @@ internal static partial class FunctionMethodCreator
             long range;
             try
             {
+                // Phase 9のRAND互換修正: 最大値-最小値がlong範囲を超えるとunchecked差分で乱数範囲が壊れるため、明示的にerrorへ戻す。
                 range = checked(max - min);
             }
             catch (OverflowException)
@@ -2005,6 +2006,7 @@ internal static partial class FunctionMethodCreator
                         break;
                     sortList.Add(new KeyValuePair<long, int>(array[i], i));
                 }
+                // Phase 5の配列順序修正: long差分を作る比較は境界値でoverflowするため、CompareToで全Int64順序を比較する。
                 sortList.Sort((a, b) => a.Key.CompareTo(b.Key));
                 sortedArray = new int[sortList.Count];
                 for (int i = 0; i < sortedArray.Length; i++)

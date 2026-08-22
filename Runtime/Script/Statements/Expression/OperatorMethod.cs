@@ -702,6 +702,7 @@ internal static class OperatorMethodManager
 
         public override long GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
+            // Phase 8のlong.MinValue修正: 引数を一度だけ評価し、その値を反転する。式を再評価するとRAND等の副作用順序が変わる。
             long ret = arguments[0].GetIntValue(exm);
             if (ret == long.MinValue)
             {

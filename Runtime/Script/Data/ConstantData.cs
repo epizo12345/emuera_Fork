@@ -337,6 +337,7 @@ internal sealed class ConstantData
                 ParserMediator.Warn(LocalizationManager.Error.VarSizeCanNotGreaterThan1M, position, 1);
                 return;
             }
+            // Phase 7の配列上限修正: 次元積をintで計算すると上限判定前にoverflowするため、longへ拡張してから制限値と比較する。
             if ((long)length * length2 > 1000000)
             {
                 ParserMediator.Warn("二次元配列の要素数は最大で100万個までです", position, 1);

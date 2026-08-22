@@ -588,7 +588,7 @@ internal sealed class ErbLoader
     {
         // [Emuera改修:MEM-13R39 2026-08-22]
         // 固定CALLが保持するFunctionLabelLine identityから対象ファイルを逆引きし、初回実行時だけhydrateする。
-        // 状態を共有して二重hydrateを避け、index時点のfile size/更新時刻不一致と失敗を従来のerror経路へ渡す。
+        // Loading/Loaded/Failed状態で同一実行経路の再hydrateを避け、index時点のfile size/更新時刻不一致と失敗を従来のerror経路へ渡す。
         if (!lazyKojoLabels.TryGetValue(label, out LazyKojoFile file))
             return true;
         if (file.State == LazyKojoState.Loaded)

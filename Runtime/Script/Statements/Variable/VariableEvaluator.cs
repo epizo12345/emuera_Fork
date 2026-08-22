@@ -1128,6 +1128,8 @@ internal sealed class VariableEvaluator : IDisposable
 
     public void PickUpChara(long[] NoList)
     {
+        // Phase 9のPICKUPCHARA修正: 配列位置はSwap/削除で変わるため、TARGET/ASSI/MASTERはindexでなくCharacterData identityを退避する。
+        // 再配置後に同じキャラを再検索し、選択対象の意味を維持する。
         List<long> pickList = [];
         CharacterData targetChara = TARGET >= 0 && TARGET < varData.CharacterList.Count ? varData.CharacterList[(int)TARGET] : null;
         CharacterData assiChara = ASSI >= 0 && ASSI < varData.CharacterList.Count ? varData.CharacterList[(int)ASSI] : null;
