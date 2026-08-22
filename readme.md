@@ -42,6 +42,7 @@ Windows 11ではメニューや設定画面にダークモードが適用され�
 - 大規模構成だけ起動完了後のmemory trimを行い、小規模構成ではskip
 - HTMLのstrict color-only `FONT`入力を既存表示オブジェクトへ短絡し、対象外HTMLは従来どおりAngleSharpへfallback
 - parsed ASTの整数literalでR25の-1〜255 immutable `SingleLongTerm` cacheを再利用し、retained managed heapを約63.2MB削減
+- `InstructionLine`のSET左辺専用slotを既存`auxiliaryData`へ統合し、retained shallow sizeを120 bytesから112 bytesへ削減
 
 # 配布フォルダについて
 『配布/Emuera.NET_最終通常版』には、2026-08-15以降のmainに対応する.NET 10正式single-file EXEを置いています。
@@ -49,7 +50,7 @@ Windows 11ではメニューや設定画面にダークモードが適用され�
 - 対象: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 形式: フレームワーク依存・単一EXE
-- 『Emuera.exe』: 配布用実行ファイル（24,643,306バイト、SHA-256 `948D71D0FCAE66B623A298A0EC924379A441F7230D6A6BFA294EFA24BD46B04F`）
+- 『Emuera.exe』: 配布用実行ファイル（24,643,306バイト、SHA-256 `983713FB3FBB1E805291DAA11EFC9D17FE5F5600518803F6D7E3DD15407B6673`）
 - 『README.md』: 導入方法と採用機能
 - 『SHA256SUMS.txt』: 配布物の改ざん確認用ハッシュ
 
