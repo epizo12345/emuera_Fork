@@ -33,7 +33,8 @@ internal sealed partial class Process
                 throw new CodeEE(line.ErrMes);
             else if (line is InstructionLine func)
             {//1753 InstructionLineを先に持ってきてみる。わずかに速くなった気がしないでもない
-                if (!Program.DebugMode && func.Function.IsDebug())
+                FunctionIdentifier function = func.Function;
+                if (!Program.DebugMode && function.IsDebug())
                 {//非DebugモードでのDebug系命令。何もしない。（SIF文のためにコメント行扱いにはできない）
                     continue;
                 }
@@ -43,9 +44,9 @@ internal sealed partial class Process
                     if (func.IsError)
                         throw new CodeEE(func.ErrMes);
                 }
-                if (skipPrint && func.Function.IsPrint())
+                if (skipPrint && function.IsPrint())
                 {
-                    if (userDefinedSkip && func.Function.IsInput())
+                    if (userDefinedSkip && function.IsInput())
                     {
                         console.PrintError(LocalizationManager.Error.SkipdispInputError1);
                         console.PrintError(LocalizationManager.Error.SkipdispInputError2);
@@ -53,9 +54,9 @@ internal sealed partial class Process
                     }
                     continue;
                 }
-                if (func.Function.Instruction != null)
-                    func.Function.Instruction.DoInstruction(exm, func, state);
-                else if (func.Function.IsFlowContorol())
+                if (function.Instruction != null)
+                    function.Instruction.DoInstruction(exm, func, state);
+                else if (function.IsFlowContorol())
                     doFlowControlFunction(func);
                 else
                     doNormalFunction(func);

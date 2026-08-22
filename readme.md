@@ -30,6 +30,7 @@ Windows 11ではメニューや設定画面にダークモードが適用され�
 『WinRT.Runtime』だけをEXE内へ残して、配布サイズを抑えています。
 
 # 主な修正
+- Phase 13R36で`InstructionLine`の`FunctionIdentifier`専用参照slotを削除し、`FunctionCode`とassignment `OperatorCode`をpackしました。built-in lookup、SET、method-as-instruction identity、lazy parsing、save互換性を維持し、shallow sizeを88 bytesから80 bytesへ削減
 - Phase 13R35で`InstructionLine`のerror messageをR34のargument storageへunionし、shallow sizeを96 bytesから88 bytesへ削減。非InstructionLineのerror semantics、lazy parser、save互換性を維持
 - Phase 13R34でlazy argument parsing前の`CharStream`をsource/offset snapshotへ変更し、reader由来のretained streamを除去。R32の`InstructionLine` 96-byte layout、lazy parser、save互換性を維持
 - Phase 13R32で`LogicalLine`のerror flag/messageを1参照slotへ統合し、lazy parser・InvalidLine semantics・CALL error伝播を維持したまま大量retained行のshallow sizeを削減
@@ -54,7 +55,7 @@ Windows 11ではメニューや設定画面にダークモードが適用され�
 - 対象: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 形式: フレームワーク依存・単一EXE
-- 『Emuera.exe』: 配布用実行ファイル（24,643,306バイト、SHA-256 `C4D73CD86784F1F60299703E8F57BD5BBF988440FAD9422183622BBC25EE8376`）
+- 『Emuera.exe』: 配布用実行ファイル（24,643,306バイト、SHA-256 `20B14927B21AF4C38A5B99CB1CCBDC8C3F04208C74C13D3C0A16AB4D82F13701`）
 - 『README.md』: 導入方法と採用機能
 - 『SHA256SUMS.txt』: 配布物の改ざん確認用ハッシュ
 

@@ -43,7 +43,18 @@ internal sealed partial class FunctionIdentifier
     readonly static Dictionary<string, FunctionIdentifier> funcDic = Config.IgnoreCase ? new(StringComparer.OrdinalIgnoreCase) : new();
     readonly static Dictionary<FunctionCode, string> funcMatch = [];
     readonly static Dictionary<FunctionCode, FunctionCode> funcParent = [];
+    readonly static FunctionIdentifier[] builtInByCode = new FunctionIdentifier[0x1000];
     readonly static AInstruction methodInstruction;
+
+    private static void registerBuiltIn(FunctionIdentifier identifier)
+    {
+        if (identifier.code == FunctionCode.__NULL__)
+            return;
+        int code = (int)identifier.code;
+        if (builtInByCode[code] != null)
+            throw new InvalidOperationException("FunctionCodeのbuilt-in登録が重複しています: " + identifier.code);
+        builtInByCode[code] = identifier;
+    }
 
     private static void addFunction(FunctionCode code, AInstruction inst)
     { addFunction(code, inst, 0); }
@@ -51,7 +62,9 @@ internal sealed partial class FunctionIdentifier
     private static void addFunction(FunctionCode code, AInstruction inst, int additionalFlag)
     {
         string key = code.ToString();
-        funcDic.Add(key, new FunctionIdentifier(key, code, inst, additionalFlag));
+        var identifier = new FunctionIdentifier(key, code, inst, additionalFlag);
+        funcDic.Add(key, identifier);
+        registerBuiltIn(identifier);
     }
 
     private static void addFunction(FunctionCode code, ArgumentBuilder arg)
@@ -60,7 +73,9 @@ internal sealed partial class FunctionIdentifier
     private static void addFunction(FunctionCode code, ArgumentBuilder arg, int flag)
     {
         string key = code.ToString();
-        funcDic.Add(key, new FunctionIdentifier(key, code, arg, flag));
+        var identifier = new FunctionIdentifier(key, code, arg, flag);
+        funcDic.Add(key, identifier);
+        registerBuiltIn(identifier);
     }
 
     public static Dictionary<string, FunctionIdentifier> GetInstructionNameDic()
@@ -80,6 +95,7 @@ internal sealed partial class FunctionIdentifier
         Dictionary<FunctionArgType, ArgumentBuilder> argb = ArgumentParser.GetArgumentBuilderDictionary();
         methodInstruction = new METHOD_Instruction();
         setFunc = new FunctionIdentifier("SET", FunctionCode.SET, new SET_Instruction());//代入文
+        registerBuiltIn(setFunc);
         #region PRINT or INPUT
         addPrintFunction(FunctionCode.PRINT);
         addPrintFunction(FunctionCode.PRINTL);
@@ -453,11 +469,20 @@ internal sealed partial class FunctionIdentifier
         funcParent[FunctionCode.NEXT] = FunctionCode.FOR;
         funcParent[FunctionCode.WEND] = FunctionCode.WHILE;
         funcParent[FunctionCode.LOOP] = FunctionCode.DO;
+
+        foreach (FunctionCode code in Enum.GetValues<FunctionCode>())
+            if ((int)code >= builtInByCode.Length)
+                throw new InvalidOperationException("FunctionCodeがpacked上位12bitに収まりません: " + code);
     }
 
     private static FunctionIdentifier setFunc;
 
     public static FunctionIdentifier SETFunction { get { return setFunc; } }
+
+    internal static FunctionIdentifier GetBuiltIn(FunctionCode code)
+    {
+        return builtInByCode[(int)code];
+    }
 
     internal static string getMatchFunction(FunctionCode func)
     {
