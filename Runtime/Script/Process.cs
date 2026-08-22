@@ -53,6 +53,7 @@ internal sealed partial class Process(EmueraConsole view)
     private IdentifierDictionary idDic;
     ProcessState state;
     ProcessState originalState;//リセットする時のために
+    private ErbLoader erbLoader;
     bool noError;
     //色々あって復活させてみる
     bool initialiing;
@@ -218,15 +219,16 @@ internal sealed partial class Process(EmueraConsole view)
 
             //ERB読込
             logWriter.WriteLine($"Proc:Init:ERB:Start {stopWatch.ElapsedMilliseconds}ms");
-            var loader = new ErbLoader(console, exm, this);
+            erbLoader = new ErbLoader(console, exm, this);
             if (Program.AnalysisMode)
-                noError = await loader.LoadErbList(Program.AnalysisFiles, labelDic);
+                noError = await erbLoader.LoadErbList(Program.AnalysisFiles, labelDic);
             else
-                noError = await loader.LoadErbDir(Program.ErbDir, Config.DisplayReport, labelDic);
-            logWriter.WriteLine($"Proc:Init:ERB:Enumeration {loader.EnumerationMilliseconds}ms");
-            logWriter.WriteLine($"Proc:Init:ERB:PrimaryParse {loader.PrimaryParseMilliseconds}ms");
-            logWriter.WriteLine($"Proc:Init:ERB:LabelSetup {loader.LabelSetupMilliseconds}ms");
-            logWriter.WriteLine($"Proc:Init:ERB:ScriptParse {loader.ScriptParseMilliseconds}ms");
+                noError = await erbLoader.LoadErbDir(Program.ErbDir, Config.DisplayReport, labelDic);
+            logWriter.WriteLine($"Proc:Init:ERB:Enumeration {erbLoader.EnumerationMilliseconds}ms");
+            logWriter.WriteLine($"Proc:Init:ERB:PrimaryParse {erbLoader.PrimaryParseMilliseconds}ms");
+            logWriter.WriteLine($"Proc:Init:ERB:LabelSetup {erbLoader.LabelSetupMilliseconds}ms");
+            logWriter.WriteLine($"Proc:Init:ERB:ScriptParse {erbLoader.ScriptParseMilliseconds}ms");
+            logWriter.WriteLine($"Proc:Init:ERB:LazyKojo files={erbLoader.LazyKojoFileCount} fallback={erbLoader.LazyKojoFallbackFileCount} hydratedAtStartup={erbLoader.LazyKojoHydratedFileCount}");
             logWriter.WriteLine($"Proc:Init:ERB:End {stopWatch.ElapsedMilliseconds}ms");
             PerformanceMetrics.MarkStartup("ErbParsed"); // ERB解析完了の目印
 
@@ -251,14 +253,16 @@ internal sealed partial class Process(EmueraConsole view)
         return true;
     }
 
+    internal bool EnsureLazyLoaded(FunctionLabelLine label) => erbLoader?.EnsureLazyLoaded(label) ?? true;
+
     public async Task ReloadErbAll()
     {
         await Preload.Load(Program.ErbDir);
         await Preload.Load(Program.CsvDir);
         saveCurrentState(false);
         state.SystemState = SystemStateCode.System_Reloaderb;
-        ErbLoader loader = new(console, exm, this);
-        await loader.LoadErbDir(Program.ErbDir, false, labelDic);
+        erbLoader = new(console, exm, this);
+        await erbLoader.LoadErbDir(Program.ErbDir, false, labelDic);
         console.ReadAnyKey();
     }
 
@@ -267,8 +271,8 @@ internal sealed partial class Process(EmueraConsole view)
         saveCurrentState(false);
         state.SystemState = SystemStateCode.System_Reloaderb;
         await Preload.Load(paths);
-        var loader = new ErbLoader(console, exm, this);
-        await loader.LoadErbList(paths, labelDic);
+        erbLoader = new ErbLoader(console, exm, this);
+        await erbLoader.LoadErbList(paths, labelDic);
         console.ReadAnyKey();
     }
 
@@ -277,7 +281,7 @@ internal sealed partial class Process(EmueraConsole view)
         saveCurrentState(false);
         state.SystemState = SystemStateCode.System_Reloaderb;
         await Preload.Load(dirPath);
-        var loader = new ErbLoader(console, exm, this);
+        erbLoader = new ErbLoader(console, exm, this);
 
         var serachOption = SearchOption.TopDirectoryOnly;
         if (Config.SearchSubdirectory)
@@ -287,7 +291,7 @@ internal sealed partial class Process(EmueraConsole view)
 
         var erbFiles = Directory.EnumerateFiles(dirPath, "", serachOption)
                         .Where(x => Path.GetExtension(x).Equals(".erb", StringComparison.OrdinalIgnoreCase));
-        await loader.LoadErbList(erbFiles, labelDic);
+        await erbLoader.LoadErbList(erbFiles, labelDic);
         console.ReadAnyKey();
     }
 
