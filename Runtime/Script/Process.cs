@@ -253,6 +253,9 @@ internal sealed partial class Process(EmueraConsole view)
         return true;
     }
 
+    // [Emuera改修:MEM-13R39 2026-08-22]
+    // 通常モードではactive erbLoaderのLazy表を使い、eagerのDebug/Analysisやreload中のloader不在時は
+    // 追加処理なしで従来経路を通す。呼び出し側の引数評価・ScopeInより前に判定できる境界を保つ。
     internal bool EnsureLazyLoaded(FunctionLabelLine label) => erbLoader?.EnsureLazyLoaded(label) ?? true;
 
     public async Task ReloadErbAll()

@@ -402,6 +402,9 @@ internal sealed class ErbLoader
 
     internal static bool IsLazyKojoPath(string filepath)
     {
+        // [Emuera改修:MEM-13R39.1 2026-08-23]
+        // ここはloader状態を変更しないpath分類helperとし、ErbDir境界を正規化してから
+        // 口上まとめ配下だけを判定する。Debug/Analysisのeager互換やreload昇格は呼び出し側で決める。
         try
         {
             string erbRoot = Path.GetFullPath(Program.ErbDir)
@@ -454,6 +457,9 @@ internal sealed class ErbLoader
 
     private static bool IsLazyKojoSafe(string filepath)
     {
+        // [Emuera改修:MEM-13R39.1 2026-08-23]
+        // 起動時indexが扱える安全なsubsetだけを先に確認し、ファイル全体の意味を変える構造は
+        // 従来のeager parserへfallbackする。safe判定で本文を解析済みにはしない。
         try
         {
             using EraStreamReader reader = new(Config.Config.UseRenameFile && ParserMediator.RenameDic != null);
@@ -478,6 +484,7 @@ internal sealed class ErbLoader
         // [Emuera改修:MEM-13R39 2026-08-22]
         // Program.ErbDir基準の相対pathで口上まとめだけを選び、関数名・引数・#DIM等のmetadataを
         // 起動時に既存parserでindexする。危険な構造は従来eagerへ戻し、通常ERBへper-line overheadを加えない。
+        // Analysis/DebugはLazyを無効にし、従来のeager loadとpartial/folder reloadを維持する。
         if (Program.AnalysisMode || Program.DebugMode || !IsLazyKojoPath(filepath))
             return false;
         if (!IsLazyKojoSafe(filepath))
@@ -507,6 +514,9 @@ internal sealed class ErbLoader
 
     private bool BuildLazyIndex(LazyKojoFile file, ConcurrentDictionary<string, byte> isOnlyEvent)
     {
+        // [Emuera改修:MEM-13R39 2026-08-22]
+        // 起動時は関数/$ labelと#DIM等のmetadataだけを登録し、関数stubのidentityをlabelDicと外部表で固定する。
+        // 本文のInstructionLineはhydrateまで作らず、$ labelも既存のGotoLabelLineとして対応付ける。
         using var eReader = new EraStreamReader(Config.Config.UseRenameFile && ParserMediator.RenameDic != null);
         if (!eReader.OpenOnCache(file.FilePath, file.FileName))
             return false;
@@ -565,7 +575,9 @@ internal sealed class ErbLoader
                 lastLine = nextLine;
                 continue;
             }
+            // [Emuera改修:MEM-13R39 2026-08-22]
             // 本文InstructionLineは作らず、次のstub/ファイル終端へだけchainをつなぐ。
+            // 後で同じstubへ本文を接続するため、起動時のretained行数を増やさずidentityを保つ。
         }
         ppstate.FileEnd(new ScriptPosition(eReader.FileId, -1));
         lastLine.NextLine = new NullLine();
@@ -574,6 +586,9 @@ internal sealed class ErbLoader
 
     public bool EnsureLazyLoaded(FunctionLabelLine label)
     {
+        // [Emuera改修:MEM-13R39 2026-08-22]
+        // 固定CALLが保持するFunctionLabelLine identityから対象ファイルを逆引きし、初回実行時だけhydrateする。
+        // 状態を共有して二重hydrateを避け、index時点のfile size/更新時刻不一致と失敗を従来のerror経路へ渡す。
         if (!lazyKojoLabels.TryGetValue(label, out LazyKojoFile file))
             return true;
         if (file.State == LazyKojoState.Loaded)
@@ -604,6 +619,7 @@ internal sealed class ErbLoader
         // [Emuera改修:MEM-13R39 2026-08-22]
         // 初回実行はERB 1ファイル単位で既存stubへ本文chainを接続する。Preload.Clear後も動くよう、
         // 起動時cache(OpenOnCache)を使わず現ファイルを直接開き、index時の長さ・更新時刻と照合する。
+        // 通常のloadErbでlabelを作り直さず、FunctionLabelLine/GotoLabelLine identityと参照先を維持する。
         using var eReader = new EraStreamReader(Config.Config.UseRenameFile && ParserMediator.RenameDic != null);
         if (!eReader.Open(file.FilePath, file.FileName))
             return false;
@@ -668,6 +684,9 @@ internal sealed class ErbLoader
         return true;
     }
 
+    // [Emuera改修:MEM-13R39 2026-08-22]
+    // Lazy labelはmetadataとstubが既に登録済みで、本文解析はIntoFunction直前に行う。
+    // 起動時ParseScriptやCALLFORMのremaining解析で本文を先に生成しないためのidentity判定。
     private bool IsLazyLabel(FunctionLabelLine label) => lazyKojoLabels.ContainsKey(label);
 
     /// <summary>
@@ -1097,6 +1116,9 @@ internal sealed class ErbLoader
                     continue;
                 if (IsLazyLabel(label))
                 {
+                    // [Emuera改修:MEM-13R39 2026-08-22]
+                    // 口上まとめのstubは関数名・引数・metadataだけで起動時参照を満たすため、
+                    // CALLFORMを含むremaining解析でも本文InstructionLineを作らず実行直前のhydrateに委ねる。
                     parsedLabels.Add(label);
                     continue;
                 }
