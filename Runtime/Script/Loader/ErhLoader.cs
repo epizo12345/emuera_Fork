@@ -86,7 +86,7 @@ internal sealed class ErhLoader
             {
                 if (!noError)
                     return false;
-                position = new ScriptPosition(filename, eReader.LineNo);
+                position = new ScriptPosition(eReader.FileId, eReader.LineNo);
                 LexicalAnalyzer.SkipWhiteSpace(st);
                 if (st.Current != '#')
                     throw new CodeEE(LocalizationManager.Error.NotStartedSharpLineInHeader, position);

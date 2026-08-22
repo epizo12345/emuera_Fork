@@ -17,17 +17,29 @@ namespace MinorShift.Emuera.Runtime.Script.Statements;
 /// </summary>
 internal abstract class LogicalLine
 {
-    // [Emuera改修:MEM-13R31 2026-08-22]
-    // ScriptPositionはimmutableで、通常生成時のFilenameはnullにならない。
-    // LogicalLine内部だけはFilename == nullのdefault structを位置なしsentinelに使い、
-    // 外向きのPosition nullable semantics、error/reload/label orderingは従来どおり維持する。
-    protected ScriptPosition scriptPosition;
+    // [Emuera改修:MEM-13R37 2026-08-22]
+    // 同一ERB内のLogicalLineはFilename stringを共有するため、行ごとに参照slotを保持しない。
+    // fileId + lineNoだけをsnapshotし、Filenameはerror/warning/reload/source表示時にregistryから復元する。
+    protected int scriptFileId;
+    protected int scriptLineNo;
+
+    protected void SetPosition(ScriptPosition? position)
+    {
+        if (position == null || position.Value.Filename == null)
+        {
+            scriptFileId = 0;
+            scriptLineNo = 0;
+            return;
+        }
+        scriptFileId = position.Value.FileId;
+        scriptLineNo = position.Value.LineNo;
+    }
 
     //LogicalLine prevLine;
     LogicalLine nextLine;
     public ScriptPosition? Position
     {
-        get { return scriptPosition.Filename == null ? null : scriptPosition; }
+        get { return scriptFileId == 0 ? null : new ScriptPosition(scriptFileId, scriptLineNo - 1); }
     }
 
     public FunctionLabelLine ParentLabelLine { get; set; }
@@ -38,9 +50,10 @@ internal abstract class LogicalLine
     }
     public override string ToString()
     {
-        if (scriptPosition.Filename == null)
+        if (scriptFileId == 0)
             return base.ToString();
-        return string.Format("{0}:{1}:{2}", scriptPosition.Filename, scriptPosition.LineNo, Process.getRawTextFormFilewithLine(scriptPosition));
+        ScriptPosition position = Position.Value;
+        return string.Format("{0}:{1}:{2}", position.Filename, position.LineNo, Process.getRawTextFormFilewithLine(position));
     }
 
     public abstract string ErrMes { get; set; }
@@ -101,7 +114,7 @@ internal sealed class InvalidLine : ErrorCapableLogicalLine
 {
     public InvalidLine(ScriptPosition? thePosition, string err)
     {
-        scriptPosition = thePosition ?? default;
+        SetPosition(thePosition);
         errMes = err;
     }
     public override bool IsError
@@ -122,7 +135,7 @@ internal class InstructionLine : LogicalLine
 
     public InstructionLine(ScriptPosition? thePosition, FunctionIdentifier theFunc, CharStream theArgPrimitive)
     {
-        scriptPosition = thePosition ?? default;
+        SetPosition(thePosition);
         packedInstructionData = Pack(theFunc.Code, OperatorCode.NULL);
         if (theFunc.Code == FunctionCode.__NULL__)
             auxiliaryData = theFunc;
@@ -135,7 +148,7 @@ internal class InstructionLine : LogicalLine
 
     public InstructionLine(ScriptPosition? thePosition, FunctionIdentifier functionIdentifier, OperatorCode assignOP, WordCollection dest, CharStream theArgPrimitive)
     {
-        scriptPosition = thePosition ?? default;
+        SetPosition(thePosition);
         packedInstructionData = Pack(functionIdentifier.Code, assignOP);
         // [Emuera改修:MEM-13R30 2026-08-22]
         // 代入左辺はSET引数解析までだけ必要で、IF/PRINTDATA/TRYCALLLIST/EndCatch用データとは命令種別上共存しない。
@@ -292,7 +305,7 @@ internal sealed class InvalidLabelLine : FunctionLabelLine
 {
     public InvalidLabelLine(ScriptPosition? thePosition, string labelname, string err)
     {
-        scriptPosition = thePosition ?? default;
+        SetPosition(thePosition);
         LabelName = labelname;
         errMes = err;
         IsSingle = false;
@@ -314,7 +327,7 @@ internal class FunctionLabelLine : ErrorCapableLogicalLine, IComparable<Function
     protected FunctionLabelLine() { }
     public FunctionLabelLine(ScriptPosition? thePosition, string labelname, WordCollection wc)
     {
-        scriptPosition = thePosition ?? default;
+        SetPosition(thePosition);
         LabelName = labelname;
         IsSingle = false;
         hasPrivDynamicVar = false;
@@ -369,7 +382,7 @@ internal class FunctionLabelLine : ErrorCapableLogicalLine, IComparable<Function
         if (FileIndex != other.FileIndex)
             return FileIndex.CompareTo(other.FileIndex);
         //position == nullであるLine(デバッグコマンドなど)をSortすることはないはず
-        return Position.Value.LineNo.CompareTo(other.Position.Value.LineNo);
+        return scriptLineNo.CompareTo(other.scriptLineNo);
     }
     #endregion
     #region private変数
@@ -430,7 +443,7 @@ internal sealed class GotoLabelLine : ErrorCapableLogicalLine, IEqualityComparer
 {
     public GotoLabelLine(ScriptPosition? thePosition, string labelname)
     {
-        scriptPosition = thePosition ?? default;
+        SetPosition(thePosition);
         this.labelname = labelname;
     }
     readonly string labelname = "";
