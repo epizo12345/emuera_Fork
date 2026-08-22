@@ -17,13 +17,17 @@ namespace MinorShift.Emuera.Runtime.Script.Statements;
 /// </summary>
 internal abstract class LogicalLine
 {
-    protected ScriptPosition? scriptPosition;
+    // [Emuera改修:MEM-13R31 2026-08-22]
+    // ScriptPositionはimmutableで、通常生成時のFilenameはnullにならない。
+    // LogicalLine内部だけはFilename == nullのdefault structを位置なしsentinelに使い、
+    // 外向きのPosition nullable semantics、error/reload/label orderingは従来どおり維持する。
+    protected ScriptPosition scriptPosition;
 
     //LogicalLine prevLine;
     LogicalLine nextLine;
     public ScriptPosition? Position
     {
-        get { return scriptPosition; }
+        get { return scriptPosition.Filename == null ? null : scriptPosition; }
     }
 
     public FunctionLabelLine ParentLabelLine { get; set; }
@@ -34,9 +38,9 @@ internal abstract class LogicalLine
     }
     public override string ToString()
     {
-        if (scriptPosition == null)
+        if (scriptPosition.Filename == null)
             return base.ToString();
-        return string.Format("{0}:{1}:{2}", scriptPosition.Value.Filename, scriptPosition.Value.LineNo, Process.getRawTextFormFilewithLine(scriptPosition));
+        return string.Format("{0}:{1}:{2}", scriptPosition.Filename, scriptPosition.LineNo, Process.getRawTextFormFilewithLine(scriptPosition));
     }
 
     protected bool isError;
@@ -78,7 +82,7 @@ internal sealed class InvalidLine : LogicalLine
 {
     public InvalidLine(ScriptPosition? thePosition, string err)
     {
-        scriptPosition = thePosition;
+        scriptPosition = thePosition ?? default;
         errMes = err;
     }
     public override bool IsError
@@ -94,14 +98,14 @@ internal class InstructionLine : LogicalLine
 {
     public InstructionLine(ScriptPosition? thePosition, FunctionIdentifier theFunc, CharStream theArgPrimitive)
     {
-        scriptPosition = thePosition;
+        scriptPosition = thePosition ?? default;
         func = theFunc;
         argumentStorage = theArgPrimitive;
     }
 
     public InstructionLine(ScriptPosition? thePosition, FunctionIdentifier functionIdentifier, OperatorCode assignOP, WordCollection dest, CharStream theArgPrimitive)
     {
-        scriptPosition = thePosition;
+        scriptPosition = thePosition ?? default;
         func = functionIdentifier;
         AssignOperator = assignOP;
         // [Emuera改修:MEM-13R30 2026-08-22]
@@ -214,7 +218,7 @@ internal sealed class InvalidLabelLine : FunctionLabelLine
 {
     public InvalidLabelLine(ScriptPosition? thePosition, string labelname, string err)
     {
-        scriptPosition = thePosition;
+        scriptPosition = thePosition ?? default;
         LabelName = labelname;
         errMes = err;
         IsSingle = false;
@@ -236,7 +240,7 @@ internal class FunctionLabelLine : LogicalLine, IComparable<FunctionLabelLine>
     protected FunctionLabelLine() { }
     public FunctionLabelLine(ScriptPosition? thePosition, string labelname, WordCollection wc)
     {
-        scriptPosition = thePosition;
+        scriptPosition = thePosition ?? default;
         LabelName = labelname;
         IsSingle = false;
         hasPrivDynamicVar = false;
@@ -352,7 +356,7 @@ internal sealed class GotoLabelLine : LogicalLine, IEqualityComparer<GotoLabelLi
 {
     public GotoLabelLine(ScriptPosition? thePosition, string labelname)
     {
-        scriptPosition = thePosition;
+        scriptPosition = thePosition ?? default;
         this.labelname = labelname;
     }
     readonly string labelname = "";
