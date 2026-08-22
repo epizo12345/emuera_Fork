@@ -400,17 +400,36 @@ internal sealed class ErbLoader
         }
     }
 
-    private static bool IsLazyKojoPath(string filename)
+    internal static bool IsLazyKojoPath(string filepath)
     {
-        if (Program.AnalysisMode || Program.DebugMode)
+        try
+        {
+            string erbRoot = Path.GetFullPath(Program.ErbDir)
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                + Path.DirectorySeparatorChar;
+            string fullPath = Path.IsPathRooted(filepath)
+                ? Path.GetFullPath(filepath)
+                : Path.GetFullPath(Path.Combine(Program.ErbDir, filepath));
+            if (!fullPath.StartsWith(erbRoot, StringComparison.OrdinalIgnoreCase))
+                return false;
+            string relativePath = Path.GetRelativePath(erbRoot, fullPath).Replace('\\', '/');
+            return relativePath.StartsWith("口上/口上まとめ/", StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
             return false;
-        string path = filename.Replace('\\', '/');
-        return path.StartsWith("口上/口上まとめ/", StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     private static bool IsLazyKojoDangerousLine(string line)
     {
         string trimmed = line.TrimStart();
+        // [Emuera改修:MEM-13R39.1 2026-08-23]
+        // preprocessorはファイル全体の有効性を変えるため、口上まとめでもeagerへ戻す。
+        // [[...]]のrename表記は既存の安全な形式なので除外する。
+        if (trimmed.StartsWith('[')
+            && !trimmed.StartsWith("[[", StringComparison.Ordinal))
+            return true;
         if (trimmed.StartsWith("#FUNCTION", StringComparison.OrdinalIgnoreCase)
             || trimmed.StartsWith("#PRI", StringComparison.OrdinalIgnoreCase)
             || trimmed.StartsWith("#LATER", StringComparison.OrdinalIgnoreCase)
@@ -459,7 +478,7 @@ internal sealed class ErbLoader
         // [Emuera改修:MEM-13R39 2026-08-22]
         // Program.ErbDir基準の相対pathで口上まとめだけを選び、関数名・引数・#DIM等のmetadataを
         // 起動時に既存parserでindexする。危険な構造は従来eagerへ戻し、通常ERBへper-line overheadを加えない。
-        if (!IsLazyKojoPath(filename))
+        if (Program.AnalysisMode || Program.DebugMode || !IsLazyKojoPath(filepath))
             return false;
         if (!IsLazyKojoSafe(filepath))
         {

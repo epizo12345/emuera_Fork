@@ -6,7 +6,7 @@
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
 - `Emuera.exe` サイズ: 24,651,498バイト（約23.5 MiB）
-- `Emuera.exe` SHA-256: `0E135D2773776B2528BC3DEB25A6B1BAD1922BFB4DFB7780CB58F97F75BC2C15`
+- `Emuera.exe` SHA-256: `3E7ED2EC5B7C9A78E0746809388B40852589E6E6D528A41240545568EAB44674`
 - Phase 4A/B/C warning cleanupを反映（Release warning 52件から37件、new warning 0、Normal/Kojo起動確認済み）
 - Phase 5A/B/C focused bugfixを反映（VARSIZE/macro、ARRAYMSORT、GGETCOLOR/GSETCOLOR、SPRITEGETCOLOR。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
 - Phase 6A/B focused bugfixを反映（SPRITEANIMEADDFRAMEの無効Sprite入力時NRE修正、ClipboardのBufferSize/MinTimer 0・負値の安全化、ConfigDialogの最小値1制限とruntime clamp。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
@@ -32,6 +32,7 @@
 - Phase 13R37で`LogicalLine`内部の`ScriptPosition`をfileId/lineNoへ圧縮し、外部位置情報、default/new/null、reload、raw source、save互換性を維持したまま`InstructionLine` shallow sizeを80 bytesから72 bytesへ削減しました。
 - Phase 13R38で通常表示ログの`displayLineList`をring buffer化し、`MaxLog=50000`到達後の先頭破棄をO(1)にしました。論理index順、描画、バックログ、選択肢、save/ERB semanticsは維持しています。
 - Phase 13R39で`Data\ERB\口上\口上まとめ\`配下だけをLazy ERB Hydration化しました。起動時は関数stub／metadataを登録し、本文は初回実行直前にERBファイル単位でhydrateします。実fixtureでLazy 478、eager fallback 10、startup hydration 0、KOJO startup Managed `1,762,740,872 → 1,174,959,288 bytes`（-33.34%）を確認しました。通常ERB、AnalysisMode、DebugModeは従来どおりeagerです。
+- Phase 13R39.1で、口上まとめ外のpartial/folder reloadはactive Lazy managerを保持し、口上まとめを含む実対象はfull reloadへ昇格するよう修正しました。preprocessorはeager fallback、`[[...]]` renameは維持しています。正式配布EXE自身でsave219 + RepeatCount=100を確認済みです。
 - Phase 13R36で`InstructionLine`の`FunctionIdentifier`専用参照slotを削除し、`FunctionCode`とassignment `OperatorCode`をpackしました。built-in lookup、SET、method-as-instruction identity、lazy parsing、save互換性を維持し、shallow sizeを88 bytesから80 bytesへ削減しました。
 - Phase 13R34 lazy argument parsing前の`CharStream`保持をsource/offset snapshotへ変更し、InputReady時のreader由来`CharStream` retentionを除去しました。`InstructionLine` 96-byte layout、lazy parsing、save互換性は維持しています。
 - Phase 13R35 `InstructionLine`のerror messageをR34のargument storageへunionし、同数のInstructionLineでshallow sizeを96 bytesから88 bytesへ削減しました。非InstructionLineのerror semantics、lazy parsing、save互換性は維持しています。

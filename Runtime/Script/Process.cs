@@ -268,30 +268,50 @@ internal sealed partial class Process(EmueraConsole view)
 
     public async Task ReloadPartialErb(List<string> paths)
     {
+        // [Emuera改修:MEM-13R39.1 2026-08-23]
+        // active erbLoaderは起動時の未hydrate stubとLazy対応表を所有するため、
+        // 口上まとめを含む再読込ではpartial loaderに置換せず、全体を一体で再構築する。
+        if (paths.Any(ErbLoader.IsLazyKojoPath))
+        {
+            await ReloadErbAll();
+            return;
+        }
         saveCurrentState(false);
         state.SystemState = SystemStateCode.System_Reloaderb;
         await Preload.Load(paths);
-        erbLoader = new ErbLoader(console, exm, this);
-        await erbLoader.LoadErbList(paths, labelDic);
+        // [Emuera改修:MEM-13R39.1 2026-08-23]
+        // Lazy対象外のpartial reloadだけはlocal loaderに限定し、active Lazy managerを保持する。
+        ErbLoader partialLoader = new(console, exm, this);
+        await partialLoader.LoadErbList(paths, labelDic);
         console.ReadAnyKey();
     }
 
     public async Task ReloadErbFolder(string dirPath)
     {
-        saveCurrentState(false);
-        state.SystemState = SystemStateCode.System_Reloaderb;
-        await Preload.Load(dirPath);
-        erbLoader = new ErbLoader(console, exm, this);
-
         var serachOption = SearchOption.TopDirectoryOnly;
         if (Config.SearchSubdirectory)
         {
             serachOption = SearchOption.AllDirectories;
         }
 
-        var erbFiles = Directory.EnumerateFiles(dirPath, "", serachOption)
-                        .Where(x => Path.GetExtension(x).Equals(".erb", StringComparison.OrdinalIgnoreCase));
-        await erbLoader.LoadErbList(erbFiles, labelDic);
+        string[] erbFiles = Directory.EnumerateFiles(dirPath, "", serachOption)
+            .Where(x => Path.GetExtension(x).Equals(".erb", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        // [Emuera改修:MEM-13R39.1 2026-08-23]
+        // 対象一覧に口上まとめが1つでもあれば、stub identity・metadata・Lazy indexを
+        // 部分更新で分離させないためfull reloadへ昇格する。
+        if (erbFiles.Any(ErbLoader.IsLazyKojoPath))
+        {
+            await ReloadErbAll();
+            return;
+        }
+        saveCurrentState(false);
+        state.SystemState = SystemStateCode.System_Reloaderb;
+        await Preload.Load(dirPath);
+        // [Emuera改修:MEM-13R39.1 2026-08-23]
+        // 口上まとめ外のfolderだけは従来どおりlocal loaderで部分再読込する。
+        ErbLoader partialLoader = new(console, exm, this);
+        await partialLoader.LoadErbList(erbFiles, labelDic);
         console.ReadAnyKey();
     }
 
