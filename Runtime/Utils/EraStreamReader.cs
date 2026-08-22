@@ -33,6 +33,9 @@ internal sealed partial class EraStreamReader : IDisposable
     int curNo;
     int nextNo = 1;
     string[] _fileLines;
+    // [Emuera改修:MEM-13R34 2026-08-22]
+    // ReadEnabledLineの返却先はsource/offsetだけを保持し、次のReadまでCharStreamをescapeさせないため、reader単位で再利用する。
+    CharStream reusableCharStream;
 
     public bool Open(string path)
     {
@@ -108,7 +111,7 @@ internal sealed partial class EraStreamReader : IDisposable
     public CharStream ReadEnabledLine(bool disabled = false)
     {
         string line;
-        CharStream st = null;
+        CharStream st = reusableCharStream;
         while (true)
         {
             line = ReadLine();
@@ -118,7 +121,7 @@ internal sealed partial class EraStreamReader : IDisposable
                 continue;
 
             if (st == null)
-                st = new CharStream(line);
+                st = reusableCharStream = new CharStream(line);
             else
                 st.Reset(line);
             LexicalAnalyzer.SkipWhiteSpace(st);
@@ -214,6 +217,7 @@ internal sealed partial class EraStreamReader : IDisposable
             return;
         filepath = null;
         filename = null;
+        reusableCharStream = null;
         disposed = true;
         _fileLines = null;
     }
