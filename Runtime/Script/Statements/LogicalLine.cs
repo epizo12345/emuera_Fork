@@ -43,18 +43,28 @@ internal abstract class LogicalLine
         return string.Format("{0}:{1}:{2}", scriptPosition.Filename, scriptPosition.LineNo, Process.getRawTextFormFilewithLine(scriptPosition));
     }
 
+    public abstract string ErrMes { get; set; }
+    public abstract bool IsError { get; set; }
+}
+
+// [Emuera改修:MEM-13R35 2026-08-22]
+// InstructionLine以外は従来どおりerror messageを専用slotへ保持する。
+// InstructionLineだけはR34のargumentStorageをerror messageと共用し、
+// argumentPrimitivePositionのsentinelでraw/Argumentとerrorを区別する。
+internal abstract class ErrorCapableLogicalLine : LogicalLine
+{
     // [Emuera改修:MEM-13R32 2026-08-22]
     // productionではerror flagとmessageは独立した状態を保持せず、正常行はnull、
     // error行は空文字または実メッセージを持つ。IsError=trueを先に設定する既存の
     // lazy parse / warning / CALL伝播順を受けるため、true setterは空文字sentinelを作る。
     protected string errMes;
 
-    public virtual string ErrMes
+    public override string ErrMes
     {
         get { return errMes ?? ""; }
         set { errMes = value; }
     }
-    public virtual bool IsError
+    public override bool IsError
     {
         get { return errMes != null; }
         set
@@ -87,7 +97,7 @@ internal abstract class LogicalLine
 /// <summary>
 /// 無効な行。
 /// </summary>
-internal sealed class InvalidLine : LogicalLine
+internal sealed class InvalidLine : ErrorCapableLogicalLine
 {
     public InvalidLine(ScriptPosition? thePosition, string err)
     {
@@ -105,6 +115,8 @@ internal sealed class InvalidLine : LogicalLine
 /// </summary>
 internal class InstructionLine : LogicalLine
 {
+    const int ErrorArgumentPosition = int.MinValue;
+
     public InstructionLine(ScriptPosition? thePosition, FunctionIdentifier theFunc, CharStream theArgPrimitive)
     {
         scriptPosition = thePosition ?? default;
@@ -139,6 +151,39 @@ internal class InstructionLine : LogicalLine
     object argumentStorage;
     int argumentPrimitivePosition;
 
+    public override string ErrMes
+    {
+        get => argumentPrimitivePosition == ErrorArgumentPosition ? argumentStorage as string ?? "" : "";
+        set
+        {
+            if (value == null)
+            {
+                argumentPrimitivePosition = 0;
+                argumentStorage = null;
+                return;
+            }
+            argumentPrimitivePosition = ErrorArgumentPosition;
+            argumentStorage = value;
+        }
+    }
+    public override bool IsError
+    {
+        get => argumentPrimitivePosition == ErrorArgumentPosition;
+        set
+        {
+            if (value)
+            {
+                argumentPrimitivePosition = ErrorArgumentPosition;
+                argumentStorage = "";
+            }
+            else
+            {
+                argumentPrimitivePosition = 0;
+                argumentStorage = null;
+            }
+        }
+    }
+
     public OperatorCode AssignOperator { get; private set; }
     public FunctionCode FunctionCode
     {
@@ -161,7 +206,7 @@ internal class InstructionLine : LogicalLine
     }
     public CharStream PopArgumentPrimitive()
     {
-        if (argumentStorage is not string source)
+        if (argumentPrimitivePosition == ErrorArgumentPosition || argumentStorage is not string source)
             return null;
         argumentStorage = null;
         // Popで一度だけ復元・消費し、parse後は従来どおりArgumentを保持する。
@@ -226,7 +271,7 @@ internal sealed class LoopInstructionLine : InstructionLine
 /// <summary>
 /// ファイルの始端と終端
 /// </summary>
-internal sealed class NullLine : LogicalLine { }
+internal sealed class NullLine : ErrorCapableLogicalLine { }
 
 /// <summary>
 /// ラベルがエラーになっている関数行専用のクラス
@@ -252,7 +297,7 @@ internal sealed class InvalidLabelLine : FunctionLabelLine
 /// <summary>
 /// @で始まるラベル行
 /// </summary>
-internal class FunctionLabelLine : LogicalLine, IComparable<FunctionLabelLine>
+internal class FunctionLabelLine : ErrorCapableLogicalLine, IComparable<FunctionLabelLine>
 {
     protected FunctionLabelLine() { }
     public FunctionLabelLine(ScriptPosition? thePosition, string labelname, WordCollection wc)
@@ -369,7 +414,7 @@ internal class FunctionLabelLine : LogicalLine, IComparable<FunctionLabelLine>
 /// <summary>
 /// $で始まるラベル行
 /// </summary>
-internal sealed class GotoLabelLine : LogicalLine, IEqualityComparer<GotoLabelLine>
+internal sealed class GotoLabelLine : ErrorCapableLogicalLine, IEqualityComparer<GotoLabelLine>
 {
     public GotoLabelLine(ScriptPosition? thePosition, string labelname)
     {
