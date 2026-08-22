@@ -6,7 +6,7 @@
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
 - `Emuera.exe` サイズ: 24,643,306バイト（約23.5 MiB）
-- `Emuera.exe` SHA-256: `983713FB3FBB1E805291DAA11EFC9D17FE5F5600518803F6D7E3DD15407B6673`
+- `Emuera.exe` SHA-256: `93F184794420DAD826AC7CECF58AE265D575973D42C4D930B3CE882BF0427950`
 - Phase 4A/B/C warning cleanupを反映（Release warning 52件から37件、new warning 0、Normal/Kojo起動確認済み）
 - Phase 5A/B/C focused bugfixを反映（VARSIZE/macro、ARRAYMSORT、GGETCOLOR/GSETCOLOR、SPRITEGETCOLOR。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
 - Phase 6A/B focused bugfixを反映（SPRITEANIMEADDFRAMEの無効Sprite入力時NRE修正、ClipboardのBufferSize/MinTimer 0・負値の安全化、ConfigDialogの最小値1制限とruntime clamp。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
@@ -27,6 +27,7 @@
 - Phase 13R28 `SingleStrTerm`は空文字列だけをimmutable共有し、runtimeの短命empty wrapper allocationを削減しました。`null`と非empty文字列は従来どおり個別instanceで、任意文字列cacheは採用していません。
 - Phase 13R29 parsed ASTのinteger literalでR25の-1〜255 immutable `SingleLongTerm` cacheを再利用し、同一fixtureのmanaged live heapを約63.2MB削減しました。cache外の値、評価順、save形式は変更していません。
 - Phase 13R30 `InstructionLine`のSET左辺専用slotを既存`auxiliaryData`へ統合し、同数のInstructionLineでshallow sizeを120 bytesから112 bytesへ削減しました。SETの解析順、lazy parsing、save形式は変更していません。
+- Phase 13R31 `LogicalLine`内部の`ScriptPosition?`専用slotを非nullable sentinelへ変更し、公開`Position` semantics、label/error/reload経路、save互換性を維持したままInstructionLine shallow sizeを112 bytesから104 bytesへ削減しました。
 
 この単一EXEにはSkiaSharpのネイティブライブラリも内包されています。別の`libSkiaSharp.dll`を同じフォルダへ追加する必要はありません。
 Windows API全体の大きな.NET投影DLLは含めず、SkiaSharpが必要とする`WinRT.Runtime.dll`だけを内包しています。

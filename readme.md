@@ -30,6 +30,7 @@ Windows 11ではメニューや設定画面にダークモードが適用され�
 『WinRT.Runtime』だけをEXE内へ残して、配布サイズを抑えています。
 
 # 主な修正
+- Phase 13R31で`LogicalLine`内部の`ScriptPosition?`専用slotを非nullablesentinelへ変更し、公開位置情報とsave互換性を維持したまま大量retained行のshallow sizeを削減
 - 起動時の不定期な偽警告を抑止
 - 大量のERBを使用するゲームの起動高速化
 - 複数入力マクロの描画集約・内部処理の高速化
