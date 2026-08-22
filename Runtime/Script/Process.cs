@@ -228,7 +228,7 @@ internal sealed partial class Process(EmueraConsole view)
             logWriter.WriteLine($"Proc:Init:ERB:PrimaryParse {erbLoader.PrimaryParseMilliseconds}ms");
             logWriter.WriteLine($"Proc:Init:ERB:LabelSetup {erbLoader.LabelSetupMilliseconds}ms");
             logWriter.WriteLine($"Proc:Init:ERB:ScriptParse {erbLoader.ScriptParseMilliseconds}ms");
-            logWriter.WriteLine($"Proc:Init:ERB:LazyKojo files={erbLoader.LazyKojoFileCount} fallback={erbLoader.LazyKojoFallbackFileCount} hydratedAtStartup={erbLoader.LazyKojoHydratedFileCount}");
+            logWriter.WriteLine($"Proc:Init:ERB:LazyKojo files={erbLoader.LazyKojoFileCount} fallback={erbLoader.LazyKojoFallbackFileCount}");
             logWriter.WriteLine($"Proc:Init:ERB:End {stopWatch.ElapsedMilliseconds}ms");
             PerformanceMetrics.MarkStartup("ErbParsed"); // ERB解析完了の目印
 

@@ -49,10 +49,8 @@ internal sealed class ErbLoader
     readonly ConcurrentDictionary<string, LazyKojoFile> lazyKojoFiles = new(StringComparer.OrdinalIgnoreCase);
     private int lazyKojoFileCount;
     private int lazyKojoFallbackFileCount;
-    private int lazyKojoHydratedFileCount;
     public int LazyKojoFileCount => Volatile.Read(ref lazyKojoFileCount);
     public int LazyKojoFallbackFileCount => Volatile.Read(ref lazyKojoFallbackFileCount);
-    public int LazyKojoHydratedFileCount => Volatile.Read(ref lazyKojoHydratedFileCount);
 
     enum LazyKojoState
     {
@@ -94,7 +92,6 @@ internal sealed class ErbLoader
         lazyKojoFiles.Clear();
         Volatile.Write(ref lazyKojoFileCount, 0);
         Volatile.Write(ref lazyKojoFallbackFileCount, 0);
-        Volatile.Write(ref lazyKojoHydratedFileCount, 0);
         var enumerationStopwatch = System.Diagnostics.Stopwatch.StartNew();
         var erbFiles = Config.Config.GetFiles(erbDir, "*.ERB");
         EnumerationMilliseconds = enumerationStopwatch.ElapsedMilliseconds;
@@ -573,14 +570,11 @@ internal sealed class ErbLoader
             if (!HydrateLazyFile(file))
                 throw new CodeEE("口上まとめERBのLazy hydrationに失敗しました。");
             file.State = LazyKojoState.Loaded;
-            Interlocked.Increment(ref lazyKojoHydratedFileCount);
-            WriteLazyDiagnostic($"Loaded\t{file.FileName}\tfunctions={file.Functions.Count}\tgotos={file.GotoLabels.Count}");
             return true;
         }
         catch (Exception e)
         {
             file.State = LazyKojoState.Failed;
-            WriteLazyDiagnostic($"Failed\t{file.FileName}\t{e.Message}");
             ParserMediator.Warn(e.Message, label, 2, true, false);
             return false;
         }
@@ -656,19 +650,6 @@ internal sealed class ErbLoader
     }
 
     private bool IsLazyLabel(FunctionLabelLine label) => lazyKojoLabels.ContainsKey(label);
-
-    private static void WriteLazyDiagnostic(string message)
-    {
-        try
-        {
-            File.AppendAllText(Path.Combine(Program.ExeDir, "phase13r39-lazy-kojo.log"),
-                $"{DateTime.UtcNow:O}\t{message}{Environment.NewLine}");
-        }
-        catch
-        {
-            // 診断ログは試験補助であり、実行結果を変えない。
-        }
-    }
 
     /// <summary>
     /// ファイル一つを読む
