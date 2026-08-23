@@ -76,7 +76,7 @@ static class JSONConfig
                     ?? throw new JsonException("setting.json must contain a valid game configuration");
                 loadedGame.LazyErb ??= new JSONLazyErbConfigData();
                 loadedGame.LazyErb.Enabled ??= true;
-                loadedGame.LazyErb.Directories ??= ["ERB/口上/口上まとめ"];
+                loadedGame.LazyErb.Directories ??= ["ERB/口上/口上まとめ", "ERB/RPG/依頼"];
 
                 // [Emuera改修:MEM-13R40.3 2026-08-23]
                 // migration結果はtyped validation成功後だけ保存する。設定ミスを先にdefault補完してdiskへ書くと、

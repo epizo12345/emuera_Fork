@@ -6,7 +6,8 @@
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
 - `Emuera.exe` サイズ: 24,659,690バイト（約23.5 MiB）
-- `Emuera.exe` SHA-256: `E781D64460F0C0D13AAA1140FD7E1E04522EAC7BF1753022622AA5C5F027F886`
+- `Emuera.exe` SHA-256: `7CA2A3F6FCF5690F710EC47F6B07FB3C1EC08EF83A5F296DC1BD312F3E4BF499`
+- Phase 13R41B1として、`ERB/RPG/依頼`をLazy ERBの新しい既定対象へ追加しました。依頼5「教授の隠れ家」の一覧・本編・初回hydration、save/load、save219実戦闘を実機確認済みです。既存の明示的な`setting.json`のLazy対象は自動変更せず、欠落・null・新規設定のdefaultだけを更新します。Repeat1000では安定したruntime性能悪化を確認していません。
 - Phase 4A/B/C warning cleanupを反映（Release warning 52件から37件、new warning 0、Normal/Kojo起動確認済み）
 - Phase 5A/B/C focused bugfixを反映（VARSIZE/macro、ARRAYMSORT、GGETCOLOR/GSETCOLOR、SPRITEGETCOLOR。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
 - Phase 6A/B focused bugfixを反映（SPRITEANIMEADDFRAMEの無効Sprite入力時NRE修正、ClipboardのBufferSize/MinTimer 0・負値の安全化、ConfigDialogの最小値1制限とruntime clamp。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
