@@ -4,8 +4,10 @@ using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Unicode;
 
 
 namespace MinorShift.Emuera.Runtime.Config.JSON;
@@ -18,6 +20,10 @@ static class JSONConfig
     {
         WriteIndented = true,
         IndentSize = 4,
+        // [Emuera改修:MEM-13R40.2 2026-08-23]
+        // setting.jsonのLazyErb directoryを日本語のまま保存し、手編集時に対象範囲を確認できるようにする。
+        // JSONの引用符・バックスラッシュ・制御文字のescapeはJavaScriptEncoderに維持させる。
+        Encoder = JavaScriptEncoder.Create(UnicodeRanges.All),
     };
     static JsonObject _gameJson;
 
