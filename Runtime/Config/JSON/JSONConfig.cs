@@ -129,12 +129,13 @@ static class JSONConfig
     static bool MigrateLazyErbSettings(JsonObject gameJson)
     {
         bool changed = false;
-        bool hasNew = gameJson.TryGetPropertyValue(_lazyErbKey, out JsonNode newNode) && newNode is JsonObject;
-        bool hasLegacy = gameJson.TryGetPropertyValue(_legacyLazyErbKey, out JsonNode legacyNode) && legacyNode is JsonObject;
-        JsonObject newJson;
+        bool hasNew = TryGetObjectOrMissing(gameJson, _lazyErbKey, out JsonObject newJson);
+        bool hasLegacy = TryGetObjectOrMissing(gameJson, _legacyLazyErbKey, out JsonObject legacyJson);
 
         if (hasNew)
-            newJson = (JsonObject)newNode;
+        {
+            // newJson is validated by TryGetObjectOrMissing; a non-null non-object is a configuration error.
+        }
         else if (hasLegacy)
         {
             newJson = new JsonObject();
@@ -151,7 +152,6 @@ static class JSONConfig
         JsonObject defaults = JsonSerializer.SerializeToNode(new JSONLazyErbConfigData(), _jsonOptions).AsObject();
         if (hasLegacy)
         {
-            JsonObject legacyJson = (JsonObject)legacyNode;
             CopyKnownIfMissing(newJson, _enabledKey, legacyJson, _legacyEnabledKey, ref changed);
             if (!newJson.ContainsKey(_directoriesKey))
             {
@@ -184,6 +184,21 @@ static class JSONConfig
             }
         }
         return changed;
+    }
+
+    static bool TryGetObjectOrMissing(JsonObject gameJson, string propertyName, out JsonObject value)
+    {
+        value = null;
+        if (!gameJson.TryGetPropertyValue(propertyName, out JsonNode property) || property is null)
+            return false;
+        if (property is JsonObject jsonObject)
+        {
+            value = jsonObject;
+            return true;
+        }
+        // [Emuera改修:MEM-13R40.3 2026-08-23]
+        // 設定keyが存在するのに非null非Objectならmissing扱いでdefaultへ置換せず、誤設定を設定errorとして表面化する。
+        throw new JsonException($"{propertyName} must be a JSON object");
     }
 
     static void CopyKnownIfMissing(JsonObject destination, string destinationKey, JsonObject source, string sourceKey, ref bool changed)
