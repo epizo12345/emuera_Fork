@@ -197,6 +197,7 @@ internal static partial class LexicalAnalyzer
     }
 
     //IsNumericにReadInt64を使うと、本来falseになるべき文字列の一部がCodeEEになってしまうので、新規に追加
+    // ReadInt64と同じ形式を検査するが、判定関数では例外を成功/失敗の制御に使わずfalseで返す。
     public static bool NumericCheck(CharStream st)
     {
         Int64 significand;
@@ -412,6 +413,8 @@ internal static partial class LexicalAnalyzer
         if (UseMacro)
         {
             int i = 0;
+            // Macro展開は未定義を正常終了、定義済みだが通常識別子を持たないものをerrorと区別する。
+            // 展開回数上限も維持し、循環macroでstartup/parserが無限に進まないようにする。
             while (true)
             {
                 DefineMacro macro = GlobalStatic.IdentifierDictionary.GetMacro(str);
@@ -1065,6 +1068,7 @@ internal static partial class LexicalAnalyzer
     private static WordCollection expandMacro(WordCollection wc)
     {
         //マクロ展開
+        // 関数型を含む展開でも同じ上限を使い、循環macroを有限回でerrorにする。
         wc.PointerReset();
         int count = 0;
         while (!wc.EOL)

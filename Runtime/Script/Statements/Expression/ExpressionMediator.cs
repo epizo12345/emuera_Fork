@@ -119,6 +119,8 @@ internal sealed class ExpressionMediator
 
     public static long CalculatePower(long x, long y)
     {
+        // Phase 10Aの互換性修正: POWERはdouble経由の丸めやlong.MinValue境界を避け、整数結果をcheckedで計算する。
+        // overflow時だけMath.Powを診断に使い、非有限値/64-bit範囲外の既存error semanticsを維持する。
         if (y < 0)
         {
             if (x == 0)
@@ -179,5 +181,4 @@ internal sealed class ExpressionMediator
         return builder.ToString();
     }
 }
-
 
