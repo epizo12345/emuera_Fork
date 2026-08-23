@@ -283,6 +283,8 @@ internal class InstructionLine : LogicalLine
 
 }
 
+// ERB起動時に大量生成される通常InstructionLineへ、FOR/REPEATだけが使うloop stateを持たせない。
+// factoryでloop命令だけLoopInstructionLineへ分け、通常命令のlayout/retained sizeとloop semanticsを両立する。
 internal sealed class LoopInstructionLine : InstructionLine
 {
     public LoopInstructionLine(ScriptPosition? thePosition, FunctionIdentifier theFunc, CharStream theArgPrimitive)
