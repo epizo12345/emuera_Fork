@@ -43,16 +43,16 @@ internal sealed class ErbLoader
     LabelDictionary labelDic;
 
     // [Emuera改修:MEM-13R39 2026-08-22]
-    // 口上まとめだけは起動時に関数/$/宣言のstubを登録し、本文を実行直前まで生成しない。
+    // 設定対象ERBだけは起動時に関数/$/宣言のstubを登録し、本文を実行直前まで生成しない。
     // 通常ERBへper-lineの管理情報を追加せず、FunctionLabelLine identityはこの外部表で保持する。
-    readonly ConcurrentDictionary<FunctionLabelLine, LazyKojoFile> lazyKojoLabels = [];
-    readonly ConcurrentDictionary<string, LazyKojoFile> lazyKojoFiles = new(StringComparer.OrdinalIgnoreCase);
-    private int lazyKojoFileCount;
-    private int lazyKojoFallbackFileCount;
-    public int LazyKojoFileCount => Volatile.Read(ref lazyKojoFileCount);
-    public int LazyKojoFallbackFileCount => Volatile.Read(ref lazyKojoFallbackFileCount);
+    readonly ConcurrentDictionary<FunctionLabelLine, LazyErbFile> lazyErbLabels = [];
+    readonly ConcurrentDictionary<string, LazyErbFile> lazyErbFiles = new(StringComparer.OrdinalIgnoreCase);
+    private int lazyErbFileCount;
+    private int lazyErbFallbackFileCount;
+    public int LazyErbFileCount => Volatile.Read(ref lazyErbFileCount);
+    public int LazyErbFallbackFileCount => Volatile.Read(ref lazyErbFallbackFileCount);
 
-    enum LazyKojoState
+    enum LazyErbState
     {
         Unloaded,
         Loading,
@@ -60,7 +60,7 @@ internal sealed class ErbLoader
         Failed,
     }
 
-    sealed class LazyKojoFile
+    sealed class LazyErbFile
     {
         public required string FilePath;
         public required string FileName;
@@ -69,7 +69,7 @@ internal sealed class ErbLoader
         public required DateTime LastWriteTimeUtc;
         public readonly Dictionary<int, FunctionLabelLine> Functions = [];
         public readonly Dictionary<int, GotoLabelLine> GotoLabels = [];
-        public LazyKojoState State;
+        public LazyErbState State;
     }
 
     // 複数スレッドから更新するため、読み書きはInterlocked/Volatile経由で行う。
@@ -88,10 +88,10 @@ internal sealed class ErbLoader
         //checkScript();の時点でExpressionPerserがProcess.instance.LabelDicを必要とするから。
         labelDic = labelDictionary;
         labelDic.Initialized = false;
-        lazyKojoLabels.Clear();
-        lazyKojoFiles.Clear();
-        Volatile.Write(ref lazyKojoFileCount, 0);
-        Volatile.Write(ref lazyKojoFallbackFileCount, 0);
+        lazyErbLabels.Clear();
+        lazyErbFiles.Clear();
+        Volatile.Write(ref lazyErbFileCount, 0);
+        Volatile.Write(ref lazyErbFallbackFileCount, 0);
         var enumerationStopwatch = System.Diagnostics.Stopwatch.StartNew();
         var erbFiles = Config.Config.GetFiles(erbDir, "*.ERB");
         EnumerationMilliseconds = enumerationStopwatch.ElapsedMilliseconds;
@@ -400,35 +400,11 @@ internal sealed class ErbLoader
         }
     }
 
-    internal static bool IsLazyKojoPath(string filepath)
-    {
-        // [Emuera改修:MEM-13R39.1 2026-08-23]
-        // ここはloader状態を変更しないpath分類helperとし、ErbDir境界を正規化してから
-        // 口上まとめ配下だけを判定する。Debug/Analysisのeager互換やreload昇格は呼び出し側で決める。
-        try
-        {
-            string erbRoot = Path.GetFullPath(Program.ErbDir)
-                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
-                + Path.DirectorySeparatorChar;
-            string fullPath = Path.IsPathRooted(filepath)
-                ? Path.GetFullPath(filepath)
-                : Path.GetFullPath(Path.Combine(Program.ErbDir, filepath));
-            if (!fullPath.StartsWith(erbRoot, StringComparison.OrdinalIgnoreCase))
-                return false;
-            string relativePath = Path.GetRelativePath(erbRoot, fullPath).Replace('\\', '/');
-            return relativePath.StartsWith("口上/口上まとめ/", StringComparison.OrdinalIgnoreCase);
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    private static bool IsLazyKojoDangerousLine(string line)
+    private static bool IsLazyErbDangerousLine(string line)
     {
         string trimmed = line.TrimStart();
         // [Emuera改修:MEM-13R39.1 2026-08-23]
-        // preprocessorはファイル全体の有効性を変えるため、口上まとめでもeagerへ戻す。
+        // preprocessorはファイル全体の有効性を変えるため、設定対象でもeagerへ戻す。
         // [[...]]のrename表記は既存の安全な形式なので除外する。
         if (trimmed.StartsWith('[')
             && !trimmed.StartsWith("[[", StringComparison.Ordinal))
@@ -455,7 +431,7 @@ internal sealed class ErbLoader
         }
     }
 
-    private static bool IsLazyKojoSafe(string filepath)
+    private static bool IsLazyErbSafe(string filepath)
     {
         // [Emuera改修:MEM-13R39.1 2026-08-23]
         // 起動時indexが扱える安全なsubsetだけを先に確認し、ファイル全体の意味を変える構造は
@@ -463,12 +439,12 @@ internal sealed class ErbLoader
         try
         {
             using EraStreamReader reader = new(Config.Config.UseRenameFile && ParserMediator.RenameDic != null);
-            if (!reader.Open(filepath, Path.GetFileName(filepath)))
+            if (!reader.OpenDirect(filepath, Path.GetFileName(filepath), false))
                 return false;
             string line;
             while ((line = reader.ReadLine()) != null)
             {
-                if (IsLazyKojoDangerousLine(line))
+                if (IsLazyErbDangerousLine(line))
                     return false;
             }
             return true;
@@ -482,37 +458,37 @@ internal sealed class ErbLoader
     private bool TryLoadLazyErb(string filepath, string filename, int fileIndex, ConcurrentDictionary<string, byte> isOnlyEvent)
     {
         // [Emuera改修:MEM-13R39 2026-08-22]
-        // Program.ErbDir基準の相対pathで口上まとめだけを選び、関数名・引数・#DIM等のmetadataを
+        // 中央policyで設定対象だけを選び、関数名・引数・#DIM等のmetadataを
         // 起動時に既存parserでindexする。危険な構造は従来eagerへ戻し、通常ERBへper-line overheadを加えない。
         // Analysis/DebugはLazyを無効にし、従来のeager loadとpartial/folder reloadを維持する。
-        if (Program.AnalysisMode || Program.DebugMode || !IsLazyKojoPath(filepath))
+        if (!LazyErbPolicy.IsActiveTarget(filepath))
             return false;
-        if (!IsLazyKojoSafe(filepath))
+        if (!IsLazyErbSafe(filepath))
         {
-            Interlocked.Increment(ref lazyKojoFallbackFileCount);
+            Interlocked.Increment(ref lazyErbFallbackFileCount);
             return false;
         }
 
-        LazyKojoFile file = new()
+        LazyErbFile file = new()
         {
             FilePath = filepath,
             FileName = filename,
             FileIndex = labelDic.RegisterFile(filename, fileIndex),
             Length = new FileInfo(filepath).Length,
             LastWriteTimeUtc = File.GetLastWriteTimeUtc(filepath),
-            State = LazyKojoState.Unloaded,
+            State = LazyErbState.Unloaded,
         };
         if (!BuildLazyIndex(file, isOnlyEvent))
         {
             Interlocked.Exchange(ref hasError, 1);
             return true;
         }
-        lazyKojoFiles[filename] = file;
-        Interlocked.Increment(ref lazyKojoFileCount);
+        lazyErbFiles[filename] = file;
+        Interlocked.Increment(ref lazyErbFileCount);
         return true;
     }
 
-    private bool BuildLazyIndex(LazyKojoFile file, ConcurrentDictionary<string, byte> isOnlyEvent)
+    private bool BuildLazyIndex(LazyErbFile file, ConcurrentDictionary<string, byte> isOnlyEvent)
     {
         // [Emuera改修:MEM-13R39 2026-08-22]
         // 起動時は関数/$ labelと#DIM等のmetadataだけを登録し、関数stubのidentityをlabelDicと外部表で固定する。
@@ -559,7 +535,7 @@ internal sealed class ErbLoader
                     lastLabelLine = label;
                     file.Functions[eReader.LineNo] = label;
                     labelDic.AddLabel(label, file.FileIndex);
-                    lazyKojoLabels[label] = file;
+                    lazyErbLabels[label] = file;
                 }
                 else if (nextLine is GotoLabelLine gotoLabel)
                 {
@@ -589,39 +565,39 @@ internal sealed class ErbLoader
         // [Emuera改修:MEM-13R39 2026-08-22]
         // 固定CALLが保持するFunctionLabelLine identityから対象ファイルを逆引きし、初回実行時だけhydrateする。
         // Loading/Loaded/Failed状態で同一実行経路の再hydrateを避け、index時点のfile size/更新時刻不一致と失敗を従来のerror経路へ渡す。
-        if (!lazyKojoLabels.TryGetValue(label, out LazyKojoFile file))
+        if (!lazyErbLabels.TryGetValue(label, out LazyErbFile file))
             return true;
-        if (file.State == LazyKojoState.Loaded)
+        if (file.State == LazyErbState.Loaded)
             return true;
-        if (file.State == LazyKojoState.Loading || file.State == LazyKojoState.Failed)
-            return file.State == LazyKojoState.Loading;
-        file.State = LazyKojoState.Loading;
+        if (file.State == LazyErbState.Loading || file.State == LazyErbState.Failed)
+            return file.State == LazyErbState.Loading;
+        file.State = LazyErbState.Loading;
         try
         {
             if (new FileInfo(file.FilePath).Length != file.Length
                 || File.GetLastWriteTimeUtc(file.FilePath) != file.LastWriteTimeUtc)
-                throw new CodeEE("口上まとめのLazy対象ERBが起動後に変更されました。コードを再読込してください。");
+                throw new CodeEE("Lazy対象ERBが起動後に変更されました。コードを再読込してください。");
             if (!HydrateLazyFile(file))
-                throw new CodeEE("口上まとめERBのLazy hydrationに失敗しました。");
-            file.State = LazyKojoState.Loaded;
+                throw new CodeEE("Lazy対象ERBのhydrationに失敗しました。");
+            file.State = LazyErbState.Loaded;
             return true;
         }
         catch (Exception e)
         {
-            file.State = LazyKojoState.Failed;
+            file.State = LazyErbState.Failed;
             ParserMediator.Warn(e.Message, label, 2, true, false);
             return false;
         }
     }
 
-    private bool HydrateLazyFile(LazyKojoFile file)
+    private bool HydrateLazyFile(LazyErbFile file)
     {
         // [Emuera改修:MEM-13R39 2026-08-22]
         // 初回実行はERB 1ファイル単位で既存stubへ本文chainを接続する。Preload.Clear後も動くよう、
         // 起動時cache(OpenOnCache)を使わず現ファイルを直接開き、index時の長さ・更新時刻と照合する。
         // 通常のloadErbでlabelを作り直さず、FunctionLabelLine/GotoLabelLine identityと参照先を維持する。
         using var eReader = new EraStreamReader(Config.Config.UseRenameFile && ParserMediator.RenameDic != null);
-        if (!eReader.Open(file.FilePath, file.FileName))
+        if (!eReader.OpenDirect(file.FilePath, file.FileName, false))
             return false;
         PPState ppstate = new();
         LogicalLine lastLine = null;
@@ -687,7 +663,7 @@ internal sealed class ErbLoader
     // [Emuera改修:MEM-13R39 2026-08-22]
     // Lazy labelはmetadataとstubが既に登録済みで、本文解析はIntoFunction直前に行う。
     // 起動時ParseScriptやCALLFORMのremaining解析で本文を先に生成しないためのidentity判定。
-    private bool IsLazyLabel(FunctionLabelLine label) => lazyKojoLabels.ContainsKey(label);
+    private bool IsLazyLabel(FunctionLabelLine label) => lazyErbLabels.ContainsKey(label);
 
     /// <summary>
     /// ファイル一つを読む
@@ -1117,7 +1093,7 @@ internal sealed class ErbLoader
                 if (IsLazyLabel(label))
                 {
                     // [Emuera改修:MEM-13R39 2026-08-22]
-                    // 口上まとめのstubは関数名・引数・metadataだけで起動時参照を満たすため、
+                    // 設定対象のstubは関数名・引数・metadataだけで起動時参照を満たすため、
                     // CALLFORMを含むremaining解析でも本文InstructionLineを作らず実行直前のhydrateに委ねる。
                     parsedLabels.Add(label);
                     continue;

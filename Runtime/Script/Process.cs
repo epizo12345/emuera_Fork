@@ -228,7 +228,7 @@ internal sealed partial class Process(EmueraConsole view)
             logWriter.WriteLine($"Proc:Init:ERB:PrimaryParse {erbLoader.PrimaryParseMilliseconds}ms");
             logWriter.WriteLine($"Proc:Init:ERB:LabelSetup {erbLoader.LabelSetupMilliseconds}ms");
             logWriter.WriteLine($"Proc:Init:ERB:ScriptParse {erbLoader.ScriptParseMilliseconds}ms");
-            logWriter.WriteLine($"Proc:Init:ERB:LazyKojo files={erbLoader.LazyKojoFileCount} fallback={erbLoader.LazyKojoFallbackFileCount}");
+            logWriter.WriteLine($"Proc:Init:ERB:LazyErb files={erbLoader.LazyErbFileCount} fallback={erbLoader.LazyErbFallbackFileCount}");
             logWriter.WriteLine($"Proc:Init:ERB:End {stopWatch.ElapsedMilliseconds}ms");
             PerformanceMetrics.MarkStartup("ErbParsed"); // ERB解析完了の目印
 
@@ -273,11 +273,11 @@ internal sealed partial class Process(EmueraConsole view)
     {
         // [Emuera改修:MEM-13R39.1 2026-08-23]
         // active erbLoaderは通常モードで起動時の未hydrate stubとLazy対応表を所有するため、
-        // 口上まとめを含む再読込ではpartial loaderに置換せず、全体を一体で再構築する。
+        // active Lazy対象を含む再読込ではpartial loaderに置換せず、全体を一体で再構築する。
         // Debug/AnalysisではLazyが無効なので、従来どおりpartial reloadを維持する。
         if (!Program.DebugMode
             && !Program.AnalysisMode
-            && paths.Any(ErbLoader.IsLazyKojoPath))
+            && paths.Any(LazyErbPolicy.IsActiveTarget))
         {
             await ReloadErbAll();
             return;
@@ -304,11 +304,11 @@ internal sealed partial class Process(EmueraConsole view)
             .Where(x => Path.GetExtension(x).Equals(".erb", StringComparison.OrdinalIgnoreCase))
             .ToArray();
         // [Emuera改修:MEM-13R39.1 2026-08-23]
-        // 通常モードで対象一覧に口上まとめが1つでもあれば、stub identity・metadata・Lazy indexを
+        // 通常モードで対象一覧にactive Lazy対象が1つでもあれば、stub identity・metadata・Lazy indexを
         // 部分更新で分離させないためfull reloadへ昇格する。Debug/Analysisでは従来のfolder reloadを維持する。
         if (!Program.DebugMode
             && !Program.AnalysisMode
-            && erbFiles.Any(ErbLoader.IsLazyKojoPath))
+            && erbFiles.Any(LazyErbPolicy.IsActiveTarget))
         {
             await ReloadErbAll();
             return;
@@ -317,7 +317,7 @@ internal sealed partial class Process(EmueraConsole view)
         state.SystemState = SystemStateCode.System_Reloaderb;
         await Preload.Load(dirPath);
         // [Emuera改修:MEM-13R39.1 2026-08-23]
-        // 口上まとめ外のfolderだけは従来どおりlocal loaderで部分再読込する。
+        // active Lazy対象外のfolderだけは従来どおりlocal loaderで部分再読込する。
         ErbLoader partialLoader = new(console, exm, this);
         await partialLoader.LoadErbList(erbFiles, labelDic);
         console.ReadAnyKey();

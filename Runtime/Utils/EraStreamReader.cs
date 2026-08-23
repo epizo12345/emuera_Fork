@@ -70,6 +70,28 @@ internal sealed partial class EraStreamReader : IDisposable
         return true;
     }
 
+    internal bool OpenDirect(string path, string name, bool checkUtf8Bom)
+    {
+        // [Emuera改修:MEM-13R40 2026-08-23]
+        // active Lazy ERBだけはPreload cacheを使わず、Preloadと同じdecode/BOM判定をdirect readで共有する。
+        // safe scanではwarningを抑え、実際のindex/fallback parseで一度だけ従来相当のwarningを出す。
+        filepath = path;
+        filename = name;
+        fileId = ScriptFileRegistry.GetId(filename);
+        curNo = 0;
+        nextNo = 0;
+        try
+        {
+            _fileLines = Preload.ReadFileLines(filepath, checkUtf8Bom);
+        }
+        catch
+        {
+            this.Dispose();
+            return false;
+        }
+        return true;
+    }
+
     public bool OpenOnCache(string path)
     {
         return OpenOnCache(path, Path.GetFileName(path));
@@ -78,12 +100,18 @@ internal sealed partial class EraStreamReader : IDisposable
 
     public bool OpenOnCache(string path, string name)
     {
+        // [Emuera改修:MEM-13R40 2026-08-23]
+        // R40でPreloadから明示的にskipしたactive Lazy ERBだけがcache missからdirect readへ進む。
+        // 非targetのcache missは従来のGetFileLines契約を維持し、KeyNotFound等を隠さない。
+        if (!Preload.TryGetFileLines(path, out string[] cachedLines)
+            && LazyErbPolicy.IsActiveTarget(path))
+            return OpenDirect(path, name, true);
         filepath = path.ToString();
         filename = name.ToString();
         fileId = ScriptFileRegistry.GetId(filename);
         curNo = 0;
         nextNo = 0;
-        _fileLines = Preload.GetFileLines(path);
+        _fileLines = cachedLines ?? Preload.GetFileLines(path);
         return true;
     }
 

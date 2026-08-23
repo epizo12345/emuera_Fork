@@ -3,6 +3,7 @@
 # CSVへまとめる自動試験。ゲームのERB・CSV・セーブは変更しない。
 # --StartupTestで起動したEmueraは、必要なログを出したあと自動終了する。
 # 使い方と結果の見方: プロジェクト資料/06_コード案内.md
+# GameDirは実効DataDir（Data\erb・Data\csv・Data\setting.jsonの親）を指定する。
 param(
     [string]$ExePath = (Join-Path $PSScriptRoot '..\artifacts\publish\Emuera\release_win-x64\Emuera.exe'),
     [string]$GameDir = (Join-Path $PSScriptRoot '..\eramegaten_p\Data'),
@@ -16,7 +17,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $ExePath = [IO.Path]::GetFullPath($ExePath)
-$GameDir = [IO.Path]::GetFullPath($GameDir)
+$GameDir = [IO.Path]::GetFullPath($GameDir) # DataDir; FixtureRootを渡した場合だけ既存補正でDataへ解決する。
 $OutputDir = [IO.Path]::GetFullPath($OutputDir)
 
 if ((Test-Path -LiteralPath (Join-Path $GameDir 'Data\erb') -PathType Container) -and
@@ -46,6 +47,7 @@ for ($iteration = 1; $iteration -le $Iterations; $iteration++) {
     Remove-Item -LiteralPath $startupLogPath -Force -ErrorAction SilentlyContinue
 
     $startedAt = Get-Date
+    # Program.ExeDirはDataDirを受け取る。FixtureRootを直接渡さない。
     $process = Start-Process -FilePath $ExePath `
         -ArgumentList @('--ExeDir', ('"{0}"' -f $GameDir), '--StartupTest') `
         -PassThru -WindowStyle Hidden

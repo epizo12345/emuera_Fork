@@ -4,6 +4,7 @@
 
 - `#今回の修正説明_2026-08-22.md` — Phase 13R38 displayLineList ring buffer化、Phase 13R37〜R35 LogicalLine/InstructionLine slot compaction、Phase 13R34 lazy argument CharStream retention削減、Phase 13R32〜R33 LogicalLine slot共有・error state整理、Phase 13R28〜R31 memory optimization
 - `#今回の修正説明_2026-08-23.md` — Phase 13R39 口上まとめ限定 Lazy ERB Hydration、およびPhase 13R39.1 部分再読込安全化の正式採用説明、実測効果、検証、採用状態
+- `#今回の修正説明_2026-08-23.md` — Phase 13R39〜R39.1、Phase 13R40.3 Lazy ERB設定化・Preload bypassの正式採用説明、実測効果、検証、採用状態
 - `#今回の修正説明_2026-08-21.md` — Phase 13R14、Phase 13R22〜R27（CheckElement共有mask、PrivateInt1D bounded reuse、FixedVariableTerm lease化、SingleLongTerm小整数共有、CalledFunction missing-target allocation削減、UDF selective transporter allocation）
 - `#今回の修正説明_2026-08-19.md` — Phase 12B1.1 runtime allocation optimization（private dynamic 2D整数配列のbounded reuse）
 - `#今回の修正説明_2026-08-17.md` — repository cleanup / code cleanup / warning cleanup / focused bugfix / memory optimization（Phase 1〜10B）
