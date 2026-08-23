@@ -458,6 +458,7 @@ internal sealed partial class EmueraConsole : IDisposable
         Preload.Clear();
         await Preload.Load(Program.ErbDir);
         await Preload.Load(Program.CsvDir);
+        logWriter.WriteLine($"File:Preload:Cached={Preload.CachedFileCount} LazySkipped={Preload.LazySkippedFileCount}");
 
         logWriter.WriteLine("File:Preload:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
 

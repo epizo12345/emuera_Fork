@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Unicode;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MinorShift.Emuera.Runtime.Utils;
@@ -19,10 +20,57 @@ static partial class Preload
     // キーはファイルパス、値はそのファイルを行ごとに分けた文字列配列。
     // 参照: プロジェクト資料/06_コード案内.md
     static ConcurrentDictionary<string, string[]> files = new(StringComparer.OrdinalIgnoreCase);
+    static int cachedFileCount;
+    static int lazySkippedFileCount;
+
+    internal static int CachedFileCount => Volatile.Read(ref cachedFileCount);
+    internal static int LazySkippedFileCount => Volatile.Read(ref lazySkippedFileCount);
 
     public static string[] GetFileLines(string path)
     {
         return files[path];
+    }
+
+    internal static bool TryGetFileLines(string path, out string[] lines)
+    {
+        return files.TryGetValue(path, out lines);
+    }
+
+    internal static string[] ReadFileLines(string path, bool checkUtf8Bom)
+    {
+        var bytes = File.ReadAllBytes(path).AsSpan();
+        if (bytes.IsEmpty)
+            return [""];
+
+        var encoding = Config.Config.Encode;
+        if (bytes.StartsWith<byte>([0xEF, 0xBB, 0xBF]))
+        {
+            encoding = Encoding.UTF8;
+            bytes = bytes[3..];
+        }
+        else if (checkUtf8Bom && JSONConfig.Game.CheckUTF8withBOM)
+        {
+            ParserMediator.ConfigWarn(LocalizationManager.Error.FileNotUTF8BOM, new ScriptPosition(path, 0), 0, "");
+        }
+
+        var n = (byte)'\n';
+        int lineCount = 1;
+        foreach (byte value in bytes)
+        {
+            if (value == n)
+                lineCount++;
+        }
+        var lines = new List<string>(lineCount);
+        foreach (var range in ((ReadOnlySpan<byte>)bytes[..]).Split(n))
+        {
+            if (bytes[range].IsEmpty)
+                lines.Add("");
+            else if (bytes[range].EndsWith([(byte)'\r']))
+                lines.Add(encoding.GetString(bytes[range.Start..(range.End.Value - 1)]));
+            else
+                lines.Add(encoding.GetString(bytes[range]));
+        }
+        return [.. lines];
     }
 
     public static async Task Load(string path)
@@ -46,58 +94,17 @@ static partial class Preload
                             ext.Equals(".erh", StringComparison.OrdinalIgnoreCase);
                 }).ForAll((childPath) =>
                 {
-                    var bytes = File.ReadAllBytes(childPath.FullName).AsSpan();
-
-                    if (bytes.IsEmpty)
+                    // [Emuera改修:MEM-13R40 2026-08-23]
+                    // active Lazy ERBは本文を起動時に全件retainedさせず、index/fallback側のdirect readへ渡す。
+                    // ERH/CSVやinactive modeは従来どおりPreloadへ保持し、encoding/BOM判定も変えない。
+                    if (childPath.Extension.Equals(".erb", StringComparison.OrdinalIgnoreCase)
+                        && LazyErbPolicy.IsActiveTarget(childPath.FullName))
                     {
-                        files[childPath.FullName] = [""];
+                        Interlocked.Increment(ref lazySkippedFileCount);
                         return;
                     }
-
-                    var encoding = Config.Config.Encode;
-                    if (bytes.StartsWith<byte>([0xEF, 0xBB, 0xBF]))
-                    {
-                        encoding = Encoding.UTF8;
-                        bytes = bytes[3..];
-                    }
-                    else
-                    {
-                        if (JSONConfig.Game.CheckUTF8withBOM)
-                        {
-                            ParserMediator.ConfigWarn(LocalizationManager.Error.FileNotUTF8BOM, new ScriptPosition(childPath.FullName, 0), 0, "");
-                        }
-                    }
-
-                    var n = (byte)'\n';
-                    // 先に改行数を数えてListの必要容量を確保し、拡張用配列の作り直しを減らす。
-                    int lineCount = 1;
-                    foreach (byte value in bytes)
-                    {
-                        if (value == n)
-                            lineCount++;
-                    }
-                    var lines = new List<string>(lineCount);
-
-                    foreach (var range in ((ReadOnlySpan<byte>)bytes[..]).Split(n))
-                    {
-                        if (bytes[range].IsEmpty)
-                        {
-                            lines.Add("");
-                        }
-                        else
-                        {
-                            if (bytes[range].EndsWith([(byte)'\r']))
-                            {
-                                lines.Add(encoding.GetString(bytes[range.Start..(range.End.Value - 1)]));
-                            }
-                            else
-                            {
-                                lines.Add(encoding.GetString(bytes[range]));
-                            }
-
-                        }
-                    }
-                    files[childPath.FullName] = [.. lines];
+                    files[childPath.FullName] = ReadFileLines(childPath.FullName, true);
+                    Interlocked.Increment(ref cachedFileCount);
                 });
             });
         }
@@ -106,6 +113,7 @@ static partial class Preload
             var key = path;
             var value = File.ReadAllLines(path, Config.Config.Encode);
             files[key] = value;
+            Interlocked.Increment(ref cachedFileCount);
         }
 
         Debug.WriteLine($"Load: {path} : End in {(DateTime.Now - startTime).TotalMilliseconds}ms");
@@ -122,5 +130,7 @@ static partial class Preload
     public static void Clear()
     {
         files.Clear();
+        Volatile.Write(ref cachedFileCount, 0);
+        Volatile.Write(ref lazySkippedFileCount, 0);
     }
 }
