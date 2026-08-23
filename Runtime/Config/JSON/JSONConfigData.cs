@@ -18,10 +18,10 @@ enum FontAntialias
 
 sealed class JSONGameConfigData
 {
-    // [Emuera改修:MEM-13R40 2026-08-23]
-    // Lazy ERBは既存setting.jsonの中で既定ONにし、Enabled=falseで完全にeagerへ戻せる。
-    // DirectoriesはProgram.ExeDir（通常のEmuera.exe + Data\ERB/CSV構成では実効DataDir）基準の相対directory配列。
-    // 設定ファイルは同じDataDirのsetting.jsonで、unknown property保持と不足項目migrationはJSONConfig側が担う。
+    // [Emuera改修:MEM-13R40.3 2026-08-23]
+    // ユーザー向けJSONは日本語名で、DataDir相対のERB/配下を指定する。内部型名は既存コードとの互換性のため維持する。
+    // 「起動時に読み込まない」はERB本文の解析/hydrationを必要時まで遅らせる意味で、存在・関数metadata等の確認まで省略する設定ではない。
+    [JsonPropertyName("起動時に読み込まないERBフォルダ")]
     public JSONLazyErbConfigData LazyErb { get; set; } = new();
 
     //ボタンにカーソルを合わせたときに背景色を変更するか
@@ -43,8 +43,10 @@ sealed class JSONGameConfigData
 
 sealed class JSONLazyErbConfigData
 {
+    [JsonPropertyName("有効")]
     public bool? Enabled { get; set; } = true;
-    public string[] Directories { get; set; } = ["口上/口上まとめ"];
+    [JsonPropertyName("フォルダ")]
+    public string[] Directories { get; set; } = ["ERB/口上/口上まとめ"];
 }
 
 sealed class JSONUserConfigData

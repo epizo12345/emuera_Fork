@@ -13,6 +13,13 @@ using System.Text.Unicode;
 namespace MinorShift.Emuera.Runtime.Config.JSON;
 static class JSONConfig
 {
+    const string _lazyErbKey = "起動時に読み込まないERBフォルダ";
+    const string _legacyLazyErbKey = "LazyErb";
+    const string _enabledKey = "有効";
+    const string _legacyEnabledKey = "Enabled";
+    const string _directoriesKey = "フォルダ";
+    const string _legacyDirectoriesKey = "Directories";
+
     public static JSONGameConfigData Game;
     public static JSONUserConfigData User;
 
@@ -60,17 +67,17 @@ static class JSONConfig
                 if (parsed is not JsonObject gameJson)
                     throw new JsonException("setting.json must contain a JSON object");
 
-                // [Emuera改修:MEM-13R40 2026-08-23]
-                // 既存setting.jsonのtop-level/nested unknown propertyを保持したまま、LazyErbの不足項目だけを可視化migrationする。
-                // 壊れたJSONや型不整合は後段の既存deserializeで例外化し、設定errorを黙って隠さない。
-                if (MigrateLazyErbDefaults(gameJson))
+                // [Emuera改修:MEM-13R40.3 2026-08-23]
+                // 旧LazyErbを日本語設定へ一度だけ移し、旧known fieldは変換、unknown fieldは新objectへ移して保持する。
+                // 新旧が同時にある場合は新設定を優先し、欠落known fieldだけ旧設定から補完する。
+                if (MigrateLazyErbSettings(gameJson))
                     File.WriteAllText(_gameConfigFilePath, gameJson.ToJsonString(_jsonOptions));
                 _gameJson = gameJson;
 
                 Game = JsonSerializer.Deserialize<JSONGameConfigData>(gameJson.ToJsonString(_jsonOptions));
                 Game.LazyErb ??= new JSONLazyErbConfigData();
                 Game.LazyErb.Enabled ??= true;
-                Game.LazyErb.Directories ??= ["口上/口上まとめ"];
+                Game.LazyErb.Directories ??= ["ERB/口上/口上まとめ"];
             }
         }
 
@@ -101,9 +108,9 @@ static class JSONConfig
             JsonObject knownJson = JsonSerializer.SerializeToNode(Game, _jsonOptions).AsObject();
             foreach (KeyValuePair<string, JsonNode> property in knownJson)
             {
-                if (property.Key == "LazyErb"
+                if (property.Key == _lazyErbKey
                     && property.Value is JsonObject knownLazy
-                    && gameJson["LazyErb"] is JsonObject existingLazy)
+                    && gameJson[_lazyErbKey] is JsonObject existingLazy)
                 {
                     foreach (KeyValuePair<string, JsonNode> lazyProperty in knownLazy)
                         existingLazy[lazyProperty.Key] = lazyProperty.Value?.DeepClone();
@@ -119,26 +126,100 @@ static class JSONConfig
         }
     }
 
-    static bool MigrateLazyErbDefaults(JsonObject gameJson)
+    static bool MigrateLazyErbSettings(JsonObject gameJson)
     {
-        if (!gameJson.TryGetPropertyValue("LazyErb", out JsonNode lazyNode) || lazyNode is null)
+        bool changed = false;
+        bool hasNew = gameJson.TryGetPropertyValue(_lazyErbKey, out JsonNode newNode) && newNode is JsonObject;
+        bool hasLegacy = gameJson.TryGetPropertyValue(_legacyLazyErbKey, out JsonNode legacyNode) && legacyNode is JsonObject;
+        JsonObject newJson;
+
+        if (hasNew)
+            newJson = (JsonObject)newNode;
+        else if (hasLegacy)
         {
-            gameJson["LazyErb"] = JsonSerializer.SerializeToNode(new JSONLazyErbConfigData(), _jsonOptions);
+            newJson = new JsonObject();
+            gameJson[_lazyErbKey] = newJson;
+            changed = true;
+        }
+        else
+        {
+            newJson = JsonSerializer.SerializeToNode(new JSONLazyErbConfigData(), _jsonOptions).AsObject();
+            gameJson[_lazyErbKey] = newJson;
             return true;
         }
-        if (lazyNode is not JsonObject lazyJson)
-            return false;
 
         JsonObject defaults = JsonSerializer.SerializeToNode(new JSONLazyErbConfigData(), _jsonOptions).AsObject();
-        bool changed = false;
-        foreach (string propertyName in new[] { "Enabled", "Directories" })
+        if (hasLegacy)
         {
-            if (!lazyJson.TryGetPropertyValue(propertyName, out JsonNode property) || property is null)
+            JsonObject legacyJson = (JsonObject)legacyNode;
+            CopyKnownIfMissing(newJson, _enabledKey, legacyJson, _legacyEnabledKey, ref changed);
+            if (!newJson.ContainsKey(_directoriesKey))
             {
-                lazyJson[propertyName] = defaults[propertyName]?.DeepClone();
+                if (legacyJson.TryGetPropertyValue(_legacyDirectoriesKey, out JsonNode legacyDirectories))
+                    newJson[_directoriesKey] = ConvertLegacyDirectories(legacyDirectories);
+                else
+                    newJson[_directoriesKey] = defaults[_directoriesKey]?.DeepClone();
+                changed = true;
+            }
+            foreach (KeyValuePair<string, JsonNode> property in legacyJson)
+            {
+                if (property.Key != _legacyEnabledKey
+                    && property.Key != _legacyDirectoriesKey
+                    && !newJson.ContainsKey(property.Key))
+                {
+                    newJson[property.Key] = property.Value?.DeepClone();
+                    changed = true;
+                }
+            }
+            gameJson.Remove(_legacyLazyErbKey);
+            changed = true;
+        }
+
+        foreach (string propertyName in new[] { _enabledKey, _directoriesKey })
+        {
+            if (!newJson.TryGetPropertyValue(propertyName, out JsonNode property) || property is null)
+            {
+                newJson[propertyName] = defaults[propertyName]?.DeepClone();
                 changed = true;
             }
         }
         return changed;
+    }
+
+    static void CopyKnownIfMissing(JsonObject destination, string destinationKey, JsonObject source, string sourceKey, ref bool changed)
+    {
+        if (!destination.ContainsKey(destinationKey)
+            && source.TryGetPropertyValue(sourceKey, out JsonNode sourceValue))
+        {
+            destination[destinationKey] = sourceValue?.DeepClone();
+            changed = true;
+        }
+    }
+
+    static JsonNode ConvertLegacyDirectories(JsonNode legacyDirectories)
+    {
+        if (legacyDirectories is not JsonArray legacyArray)
+            return legacyDirectories.DeepClone();
+
+        JsonArray converted = [];
+        foreach (JsonNode item in legacyArray)
+        {
+            if (item is JsonValue value && value.TryGetValue<string>(out string directory))
+                converted.Add(ConvertLegacyDirectory(directory));
+            else
+                converted.Add(item?.DeepClone());
+        }
+        return converted;
+    }
+
+    static string ConvertLegacyDirectory(string directory)
+    {
+        string normalized = directory.Trim().Replace('\\', '/');
+        if (Path.IsPathRooted(directory))
+            return normalized;
+        if (normalized.Equals("ERB", StringComparison.OrdinalIgnoreCase)
+            || normalized.StartsWith("ERB/", StringComparison.OrdinalIgnoreCase))
+            return normalized;
+        return "ERB/" + normalized.TrimStart('/');
     }
 }

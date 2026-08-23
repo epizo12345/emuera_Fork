@@ -7,9 +7,9 @@ namespace MinorShift.Emuera.Runtime.Utils;
 
 internal static class LazyErbPolicy
 {
-    // [Emuera改修:MEM-13R40 2026-08-23]
+    // [Emuera改修:MEM-13R40.3 2026-08-23]
     // Enabled=falseはLazy全体を止める完全なsafety switchとし、Debug/Analysisは従来どおり強制eagerにする。
-    // configured / enabled / activeを分離し、path membershipだけでPreloadやreloadを動かさない。
+    // 設定はDataDir相対だが、実際の対象はERB配下だけに限定し、ERB root自身も誤記による全ERB対象化を避けて拒否する。
     internal static bool IsEnabledForCurrentMode =>
         JSONConfig.Game?.LazyErb?.Enabled == true
         && !Program.DebugMode
@@ -57,16 +57,19 @@ internal static class LazyErbPolicy
             string fullDirectory;
             try
             {
-                fullDirectory = NormalizePath(normalized, erbRoot);
+                fullDirectory = NormalizePath(normalized, NormalizeRoot(Program.ExeDir));
             }
             catch
             {
                 continue;
             }
-            // [Emuera改修:MEM-13R40 2026-08-23]
-            // 設定値はProgram.ErbDir相対として正規化し、absolute/root escape/root自身を拒否する。
+            // [Emuera改修:MEM-13R40.3 2026-08-23]
+            // 設定値はDataDir相対で解決した後、ERB root配下かつroot自身ではない場合だけ採用する。
             // 同一表記の重複を除き、directory boundaryをIsWithinで確認して兄弟prefixを対象にしない。
-            if (fullDirectory == null || fullDirectory == erbRoot || !IsWithin(fullDirectory, erbRoot) || !seen.Add(fullDirectory))
+            if (fullDirectory == null
+                || string.Equals(fullDirectory, erbRoot, StringComparison.OrdinalIgnoreCase)
+                || !IsWithin(fullDirectory, erbRoot)
+                || !seen.Add(fullDirectory))
                 continue;
             yield return fullDirectory;
         }
