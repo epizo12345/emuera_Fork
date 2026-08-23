@@ -260,6 +260,9 @@ static partial class Program
     static Program()
     {
         var baseDirectory = AppContext.BaseDirectory;
+        // [Emuera改修:MEM-13R40.2 2026-08-23]
+        // 通常のsingle-file配置では実行ファイル横のData\erbを実効DataDirとして採用し、
+        // --ExeDirとsetting.jsonもこのDataDirを基準にする。テストfixtureも同じ契約で指定する。
         if (Directory.Exists(Path.Combine(baseDirectory, "Data", "erb")))
         {
             baseDirectory = Path.Combine(baseDirectory, "Data");

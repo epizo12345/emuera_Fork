@@ -4,6 +4,7 @@
 # N=10は画面確認、100は短い比較、1000は通常比較、5000は耐久試験に使う。
 # InternalMetrics付きではEmuera内部のERB・描画・GC等もJSON Linesへ記録する。
 # ゲームデータやセーブは書き換えない。使い方: プロジェクト資料/06_コード案内.md
+# GameDirは実効DataDir（sav\save219.savとsetting.jsonの親）を指定する。
 param(
     [string]$ExePath = (Join-Path $PSScriptRoot '..\artifacts\publish\Emuera\release_win-x64\Emuera.exe'),
     [string]$GameDir = (Join-Path $PSScriptRoot '..\eramegaten_p\Data'),
@@ -186,7 +187,7 @@ public static class EmueraBenchmarkNative
 '@
 
 $ExePath = [IO.Path]::GetFullPath($ExePath)
-$GameDir = [IO.Path]::GetFullPath($GameDir)
+$GameDir = [IO.Path]::GetFullPath($GameDir) # DataDir; FixtureRootを渡した場合だけ既存補正でDataへ解決する。
 $OutputDir = [IO.Path]::GetFullPath($OutputDir)
 $TraceToolPath = [IO.Path]::GetFullPath($TraceToolPath)
 
@@ -421,6 +422,7 @@ for ($iteration = 1; $iteration -le $Iterations; $iteration++) {
         $startupWatch = [Diagnostics.Stopwatch]::StartNew()
         $processStartedAtUtc = [datetime]::UtcNow
         $benchmarkLogPath = Join-Path $runDir ("metrics-{0:D3}.jsonl" -f $iteration)
+        # Program.ExeDirはDataDirを受け取る。FixtureRootを直接渡さない。
         $processArguments = @('--ExeDir', ('"{0}"' -f $GameDir))
         if ($InternalMetrics) {
             $processArguments += @('--BenchmarkLog', ('"{0}"' -f $benchmarkLogPath))

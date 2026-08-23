@@ -435,10 +435,10 @@ internal sealed class ProcessState
     public void IntoFunction(CalledFunction call, UserDefinedFunctionArgument srcArgs, ExpressionMediator exm)
     {
         // [Emuera改修:MEM-13R39 2026-08-22]
-        // 口上まとめの本文は固定CALLが保持するFunctionLabelLine stubへ実行直前に接続する。
+        // Lazy対象の本文は固定CALLが保持するFunctionLabelLine stubへ実行直前に接続する。
         // hydrationを引数評価・ScopeIn・functionList追加より前に行い、stub identityを変えない。
         if (!GlobalStatic.Process.EnsureLazyLoaded(call.TopLabel))
-            throw new CodeEE("口上まとめERBのLazy hydrationに失敗しました。");
+            throw new CodeEE("Lazy対象ERBのhydrationに失敗しました。");
 
         if (call.IsEvent)
         {
