@@ -5,8 +5,8 @@
 - 対象OS: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
-- `Emuera.exe` サイズ: 24,651,498バイト（約23.5 MiB）
-- `Emuera.exe` SHA-256: `3867710B90D03BC2569826731EC3D2C6AEBFA383AEBDA8B2075D969A824C8D8A`
+- `Emuera.exe` サイズ: 24,659,690バイト（約23.5 MiB）
+- `Emuera.exe` SHA-256: `E781D64460F0C0D13AAA1140FD7E1E04522EAC7BF1753022622AA5C5F027F886`
 - Phase 4A/B/C warning cleanupを反映（Release warning 52件から37件、new warning 0、Normal/Kojo起動確認済み）
 - Phase 5A/B/C focused bugfixを反映（VARSIZE/macro、ARRAYMSORT、GGETCOLOR/GSETCOLOR、SPRITEGETCOLOR。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
 - Phase 6A/B focused bugfixを反映（SPRITEANIMEADDFRAMEの無効Sprite入力時NRE修正、ClipboardのBufferSize/MinTimer 0・負値の安全化、ConfigDialogの最小値1制限とruntime clamp。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
@@ -33,6 +33,7 @@
 - Phase 13R38で通常表示ログの`displayLineList`をring buffer化し、`MaxLog=50000`到達後の先頭破棄をO(1)にしました。論理index順、描画、バックログ、選択肢、save/ERB semanticsは維持しています。
 - Phase 13R39で`Data\ERB\口上\口上まとめ\`配下だけをLazy ERB Hydration化しました。起動時は関数stub／metadataを登録し、本文は初回実行直前にERBファイル単位でhydrateします。実fixtureでLazy 478、eager fallback 10、startup hydration 0、KOJO startup Managed `1,762,740,872 → 1,174,959,288 bytes`（-33.34%）を確認しました。通常ERB、AnalysisMode、DebugModeは従来どおりeagerです。
 - Phase 13R39.1で、通常モードの口上まとめ対象reloadだけをfull reloadへ昇格し、DebugMode / AnalysisModeでは従来のpartial/folder reloadを維持するよう修正しました。preprocessorはeager fallback、`[[...]]` renameは維持しています。正式配布EXE自身でsave219 + RepeatCount=100を確認済みです。
+- Phase 13R40.3で、`Data\setting.json`から設定できる日本語名のLazy ERB設定を正式採用しました。旧`LazyErb`形式から自動移行し、Data基準の`ERB\`配下だけを対象に、不正パスやERB root指定を拒否します。Preload時の不要なbulk cacheを抑制し、従来互換性とreload safetyを維持しています。既存検証でManaged memory約1.311GB→約1.050GB、Working Set約2.224GB→約1.604GBを確認しています。
 - Phase 13R36で`InstructionLine`の`FunctionIdentifier`専用参照slotを削除し、`FunctionCode`とassignment `OperatorCode`をpackしました。built-in lookup、SET、method-as-instruction identity、lazy parsing、save互換性を維持し、shallow sizeを88 bytesから80 bytesへ削減しました。
 - Phase 13R34 lazy argument parsing前の`CharStream`保持をsource/offset snapshotへ変更し、InputReady時のreader由来`CharStream` retentionを除去しました。`InstructionLine` 96-byte layout、lazy parsing、save互換性は維持しています。
 - Phase 13R35 `InstructionLine`のerror messageをR34のargument storageへunionし、同数のInstructionLineでshallow sizeを96 bytesから88 bytesへ削減しました。非InstructionLineのerror semantics、lazy parsing、save互換性は維持しています。
