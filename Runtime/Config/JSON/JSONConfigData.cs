@@ -43,10 +43,13 @@ sealed class JSONGameConfigData
 
 sealed class JSONLazyErbConfigData
 {
+    // [Emuera改修:MEM-13R41B1 2026-08-23]
+    // 依頼は一覧用のfallbackファイルをeagerに維持したまま、本編の大部分を初回利用まで遅延できることを実ゲームで確認したため既定対象へ加える。
+    // ユーザーが明示したフォルダ設定は設定値として尊重し、起動時に自動追加しない。
     [JsonPropertyName("有効")]
     public bool? Enabled { get; set; } = true;
     [JsonPropertyName("フォルダ")]
-    public string[] Directories { get; set; } = ["ERB/口上/口上まとめ"];
+    public string[] Directories { get; set; } = ["ERB/口上/口上まとめ", "ERB/RPG/依頼"];
 }
 
 sealed class JSONUserConfigData
