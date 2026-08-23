@@ -1,14 +1,16 @@
 # Emuera.NET 最終通常版
 
-- 更新日: 2026-08-23
+- 更新日: 2026-08-24
 - 基礎: BugFix_Test `7b7dd3bf240eff4fdfc7094f4175de0e014532b7`
 - 対象OS: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
 - `Emuera.exe` サイズ: 24,659,690バイト（約23.5 MiB）
-- `Emuera.exe` SHA-256: `7CA2A3F6FCF5690F710EC47F6B07FB3C1EC08EF83A5F296DC1BD312F3E4BF499`
+- `Emuera.exe` SHA-256: `E94BAE6269BE6DC101FC5D7F4E5BE0719041769D1BD447C15EB7183EBE91FEC4`
+- `Emuera.exe` ProductVersion: `0.2.6.0+e8f836979288c303906ca78ba89738c0456d5e49`（suffixはEXEを生成したsource commit）
 - Phase 13R41B1として、`ERB/RPG/依頼`をLazy ERBの新しい既定対象へ追加しました。依頼5「教授の隠れ家」の一覧・本編・初回hydration、save/load、save219実戦闘を実機確認済みです。既存の明示的な`setting.json`のLazy対象は自動変更せず、欠落・null・新規設定のdefaultだけを更新します。Repeat1000では安定したruntime性能悪化を確認していません。
 - Phase 13R41B2として、`ERB/RPG/イベント`をLazy ERBの新しい既定対象へ追加しました。save39のイベント一覧表示後も596 files / 8,255,909 bytesが未接触で、Trial startup Working Set中央値は約69.2MB減少しました。イベント30「神野の娘」本編、save/load、save219実戦闘を実機確認済みです。既存の明示的な`setting.json`へEventは自動追加しません。Repeat1000では安定したruntime性能悪化を確認していません。
+- Phase 13R41Cとして、配布EXEのProductVersion suffixがEXEを生成したsource commitを示すよう、clean commitからのpublishとfull SHA検証手順を整備しました。ゲーム機能・Lazy対象・GC policyは変更していません。
 - Phase 4A/B/C warning cleanupを反映（Release warning 52件から37件、new warning 0、Normal/Kojo起動確認済み）
 - Phase 5A/B/C focused bugfixを反映（VARSIZE/macro、ARRAYMSORT、GGETCOLOR/GSETCOLOR、SPRITEGETCOLOR。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
 - Phase 6A/B focused bugfixを反映（SPRITEANIMEADDFRAMEの無効Sprite入力時NRE修正、ClipboardのBufferSize/MinTimer 0・負値の安全化、ConfigDialogの最小値1制限とruntime clamp。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
