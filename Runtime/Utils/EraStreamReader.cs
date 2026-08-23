@@ -101,16 +101,17 @@ internal sealed partial class EraStreamReader : IDisposable
     public bool OpenOnCache(string path, string name)
     {
         // [Emuera改修:MEM-13R40 2026-08-23]
-        // R40はactive Lazy ERBをPreloadへ入れないため、cache missだけ対象fileをdirect readする。
-        // cache hitの既存経路とencoding/BOM semanticsは維持し、fallbackやCSV/ERHの利用者を変えない。
-        if (!Preload.TryGetFileLines(path, out string[] cachedLines))
+        // R40でPreloadから明示的にskipしたactive Lazy ERBだけがcache missからdirect readへ進む。
+        // 非targetのcache missは従来のGetFileLines契約を維持し、KeyNotFound等を隠さない。
+        if (!Preload.TryGetFileLines(path, out string[] cachedLines)
+            && LazyErbPolicy.IsActiveTarget(path))
             return OpenDirect(path, name, true);
         filepath = path.ToString();
         filename = name.ToString();
         fileId = ScriptFileRegistry.GetId(filename);
         curNo = 0;
         nextNo = 0;
-        _fileLines = cachedLines;
+        _fileLines = cachedLines ?? Preload.GetFileLines(path);
         return true;
     }
 

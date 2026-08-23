@@ -20,11 +20,13 @@ static partial class Preload
     // キーはファイルパス、値はそのファイルを行ごとに分けた文字列配列。
     // 参照: プロジェクト資料/06_コード案内.md
     static ConcurrentDictionary<string, string[]> files = new(StringComparer.OrdinalIgnoreCase);
+#if PERFORMANCE_METRICS
     static int cachedFileCount;
     static int lazySkippedFileCount;
 
     internal static int CachedFileCount => Volatile.Read(ref cachedFileCount);
     internal static int LazySkippedFileCount => Volatile.Read(ref lazySkippedFileCount);
+#endif
 
     public static string[] GetFileLines(string path)
     {
@@ -100,11 +102,15 @@ static partial class Preload
                     if (childPath.Extension.Equals(".erb", StringComparison.OrdinalIgnoreCase)
                         && LazyErbPolicy.IsActiveTarget(childPath.FullName))
                     {
+#if PERFORMANCE_METRICS
                         Interlocked.Increment(ref lazySkippedFileCount);
+#endif
                         return;
                     }
                     files[childPath.FullName] = ReadFileLines(childPath.FullName, true);
+#if PERFORMANCE_METRICS
                     Interlocked.Increment(ref cachedFileCount);
+#endif
                 });
             });
         }
@@ -113,7 +119,9 @@ static partial class Preload
             var key = path;
             var value = File.ReadAllLines(path, Config.Config.Encode);
             files[key] = value;
+#if PERFORMANCE_METRICS
             Interlocked.Increment(ref cachedFileCount);
+#endif
         }
 
         Debug.WriteLine($"Load: {path} : End in {(DateTime.Now - startTime).TotalMilliseconds}ms");
@@ -130,7 +138,9 @@ static partial class Preload
     public static void Clear()
     {
         files.Clear();
+#if PERFORMANCE_METRICS
         Volatile.Write(ref cachedFileCount, 0);
         Volatile.Write(ref lazySkippedFileCount, 0);
+#endif
     }
 }

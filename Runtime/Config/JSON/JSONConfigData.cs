@@ -19,8 +19,8 @@ enum FontAntialias
 sealed class JSONGameConfigData
 {
     // [Emuera改修:MEM-13R40 2026-08-23]
-    // Lazy ERBは既存setting.jsonの中で既定ONにし、R39の安全境界を保ったまま対象directoryだけを変更可能にする。
-    // DirectoriesはProgram.ErbDir基準の相対directory配列で、未知のJSON propertyはJSONConfig側で保持する。
+    // Lazy ERBは既存setting.jsonの中で既定ONにし、Enabled=falseで完全にeagerへ戻せる。
+    // DirectoriesはProgram.ErbDir基準の相対directory配列で、unknown property保持と不足項目migrationはJSONConfig側が担う。
     public JSONLazyErbConfigData LazyErb { get; set; } = new();
 
     //ボタンにカーソルを合わせたときに背景色を変更するか

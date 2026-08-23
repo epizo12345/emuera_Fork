@@ -7,6 +7,9 @@ namespace MinorShift.Emuera.Runtime.Utils;
 
 internal static class LazyErbPolicy
 {
+    // [Emuera改修:MEM-13R40 2026-08-23]
+    // Enabled=falseはLazy全体を止める完全なsafety switchとし、Debug/Analysisは従来どおり強制eagerにする。
+    // configured / enabled / activeを分離し、path membershipだけでPreloadやreloadを動かさない。
     internal static bool IsEnabledForCurrentMode =>
         JSONConfig.Game?.LazyErb?.Enabled == true
         && !Program.DebugMode
@@ -60,7 +63,9 @@ internal static class LazyErbPolicy
             {
                 continue;
             }
-            // ErbDir root itself is deliberately rejected; a broad root target would remove the R39 safety boundary.
+            // [Emuera改修:MEM-13R40 2026-08-23]
+            // 設定値はProgram.ErbDir相対として正規化し、absolute/root escape/root自身を拒否する。
+            // 同一表記の重複を除き、directory boundaryをIsWithinで確認して兄弟prefixを対象にしない。
             if (fullDirectory == null || fullDirectory == erbRoot || !IsWithin(fullDirectory, erbRoot) || !seen.Add(fullDirectory))
                 continue;
             yield return fullDirectory;
@@ -69,21 +74,32 @@ internal static class LazyErbPolicy
 
     static string NormalizeRoot(string root)
     {
-        string fullRoot = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-        return fullRoot + Path.DirectorySeparatorChar;
+        return NormalizeAbsolute(root);
     }
 
     static string NormalizePath(string path, string erbRoot)
     {
-        string fullPath = Path.GetFullPath(Path.IsPathRooted(path) ? path : Path.Combine(erbRoot, path))
-            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        string fullPath = NormalizeAbsolute(Path.IsPathRooted(path) ? path : Path.Combine(erbRoot, path));
         return IsWithin(fullPath, erbRoot) ? fullPath : null;
+    }
+
+    static string NormalizeAbsolute(string path)
+    {
+        string fullPath = Path.GetFullPath(path);
+        string root = Path.GetPathRoot(fullPath);
+        return fullPath.Length == root.Length
+            ? fullPath
+            : fullPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
     }
 
     static bool IsWithin(string path, string directory)
     {
-        string normalizedDirectory = directory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-        return path.Equals(normalizedDirectory, StringComparison.OrdinalIgnoreCase)
-            || path.StartsWith(normalizedDirectory + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+        if (path.Equals(directory, StringComparison.OrdinalIgnoreCase))
+            return true;
+        string prefix = directory.EndsWith(Path.DirectorySeparatorChar)
+            || directory.EndsWith(Path.AltDirectorySeparatorChar)
+            ? directory
+            : directory + Path.DirectorySeparatorChar;
+        return path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
     }
 }

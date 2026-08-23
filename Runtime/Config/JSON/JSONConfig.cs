@@ -55,13 +55,10 @@ static class JSONConfig
                     throw new JsonException("setting.json must contain a JSON object");
 
                 // [Emuera改修:MEM-13R40 2026-08-23]
-                // 既存setting.jsonへblockを追加する際、既知propertyだけを再Serializeすると将来の未知propertyを失う。
-                // JsonObjectへ必要なblockだけを追加して元のpropertyを保持し、壊れたJSONは従来どおり例外として扱う。
-                if (!gameJson.TryGetPropertyValue("LazyErb", out JsonNode lazyErbNode) || lazyErbNode is null)
-                {
-                    gameJson["LazyErb"] = JsonSerializer.SerializeToNode(new JSONLazyErbConfigData(), _jsonOptions);
+                // 既存setting.jsonのtop-level/nested unknown propertyを保持したまま、LazyErbの不足項目だけを可視化migrationする。
+                // 壊れたJSONや型不整合は後段の既存deserializeで例外化し、設定errorを黙って隠さない。
+                if (MigrateLazyErbDefaults(gameJson))
                     File.WriteAllText(_gameConfigFilePath, gameJson.ToJsonString(_jsonOptions));
-                }
                 _gameJson = gameJson;
 
                 Game = JsonSerializer.Deserialize<JSONGameConfigData>(gameJson.ToJsonString(_jsonOptions));
@@ -93,16 +90,49 @@ static class JSONConfig
     {
         {
             // [Emuera改修:MEM-13R40 2026-08-23]
-            // Save後もmigration時に残した未知propertyを維持し、setting.jsonの将来拡張を破壊しない。
+            // Save後もtop-level/nested unknown propertyを維持し、setting.jsonの将来拡張を破壊しない。
             JsonObject gameJson = _gameJson ?? JsonSerializer.SerializeToNode(Game, _jsonOptions).AsObject();
             JsonObject knownJson = JsonSerializer.SerializeToNode(Game, _jsonOptions).AsObject();
             foreach (KeyValuePair<string, JsonNode> property in knownJson)
-                gameJson[property.Key] = property.Value?.DeepClone();
+            {
+                if (property.Key == "LazyErb"
+                    && property.Value is JsonObject knownLazy
+                    && gameJson["LazyErb"] is JsonObject existingLazy)
+                {
+                    foreach (KeyValuePair<string, JsonNode> lazyProperty in knownLazy)
+                        existingLazy[lazyProperty.Key] = lazyProperty.Value?.DeepClone();
+                }
+                else
+                    gameJson[property.Key] = property.Value?.DeepClone();
+            }
             File.WriteAllText(_gameConfigFilePath, gameJson.ToJsonString(_jsonOptions));
         }
         {
             var json = JsonSerializer.Serialize(User, _jsonOptions);
             File.WriteAllText(_userConfigFilePath, json);
         }
+    }
+
+    static bool MigrateLazyErbDefaults(JsonObject gameJson)
+    {
+        if (!gameJson.TryGetPropertyValue("LazyErb", out JsonNode lazyNode) || lazyNode is null)
+        {
+            gameJson["LazyErb"] = JsonSerializer.SerializeToNode(new JSONLazyErbConfigData(), _jsonOptions);
+            return true;
+        }
+        if (lazyNode is not JsonObject lazyJson)
+            return false;
+
+        JsonObject defaults = JsonSerializer.SerializeToNode(new JSONLazyErbConfigData(), _jsonOptions).AsObject();
+        bool changed = false;
+        foreach (string propertyName in new[] { "Enabled", "Directories" })
+        {
+            if (!lazyJson.TryGetPropertyValue(propertyName, out JsonNode property) || property is null)
+            {
+                lazyJson[propertyName] = defaults[propertyName]?.DeepClone();
+                changed = true;
+            }
+        }
+        return changed;
     }
 }
