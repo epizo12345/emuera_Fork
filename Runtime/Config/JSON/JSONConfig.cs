@@ -189,7 +189,7 @@ static class JSONConfig
         }
         else if (hasLegacyProperty)
         {
-            // null is compatible with missing/default semantics, but the obsolete key must not survive migration.
+            // nullはmissing/default互換として扱うが、migration後に旧LazyErb keyを残してはいけない。
             gameJson.Remove(_legacyLazyErbKey);
             changed = true;
         }
