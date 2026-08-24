@@ -1,4 +1,6 @@
 using MinorShift.Emuera.Runtime.Config.JSON;
+using RuntimeConfig = MinorShift.Emuera.Runtime.Config.Config;
+using MinorShift.Emuera.Runtime.Config;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,7 +15,10 @@ internal static class LazyErbPolicy
     internal static bool IsEnabledForCurrentMode =>
         JSONConfig.Game?.LazyErb?.Enabled == true
         && !Program.DebugMode
-        && !Program.AnalysisMode;
+        && !Program.AnalysisMode
+            && RuntimeConfig.IgnoreUncalledFunction
+            && !RuntimeConfig.NeedReduceArgumentOnLoad
+            && RuntimeConfig.FunctionNotCalledWarning == DisplayWarningFlag.IGNORE;
 
     internal static bool IsConfiguredTargetPath(string path)
     {
@@ -41,6 +46,30 @@ internal static class LazyErbPolicy
 
     internal static bool IsActiveTarget(string path) =>
         IsEnabledForCurrentMode && IsConfiguredTargetPath(path);
+
+    internal static bool RequiresFullReloadForDirectory(string reloadDirectory, bool searchSubdirectory)
+    {
+        if (!IsEnabledForCurrentMode || string.IsNullOrWhiteSpace(reloadDirectory))
+            return false;
+        try
+        {
+            string erbRoot = NormalizeRoot(Program.ErbDir);
+            string reloadRoot = NormalizeAbsolute(reloadDirectory);
+            if (!IsWithin(reloadRoot, erbRoot))
+                return false;
+            foreach (string configuredDirectory in GetConfiguredDirectories(erbRoot))
+            {
+                if (IsWithin(reloadRoot, configuredDirectory)
+                    || searchSubdirectory && IsWithin(configuredDirectory, reloadRoot))
+                    return true;
+            }
+        }
+        catch
+        {
+            return false;
+        }
+        return false;
+    }
 
     static IEnumerable<string> GetConfiguredDirectories(string erbRoot)
     {
