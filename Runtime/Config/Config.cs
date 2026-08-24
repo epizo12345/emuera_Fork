@@ -258,6 +258,7 @@ internal static class Config
         long key = getUpdateKey();
         bool updated = LastKey != key;
         LastKey = key;
+        NeedReduceArgumentOnLoad = updated;
         return updated;
     }
 

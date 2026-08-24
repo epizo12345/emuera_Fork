@@ -229,6 +229,7 @@ internal sealed partial class Process(EmueraConsole view)
             logWriter.WriteLine($"Proc:Init:ERB:LabelSetup {erbLoader.LabelSetupMilliseconds}ms");
             logWriter.WriteLine($"Proc:Init:ERB:ScriptParse {erbLoader.ScriptParseMilliseconds}ms");
             logWriter.WriteLine($"Proc:Init:ERB:LazyErb files={erbLoader.LazyErbFileCount} fallback={erbLoader.LazyErbFallbackFileCount}");
+            logWriter.WriteLine($"Proc:Init:ERB:DeferredEager count={erbLoader.DeferredEagerCount}");
             logWriter.WriteLine($"Proc:Init:ERB:End {stopWatch.ElapsedMilliseconds}ms");
             PerformanceMetrics.MarkStartup("ErbParsed"); // ERB解析完了の目印
 
@@ -256,7 +257,7 @@ internal sealed partial class Process(EmueraConsole view)
     // [Emuera改修:MEM-13R39 2026-08-22]
     // 通常モードではactive erbLoaderのLazy表を使い、eagerのDebug/Analysisやreload中のloader不在時は
     // 追加処理なしで従来経路を通す。呼び出し側の引数評価・ScopeInより前に判定できる境界を保つ。
-    internal bool EnsureLazyLoaded(FunctionLabelLine label) => erbLoader?.EnsureLazyLoaded(label) ?? true;
+    internal bool EnsureFunctionReady(FunctionLabelLine label) => erbLoader?.EnsureFunctionReady(label) ?? true;
 
     public async Task ReloadErbAll()
     {
@@ -275,10 +276,11 @@ internal sealed partial class Process(EmueraConsole view)
         // active erbLoaderは通常モードで起動時の未hydrate stubとLazy対応表を所有するため、
         // active Lazy対象を含む再読込ではpartial loaderに置換せず、全体を一体で再構築する。
         // Debug/AnalysisではLazyが無効なので、従来どおりpartial reloadを維持する。
-        if (!Program.DebugMode
-            && !Program.AnalysisMode
-            && paths.Any(LazyErbPolicy.IsActiveTarget))
+        if (erbLoader?.HasRuntimeLazyState == true || paths.Any(LazyErbPolicy.IsActiveTarget))
         {
+            // [Emuera改修:MEM-13R41I 2026-08-24]
+            // active loaderのLazy/Deferred表はFunctionLabelLine identityを保持する。
+            // 別partialLoaderで一部fileだけ差し替えるとold label参照が残るため、runtime stateがある間はfull reloadへ統一する。
             await ReloadErbAll();
             return;
         }
@@ -294,6 +296,17 @@ internal sealed partial class Process(EmueraConsole view)
 
     public async Task ReloadErbFolder(string dirPath)
     {
+        // [Emuera改修:MEM-13R41F 2026-08-24]
+        // ファイルが削除されて列挙結果から消えていても、configured Lazy directoryとのscope交差で
+        // full reloadへ昇格し、古いstubをLabelDictionaryへ残さない。親folderの扱いはSearchSubdirectoryに従う。
+        if (erbLoader?.HasRuntimeLazyState == true
+            || LazyErbPolicy.RequiresFullReloadForDirectory(dirPath, Config.SearchSubdirectory))
+        {
+            // [Emuera改修:MEM-13R41I 2026-08-24]
+            // folder reloadも同じloader ownership規則に揃え、削除済みLazy fileと旧label identityの双方を残さない。
+            await ReloadErbAll();
+            return;
+        }
         var serachOption = SearchOption.TopDirectoryOnly;
         if (Config.SearchSubdirectory)
         {
@@ -303,16 +316,6 @@ internal sealed partial class Process(EmueraConsole view)
         string[] erbFiles = Directory.EnumerateFiles(dirPath, "", serachOption)
             .Where(x => Path.GetExtension(x).Equals(".erb", StringComparison.OrdinalIgnoreCase))
             .ToArray();
-        // [Emuera改修:MEM-13R39.1 2026-08-23]
-        // 通常モードで対象一覧にactive Lazy対象が1つでもあれば、stub identity・metadata・Lazy indexを
-        // 部分更新で分離させないためfull reloadへ昇格する。Debug/Analysisでは従来のfolder reloadを維持する。
-        if (!Program.DebugMode
-            && !Program.AnalysisMode
-            && erbFiles.Any(LazyErbPolicy.IsActiveTarget))
-        {
-            await ReloadErbAll();
-            return;
-        }
         saveCurrentState(false);
         state.SystemState = SystemStateCode.System_Reloaderb;
         await Preload.Load(dirPath);
