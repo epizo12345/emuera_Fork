@@ -1,13 +1,14 @@
 # Emuera.NET 最終通常版
 
-- 更新日: 2026-08-24
+- 更新日: 2026-08-25
 - 基礎: BugFix_Test `7b7dd3bf240eff4fdfc7094f4175de0e014532b7`
 - 対象OS: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
 - `Emuera.exe` サイズ: 24,659,690バイト（約23.5 MiB）
-- `Emuera.exe` SHA-256: `E94BAE6269BE6DC101FC5D7F4E5BE0719041769D1BD447C15EB7183EBE91FEC4`
-- `Emuera.exe` ProductVersion: `0.2.6.0+e8f836979288c303906ca78ba89738c0456d5e49`（suffixはEXEを生成したsource commit）
+- `Emuera.exe` SHA-256: `F83D7EDBB3FEC91B4E92C8CFAB69A7149F92B5BE31E4CBE3DCB0DDA94EDE7EA0`
+- `Emuera.exe` ProductVersion: `0.2.6.0+888c57406e68f63274a4fa64e861923bc9ce7e69`（suffixはEXEを生成したsource commit）
+- Phase 13R41Iとして、Lazyから到達した未解析Eager関数のDeferred Eager処理、同一Lazy fileのready判定、runtime parse後のwarning/error処理、#DIM/#DIMS transaction、Rename安全化、Lazy state存在時のRELOADERB全体再読み込み昇格、設定条件による安全側のLazy制限、ReduceArgumentOnLoad=ONCE更新判定を正式採用しました。correctness validation、save39 Request/Event/調教口上/save-load、save219/Repeat、settings matrix 9/9を確認済みです。性能はR41C比で実質維持です。
 - Phase 13R41B1として、`ERB/RPG/依頼`をLazy ERBの新しい既定対象へ追加しました。依頼5「教授の隠れ家」の一覧・本編・初回hydration、save/load、save219実戦闘を実機確認済みです。既存の明示的な`setting.json`のLazy対象は自動変更せず、欠落・null・新規設定のdefaultだけを更新します。Repeat1000では安定したruntime性能悪化を確認していません。
 - Phase 13R41B2として、`ERB/RPG/イベント`をLazy ERBの新しい既定対象へ追加しました。save39のイベント一覧表示後も596 files / 8,255,909 bytesが未接触で、Trial startup Working Set中央値は約69.2MB減少しました。イベント30「神野の娘」本編、save/load、save219実戦闘を実機確認済みです。既存の明示的な`setting.json`へEventは自動追加しません。Repeat1000では安定したruntime性能悪化を確認していません。
 - Phase 13R41Cとして、配布EXEのProductVersion suffixがEXEを生成したsource commitを示すよう、clean commitからのpublishとfull SHA検証手順を整備しました。ゲーム機能・Lazy対象・GC policyは変更していません。
