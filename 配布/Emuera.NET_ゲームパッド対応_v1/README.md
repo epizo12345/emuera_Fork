@@ -1,6 +1,7 @@
 # Emuera.NET ゲームパッド対応 v1
 
 作成日: 2026-08-16
+更新日: 2026-08-25
 
 このフォルダの`Emuera.exe`は、ゲームパッド対応v1を含むWindows x64向けRelease単一EXEです。
 
@@ -47,6 +48,12 @@ framework-dependent単一ファイル版のため、Emuera本体のDLLを別途�
 
 PS4系の既定は×が決定、○がキャンセルです。XInputはXbox配列、WinMM / Raw Input(HID)は接続デバイスを確認してXbox系またはPS4系の配列を選択します。
 
+### Bugfix1 R4
+
+- MaxLog到達後の方向入力停止、Mapping下部の[0]/[1]/[9] navigation、Dungeon Direct Input後のFocus位置問題を修正しました。
+- WinMM/XInput使用中の不要なRaw Input payload解析を抑制し、Controller接続時のMacro性能低下を修正しました。Raw Input fallback、hotplug、Macro中Escapeは維持しています。
+- 実機で長時間Dungeon移動、hotplug、Mapping、Macro中Escapeを確認済みです。
+
 ## 診断
 
 ```powershell
@@ -79,10 +86,10 @@ EXEと同じフォルダへ`gamepad-debug.log`を出力します。
 - Runtime: win-x64
 - Self-contained: false
 - Single-file: true
-- Source commit: `5bdf12155d2546f849024011c89b93c800c4e9cc`
+- Source commit: `6ef3917cc2df49f16cac1358df4ccead4c6ac72f`
 - FileVersion: `0.2.6.0`
-- ProductVersion: `0.2.6.0+5bdf12155d2546f849024011c89b93c800c4e9cc`
-- Emuera.exe: 24,807,146 bytes
-- SHA-256: `931611826DF6C7154A27AEFF7CC05FF56ADDEBF501B9E49D50FBA1A8DEBFF210`
+- ProductVersion: `0.2.6.0+6ef3917cc2df49f16cac1358df4ccead4c6ac72f`
+- Emuera.exe: 24,835,818 bytes
+- SHA-256: `AA896CE0A433757C49155BF217D6152344463A53366EABD1D6F0855FB7C4FB6D`
 
 詳細仕様はリポジトリの`プロジェクト資料/07_ゲームパッド対応_v1_仕様書.md`、変更説明は`今回の修正説明_2026-08-11_ゲームパッド対応_v1.md`を参照してください。
