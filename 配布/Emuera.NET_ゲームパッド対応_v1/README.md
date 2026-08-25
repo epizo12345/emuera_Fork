@@ -48,6 +48,10 @@ framework-dependent単一ファイル版のため、Emuera本体のDLLを別途�
 
 PS4系の既定は×が決定、○がキャンセルです。XInputはXbox配列、WinMM / Raw Input(HID)は接続デバイスを確認してXbox系またはPS4系の配列を選択します。
 
+### JSON設定ファイル
+
+`setting.json` と `setting_user.json` はUTF-8 BOM付きで保存します。既存のBOMなしJSONは、正常に読み込めた場合だけBOM付きへ移行します。壊れたJSONは上書きせず、そのまま保持します。
+
 ### Bugfix1 R4
 
 - MaxLog到達後の方向入力停止、Mapping下部の[0]/[1]/[9] navigation、Dungeon Direct Input後のFocus位置問題を修正しました。
@@ -86,10 +90,10 @@ EXEと同じフォルダへ`gamepad-debug.log`を出力します。
 - Runtime: win-x64
 - Self-contained: false
 - Single-file: true
-- Source commit: `6ef3917cc2df49f16cac1358df4ccead4c6ac72f`
+- Source commit: `541a46a23af418348f4c15207f55e9b63cd8f318`
 - FileVersion: `0.2.6.0`
-- ProductVersion: `0.2.6.0+6ef3917cc2df49f16cac1358df4ccead4c6ac72f`
+- ProductVersion: `0.2.6.0+541a46a23af418348f4c15207f55e9b63cd8f318`
 - Emuera.exe: 24,835,818 bytes
-- SHA-256: `AA896CE0A433757C49155BF217D6152344463A53366EABD1D6F0855FB7C4FB6D`
+- SHA-256: `7D25BD2ECFC6B4B8A73332D4D8BEB398F5DE52CD90CF8F77EB7A973CEE29BB5E`
 
 詳細仕様はリポジトリの`プロジェクト資料/07_ゲームパッド対応_v1_仕様書.md`、変更説明は`今回の修正説明_2026-08-11_ゲームパッド対応_v1.md`を参照してください。
