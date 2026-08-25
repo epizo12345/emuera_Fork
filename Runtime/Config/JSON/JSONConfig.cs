@@ -4,6 +4,7 @@ using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -38,6 +39,7 @@ static class JSONConfig
     static string _gameConfigFilePath = Program.ExeDir + _gameConfigFileName;
     const string _userConfigFileName = "setting_user.json";
     static string _userConfigFilePath = Program.ExeDir + _userConfigFileName;
+    static readonly Encoding _utf8Bom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: true);
 
     public static SKSamplingOptions SamplingOptions { get; private set; }
     public static void SetSamplingOptions()
@@ -58,7 +60,7 @@ static class JSONConfig
             {
                 var defaultData = new JSONGameConfigData();
                 var defaultJson = JsonSerializer.Serialize(defaultData, _jsonOptions);
-                File.WriteAllText(_gameConfigFilePath, defaultJson);
+                WriteJsonFile(_gameConfigFilePath, defaultJson);
             }
 
             {
@@ -81,8 +83,8 @@ static class JSONConfig
                 // [Emuera改修:MEM-13R40.3 2026-08-23]
                 // migration結果はtyped validation成功後だけ保存する。設定ミスを先にdefault補完してdiskへ書くと、
                 // 後段の型エラー発生時にユーザーの元設定を部分的に書き換えて隠してしまうため。
-                if (migrated)
-                    File.WriteAllText(_gameConfigFilePath, validatedJson);
+                if (migrated || !HasUtf8Bom(_gameConfigFilePath))
+                    WriteJsonFile(_gameConfigFilePath, migrated ? validatedJson : json);
                 _gameJson = gameJson;
                 Game = loadedGame;
             }
@@ -93,13 +95,15 @@ static class JSONConfig
             {
                 var defaultData = new JSONUserConfigData();
                 var defaultJson = JsonSerializer.Serialize(defaultData, _jsonOptions);
-                File.WriteAllText(_userConfigFilePath, defaultJson);
+                WriteJsonFile(_userConfigFilePath, defaultJson);
             }
 
             {
                 var json = File.ReadAllText(_userConfigFilePath);
 
                 User = JsonSerializer.Deserialize<JSONUserConfigData>(json);
+                if (!HasUtf8Bom(_userConfigFilePath))
+                    WriteJsonFile(_userConfigFilePath, json);
             }
         }
 
@@ -125,12 +129,25 @@ static class JSONConfig
                 else
                     gameJson[property.Key] = property.Value?.DeepClone();
             }
-            File.WriteAllText(_gameConfigFilePath, gameJson.ToJsonString(_jsonOptions));
+            WriteJsonFile(_gameConfigFilePath, gameJson.ToJsonString(_jsonOptions));
         }
         {
             var json = JsonSerializer.Serialize(User, _jsonOptions);
-            File.WriteAllText(_userConfigFilePath, json);
+            WriteJsonFile(_userConfigFilePath, json);
         }
+    }
+
+    static void WriteJsonFile(string path, string json)
+        => File.WriteAllText(path, json, _utf8Bom);
+
+    static bool HasUtf8Bom(string path)
+    {
+        using FileStream stream = File.OpenRead(path);
+        Span<byte> bom = stackalloc byte[3];
+        return stream.Read(bom) == 3
+            && bom[0] == 0xEF
+            && bom[1] == 0xBB
+            && bom[2] == 0xBF;
     }
 
     static bool MigrateLazyErbSettings(JsonObject gameJson)
