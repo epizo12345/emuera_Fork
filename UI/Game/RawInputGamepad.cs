@@ -154,6 +154,7 @@ internal sealed class RawInputGamepad : IDisposable
     // actual registration result is logged by Register, while keeping the
     // polling timer alive permits controllers to be attached after startup.
     internal bool IsAvailable => OperatingSystem.IsWindows();
+    internal int LastParsedReportCount { get; private set; }
 
     internal RawInputCandidateSummary GetCandidateSummary()
     {
@@ -210,6 +211,7 @@ internal sealed class RawInputGamepad : IDisposable
 
     internal void Process(nint rawInputHandle)
     {
+        LastParsedReportCount = 0;
         if (disposed || !registered || rawInputHandle == nint.Zero)
             return;
 
@@ -257,6 +259,7 @@ internal sealed class RawInputGamepad : IDisposable
                 Marshal.Copy(buffer + checked((int)payloadStart), report, 0, report.Length);
                 if (TryParseReport(device, report, out RawInputGamepadSample sample))
                 {
+                    LastParsedReportCount++;
                     latestSample = sample;
                     hasLatestSample = true;
                     activeDevice = header.hDevice;

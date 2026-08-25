@@ -620,9 +620,13 @@ internal sealed partial class EmueraConsole : IDisposable
     // 再構築する。入力時は構築済みTargetを既存の決定・クリック経路へ渡す。
     private readonly List<GamepadFocusTarget> gamepadFocusTargets = [];
     private readonly GamepadNavigationGraph gamepadNavigationGraph = new();
+    private readonly record struct GamepadFocusViewportSignature(
+        int ScrollValue, int ScrollMaximum, int Width, int Height);
     private bool gamepadFocusTargetsDirty = true;
     private int gamepadFocusTargetGeneration = int.MinValue;
     private long gamepadFocusTargetRequestId = -1;
+    private GamepadFocusViewportSignature gamepadFocusTargetViewport;
+    private bool gamepadFocusTargetZeroRetryPending;
     private int gamepadFocusLoggedGeneration = int.MinValue;
     private long gamepadFocusLoggedRequestId = -1;
     private int gamepadFocusLoggedGeometryHash;
@@ -645,6 +649,8 @@ internal sealed partial class EmueraConsole : IDisposable
     // [Emuera改修:GAMEPAD-V1] Confirm直後の同一画面再描画だけに使う一時Anchor。
     // 通常のFocus履歴とは分け、別InputRequestへの無条件復元を防ぐ。
     private PostConfirmFocusAnchor postConfirmFocusAnchor;
+    // Direct Input後の次の入力要求だけに使う一時Anchor。PostConfirm/Return履歴とは分離する。
+    private DirectInputFocusAnchor directInputFocusAnchor;
     private static bool gamepadSelfTestsRun;
     private static readonly GamepadSelfTestSuite[] GamepadSelfTestSuites =
     [
@@ -655,6 +661,7 @@ internal sealed partial class EmueraConsole : IDisposable
         new("HTML modal", GetGamepadHtmlModalSelfTestCases),
         new("page navigation", GetGamepadPageNavigationSelfTestCases),
         new("return focus history", GetGamepadReturnFocusHistorySelfTestCases),
+        new("visible display range", GetGamepadVisibleDisplayRangeSelfTestCases),
     ];
 
     private readonly record struct GamepadSelfTestCase(string Name, bool Actual, bool Expected = true);
@@ -695,6 +702,13 @@ internal sealed partial class EmueraConsole : IDisposable
         internal long RequestId;
         internal int ButtonGeneration;
         internal List<GamepadScreenTargetSnapshot> Targets = [];
+    }
+
+    private sealed class DirectInputFocusAnchor
+    {
+        internal GamepadScreenTargetSnapshot Focus;
+        internal long RequestId;
+        internal int ButtonGeneration;
     }
 
     private enum GamepadFocusTransitionKind
@@ -790,10 +804,15 @@ internal sealed partial class EmueraConsole : IDisposable
     internal bool GamepadEnsureSelection()
     {
         if (state != ConsoleState.WaitInput || inputReq == null || !inputReq.NeedValue)
+        {
+            directInputFocusAnchor = null;
             return false;
+        }
         List<GamepadFocusTarget> targets = GetGamepadFocusTargets();
         if (targets.Count == 0)
         {
+            if (TryConsumeDirectInputFocusAnchor(targets, out _))
+                WriteGamepadNavigationDiagnostic("Direct-input focus anchor consumed: no focus target");
             if (postConfirmFocusAnchor != null)
             {
                 WriteGamepadNavigationDiagnostic(
@@ -802,6 +821,29 @@ internal sealed partial class EmueraConsole : IDisposable
                     "Post-confirm focus restore rejected: reason=UI structure changed (no focus targets)");
                 postConfirmFocusAnchor = null;
             }
+            return false;
+        }
+
+        if (TryConsumeDirectInputFocusAnchor(targets, out GamepadFocusTarget directInputRestored))
+        {
+            if (directInputRestored != null)
+            {
+                ApplyGamepadFocusSelection(directInputRestored);
+                RememberGamepadFocus(directInputRestored);
+                return true;
+            }
+        }
+
+        // A stable target set is the hot path.  Do not rebuild the fingerprint,
+        // history, or pending-transition state on every 33ms timer tick.
+        bool sameInputRequest = inputReq.ID == lastGamepadFocusRequestId;
+        GamepadFocusTarget current = gamepadNavigationGraph.Find(selectingButton);
+        if (sameInputRequest && current != null && CanSelectGamepadButton(selectingButton)
+            && postConfirmFocusAnchor == null
+            && pendingGamepadFocusTransition == null
+            && pendingReturnFocusRestore == null)
+        {
+            RememberGamepadFocus(current);
             return false;
         }
 
@@ -825,14 +867,6 @@ internal sealed partial class EmueraConsole : IDisposable
                 return true;
             }
             postConfirmFocusAnchor = null;
-        }
-
-        bool sameInputRequest = inputReq.ID == lastGamepadFocusRequestId;
-        GamepadFocusTarget current = gamepadNavigationGraph.Find(selectingButton);
-        if (sameInputRequest && current != null && CanSelectGamepadButton(selectingButton))
-        {
-            RememberGamepadFocus(current);
-            return false;
         }
 
         GamepadFocusTarget restored = null;
@@ -949,6 +983,55 @@ internal sealed partial class EmueraConsole : IDisposable
             + $"rect={FormatGamepadRectangle(anchor.Focus.Bounds)} row={anchor.Focus.Row} column={anchor.Focus.Column} "
             + $"source={target.SourceName} baseGroup={anchor.Focus.GroupId} navigationGroup={anchor.Focus.NavigationGroupId} "
             + $"generation={anchor.ButtonGeneration} targetCount={anchor.Targets.Count}");
+    }
+
+    private void CaptureDirectInputFocusAnchor(GamepadFocusTarget target)
+    {
+        if (target == null || inputReq == null)
+            return;
+
+        directInputFocusAnchor = new DirectInputFocusAnchor
+        {
+            Focus = new GamepadScreenTargetSnapshot(target),
+            RequestId = inputReq.ID,
+            ButtonGeneration = lastButtonGeneration,
+        };
+        WriteGamepadNavigationDiagnostic(
+            $"Direct-input focus anchor: input={GetGamepadButtonInput(target.Button)} "
+            + $"request={inputReq.ID} generation={lastButtonGeneration} "
+            + $"rect={FormatGamepadRectangle(target.Bounds)}");
+    }
+
+    internal void ClearGamepadDirectInputFocusAnchor()
+    {
+        directInputFocusAnchor = null;
+    }
+
+    private bool TryConsumeDirectInputFocusAnchor(List<GamepadFocusTarget> targets,
+        out GamepadFocusTarget restored)
+    {
+        restored = null;
+        DirectInputFocusAnchor anchor = directInputFocusAnchor;
+        if (anchor == null || inputReq == null
+            || inputReq.ID == anchor.RequestId || lastButtonGeneration == anchor.ButtonGeneration)
+            return false;
+
+        directInputFocusAnchor = null;
+        GamepadFocusHistoryEntry entry = new()
+        {
+            Focus = anchor.Focus,
+            RequestId = anchor.RequestId,
+        };
+        if (TryRestoreGamepadFocusHistory(entry, targets, out restored, out string reason))
+        {
+            WriteGamepadNavigationDiagnostic(
+                $"Direct-input focus restored: input={GetGamepadButtonInput(restored.Button)} reason={reason}");
+        }
+        else
+        {
+            WriteGamepadNavigationDiagnostic("Direct-input focus restore unavailable: fallback=initial-focus");
+        }
+        return true;
     }
 
     private bool TryRestorePostConfirmFocus(List<GamepadFocusTarget> targets,
@@ -1131,12 +1214,25 @@ internal sealed partial class EmueraConsole : IDisposable
             return false;
 
         GamepadFocusTarget best = current.GetNeighbor(direction);
-        if (best == null || best.Button == selectingButton)
+        bool crossComponent = false;
+        if (best == null)
+        {
+            best = gamepadNavigationGraph.FindCrossComponentNeighbor(current, direction);
+            crossComponent = best != null;
+        }
+        if (best == null || best.Button == selectingButton || !CanSelectGamepadButton(best.Button))
             return false;
 
         selectingCBGButtonInt = -1;
         pointingString = null;
         LogGamepadMove(direction, current, best);
+        if (crossComponent && Program.GamepadDebugMode)
+        {
+            WriteGamepadNavigationDiagnostic(
+                $"Cross-component move: from input={GetGamepadButtonInput(current.Button)} "
+                + $"to input={GetGamepadButtonInput(best.Button)} direction={direction} "
+                + $"oldGroup={current.NavigationGroupId} newGroup={best.NavigationGroupId}");
+        }
         selectingButton = best.Button;
         RememberGamepadFocus(best);
         return true;
@@ -1303,6 +1399,7 @@ internal sealed partial class EmueraConsole : IDisposable
             if (key == Keys.None)
                 return false;
             WriteGamepadNavigationDiagnostic($"Direct input: profile={profile}, direction={direction}, key={key}");
+            CaptureDirectInputFocusAnchor(GetCurrentGamepadFocusTarget());
             InputMouseKey(3, (int)key, (int)key, 0, 0);
             return true;
         }
@@ -1331,6 +1428,7 @@ internal sealed partial class EmueraConsole : IDisposable
             return false;
 
         WriteGamepadNavigationDiagnostic($"Direct input: profile={profile}, direction={direction}, input={input}");
+        CaptureDirectInputFocusAnchor(GetCurrentGamepadFocusTarget());
         PressEnterKey(false, input, false);
         return true;
     }
@@ -1435,6 +1533,7 @@ internal sealed partial class EmueraConsole : IDisposable
 
     internal void GamepadCancel()
     {
+        directInputFocusAnchor = null;
         if (ReturnFromGamepadBacklog())
             return;
         if (state == ConsoleState.WaitInput && inputReq != null && inputReq.NeedValue)
@@ -1540,18 +1639,42 @@ internal sealed partial class EmueraConsole : IDisposable
         if (Program.GamepadDebugMode)
             RunGamepadSelfTests();
         long requestId = inputReq?.ID ?? -1;
-        if (!gamepadFocusTargetsDirty && gamepadFocusTargetGeneration == lastButtonGeneration
-            && gamepadFocusTargetRequestId == requestId)
+        GamepadFocusViewportSignature viewport = new(
+            window.ScrollBar.Value,
+            window.ScrollBar.Maximum,
+            window.MainPicBox.ClientSize.Width,
+            window.MainPicBox.ClientSize.Height);
+        bool sameIdentity = gamepadFocusTargetGeneration == lastButtonGeneration
+            && gamepadFocusTargetRequestId == requestId
+            && gamepadFocusTargetViewport == viewport;
+        if (!sameIdentity)
+            gamepadFocusTargetZeroRetryPending = false;
+        bool needGamepadTargets = state == ConsoleState.WaitInput
+            && inputReq != null && inputReq.NeedValue;
+        if (!needGamepadTargets)
+            gamepadFocusTargetZeroRetryPending = false;
+        bool retryAttempt = needGamepadTargets && sameIdentity && !gamepadFocusTargetsDirty
+            && gamepadFocusTargetZeroRetryPending;
+        if (!gamepadFocusTargetsDirty && sameIdentity
+            && !gamepadFocusTargetZeroRetryPending)
             return gamepadFocusTargets;
+
+        bool wasDirty = gamepadFocusTargetsDirty;
+        string rebuildReason = retryAttempt ? "zero-retry"
+            : !sameIdentity ? "request/generation/viewport" : wasDirty ? "dirty" : "initial";
+        long rebuildStart = Program.GamepadDebugMode ? Stopwatch.GetTimestamp() : 0;
 
         gamepadFocusTargets.Clear();
         gamepadFocusTargetGeneration = lastButtonGeneration;
         gamepadFocusTargetRequestId = requestId;
+        gamepadFocusTargetViewport = viewport;
         gamepadFocusTargetsDirty = false;
 
         if (state != ConsoleState.WaitInput || inputReq == null || !inputReq.NeedValue)
         {
+            gamepadFocusTargetZeroRetryPending = false;
             LogGamepadFocusTargets();
+            LogGamepadFocusRebuildTiming(requestId, rebuildReason, rebuildStart);
             return gamepadFocusTargets;
         }
 
@@ -1572,11 +1695,12 @@ internal sealed partial class EmueraConsole : IDisposable
             }
         }
 
-        for (int lineIndex = 0; lineIndex < displayLineList.Count; lineIndex++)
+        TryGetGamepadVisibleDisplayLineRange(displayLineList.Count,
+            window.ScrollBar.Value, window.MainPicBox.Height, Config.LineHeight,
+            out int firstVisibleLine, out int lastVisibleLine);
+        for (int lineIndex = firstVisibleLine; lineIndex <= lastVisibleLine; lineIndex++)
         {
             ConsoleDisplayLine line = displayLineList[lineIndex];
-            if (!IsGamepadLineVisible(line))
-                continue;
             CollectGamepadNodes(line.Buttons, null, GamepadFocusSourceType.NormalDisplay,
                 line.IsHtml ? GamepadFocusLayoutType.Html : GamepadFocusLayoutType.Console,
                 0, line, byButton, ref order);
@@ -1594,8 +1718,63 @@ internal sealed partial class EmueraConsole : IDisposable
         ApplyGamepadHtmlModalNavigationScope(gamepadFocusTargets);
         gamepadNavigationGraph.Build(gamepadFocusTargets,
             Program.GamepadDebugMode ? WriteGamepadNavigationDiagnostic : null);
+        if (gamepadFocusTargets.Count == 0)
+        {
+            gamepadFocusTargetZeroRetryPending = !retryAttempt;
+            LogGamepadFocusTargetZero(viewport, retryAttempt ? "consumed" : "scheduled");
+        }
+        else
+        {
+            gamepadFocusTargetZeroRetryPending = false;
+        }
         LogGamepadFocusTargets();
+        LogGamepadFocusRebuildTiming(requestId, rebuildReason, rebuildStart);
         return gamepadFocusTargets;
+    }
+
+    private static bool TryGetGamepadVisibleDisplayLineRange(int displayLineCount,
+        int scrollValue, int viewportHeight, int lineHeight, out int firstLine, out int lastLine)
+    {
+        firstLine = 0;
+        lastLine = -1;
+        if (displayLineCount <= 0 || lineHeight <= 0)
+            return false;
+
+        int bottomLine = scrollValue - 1;
+        int pointY = viewportHeight - lineHeight;
+        int topLine = bottomLine - (pointY / lineHeight + 1);
+        if (topLine < 0)
+            topLine = 0;
+        firstLine = topLine;
+        lastLine = Math.Min(displayLineCount - 1, bottomLine);
+        return firstLine <= lastLine;
+    }
+
+    private void LogGamepadFocusRebuildTiming(long requestId, string reason, long start)
+    {
+        if (!Program.GamepadDebugMode || start == 0)
+            return;
+        double elapsedMilliseconds = (Stopwatch.GetTimestamp() - start) * 1000.0 / Stopwatch.Frequency;
+        WriteGamepadNavigationDiagnostic(
+            $"Focus rebuild: request={requestId} generation={lastButtonGeneration} "
+            + $"targets={gamepadFocusTargets.Count} elapsedMs={elapsedMilliseconds:F3} reason={reason}");
+    }
+
+    private void LogGamepadFocusTargetZero(GamepadFocusViewportSignature viewport, string retryState)
+    {
+        if (!Program.GamepadDebugMode)
+            return;
+        WriteGamepadNavigationDiagnostic(
+            $"Gamepad focus target rebuild yielded 0: request={inputReq?.ID ?? -1} "
+            + $"inputType={inputReq?.InputType.ToString() ?? "<none>"} "
+            + $"oneInput={inputReq?.OneInput.ToString() ?? "<none>"} "
+            + $"generation={lastButtonGeneration} newGeneration={newButtonGeneration} "
+            + $"cachedGeneration={gamepadFocusTargetGeneration} "
+            + $"lineNo={process.getCurrentLine?.Position?.LineNo ?? -1} lastDrawnLineNo={lastDrawnLineNo} "
+            + $"scroll={window.ScrollBar.Value}/{window.ScrollBar.Maximum} "
+            + $"viewport={viewport.Width}x{viewport.Height} "
+            + $"displayLines={displayLineList.Count} htmlIslands={_htmlElementListDict.Count} "
+            + $"zero-retry={retryState}");
     }
 
     private void CollectGamepadNodes(
@@ -2559,6 +2738,24 @@ internal sealed partial class EmueraConsole : IDisposable
             results[i] = new GamepadSelfTestCase($"text=\"{text}\"", actual, expected);
         }
         return results;
+    }
+
+    private static GamepadSelfTestCase[] GetGamepadVisibleDisplayRangeSelfTestCases()
+    {
+        return
+        [
+            new("ring-buffer tail", IsGamepadVisibleDisplayRange(5000, 5000, 100, 20, 4994, 4999)),
+            new("scrolled viewport", IsGamepadVisibleDisplayRange(100, 20, 100, 20, 14, 19)),
+            new("empty buffer", !TryGetGamepadVisibleDisplayLineRange(0, 0, 100, 20, out _, out _)),
+        ];
+    }
+
+    private static bool IsGamepadVisibleDisplayRange(int displayLineCount, int scrollValue,
+        int viewportHeight, int lineHeight, int expectedFirst, int expectedLast)
+    {
+        return TryGetGamepadVisibleDisplayLineRange(displayLineCount, scrollValue,
+            viewportHeight, lineHeight, out int firstLine, out int lastLine)
+            && firstLine == expectedFirst && lastLine == expectedLast;
     }
 
     private static GamepadSelfTestCase[] GetGamepadFocusPersistenceSelfTestCases()
@@ -5282,6 +5479,7 @@ internal sealed partial class EmueraConsole : IDisposable
 
     public void GotoTitle()
     {
+        directInputFocusAnchor = null;
         forceStopTimer();
         ClearDisplay();
         //動的作成の分だけは削除する

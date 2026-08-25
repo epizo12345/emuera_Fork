@@ -755,13 +755,18 @@ internal sealed partial class MainWindow : Form
         GamepadAction action = manager.Poll();
         if (!gamepadWindowActive)
             return;
-        if (manager.IsConnected && console.GamepadEnsureSelection())
-            console.RefreshStrings(true);
+        if (console.IsInProcess)
+        {
+            if (action.Kind != GamepadActionKind.Escape
+                && action.Kind != GamepadActionKind.OpenSettings)
+                return;
+        }
+        else
+        {
+            if (manager.IsConnected && console.GamepadEnsureSelection())
+                console.RefreshStrings(true);
+        }
         if (action.Kind == GamepadActionKind.None)
-            return;
-        if (console.IsInProcess
-            && action.Kind != GamepadActionKind.Escape
-            && action.Kind != GamepadActionKind.OpenSettings)
             return;
 
         gamepadProcessing = true;
@@ -849,6 +854,7 @@ internal sealed partial class MainWindow : Form
 
         if (console == null || GlobalStatic.Console == null)
             return;
+        console.ClearGamepadDirectInputFocusAnchor();
         GamepadManager? manager = gamepadManager;
         bool timerWasEnabled = gamepadTimer?.Enabled == true;
         gamepadDialogActive = true;

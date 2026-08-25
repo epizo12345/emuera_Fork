@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using MinorShift.Emuera.Runtime.Config.JSON;
@@ -489,6 +490,13 @@ internal sealed class GamepadManager
     private GamepadFaceButtonLayout winmmFaceButtonLayout = GamepadFaceButtonLayout.Xbox;
     private GamepadFaceButtonLayout rawInputFaceButtonLayout = GamepadFaceButtonLayout.Xbox;
     private bool firstPollAfterActivation;
+    private long rawInputReceivedCount;
+    private long rawInputParsedCount;
+    private long rawInputSkippedCount;
+    private long rawInputParseTotalTicks;
+    private long rawInputParseMaxTicks;
+    private long rawInputLastDiagnosticCount;
+    private string rawInputLastSkipReason = "<none>";
 
     internal GamepadManager(bool diagnosticsEnabled)
     {
@@ -548,7 +556,57 @@ internal sealed class GamepadManager
 
     internal void ProcessRawInput(nint rawInputHandle)
     {
+        if (!ShouldProcessRawInputReports(backend))
+        {
+            if (diagnosticsEnabled)
+            {
+                rawInputReceivedCount++;
+                rawInputSkippedCount++;
+                rawInputLastSkipReason = $"active backend={backend}";
+                MaybeLogRawInputCounters();
+            }
+            return;
+        }
+
+        if (!diagnosticsEnabled)
+        {
+            rawInputGamepad.Process(rawInputHandle);
+            return;
+        }
+
+        rawInputReceivedCount++;
+        long started = Stopwatch.GetTimestamp();
         rawInputGamepad.Process(rawInputHandle);
+        long elapsed = Stopwatch.GetTimestamp() - started;
+        rawInputParsedCount += rawInputGamepad.LastParsedReportCount;
+        rawInputParseTotalTicks += elapsed;
+        rawInputParseMaxTicks = Math.Max(rawInputParseMaxTicks, elapsed);
+        MaybeLogRawInputCounters();
+    }
+
+    private static bool ShouldProcessRawInputReports(GamepadBackend currentBackend)
+    {
+        return currentBackend is GamepadBackend.None or GamepadBackend.RawInput;
+    }
+
+    private void MaybeLogRawInputCounters()
+    {
+        if (!diagnosticsEnabled || rawInputReceivedCount - rawInputLastDiagnosticCount < 256)
+            return;
+        rawInputLastDiagnosticCount = rawInputReceivedCount;
+        WriteRawInputCounterSummary("periodic");
+    }
+
+    private void WriteRawInputCounterSummary(string reason)
+    {
+        if (!diagnosticsEnabled || rawInputReceivedCount == 0)
+            return;
+        double milliseconds = 1000.0 / Stopwatch.Frequency;
+        double totalMilliseconds = rawInputParseTotalTicks * milliseconds;
+        double maxMilliseconds = rawInputParseMaxTicks * milliseconds;
+        WriteDiagnostic($"Raw Input counters: reason={reason}, backend={backend}, "
+            + $"received={rawInputReceivedCount}, parsed={rawInputParsedCount}, skipped={rawInputSkippedCount}, "
+            + $"skipReason={rawInputLastSkipReason}, parseTotalMs={totalMilliseconds:F3}, parseMaxMs={maxMilliseconds:F3}");
     }
 
     internal void NotifyRawInputDeviceChange(uint change, nint deviceHandle)
@@ -590,6 +648,7 @@ internal sealed class GamepadManager
 
     internal void Dispose()
     {
+        WriteRawInputCounterSummary("dispose");
         rawInputGamepad.Dispose();
     }
 
@@ -912,6 +971,7 @@ internal sealed class GamepadManager
 
     private void ConnectXInput(int userIndex)
     {
+        rawInputGamepad.ResetTransientState();
         backend = GamepadBackend.XInput;
         xinputIndex = userIndex;
         connected = true;
@@ -923,6 +983,7 @@ internal sealed class GamepadManager
 
     private void ConnectWinmm(uint joyId, WinmmJoyCaps caps)
     {
+        rawInputGamepad.ResetTransientState();
         backend = GamepadBackend.Winmm;
         xinputIndex = -1;
         winmmId = joyId;
@@ -1287,19 +1348,26 @@ internal sealed class GamepadManager
         bool captureRejectsMultiple = !TryGetSinglePhysicalButton(
             GamepadPhysicalButtonMask.FaceSouth | GamepadPhysicalButtonMask.FaceEast, out _);
         bool captureLeavesLiveBindings = bindings.Confirm == liveConfirmBeforeCapture;
+        bool rawInputGating = ShouldProcessRawInputReports(GamepadBackend.None)
+            && ShouldProcessRawInputReports(GamepadBackend.RawInput)
+            && !ShouldProcessRawInputReports(GamepadBackend.Winmm)
+            && !ShouldProcessRawInputReports(GamepadBackend.XInput);
         ResetInputState();
 
-        WriteDiagnostic("Gamepad input self-test (layout / binding swap / capture / Raw D-pad-stick split): "
+        WriteDiagnostic("Gamepad input self-test (layout / binding swap / capture / Raw D-pad-stick split / Raw Input gating): "
             + (layouts && defaultsUnchanged && candidateOrder && actionShape && bindingSwap && allActionsCanBeUnassigned
                 && startConfirmMapping && startMacroMapping && startSettingsMapping
                 && macroLogicalMapping && macroAssignment && macroDispatch && directionSources
                 && triggerEscape && triggerSettings && triggerSwap && triggerNone && triggerThresholds
                 && captureEdges && captureButtons && captureRejectsMultiple && captureLeavesLiveBindings
+                && rawInputGating
                 ? "PASS" : "WARNING"));
     }
 
     private void Disconnect()
     {
+        if (backend is GamepadBackend.XInput or GamepadBackend.Winmm)
+            rawInputGamepad.ResetTransientState();
         if (backend != GamepadBackend.None || connected)
             WriteDiagnostic(Status + " disconnected.");
         backend = GamepadBackend.None;

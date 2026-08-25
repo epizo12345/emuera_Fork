@@ -71,6 +71,94 @@ internal sealed class GamepadNavigationGraph
         return target;
     }
 
+    internal GamepadFocusTarget? FindCrossComponentNeighbor(GamepadFocusTarget current,
+        GamepadDirection direction)
+    {
+        if (current == null || direction == GamepadDirection.None
+            || !groups.TryGetValue((current.SourceType, current.GroupId), out List<GamepadFocusTarget>? group))
+            return null;
+
+        GamepadFocusTarget? best = null;
+        bool bestOverlap = false;
+        int bestMainDistance = int.MaxValue;
+        int bestOrthogonalDistance = int.MaxValue;
+        for (int i = 0; i < group.Count; i++)
+        {
+            GamepadFocusTarget candidate = group[i];
+            if (candidate == current || !candidate.Enabled || candidate.IsDirectionalFocusExcluded
+                || candidate.NavigationGroupId == current.NavigationGroupId
+                || !IsCompatibleModalScope(current, candidate)
+                || !IsInDirection(current, candidate, direction))
+                continue;
+
+            bool overlap = IsOrthogonallyOverlapping(current, candidate, direction);
+            int mainDistance = GetMainAxisDistance(current, candidate, direction);
+            int orthogonalDistance = GetOrthogonalCenterDistance(current, candidate, direction);
+            if (best == null
+                || (overlap && !bestOverlap)
+                || (overlap == bestOverlap && mainDistance < bestMainDistance)
+                || (overlap == bestOverlap && mainDistance == bestMainDistance
+                    && orthogonalDistance < bestOrthogonalDistance)
+                || (overlap == bestOverlap && mainDistance == bestMainDistance
+                    && orthogonalDistance == bestOrthogonalDistance
+                    && candidate.Order < best.Order))
+            {
+                best = candidate;
+                bestOverlap = overlap;
+                bestMainDistance = mainDistance;
+                bestOrthogonalDistance = orthogonalDistance;
+            }
+        }
+        return best;
+    }
+
+    private static bool IsCompatibleModalScope(GamepadFocusTarget current,
+        GamepadFocusTarget candidate)
+    {
+        if (current.IsModalBackdrop || candidate.IsModalBackdrop)
+            return false;
+        return current.IsModalForeground == candidate.IsModalForeground;
+    }
+
+    private static bool IsInDirection(GamepadFocusTarget current,
+        GamepadFocusTarget candidate, GamepadDirection direction)
+    {
+        return direction switch
+        {
+            GamepadDirection.Up => candidate.CenterY < current.CenterY,
+            GamepadDirection.Down => candidate.CenterY > current.CenterY,
+            GamepadDirection.Left => candidate.CenterX < current.CenterX,
+            GamepadDirection.Right => candidate.CenterX > current.CenterX,
+            _ => false,
+        };
+    }
+
+    private static bool IsOrthogonallyOverlapping(GamepadFocusTarget current,
+        GamepadFocusTarget candidate, GamepadDirection direction)
+    {
+        return direction == GamepadDirection.Up || direction == GamepadDirection.Down
+            ? candidate.Bounds.Left < current.Bounds.Right
+                && current.Bounds.Left < candidate.Bounds.Right
+            : candidate.Bounds.Top < current.Bounds.Bottom
+                && current.Bounds.Top < candidate.Bounds.Bottom;
+    }
+
+    private static int GetMainAxisDistance(GamepadFocusTarget current,
+        GamepadFocusTarget candidate, GamepadDirection direction)
+    {
+        return direction == GamepadDirection.Up || direction == GamepadDirection.Down
+            ? Math.Abs(candidate.CenterY - current.CenterY)
+            : Math.Abs(candidate.CenterX - current.CenterX);
+    }
+
+    private static int GetOrthogonalCenterDistance(GamepadFocusTarget current,
+        GamepadFocusTarget candidate, GamepadDirection direction)
+    {
+        return direction == GamepadDirection.Up || direction == GamepadDirection.Down
+            ? Math.Abs(candidate.CenterX - current.CenterX)
+            : Math.Abs(candidate.CenterY - current.CenterY);
+    }
+
     private static void BuildGroup(List<GamepadFocusTarget> targets)
     {
         targets.Sort(CompareVisualOrder);
@@ -213,14 +301,40 @@ internal sealed class GamepadNavigationGraph
         b2.Down = originalDown;
         diagnostic("Navigation graph self-test (independent vertical lanes / row skip validation): "
             + (panelLanes && skippedRows && rowSkipAccepted && reverseDetected ? "PASS" : "WARNING"));
+
+        List<GamepadFocusTarget> separatedPanels =
+        [
+            CreateSelfTestTarget("P0", 40, 20, 0, 0),
+            CreateSelfTestTarget("P1", 40, 60, 1, 0),
+            CreateSelfTestTarget("Q0", 220, 90, 2, 0),
+            CreateSelfTestTarget("Q1", 220, 130, 3, 0),
+            CreateSelfTestTarget("OTHER", 40, 220, 4, 1),
+            CreateSelfTestTarget("MODAL-BACKDROP", 220, 220, 5, 0),
+        ];
+        separatedPanels[5].IsModalBackdrop = true;
+        GamepadNavigationGraph separatedGraph = new();
+        separatedGraph.Build(separatedPanels, null);
+        GamepadFocusTarget p0 = separatedPanels[0];
+        GamepadFocusTarget p1 = separatedPanels[1];
+        GamepadFocusTarget q0 = separatedPanels[2];
+        GamepadFocusTarget q1 = separatedPanels[3];
+        GamepadFocusTarget? fallbackDown = separatedGraph.FindCrossComponentNeighbor(p1, GamepadDirection.Down);
+        GamepadFocusTarget? fallbackUp = separatedGraph.FindCrossComponentNeighbor(q0, GamepadDirection.Up);
+        bool normalPreferred = p0.Down == p1;
+        bool crossComponent = fallbackDown == q0 && fallbackUp == p1;
+        bool noBaseGroupCrossing = fallbackDown != separatedPanels[4];
+        bool noModalCrossing = fallbackDown != separatedPanels[5];
+        diagnostic("Navigation graph self-test (separated panels / cross-component fallback): "
+            + (normalPreferred && crossComponent && noBaseGroupCrossing && noModalCrossing ? "PASS" : "WARNING"));
     }
 
-    private static GamepadFocusTarget CreateSelfTestTarget(string input, int x, int y, int order)
+    private static GamepadFocusTarget CreateSelfTestTarget(string input, int x, int y, int order,
+        int groupId = 0)
     {
         ConsoleButtonString button = new(null, [], input);
         Rectangle bounds = new(x, y, 30, 12);
         return new GamepadFocusTarget(button, GamepadFocusSourceType.NormalDisplay,
-            GamepadFocusLayoutType.Html, 0, null, bounds, bounds, order);
+            GamepadFocusLayoutType.Html, groupId, null, bounds, bounds, order);
     }
 
     private static GamepadFocusTarget FindVerticalCandidate(GamepadFocusTarget current,
