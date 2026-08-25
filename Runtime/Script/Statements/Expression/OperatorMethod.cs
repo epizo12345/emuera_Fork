@@ -486,7 +486,7 @@ internal static class OperatorMethodManager
         public override long GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             int c = string.Compare(arguments[0].GetStrValue(exm), arguments[1].GetStrValue(exm), Config.Config.SCExpression);
-            if (c < 0)
+            if (c >= 0)
                 return 1L;
             return 0L;
         }
@@ -517,7 +517,7 @@ internal static class OperatorMethodManager
         public override long GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             int c = string.Compare(arguments[0].GetStrValue(exm), arguments[1].GetStrValue(exm), Config.Config.SCExpression);
-            if (c < 0)
+            if (c <= 0)
                 return 1L;
             return 0L;
         }
@@ -702,12 +702,13 @@ internal static class OperatorMethodManager
 
         public override long GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
+            // Phase 8のlong.MinValue修正: 引数を一度だけ評価し、その値を反転する。式を再評価するとRAND等の副作用順序が変わる。
             long ret = arguments[0].GetIntValue(exm);
             if (ret == long.MinValue)
             {
                 exm.Console.PrintSystemLine("整数型最小値(" + long.MinValue.ToString() + ")は-を取っても値は変化しません");
             }
-            return -arguments[0].GetIntValue(exm);
+            return -ret;
         }
     }
 

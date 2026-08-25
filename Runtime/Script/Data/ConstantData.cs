@@ -215,10 +215,10 @@ internal sealed class ConstantData
             CharStream st = null;
             while ((st = eReader.ReadEnabledLine()) != null)
             {
-                position = new ScriptPosition(eReader.Filename, eReader.LineNo);
+                position = new ScriptPosition(eReader.FileId, eReader.LineNo);
                 changeVariableSizeData(st.Substring(), position);
             }
-            position = new ScriptPosition(eReader.Filename, -1);
+            position = new ScriptPosition(eReader.FileId, -1);
         }
         catch
         {
@@ -337,7 +337,8 @@ internal sealed class ConstantData
                 ParserMediator.Warn(LocalizationManager.Error.VarSizeCanNotGreaterThan1M, position, 1);
                 return;
             }
-            if (length * length2 > 1000000)
+            // Phase 7の配列上限修正: 次元積をintで計算すると上限判定前にoverflowするため、longへ拡張してから制限値と比較する。
+            if ((long)length * length2 > 1000000)
             {
                 ParserMediator.Warn("二次元配列の要素数は最大で100万個までです", position, 1);
                 return;
@@ -375,7 +376,7 @@ internal sealed class ConstantData
                 ParserMediator.Warn(LocalizationManager.Error.VarSizeCanNotGreaterThan1M, position, 1);
                 return;
             }
-            if (length * length2 * length3 > 10000000)
+            if ((long)length * length2 * length3 > 10000000)
             {
                 ParserMediator.Warn("三次元配列の要素数は最大で1000万個までです", position, 1);
                 return;
@@ -574,7 +575,7 @@ internal sealed class ConstantData
         {
             length1 = MaxDataList[cdflag1Index];
             length2 = MaxDataList[cdflag2Index];
-            if (length1 * length2 > 1000000)
+            if ((long)length1 * length2 > 1000000)
             {
                 //調整が面倒なので投げる
                 throw new CodeEE(LocalizationManager.Error.TooManyCdflagElements, position);
@@ -1056,7 +1057,7 @@ internal sealed class ConstantData
             CharStream st = null;
             while ((st = eReader.ReadEnabledLine()) != null)
             {
-                position = new ScriptPosition(eReader.Filename, eReader.LineNo);
+                position = new ScriptPosition(eReader.FileId, eReader.LineNo);
                 string[] tokens = st.Substring().Split(',');
                 if (tokens.Length < 2)
                 {
@@ -1360,7 +1361,7 @@ internal sealed class ConstantData
             Span<Range> dest = stackalloc Range[5];
             while ((st = eReader.ReadEnabledLine()) != null)
             {
-                position = new ScriptPosition(eReader.Filename, eReader.LineNo);
+                position = new ScriptPosition(eReader.FileId, eReader.LineNo);
                 var ros = st.SubstringROS();
                 var length = ros.Split(dest, [',']);
                 if (length < 2)

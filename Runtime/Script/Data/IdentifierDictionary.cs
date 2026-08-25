@@ -116,7 +116,6 @@ internal sealed partial class IdentifierDictionary
     readonly Dictionary<string, FunctionIdentifier> instructionDic;
     readonly Dictionary<string, FunctionMethod> methodDic;
     readonly Dictionary<string, UserDefinedRefMethod> refmethodDic;
-    public List<UserDefinedCharaVariableToken> CharaDimList = [];
     #region initialize
     public IdentifierDictionary(VariableData varData)
     {
@@ -410,6 +409,8 @@ internal sealed partial class IdentifierDictionary
 
     #region header.erb
     //1807 ErbLoaderに移動
+    // Macro名そのものをcomparer付きでkeyにする。hash値だけをkeyにすると異なるmacroが衝突して誤展開するため、
+    // Config.StrComperの大文字小文字規則を保ったまま、名前一致をdictionary lookupに委ねる。
     Dictionary<string, DefineMacro> macroDic = new(Config.StrComper);
 
     internal void AddUseDefinedVariable(VariableToken var)

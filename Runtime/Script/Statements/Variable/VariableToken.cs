@@ -16,6 +16,9 @@ namespace MinorShift.Emuera.GameData.Variable;
 //引数は整数しか受け付けない。*.csvを利用した置換はVariableTermの方で処理すること
 internal abstract class VariableToken
 {
+    // [Emuera改修:PERF-13R22 2026-08-21]
+    // 全要素判定の共有mask。overrideはread-only参照し、この配列を書き換えない。
+    private static readonly bool[] AllElementChecks = [true, true, true];
     protected VariableToken(VariableCode varCode, VariableData varData)
     {
         Code = varCode;
@@ -133,15 +136,10 @@ internal abstract class VariableToken
         throw new CodeEE(string.Format(LocalizationManager.Error.GetSize0DVar, varName));
     }
 
-    public void throwOutOfRangeException(Int64[] arguments, Exception e)
-    {
-        CheckElement(arguments, [true, true, true]);
-        throw e;
-    }
     public virtual void CheckElement(Int64[] arguments, bool[] doCheck) { }
     public void CheckElement(Int64[] arguments)
     {
-        CheckElement(arguments, [true, true, true]);
+        CheckElement(arguments, AllElementChecks);
     }
     public virtual void IsArrayRangeValid(Int64[] arguments, Int64 index1, Int64 index2, string funcName, Int64 i1, Int64 i2)
     {
@@ -543,16 +541,14 @@ internal abstract class ReferenceToken : UserDefinedVariableToken
 
 internal abstract class LocalVariableToken : VariableToken
 {
-    public LocalVariableToken(VariableCode varCode, VariableData varData, string subId, int size)
+    public LocalVariableToken(VariableCode varCode, VariableData varData, int size)
         : base(varCode, varData)
     {
         CanRestructure = false;
-        this.subID = subId;
         this.size = size;
     }
     public abstract void SetDefault();
     public abstract void resize(int newSize);
-    protected string subID;
     protected int size;
     public override Int32 GetLength()
     {
@@ -1520,8 +1516,8 @@ internal sealed partial class VariableData
 
     private sealed class LocalInt1DVariableToken : LocalVariableToken
     {
-        public LocalInt1DVariableToken(VariableCode varCode, VariableData varData, string subId, int size)
-            : base(varCode, varData, subId, size)
+        public LocalInt1DVariableToken(VariableCode varCode, VariableData varData, int size)
+            : base(varCode, varData, size)
         {
         }
         Int64[] array;
@@ -1588,8 +1584,8 @@ internal sealed partial class VariableData
 
     private sealed class LocalStr1DVariableToken : LocalVariableToken
     {
-        public LocalStr1DVariableToken(VariableCode varCode, VariableData varData, string subId, int size)
-            : base(varCode, varData, subId, size)
+        public LocalStr1DVariableToken(VariableCode varCode, VariableData varData, int size)
+            : base(varCode, varData, size)
         {
         }
         string[] array;
@@ -2077,6 +2073,9 @@ internal sealed partial class VariableData
 
     private sealed class PrivateInt1DVariableToken : UserDefinedVariableToken
     {
+        // [Emuera改修:MEM-13R23 2026-08-21]
+        // top-level private dynamic 1D整数配列を最大32,768要素だけbounded reuseする。
+        // reuse前のclearとdefault復元を維持し、nested/recursiveと大きな配列は保持しない。
         public PrivateInt1DVariableToken(UserDefinedVariableData data)
             : base(VariableCode.VAR, data)
         {
@@ -2085,7 +2084,9 @@ internal sealed partial class VariableData
             defArray = data.DefaultInt;
         }
         readonly Stack<long[]> arrayStack;
+        const int MaxReusableArrayElements = 32 * 1024;
         Int64[] array;
+        Int64[] spareArray;
         Int64[] defArray;
         //int counter = 0;
         public override void SetDefault()
@@ -2125,9 +2126,23 @@ internal sealed partial class VariableData
         public override void ScopeIn()
         {
             if (array != null)
+            {
                 arrayStack.Push(array);
-            //counter++;
-            array = new Int64[sizes[0]];
+                array = new Int64[sizes[0]];
+                if (defArray != null)
+                    defArray.AsSpan().CopyTo(array.AsSpan());
+                return;
+            }
+
+            if (spareArray == null)
+                array = new Int64[sizes[0]];
+            else
+            {
+                array = spareArray;
+                spareArray = null;
+                Array.Clear(array);
+            }
+
             if (defArray != null)
                 defArray.AsSpan().CopyTo(array.AsSpan());
         }
@@ -2137,9 +2152,14 @@ internal sealed partial class VariableData
             if (arrayStack.Count > 0)
             {
                 array = arrayStack.Pop();
+                return;
             }
+
+            if (array != null && array.Length <= MaxReusableArrayElements)
+                spareArray = array;
             else
-                array = null;
+                spareArray = null;
+            array = null;
         }
     }
     private sealed class PrivateInt2DVariableToken : UserDefinedVariableToken
@@ -2150,8 +2170,16 @@ internal sealed partial class VariableData
             IsStatic = false;
             arrayStack = [];
         }
+        // [Emuera改修:MEM-12B1.1 2026-08-19]
+        // top-level private dynamic 2D整数配列を最大32,768要素だけ保持し、payload約256KiBを上限にする。
+        // nested/recursiveは外側scopeの配列を保持し、上限超過配列はretained memory化させない。
+        // Retain only small/medium arrays between top-level calls.
+        // 32K Int64 elements are at most 256 KiB of payload.
+        // Larger private arrays return to the GC instead of becoming retained memory.
+        const int MaxReusableArrayElements = 32 * 1024;
         readonly Stack<long[,]> arrayStack;
         Int64[,] array;
+        Int64[,] spareArray;
         //int counter = 0;
         public override void SetDefault() { }
         public override Int64 GetIntValue(ExpressionMediator exm, Int64[] arguments)
@@ -2189,9 +2217,22 @@ internal sealed partial class VariableData
         public override void ScopeIn()
         {
             if (array != null)
+            {
                 arrayStack.Push(array);
-            //counter++;
-            array = new Int64[sizes[0], sizes[1]];
+                // Keep recursive/nested calls on the original allocation path.
+                array = new Int64[sizes[0], sizes[1]];
+                return;
+            }
+
+            if (spareArray == null)
+            {
+                array = new Int64[sizes[0], sizes[1]];
+                return;
+            }
+
+            array = spareArray;
+            spareArray = null;
+            Array.Clear(array);
         }
 
         public override void ScopeOut()
@@ -2201,9 +2242,16 @@ internal sealed partial class VariableData
             if (arrayStack.Count > 0)
             {
                 array = arrayStack.Pop();
+                return;
             }
+
+            // Keep at most one small/medium top-level array per token for the next call.
+            // Large one-shot arrays must remain collectible after the function returns.
+            if (array != null && array.Length <= MaxReusableArrayElements)
+                spareArray = array;
             else
-                array = null;
+                spareArray = null;
+            array = null;
         }
     }
     private sealed class PrivateInt3DVariableToken : UserDefinedVariableToken

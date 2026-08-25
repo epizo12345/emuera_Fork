@@ -94,6 +94,38 @@ internal sealed class FileEE : EmueraException
     { }
 }
 
+// [Emuera改修:MEM-13R37 2026-08-22]
+// LogicalLineごとにFilename参照を持たないため、process lifetimeでFilenameをcanonical fileIdへ集約する。
+// ID 0は「位置なし」sentinelに予約し、登録時だけlock、Filename復元はsnapshotからlockなしで行う。
+internal static class ScriptFileRegistry
+{
+    static readonly object sync = new();
+    static readonly System.Collections.Generic.Dictionary<string, int> ids = new(StringComparer.Ordinal);
+    static readonly System.Collections.Generic.List<string> filenames = new() { null };
+    static string[] filenameSnapshot = [null];
+
+    internal static int GetId(string filename)
+    {
+        filename ??= "";
+        lock (sync)
+        {
+            if (ids.TryGetValue(filename, out int id))
+                return id;
+            id = filenames.Count;
+            ids.Add(filename, id);
+            filenames.Add(filename);
+            // ファイル登録は低頻度なので配列copyを許容し、Position復元のread pathではlockを取らない。
+            filenameSnapshot = filenames.ToArray();
+            return id;
+        }
+    }
+
+    internal static string GetFilename(int id)
+    {
+        return System.Threading.Volatile.Read(ref filenameSnapshot)[id];
+    }
+}
+
 /// <summary>
 /// エラー箇所を表示するための位置データ。整形前のデータなのでエラー表示以外の理由で参照するべきではない。
 /// </summary>
@@ -102,13 +134,22 @@ readonly record struct ScriptPosition
     public ScriptPosition()
     {
         LineNo = -1;
+        FileId = ScriptFileRegistry.GetId("");
         Filename = "";
     }
     public ScriptPosition(string srcFile, int srcLineNo)
     {
         LineNo = srcLineNo + 1;
+        FileId = ScriptFileRegistry.GetId(srcFile);
         Filename = srcFile ?? "";
     }
+    internal ScriptPosition(int fileId, int srcLineNo)
+    {
+        LineNo = srcLineNo + 1;
+        FileId = fileId;
+        Filename = ScriptFileRegistry.GetFilename(fileId);
+    }
     public readonly int LineNo;
+    internal readonly int FileId;
     public readonly string Filename;
 }

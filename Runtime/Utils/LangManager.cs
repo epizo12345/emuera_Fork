@@ -18,6 +18,7 @@ internal static class LangManager
 
 private static int GetByteCountLang(string str)
 {
+    // 設定encodingでround-tripできない文字だけCP932をfallbackにし、表示位置と文字列切り出しのbyte幅互換を保つ。
     if (isJapanese)
         return lang.GetByteCount(str);
 

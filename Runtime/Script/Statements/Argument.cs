@@ -34,7 +34,9 @@ internal sealed class ExpressionsArgument : Argument
 
 internal sealed class VoidArgument : Argument
 {
-    public VoidArgument() { }
+    public static readonly VoidArgument Instance = new();
+
+    private VoidArgument() { }
 }
 
 internal sealed class ExpressionArgument : Argument
@@ -584,5 +586,4 @@ internal sealed class HTML_PRINT_ISLAND_CLEARArgument : Argument
         TargetLayer = layer;
     }
     readonly public AExpression TargetLayer;
-    readonly public AExpression Term;
 }

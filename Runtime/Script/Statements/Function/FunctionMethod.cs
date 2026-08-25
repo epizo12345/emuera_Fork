@@ -44,9 +44,9 @@ internal abstract class FunctionMethod
     public virtual SingleTerm GetReturnValue(ExpressionMediator exm, List<AExpression> arguments)
     {
         if (ReturnType == typeof(long))
-            return new SingleLongTerm(GetIntValue(exm, arguments));
+            return SingleLongTerm.FromValue(GetIntValue(exm, arguments));
         else
-            return new SingleStrTerm(GetStrValue(exm, arguments));
+            return SingleStrTerm.FromValue(GetStrValue(exm, arguments));
     }
 
     /// <summary>

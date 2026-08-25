@@ -117,6 +117,45 @@ internal sealed class ExpressionMediator
         return buffer.ToString();
     }
 
+    public static long CalculatePower(long x, long y)
+    {
+        // Phase 10Aの互換性修正: POWERはdouble経由の丸めやlong.MinValue境界を避け、整数結果をcheckedで計算する。
+        // overflow時だけMath.Powを診断に使い、非有限値/64-bit範囲外の既存error semanticsを維持する。
+        if (y < 0)
+        {
+            if (x == 0)
+                throw new CodeEE(LocalizationManager.Error.PowerResultInfinite);
+            if (x == 1)
+                return 1;
+            if (x == -1)
+                return (y & 1) == 0 ? 1 : -1;
+            return 0;
+        }
+
+        long result = 1;
+        long factor = x;
+        long exponent = y;
+        try
+        {
+            while (exponent != 0)
+            {
+                if ((exponent & 1) != 0)
+                    result = checked(result * factor);
+                exponent >>= 1;
+                if (exponent != 0)
+                    factor = checked(factor * factor);
+            }
+        }
+        catch (OverflowException)
+        {
+            double pow = Math.Pow(x, y);
+            if (double.IsInfinity(pow))
+                throw new CodeEE(LocalizationManager.Error.PowerResultInfinite);
+            throw new CodeEE("累乗結果(" + pow.ToString() + ")が64ビット符号付き整数の範囲外です");
+        }
+        return result;
+    }
+
     public static string CreateBar(long var, long max, long length)
     {
         if (max <= 0)
@@ -142,5 +181,4 @@ internal sealed class ExpressionMediator
         return builder.ToString();
     }
 }
-
 

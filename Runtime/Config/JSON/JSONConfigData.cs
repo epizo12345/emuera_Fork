@@ -35,6 +35,12 @@ sealed class GamepadBindingJsonConverter : JsonConverter<string>
 
 sealed class JSONGameConfigData
 {
+    // [Emuera改修:MEM-13R40.3 2026-08-23]
+    // ユーザー向けJSONは日本語名で、DataDir相対のERB/配下を指定する。内部型名は既存コードとの互換性のため維持する。
+    // 「起動時に読み込まない」はERB本文の解析/hydrationを必要時まで遅らせる意味で、存在・関数metadata等の確認まで省略する設定ではない。
+    [JsonPropertyName("起動時に読み込まないERBフォルダ")]
+    public JSONLazyErbConfigData LazyErb { get; set; } = new();
+
     //ボタンにカーソルを合わせたときに背景色を変更するか
     [JsonPropertyName("UseButtonFocusBackgroundColor")]
     public bool UseButtonFocusBackgroundColor { get; set; }
@@ -50,6 +56,17 @@ sealed class JSONGameConfigData
     public FontAntialias FontAntialias { get; set; } = FontAntialias.Normal;
 
     public bool UseRenameInCharaCSV { get; set; } = false;
+}
+
+sealed class JSONLazyErbConfigData
+{
+    // [Emuera改修:MEM-13R41B2 2026-08-23]
+    // イベントはSHOPトップ・一覧表示に必要な入口をfallbackで維持しつつ、本編の大部分を初回利用まで遅延できることを実ゲームで確認したため既定対象へ加える。
+    // ユーザーが明示したフォルダ設定は設定値として尊重し、起動時に自動追加しない。
+    [JsonPropertyName("有効")]
+    public bool? Enabled { get; set; } = true;
+    [JsonPropertyName("フォルダ")]
+    public string[] Directories { get; set; } = ["ERB/口上/口上まとめ", "ERB/RPG/依頼", "ERB/RPG/イベント"];
 }
 
 sealed class JSONUserConfigData
@@ -76,8 +93,6 @@ sealed class JSONUserConfigData
     public string GamepadPreviousPage { get; set; } = "LeftShoulder";
     [JsonConverter(typeof(GamepadBindingJsonConverter))]
     public string GamepadNextPage { get; set; } = "RightShoulder";
-    [JsonConverter(typeof(GamepadBindingJsonConverter))]
-    public string GamepadStart { get; set; } = "Start";
     [JsonConverter(typeof(GamepadBindingJsonConverter))]
     public string GamepadOpenSettings { get; set; } = "FaceWest";
 

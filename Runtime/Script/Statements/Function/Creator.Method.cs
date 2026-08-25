@@ -54,6 +54,8 @@ internal static partial class FunctionMethodCreator
         }
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
+            // [Emuera改修:PERF-13R24 2026-08-21]
+            // 短命FixedVariableTermは既存lease経路をusing scope内だけで使い、添字評価順を維持する。
             Int64 integer = arguments[0].GetIntValue(exm);
             if (!Config.CompatiSPChara)
             {
@@ -973,7 +975,17 @@ internal static partial class FunctionMethodCreator
                 else
                     throw new CodeEE("RANDの最大値に最小値以下の値(" + max.ToString() + ")が指定されました");
             }
-            return exm.VEvaluator.GetNextRand(max - min) + min;
+            long range;
+            try
+            {
+                // Phase 9のRAND互換修正: 最大値-最小値がlong範囲を超えるとunchecked差分で乱数範囲が壊れるため、明示的にerrorへ戻す。
+                range = checked(max - min);
+            }
+            catch (OverflowException)
+            {
+                throw new CodeEE("RANDの最大値と最小値の差が64ビット符号付き整数の最大値を超えています");
+            }
+            return exm.VEvaluator.GetNextRand(range) + min;
         }
     }
 
@@ -1059,14 +1071,7 @@ internal static partial class FunctionMethodCreator
         {
             Int64 x = arguments[0].GetIntValue(exm);
             Int64 y = arguments[1].GetIntValue(exm);
-            double pow = Math.Pow(x, y);
-            if (double.IsNaN(pow))
-                throw new CodeEE(LocalizationManager.Error.PowerResultNonNumeric);
-            else if (double.IsInfinity(pow))
-                throw new CodeEE(LocalizationManager.Error.PowerResultInfinite);
-            else if ((pow >= Int64.MaxValue) || (pow <= Int64.MinValue))
-                throw new CodeEE("累乗結果(" + pow.ToString() + ")が64ビット符号付き整数の範囲外です");
-            return (long)pow;
+            return ExpressionMediator.CalculatePower(x, y);
         }
     }
 
@@ -1258,7 +1263,8 @@ internal static partial class FunctionMethodCreator
             Int64 index1 = (arguments.Count >= 2 && arguments[1] != null) ? arguments[1].GetIntValue(exm) : 0;
             Int64 index2 = (arguments.Count == 3 && arguments[2] != null) ? arguments[2].GetIntValue(exm) : (isCharaRange ? exm.VEvaluator.CHARANUM : varTerm.GetLastLength());
 
-            FixedVariableTerm p = varTerm.GetFixedVariableTerm(exm);
+            using VariableTerm.FixedVariableTermLease lease = varTerm.RentFixedVariableTerm(exm);
+            FixedVariableTerm p = lease.Term;
             if (!isCharaRange)
             {
                 p.IsArrayRangeValid(index1, index2, "SUMARRAY", 2L, 3L);
@@ -1592,7 +1598,8 @@ internal static partial class FunctionMethodCreator
             VariableTerm vTerm = (VariableTerm)arguments[0];
             Int64 start = (arguments.Count > 1 && arguments[1] != null) ? arguments[1].GetIntValue(exm) : 0;
             Int64 end = (arguments.Count > 2 && arguments[2] != null) ? arguments[2].GetIntValue(exm) : (isCharaRange ? exm.VEvaluator.CHARANUM : vTerm.GetLength());
-            FixedVariableTerm p = vTerm.GetFixedVariableTerm(exm);
+            using VariableTerm.FixedVariableTermLease lease = vTerm.RentFixedVariableTerm(exm);
+            FixedVariableTerm p = lease.Term;
             if (!isCharaRange)
             {
                 p.IsArrayRangeValid(start, end, funcName, 2L, 3L);
@@ -1822,7 +1829,8 @@ internal static partial class FunctionMethodCreator
             if (arguments.Count > 4 && arguments[4] != null)
                 isExact = arguments[4].GetIntValue(exm) != 0;
 
-            FixedVariableTerm p = varTerm.GetFixedVariableTerm(exm);
+            using VariableTerm.FixedVariableTermLease lease = varTerm.RentFixedVariableTerm(exm);
+            FixedVariableTerm p = lease.Term;
             p.IsArrayRangeValid(start, end, funcName, 3L, 4L);
 
             if (arguments[0].GetOperandType() == typeof(Int64))
@@ -1938,7 +1946,8 @@ internal static partial class FunctionMethodCreator
             Int64 start = (arguments.Count > 3 && arguments[3] != null) ? arguments[3].GetIntValue(exm) : 0;
             Int64 end = (arguments.Count > 4 && arguments[4] != null) ? arguments[4].GetIntValue(exm) : (isCharaRange ? exm.VEvaluator.CHARANUM : varTerm.GetLength());
 
-            FixedVariableTerm p = varTerm.GetFixedVariableTerm(exm);
+            using VariableTerm.FixedVariableTermLease lease = varTerm.RentFixedVariableTerm(exm);
+            FixedVariableTerm p = lease.Term;
 
             if (!isCharaRange)
             {
@@ -1978,7 +1987,7 @@ internal static partial class FunctionMethodCreator
                     return string.Format("{0}関数:{1}番目の引数がキャラクタ変数です", name, i + 1);
                 if (i == 0 && !varTerm.Identifier.IsArray1D)
                     return string.Format("{0}関数:{1}番目の引数が一次元配列ではありません", name, i + 1);
-                if (!varTerm.Identifier.IsArray1D && !varTerm.Identifier.IsArray2D && !varTerm.Identifier.IsArray2D)
+                if (!varTerm.Identifier.IsArray1D && !varTerm.Identifier.IsArray2D && !varTerm.Identifier.IsArray3D)
                     return string.Format("{0}関数:{1}番目の引数が配列変数ではありません", name, i + 1);
             }
             return null;
@@ -1995,12 +2004,10 @@ internal static partial class FunctionMethodCreator
                 {
                     if (array[i] == 0)
                         break;
-                    if (array[i] < Int64.MinValue || array[i] > Int64.MaxValue)
-                        return 0;
                     sortList.Add(new KeyValuePair<long, int>(array[i], i));
                 }
-                //素ではintの範囲しか扱えないので一工夫
-                sortList.Sort((a, b) => { return Math.Sign(a.Key - b.Key); });
+                // Phase 5の配列順序修正: long差分を作る比較は境界値でoverflowするため、CompareToで全Int64順序を比較する。
+                sortList.Sort((a, b) => a.Key.CompareTo(b.Key));
                 sortedArray = new int[sortList.Count];
                 for (int i = 0; i < sortedArray.Length; i++)
                     sortedArray[i] = sortList[i].Value;
@@ -2789,7 +2796,8 @@ internal static partial class FunctionMethodCreator
             Int64 index1 = (arguments.Count >= 3 && arguments[2] != null) ? arguments[2].GetIntValue(exm) : 0;
             Int64 index2 = (arguments.Count == 4 && arguments[3] != null) ? arguments[3].GetIntValue(exm) : varTerm.GetLastLength() - index1;
 
-            FixedVariableTerm p = varTerm.GetFixedVariableTerm(exm);
+            using VariableTerm.FixedVariableTermLease lease = varTerm.RentFixedVariableTerm(exm);
+            FixedVariableTerm p = lease.Term;
 
             if (index2 < 0)
                 throw new CodeEE("STRJOINの第4引数(" + index2.ToString() + ")が負の値になっています");
@@ -3007,7 +3015,8 @@ internal static partial class FunctionMethodCreator
     private static float[][] ReadColormatrix(string Name, ExpressionMediator exm, List<AExpression> arguments, int argNo)
     {
         //数値型二次元以上配列変数のはず
-        FixedVariableTerm p = ((VariableTerm)arguments[argNo]).GetFixedVariableTerm(exm);
+        using VariableTerm.FixedVariableTermLease lease = ((VariableTerm)arguments[argNo]).RentFixedVariableTerm(exm);
+        FixedVariableTerm p = lease.Term;
         Int64 e1, e2;
         float[][] cm = new float[5][];
         if (p.Identifier.IsArray2D)
@@ -3111,7 +3120,7 @@ internal static partial class FunctionMethodCreator
             if (!g.IsCreated)
                 return -1;
             Point p = ReadPoint(Name, exm, arguments, 1);
-            if (p.X < 0 || p.X >= g.Width || p.X < 0 || p.Y >= g.Height)
+            if (p.X < 0 || p.X >= g.Width || p.Y < 0 || p.Y >= g.Height)
                 return -1;
             var c = g.GGetColor(p.X, p.Y).ToDrawingColor();
             //Color.ToArgb()はInt32の負の値をとることがあり、Int64にうまく変換できない?（と思ったが気のせいだった
@@ -3136,7 +3145,7 @@ internal static partial class FunctionMethodCreator
                 return 0;
             Color c = ReadColor(Name, exm, arguments, 1);
             Point p = ReadPoint(Name, exm, arguments, 2);
-            if (p.X < 0 || p.X >= g.Width || p.X < 0 || p.Y >= g.Height)
+            if (p.X < 0 || p.X >= g.Width || p.Y < 0 || p.Y >= g.Height)
                 return 0;
             g.GSetColor(c, p.X, p.Y);
             return 1;
@@ -3300,7 +3309,10 @@ internal static partial class FunctionMethodCreator
                 return -1;
             var c = img.SpriteGetColor(p.X, p.Y);
             //Color.ToArgb()はInt32の負の値をとることがあり、Int64にうまく変換できない？（と思ったが気のせいだった
-            return ((Int64)c.Alpha) << 24 + c.Red << 16 + c.Green << 8 + c.Blue;
+            return ((Int64)c.Alpha << 24)
+                | ((Int64)c.Red << 16)
+                | ((Int64)c.Green << 8)
+                | c.Blue;
         }
     }
 
@@ -3941,7 +3953,7 @@ internal static partial class FunctionMethodCreator
             if (string.IsNullOrEmpty(imgname))
                 return 0;
             SpriteAnime img = AppContents.GetSprite(imgname) as SpriteAnime;
-            if (img == null && !img.IsCreated)
+            if (img == null || !img.IsCreated)
                 return 0;
             GraphicsImage g = ReadGraphics(Name, exm, arguments, 1);
             if (!g.IsCreated)

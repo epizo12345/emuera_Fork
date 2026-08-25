@@ -1,8 +1,10 @@
-# [Emuera改修:TOOLS-03]
+# [Emuera改修:TOOLS-04]
+# RichEdit class-nameだけに依存せず、画面遷移後も入力欄を再探索する。
 # save219.savをロードし、(H\e\nd\e\n)*N をWindowsの入力欄へ送って所要時間を測る。
 # N=10は画面確認、100は短い比較、1000は通常比較、5000は耐久試験に使う。
 # InternalMetrics付きではEmuera内部のERB・描画・GC等もJSON Linesへ記録する。
 # ゲームデータやセーブは書き換えない。使い方: プロジェクト資料/06_コード案内.md
+# GameDirは実効DataDir（sav\save219.savとsetting.jsonの親）を指定する。
 param(
     [string]$ExePath = (Join-Path $PSScriptRoot '..\artifacts\publish\Emuera\release_win-x64\Emuera.exe'),
     [string]$GameDir = (Join-Path $PSScriptRoot '..\eramegaten_p\Data'),
@@ -24,10 +26,13 @@ param(
 $ErrorActionPreference = 'Stop'
 
 Add-Type -AssemblyName System.Windows.Forms
-Add-Type -TypeDefinition @'
+Add-Type -AssemblyName UIAutomationClient
+Add-Type -AssemblyName UIAutomationTypes
+Add-Type -ReferencedAssemblies UIAutomationClient,UIAutomationTypes -TypeDefinition @'
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Windows.Automation;
 
 public static class EmueraBenchmarkNative
 {
@@ -45,8 +50,20 @@ public static class EmueraBenchmarkNative
     [DllImport("user32.dll")]
     private static extern bool EnumChildWindows(IntPtr parent, EnumWindowProc callback, IntPtr parameter);
 
+    [DllImport("user32.dll")]
+    private static extern bool EnumWindows(EnumWindowProc callback, IntPtr parameter);
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
+
     [DllImport("user32.dll", CharSet = CharSet.Auto)]
     private static extern int GetClassName(IntPtr window, StringBuilder className, int maximumCount);
+
+    [DllImport("user32.dll")]
+    private static extern bool IsWindowVisible(IntPtr window);
+
+    [DllImport("user32.dll")]
+    private static extern bool IsWindowEnabled(IntPtr window);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "SendMessageW")]
     public static extern IntPtr SendText(IntPtr window, uint message, IntPtr wParam, string text);
@@ -57,18 +74,111 @@ public static class EmueraBenchmarkNative
     [DllImport("user32.dll")]
     public static extern bool GetWindowRect(IntPtr window, out Rect rectangle);
 
-    public static IntPtr FindRichEdit(IntPtr parent)
+    private static string GetClass(IntPtr window)
     {
-        IntPtr result = IntPtr.Zero;
+        StringBuilder className = new StringBuilder(128);
+        GetClassName(window, className, className.Capacity);
+        return className.ToString();
+    }
+
+    public static IntPtr FindMainWindow(int pid)
+    {
+        IntPtr hiddenResult = IntPtr.Zero;
+        EnumWindows(delegate(IntPtr window, IntPtr parameter)
+        {
+            GetWindowThreadProcessId(window, out uint windowPid);
+            if (windowPid == pid)
+            {
+                if (IsWindowVisible(window))
+                {
+                    hiddenResult = window;
+                    return false;
+                }
+                hiddenResult = window;
+            }
+            return true;
+        }, IntPtr.Zero);
+        return hiddenResult;
+    }
+
+    public static IntPtr FindInput(IntPtr parent)
+    {
+        if (!GetWindowRect(parent, out Rect parentRect))
+            return IntPtr.Zero;
+        IntPtr richEdit = IntPtr.Zero;
+        IntPtr fallback = IntPtr.Zero;
+        int fallbackScore = int.MinValue;
         EnumChildWindows(parent, delegate(IntPtr window, IntPtr parameter)
         {
-            StringBuilder className = new StringBuilder(128);
-            GetClassName(window, className, className.Capacity);
-            if (className.ToString().IndexOf("RichEdit", StringComparison.OrdinalIgnoreCase) >= 0)
+            string className = GetClass(window);
+            bool visible = IsWindowVisible(window);
+            bool enabled = IsWindowEnabled(window);
+            if (!visible || !enabled || !GetWindowRect(window, out Rect rect))
+                return true;
+            if (className.IndexOf("RichEdit", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                result = window;
+                richEdit = window;
                 return false;
             }
+            bool editClass = className.IndexOf("Edit", StringComparison.OrdinalIgnoreCase) >= 0;
+            int width = rect.Right - rect.Left;
+            int height = rect.Bottom - rect.Top;
+            int bottomDistance = parentRect.Bottom - rect.Bottom;
+            if (editClass && width >= 200 && height >= 10 && height <= 80 && bottomDistance >= -10 && bottomDistance <= 160)
+            {
+                int score = width - Math.Abs(bottomDistance);
+                if (score > fallbackScore)
+                {
+                    fallback = window;
+                    fallbackScore = score;
+                }
+            }
+            return true;
+        }, IntPtr.Zero);
+        return richEdit != IntPtr.Zero ? richEdit : fallback;
+    }
+
+    public static string DescribeChildren(IntPtr parent)
+    {
+        var result = new StringBuilder();
+        EnumChildWindows(parent, delegate(IntPtr window, IntPtr parameter)
+        {
+            if (!GetWindowRect(window, out Rect rect))
+                return true;
+            if (result.Length > 0)
+                result.Append("; ");
+            result.Append(GetClass(window));
+            result.Append(" visible=").Append(IsWindowVisible(window));
+            result.Append(" enabled=").Append(IsWindowEnabled(window));
+            result.Append(" rect=").Append(rect.Left).Append(',').Append(rect.Top).Append('-').Append(rect.Right).Append(',').Append(rect.Bottom);
+            return result.Length < 4096;
+        }, IntPtr.Zero);
+        return result.ToString();
+    }
+
+    public static IntPtr FindAutomationInput(int pid)
+    {
+        IntPtr result = IntPtr.Zero;
+        EnumWindows(delegate(IntPtr window, IntPtr parameter)
+        {
+            GetWindowThreadProcessId(window, out uint windowPid);
+            if (windowPid != pid)
+                return true;
+            try
+            {
+                AutomationElement root = AutomationElement.FromHandle(window);
+                AutomationElementCollection elements = root.FindAll(TreeScope.Descendants, Condition.TrueCondition);
+                foreach (AutomationElement element in elements)
+                {
+                    if (string.Equals(element.Current.AutomationId, "richTextBox1", StringComparison.OrdinalIgnoreCase))
+                    {
+                        result = (IntPtr)element.Current.NativeWindowHandle;
+                        return false;
+                    }
+                }
+            }
+            catch (ElementNotAvailableException) { }
+            catch (InvalidOperationException) { }
             return true;
         }, IntPtr.Zero);
         return result;
@@ -77,7 +187,7 @@ public static class EmueraBenchmarkNative
 '@
 
 $ExePath = [IO.Path]::GetFullPath($ExePath)
-$GameDir = [IO.Path]::GetFullPath($GameDir)
+$GameDir = [IO.Path]::GetFullPath($GameDir) # DataDir; FixtureRootを渡した場合だけ既存補正でDataへ解決する。
 $OutputDir = [IO.Path]::GetFullPath($OutputDir)
 $TraceToolPath = [IO.Path]::GetFullPath($TraceToolPath)
 
@@ -146,13 +256,40 @@ function Wait-ForInputHandle([Diagnostics.Process]$Process, [int]$TimeoutMillise
             throw "Emueraが入力欄の準備中に終了しました: ExitCode=$($Process.ExitCode)"
         }
         $Process.Refresh()
-        $handle = [EmueraBenchmarkNative]::FindRichEdit($Process.MainWindowHandle)
+        $mainHandle = $Process.MainWindowHandle
+        if ($mainHandle -eq [IntPtr]::Zero) {
+            $mainHandle = [EmueraBenchmarkNative]::FindMainWindow($Process.Id)
+        }
+        $handle = [EmueraBenchmarkNative]::FindInput($mainHandle)
+        if ($handle -eq [IntPtr]::Zero) {
+            $handle = [EmueraBenchmarkNative]::FindAutomationInput($Process.Id)
+        }
         if ($handle -ne [IntPtr]::Zero) {
             return $handle
         }
         Start-Sleep -Milliseconds 25
     }
-    throw "Emueraの入力欄が見つかりません: PID=$($Process.Id)"
+    $Process.Refresh()
+    $mainHandle = $Process.MainWindowHandle
+    if ($mainHandle -eq [IntPtr]::Zero) {
+        $mainHandle = [EmueraBenchmarkNative]::FindMainWindow($Process.Id)
+    }
+    $details = if ($mainHandle -ne [IntPtr]::Zero) {
+        [EmueraBenchmarkNative]::DescribeChildren($mainHandle)
+    } else { 'main window handle=0' }
+    throw "Emueraの入力欄が見つかりません: PID=$($Process.Id); candidates=$details"
+}
+
+function Refresh-InputHandle([Diagnostics.Process]$Process, [IntPtr]$CurrentHandle, [int]$TimeoutMilliseconds) {
+    $mainHandle = $Process.MainWindowHandle
+    if ($mainHandle -eq [IntPtr]::Zero) {
+        $mainHandle = [EmueraBenchmarkNative]::FindMainWindow($Process.Id)
+    }
+    if ($CurrentHandle -ne [IntPtr]::Zero -and [EmueraBenchmarkNative]::FindInput($mainHandle) -eq $CurrentHandle)
+    {
+        return $CurrentHandle
+    }
+    return Wait-ForInputHandle $Process $TimeoutMilliseconds
 }
 
 function Set-InputText([IntPtr]$InputHandle, [string]$Text) {
@@ -243,8 +380,12 @@ function Wait-ForBenchmarkRecord(
 }
 
 function Save-WindowScreenshot([Diagnostics.Process]$Process, [string]$Path) {
+    $mainHandle = $Process.MainWindowHandle
+    if ($mainHandle -eq [IntPtr]::Zero) {
+        $mainHandle = [EmueraBenchmarkNative]::FindMainWindow($Process.Id)
+    }
     $rectangle = [EmueraBenchmarkNative+Rect]::new()
-    if (-not [EmueraBenchmarkNative]::GetWindowRect($Process.MainWindowHandle, [ref]$rectangle)) {
+    if (-not [EmueraBenchmarkNative]::GetWindowRect($mainHandle, [ref]$rectangle)) {
         throw "Emueraウィンドウの領域を取得できません"
     }
     $width = $rectangle.Right - $rectangle.Left
@@ -281,6 +422,7 @@ for ($iteration = 1; $iteration -le $Iterations; $iteration++) {
         $startupWatch = [Diagnostics.Stopwatch]::StartNew()
         $processStartedAtUtc = [datetime]::UtcNow
         $benchmarkLogPath = Join-Path $runDir ("metrics-{0:D3}.jsonl" -f $iteration)
+        # Program.ExeDirはDataDirを受け取る。FixtureRootを直接渡さない。
         $processArguments = @('--ExeDir', ('"{0}"' -f $GameDir))
         if ($InternalMetrics) {
             $processArguments += @('--BenchmarkLog', ('"{0}"' -f $benchmarkLogPath))
@@ -301,10 +443,12 @@ for ($iteration = 1; $iteration -le $Iterations; $iteration++) {
         if ($CaptureScreenshots) {
             Save-WindowScreenshot $process (Join-Path $runDir ("{0:D3}-title.png" -f $iteration))
         }
+        $inputHandle = Refresh-InputHandle $process $inputHandle ($TimeoutSeconds * 1000)
         Send-TextAndEnter $inputHandle '1'
         if ($CaptureScreenshots) {
             Save-WindowScreenshot $process (Join-Path $runDir ("{0:D3}-load-list.png" -f $iteration))
         }
+        $inputHandle = Refresh-InputHandle $process $inputHandle ($TimeoutSeconds * 1000)
         Send-TextAndEnter $inputHandle '219'
         Start-Sleep -Milliseconds 200
         if ($CaptureScreenshots) {
@@ -328,6 +472,7 @@ for ($iteration = 1; $iteration -le $Iterations; $iteration++) {
             Start-Sleep -Milliseconds 1000
         }
 
+        $inputHandle = Refresh-InputHandle $process $inputHandle ($TimeoutSeconds * 1000)
         Set-InputText $inputHandle $macroText
 
         $process.Refresh()

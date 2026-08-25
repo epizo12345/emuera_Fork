@@ -54,13 +54,6 @@ internal sealed class CharStream
         }
     }
 
-    public void AppendString(string str)
-    {
-        if (pointer > source.Length)
-            pointer = source.Length;
-        source += " " + str;
-    }
-
     /// <summary>
     /// 文字列終端に達した
     /// </summary>

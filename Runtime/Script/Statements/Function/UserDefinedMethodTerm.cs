@@ -33,9 +33,9 @@ internal abstract class SuperUserDefinedMethodTerm : AExpression
         if (term == null)
         {
             if (GetOperandType() == typeof(long))
-                return new SingleLongTerm(0);
+                return SingleLongTerm.FromValue(0);
             else
-                return new SingleStrTerm("");
+                return SingleStrTerm.FromValue("");
         }
         return term;
     }
@@ -135,12 +135,6 @@ internal sealed class UserDefinedRefMethodNoArgTerm : SuperUserDefinedMethodTerm
     { get { throw new CodeEE("引数のない関数参照" + reffunc.Name + "を呼び出しました"); } }
     public override CalledFunction Call
     { get { throw new CodeEE("引数のない関数参照" + reffunc.Name + "を呼び出しました"); } }
-    public string GetRefName()
-    {
-        if (reffunc.CalledFunction == null)
-            return "";
-        return reffunc.CalledFunction.TopLabel.LabelName;
-    }
     public override long GetIntValue(ExpressionMediator exm)
     { throw new CodeEE("引数のない関数参照" + reffunc.Name + "を呼び出しました"); }
     public override string GetStrValue(ExpressionMediator exm)

@@ -11,7 +11,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
-using System.Runtime;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using MinorShift.Emuera.UI.Framework;
@@ -58,6 +57,7 @@ internal sealed partial class MainWindow : Form
         EmuVerToolStripTextBox.Text = Emuera_verInfo;
 
         console = new EmueraConsole(this);
+        クリップボードにコピーToolStripMenuItem.Checked = JSONConfig.User.CBUseClipboard;
         macroMenuItems[0] = マクロ01ToolStripMenuItem;
         macroMenuItems[1] = マクロ02ToolStripMenuItem;
         macroMenuItems[2] = マクロ03ToolStripMenuItem;
@@ -206,11 +206,11 @@ internal sealed partial class MainWindow : Form
         #region EE_AnchorのCB機能移植
         else if (Keys.Up == (keyData & Keys.KeyCode) && ((keyData & Keys.Modifiers & Keys.Control) == Keys.Control))
         {
-            if (JSONConfig.User.CBUseClipboard && console.CBProc.ScrollUp(1)) return true;
+            if (console != null && JSONConfig.User.CBUseClipboard && console.CBProc.ScrollUp(1)) return true;
         }
         else if (Keys.Down == (keyData & Keys.KeyCode) && ((keyData & Keys.Modifiers & Keys.Control) == Keys.Control))
         {
-            if (JSONConfig.User.CBUseClipboard && console.CBProc.ScrollDown(1)) return true;
+            if (console != null && JSONConfig.User.CBUseClipboard && console.CBProc.ScrollDown(1)) return true;
         }
         #endregion
 

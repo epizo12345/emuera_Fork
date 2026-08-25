@@ -434,6 +434,16 @@ internal sealed class ProcessState
 
     public void IntoFunction(CalledFunction call, UserDefinedFunctionArgument srcArgs, ExpressionMediator exm)
     {
+        // [Emuera改修:MEM-13R39 2026-08-22]
+        // Lazy対象の本文は固定CALLが保持するFunctionLabelLine stubへ実行直前に接続する。
+        // hydrationを引数評価・ScopeIn・functionList追加より前に行い、stub identityを変えない。
+        if (!GlobalStatic.Process.EnsureFunctionReady(call.TopLabel))
+        {
+            string errMes = call.TopLabel?.ErrMes;
+            throw new CodeEE(string.IsNullOrEmpty(errMes)
+                ? "関数の実行準備に失敗しました。"
+                : errMes);
+        }
 
         if (call.IsEvent)
         {

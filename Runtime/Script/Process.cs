@@ -53,6 +53,7 @@ internal sealed partial class Process(EmueraConsole view)
     private IdentifierDictionary idDic;
     ProcessState state;
     ProcessState originalState;//リセットする時のために
+    private ErbLoader erbLoader;
     bool noError;
     //色々あって復活させてみる
     bool initialiing;
@@ -218,15 +219,17 @@ internal sealed partial class Process(EmueraConsole view)
 
             //ERB読込
             logWriter.WriteLine($"Proc:Init:ERB:Start {stopWatch.ElapsedMilliseconds}ms");
-            var loader = new ErbLoader(console, exm, this);
+            erbLoader = new ErbLoader(console, exm, this);
             if (Program.AnalysisMode)
-                noError = await loader.LoadErbList(Program.AnalysisFiles, labelDic);
+                noError = await erbLoader.LoadErbList(Program.AnalysisFiles, labelDic);
             else
-                noError = await loader.LoadErbDir(Program.ErbDir, Config.DisplayReport, labelDic);
-            logWriter.WriteLine($"Proc:Init:ERB:Enumeration {loader.EnumerationMilliseconds}ms");
-            logWriter.WriteLine($"Proc:Init:ERB:PrimaryParse {loader.PrimaryParseMilliseconds}ms");
-            logWriter.WriteLine($"Proc:Init:ERB:LabelSetup {loader.LabelSetupMilliseconds}ms");
-            logWriter.WriteLine($"Proc:Init:ERB:ScriptParse {loader.ScriptParseMilliseconds}ms");
+                noError = await erbLoader.LoadErbDir(Program.ErbDir, Config.DisplayReport, labelDic);
+            logWriter.WriteLine($"Proc:Init:ERB:Enumeration {erbLoader.EnumerationMilliseconds}ms");
+            logWriter.WriteLine($"Proc:Init:ERB:PrimaryParse {erbLoader.PrimaryParseMilliseconds}ms");
+            logWriter.WriteLine($"Proc:Init:ERB:LabelSetup {erbLoader.LabelSetupMilliseconds}ms");
+            logWriter.WriteLine($"Proc:Init:ERB:ScriptParse {erbLoader.ScriptParseMilliseconds}ms");
+            logWriter.WriteLine($"Proc:Init:ERB:LazyErb files={erbLoader.LazyErbFileCount} fallback={erbLoader.LazyErbFallbackFileCount}");
+            logWriter.WriteLine($"Proc:Init:ERB:DeferredEager count={erbLoader.DeferredEagerCount}");
             logWriter.WriteLine($"Proc:Init:ERB:End {stopWatch.ElapsedMilliseconds}ms");
             PerformanceMetrics.MarkStartup("ErbParsed"); // ERB解析完了の目印
 
@@ -251,43 +254,75 @@ internal sealed partial class Process(EmueraConsole view)
         return true;
     }
 
+    // [Emuera改修:MEM-13R39 2026-08-22]
+    // 通常モードではactive erbLoaderのLazy表を使い、eagerのDebug/Analysisやreload中のloader不在時は
+    // 追加処理なしで従来経路を通す。呼び出し側の引数評価・ScopeInより前に判定できる境界を保つ。
+    internal bool EnsureFunctionReady(FunctionLabelLine label) => erbLoader?.EnsureFunctionReady(label) ?? true;
+
     public async Task ReloadErbAll()
     {
         await Preload.Load(Program.ErbDir);
         await Preload.Load(Program.CsvDir);
         saveCurrentState(false);
         state.SystemState = SystemStateCode.System_Reloaderb;
-        ErbLoader loader = new(console, exm, this);
-        await loader.LoadErbDir(Program.ErbDir, false, labelDic);
+        erbLoader = new(console, exm, this);
+        await erbLoader.LoadErbDir(Program.ErbDir, false, labelDic);
         console.ReadAnyKey();
     }
 
     public async Task ReloadPartialErb(List<string> paths)
     {
+        // [Emuera改修:MEM-13R39.1 2026-08-23]
+        // active erbLoaderは通常モードで起動時の未hydrate stubとLazy対応表を所有するため、
+        // active Lazy対象を含む再読込ではpartial loaderに置換せず、全体を一体で再構築する。
+        // Debug/AnalysisではLazyが無効なので、従来どおりpartial reloadを維持する。
+        if (erbLoader?.HasRuntimeLazyState == true || paths.Any(LazyErbPolicy.IsActiveTarget))
+        {
+            // [Emuera改修:MEM-13R41I 2026-08-24]
+            // active loaderのLazy/Deferred表はFunctionLabelLine identityを保持する。
+            // 別partialLoaderで一部fileだけ差し替えるとold label参照が残るため、runtime stateがある間はfull reloadへ統一する。
+            await ReloadErbAll();
+            return;
+        }
         saveCurrentState(false);
         state.SystemState = SystemStateCode.System_Reloaderb;
         await Preload.Load(paths);
-        var loader = new ErbLoader(console, exm, this);
-        await loader.LoadErbList(paths, labelDic);
+        // [Emuera改修:MEM-13R39.1 2026-08-23]
+        // Lazy対象外のpartial reloadだけはlocal loaderに限定し、active Lazy managerを保持する。
+        ErbLoader partialLoader = new(console, exm, this);
+        await partialLoader.LoadErbList(paths, labelDic);
         console.ReadAnyKey();
     }
 
     public async Task ReloadErbFolder(string dirPath)
     {
-        saveCurrentState(false);
-        state.SystemState = SystemStateCode.System_Reloaderb;
-        await Preload.Load(dirPath);
-        var loader = new ErbLoader(console, exm, this);
-
+        // [Emuera改修:MEM-13R41F 2026-08-24]
+        // ファイルが削除されて列挙結果から消えていても、configured Lazy directoryとのscope交差で
+        // full reloadへ昇格し、古いstubをLabelDictionaryへ残さない。親folderの扱いはSearchSubdirectoryに従う。
+        if (erbLoader?.HasRuntimeLazyState == true
+            || LazyErbPolicy.RequiresFullReloadForDirectory(dirPath, Config.SearchSubdirectory))
+        {
+            // [Emuera改修:MEM-13R41I 2026-08-24]
+            // folder reloadも同じloader ownership規則に揃え、削除済みLazy fileと旧label identityの双方を残さない。
+            await ReloadErbAll();
+            return;
+        }
         var serachOption = SearchOption.TopDirectoryOnly;
         if (Config.SearchSubdirectory)
         {
             serachOption = SearchOption.AllDirectories;
         }
 
-        var erbFiles = Directory.EnumerateFiles(dirPath, "", serachOption)
-                        .Where(x => Path.GetExtension(x).Equals(".erb", StringComparison.OrdinalIgnoreCase));
-        await loader.LoadErbList(erbFiles, labelDic);
+        string[] erbFiles = Directory.EnumerateFiles(dirPath, "", serachOption)
+            .Where(x => Path.GetExtension(x).Equals(".erb", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        saveCurrentState(false);
+        state.SystemState = SystemStateCode.System_Reloaderb;
+        await Preload.Load(dirPath);
+        // [Emuera改修:MEM-13R39.1 2026-08-23]
+        // active Lazy対象外のfolderだけは従来どおりlocal loaderで部分再読込する。
+        ErbLoader partialLoader = new(console, exm, this);
+        await partialLoader.LoadErbList(erbFiles, labelDic);
         console.ReadAnyKey();
     }
 
@@ -510,22 +545,6 @@ internal sealed partial class Process(EmueraConsole view)
         return methodStack;
     }
 
-    public ScriptPosition? GetRunningPosition()
-    {
-        LogicalLine line = state.ErrorLine;
-        if (line == null)
-            return default;
-        return line.Position;
-    }
-    /*
-				private readonly string scaningScope = null;
-				private string GetScaningScope()
-				{
-					if (scaningScope != null)
-						return scaningScope;
-					return state.Scope;
-				}
-		*/
     // [Emuera改修:WARN-04]
     // 並列解析中の「今どの行を解析しているか」を作業スレッドごとに分ける。
     // 1つの共有変数だと、別スレッドの行番号を使って誤警告を出すことがある。

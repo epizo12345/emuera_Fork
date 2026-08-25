@@ -33,7 +33,8 @@ internal sealed partial class Process
                 throw new CodeEE(line.ErrMes);
             else if (line is InstructionLine func)
             {//1753 InstructionLineを先に持ってきてみる。わずかに速くなった気がしないでもない
-                if (!Program.DebugMode && func.Function.IsDebug())
+                FunctionIdentifier function = func.Function;
+                if (!Program.DebugMode && function.IsDebug())
                 {//非DebugモードでのDebug系命令。何もしない。（SIF文のためにコメント行扱いにはできない）
                     continue;
                 }
@@ -43,9 +44,9 @@ internal sealed partial class Process
                     if (func.IsError)
                         throw new CodeEE(func.ErrMes);
                 }
-                if (skipPrint && func.Function.IsPrint())
+                if (skipPrint && function.IsPrint())
                 {
-                    if (userDefinedSkip && func.Function.IsInput())
+                    if (userDefinedSkip && function.IsInput())
                     {
                         console.PrintError(LocalizationManager.Error.SkipdispInputError1);
                         console.PrintError(LocalizationManager.Error.SkipdispInputError2);
@@ -53,9 +54,9 @@ internal sealed partial class Process
                     }
                     continue;
                 }
-                if (func.Function.Instruction != null)
-                    func.Function.Instruction.DoInstruction(exm, func, state);
-                else if (func.Function.IsFlowContorol())
+                if (function.Instruction != null)
+                    function.Instruction.DoInstruction(exm, func, state);
+                else if (function.IsFlowContorol())
                     doFlowControlFunction(func);
                 else
                     doNormalFunction(func);
@@ -328,25 +329,22 @@ internal sealed partial class Process
             case FunctionCode.POWER:
                 {
                     SpPowerArgument powerArg = (SpPowerArgument)func.Argument;
-                    double x = powerArg.X.GetIntValue(exm);
-                    double y = powerArg.Y.GetIntValue(exm);
-                    double pow = Math.Pow(x, y);
-                    if (double.IsNaN(pow))
-                        throw new CodeEE(LocalizationManager.Error.PowerResultNonNumeric);
-                    else if (double.IsInfinity(pow))
-                        throw new CodeEE(LocalizationManager.Error.PowerResultInfinite);
-                    else if ((pow >= Int64.MaxValue) || (pow <= Int64.MinValue))
-                        throw new CodeEE("累乗結果(" + pow.ToString() + ")が64ビット符号付き整数の範囲外です");
-                    powerArg.VariableDest.SetValue((long)pow, exm);
+                    long x = powerArg.X.GetIntValue(exm);
+                    long y = powerArg.Y.GetIntValue(exm);
+                    powerArg.VariableDest.SetValue(ExpressionMediator.CalculatePower(x, y), exm);
                     break;
                 }
             case FunctionCode.SWAP:
                 {
+                    // [Emuera改修:PERF-13R24 2026-08-21]
+                    // 短命termは既存lease/pool経路だけをusing scope内で使い、var1→var2評価順を変えない。
                     SpSwapVarArgument arg = (SpSwapVarArgument)func.Argument;
                     //1756beta2+v11
                     //値を読み出す前に添え字を確定させておかないと、RANDが添え字にある場合正しく処理できない
-                    FixedVariableTerm vTerm1 = arg.var1.GetFixedVariableTerm(exm);
-                    FixedVariableTerm vTerm2 = arg.var2.GetFixedVariableTerm(exm);
+                    using VariableTerm.FixedVariableTermLease lease1 = arg.var1.RentFixedVariableTerm(exm);
+                    using VariableTerm.FixedVariableTermLease lease2 = arg.var2.RentFixedVariableTerm(exm);
+                    FixedVariableTerm vTerm1 = lease1.Term;
+                    FixedVariableTerm vTerm2 = lease2.Term;
                     if (vTerm1.GetOperandType() != vTerm2.GetOperandType())
                         throw new CodeEE(LocalizationManager.Error.VarsTypeDifferent);
                     if (vTerm1.GetOperandType() == typeof(Int64))
@@ -590,7 +588,8 @@ internal sealed partial class Process
                     SpArrayShiftArgument arrayArg = (SpArrayShiftArgument)func.Argument;
                     if (!arrayArg.VarToken.Identifier.IsArray1D)
                         throw new CodeEE("ARRAYSHIFTは1次元配列および配列型キャラクタ変数のみに対応しています");
-                    FixedVariableTerm dest = arrayArg.VarToken.GetFixedVariableTerm(exm);
+                    using VariableTerm.FixedVariableTermLease lease = arrayArg.VarToken.RentFixedVariableTerm(exm);
+                    FixedVariableTerm dest = lease.Term;
                     int shift = (int)arrayArg.Num1.GetIntValue(exm);
                     if (shift == 0)
                         break;
@@ -625,7 +624,8 @@ internal sealed partial class Process
                     SpArrayControlArgument arrayArg = (SpArrayControlArgument)func.Argument;
                     if (!arrayArg.VarToken.Identifier.IsArray1D)
                         throw new CodeEE("ARRAYREMOVEは1次元配列および配列型キャラクタ変数のみに対応しています");
-                    FixedVariableTerm p = arrayArg.VarToken.GetFixedVariableTerm(exm);
+                    using VariableTerm.FixedVariableTermLease lease = arrayArg.VarToken.RentFixedVariableTerm(exm);
+                    FixedVariableTerm p = lease.Term;
                     int start = (int)arrayArg.Num1.GetIntValue(exm);
                     int num = (int)arrayArg.Num2.GetIntValue(exm);
                     if (start < 0)
@@ -642,7 +642,8 @@ internal sealed partial class Process
                     SpArraySortArgument arrayArg = (SpArraySortArgument)func.Argument;
                     if (!arrayArg.VarToken.Identifier.IsArray1D)
                         throw new CodeEE("ARRAYRESORTは1次元配列および配列型キャラクタ変数のみに対応しています");
-                    FixedVariableTerm p = arrayArg.VarToken.GetFixedVariableTerm(exm);
+                    using VariableTerm.FixedVariableTermLease lease = arrayArg.VarToken.RentFixedVariableTerm(exm);
+                    FixedVariableTerm p = lease.Term;
                     int start = (int)arrayArg.Num1.GetIntValue(exm);
                     if (start < 0)
                         throw new CodeEE("ARRAYSORTの第３引数が負の値(" + start.ToString() + ")です");

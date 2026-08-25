@@ -139,7 +139,7 @@ internal static partial class LexicalAnalyzer
     {
         long significand;
         int expBase = 0;
-        int exponent = 0;
+        long exponent = 0;
         int stStartPos = st.CurrentPosition;
         int stEndPos;
         int fromBase = 10;
@@ -180,7 +180,9 @@ internal static partial class LexicalAnalyzer
         if (expBase != 0)
         {
             st.ShiftNext();
-            unchecked { exponent = (int)readDigits(st, fromBase); }
+            if (st.EOS)
+                throw new CodeEE(LocalizationManager.Error.CanNotInterpretNum);
+            exponent = readDigits(st, fromBase);
         }
         stEndPos = st.CurrentPosition;
         if (expBase != 0 && exponent != 0)
@@ -195,13 +197,12 @@ internal static partial class LexicalAnalyzer
     }
 
     //IsNumericにReadInt64を使うと、本来falseになるべき文字列の一部がCodeEEになってしまうので、新規に追加
+    // ReadInt64と同じ形式を検査するが、判定関数では例外を成功/失敗の制御に使わずfalseで返す。
     public static bool NumericCheck(CharStream st)
     {
         Int64 significand;
         int expBase = 0;
-        int exponent = 0;
-        int stStartPos = st.CurrentPosition;
-        int stEndPos;
+        long exponent = 0;
         int fromBase = 10;
         if (st.Current == '0')
         {
@@ -224,7 +225,7 @@ internal static partial class LexicalAnalyzer
             if (fromBase != 16)
                 return false;
             //else if (!hexadecimalDigits.Contains(st.Current))
-            else if (0 <= Array.IndexOf(hexadecimalDigits, st.Current))
+            else if (Array.IndexOf(hexadecimalDigits, st.Current) < 0)
                 return false;
         }
         // ここでエラーが発生する場合、そもそも文字列ではないのでfalseを返す
@@ -243,26 +244,41 @@ internal static partial class LexicalAnalyzer
         if (expBase != 0)
         {
             st.ShiftNext();
-            if (st.EOS || !char.IsDigit(st.Current))
+            if (st.EOS)
                 return false;
-            unchecked { exponent = (int)readDigits(st, fromBase); }
+            if (st.Current == '+' || st.Current == '-')
+            {
+                if (!char.IsDigit(st.Next))
+                    return false;
+            }
+            else if (!char.IsDigit(st.Current))
+                return false;
+            try
+            {
+                exponent = readDigits(st, fromBase);
+            }
+            catch (CodeEE)
+            {
+                return false;
+            }
         }
-        stEndPos = st.CurrentPosition;
         if ((expBase != 0) && (exponent != 0))
         {
 
             double d = significand * Math.Pow(expBase, exponent);
             if ((double.IsNaN(d)) || (double.IsInfinity(d)) || (d > Int64.MaxValue) || (d < Int64.MinValue))
-                throw new CodeEE("\"" + st.Substring(stStartPos, stEndPos) + "\"は64ビット符号付整数の範囲を超えています");
+                return false;
         }
 
         return true;
     }
 
 
-    static readonly SearchValues<char> digit = SearchValues.Create(['0','1','2','3','4','5','6','7','8','9',
+    static readonly SearchValues<char> decimalDigits = SearchValues.Create(['0','1','2','3','4','5','6','7','8','9']);
+    static readonly SearchValues<char> hexadecimalSearchDigits = SearchValues.Create(['0','1','2','3','4','5','6','7','8','9',
                                                         'a', 'b', 'c', 'd', 'e', 'f',
                                                         'A', 'B', 'C', 'D', 'E', 'F']);
+    static readonly SearchValues<char> binaryDigits = SearchValues.Create(['0', '1']);
     private static long readDigits(CharStream st, int fromBase)
     {
         var span = st.SubstringROS();
@@ -274,16 +290,17 @@ internal static partial class LexicalAnalyzer
             searchStart = 1;
         }
 
-        var end = span[searchStart..].IndexOfAnyExcept(digit);
-        if (end == -1)
+        SearchValues<char> validDigits = fromBase switch
         {
-            end = searchStart + span.Length;
-            // "+"、"-"の符号が先頭につく場合、符号以降の文字数を取得する、
-            if (span[0] == '-' || span[0] == '+')
-            {
-                end -= 1;
-            }
-        }
+            2 => binaryDigits,
+            16 => hexadecimalSearchDigits,
+            _ => decimalDigits,
+        };
+        var end = span[searchStart..].IndexOfAnyExcept(validDigits);
+        if (end == -1)
+            end = span.Length;
+        else
+            end += searchStart;
         st.Jump(end);
 
         var integerSpan = span[..end];
@@ -371,7 +388,7 @@ internal static partial class LexicalAnalyzer
     }
 
     /// <summary>
-    /// 行頭の単語の取得。マクロ展開あり。ただし単語でないマクロ展開はしない。
+    /// 行頭の単語を取得する。
     /// </summary>
     /// <param name="st"></param>
     /// <returns></returns>
@@ -381,36 +398,6 @@ internal static partial class LexicalAnalyzer
         if (str.IsEmpty)
             throw new CodeEE(LocalizationManager.Error.LineBeginsIllegalCharacter);
         return str.ToString();
-    }
-
-    public static IdentifierWord ReadFirstIdentifierWord(CharStream st)
-    {
-        //int startpos = st.CurrentPosition;
-        var str = ReadSingleIdentifierROS(st);
-        if (str.IsEmpty)
-            throw new CodeEE(LocalizationManager.Error.LineBeginsIllegalCharacter);
-        //1808a3 先頭1単語の展開をやめる。－命令の置換を禁止。
-        //if (UseMacro)
-        //{
-        //    int i = 0;
-        //    while (true)
-        //    {
-        //        DefineMacro macro = GlobalStatic.IdentifierDictionary.GetMacro(str);
-        //        i++;
-        //        if (i > MAX_EXPAND_MACRO)
-        //            throw new CodeEE("マクロの展開数が1文あたりの上限を超えました(自己参照・循環参照のおそれ)");
-        //        if (macro == null)
-        //            break;
-        //        //単語（識別子一個）でないマクロが出現したらここでは処理しない
-        //        if (macro.IDWord == null)
-        //        {
-        //            st.CurrentPosition = startpos;
-        //            return null;//変数処理に任せる。
-        //        }
-        //        str = macro.IDWord.Code;
-        //    }
-        //}
-        return new IdentifierWord(str.ToString());
     }
 
     /// <summary>
@@ -426,15 +413,17 @@ internal static partial class LexicalAnalyzer
         if (UseMacro)
         {
             int i = 0;
+            // Macro展開は未定義を正常終了、定義済みだが通常識別子を持たないものをerrorと区別する。
+            // 展開回数上限も維持し、循環macroでstartup/parserが無限に進まないようにする。
             while (true)
             {
                 DefineMacro macro = GlobalStatic.IdentifierDictionary.GetMacro(str);
+                if (macro == null)
+                    break;
                 i++;
                 if (i > MAX_EXPAND_MACRO)
                     throw new CodeEE(string.Format(LocalizationManager.Error.MacroOverLimit, MAX_EXPAND_MACRO.ToString()));
-                if (macro == null)
-                    break;
-                if (macro.IDWord != null)
+                if (macro.IDWord == null)
                     throw new CodeEE(string.Format(LocalizationManager.Error.MacroIsNotAvailable, macro.Keyword));
                 str = macro.IDWord.Code;
             }
@@ -1079,6 +1068,7 @@ internal static partial class LexicalAnalyzer
     private static WordCollection expandMacro(WordCollection wc)
     {
         //マクロ展開
+        // 関数型を含む展開でも同じ上限を使い、循環macroを有限回でerrorにする。
         wc.PointerReset();
         int count = 0;
         while (!wc.EOL)

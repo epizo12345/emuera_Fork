@@ -102,7 +102,7 @@ internal sealed class GameBase
                 if (tokens.Length < 2)
                     continue;
                 string param = tokens[1].Trim();
-                pos = new ScriptPosition(eReader.Filename, eReader.LineNo);
+                pos = new ScriptPosition(eReader.FileId, eReader.LineNo);
                 switch (tokens[0])
                 {
                     case "コード":

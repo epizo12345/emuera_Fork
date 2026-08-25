@@ -27,8 +27,8 @@ public class CircularBuffer<T> : ICircularBuffer<T>, IEnumerable<T>
 
     public CircularBuffer(int capacity)
     {
-        if (capacity < 0)
-            throw new ArgumentOutOfRangeException("capacity", "must be positive");
+        if (capacity <= 0)
+            throw new ArgumentOutOfRangeException(nameof(capacity), "must be positive");
         _buffer = new T[capacity];
         _head = capacity - 1;
     }
@@ -40,8 +40,8 @@ public class CircularBuffer<T> : ICircularBuffer<T>, IEnumerable<T>
         get { return _buffer.Length; }
         set
         {
-            if (value < 0)
-                throw new ArgumentOutOfRangeException("value", "must be positive");
+            if (value <= 0)
+                throw new ArgumentOutOfRangeException(nameof(value), "must be positive");
 
             if (value == _buffer.Length)
                 return;
@@ -84,6 +84,7 @@ public class CircularBuffer<T> : ICircularBuffer<T>, IEnumerable<T>
 
     public void Clear()
     {
+        Array.Clear(_buffer);
         _head = Capacity - 1;
         _tail = 0;
         Count = 0;
@@ -94,14 +95,14 @@ public class CircularBuffer<T> : ICircularBuffer<T>, IEnumerable<T>
         get
         {
             if (index < 0 || index >= Count)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             return _buffer[(_tail + index) % Capacity];
         }
         set
         {
             if (index < 0 || index >= Count)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             _buffer[(_tail + index) % Capacity] = value;
         }
@@ -118,7 +119,7 @@ public class CircularBuffer<T> : ICircularBuffer<T>, IEnumerable<T>
     public void Insert(int index, T item)
     {
         if (index < 0 || index > Count)
-            throw new ArgumentOutOfRangeException("index");
+            throw new ArgumentOutOfRangeException(nameof(index));
 
         if (Count == index)
             Enqueue(item);
@@ -135,7 +136,7 @@ public class CircularBuffer<T> : ICircularBuffer<T>, IEnumerable<T>
     public void RemoveAt(int index)
     {
         if (index < 0 || index >= Count)
-            throw new ArgumentOutOfRangeException("index");
+            throw new ArgumentOutOfRangeException(nameof(index));
 
         for (var i = index; i > 0; --i)
             this[i] = this[i - 1];

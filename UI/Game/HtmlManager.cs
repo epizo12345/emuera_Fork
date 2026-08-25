@@ -42,7 +42,6 @@ namespace MinorShift.Emuera.UI.Game;
 /// </summary>
 internal static partial class HtmlManager
 {
-    static readonly char[] rep = ['&', '>', '<', '\"', '\''];
     static readonly Dictionary<char, string> repDic = new()
     {
         { '&', "&amp;" },
@@ -51,27 +50,6 @@ internal static partial class HtmlManager
         { '\"', "&quot;" },
         { '\'', "&apos;" }
     };
-
-    private sealed class HtmlAnalzeStateFontTag
-    {
-        public int Color = -1;
-        public int BColor = -1;
-        public string FontName;
-        //public int PointX = 0;
-        //public bool PointXisLocked = false;
-    }
-
-    private sealed class HtmlAnalzeStateButtonTag
-    {
-        public bool IsButton = true;
-        public bool IsButtonTag = true;
-        public long ButtonValueInt;
-        public string ButtonValueStr;
-        public string ButtonTitle;
-        public bool ButtonIsInteger;
-        public int PointX;
-        public bool PointXisLocked;
-    }
 
     class DivState
     {
@@ -88,57 +66,6 @@ internal static partial class HtmlManager
         public int BorderWidth;
         public SKColor BorderColor;
         public SKRect? Padding;
-    }
-
-    private sealed class HtmlAnalzeState
-    {
-        public bool LineHead = true;//行頭フラグ。一度もテキストが出てきてない状態
-        public FontStyle FontStyle = FontStyle.Regular;
-        public List<HtmlAnalzeStateFontTag> FonttagList = [];
-        public bool FlagNobr;//falseの時に</nobr>するとエラー
-        public bool FlagP;//falseの時に</p>するとエラー
-        public bool FlagNobrClosed;//trueの時に</nobr>するとエラー
-        public bool FlagPClosed;//trueの時に</p>するとエラー
-        public DisplayLineAlignment Alignment = DisplayLineAlignment.LEFT;
-
-        /// <summary>
-        /// 今まで追加された文字列についてのボタンタグ情報
-        /// </summary>
-        public HtmlAnalzeStateButtonTag LastButtonTag;
-        /// <summary>
-        /// 最新のボタンタグ情報
-        /// </summary>
-        public HtmlAnalzeStateButtonTag CurrentButtonTag;
-
-        public bool FlagBr;//<br>による強制改行の予約
-        public bool FlagButton;//<button></button>によるボタン化の予約
-
-        public DivState DivState;
-        public bool OpenDiv;
-        public bool CloseDiv;
-
-        public StringStyle GetSS()
-        {
-            Color c = Config.ForeColor;
-            Color b = Config.FocusColor;
-            string fontname = null;
-            bool colorChanged = false;
-            if (FonttagList.Count > 0)
-            {
-                HtmlAnalzeStateFontTag font = FonttagList[^1];
-                fontname = font.FontName;
-                if (font.Color >= 0)
-                {
-                    colorChanged = true;
-                    c = Color.FromArgb(font.Color >> 16, font.Color >> 8 & 0xFF, font.Color & 0xFF);
-                }
-                if (font.BColor >= 0)
-                {
-                    b = Color.FromArgb(font.BColor >> 16, font.BColor >> 8 & 0xFF, font.BColor & 0xFF);
-                }
-            }
-            return new StringStyle(c, colorChanged, b, FontStyle, fontname);
-        }
     }
 
     /// <summary>
@@ -294,6 +221,13 @@ internal static partial class HtmlManager
     static readonly AngleSharp.Html.Parser.HtmlParser parser = new();
     public static ConsoleDisplayLine[] Html2DisplayLine(string str, StringMeasure sm, EmueraConsole console, bool lineEnd)
     {
+        // [Emuera改修:HTML-01] Phase 12C / 2026-08-19
+        // strict color-only FONTだけをfast path対象とし、対象外は必ずAngleSharpへfallbackする。
+        // compatibility優先でgrammarを狭くした経路であり、表示意味論を拡張・変更しない。
+        // The fast path accepts only a deliberately narrow color-only FONT grammar.
+        // Anything outside that grammar falls through to the existing AngleSharp path unchanged.
+        if (TryBuildColorOnlyFontFastPath(str, sm, console, lineEnd, out ConsoleDisplayLine[] fastResult))
+            return fastResult;
 
         {
             var doc = parser.ParseDocument($"<body>{str.ReplaceLineEndings("<br>")}</body>");
@@ -738,6 +672,280 @@ internal static partial class HtmlManager
         }
     }
 
+
+    // [Emuera改修:HTML-01] Phase 12C / 2026-08-19
+    // strict color-only FONT専用。対象外は従来parserへfallbackする。
+    //
+    // This is intentionally narrower than the HTML syntax accepted by AngleSharp.
+    // It only handles text plus:
+    //   <font color = '#RRGGBB'>text</font>
+    // with ordinary ASCII-space variation around '=' and before '>'.
+    //
+    // Before allocating any Console display objects, the entire raw input is validated.
+    // If validation fails, the caller uses the original AngleSharp path.
+    private const string ColorOnlyFontClose = "</font>";
+
+    private static bool TryBuildColorOnlyFontFastPath(
+        string raw,
+        StringMeasure sm,
+        EmueraConsole console,
+        bool lineEnd,
+        out ConsoleDisplayLine[] result)
+    {
+        result = null;
+
+        if (!IsColorOnlyFontFastPathEligible(raw))
+            return false;
+
+        var defaultStyle = new StringStyle(Config.ForeColor, FontStyle.Regular, Config.FontName);
+        var nodes = new List<AConsoleDisplayNode>(32);
+        int position = 0;
+
+        while (position < raw.Length)
+        {
+            int nextTag = raw.IndexOf('<', position);
+            if (nextTag < 0)
+            {
+                ReadOnlySpan<char> tail = raw.AsSpan(position);
+                if (!tail.IsEmpty)
+                    nodes.Add(new ConsoleStyledString(tail.ToString(), defaultStyle));
+                break;
+            }
+
+            ReadOnlySpan<char> plain = raw.AsSpan(position, nextTag - position);
+            if (!plain.IsEmpty)
+                nodes.Add(new ConsoleStyledString(plain.ToString(), defaultStyle));
+
+            // Eligibility was validated in the first pass, so these cannot fail.
+            _ = TryReadColorOnlyFontOpening(
+                raw,
+                nextTag,
+                out int rgb,
+                out int textStart);
+
+            int closeStart = raw.IndexOf('<', textStart);
+            ReadOnlySpan<char> innerText = raw.AsSpan(textStart, closeStart - textStart);
+
+            if (!innerText.IsEmpty)
+            {
+                // Match the existing FONT branch for a color-only FONT.
+                // GetAttribute("face") is null, therefore the copied StringStyle's
+                // Fontname becomes null in the existing implementation as well.
+                var style = defaultStyle;
+                style.Fontname = null;
+                style.Color = new SKColor((uint)rgb)
+                    .WithAlpha(byte.MaxValue)
+                    .ToDrawingColor();
+                style.ButtonColor = defaultStyle.ButtonColor;
+                style.FontSize = Config.FontSize;
+
+                nodes.Add(new ConsoleStyledString(innerText.ToString(), style));
+            }
+
+            position = closeStart + ColorOnlyFontClose.Length;
+        }
+
+        if (nodes.Count == 0)
+        {
+            result = [];
+            return true;
+        }
+
+        var buttonList = new List<ConsoleButtonString>(1)
+        {
+            new ConsoleButtonString(console, [.. nodes])
+        };
+
+        result = PrintStringBuffer.ButtonsToDisplayLines(
+            buttonList,
+            sm,
+            false,
+            false);
+
+        if (result.Length > 0)
+            result[^1].IsLineEnd = lineEnd;
+
+        foreach (var line in result)
+            line.SetAlignment(DisplayLineAlignment.LEFT);
+
+        return true;
+    }
+
+    private static bool IsColorOnlyFontFastPathEligible(string raw)
+    {
+        if (string.IsNullOrEmpty(raw))
+            return false;
+
+        int fontCount = 0;
+        int position = 0;
+
+        while (position < raw.Length)
+        {
+            int nextTag = raw.IndexOf('<', position);
+
+            if (nextTag < 0)
+            {
+                return fontCount > 0 &&
+                    !ColorOnlyFontTextContainsUnsafeChar(raw.AsSpan(position));
+            }
+
+            if (ColorOnlyFontTextContainsUnsafeChar(
+                raw.AsSpan(position, nextTag - position)))
+            {
+                return false;
+            }
+
+            if (!TryReadColorOnlyFontOpening(
+                raw,
+                nextTag,
+                out _,
+                out int textStart))
+            {
+                return false;
+            }
+
+            int closeStart = raw.IndexOf('<', textStart);
+            if (closeStart < 0 ||
+                !raw.AsSpan(closeStart)
+                    .StartsWith(ColorOnlyFontClose.AsSpan(), StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            if (ColorOnlyFontTextContainsUnsafeChar(
+                raw.AsSpan(textStart, closeStart - textStart)))
+            {
+                return false;
+            }
+
+            fontCount++;
+            position = closeStart + ColorOnlyFontClose.Length;
+        }
+
+        return fontCount > 0;
+    }
+
+    private static bool TryReadColorOnlyFontOpening(
+        string raw,
+        int start,
+        out int rgb,
+        out int textStart)
+    {
+        rgb = 0;
+        textStart = 0;
+
+        int p = start;
+
+        if (p < 0 || p + 5 > raw.Length ||
+            !raw.AsSpan(p, 5).SequenceEqual("<font".AsSpan()))
+        {
+            return false;
+        }
+        p += 5;
+
+        if (p >= raw.Length || raw[p] != ' ')
+            return false;
+
+        while (p < raw.Length && raw[p] == ' ')
+            p++;
+
+        if (p + 5 > raw.Length ||
+            !raw.AsSpan(p, 5).SequenceEqual("color".AsSpan()))
+        {
+            return false;
+        }
+        p += 5;
+
+        while (p < raw.Length && raw[p] == ' ')
+            p++;
+
+        if (p >= raw.Length || raw[p] != '=')
+            return false;
+        p++;
+
+        while (p < raw.Length && raw[p] == ' ')
+            p++;
+
+        if (p + 9 > raw.Length ||
+            raw[p] != '\'' ||
+            raw[p + 1] != '#')
+        {
+            return false;
+        }
+
+        if (!TryParseColorOnlyFontHex(raw.AsSpan(p + 2, 6), out rgb))
+            return false;
+
+        if (raw[p + 8] != '\'')
+            return false;
+        p += 9;
+
+        while (p < raw.Length && raw[p] == ' ')
+            p++;
+
+        if (p >= raw.Length || raw[p] != '>')
+            return false;
+
+        textStart = p + 1;
+        return true;
+    }
+
+    private static bool TryParseColorOnlyFontHex(
+        ReadOnlySpan<char> text,
+        out int value)
+    {
+        value = 0;
+
+        if (text.Length != 6)
+            return false;
+
+        foreach (char ch in text)
+        {
+            int digit;
+
+            if (ch >= '0' && ch <= '9')
+                digit = ch - '0';
+            else if (ch >= 'A' && ch <= 'F')
+                digit = ch - 'A' + 10;
+            else if (ch >= 'a' && ch <= 'f')
+                digit = ch - 'a' + 10;
+            else
+                return false;
+
+            value = (value << 4) | digit;
+        }
+
+        return true;
+    }
+
+    private static bool ColorOnlyFontTextContainsUnsafeChar(
+        ReadOnlySpan<char> text)
+    {
+        foreach (char ch in text)
+        {
+            if (char.IsSurrogate(ch))
+                return true;
+
+            switch (ch)
+            {
+                case '&':
+                case '\0':
+                case '\r':
+                case '\n':
+                case '\f':
+                case '\u0085':
+                case '\u2028':
+                case '\u2029':
+                    return true;
+            }
+
+            if (ch < ' ' && ch != '\t')
+                return true;
+        }
+
+        return false;
+    }
+
     private static SKColor ParseColor(string colorStr, SKColor def)
     {
         SKColor color;
@@ -802,45 +1010,6 @@ internal static partial class HtmlManager
     public static string Unescape(string str)
     {
         return System.Web.HttpUtility.HtmlDecode(str);
-    }
-
-    /// <summary>
-    /// ここまでのcssをボタン化。発生原因はbrタグ、行末、ボタンタグ
-    /// </summary>
-    /// <param name="cssList"></param>
-    /// <param name="isbutton"></param>
-    /// <param name="state"></param>
-    /// <param name="console"></param>
-    /// <returns></returns>
-    private static ConsoleButtonString cssToButton(List<AConsoleDisplayNode> cssList, HtmlAnalzeState state, EmueraConsole console)
-    {
-        AConsoleDisplayNode[] css = new AConsoleDisplayNode[cssList.Count];
-        cssList.CopyTo(css);
-        cssList.Clear();
-        ConsoleButtonString ret;
-        if (state.LastButtonTag != null && state.LastButtonTag.IsButton)
-        {
-            if (state.LastButtonTag.ButtonIsInteger)
-                ret = new ConsoleButtonString(console, css, state.LastButtonTag.ButtonValueInt, state.LastButtonTag.ButtonValueStr);
-            else
-                ret = new ConsoleButtonString(console, css, state.LastButtonTag.ButtonValueStr);
-        }
-        else
-        {
-            ret = new ConsoleButtonString(console, css)
-            {
-                Title = null
-            };
-        }
-        if (state.LastButtonTag != null)
-        {
-            ret.Title = state.LastButtonTag.ButtonTitle;
-            if (state.LastButtonTag.PointXisLocked)
-            {
-                ret.LockPointX(state.LastButtonTag.PointX);
-            }
-        }
-        return ret;
     }
 
     public static string GetColorToString(Color color)

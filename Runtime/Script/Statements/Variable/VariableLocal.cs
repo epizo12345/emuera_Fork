@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace MinorShift.Emuera.Runtime.Script.Statements.Variable;
 
-internal delegate LocalVariableToken CreateLocalVariableToken(VariableCode varCode, string subKey, int size);
+internal delegate LocalVariableToken CreateLocalVariableToken(VariableCode varCode, int size);
 internal sealed class VariableLocal
 {
     public VariableLocal(VariableCode varCode, int size, CreateLocalVariableToken creater)
@@ -57,13 +57,13 @@ internal sealed class VariableLocal
         {
             if (newSize < size && (varCode == VariableCode.ARG || varCode == VariableCode.ARGS))
                 newSize = size;
-            ret = creater(varCode, subKey, newSize);
+            ret = creater(varCode, newSize);
         }
         else if (newSize == 0)
-            ret = creater(varCode, subKey, size);
+            ret = creater(varCode, size);
         else
         {
-            ret = creater(varCode, subKey, size);
+            ret = creater(varCode, size);
             LogicalLine line = GlobalStatic.Process.GetScaningLine();
             if (line != null)
             {
@@ -92,9 +92,9 @@ internal sealed class VariableLocal
         else
         {
             if (newSize > size)
-                ret = creater(varCode, subKey, newSize);
+                ret = creater(varCode, newSize);
             else if (newSize == 0)
-                ret = creater(varCode, subKey, size);
+                ret = creater(varCode, size);
             else
                 return;
             localVarTokens.TryAdd(subKey, ret);

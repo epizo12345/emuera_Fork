@@ -42,6 +42,39 @@ internal sealed class ErbLoader
     int enabledLineCount;
     LabelDictionary labelDic;
 
+    // [Emuera改修:MEM-13R39 2026-08-22]
+    // 設定対象ERBだけは起動時に関数/$/宣言のstubを登録し、本文を実行直前まで生成しない。
+    // 通常ERBへper-lineの管理情報を追加せず、FunctionLabelLine identityはこの外部表で保持する。
+    readonly ConcurrentDictionary<FunctionLabelLine, LazyErbFile> lazyErbLabels = [];
+    readonly ConcurrentDictionary<string, LazyErbFile> lazyErbFiles = new(StringComparer.OrdinalIgnoreCase);
+    readonly HashSet<FunctionLabelLine> deferredEagerLabels = [];
+    private int lazyErbFileCount;
+    private int lazyErbFallbackFileCount;
+    public int LazyErbFileCount => Volatile.Read(ref lazyErbFileCount);
+    public int LazyErbFallbackFileCount => Volatile.Read(ref lazyErbFallbackFileCount);
+    public int DeferredEagerCount => deferredEagerLabels.Count;
+    public bool HasRuntimeLazyState => LazyErbFileCount > 0 || deferredEagerLabels.Count > 0;
+
+    enum LazyErbState
+    {
+        Unloaded,
+        Loading,
+        Loaded,
+        Failed,
+    }
+
+    sealed class LazyErbFile
+    {
+        public required string FilePath;
+        public required string FileName;
+        public required int FileIndex;
+        public required long Length;
+        public required DateTime LastWriteTimeUtc;
+        public readonly Dictionary<int, FunctionLabelLine> Functions = [];
+        public readonly Dictionary<int, GotoLabelLine> GotoLabels = [];
+        public LazyErbState State;
+    }
+
     // 複数スレッドから更新するため、読み書きはInterlocked/Volatile経由で行う。
     int hasError;
     public long EnumerationMilliseconds { get; private set; }
@@ -58,6 +91,11 @@ internal sealed class ErbLoader
         //checkScript();の時点でExpressionPerserがProcess.instance.LabelDicを必要とするから。
         labelDic = labelDictionary;
         labelDic.Initialized = false;
+        lazyErbLabels.Clear();
+        lazyErbFiles.Clear();
+        deferredEagerLabels.Clear();
+        Volatile.Write(ref lazyErbFileCount, 0);
+        Volatile.Write(ref lazyErbFallbackFileCount, 0);
         var enumerationStopwatch = System.Diagnostics.Stopwatch.StartNew();
         var erbFiles = Config.Config.GetFiles(erbDir, "*.ERB");
         EnumerationMilliseconds = enumerationStopwatch.ElapsedMilliseconds;
@@ -366,12 +404,371 @@ internal sealed class ErbLoader
         }
     }
 
+    private static bool IsLazyErbDangerousLine(string line)
+    {
+        string trimmed = line.TrimStart();
+        // [Emuera改修:MEM-13R39.1 2026-08-23]
+        // preprocessorはファイル全体の有効性を変えるため、設定対象でもeagerへ戻す。
+        // [[...]]のrename表記は既存の安全な形式なので除外する。
+        if (trimmed.StartsWith('[')
+            && !trimmed.StartsWith("[[", StringComparison.Ordinal))
+            return true;
+        if (trimmed.StartsWith("#FUNCTION", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("#PRI", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("#LATER", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("#ONLY", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("#SINGLE", StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (!trimmed.StartsWith('@'))
+            return false;
+        try
+        {
+            CharStream stream = new(trimmed);
+            stream.ShiftNext();
+            string labelName = LexicalAnalyzer.ReadSingleIdentifier(stream);
+            return IdentifierDictionary.IsEventLabelName(labelName)
+                || IdentifierDictionary.IsSystemLabelName(labelName);
+        }
+        catch
+        {
+            return true;
+        }
+    }
+
+    private static bool IsLazyErbSafe(string filepath)
+    {
+        // [Emuera改修:MEM-13R39.1 2026-08-23]
+        // 起動時indexが扱える安全なsubsetだけを先に確認し、ファイル全体の意味を変える構造は
+        // 従来のeager parserへfallbackする。safe判定で本文を解析済みにはしない。
+        try
+        {
+            using EraStreamReader reader = new(Config.Config.UseRenameFile && ParserMediator.RenameDic != null);
+            if (!reader.OpenDirect(filepath, Path.GetFileName(filepath), false))
+                return false;
+            string line;
+            while ((line = reader.ReadLine()) != null)
+            {
+                // [Emuera改修:MEM-13R41F 2026-08-24]
+                // Renameで構造行へ変わる可能性がある行だけ変換後を安全判定する。
+                // 通常行へ全行の重いRenameを追加せず、警告は本解析側の1回だけにする。
+                string effectiveLine = line;
+                if (line.Contains("[[", StringComparison.Ordinal))
+                    effectiveLine = Rename.RenameString(line, new ScriptPosition(reader.FileId, reader.LineNo), true);
+                if (IsLazyErbDangerousLine(effectiveLine))
+                    return false;
+            }
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private bool TryLoadLazyErb(string filepath, string filename, int fileIndex, ConcurrentDictionary<string, byte> isOnlyEvent)
+    {
+        // [Emuera改修:MEM-13R39 2026-08-22]
+        // 中央policyで設定対象だけを選び、関数名・引数・#DIM等のmetadataを
+        // 起動時に既存parserでindexする。危険な構造は従来eagerへ戻し、通常ERBへper-line overheadを加えない。
+        // Analysis/DebugはLazyを無効にし、従来のeager loadとpartial/folder reloadを維持する。
+        if (!LazyErbPolicy.IsActiveTarget(filepath))
+            return false;
+        if (!IsLazyErbSafe(filepath))
+        {
+            Interlocked.Increment(ref lazyErbFallbackFileCount);
+            return false;
+        }
+
+        LazyErbFile file = new()
+        {
+            FilePath = filepath,
+            FileName = filename,
+            FileIndex = labelDic.RegisterFile(filename, fileIndex),
+            Length = new FileInfo(filepath).Length,
+            LastWriteTimeUtc = File.GetLastWriteTimeUtc(filepath),
+            State = LazyErbState.Unloaded,
+        };
+        if (!BuildLazyIndex(file, isOnlyEvent))
+        {
+            Interlocked.Increment(ref lazyErbFallbackFileCount);
+            // indexできない場合はlazy stubを残さず、eager loaderに従来のerror/warning処理を渡す。
+            return false;
+        }
+        lazyErbFiles[filename] = file;
+        Interlocked.Increment(ref lazyErbFileCount);
+        return true;
+    }
+
+    private bool BuildLazyIndex(LazyErbFile file, ConcurrentDictionary<string, byte> isOnlyEvent)
+    {
+        // [Emuera改修:MEM-13R39 2026-08-22]
+        // 起動時は関数/$ labelと#DIM等のmetadataだけを登録し、関数stubのidentityをlabelDicと外部表で固定する。
+        // 本文のInstructionLineはhydrateまで作らず、$ labelも既存のGotoLabelLineとして対応付ける。
+        using var eReader = new EraStreamReader(Config.Config.UseRenameFile && ParserMediator.RenameDic != null);
+        if (!eReader.OpenOnCache(file.FilePath, file.FileName))
+            return false;
+
+        PPState ppstate = new();
+        LogicalLine nextLine = new NullLine();
+        LogicalLine lastLine = new NullLine();
+        FunctionLabelLine lastLabelLine = null;
+        List<(int Line, FunctionLabelLine Label)> pendingFunctions = [];
+        List<(int Line, GotoLabelLine Label)> pendingGotoLabels = [];
+        List<(FunctionLabelLine Label, string Text, ScriptPosition Position)> pendingSharpLines = [];
+        bool sharpMetadataAllowed = false;
+        CharStream st;
+        while ((st = eReader.ReadEnabledLine(ppstate.Disabled)) != null)
+        {
+            ScriptPosition position = new(eReader.FileId, eReader.LineNo);
+            if (st.Current == '[' && st.Next != '[')
+            {
+                st.ShiftNext();
+                string token = LexicalAnalyzer.ReadSingleIdentifier(st);
+                LexicalAnalyzer.SkipWhiteSpace(st);
+                string token2 = LexicalAnalyzer.ReadSingleIdentifier(st);
+                ppstate.AddKeyWord(token, token2, position);
+                continue;
+            }
+            if (ppstate.Disabled)
+                continue;
+            if (st.Current == '#')
+            {
+                if (!sharpMetadataAllowed || lastLine is not FunctionLabelLine funcLine)
+                    return false;
+                // [Emuera改修:MEM-13R41I 2026-08-24]
+                // BuildLazyIndexが後半の構造不正でeager fallbackする前に#DIM等を実行すると、
+                // private static変数などのglobal側登録だけが残ってfallback時に二重適用される。
+                // まずfile全体の構造を副作用なしで確認し、成功後にmetadata行だけsource順で適用する。
+                pendingSharpLines.Add((funcLine, st.Substring(), position));
+                continue;
+            }
+            if (st.Current == '$' || st.Current == '@')
+            {
+                bool isFunction = st.Current == '@';
+                nextLine = LogicalLineParser.ParseLabelLine(st, position, output);
+                if (isFunction)
+                {
+                    if (nextLine is not FunctionLabelLine label || label is InvalidLabelLine || label.IsEvent || label.IsSystem)
+                        return false;
+                    lastLabelLine = label;
+                    sharpMetadataAllowed = true;
+                    pendingFunctions.Add((eReader.LineNo, label));
+                }
+                else if (nextLine is GotoLabelLine gotoLabel)
+                {
+                    gotoLabel.ParentLabelLine = lastLabelLine;
+                    sharpMetadataAllowed = false;
+                    pendingGotoLabels.Add((eReader.LineNo, gotoLabel));
+                }
+                else
+                    return false;
+                nextLine.ParentLabelLine = lastLabelLine;
+                lastLine.NextLine = nextLine;
+                lastLine = nextLine;
+                continue;
+            }
+            // [Emuera改修:MEM-13R39 2026-08-22]
+            // 本文InstructionLineは作らず、次のstub/ファイル終端へだけchainをつなぐ。
+            // 後で同じstubへ本文を接続するため、起動時のretained行数を増やさずidentityを保つ。
+            // [Emuera改修:MEM-13R41F 2026-08-24]
+            // eager loaderではコメント/空行はlastLineを進めないため、同じsharp metadata受付状態を保つ。
+            // 実本文だけを検出して受付を閉じ、本文InstructionLine自体は生成しない。
+            if (st.Current != ';')
+            {
+                if (lastLabelLine == null)
+                    return false;
+                sharpMetadataAllowed = false;
+            }
+        }
+        ppstate.FileEnd(new ScriptPosition(eReader.FileId, -1));
+        lastLine.NextLine = new NullLine();
+
+        // 構造fallbackの可能性を全て消した後で#metadataを適用する。
+        // ParseSharpLine自身のerrorはeagerと同じくhasErrorへ反映し、既に適用した#DIM等を
+        // eager fallbackで二重登録しないため、この段階からはfileをLazy indexとして確定する。
+        foreach ((FunctionLabelLine label, string text, ScriptPosition position) in pendingSharpLines)
+        {
+            if (!LogicalLineParser.ParseSharpLine(label, new CharStream(text), position, isOnlyEvent))
+                Interlocked.Exchange(ref hasError, 1);
+        }
+
+        foreach ((int line, FunctionLabelLine label) in pendingFunctions)
+        {
+            file.Functions[line] = label;
+            RegisterFunctionLabel(label, file.FileIndex, label.Position);
+            lazyErbLabels[label] = file;
+        }
+        foreach ((int line, GotoLabelLine gotoLabel) in pendingGotoLabels)
+        {
+            file.GotoLabels[line] = gotoLabel;
+            if (gotoLabel.ParentLabelLine != null && !labelDic.AddLabelDollar(gotoLabel))
+            {
+                ScriptPosition? position = labelDic.GetLabelDollar(gotoLabel.LabelName, gotoLabel.ParentLabelLine).Position;
+                ParserMediator.Warn(string.Format(LocalizationManager.Error.LabelIsAlreadyDefined, gotoLabel.LabelName, position.Value.Filename, position.Value.LineNo.ToString()), gotoLabel.Position, 2);
+            }
+        }
+        return true;
+    }
+
+    public bool EnsureLazyLoaded(FunctionLabelLine label)
+    {
+        // [Emuera改修:MEM-13R39 2026-08-22]
+        // 固定CALLが保持するFunctionLabelLine identityから対象ファイルを逆引きし、初回実行時だけhydrateする。
+        // Loading/Loaded/Failed状態で同一実行経路の再hydrateを避け、index時点のfile size/更新時刻不一致と失敗を従来のerror経路へ渡す。
+        if (!lazyErbLabels.TryGetValue(label, out LazyErbFile file))
+            return true;
+        if (file.State == LazyErbState.Loaded)
+            return true;
+        if (file.State == LazyErbState.Loading || file.State == LazyErbState.Failed)
+            return file.State == LazyErbState.Loading;
+        file.State = LazyErbState.Loading;
+        try
+        {
+            if (new FileInfo(file.FilePath).Length != file.Length
+                || File.GetLastWriteTimeUtc(file.FilePath) != file.LastWriteTimeUtc)
+                throw new CodeEE("Lazy対象ERBが起動後に変更されました。コードを再読込してください。");
+            if (!HydrateLazyFile(file))
+                throw new CodeEE("Lazy対象ERBのhydrationに失敗しました。");
+            file.State = LazyErbState.Loaded;
+            return true;
+        }
+        catch (Exception e)
+        {
+            file.State = LazyErbState.Failed;
+            ParserMediator.Warn(e.Message, label, 2, true, false);
+            return false;
+        }
+    }
+
+    private bool HydrateLazyFile(LazyErbFile file)
+    {
+        // [Emuera改修:MEM-13R39 2026-08-22]
+        // 初回実行はERB 1ファイル単位で既存stubへ本文chainを接続する。Preload.Clear後も動くよう、
+        // 起動時cache(OpenOnCache)を使わず現ファイルを直接開き、index時の長さ・更新時刻と照合する。
+        // 通常のloadErbでlabelを作り直さず、FunctionLabelLine/GotoLabelLine identityと参照先を維持する。
+        using var eReader = new EraStreamReader(Config.Config.UseRenameFile && ParserMediator.RenameDic != null);
+        if (!eReader.OpenDirect(file.FilePath, file.FileName, false))
+            return false;
+        PPState ppstate = new();
+        LogicalLine lastLine = null;
+        FunctionLabelLine currentLabel = null;
+        CharStream st;
+        List<(LogicalLine From, LogicalLine To)> links = [];
+        List<(GotoLabelLine Label, FunctionLabelLine Parent)> gotoParents = [];
+        while ((st = eReader.ReadEnabledLine(ppstate.Disabled)) != null)
+        {
+            ScriptPosition position = new(eReader.FileId, eReader.LineNo);
+            if (st.Current == '[' && st.Next != '[')
+            {
+                st.ShiftNext();
+                string token = LexicalAnalyzer.ReadSingleIdentifier(st);
+                LexicalAnalyzer.SkipWhiteSpace(st);
+                string token2 = LexicalAnalyzer.ReadSingleIdentifier(st);
+                ppstate.AddKeyWord(token, token2, position);
+                continue;
+            }
+            if (ppstate.Disabled)
+                continue;
+            if (st.Current == '#')
+                continue;
+            LogicalLine nextLine;
+            if (st.Current == '@')
+            {
+                LogicalLine parsed = LogicalLineParser.ParseLabelLine(st, position, output);
+                if (parsed is not FunctionLabelLine || !file.Functions.TryGetValue(eReader.LineNo, out currentLabel))
+                    return false;
+                nextLine = currentLabel;
+            }
+            else if (st.Current == '$')
+            {
+                LogicalLine parsed = LogicalLineParser.ParseLabelLine(st, position, output);
+                if (parsed is not GotoLabelLine || !file.GotoLabels.TryGetValue(eReader.LineNo, out GotoLabelLine gotoLabel))
+                    return false;
+                nextLine = gotoLabel;
+                gotoParents.Add((gotoLabel, currentLabel));
+            }
+            else
+            {
+                nextLine = LogicalLineParser.ParseLine(st, position, output, currentLabel);
+                if (nextLine == null)
+                    continue;
+                nextLine.ParentLabelLine = currentLabel;
+            }
+            if (lastLine != null)
+                links.Add((lastLine, nextLine));
+            lastLine = nextLine;
+        }
+        if (lastLine == null)
+            return false;
+        links.Add((lastLine, new NullLine()));
+        foreach ((LogicalLine from, LogicalLine to) in links)
+            from.NextLine = to;
+        foreach ((GotoLabelLine label, FunctionLabelLine parent) in gotoParents)
+            label.ParentLabelLine = parent;
+        // [Emuera改修:MEM-13R41I 2026-08-24]
+        // hydrationはfile本文chainの構築だけを担当する。
+        // 同じfileの未実行functionまで解析せず、実際にIntoFunctionするlabelだけEnsureFunctionReadyで解析する。
+        return true;
+    }
+
+    // [Emuera改修:MEM-13R39 2026-08-22]
+    // Lazy labelはmetadataとstubが既に登録済みで、本文解析はIntoFunction直前に行う。
+    // 起動時ParseScriptやCALLFORMのremaining解析で本文を先に生成しないためのidentity判定。
+    private bool IsLazyLabel(FunctionLabelLine label) => lazyErbLabels.ContainsKey(label);
+
+    // [Emuera改修:MEM-13R41H 2026-08-24]
+    // Lazy経由の実行に備えて保留するのは、通常の非イベント・非method関数だけに限定する。
+    // system/event、#FUNCTION系、危険属性でeager fallbackした関数は従来の解析経路を維持する。
+    private static bool IsDeferredEagerCandidate(FunctionLabelLine label) =>
+        label.Depth < 0
+        && !label.IsEvent
+        && !label.IsSystem
+        && !label.IsMethod
+        && label is not InvalidLabelLine
+        && !label.IsError;
+
+    internal bool EnsureFunctionReady(FunctionLabelLine label)
+    {
+        if (label.IsError)
+            return false;
+
+        if (lazyErbLabels.ContainsKey(label))
+        {
+            if (!EnsureLazyLoaded(label))
+            {
+                ParserMediator.FlushWarningList();
+                return false;
+            }
+
+            // [Emuera改修:MEM-13R41I 2026-08-24]
+            // file hydration後もfunction単位の解析は実行直前まで遅延する。
+            // 成否にかかわらず同じlabelを再解析しない。error状態はlabel自身が保持する。
+            ParseFunctionWithCatch(label);
+            lazyErbLabels.TryRemove(label, out _);
+            ParserMediator.FlushWarningList();
+            return !label.IsError;
+        }
+
+        // ShinEraTenseiPでは通常0件。0件時は全CALLでHashSet lookupを増やさない。
+        if (deferredEagerLabels.Count == 0 || !deferredEagerLabels.Remove(label))
+            return true;
+
+        // [Emuera改修:MEM-13R41H 2026-08-24]
+        // Deferred eager本文は既にInstructionLineを保持しているため再読込せず、
+        // IntoFunctionの引数評価・ScopeIn・functionList追加より前に既存parserを一度だけ通す。
+        ParseFunctionWithCatch(label);
+        ParserMediator.FlushWarningList();
+        return !label.IsError;
+    }
+
     /// <summary>
     /// ファイル一つを読む
     /// </summary>
     /// <param name="filepath"></param>
     private void loadErb(string filepath, string filename, int fileIndex, ConcurrentDictionary<string, byte> isOnlyEvent)
     {
+        if (TryLoadLazyErb(filepath, filename, fileIndex, isOnlyEvent))
+            return;
 #if PERFORMANCE_METRICS
         ErbStartupFileProfile profile = ErbStartupProfiler.BeginFile(filename);
 #endif
@@ -402,7 +799,7 @@ internal sealed class ErbLoader
             if (profile != null)
                 profile.ReadEnabledLineReturns++;
 #endif
-            position = new ScriptPosition(eReader.Filename, eReader.LineNo);
+            position = new ScriptPosition(eReader.FileId, eReader.LineNo);
             //rename処理をEraStreamReaderに移管
             //変換できなかった[[～～]]についてはLexAnalyzerがエラーを投げる
             if (st.Current == '[' && st.Next != '[')
@@ -466,17 +863,8 @@ internal sealed class ErbLoader
                     }
                     else// if (label is FunctionLabelLine)
                     {
-                        labelDic.AddLabel(label, fileIndex);
-                        if (!label.IsEvent && (Config.Config.WarnNormalFunctionOverloading || Program.AnalysisMode))
-                        {
-                            FunctionLabelLine seniorLabel = labelDic.GetSameNameLabel(label);
-                            if (seniorLabel != null)
-                            {
-                                //output.NewLine();
-                                ParserMediator.Warn(string.Format(LocalizationManager.Error.FuncIsAlreadyDefined, label.LabelName, seniorLabel.Position.Value.Filename, seniorLabel.Position.Value.LineNo.ToString()), position, 1);
-                                funcCount = -1;
-                            }
-                        }
+                        if (RegisterFunctionLabel(label, fileIndex, position))
+                            funcCount = -1;
                         funcCount++;
                         if (Program.AnalysisMode && Config.Config.PrintCPerLine > 0 && funcCount % Config.Config.PrintCPerLine == 0)
                         {
@@ -558,7 +946,7 @@ internal sealed class ErbLoader
             lastLine = addLine(nextLine, lastLine);
         }
         addLine(new NullLine(), lastLine);
-        position = new ScriptPosition(eReader.Filename, -1);
+        position = new ScriptPosition(eReader.FileId, -1);
         ppstate.FileEnd(position);
 #if PERFORMANCE_METRICS
         ErbStartupProfiler.CompleteFile(profile);
@@ -573,6 +961,19 @@ internal sealed class ErbLoader
         Interlocked.Increment(ref enabledLineCount);
         lastLine.NextLine = nextLine;
         return nextLine;
+    }
+
+    private bool RegisterFunctionLabel(FunctionLabelLine label, int fileIndex, ScriptPosition? position = null)
+    {
+        labelDic.AddLabel(label, fileIndex);
+        if (label.IsEvent || !Config.Config.WarnNormalFunctionOverloading && !Program.AnalysisMode)
+            return false;
+        FunctionLabelLine seniorLabel = labelDic.GetSameNameLabel(label);
+        if (seniorLabel == null)
+            return false;
+        ScriptPosition warningPosition = position ?? label.Position.Value;
+        ParserMediator.Warn(string.Format(LocalizationManager.Error.FuncIsAlreadyDefined, label.LabelName, seniorLabel.Position.Value.Filename, seniorLabel.Position.Value.LineNo.ToString()), warningPosition, 1);
+        return true;
     }
 
     private void setLabelsArg()
@@ -779,6 +1180,7 @@ internal sealed class ErbLoader
         // CALLFORM系があるゲームは、到達判定だけでは呼び先を絞れないため残りも解析する。
         // その大量の残り関数だけを最後に並列解析し、通常の評価順や実行順は変えない。
         bool parseRemainingInParallel = false;
+        bool reachableLazySeen = false;
         int remainingLabelCount = 0;
         int parallelLabelCount = 0;
         while (true)
@@ -789,6 +1191,17 @@ internal sealed class ErbLoader
             {
                 if (label.Depth != labelDepth)
                     continue;
+                if (IsLazyLabel(label))
+                {
+                    // [Emuera改修:MEM-13R39 2026-08-22]
+                    // 設定対象のstubは関数名・引数・metadataだけで起動時参照を満たすため、
+                    // CALLFORMを含むremaining解析でも本文InstructionLineを作らず実行直前のhydrateに委ねる。
+                    // [Emuera改修:MEM-13R41H 2026-08-24]
+                    // Lazy本文は起動時に再走査せず、実行時hydrate時に初めて固定/dynamic callを解決する。
+                    reachableLazySeen = true;
+                    parsedLabels.Add(label);
+                    continue;
+                }
                 usedLabelCount++;
                 countInDepth++;
                 ParseFunctionWithCatch(label);
@@ -805,6 +1218,9 @@ internal sealed class ErbLoader
                 break;
         }
         labelDepth = -1;
+        bool deferUncalledEager = reachableLazySeen
+            && !useCallForm
+            && LazyErbPolicy.IsEnabledForCurrentMode;
         var ignoredFNCWarningFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         int ignoredFNCWarningCount = 0;
 
@@ -821,7 +1237,9 @@ internal sealed class ErbLoader
         {//callform系が使われたら全ての関数が呼び出されたとみなす。
             if (Program.AnalysisMode)
                 output.PrintSystemLine(LocalizationManager.Error.BeNotFuncCheckBecauseUseCallform);
-            List<FunctionLabelLine> remainingLabels = labelList.Where(label => !parsedLabels.Contains(label)).ToList();
+            // [Emuera改修:MEM-13R41F 2026-08-24]
+            // remaining解析はeager関数の安全側解析に限定し、未到達Lazy本文まで起動時に生成しない。
+            List<FunctionLabelLine> remainingLabels = labelList.Where(label => !parsedLabels.Contains(label) && !IsLazyLabel(label)).ToList();
             remainingLabelCount = remainingLabels.Count;
             if (parseRemainingInParallel)
             {
@@ -850,9 +1268,16 @@ internal sealed class ErbLoader
             {
                 if (label.Depth != labelDepth)
                     continue;
+                if (IsLazyLabel(label))
+                    continue;
                 //解析モード時は呼ばれなかったものをここで解析
                 if (Program.AnalysisMode)
                     ParseFunctionWithCatch(label);
+                if (deferUncalledEager && IsDeferredEagerCandidate(label))
+                {
+                    deferredEagerLabels.Add(label);
+                    continue;
+                }
                 bool ignore = false;
                 if (notCalledWarning == DisplayWarningFlag.ONCE)
                 {
@@ -947,7 +1372,7 @@ internal sealed class ErbLoader
     }
 
     public Dictionary<string, long> warningDic = [];
-    private void printFunctionNotFoundWarning(string str, LogicalLine line, int level, bool isError)
+    private void printFunctionNotFoundWarning(string str, InstructionLine line, int level, bool isError)
     {
         if (Program.AnalysisMode)
         {

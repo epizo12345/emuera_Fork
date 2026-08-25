@@ -17,30 +17,41 @@ namespace MinorShift.Emuera.Runtime.Script;
 
 internal sealed class UserDefinedFunctionArgument
 {
+    // [Emuera改修:PERF-13R27 2026-08-21]
+    // destination signatureに存在するcategoryだけtransporterを確保し、index位置はArguments.Lengthのまま維持する。
+    // isRef配列はdestination metadataを直接参照し、CALL/REF semanticsとpool非使用を維持する。
     public UserDefinedFunctionArgument(AExpression[] srcArgs, VariableTerm[] destArgs)
     {
         Arguments = srcArgs;
-        TransporterInt = new long[Arguments.Length];
-        TransporterStr = new string[Arguments.Length];
-        TransporterRef = new Array[Arguments.Length];
-        isRef = new bool[Arguments.Length];
-        for (int i = 0; i < Arguments.Length; i++)
+        destinationArgs = destArgs;
+        bool needsInt = false;
+        bool needsStr = false;
+        bool needsRef = false;
+        for (int i = 0; i < destArgs.Length; i++)
         {
-            isRef[i] = destArgs[i].Identifier.IsReference;
+            if (destArgs[i].Identifier.IsReference)
+                needsRef = true;
+            else if (destArgs[i].GetOperandType() == typeof(long))
+                needsInt = true;
+            else
+                needsStr = true;
         }
+        TransporterInt = needsInt ? new long[Arguments.Length] : Array.Empty<long>();
+        TransporterStr = needsStr ? new string[Arguments.Length] : Array.Empty<string>();
+        TransporterRef = needsRef ? new Array[Arguments.Length] : Array.Empty<Array>();
     }
     public readonly AExpression[] Arguments;
+    private readonly VariableTerm[] destinationArgs;
     public readonly long[] TransporterInt;
     public readonly string[] TransporterStr;
     public readonly Array[] TransporterRef;
-    public readonly bool[] isRef;
     public void SetTransporter(ExpressionMediator exm)
     {
         for (int i = 0; i < Arguments.Length; i++)
         {
             if (Arguments[i] == null)
                 continue;
-            if (isRef[i])
+            if (destinationArgs[i].Identifier.IsReference)
             {
                 VariableTerm vTerm = (VariableTerm)Arguments[i];
                 if (vTerm.Identifier.IsCharacterData)
@@ -66,7 +77,7 @@ internal sealed class UserDefinedFunctionArgument
         {
             if (Arguments[i] == null)
                 continue;
-            if (isRef[i])
+            if (destinationArgs[i].Identifier.IsReference)
                 Arguments[i].Restructure(exm);
             else
                 Arguments[i] = Arguments[i].Restructure(exm);
@@ -84,21 +95,24 @@ internal sealed class CalledFunction
     private CalledFunction(string label) { FunctionName = label; }
     public static CalledFunction CallEventFunction(Process parent, string label, LogicalLine retAddress)
     {
-        CalledFunction called = new(label)
-        {
-            //List<FunctionLabelLine> newLabelList = new List<FunctionLabelLine>();
-            Finished = false,
-            eventLabelList = parent.LabelDictionary.GetEventLabels(label)
-        };
-        if (called.eventLabelList == null)
+        // [Emuera改修:PERF-13R26 2026-08-21]
+        // TRY系missing-targetで即破棄されるCalledFunctionを作らず、lookup成功後だけnewする。
+        // wrong-kind error semanticsは維持し、CalledFunction poolingではない。
+        List<FunctionLabelLine>[] eventLabels = parent.LabelDictionary.GetEventLabels(label);
+        if (eventLabels == null)
         {
             FunctionLabelLine line = parent.LabelDictionary.GetNonEventLabel(label);
-            if (parent.LabelDictionary.GetNonEventLabel(label) != null)
+            if (line != null)
             {
                 throw new CodeEE(string.Format(LocalizationManager.Error.CalleventToNonEventFunc, label, line.Position.Value.Filename, line.Position.Value.LineNo));
             }
             return null;
         }
+        CalledFunction called = new(label)
+        {
+            Finished = false,
+            eventLabelList = eventLabels
+        };
         called.counter = -1;
         called.group = 0;
         called.ShiftNext();
@@ -110,10 +124,8 @@ internal sealed class CalledFunction
 
     public static CalledFunction CallFunction(Process parent, string label, LogicalLine retAddress)
     {
-        CalledFunction called = new(label)
-        {
-            Finished = false
-        };
+        // [Emuera改修:PERF-13R26 2026-08-21]
+        // 通常CALLもlabel lookupとmethod/event判定後だけ生成し、成功時のfield設定を維持する。
         FunctionLabelLine labelline = parent.LabelDictionary.GetNonEventLabel(label);
         if (labelline == null)
         {
@@ -127,6 +139,10 @@ internal sealed class CalledFunction
         {
             throw new CodeEE(string.Format(LocalizationManager.Error.CallToUserFunc, labelline.LabelName, labelline.Position.Value.Filename, labelline.Position.Value.LineNo.ToString()));
         }
+        CalledFunction called = new(label)
+        {
+            Finished = false
+        };
         called.TopLabel = labelline;
         called.CurrentLabel = labelline;
         called.returnAddress = retAddress;

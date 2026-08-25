@@ -456,6 +456,9 @@ internal static class ExpressionParser
     /// </summary>
     private sealed class TermStack
     {
+        // [Emuera改修:PERF-13R14 2026-08-21]
+        // 1要素だけではStack<object>を生成せず、2要素目で従来同等のStackへpromotionする。
+        // ERB評価順とoperator semanticsを変えず、ScriptParse一時allocationを削減する。
         /// <summary>
         /// 次に来るべきものの種類。
         /// (前置)単項演算子か値待ちなら0、二項・三項演算子待ちなら1、値待ちなら2、++、--、!に対応する値待ちの場合は3。
@@ -464,7 +467,7 @@ internal static class ExpressionParser
         bool hasBefore;
         bool hasAfter;
         bool waitAfter;
-        Stack<object> stack = new(5);
+        object storage;
         public void Add(OperatorCode op)
         {
             if (state == 2 || state == 3)
@@ -473,7 +476,7 @@ internal static class ExpressionParser
             {
                 if (!OperatorManager.IsUnary(op))
                     throw new CodeEE(LocalizationManager.Error.UnrecognizedSyntax);
-                stack.Push(op);
+                Push(op);
                 if (op == OperatorCode.Plus || op == OperatorCode.Minus || op == OperatorCode.BitNot)
                     state = 2;
                 else
@@ -495,7 +498,7 @@ internal static class ExpressionParser
                         hasBefore = false;
                         throw new CodeEE(LocalizationManager.Error.DuplicateIncrementDecrement);
                     }
-                    stack.Push(op);
+                    Push(op);
                     reduceUnaryAfter();
                     //前置単項演算子が処理を待っている場合はここで解決
                     if (waitAfter)
@@ -516,7 +519,7 @@ internal static class ExpressionParser
                 {
                     reduceLastThree();
                 }
-                stack.Push(op);
+                Push(op);
                 state = 0;
                 waitAfter = false;
                 hasBefore = false;
@@ -525,11 +528,15 @@ internal static class ExpressionParser
             }
             throw new CodeEE(LocalizationManager.Error.UnrecognizedSyntax);
         }
-        public void Add(long i) { Add(new SingleLongTerm(i)); }
+        // [Emuera改修:MEM-13R29 2026-08-22]
+        // ERB integer literalは解析後もASTに長期保持されるため、
+        // -1～255だけ既存R25 immutable cacheを再利用してretained object数を減らす。
+        // cache外は従来どおり個別instanceとし、整数評価semanticsは変更しない。
+        public void Add(long i) { Add(SingleLongTerm.FromValue(i)); }
         public void Add(string s) { Add(new SingleStrTerm(s)); }
         public void Add(AExpression term)
         {
-            stack.Push(term);
+            Push(term);
             if (state == 1)
                 throw new CodeEE(LocalizationManager.Error.UnrecognizedSyntax);
             if (state == 2)
@@ -546,18 +553,18 @@ internal static class ExpressionParser
 
         private int lastPriority()
         {
-            if (stack.Count < 3)
+            if (Count < 3)
                 return -1;
-            object temp = stack.Pop();
-            OperatorCode opCode = (OperatorCode)stack.Peek();
+            object temp = Pop();
+            OperatorCode opCode = (OperatorCode)Peek();
             int priority = OperatorManager.GetPriority(opCode);
-            stack.Push(temp);
+            Push(temp);
             return priority;
         }
 
         public AExpression ReduceAll()
         {
-            if (stack.Count == 0)
+            if (Count == 0)
                 return null;
             if (state != 1)
                 throw new CodeEE(LocalizationManager.Error.UnrecognizedSyntax);
@@ -567,11 +574,11 @@ internal static class ExpressionParser
             waitAfter = false;
             hasBefore = false;
             hasAfter = false;
-            while (stack.Count > 1)
+            while (Count > 1)
             {
                 reduceLastThree();
             }
-            AExpression retTerm = (AExpression)stack.Pop();
+            AExpression retTerm = (AExpression)Pop();
             return retTerm;
         }
 
@@ -579,33 +586,33 @@ internal static class ExpressionParser
         {
             //if (stack.Count < 2)
             //    throw new ExeEE("不正な時期の呼び出し");
-            AExpression operand = (AExpression)stack.Pop();
-            OperatorCode op = (OperatorCode)stack.Pop();
+            AExpression operand = (AExpression)Pop();
+            OperatorCode op = (OperatorCode)Pop();
             AExpression newTerm = OperatorMethodManager.ReduceUnaryTerm(op, operand);
-            stack.Push(newTerm);
+            Push(newTerm);
         }
 
         private void reduceUnaryAfter()
         {
             //if (stack.Count < 2)
             //    throw new ExeEE("不正な時期の呼び出し");
-            OperatorCode op = (OperatorCode)stack.Pop();
-            AExpression operand = (AExpression)stack.Pop();
+            OperatorCode op = (OperatorCode)Pop();
+            AExpression operand = (AExpression)Pop();
 
             AExpression newTerm = OperatorMethodManager.ReduceUnaryAfterTerm(op, operand);
-            stack.Push(newTerm);
+            Push(newTerm);
 
         }
         private void reduceLastThree()
         {
             //if (stack.Count < 2)
             //    throw new ExeEE("不正な時期の呼び出し");
-            AExpression right = (AExpression)stack.Pop();//後から入れたほうが右側
-            OperatorCode op = (OperatorCode)stack.Pop();
-            AExpression left = (AExpression)stack.Pop();
+            AExpression right = (AExpression)Pop();//後から入れたほうが右側
+            OperatorCode op = (OperatorCode)Pop();
+            AExpression left = (AExpression)Pop();
             if (OperatorManager.IsTernary(op))
             {
-                if (stack.Count > 1)
+                if (Count > 1)
                 {
                     reduceTernary(left, right);
                     return;
@@ -614,23 +621,46 @@ internal static class ExpressionParser
             }
 
             AExpression newTerm = OperatorMethodManager.ReduceBinaryTerm(op, left, right);
-            stack.Push(newTerm);
+            Push(newTerm);
         }
 
         private void reduceTernary(AExpression left, AExpression right)
         {
-            _ = (OperatorCode)stack.Pop();
-            AExpression newLeft = (AExpression)stack.Pop();
+            _ = (OperatorCode)Pop();
+            AExpression newLeft = (AExpression)Pop();
 
             AExpression newTerm = OperatorMethodManager.ReduceTernaryTerm(newLeft, left, right);
-            stack.Push(newTerm);
+            Push(newTerm);
         }
 
-        /*			SingleTerm GetSingle(AExpression oprand)
-						{
-							return (SingleTerm)oprand;
-						}
-			*/
+        int Count => storage is Stack<object> s ? s.Count : storage == null ? 0 : 1;
+        void Push(object value)
+        {
+            if (storage is Stack<object> s)
+            {
+                s.Push(value);
+                return;
+            }
+            if (storage == null)
+            {
+                storage = value;
+                return;
+            }
+            var promoted = new Stack<object>(5);
+            promoted.Push(storage);
+            promoted.Push(value);
+            storage = promoted;
+        }
+        object Pop()
+        {
+            if (storage is Stack<object> s)
+                return s.Pop();
+            object value = storage;
+            storage = null;
+            return value;
+        }
+        object Peek() => storage is Stack<object> s ? s.Peek() : storage;
+
     }
 
 }

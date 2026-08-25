@@ -59,7 +59,7 @@ static class AppContents
     static public void CreateSpriteG(string imgName, GraphicsImage parent, Rectangle rect)
     {
         if (string.IsNullOrEmpty(imgName))
-            throw new ArgumentOutOfRangeException();
+            throw new ArgumentOutOfRangeException(nameof(imgName));
         SpriteG newCImg = new(imgName, parent, rect);
         imageDictionary[imgName] = newCImg;
     }
@@ -67,7 +67,7 @@ static class AppContents
     internal static void CreateSpriteAnime(string imgName, int w, int h)
     {
         if (string.IsNullOrEmpty(imgName))
-            throw new ArgumentOutOfRangeException();
+            throw new ArgumentOutOfRangeException(nameof(imgName));
         SpriteAnime newCImg = new(imgName, new Size(w, h));
         imageDictionary[imgName] = newCImg;
     }
@@ -119,17 +119,6 @@ static class AppContents
             return e;
         }
         return null;
-    }
-
-    static public void UnloadContents()
-    {
-        foreach (var img in resourceDic.Values)
-            img.Dispose();
-        resourceDic.Clear();
-        imageDictionary.Clear();
-        foreach (var graph in gList.Values)
-            graph.GDispose();
-        gList.Clear();
     }
 
     //タイトルに戻る時用（コードの変更はないので、動的に作られた分だけ削除）

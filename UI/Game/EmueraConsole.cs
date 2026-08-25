@@ -79,7 +79,7 @@ internal sealed partial class EmueraConsole : IDisposable
         state = ConsoleState.Initializing;
         if (Config.FPS > 0)
             msPerFrame = 1000 / (uint)Config.FPS;
-        displayLineList = [];
+        displayLineList = new();
         printBuffer = new PrintStringBuffer(this);
 
         genericTimer = new();
@@ -458,6 +458,9 @@ internal sealed partial class EmueraConsole : IDisposable
         Preload.Clear();
         await Preload.Load(Program.ErbDir);
         await Preload.Load(Program.CsvDir);
+#if PERFORMANCE_METRICS
+        logWriter.WriteLine($"File:Preload:Cached={Preload.CachedFileCount} LazySkipped={Preload.LazySkippedFileCount}");
+#endif
 
         logWriter.WriteLine("File:Preload:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
 
@@ -4557,10 +4560,6 @@ internal sealed partial class EmueraConsole : IDisposable
             window.Text = str;
     }
 
-    public void SetEmueraVersionInfo(string str)
-    {
-        window.TextBox.Text = str;
-    }
     public string GetWindowTitle()
     {
         if (Program.DebugMode && debugTitle != null)

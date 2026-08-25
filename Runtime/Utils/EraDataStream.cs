@@ -186,7 +186,7 @@ internal sealed class EraDataReader : IDisposable
             if (index < 0)
                 throw new FileEE(LocalizationManager.Error.InvalidSaveDataFormat);
             string key = str[..index];
-            string value = str.Substring(index + 1, str.Length - index - 1);
+            string value = str[(index + 1)..];
             strList.TryAdd(key, value);
         }
         return strList;
@@ -210,7 +210,7 @@ internal sealed class EraDataReader : IDisposable
             if (index < 0)
                 throw new FileEE(LocalizationManager.Error.InvalidSaveDataFormat);
             string key = str[..index];
-            string valueStr = str.Substring(index + 1, str.Length - index - 1);
+            string valueStr = str[(index + 1)..];
             if (!long.TryParse(valueStr, out long value))
                 throw new FileEE(LocalizationManager.Error.CanNotInterpretNum);
             intList.TryAdd(key, value);

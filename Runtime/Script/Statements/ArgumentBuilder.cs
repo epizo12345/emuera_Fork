@@ -339,7 +339,7 @@ internal static partial class ArgumentParser
             LexicalAnalyzer.SkipWhiteSpace(st);
             if (!st.EOS)
                 warn(LocalizationManager.Error.ArgIsNotRequired, line, 1, false);
-            return new VoidArgument();
+            return VoidArgument.Instance;
         }
     }
 

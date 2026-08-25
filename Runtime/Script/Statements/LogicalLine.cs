@@ -17,13 +17,29 @@ namespace MinorShift.Emuera.Runtime.Script.Statements;
 /// </summary>
 internal abstract class LogicalLine
 {
-    protected ScriptPosition? scriptPosition;
+    // [Emuera改修:MEM-13R37 2026-08-22]
+    // 同一ERB内のLogicalLineはFilename stringを共有するため、行ごとに参照slotを保持しない。
+    // fileId + lineNoだけをsnapshotし、Filenameはerror/warning/reload/source表示時にregistryから復元する。
+    protected int scriptFileId;
+    protected int scriptLineNo;
+
+    protected void SetPosition(ScriptPosition? position)
+    {
+        if (position == null || position.Value.Filename == null)
+        {
+            scriptFileId = 0;
+            scriptLineNo = 0;
+            return;
+        }
+        scriptFileId = position.Value.FileId;
+        scriptLineNo = position.Value.LineNo;
+    }
 
     //LogicalLine prevLine;
     LogicalLine nextLine;
     public ScriptPosition? Position
     {
-        get { return scriptPosition; }
+        get { return scriptFileId == 0 ? null : new ScriptPosition(scriptFileId, scriptLineNo - 1); }
     }
 
     public FunctionLabelLine ParentLabelLine { get; set; }
@@ -34,23 +50,43 @@ internal abstract class LogicalLine
     }
     public override string ToString()
     {
-        if (scriptPosition == null)
+        if (scriptFileId == 0)
             return base.ToString();
-        return string.Format("{0}:{1}:{2}", scriptPosition.Value.Filename, scriptPosition.Value.LineNo, Process.getRawTextFormFilewithLine(scriptPosition));
+        ScriptPosition position = Position.Value;
+        return string.Format("{0}:{1}:{2}", position.Filename, position.LineNo, Process.getRawTextFormFilewithLine(position));
     }
 
-    protected bool isError;
-    protected string errMes = "";
+    public abstract string ErrMes { get; set; }
+    public abstract bool IsError { get; set; }
+}
 
-    public virtual string ErrMes
+// [Emuera改修:MEM-13R35 2026-08-22]
+// InstructionLine以外は従来どおりerror messageを専用slotへ保持する。
+// InstructionLineだけはR34のargumentStorageをerror messageと共用し、
+// argumentPrimitivePositionのsentinelでraw/Argumentとerrorを区別する。
+internal abstract class ErrorCapableLogicalLine : LogicalLine
+{
+    // [Emuera改修:MEM-13R32 2026-08-22]
+    // productionではerror flagとmessageは独立した状態を保持せず、正常行はnull、
+    // error行は空文字または実メッセージを持つ。IsError=trueを先に設定する既存の
+    // lazy parse / warning / CALL伝播順を受けるため、true setterは空文字sentinelを作る。
+    protected string errMes;
+
+    public override string ErrMes
     {
-        get { return errMes; }
+        get { return errMes ?? ""; }
         set { errMes = value; }
     }
-    public virtual bool IsError
+    public override bool IsError
     {
-        get { return isError; }
-        set { isError = value; }
+        get { return errMes != null; }
+        set
+        {
+            if (value)
+                errMes ??= "";
+            else
+                errMes = null;
+        }
     }
 }
 
@@ -74,11 +110,11 @@ internal abstract class LogicalLine
 /// <summary>
 /// 無効な行。
 /// </summary>
-internal sealed class InvalidLine : LogicalLine
+internal sealed class InvalidLine : ErrorCapableLogicalLine
 {
     public InvalidLine(ScriptPosition? thePosition, string err)
     {
-        scriptPosition = thePosition;
+        SetPosition(thePosition);
         errMes = err;
     }
     public override bool IsError
@@ -92,20 +128,34 @@ internal sealed class InvalidLine : LogicalLine
 /// </summary>
 internal class InstructionLine : LogicalLine
 {
+    const int OperatorBits = 20;
+    const int OperatorMask = (1 << OperatorBits) - 1;
+    const int FunctionCodeShift = OperatorBits;
+    const int ErrorArgumentPosition = int.MinValue;
+
     public InstructionLine(ScriptPosition? thePosition, FunctionIdentifier theFunc, CharStream theArgPrimitive)
     {
-        scriptPosition = thePosition;
-        func = theFunc;
-        argumentStorage = theArgPrimitive;
+        SetPosition(thePosition);
+        packedInstructionData = Pack(theFunc.Code, OperatorCode.NULL);
+        if (theFunc.Code == FunctionCode.__NULL__)
+            auxiliaryData = theFunc;
+        // [Emuera改修:MEM-13R34 2026-08-22]
+        // lazy行はCharStream object identityを必要とせず、同じsourceとoffsetだけを必要とする。
+        // source / offsetをsnapshotし、初回lazy parse時だけCharStreamを復元することで、行がreaderの一時streamをretainedしない。
+        argumentStorage = theArgPrimitive?.RowString;
+        argumentPrimitivePosition = theArgPrimitive?.CurrentPosition ?? 0;
     }
 
     public InstructionLine(ScriptPosition? thePosition, FunctionIdentifier functionIdentifier, OperatorCode assignOP, WordCollection dest, CharStream theArgPrimitive)
     {
-        scriptPosition = thePosition;
-        func = functionIdentifier;
-        AssignOperator = assignOP;
-        assigndest = dest;
-        argumentStorage = theArgPrimitive;
+        SetPosition(thePosition);
+        packedInstructionData = Pack(functionIdentifier.Code, assignOP);
+        // [Emuera改修:MEM-13R30 2026-08-22]
+        // 代入左辺はSET引数解析までだけ必要で、IF/PRINTDATA/TRYCALLLIST/EndCatch用データとは命令種別上共存しない。
+        // 遅延引数解析と左辺→右辺の解析順を維持したままauxiliaryDataを一時利用し、全InstructionLineの専用参照slotを持たせない。
+        auxiliaryData = dest;
+        argumentStorage = theArgPrimitive?.RowString;
+        argumentPrimitivePosition = theArgPrimitive?.CurrentPosition ?? 0;
     }
     public static InstructionLine Create(ScriptPosition? thePosition, FunctionIdentifier theFunc, CharStream theArgPrimitive)
     {
@@ -114,18 +164,59 @@ internal class InstructionLine : LogicalLine
         return new InstructionLine(thePosition, theFunc, theArgPrimitive);
     }
 
-    readonly FunctionIdentifier func;
+    int packedInstructionData;
     object argumentStorage;
+    int argumentPrimitivePosition;
 
-    WordCollection assigndest;
-    public OperatorCode AssignOperator { get; private set; }
+    public override string ErrMes
+    {
+        get => argumentPrimitivePosition == ErrorArgumentPosition ? argumentStorage as string ?? "" : "";
+        set
+        {
+            if (value == null)
+            {
+                argumentPrimitivePosition = 0;
+                argumentStorage = null;
+                return;
+            }
+            argumentPrimitivePosition = ErrorArgumentPosition;
+            argumentStorage = value;
+        }
+    }
+    public override bool IsError
+    {
+        get => argumentPrimitivePosition == ErrorArgumentPosition;
+        set
+        {
+            if (value)
+            {
+                argumentPrimitivePosition = ErrorArgumentPosition;
+                argumentStorage = "";
+            }
+            else
+            {
+                argumentPrimitivePosition = 0;
+                argumentStorage = null;
+            }
+        }
+    }
+
+    static int Pack(FunctionCode code, OperatorCode assignOperator)
+    {
+        return ((int)code << FunctionCodeShift) | (int)assignOperator;
+    }
+
+    public OperatorCode AssignOperator
+    {
+        get { return (OperatorCode)((uint)packedInstructionData & OperatorMask); }
+    }
     public FunctionCode FunctionCode
     {
-        get { return func.Code; }
+        get { return (FunctionCode)((uint)packedInstructionData >> FunctionCodeShift); }
     }
     public FunctionIdentifier Function
     {
-        get { return func; }
+        get { return FunctionCode == FunctionCode.__NULL__ ? auxiliaryData as FunctionIdentifier : FunctionIdentifier.GetBuiltIn(FunctionCode); }
     }
     public Argument Argument
     {
@@ -140,26 +231,43 @@ internal class InstructionLine : LogicalLine
     }
     public CharStream PopArgumentPrimitive()
     {
-        if (argumentStorage is not CharStream ret)
+        if (argumentPrimitivePosition == ErrorArgumentPosition || argumentStorage is not string source)
             return null;
         argumentStorage = null;
+        // Popで一度だけ復元・消費し、parse後は従来どおりArgumentを保持する。
+        var ret = new CharStream(source) { CurrentPosition = argumentPrimitivePosition };
         return ret;
     }
     public WordCollection PopAssignmentDestStr()
     {
-        WordCollection ret = assigndest;
-        assigndest = null;
+        WordCollection ret = auxiliaryData as WordCollection;
+        auxiliaryData = null;
         return ret;
     }
 
     private LogicalLine jumpto;
-    private LogicalLine jumptoendcatch;
+    // JumpToEndCatch / IfCaseList / dataList / callList are mutually exclusive by command type.
+    // Keep them in one reference slot to reduce the retained size of every InstructionLine.
+    private object auxiliaryData;
+
     //IF文とSELECT文のみが使う。
-    public LinkedList<InstructionLine> IfCaseList;
+    public LinkedList<InstructionLine> IfCaseList
+    {
+        get { return auxiliaryData as LinkedList<InstructionLine>; }
+        set { auxiliaryData = value; }
+    }
     //PRINTDATA文のみが使う。
-    public List<List<InstructionLine>> dataList;
+    public List<List<InstructionLine>> dataList
+    {
+        get { return auxiliaryData as List<List<InstructionLine>>; }
+        set { auxiliaryData = value; }
+    }
     //TRYCALLLIST系が使う
-    public List<InstructionLine> callList;
+    public List<InstructionLine> callList
+    {
+        get { return auxiliaryData as List<InstructionLine>; }
+        set { auxiliaryData = value; }
+    }
 
     public LogicalLine JumpTo
     {
@@ -169,12 +277,14 @@ internal class InstructionLine : LogicalLine
 
     public LogicalLine JumpToEndCatch
     {
-        get { return jumptoendcatch; }
-        set { jumptoendcatch = value; }
+        get { return auxiliaryData as LogicalLine; }
+        set { auxiliaryData = value; }
     }
 
 }
 
+// ERB起動時に大量生成される通常InstructionLineへ、FOR/REPEATだけが使うloop stateを持たせない。
+// factoryでloop命令だけLoopInstructionLineへ分け、通常命令のlayout/retained sizeとloop semanticsを両立する。
 internal sealed class LoopInstructionLine : InstructionLine
 {
     public LoopInstructionLine(ScriptPosition? thePosition, FunctionIdentifier theFunc, CharStream theArgPrimitive)
@@ -188,7 +298,7 @@ internal sealed class LoopInstructionLine : InstructionLine
 /// <summary>
 /// ファイルの始端と終端
 /// </summary>
-internal sealed class NullLine : LogicalLine { }
+internal sealed class NullLine : ErrorCapableLogicalLine { }
 
 /// <summary>
 /// ラベルがエラーになっている関数行専用のクラス
@@ -197,7 +307,7 @@ internal sealed class InvalidLabelLine : FunctionLabelLine
 {
     public InvalidLabelLine(ScriptPosition? thePosition, string labelname, string err)
     {
-        scriptPosition = thePosition;
+        SetPosition(thePosition);
         LabelName = labelname;
         errMes = err;
         IsSingle = false;
@@ -214,12 +324,12 @@ internal sealed class InvalidLabelLine : FunctionLabelLine
 /// <summary>
 /// @で始まるラベル行
 /// </summary>
-internal class FunctionLabelLine : LogicalLine, IComparable<FunctionLabelLine>
+internal class FunctionLabelLine : ErrorCapableLogicalLine, IComparable<FunctionLabelLine>
 {
     protected FunctionLabelLine() { }
     public FunctionLabelLine(ScriptPosition? thePosition, string labelname, WordCollection wc)
     {
-        scriptPosition = thePosition;
+        SetPosition(thePosition);
         LabelName = labelname;
         IsSingle = false;
         hasPrivDynamicVar = false;
@@ -274,13 +384,14 @@ internal class FunctionLabelLine : LogicalLine, IComparable<FunctionLabelLine>
         if (FileIndex != other.FileIndex)
             return FileIndex.CompareTo(other.FileIndex);
         //position == nullであるLine(デバッグコマンドなど)をSortすることはないはず
-        return Position.Value.LineNo.CompareTo(other.Position.Value.LineNo);
+        return scriptLineNo.CompareTo(other.scriptLineNo);
     }
     #endregion
     #region private変数
-    readonly Dictionary<string, UserDefinedVariableToken> privateVar = new(Config.Config.StrComper);
+    Dictionary<string, UserDefinedVariableToken> privateVar;
     internal bool AddPrivateVariable(UserDefinedVariableData data)
     {
+        privateVar ??= new Dictionary<string, UserDefinedVariableToken>(Config.Config.StrComper);
         if (privateVar.ContainsKey(data.Name))
             return false;
         UserDefinedVariableToken var = GlobalStatic.VariableData.CreatePrivateVariable(data);
@@ -292,6 +403,8 @@ internal class FunctionLabelLine : LogicalLine, IComparable<FunctionLabelLine>
     }
     internal UserDefinedVariableToken GetPrivateVariable(string key)
     {
+        if (privateVar == null)
+            return null;
         privateVar.TryGetValue(key, out UserDefinedVariableToken var);
         return var;
     }
@@ -304,6 +417,8 @@ internal class FunctionLabelLine : LogicalLine, IComparable<FunctionLabelLine>
 #if DEBUG
         GlobalStatic.StackList.Add(this);
 #endif
+        if (privateVar == null)
+            return;
         foreach (UserDefinedVariableToken var in privateVar.Values)
             if (!var.IsStatic)
                 var.ScopeIn();
@@ -313,6 +428,8 @@ internal class FunctionLabelLine : LogicalLine, IComparable<FunctionLabelLine>
 #if DEBUG
         GlobalStatic.StackList.Remove(this);
 #endif
+        if (privateVar == null)
+            return;
         foreach (UserDefinedVariableToken var in privateVar.Values)
             if (!var.IsStatic)
                 var.ScopeOut();
@@ -324,11 +441,11 @@ internal class FunctionLabelLine : LogicalLine, IComparable<FunctionLabelLine>
 /// <summary>
 /// $で始まるラベル行
 /// </summary>
-internal sealed class GotoLabelLine : LogicalLine, IEqualityComparer<GotoLabelLine>
+internal sealed class GotoLabelLine : ErrorCapableLogicalLine, IEqualityComparer<GotoLabelLine>
 {
     public GotoLabelLine(ScriptPosition? thePosition, string labelname)
     {
-        scriptPosition = thePosition;
+        SetPosition(thePosition);
         this.labelname = labelname;
     }
     readonly string labelname = "";
