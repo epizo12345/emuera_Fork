@@ -56,6 +56,8 @@
     <!-- [Emuera改修:TOOLS-01]
          補助ツールのC#をEmuera本体へ誤って混ぜないため、コンパイル対象から外す。 -->
     <Compile Remove="Emuera以外(開発補助ツールなど)\TraceAllocationAnalyzer\**\*.cs" />
+    <!-- Next RuntimeはLegacyと独立してビルドする。 -->
+    <Compile Remove="NextRuntime\**\*.cs" />
     <Compile Update="Forms\ColorBox.cs">
       <SubType>UserControl</SubType>
     </Compile>
