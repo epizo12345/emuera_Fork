@@ -1,8 +1,10 @@
 #if LEGACY_ORACLE
 using MinorShift.Emuera.Runtime.Script.Data;
+using MinorShift.Emuera.Runtime.Script.Loader;
 using MinorShift.Emuera.Runtime.Script.Statements;
 using LegacyConfig = MinorShift.Emuera.Runtime.Config.Config;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -14,7 +16,8 @@ internal static class LegacyOracleExporter
 {
     private static readonly JsonSerializerOptions JsonOptions = new();
 
-    internal static void Write(LabelDictionary labels, string outputPath, string erbRoot, LegacyErbBaseline baseline)
+    internal static void Write(LabelDictionary labels, string outputPath, string erbRoot, LegacyErbBaseline baseline,
+        IReadOnlyDictionary<string, LegacyPreprocessorTrace> preprocessorDiagnostics)
     {
         if (labels is null || string.IsNullOrWhiteSpace(outputPath))
             return;
@@ -44,6 +47,24 @@ internal static class LegacyOracleExporter
                 IsError = false,
                 Kind = "File"
             }, JsonOptions));
+            if (preprocessorDiagnostics.TryGetValue(Program.AnalysisFiles[fileOrder], out var trace))
+                foreach (var range in trace.DisabledRanges)
+                    writer.WriteLine(JsonSerializer.Serialize(new
+                    {
+                        FileOrder = fileOrder + 1,
+                        RelativeFile = relativeFile,
+                        FunctionOrder = -1,
+                        FunctionName = (string?)null,
+                        StartLine = range.StartLine,
+                        EndLine = range.EndLine,
+                        StartByte = 0L,
+                        EndByte = 0L,
+                        Flags = "Preprocessor",
+                        Fallback = true,
+                        IsError = false,
+                        Kind = "PreprocessorRange"
+                    }, JsonOptions));
+
         }
         string? previousFile = null;
         var functionOrder = 0;
@@ -93,6 +114,59 @@ internal static class LegacyOracleExporter
             $"erbManagedAfterDiagnosticGc={baseline.ManagedAfterDiagnosticGc}",
             $"legacyRetainedManagedEstimate={Math.Max(0, baseline.ManagedAfterDiagnosticGc - baseline.ManagedBefore)}"
         ], new UTF8Encoding(false));
+        WritePreprocessorReports(Path.GetDirectoryName(fullPath)!, erbRoot, preprocessorDiagnostics);
+    }
+
+    private static void WritePreprocessorReports(string directory, string erbRoot,
+        IReadOnlyDictionary<string, LegacyPreprocessorTrace> traces)
+    {
+        var ranges = new List<string>();
+        var bit = new List<string>();
+        foreach (var pair in traces.OrderBy(static pair => pair.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            var relativeFile = Path.GetRelativePath(erbRoot, pair.Key).Replace('\\', '/');
+            ranges.Add($"file={relativeFile}");
+            ranges.AddRange(pair.Value.Directives.Select(static d =>
+                $"directive line={d.PhysicalLine} token={d.Directive} before={(d.DisabledBefore ? "Disabled" : "Enabled")} after={(d.DisabledAfter ? "Disabled" : "Enabled")}"));
+            ranges.AddRange(pair.Value.DisabledRanges.Select(static r =>
+                $"disabledRange start={r.StartLine} end={r.EndLine} reason={r.Reason}"));
+
+            if (!relativeFile.EndsWith("BIT_SETTING.ERB", StringComparison.OrdinalIgnoreCase))
+                continue;
+            var path = pair.Key;
+            if (!File.Exists(path))
+                continue;
+            var sourceLines = File.ReadAllLines(path);
+            var candidates = sourceLines
+                .Select((line, index) => (Name: CandidateName(line), Line: index + 1))
+                .Where(static item => item.Name is not null)
+                .Select(static item => (Name: item.Name!, item.Line))
+                .ToArray();
+            bit.Add($"file={pair.Key}");
+            foreach (var candidate in candidates)
+            {
+                var endLine = candidates.FirstOrDefault(next => next.Line > candidate.Line).Line - 1;
+                if (endLine < candidate.Line)
+                    endLine = sourceLines.Length;
+                var range = pair.Value.DisabledRanges.FirstOrDefault(r => candidate.Line >= r.StartLine && candidate.Line <= r.EndLine);
+                var disabled = range.EndLine >= candidate.Line && range.StartLine <= candidate.Line;
+                bit.Add($"function={candidate.Name} physicalStart={candidate.Line} physicalEnd={endLine} LegacyState={(disabled ? "Disabled" : "Enabled")}" +
+                    (disabled ? $" reason={range.Reason}" : ""));
+            }
+        }
+        File.WriteAllLines(Path.Combine(directory, "preprocessor-ranges.txt"), ranges, new UTF8Encoding(false));
+        File.WriteAllLines(Path.Combine(directory, "bit-setting-check.txt"), bit, new UTF8Encoding(false));
+    }
+
+    private static string CandidateName(string line)
+    {
+        var text = line.TrimStart(' ', '\t');
+        if (text.Length < 2 || text[0] != '@' || text[1] is '"' or '\'')
+            return null;
+        var end = 1;
+        while (end < text.Length && (char.IsLetterOrDigit(text[end]) || text[end] is '_' or '\\'))
+            end++;
+        return end == 1 ? null : text[1..end];
     }
 }
 #endif

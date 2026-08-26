@@ -41,7 +41,7 @@ static List<Row> Read(string path)
 
 static ComparisonResult Compare(List<Row> legacy, List<Row> next)
 {
-    var legacyFileRows = legacy.Where(static row => row.FunctionOrder == 0).ToDictionary(static row => row.RelativeFile, StringComparer.OrdinalIgnoreCase);
+    var legacyFileRows = legacy.Where(static row => row.FunctionOrder == 0 && row.Kind == "File").ToDictionary(static row => row.RelativeFile, StringComparer.OrdinalIgnoreCase);
     var nextFileRows = next.Where(static row => row.FunctionOrder == 0).ToDictionary(static row => row.RelativeFile, StringComparer.OrdinalIgnoreCase);
     var missingFiles = legacyFileRows.Keys.Except(nextFileRows.Keys, StringComparer.OrdinalIgnoreCase).ToArray();
     var extraFiles = nextFileRows.Keys.Except(legacyFileRows.Keys, StringComparer.OrdinalIgnoreCase).ToArray();
@@ -55,6 +55,9 @@ static ComparisonResult Compare(List<Row> legacy, List<Row> next)
     var nextByPosition = nextFunctions.ToDictionary(PositionKey, StringComparer.OrdinalIgnoreCase);
     var legacyByLine = legacyFunctions.GroupBy(LineKey, StringComparer.OrdinalIgnoreCase)
         .ToDictionary(static group => group.Key, static group => group.ToArray(), StringComparer.OrdinalIgnoreCase);
+    var legacyPreprocessorRanges = legacy.Where(static row => row.Kind == "PreprocessorRange")
+        .GroupBy(static row => row.RelativeFile, StringComparer.OrdinalIgnoreCase)
+        .ToDictionary(static group => group.Key, static group => group.Select(row => new ContinuationBlock(row.StartLine, row.EndLine)).ToArray(), StringComparer.OrdinalIgnoreCase);
     var ranges = next.Where(static row => row.ContinuationBlocks is not null)
         .SelectMany(static row => row.ContinuationBlocks!.Select(block => (row.RelativeFile, Block: block)))
         .GroupBy(static item => item.RelativeFile, StringComparer.OrdinalIgnoreCase)
@@ -77,6 +80,13 @@ static ComparisonResult Compare(List<Row> legacy, List<Row> next)
             }
             expectedFallbackKeys.Add(PositionKey(oracle));
             fallbackLines.Add($"expected {PositionKey(row)} reason={row.Flags} legacy={PositionKey(oracle)}");
+        }
+        else if (row.Flags.Contains("Preprocessor", StringComparison.Ordinal)
+            && legacyPreprocessorRanges.TryGetValue(row.RelativeFile, out var disabledRanges)
+            && disabledRanges.Any(range => row.StartLine >= range.StartLine && row.StartLine <= range.EndLine))
+        {
+            var range = disabledRanges.First(range => row.StartLine >= range.StartLine && row.StartLine <= range.EndLine);
+            fallbackLines.Add($"expected {PositionKey(row)} reason=LegacyPPState Disabled range={range.StartLine}-{range.EndLine}");
         }
         else
             unexplainedFallback.Add($"next-only {PositionKey(row)} reason={row.Flags}");
@@ -132,7 +142,8 @@ static ComparisonResult Compare(List<Row> legacy, List<Row> next)
         .Concat(unexplainedFallback.Select(line => $"unexplained-fallback {line}"))
         .Concat(duplicates.PriorityMismatches.Select(line => $"priority {line}")));
     var fallback = string.Join(Environment.NewLine, fallbackLines.Concat(unexplainedFallback.Select(line => $"unexplained {line}")));
-    var summary = $"Legacy file rows: {legacyFileRows.Count}\nNext file rows: {nextFileRows.Count}\nLegacy function rows: {legacyFunctions.Length}\nNext function rows: {nextFunctions.Length}\nSafe Next functions: {nextFunctions.Count(static row => !row.Fallback)}\nFallback Next functions: {nextFunctions.Count(static row => row.Fallback)}\nExpected fallback differences: {fallbackLines.Count}\nUnexplained fallback differences: {unexplainedFallback.Count}\nUnexpected missing: {missing.Count + missingFiles.Length}\nUnexpected extra: {extra.Length + extraFiles.Length}\nFileOrder mismatch: {fileOrder.Length}\nName mismatch: {names.Count}\nOrder mismatch: {order.Count}\nInvalid/error mismatch: {invalid.Length}\nDuplicate function names: {duplicates.Groups.Count}\nDuplicate definitions: {duplicates.Groups.Sum(static group => group.Count())}\nMax duplicate count: {(duplicates.Groups.Count == 0 ? 0 : duplicates.Groups.Max(static group => group.Count()))}\nDuplicate priority mismatches: {duplicates.PriorityMismatches.Count}\n";
+    var preprocessorExpected = fallbackLines.Count(line => line.Contains("LegacyPPState Disabled", StringComparison.Ordinal));
+    var summary = $"Legacy file rows: {legacyFileRows.Count}\nNext file rows: {nextFileRows.Count}\nLegacy function rows: {legacyFunctions.Length}\nNext function rows: {nextFunctions.Length}\nSafe Next functions: {nextFunctions.Count(static row => !row.Fallback)}\nFallback Next functions: {nextFunctions.Count(static row => row.Fallback)}\nExpected fallback differences: {fallbackLines.Count}\nExpected preprocessor-disabled differences: {preprocessorExpected}\nUnexplained fallback differences: {unexplainedFallback.Count}\nUnexpected missing: {missing.Count + missingFiles.Length}\nUnexpected extra: {extra.Length + extraFiles.Length}\nFileOrder mismatch: {fileOrder.Length}\nName mismatch: {names.Count}\nOrder mismatch: {order.Count}\nInvalid/error mismatch: {invalid.Length}\nDuplicate function names: {duplicates.Groups.Count}\nDuplicate definitions: {duplicates.Groups.Sum(static group => group.Count())}\nMax duplicate count: {(duplicates.Groups.Count == 0 ? 0 : duplicates.Groups.Max(static group => group.Count()))}\nDuplicate definition order mismatches: {duplicates.PriorityMismatches.Count}\nEvent priority semantic verification: DEFERRED / LEGACY FALLBACK\n";
     var blockers = missing.Count + missingFiles.Length + extra.Length + extraFiles.Length + fileOrder.Length + names.Count + order.Count + invalid.Length + unexplainedFallback.Count + duplicates.PriorityMismatches.Count;
     return new(summary, unexpected.Length == 0 ? "none\n" : unexpected + Environment.NewLine,
         fallback.Length == 0 ? "none\n" : fallback + Environment.NewLine, blockers);
@@ -173,7 +184,8 @@ static string DuplicateReport(List<Row> legacy, List<Row> next)
         $"duplicateFunctionNames={result.Groups.Count}",
         $"duplicateDefinitions={result.Groups.Sum(static group => group.Count())}",
         $"maxDuplicateCount={(result.Groups.Count == 0 ? 0 : result.Groups.Max(static group => group.Count()))}",
-        $"priorityMismatches={result.PriorityMismatches.Count}"
+        $"definitionOrderMismatches={result.PriorityMismatches.Count}",
+        "eventPrioritySemanticVerification=DEFERRED / LEGACY FALLBACK"
     };
     foreach (var group in result.Groups)
     {
@@ -183,7 +195,7 @@ static string DuplicateReport(List<Row> legacy, List<Row> next)
         foreach (var row in next.Where(row => string.Equals(row.FunctionName, group.Key, StringComparison.OrdinalIgnoreCase)).OrderBy(static row => row.FileOrder).ThenBy(static row => row.StartLine))
             lines.Add($"next order={row.FunctionOrder} fileOrder={row.FileOrder} file={row.RelativeFile} line={row.StartLine}");
     }
-    lines.AddRange(result.PriorityMismatches.Select(static line => $"priority-mismatch {line}"));
+    lines.AddRange(result.PriorityMismatches.Select(static line => $"definition-order-mismatch {line}"));
     return string.Join(Environment.NewLine, lines) + Environment.NewLine;
 }
 
@@ -209,8 +221,8 @@ static int SelfTest()
     if (!StringComparer.OrdinalIgnoreCase.Equals("EVENT", "event")) return Fail("case rule");
     var fileLegacy = new List<Row>
     {
-        new(1, "A.ERB", 0, null, 0, 0, 0, 0, "None", false, false),
-        new(2, "B.ERB", 0, null, 0, 0, 0, 0, "None", false, false),
+        new(1, "A.ERB", 0, null, 0, 0, 0, 0, "None", false, false, Kind: "File"),
+        new(2, "B.ERB", 0, null, 0, 0, 0, 0, "None", false, false, Kind: "File"),
         new(1, "A.ERB", 1, "A", 1, 1, 0, 0, "None", false, false)
     };
     var fileExact = Compare(fileLegacy, fileLegacy.ToList());
@@ -219,14 +231,14 @@ static int SelfTest()
     if (Compare(fileLegacy, fileSwapped).BlockerCount == 0) return Fail("file order mismatch");
     var fallbackLegacy = new List<Row>
     {
-        new(1, "C.ERB", 0, null, 0, 0, 0, 0, "None", false, false),
+        new(1, "C.ERB", 0, null, 0, 0, 0, 0, "None", false, false, Kind: "File"),
         new(1, "C.ERB", 1, "BEFORE", 1, 1, 0, 0, "None", false, false),
         new(1, "C.ERB", 2, "INSIDE", 3, 3, 0, 0, "None", false, false),
         new(1, "C.ERB", 3, "AFTER", 5, 5, 0, 0, "None", false, false)
     };
     var fallbackNext = new List<Row>
     {
-        new(1, "C.ERB", 0, null, 0, 0, 0, 0, "LineContinuation", true, false, ContinuationBlocks: [new(2, 4)]),
+        new(1, "C.ERB", 0, null, 0, 0, 0, 0, "LineContinuation", true, false, Kind: "File", ContinuationBlocks: [new(2, 4)]),
         new(1, "C.ERB", 1, "BEFORE", 1, 1, 0, 0, "None", false, false),
         new(1, "C.ERB", 2, "AFTER", 5, 5, 0, 0, "LineContinuation", true, false, ContinuationBlocks: [new(2, 4)])
     };
@@ -234,7 +246,22 @@ static int SelfTest()
     if (fallbackExact.BlockerCount != 0 || !fallbackExact.Fallback.Contains("block=2-4", StringComparison.Ordinal)) return Fail("fallback source range");
     var unexplained = fallbackNext.Append(fallbackNext[^1] with { FunctionName = "UNEXPLAINED", StartLine = 99 }).ToList();
     if (Compare(fallbackLegacy, unexplained).BlockerCount == 0) return Fail("unexplained fallback");
-    Console.WriteLine("DifferentialSelfTest: exact/fallback/extra/missing/name/order/duplicate/invalid/case PASS");
+    var ppLegacy = new List<Row>
+    {
+        new(1, "BIT_SETTING.ERB", 0, null, 0, 0, 0, 0, "None", false, false, Kind: "File"),
+        new(1, "BIT_SETTING.ERB", -1, null, 140, 185, 0, 0, "Preprocessor", true, false, Kind: "PreprocessorRange"),
+        new(1, "BIT_SETTING.ERB", 1, "ENABLED", 190, 190, 0, 0, "None", false, false)
+    };
+    var ppNext = new List<Row>
+    {
+        new(1, "BIT_SETTING.ERB", 0, null, 0, 0, 0, 0, "Preprocessor", true, false, Kind: "File"),
+        new(1, "BIT_SETTING.ERB", 1, "DISABLED", 150, 155, 0, 0, "Preprocessor", true, false),
+        new(1, "BIT_SETTING.ERB", 2, "ENABLED", 190, 190, 0, 0, "None", false, false)
+    };
+    var ppExact = Compare(ppLegacy, ppNext);
+    if (ppExact.BlockerCount != 0 || !ppExact.Fallback.Contains("LegacyPPState Disabled range=140-185", StringComparison.Ordinal)) return Fail("preprocessor disabled range");
+    if (Compare(ppLegacy, ppNext.Select(row => row with { StartLine = row.FunctionName == "DISABLED" ? 99 : row.StartLine }).ToList()).BlockerCount == 0) return Fail("preprocessor range guard");
+    Console.WriteLine("DifferentialSelfTest: exact/fallback/extra/missing/name/order/duplicate/invalid/case/preprocessor-range PASS");
     return 0;
 
     static int Fail(string name) { Console.Error.WriteLine($"DifferentialSelfTest: FAIL {name}"); return 1; }

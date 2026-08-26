@@ -21,8 +21,19 @@ using System.Collections.Concurrent;
 
 namespace MinorShift.Emuera.Runtime.Script.Loader;
 
+#if LEGACY_ORACLE
+internal readonly record struct LegacyPreprocessorDirective(int PhysicalLine, string Directive, bool DisabledBefore, bool DisabledAfter);
+internal readonly record struct LegacyPreprocessorRange(int StartLine, int EndLine, string Reason);
+internal sealed record LegacyPreprocessorTrace(
+    IReadOnlyList<LegacyPreprocessorDirective> Directives,
+    IReadOnlyList<LegacyPreprocessorRange> DisabledRanges);
+#endif
+
 internal sealed class ErbLoader
 {
+#if LEGACY_ORACLE
+    internal readonly ConcurrentDictionary<string, LegacyPreprocessorTrace> PreprocessorDiagnostics = new(StringComparer.OrdinalIgnoreCase);
+#endif
     public ErbLoader(EmueraConsole main, ExpressionMediator exm, Process proc)
     {
         output = main;
@@ -96,6 +107,9 @@ internal sealed class ErbLoader
         deferredEagerLabels.Clear();
         Volatile.Write(ref lazyErbFileCount, 0);
         Volatile.Write(ref lazyErbFallbackFileCount, 0);
+#if LEGACY_ORACLE
+        PreprocessorDiagnostics.Clear();
+#endif
         var enumerationStopwatch = System.Diagnostics.Stopwatch.StartNew();
         var erbFiles = Config.Config.GetFiles(erbDir, "*.ERB");
         EnumerationMilliseconds = enumerationStopwatch.ElapsedMilliseconds;
@@ -258,6 +272,35 @@ internal sealed class ErbLoader
         readonly Stack<bool> disabledStack = new();
         readonly Stack<bool> doneStack = new();
         readonly Stack<string> ppMatch = new();
+#if LEGACY_ORACLE
+        readonly List<LegacyPreprocessorDirective> diagnostics = [];
+        readonly List<LegacyPreprocessorRange> disabledRanges = [];
+        int disabledStart;
+        string disabledReason;
+
+        internal void RecordDirective(int line, string token, bool before)
+        {
+            diagnostics.Add(new(line, token, before, Disabled));
+            if (!before && Disabled)
+            {
+                disabledStart = line + 1;
+                disabledReason = $"[{token}] line {line}";
+            }
+            else if (before && !Disabled && disabledStart > 0)
+            {
+                disabledRanges.Add(new(disabledStart, line - 1, $"{disabledReason} - [{token}] line {line}"));
+                disabledStart = 0;
+                disabledReason = null;
+            }
+        }
+
+        internal LegacyPreprocessorTrace GetDiagnosticTrace(int lastLine)
+        {
+            if (disabledStart > 0)
+                disabledRanges.Add(new(disabledStart, Math.Max(disabledStart, lastLine), $"{disabledReason} - EOF"));
+            return new(diagnostics.ToArray(), disabledRanges.ToArray());
+        }
+#endif
 
         internal void AddKeyWord(string token, string token2, ScriptPosition? position)
         {
@@ -814,7 +857,11 @@ internal sealed class ErbLoader
                 string token2 = LexicalAnalyzer.ReadSingleIdentifier(st);
                 if (string.IsNullOrEmpty(token) || st.Current != ']')
                     ParserMediator.Warn(LocalizationManager.Error.InvalidSBrackets, position, 1);
+                bool disabledBefore = ppstate.Disabled;
                 ppstate.AddKeyWord(token, token2, position);
+#if LEGACY_ORACLE
+                ppstate.RecordDirective(position.Value.LineNo, token, disabledBefore);
+#endif
                 st.ShiftNext();
                 if (!st.EOS)
                     ParserMediator.Warn(string.Format(LocalizationManager.Error.IgnoreAfterPreprosessor, token), position, 1);
@@ -948,6 +995,9 @@ internal sealed class ErbLoader
         addLine(new NullLine(), lastLine);
         position = new ScriptPosition(eReader.FileId, -1);
         ppstate.FileEnd(position);
+#if LEGACY_ORACLE
+        PreprocessorDiagnostics[filename] = ppstate.GetDiagnosticTrace(eReader.LineNo + 1);
+#endif
 #if PERFORMANCE_METRICS
         ErbStartupProfiler.CompleteFile(profile);
 #endif

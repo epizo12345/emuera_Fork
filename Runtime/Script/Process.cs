@@ -279,6 +279,9 @@ internal sealed partial class Process(EmueraConsole view)
     // 通常モードではactive erbLoaderのLazy表を使い、eagerのDebug/Analysisやreload中のloader不在時は
     // 追加処理なしで従来経路を通す。呼び出し側の引数評価・ScopeInより前に判定できる境界を保つ。
     internal bool EnsureFunctionReady(FunctionLabelLine label) => erbLoader?.EnsureFunctionReady(label) ?? true;
+#if LEGACY_ORACLE
+    internal IReadOnlyDictionary<string, LegacyPreprocessorTrace> LegacyPreprocessorDiagnostics => erbLoader is null ? new Dictionary<string, LegacyPreprocessorTrace>() : erbLoader.PreprocessorDiagnostics;
+#endif
 
     public async Task ReloadErbAll()
     {

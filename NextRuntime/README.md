@@ -12,9 +12,9 @@ Next Runtimeは、既存ゲーム・セーブ・ERB互換を最優先にしつ�
 
 ## Phase 0Bの結果
 
-実ゲームfixtureを対象に、Legacyの実際の`ErbLoader` / `LogicalLineParser` / `LabelDictionary`をoracleとして、NextのSource IndexとJSONL manifestを照合しました。LegacyとNextはともに9458 ERB・134652関数で、safe 112854関数、fallback 21798関数でした。unexpected missing、extra、name、order、invalid/error mismatchはすべて0です。
+実ゲームfixtureを対象に、Legacyの実際の`ErbLoader` / `LogicalLineParser` / `LabelDictionary`をoracleとして、NextのSource IndexとJSONL manifestを照合しました。LegacyとNextはともに9458 ERB・134652関数で、safe 112854関数、fallback 21798関数でした。R2ではLegacy PPStateのdisabled rangeを診断し、BIT_SETTING.ERBの3件も含めてunexplained fallback differencesは0です。missing、extra、name、order、FileOrder、invalid/error mismatchもすべて0です。
 
-fallbackは、DeclarationDirective 6844、FunctionMetadata 6817、LineContinuation 164、OtherSemanticFallback 1425、Preprocessor 234、Rename 12705（重複計上）です。実データの重複関数名は3名称・9定義で、Legacyの設定は`IgnoreCase=True`、`OrdinalIgnoreCase`、`SystemAllowFullSpace=True`でした。全角space、vertical tab/form feed、BOM、invalid UTF-8、引用符付き`@`の境界はSelfTestと診断値で確認しています。
+fallbackは、DeclarationDirective 6844、FunctionMetadata 6817、LineContinuation 164、OtherSemanticFallback 1425、Preprocessor 234、Rename 12705（重複計上）です。実データの重複関数名は3名称・9定義、定義順差分0です。#PRI/#LATER/#ONLY/#SINGLEを含むevent dispatch semantics自体はNext VM未実装のため、priority完全一致ではなく`DEFERRED / LEGACY FALLBACK`です。全角space、vertical tab/form feed、BOM、invalid UTF-8、引用符付き`@`、PPState disabled rangeの境界はSelfTestと診断値で確認しています。
 
 性能値は同じ処理の比較ではありません。Legacyは実ERB parse/load、Nextはread-only Source Index構築を各5回測定し、runtime speedupは主張しません。Phase 0Bは差分ゲートを通過しましたが、Phase 1はまだ開始していません。
 
@@ -63,6 +63,10 @@ IndexAuditの`indexBuild*`は`ErbSourceIndexer.IndexDirectory`の直前から直
 ## 差分更新の設計方針（Phase 0B-R1）
 
 差分更新はまだ実装せず、変更ファイルの関数span・content hash・確定した依存先だけを無効化する設計とする。ERH、Rename、Preprocessor、宣言directiveは安全側にfile-level invalidation、画像・CSV等の非ERB assetは別cache namespaceとする。cache headerのengine/index schema/parser rule version、設定値、root identityが変われば全再構築し、更新後のLegacy oracle検証に失敗した場合は前回の完全なindexへ戻す。
+
+## CSV変更（Phase 0B-R2設計）
+
+CSVは依存性で分類する。表示・名称・説明などcompile時意味解析へ影響しないものはERB compile cache全破棄を不要とする。変数・定数・ID・構造など解析時意味へ影響するものは、依存関係が確定したcompiled functionだけを無効化する。影響範囲不明のCSVは安全側に広くcache invalidationする。R2では分類本実装を行わず、画像だけの変更でERB cacheを破棄しない方針と併せてdependency graph設計へ残す。
 
 ## Windows distribution invariant
 

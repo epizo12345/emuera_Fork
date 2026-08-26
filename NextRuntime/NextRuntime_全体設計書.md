@@ -52,7 +52,7 @@ Phase 0AのSource Indexは実行系ではなく、ERBを読むための小さな
 
 ## 8. 完了済み作業と今後の起動計画
 
-完了はPhase 0AのSource Index、IndexAudit、SelfTest、0A-R1のLegacy境界に沿ったflag分類、0A-R2の関数ヘッダー境界と計測分離、0BのLegacy oracle差分・性能baselineである。Phase 1はまだ開始していない。
+完了はPhase 0AのSource Index、IndexAudit、SelfTest、0A-R1のLegacy境界に沿ったflag分類、0A-R2の関数ヘッダー境界と計測分離、0B-R2のLegacy oracle差分・PPState disabled range診断・性能baselineである。Phase 1はまだ開始していない。
 
 今後は関数単位compiler prototype、compact IR、instruction VM、bounded/evictable cache、disk compile cacheへ進む。warm startupでは、変更検出済みのsource indexと検証済みcompile cacheを再利用し、不要なparser再実行を避ける。cacheは再生成可能であり、配布Runtime本体とは別扱いにする。
 
@@ -105,19 +105,27 @@ Phase 0A、0A-R1、0A-R2、0A-R3、0Bを完了とする。0A-R3では、Legacy�
 
 対象は`E:\GAME-2\テスト版\eramegaten_p_口上有り\Data`である。Legacy oracleは診断ビルドの実際のERB parse/load経路から取得し、Nextは同じERB directoryのSource Indexから取得した。manifestはファイル順・関数順・名前・1-based行・byte span・fallback flagを比較した。
 
-LegacyとNextは9458ファイル・134652関数で一致した。Nextのsafe functionは112854、fallback functionは21798。unexpected missing、extra、name、order、invalid/error mismatchは0である。fallback reasonはDeclarationDirective 6844、FunctionMetadata 6817、LineContinuation 164、OtherSemanticFallback 1425、Preprocessor 234、Rename 12705（重複計上）。全角space、vertical tab/form feed、BOM、invalid UTF-8、引用符付き`@`、行継続のSelfTestを維持・追加した。
+LegacyとNextは9458ファイル・134652関数で一致した。Nextのsafe functionは112854、fallback functionは21798。R2ではLegacy PPStateのdisabled rangeを出力し、unexpected missing、extra、name、order、FileOrder、invalid/error mismatchとunexplained fallback differencesを0にした。fallback reasonはDeclarationDirective 6844、FunctionMetadata 6817、LineContinuation 164、OtherSemanticFallback 1425、Preprocessor 234、Rename 12705（重複計上）。BIT_SETTING.ERBの`SETTING_IS_XXX`（150行）、`SETTING_INVERT_XXX`（166行）、`SETTING_SET_XXX`（178行）は`[SKIPSTART]` 139行から`[SKIPEND]` 186行のDisabled rangeへ対応した。
 
-重複はcase-insensitive groupingで3名称・9定義、最大4定義。Legacyの比較設定は`IgnoreCase=True`、`StringComparison=OrdinalIgnoreCase`、`SystemAllowFullSpace=True`である。これはNextがLegacy設定を採用したという意味ではなく、oracleの実設定を記録したものである。
+重複はcase-insensitive groupingで3名称・9定義、最大4定義、定義順差分0である。`#PRI`等を含むevent priority semantic verificationは`DEFERRED / LEGACY FALLBACK`であり、Next VMでの完全一致確認ではない。Legacyの比較設定は`IgnoreCase=True`、`StringComparison=OrdinalIgnoreCase`、`SystemAllowFullSpace=True`である。
 
-性能は各5回の診断baselineで、Legacy actual ERB parse/loadの中央値は8790.342 ms、allocation中央値は6280117840 bytes。Next Source Index構築の中央値は1796.173 ms、allocation中央値は36947992 bytes。処理境界が異なるため、速度比・runtime高速化・起動高速化は主張しない。p95、最大、標準偏差とメモリ境界はレビューartifactに記録する。
+性能は各5回の診断baselineで、Legacy actual ERB parse/loadの中央値は8340.524 ms、allocation中央値は6282642256 bytes、forced-GC後のretained estimate中央値は1618849120 bytes。Next Source Index構築の中央値は1841.047 ms、allocation中央値は38044280 bytes、retained index中央値は17163408 bytes。処理境界が異なるため、速度比・runtime高速化・起動高速化は主張しない。p95、最大、標準偏差とメモリ境界はレビューartifactに記録する。
 
-0Bの差分ゲートは通過した。これはPhase 1開始の承認ではなく、Chatレビュー可能な基準点である。Phase 1は別の明示的依頼まで開始しない。
+0B-R2の差分ゲートは通過した。これはPhase 1開始の承認ではなく、Chatレビュー可能な基準点である。Phase 1は別の明示的依頼まで開始しない。
 
 ## 18. Phase 0B-R1 差分更新とcache無効化
 
 R1では差分更新を実装せず、root相対path・length・last-write time・content hashをfile identityとする。変更ファイルは関数spanと行連結blockを再計算し、関数content hashの変更を起点に、確定したcall/reference dependencyの逆向き到達範囲を再評価する。ERH、Rename、Preprocessor、宣言directiveは安全側にfile-level invalidationとする。
 
 画像・CSVなどの非ERB assetは独立namespaceでcacheし、ERB変更では無効化しない。cache headerにはengine version、index schema version、parser rule version、設定値、root identityを含め、変更時はfull rebuildする。一時manifestをLegacy oracle互換のFileOrder・function order・span・fallback理由で検証してからswapし、失敗時は前回の完全なindexを維持する。R1はこの設計と検証契約までで、差分cache、dependency graph、runtime統合、Phase 1は未着手である。
+
+### CSV変更（Phase 0B-R2設計）
+
+CSVは依存性で分類する。表示・名称・説明などcompile時意味解析へ影響しないものはERB compile cache全破棄を不要とする。変数・定数・ID・構造など解析時意味へ影響するものは関連compiled functionを無効化する。影響範囲不明のCSVは、依存関係が確定するまで安全側に広くcache invalidationする。R2では分類本実装を行わず、後のdependency graph設計へ残す。PNG/JPG等だけの変更でERB compile cacheを全破棄しない既存方針、ERB小変更のfile-level変更検出からfunction hash比較へ進む方針、ERH/Renameの広い無効化、engine/compiler/IR version変更時のfull rebuildも維持する。
+
+### Duplicate event semantics
+
+Phase 1以降のFunctionId/event dispatchでは、LegacyのFileIndex、source order、`#PRI`、`#LATER`、`#ONLY`、`#SINGLE`、`CompatiCallEvent`等を再現する必要がある。Phase 0B-R2で検証したのは定義集合・FileOrder・StartLine・定義順までであり、event dispatch semanticsの完全差分は実行系が存在するPhaseで行う。
 
 ## 19. 用語集
 

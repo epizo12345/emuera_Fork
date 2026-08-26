@@ -494,7 +494,7 @@ internal sealed partial class EmueraConsole : IDisposable
 #if LEGACY_ORACLE
             if (!string.IsNullOrWhiteSpace(Program.LegacyOraclePath))
             {
-                LegacyOracleExporter.Write(process.LabelDictionary, Program.LegacyOraclePath, Program.ErbDir, process.LegacyErbBaseline);
+                LegacyOracleExporter.Write(process.LabelDictionary, Program.LegacyOraclePath, Program.ErbDir, process.LegacyErbBaseline, process.LegacyPreprocessorDiagnostics);
                 window.BeginInvoke(window.Close);
                 return;
             }
@@ -510,7 +510,7 @@ internal sealed partial class EmueraConsole : IDisposable
 #if LEGACY_ORACLE
         if (!string.IsNullOrWhiteSpace(Program.LegacyOraclePath))
         {
-            LegacyOracleExporter.Write(process.LabelDictionary, Program.LegacyOraclePath, Program.ErbDir, process.LegacyErbBaseline);
+            LegacyOracleExporter.Write(process.LabelDictionary, Program.LegacyOraclePath, Program.ErbDir, process.LegacyErbBaseline, process.LegacyPreprocessorDiagnostics);
             window.BeginInvoke(window.Close);
             return;
         }
