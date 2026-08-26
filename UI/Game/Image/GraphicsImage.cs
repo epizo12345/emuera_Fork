@@ -182,7 +182,9 @@ internal sealed class GraphicsImage : AbstractImage
         {
             paint.Style = SKPaintStyle.Fill;
 
-            var path = new SKPath();
+            // [Emuera改修:PERF-14N2 2026-08-26]
+            // polygonのpathはこの描画だけで使う一時native object。fieldへ保持せず、描画完了後に解放する。
+            using var path = new SKPath();
             foreach (var p in _points)
             {
                 path.LineTo(p);
@@ -249,7 +251,10 @@ internal sealed class GraphicsImage : AbstractImage
             cm[0][2],cm[1][2],cm[2][2],cm[3][2],cm[2][4],
             cm[0][3],cm[1][3],cm[2][3],cm[3][3],cm[3][4],
         ];
-        var filter = SKColorFilter.CreateColorMatrix(skiaCM);
+        // [Emuera改修:PERF-14N2 2026-08-26]
+        // ColorMatrix用filterは描画中だけ必要な一時native resource。paintへ設定したまま描画を完了し、
+        // 既存のsampling / pixel semanticsを変えずに描画後だけ解放する。
+        using var filter = SKColorFilter.CreateColorMatrix(skiaCM);
         if (img is ASpriteSingle single && ReferenceEquals(single.BaseImage, this))
         {
             using SKImage snapshot = SKImage.FromBitmap(Bitmap);
@@ -288,7 +293,7 @@ internal sealed class GraphicsImage : AbstractImage
             cm[0][2],cm[1][2],cm[2][2],cm[3][2],cm[2][4],
             cm[0][3],cm[1][3],cm[2][3],cm[3][3],cm[3][4],
         ];
-        var filter = SKColorFilter.CreateColorMatrix(skiaCM);
+        using var filter = SKColorFilter.CreateColorMatrix(skiaCM);
         using (var paint = new SKPaint() { ColorFilter = filter })
         {
             srcGra.Draw(canvas, srcRect.ToSKRect(), destRect.ToSKRect(), paint);
@@ -367,6 +372,9 @@ internal sealed class GraphicsImage : AbstractImage
     public void GDrawText(string text, SKPoint point)
     {
         EnsureWritable();
+        // [Emuera改修:PERF-14N2 2026-08-26]
+        // _fontがある場合はborrowed/cached objectなのでDraw側では解放しない。null時に作る一時fontだけを
+        // 描画後に解放し、FontFactory等の所有権は変更しない。
         var font = _font ?? new SKFont();
         point.Offset(0, -font.Metrics.Top);
         SKPaint paint = _brush ?? new SKPaint();
@@ -378,6 +386,8 @@ internal sealed class GraphicsImage : AbstractImage
         {
             if (_brush == null)
                 paint.Dispose();
+            if (_font == null)
+                font.Dispose();
         }
     }
 

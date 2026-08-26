@@ -103,7 +103,9 @@ internal abstract class ASpriteSingle : ASprite
         var sy = Math.Sign(destRect.Height);
         if (sx != 1 || sy != 1)
         {
-            var flipedBitmap = new SKBitmap(Math.Abs(destRect.Width), Math.Abs(destRect.Height));
+            // [Emuera改修:PERF-14N2 2026-08-26]
+            // negative flip専用の一時Bitmapは描画完了後に解放する。flip座標・sampling・既知の挙動は変更しない。
+            using var flipedBitmap = new SKBitmap(Math.Abs(destRect.Width), Math.Abs(destRect.Height));
             using var canvas = new SKCanvas(flipedBitmap);
 
             canvas.Scale(sx, sy, flipedBitmap.Width / 2, flipedBitmap.Height / 2);
@@ -185,7 +187,8 @@ internal abstract class ASpriteSingle : ASprite
         using SKPaint paint = new() { ColorFilter = attr };
         if (sx != 1 || sy != 1)
         {
-            var flipedBitmap = new SKBitmap(Math.Abs(destRect.Width), Math.Abs(destRect.Height));
+            // negative flipの一時Bitmapは描画完了後に解放する。座標計算とcolor-matrixの意味論は維持する。
+            using var flipedBitmap = new SKBitmap(Math.Abs(destRect.Width), Math.Abs(destRect.Height));
             using var canvas = new SKCanvas(flipedBitmap);
 
             canvas.Scale(sx, sy, flipedBitmap.Width / 2, flipedBitmap.Height / 2);
