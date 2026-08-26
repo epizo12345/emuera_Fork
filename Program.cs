@@ -81,6 +81,13 @@ static partial class Program
             Description = "起動・マクロ性能計測のJSON Lines出力先"
         };
         rootCommand.Options.Add(benchmarkLogOption);
+#if LEGACY_ORACLE
+        var legacyOracleOption = new Option<string>(name: "--LegacyOracle")
+        {
+            Description = "Legacy parser label manifest output path (diagnostic build only)"
+        };
+        rootCommand.Options.Add(legacyOracleOption);
+#endif
 
 #if PERFORMANCE_METRICS
         var erbStartupProfileOption = new Option<string>(name: "--ErbStartupProfile")
@@ -103,6 +110,9 @@ static partial class Program
 
         var result = rootCommand.Parse(args);
         PerformanceMetrics.Configure(result.GetValue(benchmarkLogOption));
+#if LEGACY_ORACLE
+        LegacyOraclePath = result.GetValue(legacyOracleOption);
+#endif
 #if PERFORMANCE_METRICS
         ErbStartupProfiler.Configure(result.GetValue(erbStartupProfileOption), result.GetValue(erbStartupProfileModeOption));
 #endif
@@ -141,8 +151,10 @@ static partial class Program
             return;
         }
 
+#if !LEGACY_ORACLE
         ProfileOptimization.SetProfileRoot(exeDir ?? ExeDir);
         ProfileOptimization.StartProfile(AssemblyData.EmueraVersionText + ".profile");
+#endif
 
         ConfigData.Instance.LoadConfig();
         JSONConfig.Load();
@@ -256,6 +268,10 @@ static partial class Program
     public static bool DebugMode { get; private set; }
 
     public static bool StartupTestMode { get; private set; }
+
+#if LEGACY_ORACLE
+    public static string LegacyOraclePath { get; private set; }
+#endif
 
     static Program()
     {

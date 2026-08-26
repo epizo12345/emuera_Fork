@@ -52,7 +52,7 @@ Phase 0AのSource Indexは実行系ではなく、ERBを読むための小さな
 
 ## 8. 完了済み作業と今後の起動計画
 
-完了はPhase 0AのSource Index、IndexAudit、SelfTest、0A-R1のLegacy境界に沿ったflag分類、0A-R2の関数ヘッダー境界と計測分離である。0Bは未着手で、Legacy oracleとの大規模差分と性能baselineを次に行う。
+完了はPhase 0AのSource Index、IndexAudit、SelfTest、0A-R1のLegacy境界に沿ったflag分類、0A-R2の関数ヘッダー境界と計測分離、0BのLegacy oracle差分・性能baselineである。Phase 1はまだ開始していない。
 
 今後は関数単位compiler prototype、compact IR、instruction VM、bounded/evictable cache、disk compile cacheへ進む。warm startupでは、変更検出済みのsource indexと検証済みcompile cacheを再利用し、不要なparser再実行を避ける。cacheは再生成可能であり、配布Runtime本体とは別扱いにする。
 
@@ -74,7 +74,7 @@ ERBの入力契約はUTF-8 BOM付きである。BOMは文字データではな�
 
 ## 13. 現在の状態
 
-Phase 0A、0A-R1、0A-R2、0A-R3を完了とする。0A-R3では、Legacyの`{`単独行から`}`単独行までの行連結を安全側fallbackとして検出し、連結内部の`@`を通常の関数境界として扱わない。nested・異常終了・未閉鎖も安全側へ倒す。識別子delimiterには`\\`を含め、先頭のvertical tab/form feedはLegacy互換のため空白として飛ばさない。全角spaceは`SystemAllowFullSpace`依存のためCoreへ設定を持ち込まずfallbackを付ける。保持メモリはindex構築前baselineとindexだけを保持したforced-GC後の差として診断する。0Bはまだ開始していない。正式mainへの統合やGitGudへのpushは別の明示的な作業である。
+Phase 0A、0A-R1、0A-R2、0A-R3、0Bを完了とする。0A-R3では、Legacyの`{`単独行から`}`単独行までの行連結を安全側fallbackとして検出し、連結内部の`@`を通常の関数境界として扱わない。nested・異常終了・未閉鎖も安全側へ倒す。識別子delimiterには`\\`を含め、先頭のvertical tab/form feedはLegacy互換のため空白として飛ばさない。全角spaceは`SystemAllowFullSpace`依存のためCoreへ設定を持ち込まずfallbackを付ける。保持メモリはindex構築前baselineとindexだけを保持したforced-GC後の差として診断する。0Bでは実際のLegacy `ErbLoader` / `LogicalLineParser` / `LabelDictionary`をoracleとして9458 ERB・134652関数を照合し、safe 112854、fallback 21798、unexpected missing/extra/name/order/invalid-error mismatch 0を確認した。Legacy設定は`IgnoreCase=True`、`OrdinalIgnoreCase`、`SystemAllowFullSpace=True`で、重複関数名は3名称・9定義だった。正式mainへの統合やGitGudへのpushは別の明示的な作業である。
 
 ## 14. ロードマップ
 
@@ -101,7 +101,19 @@ Phase 0A、0A-R1、0A-R2、0A-R3を完了とする。0A-R3では、Legacyの`{`�
 
 最終値はレビューartifactの`audit/real-game.txt`に記録する。対象fixtureは`E:\GAME-2\テスト版\eramegaten_p_口上有り`であり、値はSource Index構築だけの時間・allocationと、後処理の時間・allocationに分ける。これらはIndexAuditの実装と実行環境に依存し、Legacy Runtime全体との性能比較を意味しない。特にPhase 0Aの旧allocation値とは測定境界が異なるため、NOT DIRECTLY COMPARABLEである。
 
-## 17. 用語集
+## 17. Phase 0Bの差分と性能baseline
+
+対象は`E:\GAME-2\テスト版\eramegaten_p_口上有り\Data`である。Legacy oracleは診断ビルドの実際のERB parse/load経路から取得し、Nextは同じERB directoryのSource Indexから取得した。manifestはファイル順・関数順・名前・1-based行・byte span・fallback flagを比較した。
+
+LegacyとNextは9458ファイル・134652関数で一致した。Nextのsafe functionは112854、fallback functionは21798。unexpected missing、extra、name、order、invalid/error mismatchは0である。fallback reasonはDeclarationDirective 6844、FunctionMetadata 6817、LineContinuation 164、OtherSemanticFallback 1425、Preprocessor 234、Rename 12705（重複計上）。全角space、vertical tab/form feed、BOM、invalid UTF-8、引用符付き`@`、行継続のSelfTestを維持・追加した。
+
+重複はcase-insensitive groupingで3名称・9定義、最大4定義。Legacyの比較設定は`IgnoreCase=True`、`StringComparison=OrdinalIgnoreCase`、`SystemAllowFullSpace=True`である。これはNextがLegacy設定を採用したという意味ではなく、oracleの実設定を記録したものである。
+
+性能は各5回の診断baselineで、Legacy actual ERB parse/loadの中央値は8790.342 ms、allocation中央値は6280117840 bytes。Next Source Index構築の中央値は1796.173 ms、allocation中央値は36947992 bytes。処理境界が異なるため、速度比・runtime高速化・起動高速化は主張しない。p95、最大、標準偏差とメモリ境界はレビューartifactに記録する。
+
+0Bの差分ゲートは通過した。これはPhase 1開始の承認ではなく、Chatレビュー可能な基準点である。Phase 1は別の明示的依頼まで開始しない。
+
+## 18. 用語集
 
 * Source Index：ソース本文を持たず、ファイルと関数の位置を示す索引。
 * SourceSpan：物理byte offsetと行範囲。

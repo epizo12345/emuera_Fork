@@ -10,6 +10,14 @@ Next Runtimeは、既存ゲーム・セーブ・ERB互換を最優先にしつ�
 
 全体の目的・互換性境界・将来ロードマップは[Next Runtime全体設計書](NextRuntime_全体設計書.md)を参照してください。技術用語を避けた概要は[かんたん説明](NextRuntime_かんたん説明.md)です。
 
+## Phase 0Bの結果
+
+実ゲームfixtureを対象に、Legacyの実際の`ErbLoader` / `LogicalLineParser` / `LabelDictionary`をoracleとして、NextのSource IndexとJSONL manifestを照合しました。LegacyとNextはともに9458 ERB・134652関数で、safe 112854関数、fallback 21798関数でした。unexpected missing、extra、name、order、invalid/error mismatchはすべて0です。
+
+fallbackは、DeclarationDirective 6844、FunctionMetadata 6817、LineContinuation 164、OtherSemanticFallback 1425、Preprocessor 234、Rename 12705（重複計上）です。実データの重複関数名は3名称・9定義で、Legacyの設定は`IgnoreCase=True`、`OrdinalIgnoreCase`、`SystemAllowFullSpace=True`でした。全角space、vertical tab/form feed、BOM、invalid UTF-8、引用符付き`@`の境界はSelfTestと診断値で確認しています。
+
+性能値は同じ処理の比較ではありません。Legacyは実ERB parse/load、Nextはread-only Source Index構築を各5回測定し、runtime speedupは主張しません。Phase 0Bは差分ゲートを通過しましたが、Phase 1はまだ開始していません。
+
 ## 固定する設計
 
 長期目標は次の順です。

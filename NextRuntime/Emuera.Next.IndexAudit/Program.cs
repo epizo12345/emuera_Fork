@@ -4,14 +4,16 @@ using MinorShift.Emuera.Next.Core;
 
 if (args.Length == 0 || args.Any(static a => a is "-h" or "--help"))
 {
-    Console.Error.WriteLine("Usage: Emuera.Next.IndexAudit <erb-directory> [--json <manifest.json>]");
+    Console.Error.WriteLine("Usage: Emuera.Next.IndexAudit <erb-directory> [--json <manifest.json>] [--manifest <manifest.jsonl>]");
     return args.Length == 0 ? 2 : 0;
 }
 
 var directory = Path.GetFullPath(args[0]);
 string? jsonPath = null;
+string? manifestPath = null;
 for (var i = 1; i < args.Length; i++)
     if (args[i] == "--json" && ++i < args.Length) jsonPath = Path.GetFullPath(args[i]);
+    else if (args[i] == "--manifest" && ++i < args.Length) manifestPath = Path.GetFullPath(args[i]);
 
 var indexAllocatedBefore = GC.GetTotalAllocatedBytes(precise: true);
 var indexManagedBefore = GC.GetTotalMemory(false);
@@ -110,6 +112,39 @@ if (jsonPath is not null)
 {
     Directory.CreateDirectory(Path.GetDirectoryName(jsonPath)!);
     File.WriteAllText(jsonPath, JsonSerializer.Serialize(new { directory, files }, new JsonSerializerOptions { WriteIndented = true }));
+}
+
+if (manifestPath is not null)
+{
+    Directory.CreateDirectory(Path.GetDirectoryName(manifestPath)!);
+    using var writer = new StreamWriter(manifestPath, false, new System.Text.UTF8Encoding(false));
+    var fileOrder = 0;
+    foreach (var file in files)
+    {
+        fileOrder++;
+        var relativeFile = Path.GetRelativePath(directory, file.FileIdentity).Replace('\\', '/');
+        if (file.Functions.Count == 0)
+        {
+            writer.WriteLine(JsonSerializer.Serialize(new
+            {
+                FileOrder = fileOrder, RelativeFile = relativeFile, FunctionOrder = 0,
+                FunctionName = (string?)null, StartLine = 0, EndLine = 0, StartByte = 0L, EndByte = 0L,
+                Flags = file.Flags.ToString(), Fallback = file.HasFallback
+            }));
+            continue;
+        }
+        for (var functionOrder = 0; functionOrder < file.Functions.Count; functionOrder++)
+        {
+            var function = file.Functions[functionOrder];
+            writer.WriteLine(JsonSerializer.Serialize(new
+            {
+                FileOrder = fileOrder, RelativeFile = relativeFile, FunctionOrder = functionOrder + 1,
+                FunctionName = function.Name, StartLine = function.Span.StartLine, EndLine = function.Span.EndLine,
+                StartByte = function.Span.StartOffset, EndByte = function.Span.EndOffset,
+                Flags = function.Flags.ToString(), Fallback = (function.Flags & SourceFileIndex.FallbackFlags) != 0
+            }));
+        }
+    }
 }
 
 return 0;

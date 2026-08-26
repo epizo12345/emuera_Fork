@@ -859,6 +859,7 @@ internal sealed class ErbLoader
                     {
                         Interlocked.Exchange(ref hasError, 1);
                         ParserMediator.Warn(nextLine.ErrMes, position, 2);
+                        label.FileIndex = fileIndex;
                         labelDic.AddInvalidLabel(label);
                     }
                     else// if (label is FunctionLabelLine)

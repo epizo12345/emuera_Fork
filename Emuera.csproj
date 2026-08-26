@@ -34,6 +34,9 @@
          普通に配るEXEでは false のため、細かな計時処理は呼び出しごと消える。 -->
     <EnablePerformanceMetrics Condition="'$(EnablePerformanceMetrics)' == ''">false</EnablePerformanceMetrics>
     <DefineConstants Condition="'$(EnablePerformanceMetrics)' == 'true'">$(DefineConstants);PERFORMANCE_METRICS</DefineConstants>
+    <!-- 0BのLegacy oracle export専用。通常Releaseには診断経路を含めない。 -->
+    <EnableLegacyOracle Condition="'$(EnableLegacyOracle)' == ''">false</EnableLegacyOracle>
+    <DefineConstants Condition="'$(EnableLegacyOracle)' == 'true'">$(DefineConstants);LEGACY_ORACLE</DefineConstants>
     <!-- [Emuera改修:START-04]
          起動完了時のmanaged memoryが2GiB以上の大規模構成だけ、
          Aggressive / blocking / compacting GCを1回実行する。

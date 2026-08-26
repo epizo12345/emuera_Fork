@@ -8,6 +8,9 @@ using MinorShift.Emuera.Runtime.Script.Parser;
 using MinorShift.Emuera.Runtime.Script.Statements;
 using MinorShift.Emuera.Runtime.Script.Statements.Expression;
 using MinorShift.Emuera.Runtime.Utils;
+#if LEGACY_ORACLE
+using MinorShift.Emuera.Runtime.Diagnostics;
+#endif
 using MinorShift.Emuera.UI.Game;
 using MinorShift.Emuera.UI.Game.Image;
 using SkiaSharp;
@@ -448,8 +451,15 @@ internal sealed partial class EmueraConsole : IDisposable
     public async Task Initialize()
     {
         var boottimeDebugStopwatch = Stopwatch.StartNew();
+#if LEGACY_ORACLE
+        using FileStream? fs = string.IsNullOrWhiteSpace(Program.LegacyOraclePath)
+            ? new FileStream(Program.ExeDir + "time.log", FileMode.Create)
+            : null;
+        using var logWriter = fs is null ? new StreamWriter(Stream.Null) : new StreamWriter(fs);
+#else
         using var fs = new FileStream(Program.ExeDir + "time.log", FileMode.Create);
         using var logWriter = new StreamWriter(fs);
+#endif
         logWriter.WriteLine("Init:Start");
         _genericTimerStopwatch.Restart();
 
@@ -481,6 +491,14 @@ internal sealed partial class EmueraConsole : IDisposable
         logWriter.WriteLine("Process:Initialize:Start " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
         if (!await process.Initialize(logWriter))
         {
+#if LEGACY_ORACLE
+            if (!string.IsNullOrWhiteSpace(Program.LegacyOraclePath))
+            {
+                LegacyOracleExporter.Write(process.LabelDictionary, Program.LegacyOraclePath, Program.ErbDir, process.LegacyErbBaseline);
+                window.BeginInvoke(window.Close);
+                return;
+            }
+#endif
             state = ConsoleState.Error;
             OutputLog(null);
             PrintFlush(false);
@@ -489,6 +507,14 @@ internal sealed partial class EmueraConsole : IDisposable
                 window.BeginInvoke(window.Close);
             return;
         }
+#if LEGACY_ORACLE
+        if (!string.IsNullOrWhiteSpace(Program.LegacyOraclePath))
+        {
+            LegacyOracleExporter.Write(process.LabelDictionary, Program.LegacyOraclePath, Program.ErbDir, process.LegacyErbBaseline);
+            window.BeginInvoke(window.Close);
+            return;
+        }
+#endif
         logWriter.WriteLine("Process:Initialize:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
         logWriter.WriteLine("MacroNames:Start " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
         window.SetMacroGroupNames();

@@ -23,6 +23,7 @@ var quoted = Path.Combine(root, "quoted.ERB");
 var quotedLeading = Path.Combine(root, "quoted-leading.ERB");
 var quotedBody = Path.Combine(root, "quoted-body.ERB");
 var boundaries = Path.Combine(root, "boundaries.ERB");
+var duplicate = Path.Combine(root, "duplicate.ERB");
 var continuation = Path.Combine(root, "continuation.ERB");
 var continuationFunction = Path.Combine(root, "continuation-function.ERB");
 var unclosedContinuation = Path.Combine(root, "unclosed-continuation.ERB");
@@ -54,6 +55,7 @@ WriteBom(quoted, "@\"文字列\"\n");
 WriteBom(quotedLeading, "  @\"文字列\"\n");
 WriteBom(quotedBody, "@REAL\nPRINT 1\n  @\"本文中の文字列\"\nPRINT 2\n");
 WriteBom(boundaries, "@A(ARG)\nX\n@B(ARG)\nY\n");
+WriteBom(duplicate, "@D\nX\n@D\nY\n");
 WriteBom(continuation, "{\n複数行\n}\n");
 WriteBom(continuationFunction, "@BEFORE\n{\n@INSIDE(ARG)\nX\n}\n@AFTER\nY\n");
 WriteBom(unclosedContinuation, "@BEFORE\n{\nX\n");
@@ -121,6 +123,9 @@ tests.Add(("Vertical tab is not leading whitespace", () => Assert(ErbSourceIndex
 tests.Add(("Form feed is not leading whitespace", () => Assert(ErbSourceIndexer.IndexFile(formFeedHeader).Functions.Count == 0)));
 tests.Add(("Fullwidth space is explicit fallback", () => { var i = ErbSourceIndexer.IndexFile(fullWidthHeader); Assert(Name(fullWidthHeader) == "FULL"); Assert((i.Flags & SourceIndexFlags.OtherSemanticFallback) != 0); }));
 tests.Add(("Backslash ends identifier", () => Assert(Name(backslashHeader) == "FUNC")));
+tests.Add(("Duplicate names preserve source order", () => { var i = ErbSourceIndexer.IndexFile(duplicate); Assert(i.Functions.Count == 2); Assert(i.Functions[0].Name == i.Functions[1].Name); Assert(i.Functions[0].Span.StartLine < i.Functions[1].Span.StartLine); }));
+tests.Add(("Fallback retains diagnostic reason", () => { var i = ErbSourceIndexer.IndexFile(continuation); Assert((i.Flags & SourceIndexFlags.LineContinuation) != 0); Assert(i.HasFallback); }));
+tests.Add(("Invalid candidate is counted", () => { var i = ErbSourceIndexer.IndexFile(quoted); Assert(i.InvalidFunctionCandidateCount == 1); Assert(i.QuotedAtSignLineCount == 1); }));
 
 var passed = 0;
 var failed = 0;

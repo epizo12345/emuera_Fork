@@ -21,6 +21,9 @@ using MinorShift.Emuera.UI.Framework;
 using System.Reflection.Emit;
 using System.Reflection;
 using System.Runtime.Loader;
+#if LEGACY_ORACLE
+using MinorShift.Emuera.Runtime.Diagnostics;
+#endif
 
 namespace MinorShift.Emuera.GameProc;
 
@@ -54,6 +57,9 @@ internal sealed partial class Process(EmueraConsole view)
     ProcessState state;
     ProcessState originalState;//リセットする時のために
     private ErbLoader erbLoader;
+#if LEGACY_ORACLE
+    internal LegacyErbBaseline LegacyErbBaseline { get; private set; }
+#endif
     bool noError;
     //色々あって復活させてみる
     bool initialiing;
@@ -220,10 +226,21 @@ internal sealed partial class Process(EmueraConsole view)
             //ERB読込
             logWriter.WriteLine($"Proc:Init:ERB:Start {stopWatch.ElapsedMilliseconds}ms");
             erbLoader = new ErbLoader(console, exm, this);
+#if LEGACY_ORACLE
+            var erbBaselineWatch = Stopwatch.StartNew();
+            var erbBaselineAllocatedBefore = GC.GetTotalAllocatedBytes(precise: true);
+            var erbBaselineManagedBefore = GC.GetTotalMemory(false);
+#endif
             if (Program.AnalysisMode)
                 noError = await erbLoader.LoadErbList(Program.AnalysisFiles, labelDic);
             else
                 noError = await erbLoader.LoadErbDir(Program.ErbDir, Config.DisplayReport, labelDic);
+#if LEGACY_ORACLE
+            erbBaselineWatch.Stop();
+            LegacyErbBaseline = new(erbBaselineWatch.Elapsed.TotalMilliseconds,
+                GC.GetTotalAllocatedBytes(precise: true) - erbBaselineAllocatedBefore,
+                erbBaselineManagedBefore, GC.GetTotalMemory(false));
+#endif
             logWriter.WriteLine($"Proc:Init:ERB:Enumeration {erbLoader.EnumerationMilliseconds}ms");
             logWriter.WriteLine($"Proc:Init:ERB:PrimaryParse {erbLoader.PrimaryParseMilliseconds}ms");
             logWriter.WriteLine($"Proc:Init:ERB:LabelSetup {erbLoader.LabelSetupMilliseconds}ms");
