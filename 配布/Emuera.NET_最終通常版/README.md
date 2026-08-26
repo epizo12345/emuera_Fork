@@ -6,8 +6,8 @@
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
 - `Emuera.exe` サイズ: 24,663,786バイト（約23.5 MiB）
-- `Emuera.exe` SHA-256: `A886EA961787558FDF81855B8449ECF1D47D701B21668DAAC39FCB6959A9DD97`
-- `Emuera.exe` ProductVersion: `0.2.6.0+445b75afdae5a2487679f07cccaeeb96c5238204`（suffixはEXEを生成したsource commit）
+- `Emuera.exe` SHA-256: `6CAD66576413725601EE75BDEE4F71028740B09965AC79DDD674F73BA91A3078`
+- `Emuera.exe` ProductVersion: `0.2.6.0+ccbc69a1910a0fb8d732afef81f5efbdfa8aa3bf`（suffixはEXEを生成したsource commit）
 - publish条件: Release / win-x64 / framework-dependent / self-contained false / PublishSingleFile=true
 - JSON設定ファイルをUTF-8 BOM付きへ統一しました。`setting.json` / `setting_user.json`は新規生成・保存時にBOM付きとなり、既存のUTF-8 BOMなし設定は本文を維持して自動移行します。malformed設定は書き換えません。
 - Phase 13R41Iとして、Lazyから到達した未解析Eager関数のDeferred Eager処理、同一Lazy fileのready判定、runtime parse後のwarning/error処理、#DIM/#DIMS transaction、Rename安全化、Lazy state存在時のRELOADERB全体再読み込み昇格、設定条件による安全側のLazy制限、ReduceArgumentOnLoad=ONCE更新判定を正式採用しました。correctness validation、save39 Request/Event/調教口上/save-load、save219/Repeat、settings matrix 9/9を確認済みです。性能はR41C比で実質維持です。
@@ -15,6 +15,7 @@
 - Phase 13R41B2として、`ERB/RPG/イベント`をLazy ERBの新しい既定対象へ追加しました。save39のイベント一覧表示後も596 files / 8,255,909 bytesが未接触で、Trial startup Working Set中央値は約69.2MB減少しました。イベント30「神野の娘」本編、save/load、save219実戦闘を実機確認済みです。既存の明示的な`setting.json`へEventは自動追加しません。Repeat1000では安定したruntime性能悪化を確認していません。
 - Phase 13R41Cとして、配布EXEのProductVersion suffixがEXEを生成したsource commitを示すよう、clean commitからのpublishとfull SHA検証手順を整備しました。ゲーム機能・Lazy対象・GC policyは変更していません。
 - Phase 14Aとして、ファイルから読み込んだG画像を必要になるまでSKImageのまま保持し、初回書き込み時のみSKBitmapへ変換するCopy-on-Write方式へ変更しました。Sprite描画時の不要な画像snapshot生成も抑止し、画像メモリ使用量とnative allocationを削減します。既存の画像描画・self draw互換性は維持しています。
+- Phase 14N1として、SpriteやDIV表示で不要なSKPaintを長寿命保持しないようnative objectの管理を整理しました。GSETBRUSH/GSETPENのownershipをGraphicsImageへ統一し、描画中に保持済みPaintを誤ってDisposeする問題も解消しています。起動A/Bでは環境依存の中央値としてPrivate Memory/Working Setの削減方向を確認しています。
 - Phase 4A/B/C warning cleanupを反映（Release warning 52件から37件、new warning 0、Normal/Kojo起動確認済み）
 - Phase 5A/B/C focused bugfixを反映（VARSIZE/macro、ARRAYMSORT、GGETCOLOR/GSETCOLOR、SPRITEGETCOLOR。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
 - Phase 6A/B focused bugfixを反映（SPRITEANIMEADDFRAMEの無効Sprite入力時NRE修正、ClipboardのBufferSize/MinTimer 0・負値の安全化、ConfigDialogの最小値1制限とruntime clamp。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
