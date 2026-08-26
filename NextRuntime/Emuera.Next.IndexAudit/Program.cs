@@ -48,6 +48,10 @@ var renameFiles = files.Count(static f => (f.Flags & SourceIndexFlags.Rename) !=
 var renameFunctions = functions.Count(static x => (x.Function.Flags & SourceIndexFlags.Rename) != 0);
 var continuationFiles = files.Count(static f => (f.Flags & SourceIndexFlags.LineContinuation) != 0);
 var continuationFunctions = functions.Count(static x => (x.Function.Flags & SourceIndexFlags.LineContinuation) != 0);
+var parenthesizedHeaders = files.Sum(static f => f.ParenthesizedFunctionHeaderCount);
+var quotedAtSigns = files.Sum(static f => f.QuotedAtSignLineCount);
+var invalidCandidates = files.Sum(static f => f.InvalidFunctionCandidateCount);
+var rejectedCandidates = files.Sum(static f => f.RejectedAtCandidateCount);
 var reasonCounts = functions.SelectMany(static x => Reasons(x.Function.Flags))
     .GroupBy(static reason => reason).OrderBy(static group => group.Key)
     .ToDictionary(static group => group.Key, static group => group.Count());
@@ -78,6 +82,10 @@ Console.WriteLine($"renameFiles: {renameFiles}");
 Console.WriteLine($"renameFunctions: {renameFunctions}");
 Console.WriteLine($"lineContinuationFiles: {continuationFiles}");
 Console.WriteLine($"lineContinuationFunctions: {continuationFunctions}");
+Console.WriteLine($"parenthesizedFunctionHeaderCount: {parenthesizedHeaders}");
+Console.WriteLine($"quotedAtSignLineCount: {quotedAtSigns}");
+Console.WriteLine($"invalidFunctionCandidateCount: {invalidCandidates}");
+Console.WriteLine($"rejectedAtCandidateCount: {rejectedCandidates}");
 Console.WriteLine($"fallbackReasonBreakdown: {JsonSerializer.Serialize(reasonCounts)}");
 Console.WriteLine($"largestFunction: {(largest == default ? "none" : $"{largest.Function.Name} {largest.Function.Span.ByteLength} bytes / {largest.Function.Span.LineCount} lines")}");
 Console.WriteLine($"medianFunctionBytes: {Percentile(sizes, .50)}");

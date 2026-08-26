@@ -15,6 +15,14 @@ var dims = Path.Combine(root, "dims.ERB");
 var function = Path.Combine(root, "function.ERB");
 var functions = Path.Combine(root, "functions.ERB");
 var localsize = Path.Combine(root, "localsize.ERB");
+var args1 = Path.Combine(root, "args1.ERB");
+var args2 = Path.Combine(root, "args2.ERB");
+var comma = Path.Combine(root, "comma.ERB");
+var japaneseArgs = Path.Combine(root, "japanese-args.ERB");
+var quoted = Path.Combine(root, "quoted.ERB");
+var quotedLeading = Path.Combine(root, "quoted-leading.ERB");
+var quotedBody = Path.Combine(root, "quoted-body.ERB");
+var boundaries = Path.Combine(root, "boundaries.ERB");
 
 WriteBom(valid, "@通常関数, ARG\r\n; comment\r\n\r\n  PRINTFORM こんにちは\r\n@二つ目\nIF 1 == 1 [[名前]]\\\n続き\n");
 WriteBom(one, "@ONE\nPRINT 1\n");
@@ -27,6 +35,14 @@ WriteBom(dims, "@D\n#DIMS A\n");
 WriteBom(function, "@D\n#FUNCTION A\n");
 WriteBom(functions, "@D\n#FUNCTIONS A\n");
 WriteBom(localsize, "@D\n#LOCALSIZE 2\n#LOCALSSIZE 3\n");
+WriteBom(args1, "@FUNC(ARG)\n");
+WriteBom(args2, "@FUNC(ARG1, ARG2)\n");
+WriteBom(comma, "@FUNC, ARG\n");
+WriteBom(japaneseArgs, "@日本語(ARG)\n");
+WriteBom(quoted, "@\"文字列\"\n");
+WriteBom(quotedLeading, "  @\"文字列\"\n");
+WriteBom(quotedBody, "@REAL\nPRINT 1\n  @\"本文中の文字列\"\nPRINT 2\n");
+WriteBom(boundaries, "@A(ARG)\nX\n@B(ARG)\nY\n");
 
 tests.Add(("UTF-8 BOM simple ERB", () => Assert(ErbSourceIndexer.IndexFile(one).Flags == SourceIndexFlags.None)));
 tests.Add(("UTF-8 BOM Japanese function", () => Assert(ErbSourceIndexer.IndexFile(valid).Functions[0].Name == "通常関数")));
@@ -61,6 +77,15 @@ tests.Add(("Large function body", () => Assert(ErbSourceIndexer.IndexFile(large)
 tests.Add(("File fallback propagates to every function", () => { var i = ErbSourceIndexer.IndexFile(pp); Assert(i.Functions.All(f => (f.Flags & SourceIndexFlags.Preprocessor) != 0)); }));
 tests.Add(("Index stores spans, not source bodies", () => Assert(typeof(FunctionIndex).GetProperties().All(static p => p.Name is not "Body" and not "Source"))));
 tests.Add(("Indexer has no mutable global state", () => Assert(typeof(ErbSourceIndexer).GetFields().All(static f => f.IsStatic))));
+tests.Add(("@FUNC(ARG) name", () => Assert(Name(args1) == "FUNC")));
+tests.Add(("@FUNC(ARG1, ARG2) name", () => Assert(Name(args2) == "FUNC")));
+tests.Add(("@FUNC, ARG name", () => Assert(Name(comma) == "FUNC")));
+tests.Add(("Japanese function name with args", () => Assert(Name(japaneseArgs) == "日本語")));
+tests.Add(("@\"string\" is rejected", () => Assert(ErbSourceIndexer.IndexFile(quoted).Functions.Count == 0)));
+tests.Add(("Leading whitespace @\"string\" is rejected", () => Assert(ErbSourceIndexer.IndexFile(quotedLeading).Functions.Count == 0)));
+tests.Add(("Quoted @ in body does not split function", () => Assert(ErbSourceIndexer.IndexFile(quotedBody).Functions.Count == 1)));
+tests.Add(("Function span starts at @FUNC", () => Assert(ErbSourceIndexer.IndexFile(args1).Functions[0].Span.StartOffset == 3)));
+tests.Add(("Adjacent @FUNC(ARG) boundaries", () => { var i = ErbSourceIndexer.IndexFile(boundaries); Assert(i.Functions.Count == 2); Assert(i.Functions[0].Span.EndOffset == i.Functions[1].Span.StartOffset); }));
 
 var passed = 0;
 var failed = 0;
@@ -81,5 +106,6 @@ Console.WriteLine($"SelfTest: executed={tests.Count} passed={passed} failed={fai
 return failed == 0 ? 0 : 1;
 
 static bool Has(string path, SourceIndexFlags flag) => (ErbSourceIndexer.IndexFile(path).Functions[0].Flags & flag) != 0;
+static string Name(string path) => ErbSourceIndexer.IndexFile(path).Functions[0].Name;
 static void WriteBom(string path, string text) => File.WriteAllBytes(path, [0xEF, 0xBB, 0xBF, ..Encoding.UTF8.GetBytes(text)]);
 static void Assert(bool condition) { if (!condition) throw new InvalidOperationException("assertion failed"); }
