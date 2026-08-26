@@ -293,6 +293,8 @@ internal sealed class GraphicsImage : AbstractImage
             cm[0][2],cm[1][2],cm[2][2],cm[3][2],cm[2][4],
             cm[0][3],cm[1][3],cm[2][3],cm[3][3],cm[3][4],
         ];
+        // [Emuera改修:PERF-14N2 2026-08-26]
+        // ColorMatrix用filterは描画中だけ必要な一時native resource。描画完了後にDisposeし、既存のsampling / pixel / color-matrix semanticsは変更しない。
         using var filter = SKColorFilter.CreateColorMatrix(skiaCM);
         using (var paint = new SKPaint() { ColorFilter = filter })
         {
