@@ -158,10 +158,16 @@ internal sealed class GraphicsImage : AbstractImage
         {
             throw new NullReferenceException("DrawPolygonに渡されるPointsが空です");
         }
-        using (var paint = _pen ?? new SKPaint())
+        SKPaint paint = _pen ?? new SKPaint();
+        try
         {
             paint.Style = SKPaintStyle.Stroke;
             canvas.DrawPoints(SKPointMode.Polygon, [.. _points, _points[0]], paint);
+        }
+        finally
+        {
+            if (_pen == null)
+                paint.Dispose();
         }
     }
     public void GFillPolygon()
@@ -171,7 +177,8 @@ internal sealed class GraphicsImage : AbstractImage
         {
             throw new NullReferenceException("FillPolygonに渡されるPointsが空です");
         }
-        using (var paint = _brush ?? new SKPaint())
+        SKPaint paint = _brush ?? new SKPaint();
+        try
         {
             paint.Style = SKPaintStyle.Fill;
 
@@ -182,6 +189,11 @@ internal sealed class GraphicsImage : AbstractImage
             }
             path.LineTo(_points[0]);
             canvas.DrawPath(path, paint);
+        }
+        finally
+        {
+            if (_brush == null)
+                paint.Dispose();
         }
     }
 
@@ -357,9 +369,15 @@ internal sealed class GraphicsImage : AbstractImage
         EnsureWritable();
         var font = _font ?? new SKFont();
         point.Offset(0, -font.Metrics.Top);
-        using (var paint = _brush ?? new SKPaint())
+        SKPaint paint = _brush ?? new SKPaint();
+        try
         {
             canvas.DrawText(text, point, font, paint);
+        }
+        finally
+        {
+            if (_brush == null)
+                paint.Dispose();
         }
     }
 
@@ -369,12 +387,16 @@ internal sealed class GraphicsImage : AbstractImage
     }
     public void GSetBrush(SKPaint r)
     {
+        if (ReferenceEquals(_brush, r))
+            return;
         if (_brush != null)
             _brush.Dispose();
         _brush = r;
     }
     public void GSetPen(SKPaint r)
     {
+        if (ReferenceEquals(_pen, r))
+            return;
         if (_pen != null)
             _pen.Dispose();
         _pen = r;

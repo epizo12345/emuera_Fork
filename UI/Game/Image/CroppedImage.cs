@@ -78,16 +78,13 @@ internal abstract class ASpriteSingle : ASprite
         BaseImage = null;
     }
 
-    SKPaint _paint = new();
-
     public override void GraphicsDraw(SKCanvas g, Point offset)
     {
         if (!IsCreated)
             return;
         offset.Offset(DestBasePosition);
         // g.DrawImage(Bitmap.ToBitmap(), new Rectangle(offset, DestBaseSize), SrcRectangle, GraphicsUnit.Pixel);
-        //g.DrawBitmap(Bitmap, SrcRectangle.ToSKRect(), SKRect.Create(offset.ToSKPoint(), SrcRectangle.Size.ToSKSize()), _paint);
-        BaseImage.Draw(g, SrcRectangle.ToSKRect(), SKRect.Create(offset.ToSKPoint(), SrcRectangle.Size.ToSKSize()), JSONConfig.SamplingOptions, _paint);
+        BaseImage.Draw(g, SrcRectangle.ToSKRect(), SKRect.Create(offset.ToSKPoint(), SrcRectangle.Size.ToSKSize()), JSONConfig.SamplingOptions);
     }
 
 
@@ -111,7 +108,6 @@ internal abstract class ASpriteSingle : ASprite
 
             canvas.Scale(sx, sy, flipedBitmap.Width / 2, flipedBitmap.Height / 2);
             BaseImage.Draw(canvas, SrcRectangle.ToSKRect(), SKRect.Create(new SKPoint(), flipedBitmap.Info.Size), JSONConfig.SamplingOptions);
-            //canvas.DrawBitmap(Bitmap, SrcRectangle.ToSKRect(), SKRect.Create(new SKPoint(), flipedBitmap.Info.Size), _paint);
 
             var point = destRect.Location.ToSKPoint();
             if (sx < 0)
@@ -123,12 +119,11 @@ internal abstract class ASpriteSingle : ASprite
                 point.Offset(0, -flipedBitmap.Width);
             }
 
-            g.DrawBitmap(flipedBitmap, point, _paint);
+            g.DrawBitmap(flipedBitmap, point);
         }
         else
         {
-            BaseImage.Draw(g, SrcRectangle.ToSKRect(), destRect.ToSKRect(), JSONConfig.SamplingOptions, _paint);
-            //g.DrawBitmap(Bitmap, SrcRectangle.ToSKRect(), destRect.ToSKRect(), _paint);
+            BaseImage.Draw(g, SrcRectangle.ToSKRect(), destRect.ToSKRect(), JSONConfig.SamplingOptions);
         }
     }
 
@@ -144,6 +139,7 @@ internal abstract class ASpriteSingle : ASprite
 
         var sx = Math.Sign(destRect.Width);
         var sy = Math.Sign(destRect.Height);
+        using SKPaint paint = attr == null ? null : new SKPaint { ColorFilter = attr };
         if (sx != 1 || sy != 1)
         {
             using var flippedBitmap = new SKBitmap(Math.Abs(destRect.Width), Math.Abs(destRect.Height));
@@ -158,21 +154,17 @@ internal abstract class ASpriteSingle : ASprite
                 point.Offset(-flippedBitmap.Width, 0);
             if (sy < 0)
                 point.Offset(0, -flippedBitmap.Width);
-            _paint.ColorFilter = attr;
             if (attr == null)
-                g.DrawBitmap(flippedBitmap, point, JSONConfig.SamplingOptions, _paint);
+                g.DrawBitmap(flippedBitmap, point, JSONConfig.SamplingOptions);
             else
-                g.DrawBitmap(flippedBitmap, point, _paint);
-            _paint.ColorFilter = null;
+                g.DrawBitmap(flippedBitmap, point, paint);
         }
         else
         {
-            _paint.ColorFilter = attr;
             if (attr == null)
-                g.DrawImage(snapshot, SrcRectangle.ToSKRect(), destRect.ToSKRect(), JSONConfig.SamplingOptions, _paint);
+                g.DrawImage(snapshot, SrcRectangle.ToSKRect(), destRect.ToSKRect(), JSONConfig.SamplingOptions);
             else
-                g.DrawImage(snapshot, SrcRectangle.ToSKRect(), destRect.ToSKRect(), _paint);
-            _paint.ColorFilter = null;
+                g.DrawImage(snapshot, SrcRectangle.ToSKRect(), destRect.ToSKRect(), paint);
         }
     }
 
@@ -190,6 +182,7 @@ internal abstract class ASpriteSingle : ASprite
 
         var sx = Math.Sign(destRect.Width);
         var sy = Math.Sign(destRect.Height);
+        using SKPaint paint = new() { ColorFilter = attr };
         if (sx != 1 || sy != 1)
         {
             var flipedBitmap = new SKBitmap(Math.Abs(destRect.Width), Math.Abs(destRect.Height));
@@ -207,15 +200,11 @@ internal abstract class ASpriteSingle : ASprite
                 point.Offset(0, -flipedBitmap.Width);
             }
 
-            _paint.ColorFilter = attr;
-            g.DrawBitmap(flipedBitmap, point, _paint);
-            _paint.ColorFilter = null;
+            g.DrawBitmap(flipedBitmap, point, paint);
         }
         else
         {
-            _paint.ColorFilter = attr;
-            BaseImage.Draw(g, SrcRectangle.ToSKRect(), destRect.ToSKRect(), _paint);
-            _paint.ColorFilter = null;
+            BaseImage.Draw(g, SrcRectangle.ToSKRect(), destRect.ToSKRect(), paint);
         }
 
     }

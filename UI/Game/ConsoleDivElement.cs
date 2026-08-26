@@ -9,7 +9,8 @@ using SkiaSharp;
 #nullable enable
 struct BorderStyle
 {
-    public SKPaint Paint;
+    public SKColor Color;
+    public float StrokeWidth;
 }
 
 class ConsoleDivElement : AConsoleDisplayNode
@@ -153,7 +154,13 @@ class ConsoleDivElement : AConsoleDisplayNode
 
         if (_borderStyle.HasValue)
         {
-            canvas.DrawRect(SKRect.Create(Point, Size), _borderStyle?.Paint);
+            using var paint = new SKPaint
+            {
+                Color = _borderStyle.Value.Color,
+                StrokeWidth = _borderStyle.Value.StrokeWidth,
+                IsStroke = true
+            };
+            canvas.DrawRect(SKRect.Create(Point, Size), paint);
         }
 
         var drawPoint = paddingOrigin;

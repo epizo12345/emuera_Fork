@@ -3169,9 +3169,7 @@ internal static partial class FunctionMethodCreator
                 return 0;
             var c = ReadColor(Name, exm, arguments, 1);
 
-            using (var paint = new SKPaint() { Color = c.ToSKColor() }){
-                g.GSetBrush(paint);
-            }
+            g.GSetBrush(new SKPaint() { Color = c.ToSKColor() });
             return 1;
         }
     }
@@ -3220,10 +3218,7 @@ internal static partial class FunctionMethodCreator
                 return 0;
             var c = ReadColor(Name, exm, arguments, 1);
             var width = arguments[2].GetIntValue(exm);
-            using (var paint = new SKPaint() { Color = c.ToSKColor(), StrokeWidth = width, IsStroke = true })
-            {
-                g.GSetPen(paint);
-            }
+            g.GSetPen(new SKPaint() { Color = c.ToSKColor(), StrokeWidth = width, IsStroke = true });
             return 1;
         }
     }
