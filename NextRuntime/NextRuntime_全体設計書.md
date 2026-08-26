@@ -113,7 +113,13 @@ LegacyとNextは9458ファイル・134652関数で一致した。Nextのsafe fun
 
 0Bの差分ゲートは通過した。これはPhase 1開始の承認ではなく、Chatレビュー可能な基準点である。Phase 1は別の明示的依頼まで開始しない。
 
-## 18. 用語集
+## 18. Phase 0B-R1 差分更新とcache無効化
+
+R1では差分更新を実装せず、root相対path・length・last-write time・content hashをfile identityとする。変更ファイルは関数spanと行連結blockを再計算し、関数content hashの変更を起点に、確定したcall/reference dependencyの逆向き到達範囲を再評価する。ERH、Rename、Preprocessor、宣言directiveは安全側にfile-level invalidationとする。
+
+画像・CSVなどの非ERB assetは独立namespaceでcacheし、ERB変更では無効化しない。cache headerにはengine version、index schema version、parser rule version、設定値、root identityを含め、変更時はfull rebuildする。一時manifestをLegacy oracle互換のFileOrder・function order・span・fallback理由で検証してからswapし、失敗時は前回の完全なindexを維持する。R1はこの設計と検証契約までで、差分cache、dependency graph、runtime統合、Phase 1は未着手である。
+
+## 19. 用語集
 
 * Source Index：ソース本文を持たず、ファイルと関数の位置を示す索引。
 * SourceSpan：物理byte offsetと行範囲。

@@ -5,5 +5,6 @@ internal readonly record struct LegacyErbBaseline(
     double ElapsedMilliseconds,
     long AllocatedBytes,
     long ManagedBefore,
-    long ManagedAfter);
+    long ManagedImmediatelyAfter,
+    long ManagedAfterDiagnosticGc);
 #endif

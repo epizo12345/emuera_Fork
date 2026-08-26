@@ -237,9 +237,13 @@ internal sealed partial class Process(EmueraConsole view)
                 noError = await erbLoader.LoadErbDir(Program.ErbDir, Config.DisplayReport, labelDic);
 #if LEGACY_ORACLE
             erbBaselineWatch.Stop();
+            var erbBaselineManagedImmediatelyAfter = GC.GetTotalMemory(false);
+            GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+            GC.WaitForPendingFinalizers();
+            GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
             LegacyErbBaseline = new(erbBaselineWatch.Elapsed.TotalMilliseconds,
                 GC.GetTotalAllocatedBytes(precise: true) - erbBaselineAllocatedBefore,
-                erbBaselineManagedBefore, GC.GetTotalMemory(false));
+                erbBaselineManagedBefore, erbBaselineManagedImmediatelyAfter, GC.GetTotalMemory(false));
 #endif
             logWriter.WriteLine($"Proc:Init:ERB:Enumeration {erbLoader.EnumerationMilliseconds}ms");
             logWriter.WriteLine($"Proc:Init:ERB:PrimaryParse {erbLoader.PrimaryParseMilliseconds}ms");

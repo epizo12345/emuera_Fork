@@ -123,16 +123,13 @@ if (manifestPath is not null)
     {
         fileOrder++;
         var relativeFile = Path.GetRelativePath(directory, file.FileIdentity).Replace('\\', '/');
-        if (file.Functions.Count == 0)
+        writer.WriteLine(JsonSerializer.Serialize(new
         {
-            writer.WriteLine(JsonSerializer.Serialize(new
-            {
-                FileOrder = fileOrder, RelativeFile = relativeFile, FunctionOrder = 0,
-                FunctionName = (string?)null, StartLine = 0, EndLine = 0, StartByte = 0L, EndByte = 0L,
-                Flags = file.Flags.ToString(), Fallback = file.HasFallback
-            }));
-            continue;
-        }
+            FileOrder = fileOrder, RelativeFile = relativeFile, FunctionOrder = 0,
+            FunctionName = (string?)null, StartLine = 0, EndLine = 0, StartByte = 0L, EndByte = 0L,
+            Flags = file.Flags.ToString(), Fallback = file.HasFallback,
+            ContinuationBlocks = file.ContinuationBlocks ?? []
+        }));
         for (var functionOrder = 0; functionOrder < file.Functions.Count; functionOrder++)
         {
             var function = file.Functions[functionOrder];
@@ -141,7 +138,8 @@ if (manifestPath is not null)
                 FileOrder = fileOrder, RelativeFile = relativeFile, FunctionOrder = functionOrder + 1,
                 FunctionName = function.Name, StartLine = function.Span.StartLine, EndLine = function.Span.EndLine,
                 StartByte = function.Span.StartOffset, EndByte = function.Span.EndOffset,
-                Flags = function.Flags.ToString(), Fallback = (function.Flags & SourceFileIndex.FallbackFlags) != 0
+                Flags = function.Flags.ToString(), Fallback = (function.Flags & SourceFileIndex.FallbackFlags) != 0,
+                ContinuationBlocks = file.ContinuationBlocks ?? []
             }));
         }
     }

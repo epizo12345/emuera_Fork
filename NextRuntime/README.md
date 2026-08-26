@@ -60,6 +60,10 @@ ERBはEF BB BFのUTF-8 BOM付きだけを受理し、strict UTF-8 validationを�
 
 IndexAuditの`indexBuild*`は`ErbSourceIndexer.IndexDirectory`の直前から直後までだけを測ります。`managedBeforeIndex`を記録し、indexだけを保持した状態でdiagnostic full GCを行った`managedWithIndex`との差を`retainedIndexManagedBytesEstimate`とします。後続のflatten、sort、集計、JSON生成は`auditPostProcess*`へ分離します。この値は厳密なobject sizeではなく診断用推定値で、production runtimeのGC操作ではありません。旧Phase 0Aのallocation値は後処理を含むため、新値との比較はNOT DIRECTLY COMPARABLEです。
 
+## 差分更新の設計方針（Phase 0B-R1）
+
+差分更新はまだ実装せず、変更ファイルの関数span・content hash・確定した依存先だけを無効化する設計とする。ERH、Rename、Preprocessor、宣言directiveは安全側にfile-level invalidation、画像・CSV等の非ERB assetは別cache namespaceとする。cache headerのengine/index schema/parser rule version、設定値、root identityが変われば全再構築し、更新後のLegacy oracle検証に失敗した場合は前回の完全なindexへ戻す。
+
 ## Windows distribution invariant
 
 最終Windows版の正式配布は、現行Emueraと同じく `PublishSingleFile=true`、`SelfContained=false` のframework-dependent single-file publishを基本とします。内部をWindows Host、Next Core、Compiler、VMなどへ分割しても、ユーザーがゲームフォルダへ手動配置するRuntime本体は原則 `Emuera.exe` 1ファイルです。publish時に必要なruntime componentをsingle EXEへまとめ、compile cacheなどの再生成可能cacheを手動配置Runtime componentとは扱いません。

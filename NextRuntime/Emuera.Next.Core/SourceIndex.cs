@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Globalization;
 using System.Text;
 
 namespace MinorShift.Emuera.Next.Core;
@@ -25,6 +26,7 @@ public readonly record struct SourceSpan(long StartOffset, long EndOffset, int S
 }
 
 public readonly record struct FunctionIndex(string Name, SourceSpan Span, SourceIndexFlags Flags);
+public readonly record struct ContinuationBlock(int StartLine, int EndLine);
 
 public sealed record SourceFileIndex(
     string FileIdentity,
@@ -39,7 +41,8 @@ public sealed record SourceFileIndex(
     int RejectedAtCandidateCount = 0,
     int ContinuationBlockCount = 0,
     int UnclosedContinuationBlockCount = 0,
-    int MalformedContinuationBlockCount = 0)
+    int MalformedContinuationBlockCount = 0,
+    IReadOnlyList<ContinuationBlock>? ContinuationBlocks = null)
 {
     public bool HasFallback => (Flags & FallbackFlags) != 0 || Functions.Any(static f => (f.Flags & FallbackFlags) != 0);
 
@@ -51,6 +54,7 @@ public sealed record SourceFileIndex(
 public static class ErbSourceIndexer
 {
     private static readonly UTF8Encoding StrictUtf8 = new(false, true);
+    private static readonly StringComparer LegacyPathComparer = StringComparer.Create(CultureInfo.GetCultureInfo("en-US"), false);
 
     public static IReadOnlyList<SourceFileIndex> IndexDirectory(string directory)
     {
@@ -58,11 +62,31 @@ public static class ErbSourceIndexer
         if (!Directory.Exists(directory))
             throw new DirectoryNotFoundException(directory);
 
-        return Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories)
-            .Where(static path => string.Equals(Path.GetExtension(path), ".erb", StringComparison.OrdinalIgnoreCase))
-            .Order(StringComparer.OrdinalIgnoreCase)
-            .Select(IndexFile)
-            .ToArray();
+        return EnumerateLegacyErbFiles(directory).Select(IndexFile).ToArray();
+    }
+
+    private static List<string> EnumerateLegacyErbFiles(string root)
+    {
+        var files = new List<string>();
+
+        void Visit(string directory)
+        {
+            var paths = Directory.GetFiles(directory, "*", SearchOption.TopDirectoryOnly);
+            Array.Sort(paths, LegacyPathComparer);
+            foreach (var path in paths)
+            {
+                if (string.Equals(Path.GetExtension(path), ".erb", StringComparison.OrdinalIgnoreCase))
+                    files.Add(path);
+            }
+
+            var directories = Directory.GetDirectories(directory, "*", SearchOption.TopDirectoryOnly);
+            Array.Sort(directories, LegacyPathComparer);
+            foreach (var child in directories)
+                Visit(child);
+        }
+
+        Visit(root);
+        return files;
     }
 
     public static SourceFileIndex IndexFile(string path)
@@ -88,7 +112,9 @@ public static class ErbSourceIndexer
             int continuationBlocks = 0;
             int unclosedContinuationBlocks = 0;
             int malformedContinuationBlocks = 0;
+            var continuationRanges = new List<ContinuationBlock>();
             var inContinuation = false;
+            var continuationStartLine = 0;
             FunctionDraft? current = null;
             while (reader.ReadLine(out var lineStart, out _, out var lineBytes))
             {
@@ -112,6 +138,7 @@ public static class ErbSourceIndexer
                 if (!inContinuation && IsStandalone(trimmed, (byte)'{'))
                 {
                     inContinuation = true;
+                    continuationStartLine = lineCount;
                     continuationBlocks++;
                     fileFlags |= SourceIndexFlags.LineContinuation;
                     current?.AddFlags(SourceIndexFlags.LineContinuation);
@@ -133,7 +160,10 @@ public static class ErbSourceIndexer
                             current?.AddFlags(SourceIndexFlags.OtherSemanticFallback);
                         }
                         else
+                        {
                             inContinuation = false;
+                            continuationRanges.Add(new(continuationStartLine, lineCount));
+                        }
                     }
                 }
                 else if (IsStandalone(trimmed, (byte)'}'))
@@ -164,6 +194,7 @@ public static class ErbSourceIndexer
             if (inContinuation)
             {
                 unclosedContinuationBlocks = 1;
+                continuationRanges.Add(new(continuationStartLine, lineCount));
                 fileFlags |= SourceIndexFlags.OtherSemanticFallback;
                 current?.AddFlags(SourceIndexFlags.OtherSemanticFallback);
             }
@@ -177,7 +208,7 @@ public static class ErbSourceIndexer
             }
             return new(identity, sourceBytes, lineCount, result, fileFlags, null,
                 parenthesizedHeaders, quotedAtSigns, invalidCandidates, invalidCandidates,
-                continuationBlocks, unclosedContinuationBlocks, malformedContinuationBlocks);
+                continuationBlocks, unclosedContinuationBlocks, malformedContinuationBlocks, continuationRanges);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

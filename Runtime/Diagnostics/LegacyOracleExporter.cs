@@ -28,6 +28,23 @@ internal static class LegacyOracleExporter
         var fullPath = Path.GetFullPath(outputPath);
         Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
         using var writer = new StreamWriter(fullPath, false, new UTF8Encoding(false));
+        for (var fileOrder = 0; fileOrder < Program.AnalysisFiles.Count; fileOrder++)
+        {
+            var relativeFile = Path.GetRelativePath(erbRoot, Program.AnalysisFiles[fileOrder]).Replace('\\', '/');
+            writer.WriteLine(JsonSerializer.Serialize(new
+            {
+                FileOrder = fileOrder + 1,
+                RelativeFile = relativeFile,
+                FunctionOrder = 0,
+                FunctionName = (string?)null,
+                StartLine = 0,
+                IsEvent = false,
+                IsSystem = false,
+                IsMethod = false,
+                IsError = false,
+                Kind = "File"
+            }, JsonOptions));
+        }
         string? previousFile = null;
         var functionOrder = 0;
         foreach (var label in ordered)
@@ -50,7 +67,12 @@ internal static class LegacyOracleExporter
                 IsSystem = label.IsSystem,
                 IsMethod = label.IsMethod,
                 IsError = label.IsError,
-                Kind = label.GetType().Name
+                Kind = label.GetType().Name,
+                IsPri = label.IsPri,
+                IsLater = label.IsLater,
+                IsOnly = label.IsOnly,
+                IsSingle = label.IsSingle,
+                LegacyFinalPriority = !label.IsEvent && ReferenceEquals(labels.GetNonEventLabel(label.LabelName), label)
             };
             writer.WriteLine(JsonSerializer.Serialize(row, JsonOptions));
         }
@@ -67,7 +89,9 @@ internal static class LegacyOracleExporter
             $"erbElapsedMilliseconds={baseline.ElapsedMilliseconds:F3}",
             $"erbAllocatedBytes={baseline.AllocatedBytes}",
             $"erbManagedBefore={baseline.ManagedBefore}",
-            $"erbManagedAfter={baseline.ManagedAfter}"
+            $"erbManagedImmediatelyAfter={baseline.ManagedImmediatelyAfter}",
+            $"erbManagedAfterDiagnosticGc={baseline.ManagedAfterDiagnosticGc}",
+            $"legacyRetainedManagedEstimate={Math.Max(0, baseline.ManagedAfterDiagnosticGc - baseline.ManagedBefore)}"
         ], new UTF8Encoding(false));
     }
 }
