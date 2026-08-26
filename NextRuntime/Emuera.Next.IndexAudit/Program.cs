@@ -13,9 +13,9 @@ string? jsonPath = null;
 for (var i = 1; i < args.Length; i++)
     if (args[i] == "--json" && ++i < args.Length) jsonPath = Path.GetFullPath(args[i]);
 
-var beforeAllocated = GC.GetTotalAllocatedBytes(false);
-var beforeManaged = GC.GetTotalMemory(false);
-var stopwatch = Stopwatch.StartNew();
+var indexAllocatedBefore = GC.GetTotalAllocatedBytes(precise: true);
+var indexManagedBefore = GC.GetTotalMemory(false);
+var indexWatch = Stopwatch.StartNew();
 IReadOnlyList<SourceFileIndex> files;
 try
 {
@@ -26,65 +26,92 @@ catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or D
     Console.Error.WriteLine($"ERROR: {ex.Message}");
     return 1;
 }
-stopwatch.Stop();
+indexWatch.Stop();
+var indexAllocated = GC.GetTotalAllocatedBytes(precise: true) - indexAllocatedBefore;
+var indexManagedAfter = GC.GetTotalMemory(false);
 
-var functions = files.SelectMany(static f => f.Functions).ToArray();
-var sizes = functions.Select(static f => f.Span.ByteLength).Order().ToArray();
+var postAllocatedBefore = GC.GetTotalAllocatedBytes(precise: true);
+var postWatch = Stopwatch.StartNew();
+var functions = files.SelectMany(static f => f.Functions.Select(function => (File: f, Function: function))).ToArray();
+var sizes = functions.Select(static x => x.Function.Span.ByteLength).Order().ToArray();
 var totalBytes = files.Sum(static f => f.SourceBytes);
-var indexedBytes = functions.Sum(static f => f.Span.ByteLength);
+var indexedBytes = functions.Sum(static x => x.Function.Span.ByteLength);
 var fallbackFiles = files.Count(static f => f.HasFallback);
-var fallbackFunctions = functions.Count(static f => f.Flags != SourceIndexFlags.None);
-var reasonCounts = functions.SelectMany(static f => (f.FallbackReason ?? "").Split('|', StringSplitOptions.RemoveEmptyEntries))
+var fallbackFunctions = functions.Count(static x => (x.Function.Flags & SourceFileIndex.FallbackFlags) != 0);
+var preprocessorFiles = files.Count(static f => (f.Flags & SourceIndexFlags.Preprocessor) != 0);
+var preprocessorFunctions = functions.Count(static x => (x.Function.Flags & SourceIndexFlags.Preprocessor) != 0);
+var declarationFiles = files.Count(static f => (f.Flags & SourceIndexFlags.DeclarationDirective) != 0);
+var declarationFunctions = functions.Count(static x => (x.Function.Flags & SourceIndexFlags.DeclarationDirective) != 0);
+var metadataFiles = files.Count(static f => (f.Flags & SourceIndexFlags.FunctionMetadata) != 0);
+var metadataFunctions = functions.Count(static x => (x.Function.Flags & SourceIndexFlags.FunctionMetadata) != 0);
+var renameFiles = files.Count(static f => (f.Flags & SourceIndexFlags.Rename) != 0);
+var renameFunctions = functions.Count(static x => (x.Function.Flags & SourceIndexFlags.Rename) != 0);
+var continuationFiles = files.Count(static f => (f.Flags & SourceIndexFlags.LineContinuation) != 0);
+var continuationFunctions = functions.Count(static x => (x.Function.Flags & SourceIndexFlags.LineContinuation) != 0);
+var reasonCounts = functions.SelectMany(static x => Reasons(x.Function.Flags))
     .GroupBy(static reason => reason).OrderBy(static group => group.Key)
     .ToDictionary(static group => group.Key, static group => group.Count());
-var largest = functions.OrderByDescending(static f => f.Span.ByteLength).FirstOrDefault();
-var seconds = Math.Max(stopwatch.Elapsed.TotalSeconds, double.Epsilon);
-var summary = new
-{
-    erbFileCount = files.Count,
-    totalSourceBytes = totalBytes,
-    indexedFunctionCount = functions.Length,
-    indexedFunctionSourceBytes = indexedBytes,
-    fallbackFileCount = fallbackFiles,
-    fallbackFunctionCount = fallbackFunctions,
-    fallbackReasonBreakdown = reasonCounts,
-    largestFunction = largest is null ? null : new { largest.FileIdentity, largest.Name, bytes = largest.Span.ByteLength, lines = largest.Span.LineCount },
-    medianFunctionBytes = Percentile(sizes, .50),
-    p95FunctionBytes = Percentile(sizes, .95),
-    p99FunctionBytes = Percentile(sizes, .99),
-    errorCount = files.Count(static f => (f.Flags & (SourceIndexFlags.MissingBom | SourceIndexFlags.InvalidUtf8 | SourceIndexFlags.ScanError)) != 0),
-    elapsedScanMilliseconds = stopwatch.Elapsed.TotalMilliseconds,
-    allocatedBytes = GC.GetTotalAllocatedBytes(false) - beforeAllocated,
-    managedMemoryDeltaBytes = GC.GetTotalMemory(false) - beforeManaged,
-    megabytesPerSecond = totalBytes / 1024d / 1024d / seconds,
-    functionsPerSecond = functions.Length / seconds,
-};
+var largest = functions.OrderByDescending(static x => x.Function.Span.ByteLength).FirstOrDefault();
+GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+GC.WaitForPendingFinalizers();
+GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+var retainedIndexManaged = GC.GetTotalMemory(false);
+var postWatchElapsed = postWatch.Elapsed;
+postWatch.Stop();
+var postAllocated = GC.GetTotalAllocatedBytes(precise: true) - postAllocatedBefore;
+var indexSeconds = Math.Max(indexWatch.Elapsed.TotalSeconds, double.Epsilon);
+var errors = files.Count(static f => (f.Flags & (SourceIndexFlags.MissingBom | SourceIndexFlags.InvalidUtf8 | SourceIndexFlags.ScanError)) != 0);
 
-Console.WriteLine($"ERB file count: {summary.erbFileCount}");
-Console.WriteLine($"total source bytes: {summary.totalSourceBytes}");
-Console.WriteLine($"indexed function count: {summary.indexedFunctionCount}");
-Console.WriteLine($"indexed function source bytes: {summary.indexedFunctionSourceBytes}");
-Console.WriteLine($"fallback file count: {summary.fallbackFileCount}");
-Console.WriteLine($"fallback function count: {summary.fallbackFunctionCount}");
-Console.WriteLine($"fallback reason breakdown: {JsonSerializer.Serialize(summary.fallbackReasonBreakdown)}");
-Console.WriteLine($"largest function: {(summary.largestFunction is null ? "none" : $"{summary.largestFunction.Name} {summary.largestFunction.bytes} bytes / {summary.largestFunction.lines} lines")}");
-Console.WriteLine($"median function bytes: {summary.medianFunctionBytes}");
-Console.WriteLine($"p95 function bytes: {summary.p95FunctionBytes}");
-Console.WriteLine($"p99 function bytes: {summary.p99FunctionBytes}");
-Console.WriteLine($"error count: {summary.errorCount}");
-Console.WriteLine($"elapsed scan milliseconds: {summary.elapsedScanMilliseconds:F3}");
-Console.WriteLine($"allocated bytes: {summary.allocatedBytes}");
-Console.WriteLine($"managed memory delta bytes: {summary.managedMemoryDeltaBytes}");
-Console.WriteLine($"MB/sec: {summary.megabytesPerSecond:F3}");
-Console.WriteLine($"functions/sec: {summary.functionsPerSecond:F3}");
+Console.WriteLine($"erbFileCount: {files.Count}");
+Console.WriteLine($"sourceBytes: {totalBytes}");
+Console.WriteLine($"indexedFunctionCount: {functions.Length}");
+Console.WriteLine($"indexedFunctionSourceBytes: {indexedBytes}");
+Console.WriteLine($"fallbackFileCount: {fallbackFiles}");
+Console.WriteLine($"fallbackFunctionCount: {fallbackFunctions}");
+Console.WriteLine($"preprocessorFiles: {preprocessorFiles}");
+Console.WriteLine($"preprocessorFunctions: {preprocessorFunctions}");
+Console.WriteLine($"declarationDirectiveFiles: {declarationFiles}");
+Console.WriteLine($"declarationDirectiveFunctions: {declarationFunctions}");
+Console.WriteLine($"functionMetadataFiles: {metadataFiles}");
+Console.WriteLine($"functionMetadataFunctions: {metadataFunctions}");
+Console.WriteLine($"renameFiles: {renameFiles}");
+Console.WriteLine($"renameFunctions: {renameFunctions}");
+Console.WriteLine($"lineContinuationFiles: {continuationFiles}");
+Console.WriteLine($"lineContinuationFunctions: {continuationFunctions}");
+Console.WriteLine($"fallbackReasonBreakdown: {JsonSerializer.Serialize(reasonCounts)}");
+Console.WriteLine($"largestFunction: {(largest == default ? "none" : $"{largest.Function.Name} {largest.Function.Span.ByteLength} bytes / {largest.Function.Span.LineCount} lines")}");
+Console.WriteLine($"medianFunctionBytes: {Percentile(sizes, .50)}");
+Console.WriteLine($"p95FunctionBytes: {Percentile(sizes, .95)}");
+Console.WriteLine($"p99FunctionBytes: {Percentile(sizes, .99)}");
+Console.WriteLine($"errors: {errors}");
+Console.WriteLine($"indexBuildElapsedMs: {indexWatch.Elapsed.TotalMilliseconds:F3}");
+Console.WriteLine($"indexBuildAllocatedBytes: {indexAllocated}");
+Console.WriteLine($"indexBuildManagedBefore: {indexManagedBefore}");
+Console.WriteLine($"indexBuildManagedAfter: {indexManagedAfter}");
+Console.WriteLine($"indexBuildManagedDelta: {indexManagedAfter - indexManagedBefore}");
+Console.WriteLine($"retainedIndexManagedBytesEstimate: {retainedIndexManaged}");
+Console.WriteLine($"auditPostProcessElapsedMs: {postWatchElapsed.TotalMilliseconds:F3}");
+Console.WriteLine($"auditPostProcessAllocatedBytes: {postAllocated}");
+Console.WriteLine($"MB/sec: {totalBytes / 1024d / 1024d / indexSeconds:F3}");
+Console.WriteLine($"functions/sec: {functions.Length / indexSeconds:F3}");
 
 if (jsonPath is not null)
 {
     Directory.CreateDirectory(Path.GetDirectoryName(jsonPath)!);
-    File.WriteAllText(jsonPath, JsonSerializer.Serialize(new { directory, files, summary }, new JsonSerializerOptions { WriteIndented = true }));
+    File.WriteAllText(jsonPath, JsonSerializer.Serialize(new { directory, files }, new JsonSerializerOptions { WriteIndented = true }));
 }
 
 return 0;
+
+static IEnumerable<string> Reasons(SourceIndexFlags flags)
+{
+    if ((flags & SourceIndexFlags.Preprocessor) != 0) yield return nameof(SourceIndexFlags.Preprocessor);
+    if ((flags & SourceIndexFlags.DeclarationDirective) != 0) yield return nameof(SourceIndexFlags.DeclarationDirective);
+    if ((flags & SourceIndexFlags.FunctionMetadata) != 0) yield return nameof(SourceIndexFlags.FunctionMetadata);
+    if ((flags & SourceIndexFlags.Rename) != 0) yield return nameof(SourceIndexFlags.Rename);
+    if ((flags & SourceIndexFlags.LineContinuation) != 0) yield return nameof(SourceIndexFlags.LineContinuation);
+    if ((flags & SourceIndexFlags.OtherSemanticFallback) != 0) yield return nameof(SourceIndexFlags.OtherSemanticFallback);
+}
 
 static long Percentile(long[] values, double percentile)
     => values.Length == 0 ? 0 : values[Math.Min(values.Length - 1, (int)Math.Ceiling(values.Length * percentile) - 1)];

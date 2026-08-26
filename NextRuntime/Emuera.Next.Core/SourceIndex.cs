@@ -7,13 +7,15 @@ namespace MinorShift.Emuera.Next.Core;
 public enum SourceIndexFlags
 {
     None = 0,
-    MissingBom = 1,
-    InvalidUtf8 = 2,
-    Preprocessor = 4,
+    Preprocessor = 1,
+    DeclarationDirective = 2,
+    FunctionMetadata = 4,
     Rename = 8,
     LineContinuation = 16,
-    SpecialLabelOrMetadata = 32,
-    ScanError = 64,
+    OtherSemanticFallback = 32,
+    MissingBom = 64,
+    InvalidUtf8 = 128,
+    ScanError = 256,
 }
 
 public readonly record struct SourceSpan(long StartOffset, long EndOffset, int StartLine, int EndLine)
@@ -22,12 +24,7 @@ public readonly record struct SourceSpan(long StartOffset, long EndOffset, int S
     public int LineCount => EndLine < StartLine ? 0 : EndLine - StartLine + 1;
 }
 
-public sealed record FunctionIndex(
-    string FileIdentity,
-    string Name,
-    SourceSpan Span,
-    SourceIndexFlags Flags,
-    string? FallbackReason);
+public readonly record struct FunctionIndex(string Name, SourceSpan Span, SourceIndexFlags Flags);
 
 public sealed record SourceFileIndex(
     string FileIdentity,
@@ -37,16 +34,16 @@ public sealed record SourceFileIndex(
     SourceIndexFlags Flags,
     string? Error)
 {
-    public bool HasFallback => (Flags & (SourceIndexFlags.Preprocessor | SourceIndexFlags.Rename |
-        SourceIndexFlags.LineContinuation | SourceIndexFlags.SpecialLabelOrMetadata)) != 0 ||
-        Functions.Any(static f => f.Flags != SourceIndexFlags.None);
+    public bool HasFallback => (Flags & FallbackFlags) != 0 || Functions.Any(static f => (f.Flags & FallbackFlags) != 0);
+
+    public const SourceIndexFlags FallbackFlags = SourceIndexFlags.Preprocessor |
+        SourceIndexFlags.DeclarationDirective | SourceIndexFlags.FunctionMetadata |
+        SourceIndexFlags.Rename | SourceIndexFlags.LineContinuation | SourceIndexFlags.OtherSemanticFallback;
 }
 
-public sealed class ErbSourceIndexer
+public static class ErbSourceIndexer
 {
     private static readonly UTF8Encoding StrictUtf8 = new(false, true);
-    private const SourceIndexFlags FallbackFlags = SourceIndexFlags.Preprocessor | SourceIndexFlags.Rename |
-        SourceIndexFlags.LineContinuation | SourceIndexFlags.SpecialLabelOrMetadata;
 
     public static IReadOnlyList<SourceFileIndex> IndexDirectory(string directory)
     {
@@ -79,13 +76,13 @@ public sealed class ErbSourceIndexer
             SourceIndexFlags fileFlags = SourceIndexFlags.None;
             int lineCount = 0;
             FunctionDraft? current = null;
-            while (reader.ReadLine(out var lineStart, out var lineEnd, out var lineBytes))
+            while (reader.ReadLine(out var lineStart, out _, out var lineBytes))
             {
                 lineCount++;
-                string line;
+                var bytes = lineBytes.AsSpan();
                 try
                 {
-                    line = StrictUtf8.GetString(lineBytes.Array!, 0, lineBytes.Count);
+                    StrictUtf8.GetCharCount(bytes);
                 }
                 catch (DecoderFallbackException)
                 {
@@ -94,22 +91,28 @@ public sealed class ErbSourceIndexer
                         $"Invalid UTF-8 at line {lineCount}");
                 }
 
-                var trimmed = line.AsSpan().TrimStart();
-                if (trimmed.StartsWith("@", StringComparison.Ordinal))
+                var trimmed = TrimAsciiStart(bytes);
+                if (trimmed.Length > 0 && trimmed[0] == (byte)'@')
                 {
                     if (current is not null)
                         current.End(lineStart, lineCount - 1);
-                    current = new FunctionDraft(identity, FunctionName(trimmed), lineStart, lineCount);
+                    var header = StrictUtf8.GetString(trimmed);
+                    current = new FunctionDraft(FunctionName(header), lineStart, lineCount);
                     functions.Add(current);
                 }
 
-                var flags = DetectFlags(trimmed, line);
+                var flags = DetectFlags(trimmed);
                 fileFlags |= flags;
                 current?.AddFlags(flags);
             }
 
             current?.End(sourceBytes, lineCount);
             var result = functions.Select(static f => f.ToIndex()).ToArray();
+            if ((fileFlags & SourceIndexFlags.Preprocessor) != 0)
+            {
+                for (var i = 0; i < result.Length; i++)
+                    result[i] = result[i] with { Flags = result[i].Flags | SourceIndexFlags.Preprocessor };
+            }
             return new(identity, sourceBytes, lineCount, result, fileFlags, null);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -118,61 +121,78 @@ public sealed class ErbSourceIndexer
         }
     }
 
-    private static string FunctionName(ReadOnlySpan<char> header)
+    private static ReadOnlySpan<byte> TrimAsciiStart(ReadOnlySpan<byte> bytes)
     {
-        var value = header[1..].TrimStart();
+        var index = 0;
+        while (index < bytes.Length && (bytes[index] == (byte)' ' || bytes[index] == (byte)'\t' ||
+               bytes[index] == (byte)'\v' || bytes[index] == (byte)'\f')) index++;
+        return bytes[index..];
+    }
+
+    private static string FunctionName(string header)
+    {
+        var value = header.AsSpan(1).TrimStart();
         var end = value.IndexOfAny(',', ' ', '\t');
         return (end < 0 ? value : value[..end]).ToString();
     }
 
-    private static SourceIndexFlags DetectFlags(ReadOnlySpan<char> trimmed, string line)
+    private static SourceIndexFlags DetectFlags(ReadOnlySpan<byte> trimmed)
     {
         SourceIndexFlags flags = SourceIndexFlags.None;
-        if (trimmed.StartsWith("#", StringComparison.Ordinal))
-        {
+        if (trimmed.Length > 0 && trimmed[0] == (byte)'[' && (trimmed.Length < 2 || trimmed[1] != (byte)'['))
             flags |= SourceIndexFlags.Preprocessor;
-            if (trimmed.StartsWith("#FUNCTIONS", StringComparison.OrdinalIgnoreCase) ||
-                trimmed.StartsWith("#DIM", StringComparison.OrdinalIgnoreCase) ||
-                trimmed.StartsWith("#DIMS", StringComparison.OrdinalIgnoreCase))
-                flags |= SourceIndexFlags.SpecialLabelOrMetadata;
-        }
-        if (line.Contains("[[", StringComparison.Ordinal) || line.Contains("]]", StringComparison.Ordinal))
+        if (Contains(trimmed, "[["u8) || Contains(trimmed, "]]"u8))
             flags |= SourceIndexFlags.Rename;
-        if (trimmed.EndsWith("\\", StringComparison.Ordinal))
+        if (trimmed.Length > 0 && trimmed[0] == (byte)'#')
+            flags |= DirectiveFlag(trimmed[1..]);
+        if (trimmed.Length > 0 && (trimmed[0] == (byte)'*' || trimmed[0] == (byte)'$'))
+            flags |= SourceIndexFlags.OtherSemanticFallback;
+        var end = trimmed.Length;
+        while (end > 0 && (trimmed[end - 1] == (byte)' ' || trimmed[end - 1] == (byte)'\t')) end--;
+        if (end > 0 && trimmed[end - 1] == (byte)'\\')
             flags |= SourceIndexFlags.LineContinuation;
-        if (trimmed.StartsWith("*", StringComparison.Ordinal) || trimmed.StartsWith("$", StringComparison.Ordinal))
-            flags |= SourceIndexFlags.SpecialLabelOrMetadata;
         return flags;
     }
 
-    private sealed class FunctionDraft(string fileIdentity, string name, long startOffset, int startLine)
+    private static SourceIndexFlags DirectiveFlag(ReadOnlySpan<byte> token)
+    {
+        var end = 0;
+        while (end < token.Length && token[end] is not ((byte)' ' or (byte)'\t' or (byte)']' or (byte)',')) end++;
+        token = token[..end];
+        if (AsciiEquals(token, "DIM"u8) || AsciiEquals(token, "DIMS"u8))
+            return SourceIndexFlags.DeclarationDirective;
+        if (AsciiEquals(token, "FUNCTION"u8) || AsciiEquals(token, "FUNCTIONS"u8) ||
+            AsciiEquals(token, "LOCALSIZE"u8) || AsciiEquals(token, "LOCALSSIZE"u8) ||
+            AsciiEquals(token, "PRI"u8) || AsciiEquals(token, "LATER"u8) ||
+            AsciiEquals(token, "ONLY"u8) || AsciiEquals(token, "SINGLE"u8))
+            return SourceIndexFlags.FunctionMetadata;
+        return SourceIndexFlags.OtherSemanticFallback;
+    }
+
+    private static bool Contains(ReadOnlySpan<byte> value, ReadOnlySpan<byte> target) => value.IndexOf(target) >= 0;
+
+    private static bool AsciiEquals(ReadOnlySpan<byte> value, ReadOnlySpan<byte> target)
+    {
+        if (value.Length != target.Length) return false;
+        for (var i = 0; i < value.Length; i++)
+        {
+            var left = value[i];
+            var right = target[i];
+            if (left is >= (byte)'a' and <= (byte)'z') left = (byte)(left - ('a' - 'A'));
+            if (right is >= (byte)'a' and <= (byte)'z') right = (byte)(right - ('a' - 'A'));
+            if (left != right) return false;
+        }
+        return true;
+    }
+
+    private sealed class FunctionDraft(string name, long startOffset, int startLine)
     {
         private long endOffset;
         private int endLine;
         private SourceIndexFlags flags;
-
-        public void AddFlags(SourceIndexFlags value) => flags |= value & FallbackFlags;
-
-        public void End(long offset, int line)
-        {
-            endOffset = offset;
-            endLine = line;
-        }
-
-        public FunctionIndex ToIndex() => new(fileIdentity, name,
-            new SourceSpan(startOffset, endOffset, startLine, endLine), flags, Reasons(flags));
-    }
-
-    private static string? Reasons(SourceIndexFlags flags)
-    {
-        if (flags == SourceIndexFlags.None)
-            return null;
-        var reasons = new List<string>(4);
-        if ((flags & SourceIndexFlags.Preprocessor) != 0) reasons.Add(nameof(SourceIndexFlags.Preprocessor));
-        if ((flags & SourceIndexFlags.Rename) != 0) reasons.Add(nameof(SourceIndexFlags.Rename));
-        if ((flags & SourceIndexFlags.LineContinuation) != 0) reasons.Add(nameof(SourceIndexFlags.LineContinuation));
-        if ((flags & SourceIndexFlags.SpecialLabelOrMetadata) != 0) reasons.Add(nameof(SourceIndexFlags.SpecialLabelOrMetadata));
-        return string.Join('|', reasons);
+        public void AddFlags(SourceIndexFlags value) => flags |= value & SourceFileIndex.FallbackFlags;
+        public void End(long offset, int line) { endOffset = offset; endLine = line; }
+        public FunctionIndex ToIndex() => new(name, new SourceSpan(startOffset, endOffset, startLine, endLine), flags);
     }
 
     private sealed class ByteLineReader(Stream stream) : IDisposable

@@ -31,3 +31,17 @@ Phase 14A～14NのGraphics/native ownership改善はWindows Host資産として�
 0A Source Index foundation → 0B Legacy oracle differential + performance baseline → 1 function-level compiler prototype → 2 compact instruction VM → 3 compact expression/format IR → 4 bounded/evictable compiled cache → 5 disk compile cache/warm startup → 6 Next VariableStore prototype → 7 Host I/O/security sandbox → 8 full compatibility expansion
 
 各段階は実測とcorrectness結果で見直します。Phase 0AのIndexAudit性能をNext Runtime全体の性能向上とは主張しません。
+
+## Phase 0A-R1のSource Index契約
+
+分類はLegacy `ErbLoader` / parserの境界に合わせます。`[IF_DEBUG]`、`[IF_NDEBUG]`、`[IF ...]`、`[ELSEIF]`、`[ELSE]`、`[ENDIF]`、`[SKIPSTART]`、`[SKIPEND]`はPreprocessorです。`[[...]]`はRenameでありPreprocessorではありません。`#DIM` / `#DIMS`はDeclarationDirective、`#FUNCTION` / `#FUNCTIONS` / `#LOCALSIZE` / `#LOCALSSIZE` / `#PRI` / `#LATER` / `#ONLY` / `#SINGLE`はFunctionMetadataとして別に記録します。未知のSharp directiveや特殊labelはOtherSemanticFallbackです。
+
+Preprocessorは後半の有効sourceを変えるLegacy PPStateを持つためfile-level fallbackです。Auditのfallback file countはsemantic fallback flagを1つ以上持つファイル、fallback function countはそのflagを持つ関数です。Preprocessorを含むファイルでは全関数へPreprocessor flagを伝播させます。DeclarationDirective、FunctionMetadata、Rename、LineContinuationなどは検出位置の関数へ記録します。
+
+ERBはEF BB BFのUTF-8 BOM付きだけを受理し、strict UTF-8 validationを全物理行へ行います。構文markerはraw UTF-8 bytesで判定し、UTF-16 stringを作るのはfunction header名だけです。`SourceSpan`はBOM 3 byteを含むphysical byte offsetと1-based line rangeを保持し、source本文は保持しません。`FunctionIndex`はreadonly record structで、file identityはSourceFileIndexに1回だけ保持し、fallback reasonはflagsからAudit時に生成します。
+
+IndexAuditの`indexBuild*`は`ErbSourceIndexer.IndexDirectory`の直前から直後までだけを測ります。後続のflatten、sort、集計、JSON生成、diagnostic full GCは`auditPostProcess*`へ分離します。`retainedIndexManagedBytesEstimate`はindexを保持したままaudit用full GCを行った後のmanaged memoryであり、production runtimeのGC操作ではありません。旧Phase 0Aのallocation値は後処理を含むため、新値との比較はNOT DIRECTLY COMPARABLEです。
+
+## Windows distribution invariant
+
+最終Windows版の正式配布は、現行Emueraと同じく `PublishSingleFile=true`、`SelfContained=false` のframework-dependent single-file publishを基本とします。内部をWindows Host、Next Core、Compiler、VMなどへ分割しても、ユーザーがゲームフォルダへ手動配置するRuntime本体は原則 `Emuera.exe` 1ファイルです。publish時に必要なruntime componentをsingle EXEへまとめ、compile cacheなどの再生成可能cacheを手動配置Runtime componentとは扱いません。
