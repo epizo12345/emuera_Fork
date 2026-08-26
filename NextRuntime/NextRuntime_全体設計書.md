@@ -74,7 +74,7 @@ ERBの入力契約はUTF-8 BOM付きである。BOMは文字データではな�
 
 ## 13. 現在の状態
 
-Phase 0A、0A-R1、0A-R2を完了とする。0A-R2では、Legacyの識別子境界に従う関数名抽出、括弧付き引数、カンマ引数、全角空白、引用符付き`@`の拒否、本文中の偽候補、index構築と後処理計測の分離を確認した。0Bはまだ開始していない。正式mainへの統合やGitGudへのpushは別の明示的な作業である。
+Phase 0A、0A-R1、0A-R2、0A-R3を完了とする。0A-R3では、Legacyの`{`単独行から`}`単独行までの行連結を安全側fallbackとして検出し、連結内部の`@`を通常の関数境界として扱わない。nested・異常終了・未閉鎖も安全側へ倒す。識別子delimiterには`\\`を含め、先頭のvertical tab/form feedはLegacy互換のため空白として飛ばさない。全角spaceは`SystemAllowFullSpace`依存のためCoreへ設定を持ち込まずfallbackを付ける。保持メモリはindex構築前baselineとindexだけを保持したforced-GC後の差として診断する。0Bはまだ開始していない。正式mainへの統合やGitGudへのpushは別の明示的な作業である。
 
 ## 14. ロードマップ
 

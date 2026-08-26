@@ -28,7 +28,11 @@ catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or D
 }
 indexWatch.Stop();
 var indexAllocated = GC.GetTotalAllocatedBytes(precise: true) - indexAllocatedBefore;
-var indexManagedAfter = GC.GetTotalMemory(false);
+GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+GC.WaitForPendingFinalizers();
+GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+var indexManagedWithIndex = GC.GetTotalMemory(false);
+var retainedIndexManaged = Math.Max(0, indexManagedWithIndex - indexManagedBefore);
 
 var postAllocatedBefore = GC.GetTotalAllocatedBytes(precise: true);
 var postWatch = Stopwatch.StartNew();
@@ -56,10 +60,6 @@ var reasonCounts = functions.SelectMany(static x => Reasons(x.Function.Flags))
     .GroupBy(static reason => reason).OrderBy(static group => group.Key)
     .ToDictionary(static group => group.Key, static group => group.Count());
 var largest = functions.OrderByDescending(static x => x.Function.Span.ByteLength).FirstOrDefault();
-GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
-GC.WaitForPendingFinalizers();
-GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
-var retainedIndexManaged = GC.GetTotalMemory(false);
 var postWatchElapsed = postWatch.Elapsed;
 postWatch.Stop();
 var postAllocated = GC.GetTotalAllocatedBytes(precise: true) - postAllocatedBefore;
@@ -82,6 +82,9 @@ Console.WriteLine($"renameFiles: {renameFiles}");
 Console.WriteLine($"renameFunctions: {renameFunctions}");
 Console.WriteLine($"lineContinuationFiles: {continuationFiles}");
 Console.WriteLine($"lineContinuationFunctions: {continuationFunctions}");
+Console.WriteLine($"lineContinuationBlocks: {files.Sum(static f => f.ContinuationBlockCount)}");
+Console.WriteLine($"unclosedContinuationBlocks: {files.Sum(static f => f.UnclosedContinuationBlockCount)}");
+Console.WriteLine($"malformedContinuationBlocks: {files.Sum(static f => f.MalformedContinuationBlockCount)}");
 Console.WriteLine($"parenthesizedFunctionHeaderCount: {parenthesizedHeaders}");
 Console.WriteLine($"quotedAtSignLineCount: {quotedAtSigns}");
 Console.WriteLine($"invalidFunctionCandidateCount: {invalidCandidates}");
@@ -94,9 +97,9 @@ Console.WriteLine($"p99FunctionBytes: {Percentile(sizes, .99)}");
 Console.WriteLine($"errors: {errors}");
 Console.WriteLine($"indexBuildElapsedMs: {indexWatch.Elapsed.TotalMilliseconds:F3}");
 Console.WriteLine($"indexBuildAllocatedBytes: {indexAllocated}");
-Console.WriteLine($"indexBuildManagedBefore: {indexManagedBefore}");
-Console.WriteLine($"indexBuildManagedAfter: {indexManagedAfter}");
-Console.WriteLine($"indexBuildManagedDelta: {indexManagedAfter - indexManagedBefore}");
+Console.WriteLine($"managedBeforeIndex: {indexManagedBefore}");
+Console.WriteLine($"managedWithIndex: {indexManagedWithIndex}");
+Console.WriteLine($"retainedIndexManagedDelta: {retainedIndexManaged}");
 Console.WriteLine($"retainedIndexManagedBytesEstimate: {retainedIndexManaged}");
 Console.WriteLine($"auditPostProcessElapsedMs: {postWatchElapsed.TotalMilliseconds:F3}");
 Console.WriteLine($"auditPostProcessAllocatedBytes: {postAllocated}");

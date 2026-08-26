@@ -8,7 +8,7 @@ Next Runtimeは、既存ゲーム・セーブ・ERB互換を最優先にしつ�
 
 `Emuera.Next.Core`はWindows UI、Graphics、Gamepad、save、game state、任意のfilesystem mutationへ直接依存しません。IndexAuditは指定ERB directoryをread-only recursive scanし、SelfTestは一時ディレクトリだけを書き換えます。
 
-全体の目的・互換性境界・将来ロードマップは[Next Runtime全体設計書](NextRuntime_全体設計書.md)を参照してください。
+全体の目的・互換性境界・将来ロードマップは[Next Runtime全体設計書](NextRuntime_全体設計書.md)を参照してください。技術用語を避けた概要は[かんたん説明](NextRuntime_かんたん説明.md)です。
 
 ## 固定する設計
 
@@ -40,13 +40,17 @@ Phase 14A～14NのGraphics/native ownership改善はWindows Host資産として�
 
 関数ヘッダーはLegacyの識別子読み取り規則に合わせ、行頭の`@`の直後から識別子を読む。したがって`@FUNC(ARG)`、`@FUNC(ARG1, ARG2)`、`@FUNC, ARG`、`@日本語(ARG)`は関数名をそれぞれ`FUNC`、`FUNC`、`FUNC`、`日本語`として記録する。`@"文字列"`や`@'文字列'`は関数ヘッダーではなく、本文中に現れても新しい関数境界を作らない。括弧付きヘッダー数、引用符付き`@`行数、拒否した`@`候補数は診断値として保持する。
 
+R3ではLegacyの`{`単独行から`}`単独行までの物理行連結を検出する。連結範囲の`@`は通常の関数境界として信用せず、範囲を含むfile/functionへ`LineContinuation`を付ける。nested `{`、文字の付いた`}`、未閉鎖は`OtherSemanticFallback`も付ける。これはLegacy parserの再実装ではなく、安全側で委譲範囲を示すだけである。
+
+先頭空白は半角space/tabだけを確定的に飛ばす。vertical tab/form feedは飛ばさない。全角spaceはLegacyの`SystemAllowFullSpace`設定に依存するため、Coreへ設定を持ち込まず、検出・採用時に`OtherSemanticFallback`を付ける。
+
 分類はLegacy `ErbLoader` / parserの境界に合わせます。`[IF_DEBUG]`、`[IF_NDEBUG]`、`[IF ...]`、`[ELSEIF]`、`[ELSE]`、`[ENDIF]`、`[SKIPSTART]`、`[SKIPEND]`はPreprocessorです。`[[...]]`はRenameでありPreprocessorではありません。`#DIM` / `#DIMS`はDeclarationDirective、`#FUNCTION` / `#FUNCTIONS` / `#LOCALSIZE` / `#LOCALSSIZE` / `#PRI` / `#LATER` / `#ONLY` / `#SINGLE`はFunctionMetadataとして別に記録します。未知のSharp directiveや特殊labelはOtherSemanticFallbackです。
 
 Preprocessorは後半の有効sourceを変えるLegacy PPStateを持つためfile-level fallbackです。Auditのfallback file countはsemantic fallback flagを1つ以上持つファイル、fallback function countはそのflagを持つ関数です。Preprocessorを含むファイルでは全関数へPreprocessor flagを伝播させます。DeclarationDirective、FunctionMetadata、Rename、LineContinuationなどは検出位置の関数へ記録します。
 
 ERBはEF BB BFのUTF-8 BOM付きだけを受理し、strict UTF-8 validationを全物理行へ行います。構文markerはraw UTF-8 bytesで判定し、UTF-16 stringを作るのはfunction header名だけです。`SourceSpan`はBOM 3 byteを含むphysical byte offsetと1-based line rangeを保持し、source本文は保持しません。`FunctionIndex`はreadonly record structで、file identityはSourceFileIndexに1回だけ保持し、fallback reasonはflagsからAudit時に生成します。
 
-IndexAuditの`indexBuild*`は`ErbSourceIndexer.IndexDirectory`の直前から直後までだけを測ります。後続のflatten、sort、集計、JSON生成、diagnostic full GCは`auditPostProcess*`へ分離します。`retainedIndexManagedBytesEstimate`はindexを保持したままaudit用full GCを行った後のmanaged memoryであり、production runtimeのGC操作ではありません。indexだけを保持した値と、後処理用配列を作った後の値を混同しません。旧Phase 0Aのallocation値は後処理を含むため、新値との比較はNOT DIRECTLY COMPARABLEです。
+IndexAuditの`indexBuild*`は`ErbSourceIndexer.IndexDirectory`の直前から直後までだけを測ります。`managedBeforeIndex`を記録し、indexだけを保持した状態でdiagnostic full GCを行った`managedWithIndex`との差を`retainedIndexManagedBytesEstimate`とします。後続のflatten、sort、集計、JSON生成は`auditPostProcess*`へ分離します。この値は厳密なobject sizeではなく診断用推定値で、production runtimeのGC操作ではありません。旧Phase 0Aのallocation値は後処理を含むため、新値との比較はNOT DIRECTLY COMPARABLEです。
 
 ## Windows distribution invariant
 

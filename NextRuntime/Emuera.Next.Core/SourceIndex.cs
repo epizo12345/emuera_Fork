@@ -36,7 +36,10 @@ public sealed record SourceFileIndex(
     int ParenthesizedFunctionHeaderCount = 0,
     int QuotedAtSignLineCount = 0,
     int InvalidFunctionCandidateCount = 0,
-    int RejectedAtCandidateCount = 0)
+    int RejectedAtCandidateCount = 0,
+    int ContinuationBlockCount = 0,
+    int UnclosedContinuationBlockCount = 0,
+    int MalformedContinuationBlockCount = 0)
 {
     public bool HasFallback => (Flags & FallbackFlags) != 0 || Functions.Any(static f => (f.Flags & FallbackFlags) != 0);
 
@@ -82,6 +85,10 @@ public static class ErbSourceIndexer
             int parenthesizedHeaders = 0;
             int quotedAtSigns = 0;
             int invalidCandidates = 0;
+            int continuationBlocks = 0;
+            int unclosedContinuationBlocks = 0;
+            int malformedContinuationBlocks = 0;
+            var inContinuation = false;
             FunctionDraft? current = null;
             while (reader.ReadLine(out var lineStart, out _, out var lineBytes))
             {
@@ -98,8 +105,44 @@ public static class ErbSourceIndexer
                         $"Invalid UTF-8 at line {lineCount}");
                 }
 
-                var trimmed = TrimAsciiStart(bytes);
-                if (TryReadFunctionHeader(trimmed, out var nameBytes, out var parenthesized, out var quoted))
+                var trimmed = TrimLeadingWhitespace(bytes, out var fullWidthLeadingSpace);
+                if (fullWidthLeadingSpace)
+                    fileFlags |= SourceIndexFlags.OtherSemanticFallback;
+
+                if (!inContinuation && IsStandalone(trimmed, (byte)'{'))
+                {
+                    inContinuation = true;
+                    continuationBlocks++;
+                    fileFlags |= SourceIndexFlags.LineContinuation;
+                    current?.AddFlags(SourceIndexFlags.LineContinuation);
+                }
+                else if (inContinuation)
+                {
+                    if (IsStandalone(trimmed, (byte)'{'))
+                    {
+                        malformedContinuationBlocks++;
+                        fileFlags |= SourceIndexFlags.OtherSemanticFallback;
+                        current?.AddFlags(SourceIndexFlags.OtherSemanticFallback);
+                    }
+                    else if (trimmed.Length > 0 && trimmed[0] == (byte)'}')
+                    {
+                        if (!IsStandalone(trimmed, (byte)'}'))
+                        {
+                            malformedContinuationBlocks++;
+                            fileFlags |= SourceIndexFlags.OtherSemanticFallback;
+                            current?.AddFlags(SourceIndexFlags.OtherSemanticFallback);
+                        }
+                        else
+                            inContinuation = false;
+                    }
+                }
+                else if (IsStandalone(trimmed, (byte)'}'))
+                {
+                    malformedContinuationBlocks++;
+                    fileFlags |= SourceIndexFlags.OtherSemanticFallback;
+                    current?.AddFlags(SourceIndexFlags.OtherSemanticFallback);
+                }
+                else if (TryReadFunctionHeader(trimmed, out var nameBytes, out var parenthesized, out var quoted))
                 {
                     if (current is not null)
                         current.End(lineStart, lineCount - 1);
@@ -118,6 +161,13 @@ public static class ErbSourceIndexer
                 current?.AddFlags(flags);
             }
 
+            if (inContinuation)
+            {
+                unclosedContinuationBlocks = 1;
+                fileFlags |= SourceIndexFlags.OtherSemanticFallback;
+                current?.AddFlags(SourceIndexFlags.OtherSemanticFallback);
+            }
+
             current?.End(sourceBytes, lineCount);
             var result = functions.Select(static f => f.ToIndex()).ToArray();
             if ((fileFlags & SourceIndexFlags.Preprocessor) != 0)
@@ -126,7 +176,8 @@ public static class ErbSourceIndexer
                     result[i] = result[i] with { Flags = result[i].Flags | SourceIndexFlags.Preprocessor };
             }
             return new(identity, sourceBytes, lineCount, result, fileFlags, null,
-                parenthesizedHeaders, quotedAtSigns, invalidCandidates, invalidCandidates);
+                parenthesizedHeaders, quotedAtSigns, invalidCandidates, invalidCandidates,
+                continuationBlocks, unclosedContinuationBlocks, malformedContinuationBlocks);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -134,12 +185,24 @@ public static class ErbSourceIndexer
         }
     }
 
-    private static ReadOnlySpan<byte> TrimAsciiStart(ReadOnlySpan<byte> bytes)
+    private static ReadOnlySpan<byte> TrimLeadingWhitespace(ReadOnlySpan<byte> bytes, out bool fullWidthLeadingSpace)
     {
+        fullWidthLeadingSpace = false;
         var index = 0;
-        while (index < bytes.Length && (bytes[index] == (byte)' ' || bytes[index] == (byte)'\t' ||
-               bytes[index] == (byte)'\v' || bytes[index] == (byte)'\f')) index++;
+        while (index < bytes.Length && (bytes[index] == (byte)' ' || bytes[index] == (byte)'\t')) index++;
+        while (IsFullWidthSpace(bytes[index..]))
+        {
+            fullWidthLeadingSpace = true;
+            index += 3;
+        }
         return bytes[index..];
+    }
+
+    private static bool IsStandalone(ReadOnlySpan<byte> bytes, byte marker)
+    {
+        var end = bytes.Length;
+        while (end > 0 && (bytes[end - 1] == (byte)' ' || bytes[end - 1] == (byte)'\t')) end--;
+        return end == 1 && bytes[0] == marker;
     }
 
     private static bool TryReadFunctionHeader(ReadOnlySpan<byte> trimmed, out ReadOnlySpan<byte> name,
@@ -163,7 +226,7 @@ public static class ErbSourceIndexer
     private static bool IsIdentifierDelimiter(byte value) => value is (byte)' ' or (byte)'\t' or (byte)'.' or
         (byte)'+' or (byte)'-' or (byte)'*' or (byte)'/' or (byte)'%' or (byte)'=' or (byte)'!' or (byte)'<' or
         (byte)'>' or (byte)'|' or (byte)'&' or (byte)'^' or (byte)'~' or (byte)'?' or (byte)'#' or (byte)')' or
-        (byte)'}' or (byte)']' or (byte)',' or (byte)':' or (byte)'(' or (byte)'{' or (byte)'[' or (byte)'$' or
+        (byte)'}' or (byte)']' or (byte)',' or (byte)':' or (byte)'(' or (byte)'{' or (byte)'[' or (byte)'$' or (byte)'\\' or
         (byte)('\'') or (byte)'"' or (byte)'@' or (byte)';';
 
     private static bool IsFullWidthSpace(ReadOnlySpan<byte> bytes)
