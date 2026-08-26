@@ -52,7 +52,7 @@ Phase 0AのSource Indexは実行系ではなく、ERBを読むための小さな
 
 ## 8. 完了済み作業と今後の起動計画
 
-完了はPhase 0AのSource Index、IndexAudit、SelfTest、0A-R1のLegacy境界に沿ったflag分類、0A-R2の関数ヘッダー境界と計測分離、0B-R2のLegacy oracle差分・PPState disabled range診断・性能baseline、1Aの関数単位compiler prototypeである。Phase 1AではまだVMを開始していない。
+完了はPhase 0AのSource Index、IndexAudit、SelfTest、0A-R1のLegacy境界に沿ったflag分類、0A-R2の関数ヘッダー境界と計測分離、0B-R2のLegacy oracle差分・PPState disabled range診断・性能baseline、1A-R1の関数単位compiler prototypeである。Phase 1A-R1ではまだVMを開始していない。
 
 今後は関数単位compiler prototype、compact IR、instruction VM、bounded/evictable cache、disk compile cacheへ進む。warm startupでは、変更検出済みのsource indexと検証済みcompile cacheを再利用し、不要なparser再実行を避ける。cacheは再生成可能であり、配布Runtime本体とは別扱いにする。
 
@@ -119,9 +119,9 @@ LegacyとNextは9458ファイル・134652関数で一致した。Nextのsafe fun
 
 `FunctionCompiler`はIndexSafeを入口とし、さらにevent/system/method/duplicate ambiguityやCompiler未対応命令を除外する2段階eligibilityを持つ。結果は`Compiled`、`Unsupported`、`SourceChanged`、`InvalidSource`、`CompilerError`に分け、unsupported理由をenumで診断する。新形式は`CompiledFunction`と連続した`ImmutableArray<PrototypeInstruction>`で、1命令1class instanceやLegacy `LogicalLine` / expression object graphのコピーを行わない。明示的なLegacy command → `PrototypeOpcode` mappingを1か所に持つ。
 
-1Aの実ゲーム結果は9,458 ERB、Index functions 134,652、Index safe 112,854、Compiler eligible 59,435、compile succeeded 54,200、unsupported 26,175、compiler errors 0である。unsupportedはUnsupportedInstruction 26,175。関数source sizeはmin 15、median 79、p95 275、p99 587、max 49,278 bytes、compiled source bytes 6,279,120、instruction 83,761件。instruction payloadは理論値16 bytes、storage 1,340,176 bytes、metadata estimate 2,882,975 bytes（53.191 bytes/compiled function）。最大関数は2,259,654-byte spanを直接readでき、全file 3,666,631 bytesを保持しない。CompilerAuditを5回実行し、elapsed中央値6,055.479 ms、allocation中央値4,003,217,880 bytes、forced-GC後retained managed estimate中央値15,722,672 bytesである。operand semanticsは未比較で、Expression/Format IRとcontrol-flow loweringは後Phaseで行う。
+1A-R1の実ゲーム結果は9,458 ERB、Index functions 134,652、Index safe 59,438、Compiler considered 59,438、Compiler eligible 59,435、compile succeeded 54,200、unique unsupported 5,235、compiler errors 0である。5回のunsupported encountersは26,175で、coverage件数とは分離した。関数source sizeはmin 15、median 79、p95 275、p99 587、max 49,278 bytes、instruction 83,761件。`PrototypeInstruction`の実測サイズは16 bytes、payloadは1,340,176 bytes、function metadata theoretical payloadは1,734,400 bytes、forced-GC後のretained managed medianは7,001,824 bytes、推定overheadは3,927,248 bytesである。source read allocation中央値35,169,832 bytes、compiler allocation中央値60,421,536 bytes、total allocation中央値96,067,968 bytesで、R1は関数ごとの64KB FileStream bufferをbuffer 1 + RandomAccessへ変更した。最大関数は2,259,654-byte spanを直接readでき、全file 3,666,631 bytesを保持しない。operand semanticsは未比較で、Expression/Format IRとcontrol-flow loweringは後Phaseで行う。
 
-function source bytesのSHA-256 fingerprintは同一sourceで決定的で、1文字変更では変更する。synthetic `FUNC_A/FUNC_B`でA unchanged、B changedを確認した。1Aではdisk cache、dependency graph、bounded cache、VM、VariableStore、Process.ScriptProc置換、正式EXE変更を行わない。代表関数とunsupported理由はCompilerAudit reportへ出し、巨大本文はreview ZIPへ含めない。
+function source bytesのSHA-256 fingerprintは同一sourceで決定的で、1文字変更では変更する。synthetic `FUNC_A/FUNC_B`でA unchanged、B changedを確認した。fingerprintは32-byte valueとしてCompileResultに分離し、CompiledFunctionへ文字列を保持しない。R1ではdisk cache、dependency graph、bounded cache、VM、VariableStore、Process.ScriptProc置換、正式EXE変更を行わない。代表関数とunsupported理由はCompilerAudit reportへ出し、巨大本文はreview ZIPへ含めない。
 
 ## 19. Phase 0B-R1 差分更新とcache無効化
 

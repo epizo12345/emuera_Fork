@@ -39,7 +39,7 @@ public sealed class FunctionSourceReader
 
             var bytes = GC.AllocateUninitializedArray<byte>((int)span.ByteLength);
             using var stream = new FileStream(file.FileIdentity, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
-                64 * 1024, FileOptions.SequentialScan);
+                1, FileOptions.RandomAccess);
             stream.Seek(span.StartOffset, SeekOrigin.Begin);
             var read = 0;
             while (read < bytes.Length)

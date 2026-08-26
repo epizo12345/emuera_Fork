@@ -16,13 +16,13 @@ Next Runtimeは、既存ゲーム・セーブ・ERB互換を最優先にしつ�
 
 fallbackは、DeclarationDirective 6844、FunctionMetadata 6817、LineContinuation 164、OtherSemanticFallback 1425、Preprocessor 234、Rename 12705（重複計上）です。実データの重複関数名は3名称・9定義、定義順差分0です。#PRI/#LATER/#ONLY/#SINGLEを含むevent dispatch semantics自体はNext VM未実装のため、priority完全一致ではなく`DEFERRED / LEGACY FALLBACK`です。全角space、vertical tab/form feed、BOM、invalid UTF-8、引用符付き`@`、PPState disabled rangeの境界はSelfTestと診断値で確認しています。
 
-性能値は同じ処理の比較ではありません。Legacyは実ERB parse/load、Nextはread-only Source Index構築を各5回測定し、runtime speedupは主張しません。Phase 0Bの差分ゲートとPhase 1Aのprototype gateを通過しました。
+性能値は同じ処理の比較ではありません。Legacyは実ERB parse/load、Nextはread-only Source Index構築を各5回測定し、runtime speedupは主張しません。Phase 0Bの差分ゲートとPhase 1A-R1のprototype gateを通過しました。
 
 ## Phase 1Aの結果
 
-現在は、目次から選んだ関数のphysical byte spanだけを`FileStream.Seek`で読み、Legacy parserをCompiler本体へ再利用せず、compactな`PrototypeInstruction` struct列へ変換する試作段階です。実ゲームではcompiler eligible 59435件中54200件をcompileし、unsupported 26175件、compiler error 0件でした。Legacy structural differentialはfunction、instruction count、order、opcodeの全項目0 mismatchです。operand semanticsは式/format IRの後Phaseへ残します。
+現在は、目次から選んだ関数のphysical byte spanだけを`FileStream.Seek`で読み、Legacy parserをCompiler本体へ再利用せず、compactな`PrototypeInstruction` struct列へ変換する試作段階です。R1では関数ごとの64KB FileStream bufferを廃止し、buffer 1 + RandomAccessにしました。実ゲームではcompiler eligible 59,435件中54,200件をcompileし、unique unsupportedは5,235件、compiler error 0件でした（5回実行のunsupported encounterは26,175件で、coverage件数ではありません）。Legacy structural/exact opcode differentialは0 mismatchです。operand semanticsは式/format IRの後Phaseへ残します。
 
-Compilerはsafe/index fallbackとcompiler-supportedを別に判定します。`SourceChanged`、`InvalidSource`、`Unsupported`を明示的に返し、source fingerprintは関数byte spanのSHA-256です。まだVM、VariableStore、Expression/Format IR、disk cache、UI/正式EXE変更はありません。
+Compilerはsafe/index fallbackとcompiler-supportedを別に判定します。`SourceChanged`、`InvalidSource`、`Unsupported`を明示的に返し、source fingerprintは関数byte spanのSHA-256を32-byte valueとしてCompileResult側だけに返します。PrototypeInstructionは実測16 bytesです。まだVM、VariableStore、Expression/Format IR、disk cache、UI/正式EXE変更はありません。
 
 ## 固定する設計
 
