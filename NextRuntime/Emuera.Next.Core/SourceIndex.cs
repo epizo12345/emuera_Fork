@@ -42,7 +42,8 @@ public sealed record SourceFileIndex(
     int ContinuationBlockCount = 0,
     int UnclosedContinuationBlockCount = 0,
     int MalformedContinuationBlockCount = 0,
-    IReadOnlyList<ContinuationBlock>? ContinuationBlocks = null)
+    IReadOnlyList<ContinuationBlock>? ContinuationBlocks = null,
+    long LastWriteTimeUtcTicks = 0)
 {
     public bool HasFallback => (Flags & FallbackFlags) != 0 || Functions.Any(static f => (f.Flags & FallbackFlags) != 0);
 
@@ -94,6 +95,7 @@ public static class ErbSourceIndexer
         ArgumentException.ThrowIfNullOrEmpty(path);
         var identity = Path.GetFullPath(path);
         var sourceBytes = new FileInfo(identity).Length;
+        var lastWriteTimeUtcTicks = File.GetLastWriteTimeUtc(identity).Ticks;
         try
         {
             using var stream = new FileStream(identity, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
@@ -208,7 +210,8 @@ public static class ErbSourceIndexer
             }
             return new(identity, sourceBytes, lineCount, result, fileFlags, null,
                 parenthesizedHeaders, quotedAtSigns, invalidCandidates, invalidCandidates,
-                continuationBlocks, unclosedContinuationBlocks, malformedContinuationBlocks, continuationRanges);
+                continuationBlocks, unclosedContinuationBlocks, malformedContinuationBlocks, continuationRanges,
+                lastWriteTimeUtcTicks);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

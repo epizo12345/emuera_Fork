@@ -77,6 +77,7 @@ internal static class LegacyOracleExporter
                 previousFile = relativeFile;
                 functionOrder = 0;
             }
+            var instructions = ReadInstructions(label);
             var row = new
             {
                 FileOrder = label.FileIndex,
@@ -93,7 +94,10 @@ internal static class LegacyOracleExporter
                 IsLater = label.IsLater,
                 IsOnly = label.IsOnly,
                 IsSingle = label.IsSingle,
-                LegacyFinalPriority = !label.IsEvent && ReferenceEquals(labels.GetNonEventLabel(label.LabelName), label)
+                LegacyFinalPriority = !label.IsEvent && ReferenceEquals(labels.GetNonEventLabel(label.LabelName), label),
+                InstructionCount = instructions.Count,
+                InstructionCodes = instructions.Select(static instruction => instruction.Code).ToArray(),
+                InstructionLines = instructions.Select(static instruction => instruction.Line).ToArray()
             };
             writer.WriteLine(JsonSerializer.Serialize(row, JsonOptions));
         }
@@ -115,6 +119,17 @@ internal static class LegacyOracleExporter
             $"legacyRetainedManagedEstimate={Math.Max(0, baseline.ManagedAfterDiagnosticGc - baseline.ManagedBefore)}"
         ], new UTF8Encoding(false));
         WritePreprocessorReports(Path.GetDirectoryName(fullPath)!, erbRoot, preprocessorDiagnostics);
+    }
+
+    private static List<(string Code, int Line)> ReadInstructions(FunctionLabelLine label)
+    {
+        var instructions = new List<(string Code, int Line)>();
+        for (var line = label.NextLine; line is not null && line is not NullLine && line is not FunctionLabelLine; line = line.NextLine)
+        {
+            if (line is InstructionLine instruction && instruction.Position is not null)
+                instructions.Add((instruction.FunctionCode.ToString(), instruction.Position.Value.LineNo));
+        }
+        return instructions;
     }
 
     private static void WritePreprocessorReports(string directory, string erbRoot,

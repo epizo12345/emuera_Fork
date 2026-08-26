@@ -52,7 +52,7 @@ Phase 0AのSource Indexは実行系ではなく、ERBを読むための小さな
 
 ## 8. 完了済み作業と今後の起動計画
 
-完了はPhase 0AのSource Index、IndexAudit、SelfTest、0A-R1のLegacy境界に沿ったflag分類、0A-R2の関数ヘッダー境界と計測分離、0B-R2のLegacy oracle差分・PPState disabled range診断・性能baselineである。Phase 1はまだ開始していない。
+完了はPhase 0AのSource Index、IndexAudit、SelfTest、0A-R1のLegacy境界に沿ったflag分類、0A-R2の関数ヘッダー境界と計測分離、0B-R2のLegacy oracle差分・PPState disabled range診断・性能baseline、1Aの関数単位compiler prototypeである。Phase 1AではまだVMを開始していない。
 
 今後は関数単位compiler prototype、compact IR、instruction VM、bounded/evictable cache、disk compile cacheへ進む。warm startupでは、変更検出済みのsource indexと検証済みcompile cacheを再利用し、不要なparser再実行を避ける。cacheは再生成可能であり、配布Runtime本体とは別扱いにする。
 
@@ -74,14 +74,14 @@ ERBの入力契約はUTF-8 BOM付きである。BOMは文字データではな�
 
 ## 13. 現在の状態
 
-Phase 0A、0A-R1、0A-R2、0A-R3、0Bを完了とする。0A-R3では、Legacyの`{`単独行から`}`単独行までの行連結を安全側fallbackとして検出し、連結内部の`@`を通常の関数境界として扱わない。nested・異常終了・未閉鎖も安全側へ倒す。識別子delimiterには`\\`を含め、先頭のvertical tab/form feedはLegacy互換のため空白として飛ばさない。全角spaceは`SystemAllowFullSpace`依存のためCoreへ設定を持ち込まずfallbackを付ける。保持メモリはindex構築前baselineとindexだけを保持したforced-GC後の差として診断する。0Bでは実際のLegacy `ErbLoader` / `LogicalLineParser` / `LabelDictionary`をoracleとして9458 ERB・134652関数を照合し、safe 112854、fallback 21798、unexpected missing/extra/name/order/invalid-error mismatch 0を確認した。Legacy設定は`IgnoreCase=True`、`OrdinalIgnoreCase`、`SystemAllowFullSpace=True`で、重複関数名は3名称・9定義だった。正式mainへの統合やGitGudへのpushは別の明示的な作業である。
+Phase 0A、0A-R1、0A-R2、0A-R3、0B、1Aを完了とする。0A-R3では、Legacyの`{`単独行から`}`単独行までの行連結を安全側fallbackとして検出し、連結内部の`@`を通常の関数境界として扱わない。nested・異常終了・未閉鎖も安全側へ倒す。識別子delimiterには`\\`を含め、先頭のvertical tab/form feedはLegacy互換のため空白として飛ばさない。全角spaceは`SystemAllowFullSpace`依存のためCoreへ設定を持ち込まずfallbackを付ける。保持メモリはindex構築前baselineとindexだけを保持したforced-GC後の差として診断する。0Bでは実際のLegacy `ErbLoader` / `LogicalLineParser` / `LabelDictionary`をoracleとして9458 ERB・134652関数を照合し、safe 112854、fallback 21798、unexpected missing/extra/name/order/invalid-error mismatch 0を確認した。1AではSource IndexのFunctionIndexを入口に、FileStreamの関数byte spanだけを読み、compiler-supportedな関数をcompact struct列へ変換した。正式mainへの統合やGitGudへのpushは別の明示的な作業である。
 
 ## 14. ロードマップ
 
 ```text
 0A Source Index
  → 0B Legacy oracle differential / performance baseline
- → 1 function-level compiler
+ → 1A function-level compiler prototype
  → 2 compact instruction VM
  → 3 compact expression / format IR
  → 4 bounded compiled cache / eviction
@@ -111,13 +111,23 @@ LegacyとNextは9458ファイル・134652関数で一致した。Nextのsafe fun
 
 性能は各5回の診断baselineで、Legacy actual ERB parse/loadの中央値は8340.524 ms、allocation中央値は6282642256 bytes、forced-GC後のretained estimate中央値は1618849120 bytes。Next Source Index構築の中央値は1841.047 ms、allocation中央値は38044280 bytes、retained index中央値は17163408 bytes。処理境界が異なるため、速度比・runtime高速化・起動高速化は主張しない。p95、最大、標準偏差とメモリ境界はレビューartifactに記録する。
 
-0B-R2の差分ゲートは通過した。これはPhase 1開始の承認ではなく、Chatレビュー可能な基準点である。Phase 1は別の明示的依頼まで開始しない。
+0B-R2の差分ゲートと1Aのcompiler prototype gateは通過した。1AはChatレビュー可能な基準点であり、VM、VariableStore、Expression/Format IR、disk cache、Process.ScriptProc置換、正式EXE変更を含まない。Phase 1B/Phase 2は別の明示的承認まで開始しない。
 
-## 18. Phase 0B-R1 差分更新とcache無効化
+## 18. Phase 1A 関数単位compiler prototype
+
+`FunctionSourceReader`は`SourceFileIndex + FunctionIndex`のfile length / last-write time snapshotを検証してから、`FileStream.Seek(StartOffset)`と必要byte数のreadだけを実行する。不一致は`SourceChanged`としてcompileしない。UTF-8はstrict validationし、BOMはfile offsetに含むが関数sliceには含めない。ERB全体のstring/行配列、Legacy `ErbLoader` hydration、Legacy parser再利用はCompiler本体では行わない。
+
+`FunctionCompiler`はIndexSafeを入口とし、さらにevent/system/method/duplicate ambiguityやCompiler未対応命令を除外する2段階eligibilityを持つ。結果は`Compiled`、`Unsupported`、`SourceChanged`、`InvalidSource`、`CompilerError`に分け、unsupported理由をenumで診断する。新形式は`CompiledFunction`と連続した`ImmutableArray<PrototypeInstruction>`で、1命令1class instanceやLegacy `LogicalLine` / expression object graphのコピーを行わない。明示的なLegacy command → `PrototypeOpcode` mappingを1か所に持つ。
+
+1Aの実ゲーム結果は9,458 ERB、Index functions 134,652、Index safe 112,854、Compiler eligible 59,435、compile succeeded 54,200、unsupported 26,175、compiler errors 0である。unsupportedはUnsupportedInstruction 26,175。関数source sizeはmin 15、median 79、p95 275、p99 587、max 49,278 bytes、compiled source bytes 6,279,120、instruction 83,761件。instruction payloadは理論値16 bytes、storage 1,340,176 bytes、metadata estimate 2,882,975 bytes（53.191 bytes/compiled function）。最大関数は2,259,654-byte spanを直接readでき、全file 3,666,631 bytesを保持しない。CompilerAuditを5回実行し、elapsed中央値6,055.479 ms、allocation中央値4,003,217,880 bytes、forced-GC後retained managed estimate中央値15,722,672 bytesである。operand semanticsは未比較で、Expression/Format IRとcontrol-flow loweringは後Phaseで行う。
+
+function source bytesのSHA-256 fingerprintは同一sourceで決定的で、1文字変更では変更する。synthetic `FUNC_A/FUNC_B`でA unchanged、B changedを確認した。1Aではdisk cache、dependency graph、bounded cache、VM、VariableStore、Process.ScriptProc置換、正式EXE変更を行わない。代表関数とunsupported理由はCompilerAudit reportへ出し、巨大本文はreview ZIPへ含めない。
+
+## 19. Phase 0B-R1 差分更新とcache無効化
 
 R1では差分更新を実装せず、root相対path・length・last-write time・content hashをfile identityとする。変更ファイルは関数spanと行連結blockを再計算し、関数content hashの変更を起点に、確定したcall/reference dependencyの逆向き到達範囲を再評価する。ERH、Rename、Preprocessor、宣言directiveは安全側にfile-level invalidationとする。
 
-画像・CSVなどの非ERB assetは独立namespaceでcacheし、ERB変更では無効化しない。cache headerにはengine version、index schema version、parser rule version、設定値、root identityを含め、変更時はfull rebuildする。一時manifestをLegacy oracle互換のFileOrder・function order・span・fallback理由で検証してからswapし、失敗時は前回の完全なindexを維持する。R1はこの設計と検証契約までで、差分cache、dependency graph、runtime統合、Phase 1は未着手である。
+画像・CSVなどの非ERB assetは独立namespaceでcacheし、ERB変更では無効化しない。cache headerにはengine version、index schema version、parser rule version、設定値、root identityを含め、変更時はfull rebuildする。一時manifestをLegacy oracle互換のFileOrder・function order・span・fallback理由で検証してからswapし、失敗時は前回の完全なindexを維持する。R1はこの設計と検証契約までであり、差分cache、dependency graph、runtime統合は未着手である。
 
 ### CSV変更（Phase 0B-R2設計）
 
@@ -127,7 +137,7 @@ CSVは依存性で分類する。表示・名称・説明などcompile時意味�
 
 Phase 1以降のFunctionId/event dispatchでは、LegacyのFileIndex、source order、`#PRI`、`#LATER`、`#ONLY`、`#SINGLE`、`CompatiCallEvent`等を再現する必要がある。Phase 0B-R2で検証したのは定義集合・FileOrder・StartLine・定義順までであり、event dispatch semanticsの完全差分は実行系が存在するPhaseで行う。
 
-## 19. 用語集
+## 20. 用語集
 
 * Source Index：ソース本文を持たず、ファイルと関数の位置を示す索引。
 * SourceSpan：物理byte offsetと行範囲。
