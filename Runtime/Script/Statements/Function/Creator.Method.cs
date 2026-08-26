@@ -3169,9 +3169,7 @@ internal static partial class FunctionMethodCreator
                 return 0;
             var c = ReadColor(Name, exm, arguments, 1);
 
-            using (var paint = new SKPaint() { Color = c.ToSKColor() }){
-                g.GSetBrush(paint);
-            }
+            g.GSetBrush(new SKPaint() { Color = c.ToSKColor() });
             return 1;
         }
     }
@@ -3220,10 +3218,7 @@ internal static partial class FunctionMethodCreator
                 return 0;
             var c = ReadColor(Name, exm, arguments, 1);
             var width = arguments[2].GetIntValue(exm);
-            using (var paint = new SKPaint() { Color = c.ToSKColor(), StrokeWidth = width, IsStroke = true })
-            {
-                g.GSetPen(paint);
-            }
+            g.GSetPen(new SKPaint() { Color = c.ToSKColor(), StrokeWidth = width, IsStroke = true });
             return 1;
         }
     }
@@ -3399,6 +3394,7 @@ internal static partial class FunctionMethodCreator
                 if (img.Width > AbstractImage.MAX_IMAGESIZE || img.Height > AbstractImage.MAX_IMAGESIZE)
                     return 0;
                 g.GCreateFromF(img, Config.TextDrawingMode == TextDrawingMode.WINAPI);
+                img = null;
             }
             catch (Exception e)
             {
@@ -4420,7 +4416,7 @@ internal static partial class FunctionMethodCreator
             try
             {
                 Config.CreateSavDir();
-                g.Bitmap.ToBitmap().Save(filepath);
+                g.SavePng(filepath);
             }
             catch
             {
@@ -4462,6 +4458,7 @@ internal static partial class FunctionMethodCreator
                 if (img.Width > AbstractImage.MAX_IMAGESIZE || img.Height > AbstractImage.MAX_IMAGESIZE)
                     return 0;
                 g.GCreateFromF(img, Config.TextDrawingMode == TextDrawingMode.WINAPI);
+                img = null;
             }
             catch (Exception e)
             {

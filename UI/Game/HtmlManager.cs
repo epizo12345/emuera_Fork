@@ -486,12 +486,8 @@ internal static partial class HtmlManager
                                     {
                                         borderStyle = new BorderStyle()
                                         {
-                                            Paint = new SKPaint()
-                                            {
-                                                Color = borderColor,
-                                                StrokeWidth = style.BorderWidth,
-                                                IsStroke = true
-                                            }
+                                            Color = borderColor,
+                                            StrokeWidth = style.BorderWidth
                                         };
                                     }
                                 }

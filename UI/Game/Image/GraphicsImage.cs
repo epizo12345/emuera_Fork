@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
@@ -73,10 +74,45 @@ internal sealed class GraphicsImage : AbstractImage
         if (useGDI)
             throw new NotImplementedException();
         GDispose();
-        Bitmap = new SKBitmap(img.Width, img.Height);
+        Image = img ?? throw new ArgumentNullException(nameof(img));
         size = new Size(img.Width, img.Height);
-        canvas = new SKCanvas(Bitmap);
-        canvas.DrawImage(img, new SKPoint(0, 0));
+    }
+
+    // [Emuera改修:MEM-14A 2026-08-26]
+    // file-backed Gは読み取り・描画中はSKImageのまま保持し、pixelを初めて変更する時だけ
+    // writable SKBitmapへ一度だけ移行して、元画像とSpriteから見える内容を一致させる。
+    void EnsureWritable()
+    {
+        if (Bitmap != null)
+        {
+            canvas ??= new SKCanvas(Bitmap);
+            return;
+        }
+        if (Image == null)
+            throw new NullReferenceException();
+
+        SKImage oldImage = Image;
+        SKBitmap bitmap = null;
+        SKCanvas newCanvas = null;
+        try
+        {
+            bitmap = new SKBitmap(oldImage.Width, oldImage.Height);
+            newCanvas = new SKCanvas(bitmap);
+            newCanvas.DrawImage(oldImage, new SKPoint(0, 0), SKSamplingOptions.Default, null);
+        }
+        catch
+        {
+            newCanvas?.Dispose();
+            bitmap?.Dispose();
+            throw;
+        }
+
+        SKCanvas oldCanvas = canvas;
+        Bitmap = bitmap;
+        canvas = newCanvas;
+        Image = null;
+        oldCanvas?.Dispose();
+        oldImage.Dispose();
     }
 
     /// <summary>
@@ -85,8 +121,7 @@ internal sealed class GraphicsImage : AbstractImage
     /// </summary>
     public void GClear(Color c)
     {
-        if (canvas == null)
-            throw new NullReferenceException();
+        EnsureWritable();
         canvas.Clear(c.ToSKColor());
     }
 
@@ -96,8 +131,7 @@ internal sealed class GraphicsImage : AbstractImage
     /// </summary>
     public void GFillRectangle(Rectangle rect)
     {
-        if (canvas == null)
-            throw new NullReferenceException();
+        EnsureWritable();
         if (_brush != null)
         {
             //canvas.FillRectangle(brush, rect);
@@ -119,31 +153,38 @@ internal sealed class GraphicsImage : AbstractImage
     List<SKPoint> _points;
     public void GDrawPolygon()
     {
-        if (canvas == null)
-            throw new NullReferenceException();
+        EnsureWritable();
         if (_points == null)
         {
             throw new NullReferenceException("DrawPolygonに渡されるPointsが空です");
         }
-        using (var paint = _pen ?? new SKPaint())
+        SKPaint paint = _pen ?? new SKPaint();
+        try
         {
             paint.Style = SKPaintStyle.Stroke;
             canvas.DrawPoints(SKPointMode.Polygon, [.. _points, _points[0]], paint);
         }
+        finally
+        {
+            if (_pen == null)
+                paint.Dispose();
+        }
     }
     public void GFillPolygon()
     {
-        if (canvas == null)
-            throw new NullReferenceException();
+        EnsureWritable();
         if (_points == null)
         {
             throw new NullReferenceException("FillPolygonに渡されるPointsが空です");
         }
-        using (var paint = _brush ?? new SKPaint())
+        SKPaint paint = _brush ?? new SKPaint();
+        try
         {
             paint.Style = SKPaintStyle.Fill;
 
-            var path = new SKPath();
+            // [Emuera改修:PERF-14N2 2026-08-26]
+            // polygonのpathはこの描画だけで使う一時native object。fieldへ保持せず、描画完了後に解放する。
+            using var path = new SKPath();
             foreach (var p in _points)
             {
                 path.LineTo(p);
@@ -151,11 +192,16 @@ internal sealed class GraphicsImage : AbstractImage
             path.LineTo(_points[0]);
             canvas.DrawPath(path, paint);
         }
+        finally
+        {
+            if (_brush == null)
+                paint.Dispose();
+        }
     }
 
     public void GDrawPolygonAddPoint(SKPoint point)
     {
-        if (canvas == null)
+        if (!IsCreated)
             throw new NullReferenceException();
         _points ??= [];
         _points.Add(point);
@@ -163,7 +209,7 @@ internal sealed class GraphicsImage : AbstractImage
 
     public void GDrawPolygonClearPoint()
     {
-        if (canvas == null)
+        if (!IsCreated)
             throw new NullReferenceException();
         if (_points == null)
         {
@@ -181,8 +227,13 @@ internal sealed class GraphicsImage : AbstractImage
     /// </summary>
     public void GDrawCImg(ASprite img, Rectangle destRect)
     {
-        if (canvas == null)
-            throw new NullReferenceException();
+        EnsureWritable();
+        if (img is ASpriteSingle single && ReferenceEquals(single.BaseImage, this))
+        {
+            using SKImage snapshot = SKImage.FromBitmap(Bitmap);
+            single.GraphicsDrawFromSnapshot(canvas, destRect, snapshot);
+            return;
+        }
         img.GraphicsDraw(canvas, destRect);
     }
 
@@ -192,8 +243,7 @@ internal sealed class GraphicsImage : AbstractImage
     /// </summary>
     public void GDrawCImg(ASprite img, Rectangle destRect, float[][] cm)
     {
-        if (canvas == null)
-            throw new NullReferenceException();
+        EnsureWritable();
         //挙動がよくわからないので4行目は単に無視する
         float[] skiaCM = [
             cm[0][0],cm[1][0],cm[2][0],cm[3][0],cm[0][4],
@@ -201,7 +251,16 @@ internal sealed class GraphicsImage : AbstractImage
             cm[0][2],cm[1][2],cm[2][2],cm[3][2],cm[2][4],
             cm[0][3],cm[1][3],cm[2][3],cm[3][3],cm[3][4],
         ];
-        var filter = SKColorFilter.CreateColorMatrix(skiaCM);
+        // [Emuera改修:PERF-14N2 2026-08-26]
+        // ColorMatrix用filterは描画中だけ必要な一時native resource。paintへ設定したまま描画を完了し、
+        // 既存のsampling / pixel semanticsを変えずに描画後だけ解放する。
+        using var filter = SKColorFilter.CreateColorMatrix(skiaCM);
+        if (img is ASpriteSingle single && ReferenceEquals(single.BaseImage, this))
+        {
+            using SKImage snapshot = SKImage.FromBitmap(Bitmap);
+            single.GraphicsDrawFromSnapshot(canvas, destRect, snapshot, filter);
+            return;
+        }
         img.GraphicsDraw(canvas, destRect, filter);
     }
 
@@ -211,10 +270,8 @@ internal sealed class GraphicsImage : AbstractImage
     /// </summary>
     public void GDrawG(GraphicsImage srcGra, Rectangle destRect, Rectangle srcRect)
     {
-        if (canvas == null)
-            throw new NullReferenceException();
-        var src = srcGra.GetBitmap();
-        canvas.DrawBitmap(src, srcRect.ToSKRect(), destRect.ToSKRect());
+        EnsureWritable();
+        srcGra.Draw(canvas, srcRect.ToSKRect(), destRect.ToSKRect());
     }
 
 
@@ -224,9 +281,7 @@ internal sealed class GraphicsImage : AbstractImage
     /// </summary>
     public void GDrawG(GraphicsImage srcGra, Rectangle destRect, Rectangle srcRect, float[][] cm)
     {
-        if (canvas == null)
-            throw new NullReferenceException();
-        var src = srcGra.GetBitmap();
+        EnsureWritable();
         ImageAttributes imageAttributes = new();
         ColorMatrix colorMatrix = new(cm);
         imageAttributes.SetColorMatrix(colorMatrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
@@ -238,10 +293,12 @@ internal sealed class GraphicsImage : AbstractImage
             cm[0][2],cm[1][2],cm[2][2],cm[3][2],cm[2][4],
             cm[0][3],cm[1][3],cm[2][3],cm[3][3],cm[3][4],
         ];
-        var filter = SKColorFilter.CreateColorMatrix(skiaCM);
+        // [Emuera改修:PERF-14N2 2026-08-26]
+        // ColorMatrix用filterは描画中だけ必要な一時native resource。描画完了後にDisposeし、既存のsampling / pixel / color-matrix semanticsは変更しない。
+        using var filter = SKColorFilter.CreateColorMatrix(skiaCM);
         using (var paint = new SKPaint() { ColorFilter = filter })
         {
-            canvas.DrawBitmap(src, srcRect.ToSKRect(), destRect.ToSKRect(), paint);
+            srcGra.Draw(canvas, srcRect.ToSKRect(), destRect.ToSKRect(), paint);
         }
     }
 
@@ -252,11 +309,16 @@ internal sealed class GraphicsImage : AbstractImage
     /// </summary>
     public void GDrawGWithMask(GraphicsImage srcGra, GraphicsImage maskGra, Point destPoint)
     {
-        if (canvas == null)
-            throw new NullReferenceException();
-        var destImg = GetBitmap().ToBitmap();
-        byte[] srcBytes = BytesFromBitmap(srcGra.GetBitmap().ToBitmap());
-        byte[] srcMaskBytes = BytesFromBitmap(maskGra.GetBitmap().ToBitmap());
+        EnsureWritable();
+        SKBitmap srcBitmap = srcGra.GetReadableBitmap(out bool disposeSrc);
+        SKBitmap maskBitmap = maskGra.GetReadableBitmap(out bool disposeMask);
+        using SKBitmap srcTemporary = disposeSrc ? srcBitmap : null;
+        using SKBitmap maskTemporary = disposeMask ? maskBitmap : null;
+        using var destImg = Bitmap.ToBitmap();
+        using var srcImg = srcBitmap.ToBitmap();
+        using var maskImg = maskBitmap.ToBitmap();
+        byte[] srcBytes = BytesFromBitmap(srcImg);
+        byte[] srcMaskBytes = BytesFromBitmap(maskImg);
         //Rectangle destRect = new Rectangle(destPoint.X, destPoint.Y, srcGra.Width, srcGra.Height);
 
         BitmapData bmpData =
@@ -311,11 +373,23 @@ internal sealed class GraphicsImage : AbstractImage
 
     public void GDrawText(string text, SKPoint point)
     {
+        EnsureWritable();
+        // [Emuera改修:PERF-14N2 2026-08-26]
+        // _fontがある場合はborrowed/cached objectなのでDraw側では解放しない。null時に作る一時fontだけを
+        // 描画後に解放し、FontFactory等の所有権は変更しない。
         var font = _font ?? new SKFont();
         point.Offset(0, -font.Metrics.Top);
-        using (var paint = _brush ?? new SKPaint())
+        SKPaint paint = _brush ?? new SKPaint();
+        try
         {
             canvas.DrawText(text, point, font, paint);
+        }
+        finally
+        {
+            if (_brush == null)
+                paint.Dispose();
+            if (_font == null)
+                font.Dispose();
         }
     }
 
@@ -325,12 +399,16 @@ internal sealed class GraphicsImage : AbstractImage
     }
     public void GSetBrush(SKPaint r)
     {
+        if (ReferenceEquals(_brush, r))
+            return;
         if (_brush != null)
             _brush.Dispose();
         _brush = r;
     }
     public void GSetPen(SKPaint r)
     {
+        if (ReferenceEquals(_pen, r))
+            return;
         if (_pen != null)
             _pen.Dispose();
         _pen = r;
@@ -363,15 +441,17 @@ internal sealed class GraphicsImage : AbstractImage
     }
     #endregion
     #region Bitmap読み込み・削除
-    /// <summary>
-    /// 未作成ならエラー
-    /// </summary>
-    public SKBitmap GetBitmap()
+    SKBitmap GetReadableBitmap(out bool temporary)
     {
-        if (Bitmap == null)
+        if (Bitmap != null)
+        {
+            temporary = false;
+            return Bitmap;
+        }
+        if (Image == null)
             throw new NullReferenceException();
-        //UnlockGraphics();
-        return Bitmap;
+        temporary = true;
+        return SKBitmap.FromImage(Image);
     }
     /// <summary>
     /// GSETCOLOR(int ID, int cARGB, int x, int y)
@@ -379,9 +459,7 @@ internal sealed class GraphicsImage : AbstractImage
     /// </summary>
     public void GSetColor(Color c, int x, int y)
     {
-        if (Bitmap == null)
-            throw new NullReferenceException();
-        //UnlockGraphics();
+        EnsureWritable();
         Bitmap.SetPixel(x, y, c.ToSKColor());
     }
 
@@ -391,10 +469,22 @@ internal sealed class GraphicsImage : AbstractImage
     /// </summary>
     public SKColor GGetColor(int x, int y)
     {
+        return GetPixelReadOnly(x, y);
+    }
+
+    public void SavePng(string filepath)
+    {
+        if (Image != null)
+        {
+            using SKData data = Image.Encode(SKEncodedImageFormat.Png, 100);
+            using FileStream stream = File.Open(filepath, FileMode.Create, FileAccess.Write, FileShare.None);
+            data.SaveTo(stream);
+            return;
+        }
         if (Bitmap == null)
             throw new NullReferenceException();
-        //UnlockGraphics();
-        return Bitmap.GetPixel(x, y);
+        using Bitmap bitmap = Bitmap.ToBitmap();
+        bitmap.Save(filepath);
     }
 
 
@@ -404,12 +494,12 @@ internal sealed class GraphicsImage : AbstractImage
     public void GDispose()
     {
         size = new Size(0, 0);
-        if (Bitmap == null)
-            return;
         if (canvas != null)
             canvas.Dispose();
         if (Bitmap != null)
             Bitmap.Dispose();
+        if (Image != null)
+            Image.Dispose();
         if (_brush != null)
             _brush.Dispose();
         if (_pen != null)
@@ -417,6 +507,7 @@ internal sealed class GraphicsImage : AbstractImage
         _points = null;
         canvas = null;
         Bitmap = null;
+        Image = null;
         _brush = null;
         _pen = null;
         _font = null;
@@ -436,7 +527,7 @@ internal sealed class GraphicsImage : AbstractImage
     #endregion
 
     #region 状態判定（Bitmap読み書きを伴わない）
-    public override bool IsCreated { get { return canvas != null; } }
+    public override bool IsCreated { get { return Image != null || Bitmap != null; } }
     /// <summary>
     /// int GWIDTH(int ID)
     /// </summary>

@@ -34,6 +34,8 @@ Windows 11ではメニューや設定画面にダークモードが適用され�
 - Phase 13R39.1で、通常モードの口上まとめ対象reloadだけをfull reloadへ昇格し、DebugMode / AnalysisModeでは従来のpartial/folder reloadを維持するよう修正しました。preprocessorはeager fallback、`[[...]]` renameは従来どおりです。
 - Phase 13R40.3で、`Data\setting.json`から設定できる日本語名のLazy ERB設定を正式採用しました。旧`LazyErb`形式から自動移行し、Data基準の`ERB\`配下だけを対象に、不正パスやERB root指定を拒否します。Preload時の不要なbulk cacheを抑制し、従来互換性とreload safetyを維持しています。
 - Phase 13R41B1で、`ERB\RPG\依頼`をLazy ERBの新しい既定対象へ追加しました。依頼5「教授の隠れ家」の一覧・本編・初回hydration、save/load、save219実戦闘を実機確認済みです。既存の明示的な`setting.json`のLazy対象は自動変更せず、欠落・null・新規設定のdefaultだけを更新します。Repeat1000では安定したruntime性能悪化を確認していません。
+- Phase 14N1で、Sprite / DIVの長寿命SKPaintを整理し、GraphicsImageをBrush/Penのownerへ統一しました。起動A/BではPrivate Memory / Working Setの削減方向を確認していますが、環境依存の結果です。
+- Phase 14N2で、ColorMatrix、polygon、default font、negative flipが使うtemporary Skia native resourceを描画スコープ内で明示解放するよう整理しました。描画結果、sampling、flip semanticsは変更していません。native memoryの削減量は未測定です。
 - Phase 13R37で`LogicalLine`内部の`ScriptPosition`をfileId/lineNoへ圧縮し、外部位置情報とsave互換性を維持したまま`InstructionLine` shallow sizeを80 bytesから72 bytesへ削減
 - Phase 13R38で通常表示ログの`displayLineList`をring buffer化し、`MaxLog=50000`到達後の先頭破棄をO(1)化。論理index順、描画、バックログ、選択肢、save/ERB semanticsを維持
 - Phase 13R36で`InstructionLine`の`FunctionIdentifier`専用参照slotを削除し、`FunctionCode`とassignment `OperatorCode`をpackしました。built-in lookup、SET、method-as-instruction identity、lazy parsing、save互換性を維持し、shallow sizeを88 bytesから80 bytesへ削減
@@ -56,12 +58,12 @@ Windows 11ではメニューや設定画面にダークモードが適用され�
 - `InstructionLine`のSET左辺専用slotを既存`auxiliaryData`へ統合し、retained shallow sizeを120 bytesから112 bytesへ削減
 
 # 配布フォルダについて
-『配布/Emuera.NET_最終通常版』には、2026-08-23時点のmainに対応する.NET 10正式single-file EXEを置いています。
+『配布/Emuera.NET_最終通常版』には、2026-08-26時点のmainに対応する.NET 10正式single-file EXEを置いています。
 
 - 対象: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 形式: フレームワーク依存・単一EXE
-- 『Emuera.exe』: 配布用実行ファイル（24,659,690バイト、SHA-256 `7CA2A3F6FCF5690F710EC47F6B07FB3C1EC08EF83A5F296DC1BD312F3E4BF499`）
+- 『Emuera.exe』: 配布用実行ファイル（24,663,786バイト、SHA-256 `45DB53405DD36962485B4537B0FFC7F2641A2F92F264DE3D8E98AB20F0D03F2E`）
 - 『README.md』: 導入方法と採用機能
 - 『SHA256SUMS.txt』: 配布物の改ざん確認用ハッシュ
 

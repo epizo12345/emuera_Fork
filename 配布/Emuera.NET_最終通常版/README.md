@@ -1,19 +1,22 @@
 # Emuera.NET 最終通常版
 
-- 更新日: 2026-08-25
+- 更新日: 2026-08-26
 - 基礎: BugFix_Test `7b7dd3bf240eff4fdfc7094f4175de0e014532b7`
 - 対象OS: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
-- `Emuera.exe` サイズ: 24,659,690バイト（約23.5 MiB）
-- `Emuera.exe` SHA-256: `C41D88600D5FBE802BBCAF428340151AE689174550915C863DAA47136DC9AC2F`
-- `Emuera.exe` ProductVersion: `0.2.6.0+2e4ad13c4882dd9b2b641a3ce24ed06de71c0687`（suffixはEXEを生成したsource commit）
+- `Emuera.exe` サイズ: 24,663,786バイト（約23.5 MiB）
+- `Emuera.exe` SHA-256: `45DB53405DD36962485B4537B0FFC7F2641A2F92F264DE3D8E98AB20F0D03F2E`
+- `Emuera.exe` ProductVersion: `0.2.6.0+485f2e37f011234d3d25adcb9e7c5925b0f4c435`（suffixはEXEを生成したsource commit）
 - publish条件: Release / win-x64 / framework-dependent / self-contained false / PublishSingleFile=true
 - JSON設定ファイルをUTF-8 BOM付きへ統一しました。`setting.json` / `setting_user.json`は新規生成・保存時にBOM付きとなり、既存のUTF-8 BOMなし設定は本文を維持して自動移行します。malformed設定は書き換えません。
 - Phase 13R41Iとして、Lazyから到達した未解析Eager関数のDeferred Eager処理、同一Lazy fileのready判定、runtime parse後のwarning/error処理、#DIM/#DIMS transaction、Rename安全化、Lazy state存在時のRELOADERB全体再読み込み昇格、設定条件による安全側のLazy制限、ReduceArgumentOnLoad=ONCE更新判定を正式採用しました。correctness validation、save39 Request/Event/調教口上/save-load、save219/Repeat、settings matrix 9/9を確認済みです。性能はR41C比で実質維持です。
 - Phase 13R41B1として、`ERB/RPG/依頼`をLazy ERBの新しい既定対象へ追加しました。依頼5「教授の隠れ家」の一覧・本編・初回hydration、save/load、save219実戦闘を実機確認済みです。既存の明示的な`setting.json`のLazy対象は自動変更せず、欠落・null・新規設定のdefaultだけを更新します。Repeat1000では安定したruntime性能悪化を確認していません。
 - Phase 13R41B2として、`ERB/RPG/イベント`をLazy ERBの新しい既定対象へ追加しました。save39のイベント一覧表示後も596 files / 8,255,909 bytesが未接触で、Trial startup Working Set中央値は約69.2MB減少しました。イベント30「神野の娘」本編、save/load、save219実戦闘を実機確認済みです。既存の明示的な`setting.json`へEventは自動追加しません。Repeat1000では安定したruntime性能悪化を確認していません。
 - Phase 13R41Cとして、配布EXEのProductVersion suffixがEXEを生成したsource commitを示すよう、clean commitからのpublishとfull SHA検証手順を整備しました。ゲーム機能・Lazy対象・GC policyは変更していません。
+- Phase 14Aとして、ファイルから読み込んだG画像を必要になるまでSKImageのまま保持し、初回書き込み時のみSKBitmapへ変換するCopy-on-Write方式へ変更しました。Sprite描画時の不要な画像snapshot生成も抑止し、画像メモリ使用量とnative allocationを削減します。既存の画像描画・self draw互換性は維持しています。
+- Phase 14N1として、SpriteやDIV表示で不要なSKPaintを長寿命保持しないようnative objectの管理を整理しました。GSETBRUSH/GSETPENのownershipをGraphicsImageへ統一し、描画中に保持済みPaintを誤ってDisposeする問題も解消しています。起動A/Bでは環境依存の中央値としてPrivate Memory/Working Setの削減方向を確認しています。
+- Phase 14N2として、ColorMatrix描画のtemporary SKColorFilter、polygon描画のSKPath、default font描画のtemporary SKFont、negative flip描画のtemporary SKBitmapを使用直後に明示解放するよう整理しました。長時間・反復描画時にfinalizerへ依存してnative objectが滞留する可能性を抑制します。既存の描画結果・sampling・flip semanticsは変更していません。native memoryの削減量は未測定です。
 - Phase 4A/B/C warning cleanupを反映（Release warning 52件から37件、new warning 0、Normal/Kojo起動確認済み）
 - Phase 5A/B/C focused bugfixを反映（VARSIZE/macro、ARRAYMSORT、GGETCOLOR/GSETCOLOR、SPRITEGETCOLOR。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
 - Phase 6A/B focused bugfixを反映（SPRITEANIMEADDFRAMEの無効Sprite入力時NRE修正、ClipboardのBufferSize/MinTimer 0・負値の安全化、ConfigDialogの最小値1制限とruntime clamp。Release 0 errors、37 warnings、focused/Normal/Kojo確認済み）
