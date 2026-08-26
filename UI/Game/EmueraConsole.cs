@@ -951,7 +951,7 @@ internal sealed partial class EmueraConsole : IDisposable
             mapPoint.Y = clientPoint.Y + cbgButtonMap.Height;
             if (mapPoint.X >= 0 && mapPoint.Y >= 0 && mapPoint.X < cbgButtonMap.Width && mapPoint.Y < cbgButtonMap.Height)
             {
-                Color c = cbgButtonMap.Bitmap.GetPixel(mapPoint.X, mapPoint.Y).ToDrawingColor();
+                Color c = cbgButtonMap.GGetColor(mapPoint.X, mapPoint.Y).ToDrawingColor();
                 if (c.A == 255)
                 {
                     buttonNum = c.ToArgb() & 0xFFFFFF;
@@ -1904,7 +1904,7 @@ internal sealed partial class EmueraConsole : IDisposable
             mapPoint.Y = mapPoint.Y + cbgButtonMap.Height;
             if (mapPoint.X >= 0 && mapPoint.Y >= 0 && mapPoint.X < cbgButtonMap.Width && mapPoint.Y < cbgButtonMap.Height)
             {
-                Color c = cbgButtonMap.Bitmap.GetPixel(mapPoint.X, mapPoint.Y).ToDrawingColor();
+                Color c = cbgButtonMap.GGetColor(mapPoint.X, mapPoint.Y).ToDrawingColor();
                 if (c.A == 255)
                 {
                     buttonNum = c.ToArgb() & 0xFFFFFF;

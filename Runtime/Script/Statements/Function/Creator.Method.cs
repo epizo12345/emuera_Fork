@@ -3399,6 +3399,7 @@ internal static partial class FunctionMethodCreator
                 if (img.Width > AbstractImage.MAX_IMAGESIZE || img.Height > AbstractImage.MAX_IMAGESIZE)
                     return 0;
                 g.GCreateFromF(img, Config.TextDrawingMode == TextDrawingMode.WINAPI);
+                img = null;
             }
             catch (Exception e)
             {
@@ -4420,7 +4421,7 @@ internal static partial class FunctionMethodCreator
             try
             {
                 Config.CreateSavDir();
-                g.Bitmap.ToBitmap().Save(filepath);
+                g.SavePng(filepath);
             }
             catch
             {
@@ -4462,6 +4463,7 @@ internal static partial class FunctionMethodCreator
                 if (img.Width > AbstractImage.MAX_IMAGESIZE || img.Height > AbstractImage.MAX_IMAGESIZE)
                     return 0;
                 g.GCreateFromF(img, Config.TextDrawingMode == TextDrawingMode.WINAPI);
+                img = null;
             }
             catch (Exception e)
             {

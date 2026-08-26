@@ -45,7 +45,7 @@ internal sealed class ConstImage : AbstractImage
 
     public override void Dispose()
     {
-        if (Bitmap == null)
+        if (base.Bitmap == null && Image == null)
         {
             GC.SuppressFinalize(this);
             return;
@@ -55,10 +55,10 @@ internal sealed class ConstImage : AbstractImage
             canvas.Dispose();
             canvas = null;
         }
-        if (Bitmap != null)
+        if (base.Bitmap != null)
         {
-            Bitmap.Dispose();
-            Bitmap = null;
+            base.Bitmap.Dispose();
+            base.Bitmap = null;
         }
         Image?.Dispose();
         Image = null;
@@ -73,6 +73,6 @@ internal sealed class ConstImage : AbstractImage
 
     public override bool IsCreated
     {
-        get { return Image != null || Bitmap != null; }
+        get { return Image != null || base.Bitmap != null; }
     }
 }
