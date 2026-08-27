@@ -68,6 +68,8 @@ public sealed record CompiledFunction(string FileIdentity, string Name, SourceSp
 
 public static class LegacyOpcodeMap
 {
+    // [Emuera改修:NEXT-1A-R3 2026-08-27]
+    // Legacyのopcode名を1対1で保持する。CALL/TRYCALL/PRINT系を意味統合すると差分検証と将来の評価順を壊すため、未対応はUnsupportedへ送る。
     private static readonly IReadOnlyDictionary<string, PrototypeOpcode> Map =
         Enum.GetValues<PrototypeOpcode>().Where(static opcode => opcode != PrototypeOpcode.Unsupported)
             .ToDictionary(static opcode => opcode.ToString(), static opcode => opcode, StringComparer.OrdinalIgnoreCase);

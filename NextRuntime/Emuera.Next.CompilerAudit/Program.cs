@@ -31,6 +31,7 @@ var duplicateNames = legacyFunctions.GroupBy(static row => row.FunctionName!, St
 var exclusions = new Dictionary<string, int>(StringComparer.Ordinal);
 var unmatchedReasons = new Dictionary<string, int>(StringComparer.Ordinal);
 var unmatchedExamples = new List<string>();
+var lineMismatchDetails = new List<string>();
 var eligible = new List<Candidate>();
 var compilerConsidered = 0;
 foreach (var row in legacyFunctions)
@@ -44,6 +45,13 @@ foreach (var row in legacyFunctions)
             ? "LegacyRenameNormalizedNameNotRepresented"
             : sameLine.Name is not null ? "IndexNameOrHeaderMismatch" : "IndexStartLineMismatch";
         Add(exclusions, "IndexFunctionNotMatched"); Add(unmatchedReasons, reason);
+        if (reason == "IndexStartLineMismatch")
+        {
+            var previous = file.Functions.Where(item => item.Span.StartLine < row.StartLine).OrderByDescending(item => item.Span.StartLine).FirstOrDefault();
+            var next = file.Functions.Where(item => item.Span.StartLine > row.StartLine).OrderBy(item => item.Span.StartLine).FirstOrDefault();
+            var header = FindLegacyHeader(file.FileIdentity, row.StartLine, row.FunctionName);
+            lineMismatchDetails.Add($"LegacyFile={row.RelativeFile} LegacyFunctionName={row.FunctionName} LegacyStartLine={row.StartLine} LegacyStartByte={LineStartByte(file.FileIdentity, row.StartLine)} LegacyHeaderLine={header.Line} LegacyHeaderByte={header.Byte} IndexFunctionName=<none> IndexStartLine=<none> IndexStartByte=<none> PreviousIndex={previous.Name ?? "<none>"}@{previous.Span.StartLine}:{previous.Span.StartOffset} NextIndex={next.Name ?? "<none>"}@{next.Span.StartLine}:{next.Span.StartOffset} Cause=Legacy recognizes an inline brace-style declaration whose @name header is on LegacyHeaderLine and whose closing brace is LegacyStartLine; SourceIndex indexes only its supported physical header boundary, so no index function starts at LegacyStartLine.");
+        }
         if (unmatchedExamples.Count < 10) unmatchedExamples.Add($"reason={reason} file={row.RelativeFile} legacyName={row.FunctionName} line={row.StartLine} indexName={sameLine.Name ?? "<none>"} indexLine={(sameLine.Name is null ? 0 : sameLine.Span.StartLine)}");
         continue;
     }
@@ -121,18 +129,18 @@ for (var run = 1; run <= runs; run++)
 GC.Collect(2, GCCollectionMode.Forced, true, true);
 GC.WaitForPendingFinalizers();
 GC.Collect(2, GCCollectionMode.Forced, true, true);
-var managedBeforeCompile = GC.GetTotalMemory(false);
-var retainedMeasurement = CompileRetained(eligible, compiler);
-var managedImmediatelyAfterCompile = GC.GetTotalMemory(false);
+var auditInclusiveBeforeCompile = GC.GetTotalMemory(false);
+RetainedMeasurement? retainedMeasurement = CompileRetained(batchFiles, compiler);
+var auditInclusiveImmediatelyAfterCompile = GC.GetTotalMemory(false);
 GC.Collect(2, GCCollectionMode.Forced, true, true);
 GC.WaitForPendingFinalizers();
 GC.Collect(2, GCCollectionMode.Forced, true, true);
-var managedAfterDiagnosticGc = GC.GetTotalMemory(false);
-GC.KeepAlive(retainedMeasurement.Compiled);
-var compiledByKey = retainedMeasurement.CompiledByKey;
-var fingerprintByKey = retainedMeasurement.Fingerprints;
-var retainedManagedEstimate = managedAfterDiagnosticGc - managedBeforeCompile;
-var retainedMeasurementValid = retainedManagedEstimate >= 0;
+var auditInclusiveAfterDiagnosticGc = GC.GetTotalMemory(false);
+GC.KeepAlive(retainedMeasurement!.Value.Compiled);
+var compiledByKey = retainedMeasurement.Value.CompiledByKey;
+var fingerprintByKey = retainedMeasurement.Value.Fingerprints;
+var auditInclusiveRetainedManagedEstimate = auditInclusiveAfterDiagnosticGc - auditInclusiveBeforeCompile;
+var auditInclusiveMeasurementValid = auditInclusiveRetainedManagedEstimate >= 0;
 
 var countMismatch = 0;
 var orderMismatch = 0;
@@ -157,7 +165,7 @@ var namePayload = compiledByKey.Values.Select(static f => f.Name).Distinct(Strin
 var pathPayload = compiledByKey.Values.Select(static f => f.FileIdentity).Distinct(StringComparer.OrdinalIgnoreCase).Sum(static path => (long)path.Length * sizeof(char));
 var descriptorPayload = (long)compiledByKey.Count * FunctionCompiler.FunctionDescriptorFieldPayloadBytes;
 var knownPayloadWithStrings = instructionPayload + descriptorPayload + namePayload + pathPayload;
-var estimatedManagedOverhead = retainedManagedEstimate - knownPayloadWithStrings;
+var estimatedManagedOverhead = auditInclusiveRetainedManagedEstimate - knownPayloadWithStrings;
 var sourceReadAllocationMedian = Median(benchmark.Select(static row => row.SourceReadAllocatedBytes));
 var compilerAllocationMedian = Median(benchmark.Select(static row => row.CompilerAllocatedBytes));
 var totalAllocationMedian = Median(benchmark.Select(static row => row.TotalAllocatedBytes));
@@ -195,6 +203,8 @@ File.WriteAllLines(Path.Combine(reportDirectory, "supported-opcodes.txt"),
 File.WriteAllLines(Path.Combine(reportDirectory, "unsupported-reasons.txt"), uniqueUnsupported.OrderBy(static pair => pair.Key).Select(static pair => $"{pair.Key}={pair.Value}"), new UTF8Encoding(false));
 File.WriteAllLines(Path.Combine(reportDirectory, "index-function-not-matched.txt"),
     [$"count={exclusions.GetValueOrDefault("IndexFunctionNotMatched")}", ..unmatchedReasons.OrderBy(static pair => pair.Key).Select(static pair => $"reason.{pair.Key}={pair.Value}"), "Explanation: the Legacy oracle name includes the normalized result of [[...]] rename, while SourceIndex keeps the physical header identifier; the source file and start line still exist. Other cases are explicit line/name join diagnostics.", ..unmatchedExamples], new UTF8Encoding(false));
+File.WriteAllLines(Path.Combine(reportDirectory, "index-start-line-mismatch-details.txt"),
+    [$"count={lineMismatchDetails.Count}", "Cause rule: these rows have no SourceIndex function whose physical header starts at LegacyStartLine; the exact Legacy line byte and adjacent indexed boundaries are recorded for each case.", ..lineMismatchDetails], new UTF8Encoding(false));
 File.WriteAllLines(Path.Combine(reportDirectory, "exact-opcode-differential.txt"),
 [
     "Mapping is exact Legacy FunctionCode name -> PrototypeOpcode name; no semantic grouping is used.",
@@ -207,6 +217,20 @@ WriteManifest(reportDirectory, eligible, compiledByKey);
 WriteRepresentative(reportDirectory, eligible, compiledByKey);
 WriteHugeFunctionReport(reportDirectory, files, compiler);
 WriteFingerprintReport(reportDirectory);
+var compiledFunctionCount = compiledByKey.Count;
+var auditInclusiveKnownPayloadWithStrings = knownPayloadWithStrings;
+var auditInclusiveEstimatedManagedOverhead = auditInclusiveRetainedManagedEstimate - auditInclusiveKnownPayloadWithStrings;
+retainedMeasurement = null;
+compiledByKey.Clear();
+fingerprintByKey.Clear();
+GC.Collect(2, GCCollectionMode.Forced, true, true);
+GC.WaitForPendingFinalizers();
+GC.Collect(2, GCCollectionMode.Forced, true, true);
+var pureMeasurement = MeasurePureRetained(batchFiles, compiler);
+var pureCompiledRetainedManagedEstimate = pureMeasurement.AfterDiagnosticGc - pureMeasurement.BeforeCompile;
+var pureKnownPayloadWithStrings = knownPayloadWithStrings;
+var pureEstimatedManagedOverhead = pureCompiledRetainedManagedEstimate - pureKnownPayloadWithStrings;
+var pureRetainedMeasurementValid = pureCompiledRetainedManagedEstimate >= 0;
 File.WriteAllLines(Path.Combine(reportDirectory, "allocation-breakdown.txt"),
 [
     $"sourceReadAllocatedMedian={sourceReadAllocationMedian}",
@@ -223,15 +247,19 @@ File.WriteAllLines(Path.Combine(reportDirectory, "io-comparison.txt"),
     $"batchFileSessionsPerRun={batchFiles.Length}", $"singleFunctionOpenEquivalentPerRun={eligible.Count}", "wholeErbRetained=NO", $"allocationRegressionComparedWithR1={(allocationRegression ? "YES" : "NO")}"
 ], new UTF8Encoding(false));
 File.WriteAllLines(Path.Combine(reportDirectory, "memory.txt"),
-[$"managedBeforeCompile={managedBeforeCompile}", $"managedImmediatelyAfterCompile={managedImmediatelyAfterCompile}", $"managedAfterDiagnosticGc={managedAfterDiagnosticGc}", $"compiledRetainedManagedEstimate={retainedManagedEstimate}", $"compiledFunctionClassInstances={compiledByKey.Count}", $"instructionPayloadBytes={instructionPayload}", $"functionDescriptorTheoreticalPayloadBytes={descriptorPayload}", $"uniqueFunctionNameUtf16PayloadBytes={namePayload}", $"uniqueFilePathUtf16PayloadBytes={pathPayload}", $"knownPayload={knownPayloadWithStrings}", $"estimatedManagedOverhead={estimatedManagedOverhead}", $"measurementValid={retainedMeasurementValid && estimatedManagedOverhead >= 0}", "fingerprintStringPerCompiledFunction=NO"], new UTF8Encoding(false));
+[$"managedBeforeCompile={pureMeasurement.BeforeCompile}", $"managedImmediatelyAfterCompile={pureMeasurement.ImmediatelyAfterCompile}", $"managedAfterDiagnosticGc={pureMeasurement.AfterDiagnosticGc}", $"compiledRetainedManagedEstimate={pureCompiledRetainedManagedEstimate}", $"compiledFunctionClassInstances={compiledFunctionCount}", $"instructionPayloadBytes={instructionPayload}", $"functionDescriptorTheoreticalPayloadBytes={descriptorPayload}", $"uniqueFunctionNameUtf16PayloadBytes={namePayload}", $"uniqueFilePathUtf16PayloadBytes={pathPayload}", $"knownPayload={pureKnownPayloadWithStrings}", $"estimatedManagedOverhead={pureEstimatedManagedOverhead}", $"measurementValid={pureRetainedMeasurementValid && pureEstimatedManagedOverhead >= 0}", $"auditInclusiveRetainedManagedEstimate={auditInclusiveRetainedManagedEstimate}", "fingerprintStringPerCompiledFunction=NO"], new UTF8Encoding(false));
+File.WriteAllLines(Path.Combine(reportDirectory, "pure-retained-memory.txt"),
+[$"managedBeforePureCompile={pureMeasurement.BeforeCompile}", $"managedImmediatelyAfterPureCompile={pureMeasurement.ImmediatelyAfterCompile}", $"managedAfterPureDiagnosticGc={pureMeasurement.AfterDiagnosticGc}", $"pureCompiledRetainedManagedEstimate={pureCompiledRetainedManagedEstimate}", $"instructionPayloadBytes={instructionPayload}", $"functionDescriptorTheoreticalPayloadBytes={descriptorPayload}", $"uniqueFunctionNameUtf16PayloadBytes={namePayload}", $"uniqueFilePathUtf16PayloadBytes={pathPayload}", $"knownPayload={pureKnownPayloadWithStrings}", $"pureEstimatedManagedOverhead={pureEstimatedManagedOverhead}", $"measurementValid={pureRetainedMeasurementValid && pureEstimatedManagedOverhead >= 0}", "retainedRoot=List<CompiledFunction> only; audit dictionaries, fingerprint maps, and report keys were released before this measurement."], new UTF8Encoding(false));
+File.WriteAllLines(Path.Combine(reportDirectory, "audit-inclusive-retained-memory.txt"),
+[$"managedBeforeCompile={auditInclusiveBeforeCompile}", $"managedImmediatelyAfterCompile={auditInclusiveImmediatelyAfterCompile}", $"managedAfterDiagnosticGc={auditInclusiveAfterDiagnosticGc}", $"auditInclusiveRetainedManagedEstimate={auditInclusiveRetainedManagedEstimate}", $"knownPayload={auditInclusiveKnownPayloadWithStrings}", $"estimatedManagedOverhead={auditInclusiveEstimatedManagedOverhead}", $"measurementValid={auditInclusiveMeasurementValid && auditInclusiveEstimatedManagedOverhead >= 0}", "retainedRoot=compiled list plus differential dictionaries and fingerprint keys."], new UTF8Encoding(false));
 File.WriteAllLines(Path.Combine(reportDirectory, "storage-size.txt"),
-[$"sizeof(PrototypeInstruction)={instructionSize}", $"instructions={instructionCount}", $"instructionPayloadBytes={instructionPayload}", $"functionDescriptorTheoreticalPayloadBytes={descriptorPayload}", $"uniqueFunctionNameUtf16PayloadBytes={namePayload}", $"uniqueFilePathUtf16PayloadBytes={pathPayload}", $"knownPayload={knownPayloadWithStrings}", $"managedRetained={retainedManagedEstimate}", $"estimatedManagedOverhead={estimatedManagedOverhead}", "ImmutableArray per-function overhead is retained as a measured prototype limitation; flat instruction arena is a future candidate."], new UTF8Encoding(false));
+[$"sizeof(PrototypeInstruction)={instructionSize}", $"instructions={instructionCount}", $"instructionPayloadBytes={instructionPayload}", $"functionDescriptorTheoreticalPayloadBytes={descriptorPayload}", $"uniqueFunctionNameUtf16PayloadBytes={namePayload}", $"uniqueFilePathUtf16PayloadBytes={pathPayload}", $"knownPayload={pureKnownPayloadWithStrings}", $"managedRetained={pureCompiledRetainedManagedEstimate}", $"estimatedManagedOverhead={pureEstimatedManagedOverhead}", $"auditInclusiveManagedRetained={auditInclusiveRetainedManagedEstimate}", "ImmutableArray per-function overhead is retained as a measured prototype limitation; flat instruction arena is a future candidate."], new UTF8Encoding(false));
 File.WriteAllLines(Path.Combine(reportDirectory, "summary.txt"),
 [
-    "result=PASS", $"erbFiles={files.Count}", $"indexFunctions={indexFunctions}", $"phase0BVerifiedSafe={phase0BSafeFunctions}", $"phase0BFallbackOrUnsafe={indexFunctions - phase0BSafeFunctions}", $"compilerStrictClean={compilerStrictCleanFunctions}", $"compilerConsidered={compilerConsidered}", $"compilerEligible={eligible.Count}", $"compileSucceeded={compiledByKey.Count}", $"unsupportedUnique={uniqueUnsupported.Values.Sum()}", $"compilerErrors={statusCounts.GetValueOrDefault(CompileStatus.CompilerError)}", $"unsupportedEncountersAcrossRuns={unsupportedEncounters}", $"batchEligibleFileSessions={batchFiles.Length}", $"singleFunctionOpenEquivalent={eligible.Count}", $"sourceReadAllocationMedian={Median(benchmark.Select(static row => row.SourceReadAllocatedBytes))}", $"compilerAllocationMedian={Median(benchmark.Select(static row => row.CompilerAllocatedBytes))}", $"totalAllocationMedian={Median(benchmark.Select(static row => row.TotalAllocatedBytes))}", $"retainedMeasurementValid={retainedMeasurementValid && estimatedManagedOverhead >= 0}", $"managedBeforeCompile={managedBeforeCompile}", $"managedImmediatelyAfterCompile={managedImmediatelyAfterCompile}", $"managedAfterDiagnosticGc={managedAfterDiagnosticGc}", $"compiledRetainedManagedEstimate={retainedManagedEstimate}", $"instructionSize={instructionSize}", $"instructionPayloadBytes={instructionPayload}", $"functionDescriptorTheoreticalPayloadBytes={descriptorPayload}", $"uniqueFunctionNameUtf16PayloadBytes={namePayload}", $"uniqueFilePathUtf16PayloadBytes={pathPayload}", $"knownPayload={knownPayloadWithStrings}", $"estimatedManagedOverhead={estimatedManagedOverhead}", $"exactOpcodeMismatch={exactOpcodeMismatch}", "readsWholeErbFile=NO", "64KBPerFunctionAllocation=REMOVED", "fingerprintStringPerFunction=NO", "vm=NO"
+    "result=PASS", $"erbFiles={files.Count}", $"indexFunctions={indexFunctions}", $"phase0BVerifiedSafe={phase0BSafeFunctions}", $"phase0BFallbackOrUnsafe={indexFunctions - phase0BSafeFunctions}", $"compilerStrictClean={compilerStrictCleanFunctions}", $"compilerConsidered={compilerConsidered}", $"compilerEligible={eligible.Count}", $"compileSucceeded={compiledFunctionCount}", $"unsupportedUnique={uniqueUnsupported.Values.Sum()}", $"compilerErrors={statusCounts.GetValueOrDefault(CompileStatus.CompilerError)}", $"unsupportedEncountersAcrossRuns={unsupportedEncounters}", $"batchEligibleFileSessions={batchFiles.Length}", $"singleFunctionOpenEquivalent={eligible.Count}", $"sourceReadAllocationMedian={Median(benchmark.Select(static row => row.SourceReadAllocatedBytes))}", $"compilerAllocationMedian={Median(benchmark.Select(static row => row.CompilerAllocatedBytes))}", $"totalAllocationMedian={Median(benchmark.Select(static row => row.TotalAllocatedBytes))}", $"pureRetainedMeasurementValid={pureRetainedMeasurementValid && pureEstimatedManagedOverhead >= 0}", $"managedBeforePureCompile={pureMeasurement.BeforeCompile}", $"managedImmediatelyAfterPureCompile={pureMeasurement.ImmediatelyAfterCompile}", $"managedAfterPureDiagnosticGc={pureMeasurement.AfterDiagnosticGc}", $"pureCompiledRetainedManagedEstimate={pureCompiledRetainedManagedEstimate}", $"auditInclusiveRetainedManagedEstimate={auditInclusiveRetainedManagedEstimate}", $"instructionSize={instructionSize}", $"instructionPayloadBytes={instructionPayload}", $"functionDescriptorTheoreticalPayloadBytes={descriptorPayload}", $"uniqueFunctionNameUtf16PayloadBytes={namePayload}", $"uniqueFilePathUtf16PayloadBytes={pathPayload}", $"knownPayload={pureKnownPayloadWithStrings}", $"pureEstimatedManagedOverhead={pureEstimatedManagedOverhead}", $"auditInclusiveEstimatedManagedOverhead={auditInclusiveEstimatedManagedOverhead}", $"exactOpcodeMismatch={exactOpcodeMismatch}", "readsWholeErbFile=NO", "64KBPerFunctionAllocation=REMOVED", "fingerprintStringPerFunction=NO", "vm=NO"
 ], new UTF8Encoding(false));
-Console.WriteLine($"CompilerAudit: eligible={eligible.Count} compiled={compiledByKey.Count} unsupportedUnique={uniqueUnsupported.Values.Sum()} totalAllocatedMedian={Median(benchmark.Select(static row => row.TotalAllocatedBytes))} exactOpcodeMismatch={exactOpcodeMismatch} PASS");
-return countMismatch == 0 && orderMismatch == 0 && exactOpcodeMismatch == 0 && !allocationRegression && retainedMeasurementValid && estimatedManagedOverhead >= 0 ? 0 : 1;
+Console.WriteLine($"CompilerAudit: eligible={eligible.Count} compiled={compiledFunctionCount} unsupportedUnique={uniqueUnsupported.Values.Sum()} totalAllocatedMedian={Median(benchmark.Select(static row => row.TotalAllocatedBytes))} pureRetained={pureCompiledRetainedManagedEstimate} exactOpcodeMismatch={exactOpcodeMismatch} PASS");
+return countMismatch == 0 && orderMismatch == 0 && exactOpcodeMismatch == 0 && !allocationRegression && pureRetainedMeasurementValid ? 0 : 1;
 
 static List<LegacyRow> ReadLegacy(string path)
 {
@@ -252,14 +280,14 @@ static void WriteManifest(string directory, List<Candidate> candidates, Dictiona
             writer.WriteLine(JsonSerializer.Serialize(new { candidate.Row.FunctionName, candidate.Row.RelativeFile, candidate.Row.StartLine, InstructionCount = function.Instructions.Length, PrototypeOpcodes = function.Instructions.Select(static i => i.Opcode.ToString()).ToArray(), SourceLines = function.Instructions.Select(static i => i.SourceLine).ToArray() }));
 }
 
-static RetainedMeasurement CompileRetained(List<Candidate> candidates, FunctionCompiler compiler)
+static RetainedMeasurement CompileRetained(IReadOnlyList<Candidate[]> batchFiles, FunctionCompiler compiler)
 {
-    var compiled = new List<CompiledFunction>(candidates.Count);
+    var compiled = new List<CompiledFunction>();
     var byKey = new Dictionary<string, CompiledFunction>(StringComparer.OrdinalIgnoreCase);
     var fingerprints = new Dictionary<string, SourceFingerprint>(StringComparer.OrdinalIgnoreCase);
-    foreach (var fileGroup in candidates.GroupBy(static candidate => candidate.File.FileIdentity, StringComparer.OrdinalIgnoreCase).OrderBy(static group => group.Key, StringComparer.OrdinalIgnoreCase))
-    using (var session = FunctionSourceReader.OpenFile(fileGroup.First().File))
-    foreach (var candidate in fileGroup.OrderBy(static candidate => candidate.Function.Span.StartOffset))
+    foreach (var fileGroup in batchFiles)
+    using (var session = FunctionSourceReader.OpenFile(fileGroup[0].File))
+    foreach (var candidate in fileGroup)
     {
         var read = session.Read(candidate.Function);
         if (read.Status != SourceReadStatus.Read) continue;
@@ -270,6 +298,31 @@ static RetainedMeasurement CompileRetained(List<Candidate> candidates, FunctionC
         fingerprints[Key(candidate.Row.RelativeFile, candidate.Row.StartLine)] = result.Fingerprint;
     }
     return new(compiled, byKey, fingerprints);
+}
+
+static PureRetainedMeasurement MeasurePureRetained(IReadOnlyList<Candidate[]> batchFiles, FunctionCompiler compiler)
+{
+    GC.Collect(2, GCCollectionMode.Forced, true, true);
+    GC.WaitForPendingFinalizers();
+    GC.Collect(2, GCCollectionMode.Forced, true, true);
+    var before = GC.GetTotalMemory(false);
+    var compiled = new List<CompiledFunction>();
+    foreach (var fileGroup in batchFiles)
+    using (var session = FunctionSourceReader.OpenFile(fileGroup[0].File))
+    foreach (var candidate in fileGroup)
+    {
+        var read = session.Read(candidate.Function);
+        if (read.Status != SourceReadStatus.Read) continue;
+        var result = compiler.TryCompile(read.Source!.Value);
+        if (result.Status == CompileStatus.Compiled) compiled.Add(result.Function!);
+    }
+    var immediatelyAfter = GC.GetTotalMemory(false);
+    GC.Collect(2, GCCollectionMode.Forced, true, true);
+    GC.WaitForPendingFinalizers();
+    GC.Collect(2, GCCollectionMode.Forced, true, true);
+    var after = GC.GetTotalMemory(false);
+    GC.KeepAlive(compiled);
+    return new(compiled, before, immediatelyAfter, after);
 }
 
 static void WriteRepresentative(string directory, List<Candidate> candidates, Dictionary<string, CompiledFunction> compiled)
@@ -301,6 +354,23 @@ static void WriteFingerprintReport(string directory)
 }
 
 static void WriteBom(string path, string text) => File.WriteAllBytes(path, [0xEF, 0xBB, 0xBF, ..Encoding.UTF8.GetBytes(text)]);
+static long LineStartByte(string path, int targetLine)
+{
+    if (targetLine <= 1) return 0;
+    var bytes = File.ReadAllBytes(path);
+    var line = 1;
+    for (var offset = 0; offset < bytes.Length; offset++)
+        if (bytes[offset] == (byte)'\n' && ++line == targetLine) return offset + 1;
+    return -1;
+}
+static (int Line, long Byte) FindLegacyHeader(string path, int endLine, string? functionName)
+{
+    if (functionName is null) return (0, -1);
+    var lines = File.ReadAllLines(path);
+    for (var line = Math.Min(endLine, lines.Length) - 1; line >= 0; line--)
+        if (lines[line].Contains("@" + functionName, StringComparison.OrdinalIgnoreCase)) return (line + 1, LineStartByte(path, line + 1));
+    return (0, -1);
+}
 static void Add(Dictionary<string, int> counts, string key) => counts[key] = counts.GetValueOrDefault(key) + 1;
 static string Key(string file, int line) => $"{file.ToUpperInvariant()}:{line}";
 static long Median(IEnumerable<long> values) { var sorted = values.Order().ToArray(); return sorted.Length == 0 ? 0 : sorted[sorted.Length / 2]; }
@@ -308,6 +378,7 @@ static long Percentile(long[] values, int percentile) => values.Length == 0 ? 0 
 readonly record struct BenchmarkRow(int Run, double TotalElapsedMs, double SourceReadElapsedMs, double CompilerElapsedMs, long SourceReadAllocatedBytes, long CompilerAllocatedBytes, long TotalAllocatedBytes, int Compiled, int Instructions);
 readonly record struct Candidate(LegacyRow Row, SourceFileIndex File, FunctionIndex Function);
 readonly record struct RetainedMeasurement(List<CompiledFunction> Compiled, Dictionary<string, CompiledFunction> CompiledByKey, Dictionary<string, SourceFingerprint> Fingerprints);
+readonly record struct PureRetainedMeasurement(List<CompiledFunction> Compiled, long BeforeCompile, long ImmediatelyAfterCompile, long AfterDiagnosticGc);
 sealed class LegacyRow
 {
     public string RelativeFile { get; set; } = ""; public int FunctionOrder { get; set; } public string? FunctionName { get; set; }

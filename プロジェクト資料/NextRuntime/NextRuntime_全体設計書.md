@@ -52,7 +52,7 @@ Phase 0AのSource Indexは実行系ではなく、ERBを読むための小さな
 
 ## 8. 完了済み作業と今後の起動計画
 
-完了はPhase 0AのSource Index、IndexAudit、SelfTest、0A-R1のLegacy境界に沿ったflag分類、0A-R2の関数ヘッダー境界と計測分離、0B-R2のLegacy oracle差分・PPState disabled range診断・性能baseline、1A-R2の関数単位compiler prototypeである。Phase 1A-R2ではまだVMを開始していない。
+完了はPhase 0AのSource Index、IndexAudit、SelfTest、0A-R1のLegacy境界に沿ったflag分類、0A-R2の関数ヘッダー境界と計測分離、0B-R2のLegacy oracle差分・PPState disabled range診断・性能baseline、1A-R3の関数単位compiler prototypeと保持メモリ純化である。Phase 1A-R3ではまだVMを開始していない。
 
 今後は関数単位compiler prototype、compact IR、instruction VM、bounded/evictable cache、disk compile cacheへ進む。warm startupでは、変更検出済みのsource indexと検証済みcompile cacheを再利用し、不要なparser再実行を避ける。cacheは再生成可能であり、配布Runtime本体とは別扱いにする。
 
@@ -135,6 +135,14 @@ CompilerAuditのbatch pathでは、eligible functionsをfileごとにstart offse
 
 single-function `FunctionSourceReader.Read`はlazy runtime向けに維持し、batch sessionはCompilerAudit専用である。flat instruction arenaは短関数のdescriptor/array overheadをさらに下げる候補だが、R2では実装せずPhase 1B以降の候補として保留した。
 
+### Phase 1A-R3 保持メモリ純化と残差分
+
+R2の25,197,560 bytesはcompiled listに加えて差分辞書、fingerprint、key文字列を同じrootで保持した監査込み値だった。R3ではそれらを解放してから、`List<CompiledFunction>`だけをrootにした別測定を行った。54,200 compiled functionsについて、`managedBeforePureCompile`、`managedImmediatelyAfterPureCompile`、`managedAfterPureDiagnosticGc`を記録し、pure retained managed estimateは7,050,712 bytesとなった。instruction payload 1,340,176 bytes、descriptor theoretical payload 3,468,800 bytes、name payload 1,844,032 bytes、path payload 575,948 bytes、known payload合計7,228,956 bytesは実測保持量と別の理論値として扱う。監査用list・compiledByKey・fingerprintByKey・key stringsを含むaudit-inclusive retainedは25,246,200 bytesである。
+
+IndexFunctionNotMatchedの8,379件は、8,376件がLegacy oracleの`[[...]]` rename後の名前とSource Indexの物理ヘッダー名の違い、3件がstart-line差分である。3件は`CARD_BATTLE_AI_SET.ERB:3794`の`CB_MAX_SUM`、`戦闘NPC.ERB:10963`の`CS_CARD_DELIVERY`、同:11081の`CS_SUMMONER_DECK_SET`で、いずれもLegacyが`{`から`}`までのinline brace-style宣言を認識し、`@NAME`の行ではなく閉じ括弧行をLegacyStartLineとして記録する。Source Indexにはその閉じ括弧行から始まる関数境界がないため、無理にjoinせずLegacy fallbackとして残す。
+
+R3の5-run compiler batch性能はtotal中央値1,954.712 ms、source read中央値1,062.277 ms、compiler中央値62.108 ms、total allocation中央値87,163,032 bytesである。R2と同じ処理境界・fixtureであり、純粋保持計測を追加したこと以外に性能実装を変更していない。非自明なEmuera固有Production改修には、理由・互換性・lifetime・ownership・評価順・性能を日本語で記すコメント規則を`07_AI作業ルール.md`へ正式追加した。
+
 ## 20. Phase履歴
 
 - Phase 0A: Source Indexの基礎。実ゲーム9,458 ERB / 134,652関数。
@@ -142,6 +150,7 @@ single-function `FunctionSourceReader.Read`はlazy runtime向けに維持し、b
 - Phase 1A: Function-level compiler prototype。54,200関数compile。
 - Phase 1A-R1: 64KB/function bufferを修正し、allocation約4GBから約96MBへ削減。Exact Opcode化。
 - Phase 1A-R2: retained/metadata/coverageを分離し、file-scoped batch I/Oでsource read約5.93秒から約0.93秒へ削減。正式資料を`プロジェクト資料/NextRuntime/`へ移管。
+- Phase 1A-R3: compiled rootだけのpure retainedを監査辞書から分離し、pure 7,050,712 bytes、audit-inclusive 25,246,200 bytesを記録。3件のIndexStartLineMismatchはLegacyのbrace-style inline declarationの閉じ括弧行とSource Index境界の差として説明した。非自明なEmuera固有Production改修の日本語理由コメント規則を正式化した。
 
 ## 21. Phase 0B-R1 差分更新とcache無効化
 

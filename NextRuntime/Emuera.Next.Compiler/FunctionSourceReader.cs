@@ -37,6 +37,8 @@ public sealed class FunctionSourceReader
             if (info.Length != file.SourceBytes || (file.LastWriteTimeUtcTicks != 0 && info.LastWriteTimeUtc.Ticks != file.LastWriteTimeUtcTicks))
                 return FunctionSourceReadResult.Changed("file length or last-write time changed");
 
+            // [Emuera改修:NEXT-1A-R3 2026-08-27]
+            // 関数sliceだけをRandomAccessで読む。全体ERBを保持せず、indexed spanとsnapshotの整合性を所有境界にする。
             var bytes = GC.AllocateUninitializedArray<byte>((int)span.ByteLength);
             using var stream = new FileStream(file.FileIdentity, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
                 1, FileOptions.RandomAccess);
@@ -66,6 +68,8 @@ public sealed class FunctionSourceReader
         }
     }
 
+    // [Emuera改修:NEXT-1A-R3 2026-08-27]
+    // CompilerAuditのbatch呼び出しでは同一ERBのFileStreamを共有し、関数ごとのopen/closeと評価順を固定する。
     public static FunctionSourceSession OpenFile(SourceFileIndex file) => new(file);
 }
 
@@ -92,6 +96,8 @@ public sealed class FunctionSourceSession : IDisposable
         try
         {
             if (IsSnapshotChanged()) return FunctionSourceReadResult.Changed("file length or last-write time changed");
+            // [Emuera改修:NEXT-1A-R3 2026-08-27]
+            // sessionの所有streamからindexed spanだけを再利用読み取りし、source bytesは各compile終了後に解放可能にする。
             var bytes = GC.AllocateUninitializedArray<byte>((int)span.ByteLength);
             stream.Seek(span.StartOffset, SeekOrigin.Begin);
             var read = 0;
