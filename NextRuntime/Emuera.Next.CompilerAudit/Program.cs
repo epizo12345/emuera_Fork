@@ -14,6 +14,7 @@ if (args.Length < 3 || args.Any(static a => a is "-h" or "--help"))
 var erbDirectory = Path.GetFullPath(args[0]);
 var legacyManifest = Path.GetFullPath(args[1]);
 var reportDirectory = Path.GetFullPath(args[2]);
+const string RunId = "20260827_Phase1A_R4_Final";
 var runs = 5;
 for (var i = 3; i + 1 < args.Length; i++)
     if (args[i] == "--runs" && int.TryParse(args[++i], out var parsed)) runs = Math.Clamp(parsed, 1, 20);
@@ -172,9 +173,15 @@ var totalAllocationMedian = Median(benchmark.Select(static row => row.TotalAlloc
 var allocationRegression = totalAllocationMedian > 96067968;
 File.WriteAllLines(Path.Combine(reportDirectory, "compiler-runs.tsv"),
 [
-    "run\ttotalElapsedMs\tsourceReadElapsedMs\tcompilerElapsedMs\tsourceReadAllocatedBytes\tcompilerAllocatedBytes\ttotalAllocatedBytes\tcompiled\tinstructions",
-    ..benchmark.Select(static row => $"{row.Run}\t{row.TotalElapsedMs:F3}\t{row.SourceReadElapsedMs:F3}\t{row.CompilerElapsedMs:F3}\t{row.SourceReadAllocatedBytes}\t{row.CompilerAllocatedBytes}\t{row.TotalAllocatedBytes}\t{row.Compiled}\t{row.Instructions}")
+    "runId\trun\ttotalElapsedMs\tsourceReadElapsedMs\tcompilerElapsedMs\tsourceReadAllocatedBytes\tcompilerAllocatedBytes\ttotalAllocatedBytes\tcompiled\tinstructions",
+    ..benchmark.Select(static row => $"{RunId}\t{row.Run}\t{row.TotalElapsedMs:F3}\t{row.SourceReadElapsedMs:F3}\t{row.CompilerElapsedMs:F3}\t{row.SourceReadAllocatedBytes}\t{row.CompilerAllocatedBytes}\t{row.TotalAllocatedBytes}\t{row.Compiled}\t{row.Instructions}")
 ], new UTF8Encoding(false));
+var totalStats = Stats(benchmark.Select(static row => row.TotalElapsedMs));
+var sourceStats = Stats(benchmark.Select(static row => row.SourceReadElapsedMs));
+var compilerStats = Stats(benchmark.Select(static row => row.CompilerElapsedMs));
+var allocationStats = Stats(benchmark.Select(static row => (double)row.TotalAllocatedBytes));
+File.WriteAllLines(Path.Combine(reportDirectory, "performance-summary.txt"),
+[$"runId={RunId}", $"runs={benchmark.Count}", $"totalMedianMs={totalStats.Median:F3}", $"totalMeanMs={totalStats.Mean:F3}", $"totalMinMs={totalStats.Min:F3}", $"totalMaxMs={totalStats.Max:F3}", $"sourceReadMedianMs={sourceStats.Median:F3}", $"sourceReadMeanMs={sourceStats.Mean:F3}", $"sourceReadMinMs={sourceStats.Min:F3}", $"sourceReadMaxMs={sourceStats.Max:F3}", $"compilerMedianMs={compilerStats.Median:F3}", $"compilerMeanMs={compilerStats.Mean:F3}", $"compilerMinMs={compilerStats.Min:F3}", $"compilerMaxMs={compilerStats.Max:F3}", $"allocationMedianBytes={allocationStats.Median:F0}", $"allocationMeanBytes={allocationStats.Mean:F0}", $"allocationMinBytes={allocationStats.Min:F0}", $"allocationMaxBytes={allocationStats.Max:F0}"], new UTF8Encoding(false));
 File.WriteAllLines(Path.Combine(reportDirectory, "eligibility-breakdown.txt"),
 [
     $"IndexTotal={indexFunctions}", $"Phase0BVerifiedSafe={phase0BSafeFunctions}", $"Phase0BFallbackOrUnsafe={indexFunctions - phase0BSafeFunctions}", $"CompilerStrictClean={compilerStrictCleanFunctions}", $"CompilerConsidered={compilerConsidered}",
@@ -226,11 +233,26 @@ fingerprintByKey.Clear();
 GC.Collect(2, GCCollectionMode.Forced, true, true);
 GC.WaitForPendingFinalizers();
 GC.Collect(2, GCCollectionMode.Forced, true, true);
-var pureMeasurement = MeasurePureRetained(batchFiles, compiler);
-var pureCompiledRetainedManagedEstimate = pureMeasurement.AfterDiagnosticGc - pureMeasurement.BeforeCompile;
-var pureKnownPayloadWithStrings = knownPayloadWithStrings;
-var pureEstimatedManagedOverhead = pureCompiledRetainedManagedEstimate - pureKnownPayloadWithStrings;
+var pureRetainedRuns = new List<long>();
+PureRetainedMeasurement pureMeasurement = default;
+for (var pureRun = 0; pureRun < 3; pureRun++)
+{
+    pureMeasurement = MeasurePureRetained(batchFiles, compiler);
+    pureRetainedRuns.Add(pureMeasurement.AfterDiagnosticGc - pureMeasurement.BeforeCompile);
+    pureMeasurement.Compiled.Clear();
+    GC.Collect(2, GCCollectionMode.Forced, true, true);
+}
+var pureCompiledRetainedManagedEstimate = Median(pureRetainedRuns);
+var otherNewCompiledOwnedPayload = 0L;
+var pureKnownPayloadTotal = instructionPayload + descriptorPayload + otherNewCompiledOwnedPayload;
+var preExistingSharedPayloadReferenced = namePayload + pathPayload;
+var pureEstimatedManagedOverhead = pureCompiledRetainedManagedEstimate - pureKnownPayloadTotal;
 var pureRetainedMeasurementValid = pureCompiledRetainedManagedEstimate >= 0;
+var coverageConsistent = phase0BSafeFunctions <= indexFunctions && compilerStrictCleanFunctions <= phase0BSafeFunctions && eligible.Count <= compilerStrictCleanFunctions && compiledFunctionCount <= eligible.Count;
+var negativeOverheadGate = pureEstimatedManagedOverhead >= 0;
+pureRetainedMeasurementValid &= negativeOverheadGate;
+var pureKnownPayloadWithStrings = pureKnownPayloadTotal;
+File.WriteAllLines(Path.Combine(reportDirectory, "pure-retained-runs.tsv"), ["runId\trun\tpureRetainedBytes", ..pureRetainedRuns.Select((value, index) => $"{RunId}\t{index + 1}\t{value}")], new UTF8Encoding(false));
 File.WriteAllLines(Path.Combine(reportDirectory, "allocation-breakdown.txt"),
 [
     $"sourceReadAllocatedMedian={sourceReadAllocationMedian}",
@@ -249,7 +271,7 @@ File.WriteAllLines(Path.Combine(reportDirectory, "io-comparison.txt"),
 File.WriteAllLines(Path.Combine(reportDirectory, "memory.txt"),
 [$"managedBeforeCompile={pureMeasurement.BeforeCompile}", $"managedImmediatelyAfterCompile={pureMeasurement.ImmediatelyAfterCompile}", $"managedAfterDiagnosticGc={pureMeasurement.AfterDiagnosticGc}", $"compiledRetainedManagedEstimate={pureCompiledRetainedManagedEstimate}", $"compiledFunctionClassInstances={compiledFunctionCount}", $"instructionPayloadBytes={instructionPayload}", $"functionDescriptorTheoreticalPayloadBytes={descriptorPayload}", $"uniqueFunctionNameUtf16PayloadBytes={namePayload}", $"uniqueFilePathUtf16PayloadBytes={pathPayload}", $"knownPayload={pureKnownPayloadWithStrings}", $"estimatedManagedOverhead={pureEstimatedManagedOverhead}", $"measurementValid={pureRetainedMeasurementValid}", $"auditInclusiveRetainedManagedEstimate={auditInclusiveRetainedManagedEstimate}", "fingerprintStringPerCompiledFunction=NO"], new UTF8Encoding(false));
 File.WriteAllLines(Path.Combine(reportDirectory, "pure-retained-memory.txt"),
-[$"managedBeforePureCompile={pureMeasurement.BeforeCompile}", $"managedImmediatelyAfterPureCompile={pureMeasurement.ImmediatelyAfterCompile}", $"managedAfterPureDiagnosticGc={pureMeasurement.AfterDiagnosticGc}", $"pureCompiledRetainedManagedEstimate={pureCompiledRetainedManagedEstimate}", $"instructionPayloadBytes={instructionPayload}", $"functionDescriptorTheoreticalPayloadBytes={descriptorPayload}", $"uniqueFunctionNameUtf16PayloadBytes={namePayload}", $"uniqueFilePathUtf16PayloadBytes={pathPayload}", $"knownPayload={pureKnownPayloadWithStrings}", $"pureEstimatedManagedOverhead={pureEstimatedManagedOverhead}", $"measurementValid={pureRetainedMeasurementValid}", "retainedRoot=List<CompiledFunction> only; audit dictionaries, fingerprint maps, and report keys were released before this measurement."], new UTF8Encoding(false));
+[$"runId={RunId}", $"managedBeforePureCompile={pureMeasurement.BeforeCompile}", $"managedImmediatelyAfterPureCompile={pureMeasurement.ImmediatelyAfterCompile}", $"managedAfterPureDiagnosticGc={pureMeasurement.AfterDiagnosticGc}", $"pureCompiledRetainedManagedEstimate={pureCompiledRetainedManagedEstimate}", $"instructionPayloadBytes={instructionPayload}", $"newFunctionDescriptorKnownPayload={descriptorPayload}", $"otherNewCompiledOwnedPayload={otherNewCompiledOwnedPayload}", $"preExistingSharedPayloadReferenced={preExistingSharedPayloadReferenced}", $"pureKnownPayloadTotal={pureKnownPayloadTotal}", $"pureEstimatedManagedOverhead={pureEstimatedManagedOverhead}", $"measurementValid={pureRetainedMeasurementValid}", "retainedRoot=List<CompiledFunction> only; audit dictionaries, fingerprint maps, and report keys were released before this measurement."], new UTF8Encoding(false));
 File.WriteAllLines(Path.Combine(reportDirectory, "audit-inclusive-retained-memory.txt"),
 [$"managedBeforeCompile={auditInclusiveBeforeCompile}", $"managedImmediatelyAfterCompile={auditInclusiveImmediatelyAfterCompile}", $"managedAfterDiagnosticGc={auditInclusiveAfterDiagnosticGc}", $"auditInclusiveRetainedManagedEstimate={auditInclusiveRetainedManagedEstimate}", $"knownPayload={auditInclusiveKnownPayloadWithStrings}", $"estimatedManagedOverhead={auditInclusiveEstimatedManagedOverhead}", $"measurementValid={auditInclusiveMeasurementValid && auditInclusiveEstimatedManagedOverhead >= 0}", "retainedRoot=compiled list plus differential dictionaries and fingerprint keys."], new UTF8Encoding(false));
 File.WriteAllLines(Path.Combine(reportDirectory, "storage-size.txt"),
@@ -258,8 +280,9 @@ File.WriteAllLines(Path.Combine(reportDirectory, "summary.txt"),
 [
     "result=PASS", $"erbFiles={files.Count}", $"indexFunctions={indexFunctions}", $"phase0BVerifiedSafe={phase0BSafeFunctions}", $"phase0BFallbackOrUnsafe={indexFunctions - phase0BSafeFunctions}", $"compilerStrictClean={compilerStrictCleanFunctions}", $"compilerConsidered={compilerConsidered}", $"compilerEligible={eligible.Count}", $"compileSucceeded={compiledFunctionCount}", $"unsupportedUnique={uniqueUnsupported.Values.Sum()}", $"compilerErrors={statusCounts.GetValueOrDefault(CompileStatus.CompilerError)}", $"unsupportedEncountersAcrossRuns={unsupportedEncounters}", $"batchEligibleFileSessions={batchFiles.Length}", $"singleFunctionOpenEquivalent={eligible.Count}", $"sourceReadAllocationMedian={Median(benchmark.Select(static row => row.SourceReadAllocatedBytes))}", $"compilerAllocationMedian={Median(benchmark.Select(static row => row.CompilerAllocatedBytes))}", $"totalAllocationMedian={Median(benchmark.Select(static row => row.TotalAllocatedBytes))}", $"pureRetainedMeasurementValid={pureRetainedMeasurementValid}", $"managedBeforePureCompile={pureMeasurement.BeforeCompile}", $"managedImmediatelyAfterPureCompile={pureMeasurement.ImmediatelyAfterCompile}", $"managedAfterPureDiagnosticGc={pureMeasurement.AfterDiagnosticGc}", $"pureCompiledRetainedManagedEstimate={pureCompiledRetainedManagedEstimate}", $"auditInclusiveRetainedManagedEstimate={auditInclusiveRetainedManagedEstimate}", $"instructionSize={instructionSize}", $"instructionPayloadBytes={instructionPayload}", $"functionDescriptorTheoreticalPayloadBytes={descriptorPayload}", $"uniqueFunctionNameUtf16PayloadBytes={namePayload}", $"uniqueFilePathUtf16PayloadBytes={pathPayload}", $"knownPayload={pureKnownPayloadWithStrings}", $"pureEstimatedManagedOverhead={pureEstimatedManagedOverhead}", $"auditInclusiveEstimatedManagedOverhead={auditInclusiveEstimatedManagedOverhead}", $"exactOpcodeMismatch={exactOpcodeMismatch}", "readsWholeErbFile=NO", "64KBPerFunctionAllocation=REMOVED", "fingerprintStringPerFunction=NO", "vm=NO"
 ], new UTF8Encoding(false));
+File.AppendAllLines(Path.Combine(reportDirectory, "summary.txt"), [$"runId={RunId}", $"pureKnownPayloadTotal={pureKnownPayloadTotal}", $"preExistingSharedPayloadReferenced={preExistingSharedPayloadReferenced}", $"pureKnownPayloadWithinRetained={pureKnownPayloadTotal <= pureCompiledRetainedManagedEstimate}", $"negativeOverheadGate={(negativeOverheadGate ? "ACTIVE_PASS" : "ACTIVE_FAIL")}", $"coverageConsistent={coverageConsistent}", $"totalMedianMs={totalStats.Median:F3}", $"totalMeanMs={totalStats.Mean:F3}", $"totalMinMs={totalStats.Min:F3}", $"totalMaxMs={totalStats.Max:F3}", $"sourceReadMedianMs={sourceStats.Median:F3}", $"compilerMedianMs={compilerStats.Median:F3}"], new UTF8Encoding(false));
 Console.WriteLine($"CompilerAudit: eligible={eligible.Count} compiled={compiledFunctionCount} unsupportedUnique={uniqueUnsupported.Values.Sum()} totalAllocatedMedian={Median(benchmark.Select(static row => row.TotalAllocatedBytes))} pureRetained={pureCompiledRetainedManagedEstimate} exactOpcodeMismatch={exactOpcodeMismatch} PASS");
-return countMismatch == 0 && orderMismatch == 0 && exactOpcodeMismatch == 0 && !allocationRegression && pureRetainedMeasurementValid ? 0 : 1;
+return countMismatch == 0 && orderMismatch == 0 && exactOpcodeMismatch == 0 && !allocationRegression && pureRetainedMeasurementValid && negativeOverheadGate && coverageConsistent ? 0 : 1;
 
 static List<LegacyRow> ReadLegacy(string path)
 {
@@ -375,7 +398,9 @@ static void Add(Dictionary<string, int> counts, string key) => counts[key] = cou
 static string Key(string file, int line) => $"{file.ToUpperInvariant()}:{line}";
 static long Median(IEnumerable<long> values) { var sorted = values.Order().ToArray(); return sorted.Length == 0 ? 0 : sorted[sorted.Length / 2]; }
 static long Percentile(long[] values, int percentile) => values.Length == 0 ? 0 : values[(int)Math.Round((values.Length - 1) * percentile / 100.0)];
+static StatsRow Stats(IEnumerable<double> values) { var sorted = values.Order().ToArray(); return sorted.Length == 0 ? new(0, 0, 0, 0) : new(sorted[sorted.Length / 2], sorted.Average(), sorted[0], sorted[^1]); }
 readonly record struct BenchmarkRow(int Run, double TotalElapsedMs, double SourceReadElapsedMs, double CompilerElapsedMs, long SourceReadAllocatedBytes, long CompilerAllocatedBytes, long TotalAllocatedBytes, int Compiled, int Instructions);
+readonly record struct StatsRow(double Median, double Mean, double Min, double Max);
 readonly record struct Candidate(LegacyRow Row, SourceFileIndex File, FunctionIndex Function);
 readonly record struct RetainedMeasurement(List<CompiledFunction> Compiled, Dictionary<string, CompiledFunction> CompiledByKey, Dictionary<string, SourceFingerprint> Fingerprints);
 readonly record struct PureRetainedMeasurement(List<CompiledFunction> Compiled, long BeforeCompile, long ImmediatelyAfterCompile, long AfterDiagnosticGc);

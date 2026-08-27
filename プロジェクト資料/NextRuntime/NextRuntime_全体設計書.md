@@ -52,7 +52,7 @@ Phase 0AのSource Indexは実行系ではなく、ERBを読むための小さな
 
 ## 8. 完了済み作業と今後の起動計画
 
-完了はPhase 0AのSource Index、IndexAudit、SelfTest、0A-R1のLegacy境界に沿ったflag分類、0A-R2の関数ヘッダー境界と計測分離、0B-R2のLegacy oracle差分・PPState disabled range診断・性能baseline、1A-R3の関数単位compiler prototypeと保持メモリ純化である。Phase 1A-R3ではまだVMを開始していない。
+完了はPhase 0AのSource Index、IndexAudit、SelfTest、0A-R1のLegacy境界に沿ったflag分類、0A-R2の関数ヘッダー境界と計測分離、0B-R2のLegacy oracle差分・PPState disabled range診断・性能baseline、1A-R4の関数単位compiler prototypeと保持メモリ計測・artifact整合確定である。Phase 1A-R4ではまだVMを開始していない。
 
 今後は関数単位compiler prototype、compact IR、instruction VM、bounded/evictable cache、disk compile cacheへ進む。warm startupでは、変更検出済みのsource indexと検証済みcompile cacheを再利用し、不要なparser再実行を避ける。cacheは再生成可能であり、配布Runtime本体とは別扱いにする。
 
@@ -143,6 +143,12 @@ IndexFunctionNotMatchedの8,379件は、8,376件がLegacy oracleの`[[...]]` ren
 
 R3の5-run compiler batch性能はtotal中央値1,954.712 ms、source read中央値1,062.277 ms、compiler中央値62.108 ms、total allocation中央値87,163,032 bytesである。R2と同じ処理境界・fixtureであり、純粋保持計測を追加したこと以外に性能実装を変更していない。非自明なEmuera固有Production改修には、理由・互換性・lifetime・ownership・評価順・性能を日本語で記すコメント規則を`07_AI作業ルール.md`へ正式追加した。
 
+### Phase 1A-R4 計測定義とartifactの最終確定
+
+R4ではPure known payloadからbaseline以前に存在するSource Index由来の共有function-name/path参照を除外した。3回のPureRetainedBytesは7,050,736、7,050,736、7,050,712 bytes、中央値は7,050,736 bytesである。InstructionPayloadは1,340,176 bytes、NewFunctionDescriptorKnownPayloadは3,468,800 bytes、OtherNewCompiledOwnedPayloadは0 bytes、PureKnownPayloadTotalは4,808,976 bytes、PreExistingSharedPayloadReferencedは2,419,980 bytes、PureEstimatedManagedOverheadは2,241,760 bytesであり、negative overhead gateはPASSである。監査辞書を含むAuditInclusiveRetainedは25,246,200 bytesで、PureRetainedとは別値である。
+
+R4の5-run raw TSVを正本とし、自動集計した性能はtotal中央値1,939.688 ms（mean 1,967.360 / min 1,906.319 / max 2,131.080）、source read中央値1,066.033 ms、compiler中央値61.136 ms、total allocation中央値87,163,032 bytesである。Run IDは`20260827_Phase1A_R4_Final`で、raw TSV・pure runs・summary・final-status・Review READMEへ共通記録する。Phase 1Aはこの計測定義、benchmark aggregation、Git証跡、canonical docsの整合確認をもって正式COMPLETEとする。
+
 ## 20. Phase履歴
 
 - Phase 0A: Source Indexの基礎。実ゲーム9,458 ERB / 134,652関数。
@@ -151,6 +157,7 @@ R3の5-run compiler batch性能はtotal中央値1,954.712 ms、source read中央
 - Phase 1A-R1: 64KB/function bufferを修正し、allocation約4GBから約96MBへ削減。Exact Opcode化。
 - Phase 1A-R2: retained/metadata/coverageを分離し、file-scoped batch I/Oでsource read約5.93秒から約0.93秒へ削減。正式資料を`プロジェクト資料/NextRuntime/`へ移管。
 - Phase 1A-R3: compiled rootだけのpure retainedを監査辞書から分離し、pure 7,050,712 bytes、audit-inclusive 25,246,200 bytesを記録。3件のIndexStartLineMismatchはLegacyのbrace-style inline declarationの閉じ括弧行とSource Index境界の差として説明した。非自明なEmuera固有Production改修の日本語理由コメント規則を正式化した。
+- Phase 1A-R4: baseline以前の共有payloadをPure known payloadから除外し、negative overhead gateを有効化。3回pure retained、5回benchmarkの自動集計、Run ID、artifact/Git証跡の最終整合を確定した。
 
 ## 21. Phase 0B-R1 差分更新とcache無効化
 
