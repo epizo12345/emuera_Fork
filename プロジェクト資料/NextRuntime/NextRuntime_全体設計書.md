@@ -147,7 +147,7 @@ R3の5-run compiler batch性能はtotal中央値1,954.712 ms、source read中央
 
 R4ではPure known payloadからbaseline以前に存在するSource Index由来の共有function-name/path参照を除外した。3回のPureRetainedBytesは7,050,736、7,050,736、7,050,712 bytes、中央値は7,050,736 bytesである。InstructionPayloadは1,340,176 bytes、NewFunctionDescriptorKnownPayloadは3,468,800 bytes、OtherNewCompiledOwnedPayloadは0 bytes、PureKnownPayloadTotalは4,808,976 bytes、PreExistingSharedPayloadReferencedは2,419,980 bytes、PureEstimatedManagedOverheadは2,241,760 bytesであり、negative overhead gateはPASSである。監査辞書を含むAuditInclusiveRetainedは25,246,200 bytesで、PureRetainedとは別値である。
 
-R4の5-run raw TSVを正本とし、自動集計した性能はtotal中央値1,939.688 ms（mean 1,967.360 / min 1,906.319 / max 2,131.080）、source read中央値1,066.033 ms、compiler中央値61.136 ms、total allocation中央値87,163,032 bytesである。Run IDは`20260827_Phase1A_R4_Final`で、raw TSV・pure runs・summary・final-status・Review READMEへ共通記録する。Phase 1Aはこの計測定義、benchmark aggregation、Git証跡、canonical docsの整合確認をもって正式COMPLETEとする。
+R4の5-run raw TSVを正本とし、自動集計した性能はtotal中央値1,953.059 ms（mean 1,972.434 / min 1,929.404 / max 2,082.478）、source read中央値1,055.302 ms、compiler中央値60.184 ms、total allocation中央値87,163,032 bytesである。Run IDは`20260827_Phase1A_R4_Final`で、raw TSV・pure runs・summary・final-status・Review READMEへ共通記録する。Phase 1Aはこの計測定義、benchmark aggregation、Git証跡、canonical docsの整合確認をもって正式COMPLETEとする。
 
 ## 20. Phase履歴
 

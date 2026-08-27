@@ -55,7 +55,7 @@ compileとは、ERBを実行しやすい形へ変換することです。cache�
 
 ゲームのERBが更新されたら、将来は変更されたファイルと影響する依存範囲だけをcacheから外す設計です。CSVは表示用か、解析に影響するか、影響範囲不明かで扱いを分けます。設定・parser規則・エンジン版が変わった場合は安全のため全体を作り直します。R2のCSV分類と1Aのfingerprintは診断・設計段階で、disk cacheはまだ実装していません。
 
-Phase 1A-R4でも、VM、VariableStore、Expression/Format IR、UI変更は行っていません。Phase 1BはChatレビュー後に明示承認されるまで開始しません。
+Phase 1A-R4でも、VM、VariableStore、Expression/Format IR、UI変更は行っていません。最新5回測定のtotal中央値は1,953.059msです。Phase 1BはChatレビュー後に明示承認されるまで開始しません。
 
 ## 7. 最終的には？
 

@@ -22,7 +22,7 @@ fallbackは、DeclarationDirective 6844、FunctionMetadata 6817、LineContinuati
 
 現在は、目次から選んだ関数のphysical byte spanだけを`FileStream.Seek`で読み、Legacy parserをCompiler本体へ再利用せず、compactな`PrototypeInstruction` struct列へ変換する試作段階です。R1では関数ごとの64KB FileStream bufferを廃止し、R2ではAuditのfile-scoped sessionで同じERBを1回だけ開くようにしました。実ゲームではcompiler eligible 59,435件中54,200件をcompileし、unique unsupportedは5,235件、compiler error 0件でした（5回実行のunsupported encounterは26,175件で、coverage件数ではありません）。Legacy structural/exact opcode differentialは0 mismatchです。operand semanticsは式/format IRの後Phaseへ残します。
 
-CompilerはPhase0B verified safe、Compiler strict-clean、eligibleを別に判定します。`SourceChanged`、`InvalidSource`、`Unsupported`を明示的に返し、source fingerprintは関数byte spanのSHA-256を32-byte valueとしてCompileResult側だけに返します。PrototypeInstructionは実測16 bytesです。R4では共有name/path参照をPure known payloadから除外し、3回のpure retained中央値は7,050,736 bytes、Pure known payloadは4,808,976 bytes、overheadは2,241,760 bytes、監査込みrootは25,246,200 bytesでした。まだVM、VariableStore、Expression/Format IR、disk cache、UI/正式EXE変更はありません。
+CompilerはPhase0B verified safe、Compiler strict-clean、eligibleを別に判定します。`SourceChanged`、`InvalidSource`、`Unsupported`を明示的に返し、source fingerprintは関数byte spanのSHA-256を32-byte valueとしてCompileResult側だけに返します。PrototypeInstructionは実測16 bytesです。R4では共有name/path参照をPure known payloadから除外し、3回のpure retained中央値は7,050,736 bytes、Pure known payloadは4,808,976 bytes、overheadは2,241,760 bytes、監査込みrootは25,246,200 bytesでした。最新5-run性能中央値はtotal 1,953.059 ms、source read 1,055.302 ms、compiler 60.184 msです。まだVM、VariableStore、Expression/Format IR、disk cache、UI/正式EXE変更はありません。
 
 ## 固定する設計
 
