@@ -14,9 +14,8 @@ if (args.Length < 3 || args.Any(static a => a is "-h" or "--help"))
 var erbDirectory = Path.GetFullPath(args[0]);
 var legacyManifest = Path.GetFullPath(args[1]);
 var reportDirectory = Path.GetFullPath(args[2]);
-// R7 is evidence-only; production compiler semantics remain frozen at the R6 candidate.
-const string RunId = "20260827_Phase1B_R7_Final";
-const long Phase1AR4BaselineAllocationMedianBytes = 87163032;
+// [Emuera改修:NEXT-1C 2026-08-27] Tier-B追加はraw operand span分類まで。意味評価・runtimeは対象外。
+const string RunId = "20260827_Phase1C_Final";
 var runs = 5;
 string? baselineManifest = null;
 string? phase1bManifest = null;
@@ -177,8 +176,8 @@ var baselineTotalStats = Stats(baselineBenchmark.Select(static row => row.TotalE
 var baselineSourceStats = Stats(baselineBenchmark.Select(static row => row.SourceReadElapsedMs));
 var baselineCompilerStats = Stats(baselineBenchmark.Select(static row => row.CompilerElapsedMs));
 var baselineAllocationStats = Stats(baselineBenchmark.Select(static row => (double)row.TotalAllocatedBytes));
-// R5 baselineはPhase 1A-R4で成立した54,200件subset。過去artifactの5-run allocation medianを比較基準にする。
-var allocationRegression = baselineAllocationStats.Median > Phase1AR4BaselineAllocationMedianBytes * 1.10;
+// Phase 1Cの性能gateは同一runのbaseline subsetとexpandedを比較する。過去phaseの環境値はgateに使わない。
+var allocationRegression = baselineKeys is not null && totalAllocationMedian > baselineAllocationStats.Median * 1.10;
 var baselineFunctionCount = baselineKeys?.Count ?? 0;
 var baselineCompiledCount = baselineKeys is null ? 0 : compiledByKey.Keys.Count(baselineKeys.Contains);
 var baselineLost = baselineKeys is null ? -1 : baselineFunctionCount - baselineCompiledCount;
@@ -236,6 +235,7 @@ File.WriteAllLines(Path.Combine(reportDirectory, "supported-opcodes.txt"),
 File.WriteAllLines(Path.Combine(reportDirectory, "unsupported-reasons.txt"), uniqueUnsupported.OrderBy(static pair => pair.Key).Select(static pair => $"{pair.Key}={pair.Value}"), new UTF8Encoding(false));
 WriteUnsupportedAnalysis(reportDirectory, unsupportedObservations.Values.ToArray());
 WriteUnsupportedAnalysis(reportDirectory, beforeUnsupportedObservations.Values.ToArray(), "unsupported-before");
+WriteDeferredClassification(reportDirectory, unsupportedObservations.Values.ToArray());
 File.WriteAllLines(Path.Combine(reportDirectory, "index-function-not-matched.txt"),
     [$"count={exclusions.GetValueOrDefault("IndexFunctionNotMatched")}", ..unmatchedReasons.OrderBy(static pair => pair.Key).Select(static pair => $"reason.{pair.Key}={pair.Value}"), "Explanation: the Legacy oracle name includes the normalized result of [[...]] rename, while SourceIndex keeps the physical header identifier; the source file and start line still exist. Other cases are explicit line/name join diagnostics.", ..unmatchedExamples], new UTF8Encoding(false));
 File.WriteAllLines(Path.Combine(reportDirectory, "index-start-line-mismatch-details.txt"),
@@ -314,14 +314,14 @@ File.WriteAllLines(Path.Combine(reportDirectory, "allocation-breakdown.txt"),
     $"totalAllocatedMedian={totalAllocationMedian}",
     $"sourceReadElapsedMedianMs={Median(benchmark.Select(static row => (long)Math.Round(row.SourceReadElapsedMs)))}",
     $"compilerElapsedMedianMs={Median(benchmark.Select(static row => (long)Math.Round(row.CompilerElapsedMs)))}",
-    $"Phase1A-R4 54,200-function baseline total allocation={Phase1AR4BaselineAllocationMedianBytes}; baselineSubsetMedian={baselineAllocationStats.Median:F0}; allocationRegression={allocationRegression}",
+    $"current baseline subset allocation median={baselineAllocationStats.Median:F0}; expanded allocation median={totalAllocationMedian:F0}; expandedVsBaselineRatio={(baselineAllocationStats.Median == 0 ? 0 : totalAllocationMedian / baselineAllocationStats.Median):F4}; allocationRegression={allocationRegression}",
     $"baselineSubsetTotalMedianMs={baselineTotalStats.Median:F3}; baselineSubsetSourceReadMedianMs={baselineSourceStats.Median:F3}; baselineSubsetCompilerMedianMs={baselineCompilerStats.Median:F3}",
 ], new UTF8Encoding(false));
 File.WriteAllLines(Path.Combine(reportDirectory, "io-comparison.txt"),
 [
-    $"Phase1A-R4 baseline medians (54,200 functions, 5 runs): total={baselineTotalStats.Median:F3}ms sourceRead={baselineSourceStats.Median:F3}ms compiler={baselineCompilerStats.Median:F3}ms allocation={baselineAllocationStats.Median:F0}",
-    $"R6 expanded medians (59,093 functions, 5 runs): total={totalStats.Median:F3}ms sourceRead={sourceStats.Median:F3}ms compiler={compilerStats.Median:F3}ms allocation={allocationStats.Median:F0}",
-    $"batchFileSessionsPerRun={batchFiles.Length}", $"singleFunctionOpenEquivalentPerRun={reportEligibleCount}", $"baselineSubsetFileSessionsPerRun={baselineBatchFiles.Length}", $"baselineSubsetFunctionCount={reportBaselineEligibleCount}", "wholeErbRetained=NO", $"allocationRegressionComparedWithPhase1AR4={(allocationRegression ? "YES" : "NO")}"
+    $"Phase1C current baseline subset medians ({reportBaselineEligibleCount} functions, 5 runs): total={baselineTotalStats.Median:F3}ms sourceRead={baselineSourceStats.Median:F3}ms compiler={baselineCompilerStats.Median:F3}ms allocation={baselineAllocationStats.Median:F0}",
+    $"Phase1C expanded medians ({reportEligibleCount} eligible functions, 5 runs): total={totalStats.Median:F3}ms sourceRead={sourceStats.Median:F3}ms compiler={compilerStats.Median:F3}ms allocation={allocationStats.Median:F0}",
+    $"batchFileSessionsPerRun={batchFiles.Length}", $"singleFunctionOpenEquivalentPerRun={reportEligibleCount}", $"baselineSubsetFileSessionsPerRun={baselineBatchFiles.Length}", $"baselineSubsetFunctionCount={reportBaselineEligibleCount}", "wholeErbRetained=NO", $"allocationRegressionExpandedVsBaseline={(allocationRegression ? "YES" : "NO")}"
 ], new UTF8Encoding(false));
 File.WriteAllLines(Path.Combine(reportDirectory, "memory.txt"),
 [$"managedBeforeCompile={pureBeforeCompile}", $"managedImmediatelyAfterCompile={pureImmediatelyAfterCompile}", $"managedAfterDiagnosticGcWithRoot={pureAfterDiagnosticGc}", $"managedAfterRootReleased={Median(pureMeasurements.Select(static measurement => measurement.AfterRootReleased))}", $"compiledRetainedManagedEstimate={pureCompiledRetainedManagedEstimate}", $"compiledFunctionClassInstances={compiledFunctionCount}", $"instructionPayloadBytes={instructionPayload}", $"functionDescriptorTheoreticalPayloadBytes={descriptorPayload}", $"uniqueFunctionNameUtf16PayloadBytes={namePayload}", $"uniqueFilePathUtf16PayloadBytes={pathPayload}", $"knownPayload={pureKnownPayloadWithStrings}", $"estimatedManagedOverhead={pureEstimatedManagedOverhead}", $"measurementValid={pureRetainedMeasurementValid}", $"independentRuns={pureRetainedRuns.Count}", $"runValid={string.Join(',', pureRunValid)}", $"runOverheadBytes={string.Join(',', pureRunOverheads)}", $"baselineDeltaBytes={string.Join(',', pureMeasurements.Select(static measurement => measurement.AfterDiagnosticGc - measurement.BeforeCompile))}", $"auditInclusiveRetainedManagedEstimate={auditInclusiveRetainedManagedEstimate}", "fingerprintStringPerCompiledFunction=NO"], new UTF8Encoding(false));
@@ -380,7 +380,8 @@ static void WriteCoverageGainAttribution(string directory, IReadOnlyList<Candida
     var selected = new HashSet<PrototypeOpcode>
     {
         PrototypeOpcode.SET, PrototypeOpcode.CUSTOMDRAWLINE, PrototypeOpcode.RESETCOLOR,
-        PrototypeOpcode.SETCOLOR, PrototypeOpcode.SETFONT
+        PrototypeOpcode.SETCOLOR, PrototypeOpcode.SETFONT, PrototypeOpcode.RESET_STAIN,
+        PrototypeOpcode.VARSET, PrototypeOpcode.ALIGNMENT, PrototypeOpcode.ARRAYSHIFT, PrototypeOpcode.SPLIT
     };
     var rows = new List<(string Key, string Name, int Line, string[] Families)>();
     foreach (var candidate in candidates)
@@ -402,7 +403,46 @@ static void WriteCoverageGainAttribution(string directory, IReadOnlyList<Candida
         "Attribution is non-additive: a function with multiple selected opcodes is counted once in newlyCompiled and reported as multiBlocker."
     ], new UTF8Encoding(false));
     File.WriteAllLines(Path.Combine(directory, "new-opcodes.txt"),
-        ["Legacy FunctionCode -> PrototypeOpcode", "SET -> SET", "CUSTOMDRAWLINE -> CUSTOMDRAWLINE", "RESETCOLOR -> RESETCOLOR", "SETCOLOR -> SETCOLOR", "SETFONT -> SETFONT", "CALLFORM -> deferred (dynamic-name/format semantics)", $"newlyCompiled={rows.Count}", $"attributedNewlyCompiled={attributed.Length}"], new UTF8Encoding(false));
+        ["Legacy FunctionCode -> PrototypeOpcode", "SET -> SET", "CUSTOMDRAWLINE -> CUSTOMDRAWLINE", "RESETCOLOR -> RESETCOLOR", "SETCOLOR -> SETCOLOR", "SETFONT -> SETFONT", "RESET_STAIN -> RESET_STAIN", "VARSET -> VARSET", "ALIGNMENT -> ALIGNMENT", "ARRAYSHIFT -> ARRAYSHIFT", "SPLIT -> SPLIT", "CALLFORM -> deferred (dynamic-name/format semantics)", $"newlyCompiled={rows.Count}", $"attributedNewlyCompiled={attributed.Length}"], new UTF8Encoding(false));
+}
+
+static void WriteDeferredClassification(string directory, IReadOnlyList<UnsupportedObservation> observations)
+{
+    var flow = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "RESTART", "BEGIN", "CATCH", "ENDCATCH"
+    };
+    var dynamic = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "CALLFORM", "TRYCALLFORM", "TRYCCALLFORM", "CALLFORMF", "TRYCALLFORMF", "TRYCCALLFORMF"
+    };
+    var rows = observations.Select(observation =>
+    {
+        var blockers = observation.Blockers.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        if (blockers.Length == 0) blockers = ["<none>"];
+        var categories = blockers.Select(blocker => Classify(blocker, flow, dynamic)).Distinct(StringComparer.Ordinal).ToArray();
+        return new DeferredClassificationRow(observation.Key, observation.Candidate.Row.RelativeFile, observation.Candidate.Row.FunctionName ?? "", observation.Candidate.Row.StartLine,
+            observation.FirstReason.ToString(), observation.Detail ?? "", blockers, categories[0], categories);
+    }).OrderBy(static row => row.RelativeFile, StringComparer.OrdinalIgnoreCase).ThenBy(static row => row.StartLine).ToArray();
+    File.WriteAllLines(Path.Combine(directory, "unsupported-classification.tsv"),
+    [
+        "key\trelativeFile\tfunctionName\tstartLine\tfirstReason\tdetail\tprimaryBlocker\tprimaryCategory\tallBlockers\tallCategories",
+        ..rows.Select(static row => string.Join('\t', row.Key, row.RelativeFile, row.FunctionName, row.StartLine, row.FirstReason, row.Detail, row.Blockers[0], row.PrimaryCategory, string.Join(',', row.Blockers), string.Join(',', row.AllCategories)))
+    ], new UTF8Encoding(false));
+    File.WriteAllLines(Path.Combine(directory, "unsupported-classification.json"), rows.Select(static row => JsonSerializer.Serialize(row)), new UTF8Encoding(false));
+    var counts = rows.GroupBy(static row => row.PrimaryCategory, StringComparer.Ordinal).ToDictionary(static group => group.Key, static group => group.Count(), StringComparer.Ordinal);
+    File.WriteAllLines(Path.Combine(directory, "unsupported-category-summary.txt"),
+        ["category\tprimaryFunctionCount", ..new[] { "MethodBacked", "FlowControl", "DynamicCall", "AssignmentExpression", "FrontendCompatibility", "Unknown" }.Select(category => $"{category}\t{counts.GetValueOrDefault(category)}"), $"total\t{rows.Length}", $"UnknownZero={counts.GetValueOrDefault("Unknown") == 0}"], new UTF8Encoding(false));
+
+    static string Classify(string blocker, IReadOnlySet<string> flow, IReadOnlySet<string> dynamic)
+    {
+        if (LegacyOpcodeMap.MethodBackedLineHeadNames.Contains(blocker, StringComparer.OrdinalIgnoreCase)) return "MethodBacked";
+        if (dynamic.Contains(blocker)) return "DynamicCall";
+        if (flow.Contains(blocker) || blocker.StartsWith("CALL", StringComparison.OrdinalIgnoreCase) || blocker.StartsWith("TRY", StringComparison.OrdinalIgnoreCase) || blocker.StartsWith("JUMP", StringComparison.OrdinalIgnoreCase) || blocker.StartsWith("GOTO", StringComparison.OrdinalIgnoreCase)) return "FlowControl";
+        if (blocker is "multiline" or "preprocessor-or-directive" or "local-label-or-structural" or "macro-sensitive-syntax") return "FrontendCompatibility";
+        if (blocker.Equals("SET", StringComparison.OrdinalIgnoreCase) || blocker.EndsWith("++", StringComparison.Ordinal) || blocker.EndsWith("--", StringComparison.Ordinal) || blocker.Contains(':')) return "AssignmentExpression";
+        return "Unknown";
+    }
 }
 
 static List<BenchmarkRow> RunBenchmark(IReadOnlyList<Candidate[]> batchFiles, FunctionCompiler compiler, int runs,
@@ -552,7 +592,7 @@ static void CollectBaselineUnsupportedAnalysis(IReadOnlyList<Candidate[]> batchF
     if (baselineKeys is null) return;
     var forcedBlockers = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
-        "SET", "RESETCOLOR", "CUSTOMDRAWLINE", "SETCOLOR", "SETFONT"
+        "SET", "RESETCOLOR", "CUSTOMDRAWLINE", "SETCOLOR", "SETFONT", "RESET_STAIN", "VARSET", "ALIGNMENT", "ARRAYSHIFT", "SPLIT"
     };
     foreach (var fileGroup in batchFiles)
     using (var session = FunctionSourceReader.OpenFile(fileGroup[0].File))
@@ -754,6 +794,8 @@ readonly record struct UnsupportedObservation(Candidate Candidate, UnsupportedRe
 {
     public string Key => $"{Candidate.Row.RelativeFile}:{Candidate.Row.StartLine}";
 }
+readonly record struct DeferredClassificationRow(string Key, string RelativeFile, string FunctionName, int StartLine,
+    string FirstReason, string Detail, string[] Blockers, string PrimaryCategory, string[] AllCategories);
 sealed class LegacyRow
 {
     public string RelativeFile { get; set; } = ""; public int FunctionOrder { get; set; } public string? FunctionName { get; set; }

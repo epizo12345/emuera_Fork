@@ -45,6 +45,12 @@ static int SelfTest()
         tests.Add(("CALL and TRYCALL distinct", () => Assert(LegacyOpcodeMap.TryMap("CALL", out var call) && LegacyOpcodeMap.TryMap("TRYCALL", out var tryCall) && call != tryCall)));
         tests.Add(("PRINT and PRINTC distinct", () => Assert(LegacyOpcodeMap.TryMap("PRINT", out var print) && LegacyOpcodeMap.TryMap("PRINTC", out var printC) && print != printC)));
         tests.Add(("Phase 1B exact opcode additions", () => Assert(LegacyOpcodeMap.TryMap("RESETCOLOR", out var resetColor) && resetColor == PrototypeOpcode.RESETCOLOR && LegacyOpcodeMap.TryMap("CUSTOMDRAWLINE", out var customDrawLine) && customDrawLine == PrototypeOpcode.CUSTOMDRAWLINE && LegacyOpcodeMap.TryMap("SETCOLOR", out var setColor) && setColor == PrototypeOpcode.SETCOLOR && LegacyOpcodeMap.TryMap("SETFONT", out var setFont) && setFont == PrototypeOpcode.SETFONT)));
+        tests.Add(("Phase 1C exact opcode additions are distinct", () =>
+        {
+            var names = new[] { "RESET_STAIN", "VARSET", "ALIGNMENT", "ARRAYSHIFT", "SPLIT" };
+            var opcodes = names.Select(name => { Assert(LegacyOpcodeMap.TryMap(name, out var opcode)); return opcode; }).ToArray();
+            Assert(opcodes.Distinct().Count() == names.Length && opcodes.All(opcode => opcode != PrototypeOpcode.Unsupported));
+        }));
         tests.Add(("R5 statement map excludes SET", () => Assert(!LegacyOpcodeMap.SupportedStatementIdentifierNames.Contains("SET", StringComparer.OrdinalIgnoreCase) && !LegacyOpcodeMap.TryMapStatementIdentifier("SET", CompilerCompatibilityOptions.LegacyDefaults, out _))));
         tests.Add(("R5 statement map is a subset of B", () =>
         {
@@ -91,6 +97,14 @@ static int SelfTest()
                 var f = ErbSourceIndexer.IndexFile(p);
                 var result = compiler.TryCompile(f, f.Functions.Single());
                 Assert(result.Status != CompileStatus.Compiled || result.Function!.Instructions.All(i => i.Opcode != PrototypeOpcode.SET));
+            }));
+        }
+        foreach (var name in new[] { "RESET_STAIN", "VARSET", "ALIGNMENT", "ARRAYSHIFT", "SPLIT" })
+        {
+            tests.Add((name + " compiles as exact opcode", () =>
+            {
+                var result = CompileLine(name + " X");
+                Assert(result.Status == CompileStatus.Compiled && result.Function!.Instructions.Single().Opcode == Enum.Parse<PrototypeOpcode>(name));
             }));
         }
         tests.Add(("complete Legacy line-head guard is unique and nonempty", () =>

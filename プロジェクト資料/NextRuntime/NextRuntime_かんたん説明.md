@@ -146,3 +146,11 @@ performance.baselineRuns=5 expandedRuns=5 totalMedianMs=1963.985 sourceMedianMs=
 pureRetained.runs=3 values=8703552,8703552,8703552 median=8703552 knownPayload=6829664 overhead=1873888 valid=True
 fixture.New=0 Changed=0 Deleted=0
 <!-- END NEXT-1B-R7 METRICS -->
+
+### Phase 1C: Tier-B境界の完了
+
+Phase 1Cはcoverage最大化ではなく、低リスクな通常statement境界を閉じる作業です。`RESET_STAIN`、`VARSET`、`ALIGNMENT`、`ARRAYSHIFT`、`SPLIT`の5命令だけをdistinct opcodeとして追加しました。Compiledは実行処理や式評価まで完成したという意味ではなく、命令とraw operand source spanへ安全に分類できたという意味です。Legacy実登録と実oracleで5命令すべてのstatement classificationとexact opcodeを確認し、CHKFONT/GETFONT、RESTART/BEGIN/CATCH/ENDCATCH/CALLFORM/TRY family、++/--は未実装のままです。
+
+Run IDは`20260827_Phase1C_Final`。実fixtureはcompiled 59093→59103、remaining unsupported 342→332、errors 0、instruction count 191273、baseline lost 0、全structural mismatch 0、assignment false positive 0でした。残件のprimary ownerはMethodBacked 30、DynamicCall 289、FlowControl 3、AssignmentExpression 10、FrontendCompatibility 0、Unknown 0です。Core 52/52、Compiler 86/86、Differential PASS、real fixture differential PASS、Debug/matrix PASS、fixture mutation 0/0/0、semantic verifier PASSです。
+
+性能5-run中央値はtotal 1940.738 ms / source 1030.619 ms / compiler 93.361 ms / allocation 120035704 bytes。pure retainedは8717168 bytesを独立3回すべて再現し、known payload 6842960、overhead 1874208でした。Phase 1 compilerはこの範囲でCOMPLETE、実行semanticは未実装です。次はPhase 2のVM/control-flowとcall boundaryです。

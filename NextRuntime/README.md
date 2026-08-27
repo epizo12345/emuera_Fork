@@ -151,3 +151,15 @@ performance.baselineRuns=5 expandedRuns=5 totalMedianMs=1963.985 sourceMedianMs=
 pureRetained.runs=3 values=8703552,8703552,8703552 median=8703552 knownPayload=6829664 overhead=1873888 valid=True
 fixture.New=0 Changed=0 Deleted=0
 <!-- END NEXT-1B-R7 METRICS -->
+
+### Phase 1C: Tier-B Boundary Closure
+
+Phase 1Cの目的はcoverage最大化ではなく、Phase 1B-R7で確定したfunction-level compilerの低リスクな通常statement境界を閉じることである。Productionへ追加したのはLegacy statementとして実登録される`RESET_STAIN`、`VARSET`、`ALIGNMENT`、`ARRAYSHIFT`、`SPLIT`の5つだけで、既存opcode値は不変、値はappend-only、`PrototypeInstruction`は16 bytesのままである。CompiledはLegacyの実行処理や引数semantic validation、variable resolution、式評価を実装したという意味ではなく、compact instructionとraw operand source spanへ安全に分類できたという意味である。
+
+Legacy実runtime oracleでは5命令すべてが`FunctionIdentifier`の`Method == null`通常statementとして登録され、対応する`AInstruction`と`FunctionArgType`を確認した。synthetic sourceの実oracleでも`RESET_STAIN`、`VARSET`、`ALIGNMENT`、`ARRAYSHIFT`、`SPLIT`のexact FunctionCodeとline-head classificationを確認し、CHKFONT/GETFONTはmethod-backedのまま、RESTART/BEGIN/CATCH/ENDCATCH/CALLFORM/TRY familyと++/--はUnsupportedのままとした。
+
+Run IDは`20260827_Phase1C_Final`。実fixtureの結果は59093→59103 compiled（+10）、342→332 remaining unsupported、compiler errors 0、expanded instruction count 191273である。R7 baseline 59093件はlost 0、baseline/expanded instruction count・order・exact opcode mismatchはすべて0、assignment false positiveは0。R7の4構成 line-head matrixは全行pass（A/B/Cは456/275/181または454/273/181、union/intersection/map/behavior差分0）、Debug false/trueもexact/fallback pass、fixture full-tree mutationはNew 0 / Changed 0 / Deleted 0である。
+
+残unsupported 332件はprimary ownerをMethodBacked 30、DynamicCall 289、FlowControl 3、AssignmentExpression 10、FrontendCompatibility 0、Unknown 0へ機械分類した。各行はprimary blocker、all blockers、primary/all categoryをTSV/JSONへ保存し、Unknown=0を確認した。Method-backedのCHKFONT/GETFONT等はPhase 3 Method/Expression IR + Host、RESTART/BEGIN/CATCH/ENDCATCHはPhase 2 VM/control-flow、CALLFORM/TRY*はPhase 2 call VM + Phase 3 expression/format、assignment expressionと++/--はPhase 3 expression/assignment IR、frontend互換はlater compatibility expansionがownerである。
+
+expanded 5-run medianはtotal 1940.738 ms、source read 1030.619 ms、compiler 93.361 ms、allocation 120035704 bytes。pure retainedは独立3回が8717168 / 8717168 / 8717168 bytes、median 8717168、known payload 6842960、overhead 1874208で全run valid。Core SelfTest 52/52、CompilerSelfTest 86/86、DifferentialSelfTest PASS、real fixture differential PASS、semantic verifier PASS、artifact mutation test PASSである。Phase 1 compilerはこのscoped boundaryについてCOMPLETEとし、semantic/runtime executionは未実装のままPhase 2へ渡す。Phase 2の次段はVM/control-flowとcall boundaryであり、Expression/Format IR、Method IR、VariableStore、cache、Host/UI、formal EXEは今回実装しない。
