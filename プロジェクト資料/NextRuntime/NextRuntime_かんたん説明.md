@@ -206,3 +206,13 @@ Legacy semantic rowsは134652件。凍結したSourceIndexとのexact position j
 PCは0..CodeLengthのlocal next-instruction contractで、CodeLengthはimplicit return sentinel。real instructionはoperand spanを保持し、SIF / IF clause / SELECT case / loop descriptorとBREAK・CONTINUE metadataを別side tableへ置く。real ExecutableReadyは0、synthetic VMだけが実行可能である。actual retainedと性能区間を分離して測定した。
 
 最小Legacy fixtureのStartupTestは本R1環境ではempty-log timeoutとなり、BREAK/reentrant loop/implicit returnの実行oracleが未確定のためPhase2AはHOLD。Phase2B/Phase3は未開始。
+
+### Phase 2A-R2
+
+R2ではCatalogを16 bytes（CatalogSourceRef 8 + EffectiveNameId 4 + PackedMetadata 4）へ整理し、SourceIndexを恒久rootにした。名前の意味が未確定な関数はEffectiveNameKnown=false、EffectiveNameId=-1として検索候補へ入れない。Legacy名との結合キーはStartLineではなくfile内definition ordinalである。
+
+loopのBREAK/CONTINUEはOpenFrameごとの専用record index listで所有し、close時にそのframeだけをfinal LoopDescriptorへ書き換える。ELSEIF-after-ELSE等はwarning、crossed closeやloop外BREAKはInvalidStructureとし、停止理由もInvalidStructureへ分離した。SIF直後のpartial setはLegacy FunctionIdentifier/IsPartialとSIF parserのソースから固定し、VMからLegacy assemblyは参照しない。SelfTest=45/45。
+
+実測はPhase1基準値を再現したが、raw manifestではSourceIndex側のpreprocessor定義3件とLegacy側のinline-brace定義3件がfile単位で異なる。したがってExactPhysicalStartLineMatch=134649、KnownPositionResidual=3、ordinal identity missing/extra=3/3、EffectiveNameUnknown=3を明示し、physical name fallbackは行っていない。retainedは9/9 valid、mutationは24/24検出、性能は5-run直接計測である。
+
+runtime fixtureはreal CSVをData/csvへコピーして16ケースを起動し、全ケースでsentinel付きstartup-test.logとtime.logを得た。ただし同一minimal SYSTEM_TITLEの起動確認であり、loop/reentrant/implicit-returnの挙動oracleは未確定である。このためR2判定はHOLD、Phase2B/Phase3は未開始。

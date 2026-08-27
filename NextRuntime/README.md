@@ -208,4 +208,16 @@ FunctionIdはSourceIndexのphysical definition順で134652件を保持し、Lega
 
 FunctionCatalogはvalue record + file/name table + flattened candidate IDs + NameRangeへcompact化した。PCはnext-instruction local PCで、0..CodeLengthを有効域とし、CodeLengthはimplicit function fallthrough returnである。JUMPはPropagate frameでreturn伝播する。real linked instructionは全191273件のOperandOffset/OperandLengthを保持し、mismatch=0。SIF、IF ordered clause、SELECTCASE ordered case、loop descriptorを分離し、CONTINUEはloop kind別、REPEAT/FOR BREAKはcounter advance契約をside metadataへ保持する。
 
+### Phase 2A-R2: Control Ownership / Semantic Identity / Runtime Oracle
+
+R2実装では、FunctionCatalogEntryを`CatalogSourceRef(8)+EffectiveNameId(4)+PackedMetadata(4)`の16 bytesへ縮小し、FunctionId field、SourceSpan/PhysicalNameId duplication、permanent composite path lookupを除去した。SourceIndexをpermanent rootとし、EffectiveName未確定値は`EffectiveNameId=-1 / EffectiveNameKnown=false`でFindByNameから除外する。FixedCallResolverはordered candidateのfirst-definition authorityを維持する。
+
+ControlLinkerはOpenFrameの`LoopControlRecordIndices`だけをloop close時にrewriteし、temporary opener record indexをStructuralLinkRecord.LoopIndexへ入れない。REPEAT/FORのBreakAdvancesCounter、loop kind別ContinueCheckPc、IF/SELECTのwarning-only分類、fatal InvalidStructure分類、SIFのLegacy partial opcode setをside diagnosticsへ分離した。InvalidStructureはVmStopReason.InvalidStructureへ対応する。VM SelfTest=45/45。
+
+実fixture再監査はdefinitions=134652、compiled=59103、instructions=191273、CALL/JUMP=12254/15、resolved=12269、missing/wrongKind=0/0、operandSpanMismatch=0、loopDescriptors=128、maxLoopNesting=2を再現した。ExactPhysicalStartLineMatch=134649、KnownPositionResidual=3は保持した。raw ordinal identityではSourceIndexのpreprocessor定義3件とLegacy inline定義3件がfile単位で入れ替わるため、SemanticIdentityMissing/Extra=3/3、EffectiveNameUnknown=3となり、physical fallbackで0へ合わせていない。
+
+retainedはbaseline→root生成→full GC後after→KeepAliveの順で独立3-runを測定し、9/9 valid、negative=0。性能5-run中央値はCoreNextPipeline=7126.209ms、AuditTotalIncludingAll=19240.320ms。CoreNextは直接stage sumであり、oracle/retained/report writingを含めない。runtime fixtureはProgram.csの実経路どおり`--ExeDir <temp>\Data`へ構成し、real CSVをコピーした16ケースでexit=0、timeout=False、case sentinel、startup-test.log、time.logを確認したが、同一minimal SYSTEM_TITLEの起動確認であり、loop挙動差のoracleではない。
+
+R2 mutation verifierは実artifactを24回変異させ、Detected=24、FalsePass=0。identity 0/0と16個の個別runtime behavior truthは未達のため、`Phase2ADecision=HOLD`、`Phase2B/Phase3=NOT_STARTED`とする。
+
 real fixtureはCodeAvailable=59103、LinkReady/LinkedSemanticPendingをExecutableReadyと分離し、ExecutableReady real=0。actual GC retainedはcatalog/linked/combinedを独立3回で測定した。VM SelfTest=33/33、Phase1 semantic regressionはeligible59435 / compiled59103 / remaining332 / errors0 / instructionCount191273 / baselineLost0。Legacy minimal fixtureのStartupTest oracleは本R1環境でログ生成まで到達せずtimeout/empty-logとなったため、BREAK・reentrant loop・implicit returnのruntime truthは未確定であり、Phase2ADecision=HOLD。Phase2B/Phase3=NOT_STARTED。
