@@ -28,7 +28,7 @@ CompilerはPhase0B verified safe、Compiler strict-clean、eligibleを別に判�
 
 R4のunsupported 5,235関数をLegacy FunctionCode・source syntax単位で再集計した。主因は代入構文（4,836関数、30,032 occurrences）、次いでCALLFORM（201）、RESETCOLOR（150）だった。Tier Aとして、source spanだけで意味を失わないSET（代入）、RESETCOLOR、CUSTOMDRAWLINE、SETCOLOR、SETFONTを追加した。Tier BのCHKFONT/GETFONT/RESULT等、Tier CのCALLFORM/TRYCALLFORM、CATCH/ENDCATCH、LOCAL、式・動的名前依存は延期した。
 
-実ゲームfixtureでは、Previously compiled 54,200、Newly compiled 4,893、Total compiled 59,093、Remaining unsupported 342、Compiler errors 0となった。baseline lost 0、baseline/expanded structural mismatch 0、Exact Opcode mismatch 0、PrototypeInstruction 16 bytesである。5-runのbaseline subset中央値はtotal 1,829.084ms、source read 1,009.519ms、compiler 57.156ms、allocation 75,036,176 bytes。expanded set、Pure retained、known payload、overhead、audit-inclusiveは最終artifactへ記録した。
+実ゲームfixtureでは、Previously compiled 54,200、Newly compiled 4,893、Total compiled 59,093、Remaining unsupported 342、Compiler errors 0となった。baseline lost 0、baseline/expanded structural mismatch 0、Exact Opcode mismatch 0、PrototypeInstruction 16 bytesである。5-runのbaseline subset中央値はtotal 1,810.836ms、source read 1,000.763ms、compiler 55.406ms、allocation 75,036,176 bytes。expanded set、Pure retained、known payload、overhead、audit-inclusiveは最終artifactへ記録した。
 
 Phase 1Bはcompiler coverageと計測だけであり、命令を実行するVM、VariableStore、Expression/Format IR、disk cache、正式EXE変更は行わない。次候補は、残る145件のうちTier Bをsource例とLegacy oracleで精査するPhase 1Cである。
 
