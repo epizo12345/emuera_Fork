@@ -245,3 +245,23 @@ pureRetained.runs=3 values=8703552,8703552,8703552 median=8703552 valid=True
 fixtureMutation.New=0 Changed=0 Deleted=0
 semanticVerifier=PASS mutationTests=4/4
 <!-- END NEXT-1B-R6 METRICS -->
+
+<!-- BEGIN NEXT-1B-R7 METRICS -->
+RunId=20260827_Phase1B_R7_Final
+Phase1BDecision=COMPLETE
+LegacyDefaults.IgnoreCase=True
+LegacyDefaults.UseScopedVariableInstruction=False
+LegacyDefaults.SystemAllowFullSpace=True
+LegacyDefaults.DebugMode=False
+FixtureOptions.IgnoreCase=True FixtureOptions.UseScopedVariableInstruction=True FixtureOptions.SystemAllowFullSpace=True FixtureOptions.DebugMode=False constructor=explicit-options
+matrix.ic-true-scoped-true.A=456 B=275 C=181 aMissing=0 aExtra=0 bMissing=0 bExtra=0 cMissing=0 cExtra=0 union=True intersection=0 mapMinusB=0 mapIntersectionC=0 behavior=0
+matrix.ic-true-scoped-false.A=454 B=273 C=181 aMissing=0 aExtra=0 bMissing=0 bExtra=0 cMissing=0 cExtra=0 union=True intersection=0 mapMinusB=0 mapIntersectionC=0 behavior=0
+matrix.ic-false-scoped-true.A=456 B=275 C=181 aMissing=0 aExtra=0 bMissing=0 bExtra=0 cMissing=0 cExtra=0 union=True intersection=0 mapMinusB=0 mapIntersectionC=0 behavior=0
+matrix.ic-false-scoped-false.A=454 B=273 C=181 aMissing=0 aExtra=0 bMissing=0 bExtra=0 cMissing=0 cExtra=0 union=True intersection=0 mapMinusB=0 mapIntersectionC=0 behavior=0
+Debug.false.exact=True Debug.true.fallback=True silentDropped=0
+coverage.eligible=59435 compiled=59093 remaining=342 errors=0 coverageRate=0.994246
+differential.baselineLost=0 count=0 order=0 opcode=0 classification=0 span=0 SET=False assignmentFalsePositive=0
+performance.baselineRuns=5 expandedRuns=5 totalMedianMs=1963.985 sourceMedianMs=1045.655 compilerMedianMs=95.468 allocationMedianBytes=119904656 instructionCount=190482
+pureRetained.runs=3 values=8703552,8703552,8703552 median=8703552 knownPayload=6829664 overhead=1873888 valid=True
+fixture.New=0 Changed=0 Deleted=0
+<!-- END NEXT-1B-R7 METRICS -->

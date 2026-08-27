@@ -14,7 +14,8 @@ if (args.Length < 3 || args.Any(static a => a is "-h" or "--help"))
 var erbDirectory = Path.GetFullPath(args[0]);
 var legacyManifest = Path.GetFullPath(args[1]);
 var reportDirectory = Path.GetFullPath(args[2]);
-const string RunId = "20260827_Phase1B_R6_Final";
+// R7 is evidence-only; production compiler semantics remain frozen at the R6 candidate.
+const string RunId = "20260827_Phase1B_R7_Final";
 const long Phase1AR4BaselineAllocationMedianBytes = 87163032;
 var runs = 5;
 string? baselineManifest = null;
