@@ -52,7 +52,7 @@ Phase 0AのSource Indexは実行系ではなく、ERBを読むための小さな
 
 ## 8. 完了済み作業と今後の起動計画
 
-完了はPhase 0AのSource Index、IndexAudit、SelfTest、0A-R1のLegacy境界に沿ったflag分類、0A-R2の関数ヘッダー境界と計測分離、0B-R2のLegacy oracle差分・PPState disabled range診断・性能baseline、1A-R1の関数単位compiler prototypeである。Phase 1A-R1ではまだVMを開始していない。
+完了はPhase 0AのSource Index、IndexAudit、SelfTest、0A-R1のLegacy境界に沿ったflag分類、0A-R2の関数ヘッダー境界と計測分離、0B-R2のLegacy oracle差分・PPState disabled range診断・性能baseline、1A-R2の関数単位compiler prototypeである。Phase 1A-R2ではまだVMを開始していない。
 
 今後は関数単位compiler prototype、compact IR、instruction VM、bounded/evictable cache、disk compile cacheへ進む。warm startupでは、変更検出済みのsource indexと検証済みcompile cacheを再利用し、不要なparser再実行を避ける。cacheは再生成可能であり、配布Runtime本体とは別扱いにする。
 
@@ -113,7 +113,7 @@ LegacyとNextは9458ファイル・134652関数で一致した。Nextのsafe fun
 
 0B-R2の差分ゲートと1Aのcompiler prototype gateは通過した。1AはChatレビュー可能な基準点であり、VM、VariableStore、Expression/Format IR、disk cache、Process.ScriptProc置換、正式EXE変更を含まない。Phase 1B/Phase 2は別の明示的承認まで開始しない。
 
-## 18. Phase 1A 関数単位compiler prototype
+## 18. Phase 1A-R1 関数単位compiler prototype（履歴基準値）
 
 `FunctionSourceReader`は`SourceFileIndex + FunctionIndex`のfile length / last-write time snapshotを検証してから、`FileStream.Seek(StartOffset)`と必要byte数のreadだけを実行する。不一致は`SourceChanged`としてcompileしない。UTF-8はstrict validationし、BOMはfile offsetに含むが関数sliceには含めない。ERB全体のstring/行配列、Legacy `ErbLoader` hydration、Legacy parser再利用はCompiler本体では行わない。
 
@@ -123,7 +123,27 @@ LegacyとNextは9458ファイル・134652関数で一致した。Nextのsafe fun
 
 function source bytesのSHA-256 fingerprintは同一sourceで決定的で、1文字変更では変更する。synthetic `FUNC_A/FUNC_B`でA unchanged、B changedを確認した。fingerprintは32-byte valueとしてCompileResultに分離し、CompiledFunctionへ文字列を保持しない。R1ではdisk cache、dependency graph、bounded cache、VM、VariableStore、Process.ScriptProc置換、正式EXE変更を行わない。代表関数とunsupported理由はCompilerAudit reportへ出し、巨大本文はreview ZIPへ含めない。
 
-## 19. Phase 0B-R1 差分更新とcache無効化
+## 19. Phase 1A-R2 計測と関数読み込みの改善
+
+R1のretained値はbenchmark run間の前回結果をbaselineへ含み得たため、R2ではbenchmarkと分離した独立測定にした。前回resultを解放してfull GCした後、54,200 compiled functionsだけを`List<CompiledFunction>`でroot保持し、`managedBeforeCompile`、`managedImmediatelyAfterCompile`、`managedAfterDiagnosticGc`を記録する。R2のcompiledRetainedManagedEstimateは25,197,560 bytesで、runごとの中央値ではない。
+
+Known payloadは、instruction payload 1,340,176 bytes、CompiledFunction descriptor field theoretical payload 3,468,800 bytes、unique function-name UTF-16 payload 1,844,032 bytes、unique file-path UTF-16 payload 575,948 bytes、合計7,228,956 bytesと分離した。actual retained managedは25,197,560 bytes、estimated managed overheadは17,968,604 bytesであり、理論値とGC後保持量を混同しない。`sizeof(PrototypeInstruction)`は16 bytesである。
+
+coverage funnelは、Index total 134,652 → Phase0B verified safe 112,854 → Phase0B fallback/unsafe 21,798 → Compiler strict-clean 59,438 → Phase0B safe but compiler excluded 53,416 → Compiler eligible 59,435 → Compile succeeded 54,200 / Unsupported unique 5,235 / Errors 0とする。strict-cleanはSourceIndexのfunction flagsがNoneで、かつfile-level fallbackがない関数である。`IndexFunctionNotMatched` 8,379はfile欠落ではなく、8,376件が`[[...]]` rename後のLegacy名と物理ヘッダー名の違い、3件がstart-line/name join差分で、代表例をCompilerAudit reportへ出す。
+
+CompilerAuditのbatch pathでは、eligible functionsをfileごとにstart offset順へ並べ、1 file sessionを開いて複数spanを読む。R2は3,552 file sessions / runで、single-function open相当59,435回を置き換えた。ERB全体をstringやstring[]へ保持せず、sessionはboundedに1 fileずつ閉じる。SourceChangedはopen/read時のlength・last-write time snapshotで検出する。R1中央値 total 6,607ms / source read 5,929ms / compiler 145msに対し、R2は1,725ms / 932ms / 54ms、total allocationは96,067,968 bytesから87,163,032 bytesへ悪化しなかった。
+
+single-function `FunctionSourceReader.Read`はlazy runtime向けに維持し、batch sessionはCompilerAudit専用である。flat instruction arenaは短関数のdescriptor/array overheadをさらに下げる候補だが、R2では実装せずPhase 1B以降の候補として保留した。
+
+## 20. Phase履歴
+
+- Phase 0A: Source Indexの基礎。実ゲーム9,458 ERB / 134,652関数。
+- Phase 0B: Legacy実parserとのoracle差分検証。verified safe 112,854、予期しない差分0。
+- Phase 1A: Function-level compiler prototype。54,200関数compile。
+- Phase 1A-R1: 64KB/function bufferを修正し、allocation約4GBから約96MBへ削減。Exact Opcode化。
+- Phase 1A-R2: retained/metadata/coverageを分離し、file-scoped batch I/Oでsource read約5.93秒から約0.93秒へ削減。正式資料を`プロジェクト資料/NextRuntime/`へ移管。
+
+## 21. Phase 0B-R1 差分更新とcache無効化
 
 R1では差分更新を実装せず、root相対path・length・last-write time・content hashをfile identityとする。変更ファイルは関数spanと行連結blockを再計算し、関数content hashの変更を起点に、確定したcall/reference dependencyの逆向き到達範囲を再評価する。ERH、Rename、Preprocessor、宣言directiveは安全側にfile-level invalidationとする。
 

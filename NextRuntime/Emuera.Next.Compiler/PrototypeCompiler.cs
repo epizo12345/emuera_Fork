@@ -88,7 +88,7 @@ public static class LegacyOpcodeMap
 public sealed class FunctionCompiler
 {
     public const int InstructionPayloadBytes = 16;
-    public const int FunctionMetadataPayloadBytes = 32;
+    public const int FunctionDescriptorFieldPayloadBytes = 64;
     private static readonly UTF8Encoding StrictUtf8 = new(false, true);
 
     public CompileResult TryCompile(SourceFileIndex file, FunctionIndex function)

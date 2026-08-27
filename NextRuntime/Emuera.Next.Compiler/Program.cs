@@ -39,6 +39,11 @@ static int SelfTest()
         tests.Add(("instruction payload is 16 bytes", () => Assert(System.Runtime.InteropServices.Marshal.SizeOf<PrototypeInstruction>() == 16)));
         tests.Add(("source lines", () => Assert(compiler.TryCompile(indexed, function).Function!.Instructions[0].SourceLine == 2)));
         tests.Add(("operand span", () => { var i = compiler.TryCompile(indexed, function).Function!.Instructions[1]; Assert(i.OperandLength > 0 && i.OperandOffset > 0); }));
+        var batchPath = Path.Combine(root, "batch.ERB");
+        WriteBom(batchPath, "@A\nPRINT 1\n@B\nRETURN\n");
+        var batchIndex = ErbSourceIndexer.IndexFile(batchPath);
+        tests.Add(("batch session reads same bytes as single read", () => { using var session = FunctionSourceReader.OpenFile(batchIndex); var a = session.Read(batchIndex.Functions[0]); var b = FunctionSourceReader.Read(batchIndex, batchIndex.Functions[0]); Assert(a.Status == SourceReadStatus.Read && b.Status == SourceReadStatus.Read && a.Source!.Value.Bytes.SequenceEqual(b.Source!.Value.Bytes)); }));
+        tests.Add(("batch session reads multiple functions from one file", () => { using var session = FunctionSourceReader.OpenFile(batchIndex); Assert(session.Read(batchIndex.Functions[0]).Status == SourceReadStatus.Read && session.Read(batchIndex.Functions[1]).Status == SourceReadStatus.Read); }));
         tests.Add(("unsupported instruction", () => { var p = Path.Combine(root, "unknown.ERB"); WriteBom(p, "@X\nUNKNOWN 1\n"); var f = ErbSourceIndexer.IndexFile(p); Assert(compiler.TryCompile(f, f.Functions.Single()).Status == CompileStatus.Unsupported); }));
         tests.Add(("unsupported returns without exception", () => { var p = Path.Combine(root, "unknown2.ERB"); WriteBom(p, "@X\nUNKNOWN 1\n"); var f = ErbSourceIndexer.IndexFile(p); Assert(compiler.TryCompile(f, f.Functions.Single()).Reason == UnsupportedReason.UnsupportedInstruction); }));
         var fingerprint = compiler.TryCompile(indexed, function).Fingerprint;
@@ -70,6 +75,7 @@ static int SelfTest()
         var invalid = ErbSourceIndexer.IndexFile(invalidPath);
         tests.Add(("invalid UTF-8 rejected", () => Assert((invalid.Flags & SourceIndexFlags.InvalidUtf8) != 0)));
         tests.Add(("source changed result", () => { File.AppendAllText(path, " "); Assert(compiler.TryCompile(indexed, function).Status == CompileStatus.SourceChanged); }));
+        tests.Add(("batch session source changed detection", () => { using var session = FunctionSourceReader.OpenFile(batchIndex); File.AppendAllText(batchPath, " "); Assert(session.Read(batchIndex.Functions[0]).Status == SourceReadStatus.SourceChanged); }));
 
         var passed = 0;
         foreach (var (name, test) in tests)

@@ -49,13 +49,13 @@ compileとは、ERBを実行しやすい形へ変換することです。cache�
 
 ## 6. 今どこ？
 
-軽い目次の答え合わせが終わり、現在は目次から必要な関数だけ取り出して、新しい小さい形式へ変換するPhase 1A-R1試作を行っています。関数全体ではなく、Source Indexが示すphysical byte spanだけを読みます。関数ごとの64KB読み取りbufferは廃止しました。
+軽い目次の答え合わせが終わり、現在は目次から必要な関数だけ取り出して、新しい小さい形式へ変換するPhase 1A-R2試作を行っています。関数全体ではなく、Source Indexが示すphysical byte spanだけを読みます。関数ごとの64KB読み取りbufferを廃止し、監査時は同じERBを一度だけ開く方式も追加しました。
 
-まだ新しいVMでゲームを動かしていません。0B-R2では旧Emueraの実際の読み込み処理と目次を答え合わせし、134,652件を安全範囲とfallback範囲に分けて予期しない差を0件にしました。1A-R1では実ゲームのcompiler eligible 59,435件のうち54,200件をprototype compileでき、unique未対応は5,235件でした。5回計測の累積遭遇数26,175件をcoverage件数にはしていません。未対応構文は安全にLegacyへfallbackします。
+まだ新しいVMでゲームを動かしていません。0B-R2では旧Emueraの実際の読み込み処理と目次を答え合わせし、134,652件を安全範囲とfallback範囲に分けて予期しない差を0件にしました。1A-R2では実ゲームのcompiler eligible 59,435件のうち54,200件をprototype compileでき、unique未対応は5,235件でした。5回計測の累積遭遇数26,175件をcoverage件数にはしていません。監査のsource read中央値はR1の約5.93秒から約0.93秒、totalは約6.61秒から約1.73秒へ短縮しました。未対応構文は安全にLegacyへfallbackします。
 
 ゲームのERBが更新されたら、将来は変更されたファイルと影響する依存範囲だけをcacheから外す設計です。CSVは表示用か、解析に影響するか、影響範囲不明かで扱いを分けます。設定・parser規則・エンジン版が変わった場合は安全のため全体を作り直します。R2のCSV分類と1Aのfingerprintは診断・設計段階で、disk cacheはまだ実装していません。
 
-Phase 1A-R1でも、VM、VariableStore、Expression/Format IR、UI変更は行っていません。Phase 1BはChatレビュー後に明示承認されるまで開始しません。
+Phase 1A-R2でも、VM、VariableStore、Expression/Format IR、UI変更は行っていません。Phase 1BはChatレビュー後に明示承認されるまで開始しません。
 
 ## 7. 最終的には？
 
