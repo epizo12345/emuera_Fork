@@ -174,3 +174,30 @@ R2 raw replay retained: values=8717168,8717168,8717168; median=8717168; knownPay
 Measurement fixture evidence=R2 (R3 did not create a fresh fixture): before/after=20103/20103; New/Changed/Deleted=0/0/0; manifestSHA=7ca75ad502d8669589037c59c4818bac63534646e283b389e5f72971a43ef194
 Tests replay: Core=52/52; Compiler=81/81; required named gates=PASS; Differential=PASS; oracle=5/5; matrix=4/4; Debug PASS silentDropped=0
 R3 independently reaggregated immutable R2 raw evidence; no Production semantics, coverage, performance measurement, or retained measurement was changed.
+
+### Phase 2A: Compact VM Skeleton + Control Linker
+
+Phase2ARunId=20260827_Phase2A_Final
+StartHEAD=e264a40f3c4ef6af96e1c8a8020909492407c07a
+Phase1Status=COMPLETE
+Phase1Baseline=eligible59435 compiled59103 remainingUnsupported332 compilerErrors0 instructionCount191273 PrototypeInstruction=16 bytes
+
+Phase2Aは実ゲームをNext VMで起動するphaseではなく、FunctionId/catalog、compact linked representation、PC/frame/call/jump invariant、object-free structural linker、synthetic VMを確定する基盤phaseである。Production Legacy semanticsとPhase1 compiler coverageは変更しない。
+
+PC contract=常に次に実行するfunction-local instruction。fetch後にPCを進め、branchはlink済みlocal PCへ設定する。CALLはcallerのcall後PCを保持しcallee PC=0。JUMPはcallerを即popせずPropagate frameでreturn伝播する。
+FunctionId=Source Indexのphysical function definitionをfile order/function orderで0-based列挙。definitions=134652、duplicate FunctionId=0、duplicate name definitions=116。name lookupはordered FunctionId definitionsを保持する。
+ResolutionとCodeAvailableは分離する。real fixtureのfixed CALL/JUMPはCALL12254、JUMP15、static target parse success12269、resolved12266、missing3、wrongKind0、CodeAvailable true1527/false10739。
+Fixed scannerはLegacy SP_CALLと同じくhalf-space/tabをtrimし、( [ , ;までをstatic targetとしてlinkする。CALLFORM/TRYCALLFORM/dynamic callは対象外。
+CALL argument contract=target ready/hydration → caller arguments全評価・transport確定 → callee private ScopeIn → ARG/ARGS/REF代入 → frame push → callee entry。Phase2Aではargument executionとScopeInを実装しない。
+
+VmInstruction=ushort Opcode + ushort Flags + int OperandOffset + int OperandLength + int Aux、exact16 bytes。VmFunctionDescriptor=16 bytes、VmFrame=12 bytes。hot representationはreference/string/object/arrayを持たず、global VmInstruction storageとscalar side tablesを使用する。
+Linked fixture=functions59103 instructions191273 structuralLinks52638、max instruction/function=12316、max structural nesting=7、max loop nesting=2、invalid structure=0、semantic barriers=69402。IF/ELSEIF/ELSEはordered clauseとENDIF exit、SELECTCASEはselectorを一度だけ扱うordered case/end table、loopsはnearest loopのbreak/continue targetをlocal PCへ変換する。
+Memory payload=VmInstruction3060368 bytes、descriptor2154432 bytes、branch/loop side table1263312 bytes、known linked payload6478112 bytes、diagnostic sidecar0。per-instruction object graphは持たない。
+Performance 5-run median=SourceIndex2042.147ms、catalog2553.742ms、Phase1 compile3123.325ms、control link78.166ms、total7805.401ms、total allocated766069264 bytes。これは最適化採否の値ではなくPhase2A基盤のbaseline evidenceである。
+
+Legacy source oracleはPASS。Legacy control runtimeとLoopInstructionLine reentrancyの自動oracleは、Production変更なしで利用できるtest seamがないためUNAVAILABLE。REPEAT/FORのLoopCounter/LoopEnd/LoopStepがinstruction object stateであること、BREAK時のLoopStep進行、JUMPのreturn propagationはsource contractとして記録し、推測でframe-local化しない。
+VM SelfTest=26/26、Phase1 Core=52/52、Phase1 Compiler=81/81、Differential=PASS、malformed structural tests=PASS。SemanticNotAvailable、UnsupportedControl、CodeNotAvailable、InvalidFunctionId、InvalidLocalPc、StepLimitは明示StopReasonで停止する。
+
+Phase2ADecision=HOLD
+Phase2AStatus=SKELETON_IMPLEMENTED_RUNTIME_ORACLE_PENDING
+Phase2B/Phase3へ渡すもの=Legacy runtime oracleの自動化、loop reentrancy確定、expression/format/variable semantics、CALLFORM/dynamic call、GOTO/$label、TRY/CATCH、event dispatch、ARG/LOCAL/REF runtime、実ゲーム起動。
