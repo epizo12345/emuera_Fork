@@ -266,12 +266,20 @@ pureRetained.runs=3 values=8703552,8703552,8703552 median=8703552 knownPayload=6
 fixture.New=0 Changed=0 Deleted=0
 <!-- END NEXT-1B-R7 METRICS -->
 
-### Phase 1C current status: Tier-B Boundary Closure
 
-Phase 1Cの責務はcoverage最大化ではなく、Phase 1B-R7で確定したfunction-level compilerへ低リスクな通常statementを追加し、残unsupported全件のownerを確定することである。Production追加は`RESET_STAIN`、`VARSET`、`ALIGNMENT`、`ARRAYSHIFT`、`SPLIT`の5 opcodeだけで、既存opcode IDは不変、append-only、`PrototypeInstruction`は16 bytesを維持した。5命令はLegacy `FunctionIdentifier`の実登録、対応`AInstruction`、`FunctionArgType`、実runtime oracleのline-head classification/exact FunctionCodeで確認した。Next compilerはoperandをExpression/Argument objectへ変換せず、raw operand source spanだけを保持する。
+### Phase 1C-R1: Evidence Revalidation
 
-Compiledの定義は、Legacyと同じruntime executionまで実装済みという意味ではない。安全にcompact instruction + operand source spanへ分類済みであることだけを意味する。引数semantic validation、variable resolution、式評価、default引数展開、runtime side effect、VM、FunctionId解決、PC/jump target、VariableStoreはPhase 1Cの責務外である。CHKFONT/GETFONTはLegacy method-backed（return/destination/Host dependencyを含む）としてPhase 3 Method/Expression IR + Hostへ延期し、専用opcode・generic METHOD opcode・MethodId sidecarは作らない。
-
-Run IDは`20260827_Phase1C_Final`。eligible 59435、compiled 59093→59103（+10）、remaining unsupported 342→332、compiler errors 0、expanded instruction count 191273である。R7 baseline lost 0、baseline/expanded count/order/exact opcode mismatch 0、classification/span mismatch 0、assignment false positive 0、`PrototypeInstruction` 16 bytes。R7 four-config matrix、Debug true/false、SET structural regression、real fixture differentialはすべてPASS。残unsupportedのprimary categoryはMethodBacked 30、DynamicCall 289、FlowControl 3、AssignmentExpression 10、FrontendCompatibility 0、Unknown 0で、各functionのprimary blocker/all blockersをTSV/JSONへ出力しUnknown=0を機械検証した。
-
-expanded 5-run medianはtotal 1940.738 ms、source read 1030.619 ms、compiler 93.361 ms、allocation 120035704 bytes。pure retainedは独立3-runで8717168 / 8717168 / 8717168 bytes、median 8717168、known payload 6842960、overhead 1874208、3/3 valid。fixture full-tree mutationは0/0/0。従って`Phase1CDecision=COMPLETE`、`Phase1CompilerStatus=COMPLETE_FOR_SCOPED_BOUNDARY`とする。Phase 2 next stepはVM/control-flowとcall boundaryで、RESTART/BEGIN/CATCH/ENDCATCHはPhase 2、CALLFORM/TRY*はPhase 2/3、assignment expressionはPhase 3、method-backed/HostはPhase 3、frontend compatibilityはlater expansionがownerである。semantic/runtime executionを完了したとは扱わない。
+EvidenceRunId=20260827_Phase1C_R1_Final
+CompilerAuditRunId=20260827_Phase1C_Final
+ProductionCompilerChanged=NO
+Phase1CDecision=COMPLETE
+Phase1CompilerStatus=COMPLETE_FOR_SCOPED_BOUNDARY
+Coverage=59093 -> 59103 compiled (+10); remainingUnsupported=332; compilerErrors=0
+AddedOpcodes=RESET_STAIN,VARSET,ALIGNMENT,ARRAYSHIFT,SPLIT; existing opcode IDs unchanged; append-only; PrototypeInstruction=16 bytes
+UnsupportedPrimary=MethodBacked 30; DynamicCall 289; FlowControl 3; AssignmentExpression 10; FrontendCompatibility 0; Unknown 0; AllCategoriesUnknown=0; secondary owner verification=PASS
+Differential=baselineLost 0; instruction count/order/exact opcode mismatch 0; classificationMismatch 0; spanMismatch 0; assignmentFalsePositive 0; realFixture PASS; fiveOpcodeLegacyExact PASS
+R1 raw performance: expanded total=2020.805 ms; sourceRead=1092.051 ms; compiler=95.677 ms; allocation=120035704 bytes; baseline subset total=1991.678 ms; allocation=118911944 bytes
+R1 raw retained: values=8717168,8717168,8717168; median=8717168; knownPayload=6842960; overhead=1874208; valid=True 3/3
+Fresh fixture: before/after fileCount=20103/20103; manifestSHA before=7ca75ad502d8669589037c59c4818bac63534646e283b389e5f72971a43ef194, after=7ca75ad502d8669589037c59c4818bac63534646e283b389e5f72971a43ef194; New/Changed/Deleted=0/0/0
+Tests: Core 52/52; Compiler 86/86; Differential PASS; matrix/debug/SET PASS; semantic verifier PASS; mutation detection=14/14; FalsePass=0
+Production semantics and coverage unchanged from Phase 1C; R1 corrected evidence generation and validated current raw artifacts. VM, Method/Expression IR, cache, Host/UI, and Phase 2 remain NOT_STARTED.

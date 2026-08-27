@@ -152,14 +152,20 @@ pureRetained.runs=3 values=8703552,8703552,8703552 median=8703552 knownPayload=6
 fixture.New=0 Changed=0 Deleted=0
 <!-- END NEXT-1B-R7 METRICS -->
 
-### Phase 1C: Tier-B Boundary Closure
 
-Phase 1Cの目的はcoverage最大化ではなく、Phase 1B-R7で確定したfunction-level compilerの低リスクな通常statement境界を閉じることである。Productionへ追加したのはLegacy statementとして実登録される`RESET_STAIN`、`VARSET`、`ALIGNMENT`、`ARRAYSHIFT`、`SPLIT`の5つだけで、既存opcode値は不変、値はappend-only、`PrototypeInstruction`は16 bytesのままである。CompiledはLegacyの実行処理や引数semantic validation、variable resolution、式評価を実装したという意味ではなく、compact instructionとraw operand source spanへ安全に分類できたという意味である。
+### Phase 1C-R1: Evidence Revalidation
 
-Legacy実runtime oracleでは5命令すべてが`FunctionIdentifier`の`Method == null`通常statementとして登録され、対応する`AInstruction`と`FunctionArgType`を確認した。synthetic sourceの実oracleでも`RESET_STAIN`、`VARSET`、`ALIGNMENT`、`ARRAYSHIFT`、`SPLIT`のexact FunctionCodeとline-head classificationを確認し、CHKFONT/GETFONTはmethod-backedのまま、RESTART/BEGIN/CATCH/ENDCATCH/CALLFORM/TRY familyと++/--はUnsupportedのままとした。
-
-Run IDは`20260827_Phase1C_Final`。実fixtureの結果は59093→59103 compiled（+10）、342→332 remaining unsupported、compiler errors 0、expanded instruction count 191273である。R7 baseline 59093件はlost 0、baseline/expanded instruction count・order・exact opcode mismatchはすべて0、assignment false positiveは0。R7の4構成 line-head matrixは全行pass（A/B/Cは456/275/181または454/273/181、union/intersection/map/behavior差分0）、Debug false/trueもexact/fallback pass、fixture full-tree mutationはNew 0 / Changed 0 / Deleted 0である。
-
-残unsupported 332件はprimary ownerをMethodBacked 30、DynamicCall 289、FlowControl 3、AssignmentExpression 10、FrontendCompatibility 0、Unknown 0へ機械分類した。各行はprimary blocker、all blockers、primary/all categoryをTSV/JSONへ保存し、Unknown=0を確認した。Method-backedのCHKFONT/GETFONT等はPhase 3 Method/Expression IR + Host、RESTART/BEGIN/CATCH/ENDCATCHはPhase 2 VM/control-flow、CALLFORM/TRY*はPhase 2 call VM + Phase 3 expression/format、assignment expressionと++/--はPhase 3 expression/assignment IR、frontend互換はlater compatibility expansionがownerである。
-
-expanded 5-run medianはtotal 1940.738 ms、source read 1030.619 ms、compiler 93.361 ms、allocation 120035704 bytes。pure retainedは独立3回が8717168 / 8717168 / 8717168 bytes、median 8717168、known payload 6842960、overhead 1874208で全run valid。Core SelfTest 52/52、CompilerSelfTest 86/86、DifferentialSelfTest PASS、real fixture differential PASS、semantic verifier PASS、artifact mutation test PASSである。Phase 1 compilerはこのscoped boundaryについてCOMPLETEとし、semantic/runtime executionは未実装のままPhase 2へ渡す。Phase 2の次段はVM/control-flowとcall boundaryであり、Expression/Format IR、Method IR、VariableStore、cache、Host/UI、formal EXEは今回実装しない。
+EvidenceRunId=20260827_Phase1C_R1_Final
+CompilerAuditRunId=20260827_Phase1C_Final
+ProductionCompilerChanged=NO
+Phase1CDecision=COMPLETE
+Phase1CompilerStatus=COMPLETE_FOR_SCOPED_BOUNDARY
+Coverage=59093 -> 59103 compiled (+10); remainingUnsupported=332; compilerErrors=0
+AddedOpcodes=RESET_STAIN,VARSET,ALIGNMENT,ARRAYSHIFT,SPLIT; existing opcode IDs unchanged; append-only; PrototypeInstruction=16 bytes
+UnsupportedPrimary=MethodBacked 30; DynamicCall 289; FlowControl 3; AssignmentExpression 10; FrontendCompatibility 0; Unknown 0; AllCategoriesUnknown=0; secondary owner verification=PASS
+Differential=baselineLost 0; instruction count/order/exact opcode mismatch 0; classificationMismatch 0; spanMismatch 0; assignmentFalsePositive 0; realFixture PASS; fiveOpcodeLegacyExact PASS
+R1 raw performance: expanded total=2020.805 ms; sourceRead=1092.051 ms; compiler=95.677 ms; allocation=120035704 bytes; baseline subset total=1991.678 ms; allocation=118911944 bytes
+R1 raw retained: values=8717168,8717168,8717168; median=8717168; knownPayload=6842960; overhead=1874208; valid=True 3/3
+Fresh fixture: before/after fileCount=20103/20103; manifestSHA before=7ca75ad502d8669589037c59c4818bac63534646e283b389e5f72971a43ef194, after=7ca75ad502d8669589037c59c4818bac63534646e283b389e5f72971a43ef194; New/Changed/Deleted=0/0/0
+Tests: Core 52/52; Compiler 86/86; Differential PASS; matrix/debug/SET PASS; semantic verifier PASS; mutation detection=14/14; FalsePass=0
+Production semantics and coverage unchanged from Phase 1C; R1 corrected evidence generation and validated current raw artifacts. VM, Method/Expression IR, cache, Host/UI, and Phase 2 remain NOT_STARTED.

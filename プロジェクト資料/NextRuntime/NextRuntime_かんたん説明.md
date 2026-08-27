@@ -147,10 +147,20 @@ pureRetained.runs=3 values=8703552,8703552,8703552 median=8703552 knownPayload=6
 fixture.New=0 Changed=0 Deleted=0
 <!-- END NEXT-1B-R7 METRICS -->
 
-### Phase 1C: Tier-B境界の完了
 
-Phase 1Cはcoverage最大化ではなく、低リスクな通常statement境界を閉じる作業です。`RESET_STAIN`、`VARSET`、`ALIGNMENT`、`ARRAYSHIFT`、`SPLIT`の5命令だけをdistinct opcodeとして追加しました。Compiledは実行処理や式評価まで完成したという意味ではなく、命令とraw operand source spanへ安全に分類できたという意味です。Legacy実登録と実oracleで5命令すべてのstatement classificationとexact opcodeを確認し、CHKFONT/GETFONT、RESTART/BEGIN/CATCH/ENDCATCH/CALLFORM/TRY family、++/--は未実装のままです。
+### Phase 1C-R1: Evidence Revalidation
 
-Run IDは`20260827_Phase1C_Final`。実fixtureはcompiled 59093→59103、remaining unsupported 342→332、errors 0、instruction count 191273、baseline lost 0、全structural mismatch 0、assignment false positive 0でした。残件のprimary ownerはMethodBacked 30、DynamicCall 289、FlowControl 3、AssignmentExpression 10、FrontendCompatibility 0、Unknown 0です。Core 52/52、Compiler 86/86、Differential PASS、real fixture differential PASS、Debug/matrix PASS、fixture mutation 0/0/0、semantic verifier PASSです。
-
-性能5-run中央値はtotal 1940.738 ms / source 1030.619 ms / compiler 93.361 ms / allocation 120035704 bytes。pure retainedは8717168 bytesを独立3回すべて再現し、known payload 6842960、overhead 1874208でした。Phase 1 compilerはこの範囲でCOMPLETE、実行semanticは未実装です。次はPhase 2のVM/control-flowとcall boundaryです。
+EvidenceRunId=20260827_Phase1C_R1_Final
+CompilerAuditRunId=20260827_Phase1C_Final
+ProductionCompilerChanged=NO
+Phase1CDecision=COMPLETE
+Phase1CompilerStatus=COMPLETE_FOR_SCOPED_BOUNDARY
+Coverage=59093 -> 59103 compiled (+10); remainingUnsupported=332; compilerErrors=0
+AddedOpcodes=RESET_STAIN,VARSET,ALIGNMENT,ARRAYSHIFT,SPLIT; existing opcode IDs unchanged; append-only; PrototypeInstruction=16 bytes
+UnsupportedPrimary=MethodBacked 30; DynamicCall 289; FlowControl 3; AssignmentExpression 10; FrontendCompatibility 0; Unknown 0; AllCategoriesUnknown=0; secondary owner verification=PASS
+Differential=baselineLost 0; instruction count/order/exact opcode mismatch 0; classificationMismatch 0; spanMismatch 0; assignmentFalsePositive 0; realFixture PASS; fiveOpcodeLegacyExact PASS
+R1 raw performance: expanded total=2020.805 ms; sourceRead=1092.051 ms; compiler=95.677 ms; allocation=120035704 bytes; baseline subset total=1991.678 ms; allocation=118911944 bytes
+R1 raw retained: values=8717168,8717168,8717168; median=8717168; knownPayload=6842960; overhead=1874208; valid=True 3/3
+Fresh fixture: before/after fileCount=20103/20103; manifestSHA before=7ca75ad502d8669589037c59c4818bac63534646e283b389e5f72971a43ef194, after=7ca75ad502d8669589037c59c4818bac63534646e283b389e5f72971a43ef194; New/Changed/Deleted=0/0/0
+Tests: Core 52/52; Compiler 86/86; Differential PASS; matrix/debug/SET PASS; semantic verifier PASS; mutation detection=14/14; FalsePass=0
+Production semantics and coverage unchanged from Phase 1C; R1 corrected evidence generation and validated current raw artifacts. VM, Method/Expression IR, cache, Host/UI, and Phase 2 remain NOT_STARTED.
