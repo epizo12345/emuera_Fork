@@ -201,3 +201,9 @@ Phase 1以降のFunctionId/event dispatchでは、LegacyのFileIndex、source or
 * eviction：再生成可能なcache項目を追い出すこと。
 * warm startup：一度準備した索引やcompile結果を再利用する起動。
 * Host boundary：UI、画像、入力、save、filesystemとCoreを分ける境界。
+
+### Phase 1B-R3 完了判定
+
+Run IDは`20260827_Phase1B_R3_Final`。Legacyの`FunctionIdentifier.GetInstructionNameDic()`を実行時oracleとして診断exportし、`Method == null`のstatement command 275件だけをNext予約表へ固定した。全件diffはMissing 0、Extra 0、Duplicate 0、Empty 0、method-only false reservation 0。SET判定はexact opcode、Legacy statement reservation、assignmentの順で、未対応statementのoperand中の`=`をSETへ誤認しない。CHKFONT/GETFONTは実辞書上のmethod-onlyで、statement予約falseとした。
+
+実ゲーム結果はcompiled 59,093、remaining unsupported 342、compiler errors 0、baseline lost 0、instruction count/order/exact opcode mismatch 0、Phase0B safe 52.36%、eligible 99.42%。5-run性能中央値はtotal 1,913.485 ms / source read 1,018.398 ms / compiler 83.051 ms / allocation 125,520,296 bytes。Pure retainedは完全独立3回が各8,703,552 bytes、中央値8,703,552、PureKnownPayload 6,829,664、overhead 1,873,888。Audit-inclusive retained 28,602,312 bytesは別項目である。Phase 1BはCOMPLETE/HOLD、VM・Expression IR・Format IR・Phase 1Cは未開始。

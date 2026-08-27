@@ -2,6 +2,7 @@
 using MinorShift.Emuera.Runtime.Script.Data;
 using MinorShift.Emuera.Runtime.Script.Loader;
 using MinorShift.Emuera.Runtime.Script.Statements;
+using MinorShift.Emuera.GameProc.Function;
 using LegacyConfig = MinorShift.Emuera.Runtime.Config.Config;
 using System;
 using System.Collections.Generic;
@@ -118,6 +119,14 @@ internal static class LegacyOracleExporter
             $"erbManagedAfterDiagnosticGc={baseline.ManagedAfterDiagnosticGc}",
             $"legacyRetainedManagedEstimate={Math.Max(0, baseline.ManagedAfterDiagnosticGc - baseline.ManagedBefore)}"
         ], new UTF8Encoding(false));
+        // [Emuera改修:NEXT-1B-R3 2026-08-27]
+        // LogicalLineParserが実際に行頭命令検索へ使うinstruction dictionaryの登録キーを、
+        // enum/Method一覧ではなくLegacy実体から診断artifactへ出力する。
+        var instructionDictionary = FunctionIdentifier.GetInstructionNameDic();
+        File.WriteAllLines(Path.Combine(Path.GetDirectoryName(fullPath)!, "legacy-instruction-names.txt"),
+            ["source=FunctionIdentifier.GetInstructionNameDic() entries with Method == null (actual statement commands)", ..instructionDictionary.Where(static pair => pair.Value.Method is null).Select(static pair => pair.Key).Order(StringComparer.OrdinalIgnoreCase)], new UTF8Encoding(false));
+        File.WriteAllLines(Path.Combine(Path.GetDirectoryName(fullPath)!, "legacy-method-names.txt"),
+            ["source=FunctionIdentifier.GetInstructionNameDic() entries with Method != null (expression methods)", ..instructionDictionary.Where(static pair => pair.Value.Method is not null).Select(static pair => pair.Key).Order(StringComparer.OrdinalIgnoreCase)], new UTF8Encoding(false));
         WritePreprocessorReports(Path.GetDirectoryName(fullPath)!, erbRoot, preprocessorDiagnostics);
     }
 

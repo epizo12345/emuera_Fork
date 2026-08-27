@@ -87,3 +87,9 @@ CSVは依存性で分類する。表示・名称・説明などcompile時意味�
 ## Windows distribution invariant
 
 最終Windows版の正式配布は、現行Emueraと同じく `PublishSingleFile=true`、`SelfContained=false` のframework-dependent single-file publishを基本とします。内部をWindows Host、Next Core、Compiler、VMなどへ分割しても、ユーザーがゲームフォルダへ手動配置するRuntime本体は原則 `Emuera.exe` 1ファイルです。publish時に必要なruntime componentをsingle EXEへまとめ、compile cacheなどの再生成可能cacheを手動配置Runtime componentとは扱いません。
+
+## Phase 1B-R3 完了判定
+
+Run IDは`20260827_Phase1B_R3_Final`。Legacy `FunctionIdentifier.GetInstructionNameDic()` の実登録キーを `Method == null`（実際のstatement command）と `Method != null`（式中method）へ診断exportし、Next予約表をstatement 275件へ完全一致させた。Missing 0、Extra 0、Duplicate 0、Empty 0、method-only false reservation 0である。`SET`は予約表から除外し、対応済みexact opcode、Legacy statement予約、assignmentの順で判定する。CALLFORM、TRYCALLFORM、TRYCCALLFORM、ENDCATCH、RESET_STAIN、VARSET、RESTART、ARRAYSHIFT、SPLITの`X=Y`負例、RESULTS/A/日本語代入、比較・引用符・コメント負例をCompilerSelfTestへ固定した。CHKFONT/GETFONTはLegacy actual dictionaryでmethod-onlyと確認し、Next statement reservationはfalseである。
+
+実ゲームは59,093 compiled、342 remaining unsupported、compiler errors 0。Previously compiled lost 0、instruction count/order/exact opcode mismatch 0、PrototypeInstruction 16 bytes、Phase0B safe 52.36%、eligible 99.42%。5-run performance medianはtotal 1,913.485 ms、source read 1,018.398 ms、compiler 83.051 ms、allocation 125,520,296 bytes。Pure retainedは3回完全独立測定で8,703,552 / 8,703,552 / 8,703,552 bytes、中央値8,703,552、PureKnownPayload 6,829,664、overhead 1,873,888。audit-inclusive retainedは28,602,312 bytesで別計上した。artifact、正式資料、final-status、Git証跡は同じRun IDと数値で整合させ、Phase 1BをCOMPLETE/HOLDとする。VM、Expression IR、Format IR、Phase 1Cは開始しない。

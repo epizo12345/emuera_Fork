@@ -75,12 +75,12 @@ public static class LegacyOpcodeMap
     private static readonly IReadOnlyDictionary<string, PrototypeOpcode> Map =
         Enum.GetValues<PrototypeOpcode>().Where(static opcode => opcode != PrototypeOpcode.Unsupported)
             .ToDictionary(static opcode => opcode.ToString(), static opcode => opcode, StringComparer.OrdinalIgnoreCase);
-    // [Emuera改修:NEXT-1B-R2 2026-08-27]
-    // Legacy FunctionCode/FunctionMethodの実在名を1か所へ固定する。production pathでLegacy parserを呼ばず、
-    // 未対応Legacy命令のoperand中の「=」をSETへ誤認しないための予約メタデータとして保持する。
+    // [Emuera改修:NEXT-1B-R3 2026-08-27]
+    // Legacy FunctionIdentifier.GetInstructionNameDic() の Method == null 登録キーだけを固定する。
+    // production pathでLegacy parserを呼ばず、未対応statementの「=」をSETへ誤認しないための予約表とする。
     private static readonly HashSet<string> ReservedLegacyCommands = new(StringComparer.OrdinalIgnoreCase)
     {
-        "SET", "PRINT", "PRINTL", "PRINTW", "PRINTN", "PRINTV", "PRINTVL", "PRINTVW", "PRINTVN",
+        "PRINT", "PRINTL", "PRINTW", "PRINTN", "PRINTV", "PRINTVL", "PRINTVW", "PRINTVN",
         "PRINTS", "PRINTSL", "PRINTSW", "PRINTSN", "PRINTFORM", "PRINTFORML", "PRINTFORMW", "PRINTFORMN",
         "PRINTFORMS", "PRINTFORMSL", "PRINTFORMSW", "PRINTFORMSN", "PRINTC", "CLEARLINE", "REUSELASTLINE",
         "WAIT", "INPUT", "INPUTS", "TINPUT", "TINPUTS", "TWAIT", "WAITANYKEY", "FORCEWAIT", "ONEINPUT",
@@ -115,32 +115,6 @@ public static class LegacyOpcodeMap
         "TOOLTIP_SETDURATION", "PRINT_IMG", "PRINT_RECT", "PRINT_SPACE", "INPUTMOUSEKEY", "VARI", "VARS", "HTML_PRINT_ISLAND",
         "HTML_PRINT_ISLAND_CLEAR",
     };
-    static LegacyOpcodeMap() => ReservedLegacyCommands.UnionWith(new[]
-    {
-        "GETCHARA", "GETSPCHARA", "CSVNAME", "CSVCALLNAME", "CSVNICKNAME", "CSVMASTERNAME", "CSVCSTR", "CSVBASE", "CSVABL",
-        "CSVMARK", "CSVEXP", "CSVRELATION", "CSVTALENT", "CSVCFLAG", "CSVEQUIP", "CSVJUEL", "GETCSVNOBYNAME", "GETCSVNOBYNICKNAME",
-        "GETCSVNOBYCALLNAME", "GETCSVNOBYMASTERNAME", "FINDCHARA", "FINDLASTCHARA", "EXISTCSV", "CHKFONT", "CHKDATA", "ISSKIP",
-        "CHKVARDATA", "CHKGLOBALDATA", "FIND_VARDATA",
-        "MOUSESKIP", "MESSKIP", "GETCOLOR", "GETDEFCOLOR", "GETFOCUSCOLOR", "GETBGCOLOR", "GETDEFBGCOLOR", "GETSTYLE", "GETFONT",
-        "BARSTR", "CURRENTALIGN", "CURRENTREDRAW", "COLOR_FROMNAME", "COLOR_FROMRGB", "CHKCHARADATA", "FIND_CHARADATA", "MONEYSTR",
-        "PRINTCLENGTH", "GETTIMES", "GETMILLISECOND", "GETSECOND", "RAND", "MIN", "MAX", "ABS", "SQRT", "CBRT", "LOG", "LOG10",
-        "EXPONENT", "SIGN", "LIMIT", "SUMARRAY", "SUMCARRAY", "MATCH", "CMATCH", "GROUPMATCH", "NOSAMES", "ALLSAMES", "MAXARRAY",
-        "MAXCARRAY", "MINARRAY", "MINCARRAY", "GETBIT", "GETNUM", "GETPALAMLV", "GETEXPLV", "FINDELEMENT", "FINDLASTELEMENT", "INRANGE",
-        "INRANGEARRAY", "INRANGECARRAY", "GETNUMB", "ARRAYMSORT", "STRLENS", "STRLENSU", "SUBSTRING", "SUBSTRINGU", "STRFIND", "STRFINDU",
-        "STRCOUNT", "TOSTR", "TOINT", "TOUPPER", "TOLOWER", "TOHALF", "TOFULL", "LINEISEMPTY", "REPLACE", "UNICODE", "UNICODEBYTE",
-        "CONVERT", "ISNUMERIC", "ESCAPE", "CHARATU", "GETLINESTR", "STRFORM", "STRJOIN", "GETCONFIG", "GETCONFIGS", "HTML_GETPRINTEDSTR",
-        "HTML_POPPRINTINGSTR", "HTML_TOPLAINTEXT", "HTML_ESCAPE", "SPRITECREATED", "SPRITEWIDTH", "SPRITEHEIGHT", "SPRITEMOVE", "SPRITESETPOS",
-        "SPRITEPOSX", "SPRITEPOSY", "CLIENTWIDTH", "CLIENTHEIGHT", "GETKEY", "GETKEYTRIGGERED", "MOUSEX", "MOUSEY", "ISACTIVE", "SAVETEXT",
-        "LOADTEXT", "GCREATED", "GWIDTH", "GHEIGHT", "GGETCOLOR", "SPRITEGETCOLOR", "GCREATE", "GCREATEFROMFILE", "GDISPOSE", "GCLEAR",
-        "GFILLRECTANGLE", "G_POLYGON_DRAW", "G_POLYGON_FILL", "G_POLYGON_POINT_ADD", "G_POLYGON_POINT_CLEAR", "GDRAWTEXT", "GDRAWSPRITE",
-        "GSETCOLOR", "GDRAWG", "GDRAWGWITHMASK", "GSETBRUSH", "GSETFONT", "GSETPEN", "SPRITECREATE", "SPRITEDISPOSE", "CBGSETG",
-        "CBGSETSPRITE", "CBGCLEAR", "CBGCLEARBUTTON", "CBGREMOVERANGE", "CBGREMOVEBMAP", "CBGSETBMAPG", "CBGSETBUTTONSPRITE", "GSAVE",
-        "GLOAD", "SPRITEANIMECREATE", "SPRITEANIMEADDFRAME", "SETANIMETIMER", "SQL_CONNECTION_OPEN", "SQL_EXECUTE_READER", "SQL_EXECUTE_SCALER_LONG",
-        "SQL_EXECUTE_SCALER_STRING", "SQL_EXECUTE_NONQUERY", "SQL_READER_READ", "SQL_READER_GET_LONG", "SQL_READER_GET_STRING", "SQL_READER_IS_NULL",
-        "EXISTFUNCTION", "DICT_CREATE", "DICT_EXIST", "DICT_CONTAINS_KEY", "DICT_SET_VALUE", "DICT_GET_VALUE_STRING", "DICT_GET_VALUE_LONG",
-        "HASH_XXH3", "HASH_XXH32",
-    });
-
     public static bool TryMap(string token, out PrototypeOpcode opcode) => Map.TryGetValue(token, out opcode);
     public static bool IsReservedLegacyCommand(string token) => ReservedLegacyCommands.Contains(token);
     public static IReadOnlyCollection<string> ReservedLegacyCommandNames => ReservedLegacyCommands;
@@ -251,8 +225,9 @@ public sealed class FunctionCompiler
 
         static bool IsAssignment(string text)
         {
-            // [Emuera改修:NEXT-1B-R2 2026-08-27]
-            // Legacyの変数代入をSETとして識別するが、比較演算子は式意味論を含むため取り込まない。
+            // [Emuera改修:NEXT-1B-R3 2026-08-27]
+            // 実体辞書のstatement判定を代入判定より先に適用し、Legacy commandのoperand中の「=」をSETへ誤認しない。
+            // 比較演算子は式意味論を含むため、単純な変数代入へ取り込まない。
             if (text.Length == 0 || text[0] is '"' or '\'') return false;
             var equal = text.IndexOf('=');
             if (equal < 0) return false;

@@ -53,8 +53,6 @@ static int SelfTest()
             ("unsupported Legacy command operand equals is not SET", "CATCH X=Y"),
             ("Legacy command before assignment is not SET", "PRINT 日本語 = 1"),
             ("ENDCATCH operand equals is not SET", "ENDCATCH X=Y"),
-            ("CHKFONT operand equals is not SET", "CHKFONT X=Y"),
-            ("GETFONT operand equals is not SET", "GETFONT X=Y"),
             ("RESET_STAIN operand equals is not SET", "RESET_STAIN X=Y"),
             ("VARSET operand equals is not SET", "VARSET X=Y"),
             ("RESTART operand equals is not SET", "RESTART X=Y"),
@@ -77,8 +75,43 @@ static int SelfTest()
         {
             var names = LegacyOpcodeMap.ReservedLegacyCommandNames.ToArray();
             Assert(names.Length > 200 && names.All(static name => !string.IsNullOrWhiteSpace(name)) && names.Distinct(StringComparer.OrdinalIgnoreCase).Count() == names.Length);
-            Assert(LegacyOpcodeMap.IsReservedLegacyCommand("CALLFORM") && LegacyOpcodeMap.IsReservedLegacyCommand("CHKFONT") && !LegacyOpcodeMap.IsReservedLegacyCommand("普通の識別子"));
+            Assert(LegacyOpcodeMap.IsReservedLegacyCommand("CALLFORM") && !LegacyOpcodeMap.IsReservedLegacyCommand("普通の識別子"));
         }));
+        var legacyStatementPath = Environment.GetEnvironmentVariable("EMUERA_LEGACY_STATEMENT_NAMES");
+        var legacyMethodPath = Environment.GetEnvironmentVariable("EMUERA_LEGACY_METHOD_NAMES");
+        var commandSetReportPath = Environment.GetEnvironmentVariable("EMUERA_COMMAND_SET_REPORT");
+        if (!string.IsNullOrWhiteSpace(legacyStatementPath) && !string.IsNullOrWhiteSpace(legacyMethodPath) && File.Exists(legacyStatementPath) && File.Exists(legacyMethodPath))
+        {
+            tests.Add(("Legacy actual statement dictionary equals Next reservation set", () =>
+            {
+                var actualRaw = ReadOracleNames(legacyStatementPath);
+                var actual = actualRaw.ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var next = LegacyOpcodeMap.ReservedLegacyCommandNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var missing = actual.Except(next, StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase).ToArray();
+                var extra = next.Except(actual, StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase).ToArray();
+                var duplicates = actualRaw.GroupBy(static name => name, StringComparer.OrdinalIgnoreCase).Where(static group => group.Count() > 1).Select(static group => group.Key).Order(StringComparer.OrdinalIgnoreCase).ToArray();
+                var empty = actualRaw.Count(string.IsNullOrWhiteSpace);
+                WriteCommandSetReport(commandSetReportPath, actual.Count, next.Count, missing, extra, duplicates, empty, 0, []);
+                Assert(missing.Length == 0 && extra.Length == 0 && duplicates.Length == 0 && empty == 0, $"missing={missing.Length} extra={extra.Length} duplicate={duplicates.Length} empty={empty}");
+            }));
+            tests.Add(("Legacy method-only names are not statement reservations", () =>
+            {
+                var actualRaw = ReadOracleNames(legacyStatementPath);
+                var actual = actualRaw.ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var next = LegacyOpcodeMap.ReservedLegacyCommandNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var missing = actual.Except(next, StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase).ToArray();
+                var extra = next.Except(actual, StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase).ToArray();
+                var duplicates = actualRaw.GroupBy(static name => name, StringComparer.OrdinalIgnoreCase).Where(static group => group.Count() > 1).Select(static group => group.Key).Order(StringComparer.OrdinalIgnoreCase).ToArray();
+                var methods = ReadOracleNames(legacyMethodPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var checkedNames = new[] { "ABS", "RAND", "MIN" };
+                Assert(checkedNames.All(methods.Contains), $"method oracle missing: {string.Join(',', checkedNames.Where(name => !methods.Contains(name)))}");
+                Assert(checkedNames.All(name => !LegacyOpcodeMap.IsReservedLegacyCommand(name)));
+                Assert(methods.Contains("CHKFONT") && methods.Contains("GETFONT") && !LegacyOpcodeMap.IsReservedLegacyCommand("CHKFONT") && !LegacyOpcodeMap.IsReservedLegacyCommand("GETFONT"));
+                var falseReservations = methods.Where(LegacyOpcodeMap.IsReservedLegacyCommand).Order(StringComparer.OrdinalIgnoreCase).ToArray();
+                WriteCommandSetReport(commandSetReportPath, actual.Count, next.Count, missing, extra, duplicates, actualRaw.Count(string.IsNullOrWhiteSpace), falseReservations.Length, checkedNames);
+                Assert(falseReservations.Length == 0, $"methodOnlyFalseReservations={falseReservations.Length}");
+            }));
+        }
         tests.Add(("Japanese identifier assignment remains SET", () =>
         {
             var p = Path.Combine(root, "japanese-assignment.ERB");
@@ -154,5 +187,19 @@ static int SelfTest()
     finally { try { Directory.Delete(root, true); } catch { } }
 
     static void WriteBom(string path, string text) => File.WriteAllBytes(path, [0xEF, 0xBB, 0xBF, ..Encoding.UTF8.GetBytes(text)]);
+    static string[] ReadOracleNames(string path) => File.ReadAllLines(path).Skip(1).Select(static line => line.Trim()).ToArray();
+    static void WriteCommandSetReport(string? path, int? legacyCount, int? nextCount, string[] missing, string[] extra, string[] duplicates, int empty, int methodOnlyFalseReservations, string[] methodOnlyChecked)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return;
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllLines(path, [
+            "source=Legacy FunctionIdentifier.GetInstructionNameDic() Method == null vs Next ReservedLegacyCommands",
+            $"legacyActualStatementCommandCount={legacyCount?.ToString() ?? "see previous command-set test"}",
+            $"nextReservedStatementCommandCount={nextCount?.ToString() ?? "see previous command-set test"}",
+            $"missing={missing.Length}", $"extra={extra.Length}", $"duplicate={duplicates.Length}", $"empty={empty}",
+            $"methodOnlyFalseReservations={methodOnlyFalseReservations}", $"methodOnlyChecked={string.Join(',', methodOnlyChecked)}",
+            $"missingNames={string.Join(',', missing)}", $"extraNames={string.Join(',', extra)}", $"duplicateNames={string.Join(',', duplicates)}"
+        ], new UTF8Encoding(false));
+    }
     static void Assert(bool condition, string message = "assertion failed") { if (!condition) throw new InvalidOperationException(message); }
 }

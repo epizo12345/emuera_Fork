@@ -82,3 +82,9 @@ Phase 1B-R2では、Legacyに実在するcommand/function名を固定予約表�
 * 二回目以降の起動速度
 
 明確な改善がなければ、設計を見直します。
+
+### Phase 1B-R3の結果
+
+Legacyが実際に行頭命令として登録している名前だけを正解にしました。statement commandは275件で、Nextの予約表とMissing 0 / Extra 0 / Duplicate 0 / Empty 0です。RAND・ABS・MINやCHKFONT・GETFONTのような式中methodはstatement予約に混ぜていません。命令の引数に`=`があっても、変数代入と取り違えない確認も追加しました。
+
+実ゲームでは59,093関数を変換でき、未対応は342件、エラーは0件でした。pure retainedは別々に3回測定し、各8,703,552 bytes、中央値も8,703,552 bytesです。known payloadは6,829,664 bytes、overheadは1,873,888 bytesです。Phase 1BはCOMPLETE/HOLDです。VM、Expression/Format IR、Phase 1Cはまだ始めません。
