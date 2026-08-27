@@ -51,8 +51,15 @@ static int SelfTest()
             ("TRYCALLFORM operand equals is not SET", "TRYCALLFORM X=Y"),
             ("TRYCCALLFORM operand equals is not SET", "TRYCCALLFORM X=Y"),
             ("unsupported Legacy command operand equals is not SET", "CATCH X=Y"),
-            ("command-like identifier before assignment is not SET", "UNKNOWNCOMMAND X=Y"),
             ("Legacy command before assignment is not SET", "PRINT 日本語 = 1"),
+            ("ENDCATCH operand equals is not SET", "ENDCATCH X=Y"),
+            ("CHKFONT operand equals is not SET", "CHKFONT X=Y"),
+            ("GETFONT operand equals is not SET", "GETFONT X=Y"),
+            ("RESET_STAIN operand equals is not SET", "RESET_STAIN X=Y"),
+            ("VARSET operand equals is not SET", "VARSET X=Y"),
+            ("RESTART operand equals is not SET", "RESTART X=Y"),
+            ("ARRAYSHIFT operand equals is not SET", "ARRAYSHIFT X=Y"),
+            ("SPLIT operand equals is not SET", "SPLIT X=Y"),
             ("quoted equals is not SET", "\"A=B\""),
             ("comment equals is not SET", "; A=B"),
         })
@@ -66,6 +73,12 @@ static int SelfTest()
                 Assert(result.Status != CompileStatus.Compiled || result.Function!.Instructions.All(i => i.Opcode != PrototypeOpcode.SET));
             }));
         }
+        tests.Add(("complete Legacy command reservation is unique and nonempty", () =>
+        {
+            var names = LegacyOpcodeMap.ReservedLegacyCommandNames.ToArray();
+            Assert(names.Length > 200 && names.All(static name => !string.IsNullOrWhiteSpace(name)) && names.Distinct(StringComparer.OrdinalIgnoreCase).Count() == names.Length);
+            Assert(LegacyOpcodeMap.IsReservedLegacyCommand("CALLFORM") && LegacyOpcodeMap.IsReservedLegacyCommand("CHKFONT") && !LegacyOpcodeMap.IsReservedLegacyCommand("普通の識別子"));
+        }));
         tests.Add(("Japanese identifier assignment remains SET", () =>
         {
             var p = Path.Combine(root, "japanese-assignment.ERB");

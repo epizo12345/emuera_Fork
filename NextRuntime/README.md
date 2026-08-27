@@ -32,6 +32,8 @@ R4のunsupported 5,235関数をLegacy FunctionCode・source syntax単位で再�
 
 Phase 1B-R1では、未対応Legacy命令のoperand中の`=`をSETへ誤認しない予約語ガードと、比較・引用符・コメントの負例を追加した。Run IDは`20260827_Phase1B_R1_Final`。実ゲーム結果は59093 compiled / 342 unsupported / compiler errors 0、Phase1B baseline lost 0、Exact Opcode mismatch 0、expanded raw instruction count 190482、Pure retained 9227928 bytesである。VM、VariableStore、Expression/Format IR、disk cache、正式EXE変更は行わない。次候補は、残る342件のTier Bをsource例とLegacy oracleで精査するPhase 1Cである。
 
+Phase 1B-R2では、R1の暫定予約語をLegacy `BuiltInFunctionCode` と `FunctionMethodCreator` の実在名を統合した固定表へ置換し、架空tokenへの依存を除去した。Run IDは`20260827_Phase1B_R2_Final`。指定command負例・予約表整合性を含むCompilerSelfTestは56/56、実ゲーム結果は59093 compiled / 342 unsupported / errors 0、expanded raw instruction count 190482、Pure retained 9227872 bytesである。Phase 1Bを正式完了・HOLDとし、VM等は開始しない。
+
 ## 固定する設計
 
 長期目標は次の順です。

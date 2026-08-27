@@ -161,6 +161,10 @@ Expanded pure retainedは9,261,512 bytes、instruction payload 3,062,384 bytes�
 
 Phase 1B後の最上位残件は`TRYCALLFORM` 55、`CATCH`/`ENDCATCH`/`TRYCCALLFORM`各37系、`CHKFONT` 30、`GETFONT` 29、`RESULT` 29である。次候補は、Tier Bのfont/state命令をLegacy source例とoracleで精査するPhase 1C。VM、VariableStore、Expression/Format IR、disk cache、正式EXE、distributionはPhase 1Bでは開始しない。
 
+### Phase 1B-R2 完了判定
+
+`20260827_Phase1B_R2_Final`で、Legacy `BuiltInFunctionCode` と `FunctionMethodCreator` の実在名を統合した予約表をNext compiler metadataへ固定した。未対応Legacy命令のoperand中の`=`はSETへ誤認せず、架空tokenは予約表へ登録していない。実ゲームは59,093 compiled / 342 unsupported / compiler errors 0、baseline lost 0、instruction count/order/exact opcode mismatchはすべて0、expanded raw instruction countは190,482、`sizeof(PrototypeInstruction)`は16 bytesである。CompilerSelfTest 56/56、Core SelfTest 52/52、DifferentialAudit SelfTest PASS。Phase 1BはCOMPLETE/HOLDとし、VM、Expression IR、Format IR、Phase 1Cは開始しない。
+
 ## 20. Phase履歴
 
 - Phase 0A: Source Indexの基礎。実ゲーム9,458 ERB / 134,652関数。

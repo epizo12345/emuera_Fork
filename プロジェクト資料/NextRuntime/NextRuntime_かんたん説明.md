@@ -63,6 +63,8 @@ Phase 1A-R4でも、VM、VariableStore、Expression/Format IR、UI変更は行�
 
 新しい命令は実行せず、元ソースの命令名・行・operandの位置だけを保持します。PrototypeInstructionは16 bytesのままです。baseline 54,200件の失敗は0、Legacyとの命令数・順序・Exact Opcode差分も0です。VM、Expression/Format IR、正式EXE変更はまだありません。
 
+Phase 1B-R2では、Legacyに実在するcommand/function名を固定予約表へまとめ、未対応命令のoperand中の`=`を代入と誤認しないようにしました。架空の予約語は使っていません。CompilerSelfTestは56/56で、Phase 1BはCOMPLETE/HOLDです。
+
 ## 7. 最終的には？
 
 今と同じように、`Emuera.exe`を1個ゲームフォルダへ置いて起動する形を目指します。
