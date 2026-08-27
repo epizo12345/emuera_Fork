@@ -7,20 +7,22 @@ using MinorShift.Emuera.Next.Core;
 
 if (args.Length < 3 || args.Any(static a => a is "-h" or "--help"))
 {
-    Console.Error.WriteLine("Usage: Emuera.Next.CompilerAudit <erb-directory> <legacy-manifest.jsonl> <report-directory> [--runs N] [--baseline-manifest path]");
+    Console.Error.WriteLine("Usage: Emuera.Next.CompilerAudit <erb-directory> <legacy-manifest.jsonl> <report-directory> [--runs N] [--baseline-manifest path] [--phase1b-manifest path]");
     return args.Length == 0 ? 2 : 0;
 }
 
 var erbDirectory = Path.GetFullPath(args[0]);
 var legacyManifest = Path.GetFullPath(args[1]);
 var reportDirectory = Path.GetFullPath(args[2]);
-const string RunId = "20260827_Phase1B_Final";
+const string RunId = "20260827_Phase1B_R1_Final";
 var runs = 5;
 string? baselineManifest = null;
+string? phase1bManifest = null;
 for (var i = 3; i + 1 < args.Length; i++)
 {
     if (args[i] == "--runs" && int.TryParse(args[++i], out var parsed)) runs = Math.Clamp(parsed, 1, 20);
     else if (args[i] == "--baseline-manifest") baselineManifest = Path.GetFullPath(args[++i]);
+    else if (args[i] == "--phase1b-manifest") phase1bManifest = Path.GetFullPath(args[++i]);
 }
 Directory.CreateDirectory(reportDirectory);
 
@@ -82,6 +84,7 @@ var batchFiles = eligible.GroupBy(static candidate => candidate.File.FileIdentit
     .Select(static group => group.OrderBy(candidate => candidate.Function.Span.StartOffset).ToArray())
     .ToArray();
 var baselineKeys = baselineManifest is null ? null : ReadCompilerManifestKeys(baselineManifest);
+var phase1bKeys = phase1bManifest is null ? null : ReadCompilerManifestKeys(phase1bManifest);
 // [Emuera改修:NEXT-1B 2026-08-27]
 // R4の成功集合を固定し、拡張後のcoverageと性能を同じ関数集合で比較する。
 var baselineEligible = baselineKeys is null ? eligible : eligible.Where(candidate => baselineKeys.Contains(Key(candidate.Row.RelativeFile, candidate.Row.StartLine))).ToList();
@@ -168,6 +171,10 @@ var baselineFunctionCount = baselineKeys?.Count ?? 0;
 var baselineCompiledCount = baselineKeys is null ? 0 : compiledByKey.Keys.Count(baselineKeys.Contains);
 var baselineLost = baselineKeys is null ? -1 : baselineFunctionCount - baselineCompiledCount;
 var baselineSetValid = baselineKeys is not null && baselineFunctionCount == 54200 && baselineLost == 0;
+var phase1bFunctionCount = phase1bKeys?.Count ?? 0;
+var phase1bCompiledCount = phase1bKeys is null ? 0 : compiledByKey.Keys.Count(phase1bKeys.Contains);
+var phase1bLost = phase1bKeys is null ? -1 : phase1bFunctionCount - phase1bCompiledCount;
+var phase1bSetValid = phase1bKeys is not null && phase1bFunctionCount == 59093 && phase1bLost == 0;
 File.WriteAllLines(Path.Combine(reportDirectory, "compiler-runs.tsv"),
 [
     "runId\trun\ttotalElapsedMs\tsourceReadElapsedMs\tcompilerElapsedMs\tsourceReadAllocatedBytes\tcompilerAllocatedBytes\ttotalAllocatedBytes\tcompiled\tinstructions",
@@ -298,8 +305,9 @@ File.WriteAllLines(Path.Combine(reportDirectory, "summary.txt"),
     "result=PASS", $"erbFiles={files.Count}", $"indexFunctions={indexFunctions}", $"phase0BVerifiedSafe={phase0BSafeFunctions}", $"phase0BFallbackOrUnsafe={indexFunctions - phase0BSafeFunctions}", $"compilerStrictClean={compilerStrictCleanFunctions}", $"compilerConsidered={compilerConsidered}", $"compilerEligible={eligible.Count}", $"previouslyCompiled={baselineFunctionCount}", $"newlyCompiled={(baselineKeys is null ? -1 : compiledFunctionCount - baselineCompiledCount)}", $"compileSucceeded={compiledFunctionCount}", $"unsupportedUnique={eligible.Count - compiledFunctionCount}", $"compilerErrors={statusCounts.GetValueOrDefault(CompileStatus.CompilerError)}", $"unsupportedEncountersAcrossRuns={unsupportedEncounters}", $"baselineLost={baselineLost}", $"baselineSetValid={baselineSetValid}", $"baselineInstructionCountMismatch={baselineCountMismatch}", $"baselineInstructionOrderMismatch={baselineOrderMismatch}", $"baselineExactOpcodeMismatch={baselineExactOpcodeMismatch}", $"expandedInstructionCountMismatch={expandedCountMismatch}", $"expandedInstructionOrderMismatch={expandedOrderMismatch}", $"expandedExactOpcodeMismatch={expandedExactOpcodeMismatch}", $"batchEligibleFileSessions={batchFiles.Length}", $"singleFunctionOpenEquivalent={eligible.Count}", $"sourceReadAllocationMedian={Median(benchmark.Select(static row => row.SourceReadAllocatedBytes))}", $"compilerAllocationMedian={Median(benchmark.Select(static row => row.CompilerAllocatedBytes))}", $"totalAllocationMedian={Median(benchmark.Select(static row => row.TotalAllocatedBytes))}", $"baselineSubsetTotalMedianMs={baselineTotalStats.Median:F3}", $"baselineSubsetAllocationMedian={baselineAllocationStats.Median:F0}", $"pureRetainedMeasurementValid={pureRetainedMeasurementValid}", $"managedBeforePureCompile={pureMeasurement.BeforeCompile}", $"managedImmediatelyAfterPureCompile={pureMeasurement.ImmediatelyAfterCompile}", $"managedAfterPureDiagnosticGc={pureMeasurement.AfterDiagnosticGc}", $"pureCompiledRetainedManagedEstimate={pureCompiledRetainedManagedEstimate}", $"auditInclusiveRetainedManagedEstimate={auditInclusiveRetainedManagedEstimate}", $"instructionSize={instructionSize}", $"instructionPayloadBytes={instructionPayload}", $"functionDescriptorTheoreticalPayloadBytes={descriptorPayload}", $"uniqueFunctionNameUtf16PayloadBytes={namePayload}", $"uniqueFilePathUtf16PayloadBytes={pathPayload}", $"knownPayload={pureKnownPayloadWithStrings}", $"pureEstimatedManagedOverhead={pureEstimatedManagedOverhead}", $"auditInclusiveEstimatedManagedOverhead={auditInclusiveEstimatedManagedOverhead}", $"exactOpcodeMismatch={exactOpcodeMismatch}", "readsWholeErbFile=NO", "64KBPerFunctionAllocation=REMOVED", "fingerprintStringPerFunction=NO", "vm=NO"
 ], new UTF8Encoding(false));
 File.AppendAllLines(Path.Combine(reportDirectory, "summary.txt"), [$"runId={RunId}", $"pureKnownPayloadTotal={pureKnownPayloadTotal}", $"preExistingSharedPayloadReferenced={preExistingSharedPayloadReferenced}", $"pureKnownPayloadWithinRetained={pureKnownPayloadTotal <= pureCompiledRetainedManagedEstimate}", $"negativeOverheadGate={(negativeOverheadGate ? "ACTIVE_PASS" : "ACTIVE_FAIL")}", $"coverageConsistent={coverageConsistent}", $"totalMedianMs={totalStats.Median:F3}", $"totalMeanMs={totalStats.Mean:F3}", $"totalMinMs={totalStats.Min:F3}", $"totalMaxMs={totalStats.Max:F3}", $"sourceReadMedianMs={sourceStats.Median:F3}", $"compilerMedianMs={compilerStats.Median:F3}"], new UTF8Encoding(false));
+File.AppendAllLines(Path.Combine(reportDirectory, "summary.txt"), [$"phase1bBaselineCount={phase1bFunctionCount}", $"phase1bBaselineCompiled={phase1bCompiledCount}", $"phase1bBaselineLost={phase1bLost}", $"phase1bSetValid={phase1bSetValid}"], new UTF8Encoding(false));
 Console.WriteLine($"CompilerAudit: eligible={eligible.Count} compiled={compiledFunctionCount} unsupportedUnique={eligible.Count - compiledFunctionCount} baselineLost={baselineLost} baselineAllocationMedian={baselineAllocationStats.Median:F0} expandedAllocationMedian={totalAllocationMedian} pureRetained={pureCompiledRetainedManagedEstimate} exactOpcodeMismatch={exactOpcodeMismatch} PASS");
-return countMismatch == 0 && orderMismatch == 0 && exactOpcodeMismatch == 0 && baselineSetValid && !allocationRegression && pureRetainedMeasurementValid && negativeOverheadGate && coverageConsistent ? 0 : 1;
+return countMismatch == 0 && orderMismatch == 0 && exactOpcodeMismatch == 0 && baselineSetValid && phase1bSetValid && !allocationRegression && pureRetainedMeasurementValid && negativeOverheadGate && coverageConsistent ? 0 : 1;
 
 static List<LegacyRow> ReadLegacy(string path)
 {

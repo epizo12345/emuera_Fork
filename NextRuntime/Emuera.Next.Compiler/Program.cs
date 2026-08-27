@@ -45,6 +45,52 @@ static int SelfTest()
         var assignment = ErbSourceIndexer.IndexFile(assignmentPath);
         tests.Add(("assignment becomes exact SET", () => Assert(compiler.TryCompile(assignment, assignment.Functions.Single()).Function!.Instructions.Single().Opcode == PrototypeOpcode.SET)));
         tests.Add(("assignment operand span includes lhs", () => { var i = compiler.TryCompile(assignment, assignment.Functions.Single()).Function!.Instructions.Single(); Assert(i.OperandLength > 0 && i.OperandOffset == 9); }));
+        foreach (var (name, line) in new[]
+        {
+            ("CALLFORM operand equals is not SET", "CALLFORM X=Y"),
+            ("TRYCALLFORM operand equals is not SET", "TRYCALLFORM X=Y"),
+            ("TRYCCALLFORM operand equals is not SET", "TRYCCALLFORM X=Y"),
+            ("unsupported Legacy command operand equals is not SET", "CATCH X=Y"),
+            ("command-like identifier before assignment is not SET", "UNKNOWNCOMMAND X=Y"),
+            ("Legacy command before assignment is not SET", "PRINT 日本語 = 1"),
+            ("quoted equals is not SET", "\"A=B\""),
+            ("comment equals is not SET", "; A=B"),
+        })
+        {
+            tests.Add((name, () =>
+            {
+                var p = Path.Combine(root, "negative-" + tests.Count + ".ERB");
+                WriteBom(p, "@NEG\r\n" + line + "\r\n");
+                var f = ErbSourceIndexer.IndexFile(p);
+                var result = compiler.TryCompile(f, f.Functions.Single());
+                Assert(result.Status != CompileStatus.Compiled || result.Function!.Instructions.All(i => i.Opcode != PrototypeOpcode.SET));
+            }));
+        }
+        tests.Add(("Japanese identifier assignment remains SET", () =>
+        {
+            var p = Path.Combine(root, "japanese-assignment.ERB");
+            WriteBom(p, "@NEG\r\n日本語 = 1\r\n");
+            var f = ErbSourceIndexer.IndexFile(p);
+            Assert(compiler.TryCompile(f, f.Functions.Single()).Function!.Instructions.Single().Opcode == PrototypeOpcode.SET);
+        }));
+        tests.Add(("Legacy string variable assignment remains SET", () =>
+        {
+            var p = Path.Combine(root, "legacy-assignment.ERB");
+            WriteBom(p, "@NEG\r\nTSTR:0 = 日本語\r\n");
+            var f = ErbSourceIndexer.IndexFile(p);
+            Assert(compiler.TryCompile(f, f.Functions.Single()).Function!.Instructions.Single().Opcode == PrototypeOpcode.SET);
+        }));
+        foreach (var (name, line) in new[] { ("double equals", "A == B"), ("greater or equal", "A>=B"), ("less or equal", "A<=B"), ("not equal", "A!=B") })
+        {
+            tests.Add((name + " is not SET", () =>
+            {
+                var p = Path.Combine(root, "comparison-" + tests.Count + ".ERB");
+                WriteBom(p, "@NEG\r\n" + line + "\r\n");
+                var f = ErbSourceIndexer.IndexFile(p);
+                var result = compiler.TryCompile(f, f.Functions.Single());
+                Assert(result.Status != CompileStatus.Compiled || result.Function!.Instructions.All(i => i.Opcode != PrototypeOpcode.SET));
+            }));
+        }
         var batchPath = Path.Combine(root, "batch.ERB");
         WriteBom(batchPath, "@A\nPRINT 1\n@B\nRETURN\n");
         var batchIndex = ErbSourceIndexer.IndexFile(batchPath);

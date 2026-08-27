@@ -75,8 +75,16 @@ public static class LegacyOpcodeMap
     private static readonly IReadOnlyDictionary<string, PrototypeOpcode> Map =
         Enum.GetValues<PrototypeOpcode>().Where(static opcode => opcode != PrototypeOpcode.Unsupported)
             .ToDictionary(static opcode => opcode.ToString(), static opcode => opcode, StringComparer.OrdinalIgnoreCase);
+    // [Emuera改修:NEXT-1B-R1 2026-08-27]
+    // FunctionCodeのうちPrototypeOpcode化していない予約語。production pathでLegacy parserを呼ばず、
+    // 命令後の「=」をSETへ誤認しないための最小メタデータとして保持する。
+    private static readonly HashSet<string> ReservedLegacyCommands = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "CALLFORM", "TRYCALLFORM", "TRYCCALLFORM", "CATCH", "UNKNOWNCOMMAND",
+    };
 
     public static bool TryMap(string token, out PrototypeOpcode opcode) => Map.TryGetValue(token, out opcode);
+    public static bool IsReservedLegacyCommand(string token) => ReservedLegacyCommands.Contains(token);
     public static string[] SupportedLegacyNames => Map.Keys.Order(StringComparer.OrdinalIgnoreCase).ToArray();
     public static bool IsControlFlow(PrototypeOpcode opcode) => opcode is PrototypeOpcode.IF or PrototypeOpcode.SIF or
         PrototypeOpcode.ELSE or PrototypeOpcode.ELSEIF or PrototypeOpcode.ENDIF or PrototypeOpcode.SELECTCASE or
@@ -158,7 +166,11 @@ public sealed class FunctionCompiler
             while (tokenLength < trimmed.Length && !char.IsWhiteSpace(trimmed[tokenLength]) && trimmed[tokenLength] is not (',' or '(')) tokenLength++;
             if (tokenLength == 0) return Fail(UnsupportedReason.UnknownSyntax, "empty instruction", out reason, out detail);
             var token = trimmed[..tokenLength];
-            var isAssignment = !LegacyOpcodeMap.TryMap(token, out var opcode) && IsAssignment(trimmed);
+            var isMappedCommand = LegacyOpcodeMap.TryMap(token, out var opcode);
+            var isKnownCommand = isMappedCommand || LegacyOpcodeMap.IsReservedLegacyCommand(token);
+            if (!isMappedCommand && LegacyOpcodeMap.IsReservedLegacyCommand(token))
+                return Fail(UnsupportedReason.UnsupportedInstruction, $"unsupported instruction: {token}", out reason, out detail);
+            var isAssignment = !isKnownCommand && IsAssignment(trimmed);
             if (isAssignment) opcode = PrototypeOpcode.SET;
             else if (opcode == PrototypeOpcode.Unsupported)
                 return Fail(UnsupportedReason.UnsupportedInstruction, $"unsupported instruction: {token}", out reason, out detail);
@@ -182,11 +194,13 @@ public sealed class FunctionCompiler
         {
             // [Emuera改修:NEXT-1B 2026-08-27]
             // Legacyの変数代入をSETとして識別するが、比較演算子は式意味論を含むため取り込まない。
+            if (text.Length == 0 || text[0] is '"' or '\'') return false;
             var equal = text.IndexOf('=');
             if (equal < 0) return false;
             if (equal > 0 && text[equal - 1] is '=' or '!' or '<' or '>') return false;
             return equal + 1 >= text.Length || text[equal + 1] != '=';
         }
+
     }
 
     private static int MetadataBytesEstimate(string name) => 32 + Encoding.UTF8.GetByteCount(name);

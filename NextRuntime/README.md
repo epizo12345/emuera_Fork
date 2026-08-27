@@ -30,7 +30,7 @@ R4のunsupported 5,235関数をLegacy FunctionCode・source syntax単位で再�
 
 実ゲームfixtureでは、Previously compiled 54,200、Newly compiled 4,893、Total compiled 59,093、Remaining unsupported 342、Compiler errors 0となった。baseline lost 0、baseline/expanded structural mismatch 0、Exact Opcode mismatch 0、PrototypeInstruction 16 bytesである。5-runのbaseline subset中央値はtotal 1,810.836ms、source read 1,000.763ms、compiler 55.406ms、allocation 75,036,176 bytes。expanded set、Pure retained、known payload、overhead、audit-inclusiveは最終artifactへ記録した。
 
-Phase 1Bはcompiler coverageと計測だけであり、命令を実行するVM、VariableStore、Expression/Format IR、disk cache、正式EXE変更は行わない。次候補は、残る145件のうちTier Bをsource例とLegacy oracleで精査するPhase 1Cである。
+Phase 1B-R1では、未対応Legacy命令のoperand中の`=`をSETへ誤認しない予約語ガードと、比較・引用符・コメントの負例を追加した。Run IDは`20260827_Phase1B_R1_Final`。実ゲーム結果は59093 compiled / 342 unsupported / compiler errors 0、Phase1B baseline lost 0、Exact Opcode mismatch 0、expanded raw instruction count 190482、Pure retained 9227928 bytesである。VM、VariableStore、Expression/Format IR、disk cache、正式EXE変更は行わない。次候補は、残る342件のTier Bをsource例とLegacy oracleで精査するPhase 1Cである。
 
 ## 固定する設計
 
