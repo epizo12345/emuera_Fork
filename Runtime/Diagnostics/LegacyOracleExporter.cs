@@ -1,9 +1,11 @@
 #if LEGACY_ORACLE
 using MinorShift.Emuera.Runtime.Script.Data;
 using MinorShift.Emuera.Runtime.Script.Loader;
+using MinorShift.Emuera.Runtime.Script.Parser;
 using MinorShift.Emuera.Runtime.Script.Statements;
 using MinorShift.Emuera.Runtime.Config.JSON;
 using MinorShift.Emuera.GameProc.Function;
+using MinorShift.Emuera.Runtime.Utils;
 using LegacyConfig = MinorShift.Emuera.Runtime.Config.Config;
 using System;
 using System.Collections.Generic;
@@ -158,6 +160,50 @@ internal static class LegacyOracleExporter
             "SET is registered only as builtInByCode via registerBuiltIn(setFunc), not as a funcDic line-head key."
         ], new UTF8Encoding(false));
         WritePreprocessorReports(Path.GetDirectoryName(fullPath)!, erbRoot, preprocessorDiagnostics);
+        WriteLexicalCorpusFromEnvironment();
+        WriteCommandSeparatorCorpusFromEnvironment();
+    }
+
+    private static void WriteLexicalCorpusFromEnvironment()
+    {
+        // [Emuera改修:NEXT-1B-R5 2026-08-27]
+        // Legacy実parserの区切り文字をoracle化し、Next側のfirst-identifier走査を文字単位で比較可能にする。
+        var path = Environment.GetEnvironmentVariable("EMUERA_LEGACY_LEXICAL_CORPUS");
+        if (string.IsNullOrWhiteSpace(path)) return;
+        var cases = new (string Name, string Input)[]
+        {
+            ("EOS", "X"), ("space", "X "), ("tab", "X\t"), ("U+3000", "X　"), (".", "X."), ("+", "X+"), ("-", "X-"), ("*", "X*"), ("/", "X/"), ("%", "X%"), ("=", "X="), ("!", "X!"), ("<", "X<"), (">", "X>"), ("|", "X|"), ("&", "X&"), ("^", "X^"), ("~", "X~"), ("?", "X?"), ("#", "X#"), (")", "X)"), ("}", "X}"), ("]", "X]"), (",", "X,"), (":", "X:"), ("(", "X("), ("{", "X{"), ("[", "X["), ("$", "X$"), ("\\", "X\\"), ("'", "X'"), ("\"", "X\""), ("@", "X@"), (";", "X;"), ("VT", "X\v"), ("FF", "X\f")
+        };
+        var lines = new List<string>();
+        foreach (var item in cases)
+        {
+            var stream = new CharStream(item.Input);
+            string identifier;
+            try { identifier = LexicalAnalyzer.ReadFirstIdentifier(stream); }
+            catch (Exception ex) { identifier = "<error:" + ex.GetType().Name + ">"; }
+            lines.Add(JsonSerializer.Serialize(new { item.Name, item.Input, Identifier = identifier, StopPosition = stream.CurrentPosition }));
+        }
+        File.WriteAllLines(Path.GetFullPath(path), lines, new UTF8Encoding(false));
+    }
+
+    private static void WriteCommandSeparatorCorpusFromEnvironment()
+    {
+        // [Emuera改修:NEXT-1B-R5 2026-08-27]
+        // Legacyの行頭keyword後のseparator判定をoracle化し、空白・句読点・//の近似実装を防ぐ。
+        var path = Environment.GetEnvironmentVariable("EMUERA_LEGACY_COMMAND_SEPARATOR_CORPUS");
+        if (string.IsNullOrWhiteSpace(path)) return;
+        var cases = new (string Name, string Input)[]
+        {
+            ("EOS", "PRINT"), ("space", "PRINT 1"), ("tab", "PRINT\t1"), ("semicolon", "PRINT;comment"), ("U+3000", "PRINT　1"), ("left-parenthesis", "PRINT(1)"), ("comma", "PRINT,1"), ("equals", "PRINT=1"), ("lowercase", "print 1"), ("lowercase-equals", "print=1"), ("VT", "PRINT\v1"), ("FF", "PRINT\f1"), ("line-comment", "// comment")
+        };
+        var lines = new List<string>();
+        foreach (var item in cases)
+        {
+            var parsed = LogicalLineParser.ParseLine(item.Input, GlobalStatic.Console);
+            var instruction = parsed as InstructionLine;
+            lines.Add(JsonSerializer.Serialize(new { item.Name, item.Input, Kind = parsed?.GetType().Name, IsError = parsed?.IsError ?? false, FunctionCode = instruction?.FunctionCode.ToString() }));
+        }
+        File.WriteAllLines(Path.GetFullPath(path), lines, new UTF8Encoding(false));
     }
 
     private static List<(string Code, int Line)> ReadInstructions(FunctionLabelLine label)

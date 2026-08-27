@@ -94,3 +94,9 @@ Legacyが実際に行頭命令として登録している名前だけを正解�
 R3のstatement 275件だけでなく、Legacyが実際に行頭lookupする全456件を正解集合Aとして再確認しました。Aはstatement B=275件とmethod-backed C=181件の和集合で、Nextのassignment guard・statement metadata・method-backed metadataはA/B/C全てMissing 0、Extra 0、B∩C=0です。method-backedのCHKFONT、GETFONT、RAND、ABS、MINをstatement予約へ混ぜず、`X=Y`もSETへ誤認しません。コメントにしか現れないCHKVARDATA、CHKGLOBALDATA、FIND_VARDATAはLegacy A/B/Cに無く、Nextにも登録していません。
 
 実ゲームのeligibleは59,435、compiledは59,093、remaining unsupportedは342、errorsは0。R3成功集合をbaselineにしてbaseline lost 0、命令数・順序・exact opcode差分0を確認しました。R4の5-run expanded中央値はtotal 2,118.147 ms、allocation 125,520,296 bytes、pure retainedは8,703,552 bytesを3回とも再現しました。Phase 1BはCOMPLETE/HOLDで、VM・Expression/Format IR・Phase 1Cは未開始です。
+
+### Phase 1B-R5 最終Gate
+
+Run IDは`20260827_Phase1B_R5_Final`。4構成のLegacy oracleでA=456、B=275、C=181、A=B∪C、B∩C=0、statement map−B=0、map∩C=0を確認しました。`SET`は行頭statement mapから分離し、構造的に確認した代入だけで生成します。識別子delimiter、separator、`//`、SystemAllowFullSpace、複雑lvalue、source spanをLegacy実測と照合し、CompilerSelfTestは80/80です。
+
+実fixtureのeligibleは59,435、compiledは59,093、remaining unsupportedは342、errorsは0。54,200件baselineのlostは0、命令数・順序・exact opcode差分は0です。expanded 5-run中央値はtotal 1,858.849 ms、allocation 119,904,656 bytes、pure retainedは独立3回すべて8,703,552 bytesです。fixture変更はNew 0 / Changed 0 / Deleted 0、fullwidth-space実例は37件です。`Phase1BDecision=COMPLETE`。VM、Expression/Format IR、Phase 1Cは開始しません。

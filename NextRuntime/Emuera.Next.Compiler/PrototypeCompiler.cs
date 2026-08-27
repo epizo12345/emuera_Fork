@@ -68,13 +68,71 @@ public sealed record CompiledFunction(string FileIdentity, string Name, SourceSp
     public int InstructionStorageBytes => Instructions.Length * FunctionCompiler.InstructionPayloadBytes;
 }
 
+public readonly record struct CompilerCompatibilityOptions(bool IgnoreCase = true, bool UseScopedVariableInstruction = true, bool SystemAllowFullSpace = true)
+{
+    public static CompilerCompatibilityOptions Default => new(true, true, true);
+    public StringComparer NameComparer => IgnoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+    public StringComparison NameComparison => IgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+}
+
+public readonly record struct LegacyIdentifierScan(string Identifier, int StartPosition, int StopPosition);
+
+public static class LegacyIdentifierScanner
+{
+    // [Emuera改修:NEXT-1B-R5 2026-08-27]
+    // Legacy ReadSingleIdentifierROSのdelimiter集合をそのまま小さいscannerへ移す。
+    // char.IsWhiteSpaceはVT/FFまで区切るため使わず、SystemAllowFullSpaceだけを先頭/命令separatorへ反映する。
+    private const string Delimiters = " 　.+-*/%=!<>|&^~?#)}],:({[$\\'\"@;\t";
+
+    public static LegacyIdentifierScan ReadFirstIdentifier(string text, CompilerCompatibilityOptions options)
+    {
+        var start = SkipLeadingWhitespace(text, options);
+        var length = ReadIdentifierLength(text.AsSpan(start));
+        return new(text.Substring(start, length), start, start + length);
+    }
+
+    public static bool IsCommandSeparator(char value, CompilerCompatibilityOptions options) => value == '\0' || value == ';' || value == ' ' || value == '\t' || options.SystemAllowFullSpace && value == '　';
+
+    public static int SkipCommandSeparators(ReadOnlySpan<char> text, int index, CompilerCompatibilityOptions options)
+    {
+        while (index < text.Length && (text[index] == ' ' || text[index] == '\t' || options.SystemAllowFullSpace && text[index] == '　')) index++;
+        return index;
+    }
+
+    private static int SkipLeadingWhitespace(string text, CompilerCompatibilityOptions options)
+    {
+        var index = 0;
+        while (index < text.Length && (text[index] == ' ' || text[index] == '\t' || options.SystemAllowFullSpace && text[index] == '　')) index++;
+        return index;
+    }
+
+    public static int ReadIdentifierLength(ReadOnlySpan<char> text)
+    {
+        var index = 0;
+        while (index < text.Length && Delimiters.IndexOf(text[index]) < 0) index++;
+        return index;
+    }
+}
+
 public static class LegacyOpcodeMap
 {
-    // [Emuera改修:NEXT-1A-R3 2026-08-27]
-    // Legacyのopcode名を1対1で保持する。CALL/TRYCALL/PRINT系を意味統合すると差分検証と将来の評価順を壊すため、未対応はUnsupportedへ送る。
-    private static readonly IReadOnlyDictionary<string, PrototypeOpcode> Map =
-        Enum.GetValues<PrototypeOpcode>().Where(static opcode => opcode != PrototypeOpcode.Unsupported)
-            .ToDictionary(static opcode => opcode.ToString(), static opcode => opcode, StringComparer.OrdinalIgnoreCase);
+    // [Emuera改修:NEXT-1B-R5 2026-08-27]
+    // SETはsemantic opcodeでありLegacy line-head keywordではないため、statement mapから分離する。
+    // enum名の自動列挙はLegacy登録集合を表さないので、対応済みopcodeだけを明示する。
+    private static readonly (string Name, PrototypeOpcode Opcode)[] MapEntries =
+    [
+        ("SET", PrototypeOpcode.SET), ("PRINT", PrototypeOpcode.PRINT), ("PRINTC", PrototypeOpcode.PRINTC), ("PRINTLC", PrototypeOpcode.PRINTLC), ("PRINTL", PrototypeOpcode.PRINTL), ("PRINTW", PrototypeOpcode.PRINTW), ("PRINTN", PrototypeOpcode.PRINTN), ("PRINTV", PrototypeOpcode.PRINTV), ("PRINTVL", PrototypeOpcode.PRINTVL), ("PRINTVW", PrototypeOpcode.PRINTVW), ("PRINTVN", PrototypeOpcode.PRINTVN), ("PRINTS", PrototypeOpcode.PRINTS), ("PRINTSL", PrototypeOpcode.PRINTSL), ("PRINTSW", PrototypeOpcode.PRINTSW), ("PRINTSN", PrototypeOpcode.PRINTSN),
+        ("PRINTFORM", PrototypeOpcode.PRINTFORM), ("PRINTFORML", PrototypeOpcode.PRINTFORML), ("PRINTFORMW", PrototypeOpcode.PRINTFORMW), ("PRINTFORMN", PrototypeOpcode.PRINTFORMN), ("PRINTFORMS", PrototypeOpcode.PRINTFORMS), ("PRINTFORMSL", PrototypeOpcode.PRINTFORMSL), ("PRINTFORMSW", PrototypeOpcode.PRINTFORMSW), ("PRINTFORMSN", PrototypeOpcode.PRINTFORMSN), ("PRINTFORMC", PrototypeOpcode.PRINTFORMC), ("PRINTFORMLC", PrototypeOpcode.PRINTFORMLC),
+        ("INPUT", PrototypeOpcode.INPUT), ("INPUTS", PrototypeOpcode.INPUTS), ("TINPUT", PrototypeOpcode.TINPUT), ("TINPUTS", PrototypeOpcode.TINPUTS), ("ONEINPUT", PrototypeOpcode.ONEINPUT), ("ONEINPUTS", PrototypeOpcode.ONEINPUTS), ("TONEINPUT", PrototypeOpcode.TONEINPUT), ("TONEINPUTS", PrototypeOpcode.TONEINPUTS), ("WAIT", PrototypeOpcode.WAIT), ("TWAIT", PrototypeOpcode.TWAIT), ("WAITANYKEY", PrototypeOpcode.WAITANYKEY), ("FORCEWAIT", PrototypeOpcode.FORCEWAIT), ("AWAIT", PrototypeOpcode.AWAIT), ("DRAWLINE", PrototypeOpcode.DRAWLINE), ("DRAWLINEFORM", PrototypeOpcode.DRAWLINEFORM), ("BAR", PrototypeOpcode.BAR), ("BARL", PrototypeOpcode.BARL),
+        ("ADDCHARA", PrototypeOpcode.ADDCHARA), ("ADDSPCHARA", PrototypeOpcode.ADDSPCHARA), ("ADDDEFCHARA", PrototypeOpcode.ADDDEFCHARA), ("ADDVOIDCHARA", PrototypeOpcode.ADDVOIDCHARA), ("DELCHARA", PrototypeOpcode.DELCHARA), ("RESETCOLOR", PrototypeOpcode.RESETCOLOR), ("CUSTOMDRAWLINE", PrototypeOpcode.CUSTOMDRAWLINE), ("SETCOLOR", PrototypeOpcode.SETCOLOR), ("SETFONT", PrototypeOpcode.SETFONT),
+        ("CALL", PrototypeOpcode.CALL), ("TRYCALL", PrototypeOpcode.TRYCALL), ("CALLEVENT", PrototypeOpcode.CALLEVENT), ("CALLTRAIN", PrototypeOpcode.CALLTRAIN), ("CALLF", PrototypeOpcode.CALLF), ("RETURN", PrototypeOpcode.RETURN), ("RETURNFORM", PrototypeOpcode.RETURNFORM), ("RETURNF", PrototypeOpcode.RETURNF), ("IF", PrototypeOpcode.IF), ("SIF", PrototypeOpcode.SIF), ("ELSE", PrototypeOpcode.ELSE), ("ELSEIF", PrototypeOpcode.ELSEIF), ("ENDIF", PrototypeOpcode.ENDIF), ("SELECTCASE", PrototypeOpcode.SELECTCASE), ("CASE", PrototypeOpcode.CASE), ("CASEELSE", PrototypeOpcode.CASEELSE), ("ENDSELECT", PrototypeOpcode.ENDSELECT),
+        ("REPEAT", PrototypeOpcode.REPEAT), ("REND", PrototypeOpcode.REND), ("CONTINUE", PrototypeOpcode.CONTINUE), ("BREAK", PrototypeOpcode.BREAK), ("FOR", PrototypeOpcode.FOR), ("NEXT", PrototypeOpcode.NEXT), ("WHILE", PrototypeOpcode.WHILE), ("WEND", PrototypeOpcode.WEND), ("DO", PrototypeOpcode.DO), ("LOOP", PrototypeOpcode.LOOP), ("GOTO", PrototypeOpcode.GOTO), ("JUMP", PrototypeOpcode.JUMP), ("TRYJUMP", PrototypeOpcode.TRYJUMP), ("TRYGOTO", PrototypeOpcode.TRYGOTO), ("TRYGOTOFORM", PrototypeOpcode.TRYGOTOFORM),
+        ("PRINTDATA", PrototypeOpcode.PRINTDATA), ("PRINTDATAL", PrototypeOpcode.PRINTDATAL), ("PRINTDATAW", PrototypeOpcode.PRINTDATAW), ("DATA", PrototypeOpcode.DATA), ("DATAFORM", PrototypeOpcode.DATAFORM), ("ENDDATA", PrototypeOpcode.ENDDATA), ("SETBIT", PrototypeOpcode.SETBIT), ("CLEARBIT", PrototypeOpcode.CLEARBIT), ("INVERTBIT", PrototypeOpcode.INVERTBIT), ("SWAP", PrototypeOpcode.SWAP), ("POWER", PrototypeOpcode.POWER), ("TIMES", PrototypeOpcode.TIMES), ("UPCHECK", PrototypeOpcode.UPCHECK), ("CUPCHECK", PrototypeOpcode.CUPCHECK), ("CLEARLINE", PrototypeOpcode.CLEARLINE), ("REUSELASTLINE", PrototypeOpcode.REUSELASTLINE), ("OUTPUTLOG", PrototypeOpcode.OUTPUTLOG), ("QUIT", PrototypeOpcode.QUIT), ("REDRAW", PrototypeOpcode.REDRAW)
+    ];
+    private static readonly IReadOnlyDictionary<string, PrototypeOpcode> MapIgnoreCase = BuildMap(StringComparer.OrdinalIgnoreCase);
+    private static readonly IReadOnlyDictionary<string, PrototypeOpcode> MapCaseSensitive = BuildMap(StringComparer.Ordinal);
+
+    private static Dictionary<string, PrototypeOpcode> BuildMap(StringComparer comparer) => MapEntries.ToDictionary(static entry => entry.Name, static entry => entry.Opcode, comparer);
     // [Emuera改修:NEXT-1B-R4 2026-08-27]
     // Legacyの実instruction dictionaryをB(statement)とC(method-backed line-head)へ分類して保持する。
     // production pathでLegacy parserを呼ばず、A=B∪Cの全行頭識別子をassignmentより先にguardする。
@@ -112,9 +170,12 @@ public static class LegacyOpcodeMap
         "PRINTFORMD", "PRINTFORMDL", "PRINTFORMDW", "PRINTFORMSD", "PRINTFORMSDL", "PRINTFORMSDW", "PRINTCD", "PRINTLCD",
         "PRINTFORMCD", "PRINTFORMLCD", "PRINTSINGLED", "PRINTSINGLEVD", "PRINTSINGLESD", "PRINTSINGLEFORMD", "PRINTSINGLEFORMSD",
         "PRINTDATAD", "PRINTDATADL", "PRINTDATADW", "HTML_PRINT", "HTML_TAGSPLIT", "TOOLTIP_SETCOLOR", "TOOLTIP_SETDELAY",
-        "TOOLTIP_SETDURATION", "PRINT_IMG", "PRINT_RECT", "PRINT_SPACE", "INPUTMOUSEKEY", "VARI", "VARS", "HTML_PRINT_ISLAND",
+        "TOOLTIP_SETDURATION", "PRINT_IMG", "PRINT_RECT", "PRINT_SPACE", "INPUTMOUSEKEY", "HTML_PRINT_ISLAND",
         "HTML_PRINT_ISLAND_CLEAR",
     };
+    private static readonly HashSet<string> LegacyStatementIdentifiersCaseSensitive = LegacyStatementIdentifiers.ToHashSet(StringComparer.Ordinal);
+    private static readonly HashSet<string> LegacyStatementIdentifiersScoped = new(LegacyStatementIdentifiers, StringComparer.OrdinalIgnoreCase) { "VARI", "VARS" };
+    private static readonly HashSet<string> LegacyStatementIdentifiersScopedCaseSensitive = LegacyStatementIdentifiersScoped.ToHashSet(StringComparer.Ordinal);
     private static readonly HashSet<string> LegacyMethodBackedLineHeads = new(StringComparer.OrdinalIgnoreCase)
     {
         "ABS", "ALLSAMES", "ARRAYMSORT", "BARSTR", "CBGCLEAR", "CBGCLEARBUTTON", "CBGREMOVEBMAP", "CBGREMOVERANGE",
@@ -141,23 +202,37 @@ public static class LegacyOpcodeMap
         "STRJOIN", "STRLENS", "STRLENSU", "SUBSTRING", "SUBSTRINGU", "SUMARRAY", "SUMCARRAY", "TOFULL", "TOHALF", "TOINT",
         "TOLOWER", "TOSTR", "TOUPPER", "UNICODE", "UNICODEBYTE",
     };
-    private static readonly HashSet<string> AssignmentGuardIdentifiers = BuildAssignmentGuardIdentifiers();
+    private static readonly HashSet<string> LegacyMethodBackedLineHeadsCaseSensitive = LegacyMethodBackedLineHeads.ToHashSet(StringComparer.Ordinal);
 
-    private static HashSet<string> BuildAssignmentGuardIdentifiers()
+    private static HashSet<string> StatementSet(CompilerCompatibilityOptions options) => options.IgnoreCase
+        ? (options.UseScopedVariableInstruction ? LegacyStatementIdentifiersScoped : LegacyStatementIdentifiers)
+        : (options.UseScopedVariableInstruction ? LegacyStatementIdentifiersScopedCaseSensitive : LegacyStatementIdentifiersCaseSensitive);
+
+    private static HashSet<string> MethodSet(CompilerCompatibilityOptions options) => options.IgnoreCase ? LegacyMethodBackedLineHeads : LegacyMethodBackedLineHeadsCaseSensitive;
+
+    public static bool TryMap(string token, out PrototypeOpcode opcode) => MapIgnoreCase.TryGetValue(token, out opcode);
+    public static bool TryMap(string token, CompilerCompatibilityOptions options, out PrototypeOpcode opcode) => (options.IgnoreCase ? MapIgnoreCase : MapCaseSensitive).TryGetValue(token, out opcode);
+    public static bool TryMapStatementIdentifier(string token, CompilerCompatibilityOptions options, out PrototypeOpcode opcode)
     {
-        var result = new HashSet<string>(LegacyStatementIdentifiers, StringComparer.OrdinalIgnoreCase);
-        result.UnionWith(LegacyMethodBackedLineHeads);
-        return result;
+        opcode = PrototypeOpcode.Unsupported;
+        return IsStatementIdentifier(token, options) && TryMap(token, options, out opcode) && opcode != PrototypeOpcode.SET;
     }
-
-    public static bool TryMap(string token, out PrototypeOpcode opcode) => Map.TryGetValue(token, out opcode);
-    public static bool IsAssignmentGuardIdentifier(string token) => AssignmentGuardIdentifiers.Contains(token);
-    public static bool IsStatementIdentifier(string token) => LegacyStatementIdentifiers.Contains(token);
-    public static bool IsMethodBackedLineHead(string token) => LegacyMethodBackedLineHeads.Contains(token);
-    public static IReadOnlyCollection<string> AssignmentGuardIdentifierNames => AssignmentGuardIdentifiers;
-    public static IReadOnlyCollection<string> StatementIdentifierNames => LegacyStatementIdentifiers;
-    public static IReadOnlyCollection<string> MethodBackedLineHeadNames => LegacyMethodBackedLineHeads;
-    public static string[] SupportedLegacyNames => Map.Keys.Order(StringComparer.OrdinalIgnoreCase).ToArray();
+    public static bool IsLegacyLineHeadIdentifier(string token, CompilerCompatibilityOptions options) => IsStatementIdentifier(token, options) || IsMethodBackedLineHead(token, options);
+    public static bool IsAssignmentGuardIdentifier(string token) => IsLegacyLineHeadIdentifier(token, CompilerCompatibilityOptions.Default);
+    public static bool IsAssignmentGuardIdentifier(string token, CompilerCompatibilityOptions options) => IsLegacyLineHeadIdentifier(token, options);
+    public static bool IsStatementIdentifier(string token) => IsStatementIdentifier(token, CompilerCompatibilityOptions.Default);
+    public static bool IsStatementIdentifier(string token, CompilerCompatibilityOptions options) => StatementSet(options).Contains(token);
+    public static bool IsMethodBackedLineHead(string token) => IsMethodBackedLineHead(token, CompilerCompatibilityOptions.Default);
+    public static bool IsMethodBackedLineHead(string token, CompilerCompatibilityOptions options) => MethodSet(options).Contains(token);
+    public static IReadOnlyCollection<string> AssignmentGuardIdentifierNames => GetAssignmentGuardIdentifierNames(CompilerCompatibilityOptions.Default);
+    public static IReadOnlyCollection<string> StatementIdentifierNames => StatementSet(CompilerCompatibilityOptions.Default);
+    public static IReadOnlyCollection<string> MethodBackedLineHeadNames => MethodSet(CompilerCompatibilityOptions.Default);
+    public static IReadOnlyCollection<string> SupportedStatementIdentifierNames => GetSupportedStatementIdentifierNames(CompilerCompatibilityOptions.Default);
+    public static string[] GetAssignmentGuardIdentifierNames(CompilerCompatibilityOptions options) => StatementSet(options).Concat(MethodSet(options)).Distinct(options.NameComparer).Order(options.NameComparer).ToArray();
+    public static string[] StatementIdentifierNamesFor(CompilerCompatibilityOptions options) => StatementSet(options).Order(options.NameComparer).ToArray();
+    public static string[] MethodBackedLineHeadNamesFor(CompilerCompatibilityOptions options) => MethodSet(options).Order(options.NameComparer).ToArray();
+    public static string[] GetSupportedStatementIdentifierNames(CompilerCompatibilityOptions options) => MapEntries.Where(entry => entry.Opcode != PrototypeOpcode.SET && IsStatementIdentifier(entry.Name, options)).Select(static entry => entry.Name).Order(options.NameComparer).ToArray();
+    public static string[] SupportedLegacyNames => MapIgnoreCase.Keys.Order(StringComparer.OrdinalIgnoreCase).ToArray();
     public static bool IsControlFlow(PrototypeOpcode opcode) => opcode is PrototypeOpcode.IF or PrototypeOpcode.SIF or
         PrototypeOpcode.ELSE or PrototypeOpcode.ELSEIF or PrototypeOpcode.ENDIF or PrototypeOpcode.SELECTCASE or
         PrototypeOpcode.CASE or PrototypeOpcode.CASEELSE or PrototypeOpcode.ENDSELECT or PrototypeOpcode.GOTO or
@@ -174,6 +249,11 @@ public sealed class FunctionCompiler
     public const int InstructionPayloadBytes = 16;
     public const int FunctionDescriptorFieldPayloadBytes = 64;
     private static readonly UTF8Encoding StrictUtf8 = new(false, true);
+    private readonly CompilerCompatibilityOptions options;
+
+    public FunctionCompiler(CompilerCompatibilityOptions? options = null) => this.options = options ?? CompilerCompatibilityOptions.Default;
+
+    public CompilerCompatibilityOptions Options => options;
 
     public CompileResult TryCompile(SourceFileIndex file, FunctionIndex function)
     {
@@ -193,7 +273,7 @@ public sealed class FunctionCompiler
     {
         try
         {
-            var instructions = Scan(source.Bytes, source.Function.Span.StartLine, out var reason, out var detail);
+            var instructions = Scan(source.Bytes, source.Function.Span.StartLine, options, out var reason, out var detail);
             if (reason != UnsupportedReason.None)
                 return CompileResult.Unsupported(reason, detail!);
             var fingerprint = SourceFingerprint.FromBytes(source.Bytes);
@@ -211,7 +291,7 @@ public sealed class FunctionCompiler
         }
     }
 
-    private static ImmutableArray<PrototypeInstruction> Scan(byte[] bytes, int startLine, out UnsupportedReason reason, out string? detail)
+    private static ImmutableArray<PrototypeInstruction> Scan(byte[] bytes, int startLine, CompilerCompatibilityOptions options, out UnsupportedReason reason, out string? detail)
     {
         var list = ImmutableArray.CreateBuilder<PrototypeInstruction>();
         reason = UnsupportedReason.None;
@@ -229,27 +309,35 @@ public sealed class FunctionCompiler
             offset = offset < bytes.Length ? offset + 1 : offset;
             var text = StrictUtf8.GetString(lineBytes);
             if (first) { first = false; line++; continue; }
-            var trimmed = text.TrimStart(' ', '\t');
-            if (trimmed.Length == 0 || trimmed.StartsWith(';') || trimmed.StartsWith("//", StringComparison.Ordinal)) { line++; continue; }
+            var scan = LegacyIdentifierScanner.ReadFirstIdentifier(text, options);
+            var trimStart = scan.StartPosition;
+            var trimmed = text[trimStart..];
+            if (trimmed.Length == 0 || trimmed[0] == ';') { line++; continue; }
             if (trimmed.EndsWith('\\')) return Fail(UnsupportedReason.Multiline, "line continuation", out reason, out detail);
             if (trimmed[0] is '[' or '#' or '$' or '}' or '{' or '@')
                 return Fail(trimmed[0] == '$' ? UnsupportedReason.LocalLabelOrGoto : UnsupportedReason.UnknownSyntax, "unsupported structural line", out reason, out detail);
-            var tokenLength = 0;
-            while (tokenLength < trimmed.Length && !char.IsWhiteSpace(trimmed[tokenLength]) && trimmed[tokenLength] is not (',' or '(')) tokenLength++;
+            var tokenLength = scan.StopPosition - scan.StartPosition;
             if (tokenLength == 0) return Fail(UnsupportedReason.UnknownSyntax, "empty instruction", out reason, out detail);
             var token = trimmed[..tokenLength];
-            var isMappedCommand = LegacyOpcodeMap.TryMap(token, out var opcode);
-            var isKnownLineHead = isMappedCommand || LegacyOpcodeMap.IsAssignmentGuardIdentifier(token);
-            if (!isMappedCommand && LegacyOpcodeMap.IsAssignmentGuardIdentifier(token))
+            var isMappedCommand = LegacyOpcodeMap.TryMapStatementIdentifier(token, options, out var opcode);
+            var isKnownLineHead = LegacyOpcodeMap.IsLegacyLineHeadIdentifier(token, options);
+            var separator = tokenLength < trimmed.Length ? trimmed[tokenLength] : '\0';
+            if (isKnownLineHead)
+            {
+                if (!LegacyIdentifierScanner.IsCommandSeparator(separator, options))
+                    return Fail(UnsupportedReason.UnknownSyntax, $"invalid command separator after: {token}", out reason, out detail);
+                if (!isMappedCommand)
+                    return Fail(UnsupportedReason.UnsupportedInstruction, $"unsupported instruction: {token}", out reason, out detail);
+            }
+            else if (!TryFindAssignment(trimmed, out _))
+            {
                 return Fail(UnsupportedReason.UnsupportedInstruction, $"unsupported instruction: {token}", out reason, out detail);
-            var isAssignment = !isKnownLineHead && IsAssignment(trimmed);
+            }
+            var isAssignment = !isKnownLineHead;
             if (isAssignment) opcode = PrototypeOpcode.SET;
-            else if (opcode == PrototypeOpcode.Unsupported)
-                return Fail(UnsupportedReason.UnsupportedInstruction, $"unsupported instruction: {token}", out reason, out detail);
-            var operandStart = isAssignment ? 0 : tokenLength;
-            while (operandStart < trimmed.Length && (trimmed[operandStart] == ' ' || trimmed[operandStart] == '\t' || trimmed[operandStart] == ',')) operandStart++;
-            var operand = trimmed[operandStart..].TrimEnd();
-            var operandOffset = lineStart + Encoding.UTF8.GetByteCount(text[..(text.Length - trimmed.Length + operandStart)]);
+            var operandStart = isAssignment ? 0 : LegacyIdentifierScanner.SkipCommandSeparators(trimmed, tokenLength, options);
+            var operand = operandStart < trimmed.Length && trimmed[operandStart] != ';' ? trimmed[operandStart..].TrimEnd() : string.Empty;
+            var operandOffset = lineStart + Encoding.UTF8.GetByteCount(text[..(trimStart + operandStart)]);
             var operandLength = Encoding.UTF8.GetByteCount(operand);
             var flags = operandLength > 0 ? PrototypeInstructionFlags.HasOperand : PrototypeInstructionFlags.None;
             if (LegacyOpcodeMap.IsControlFlow(opcode)) flags |= PrototypeInstructionFlags.ControlFlow;
@@ -262,16 +350,81 @@ public sealed class FunctionCompiler
         static ImmutableArray<PrototypeInstruction> Fail(UnsupportedReason value, string message, out UnsupportedReason result, out string? detail)
         { result = value; detail = message; return ImmutableArray<PrototypeInstruction>.Empty; }
 
-        static bool IsAssignment(string text)
+        static bool TryFindAssignment(ReadOnlySpan<char> text, out int operatorStart)
         {
-            // [Emuera改修:NEXT-1B-R4 2026-08-27]
-            // Legacyはmethod-backed名も行頭funcDicで捕捉するため、A判定をassignmentより先に行い「=」のSET誤認を防ぐ。
-            // 比較演算子は式意味論を含むため、単純な変数代入へ取り込まない。
-            if (text.Length == 0 || text[0] is '"' or '\'') return false;
-            var equal = text.IndexOf('=');
-            if (equal < 0) return false;
-            if (equal > 0 && text[equal - 1] is '=' or '!' or '<' or '>') return false;
-            return equal + 1 >= text.Length || text[equal + 1] != '=';
+            // [Emuera改修:NEXT-1B-R5 2026-08-27]
+            // 複雑なlvalueを一律に拒否せず、Legacyのassignment候補だけを構造的に拾い、未知行をSETへ誤分類しない。
+            operatorStart = -1;
+            var depth = 0;
+            var quote = '\0';
+            for (var index = 0; index < text.Length; index++)
+            {
+                var current = text[index];
+                if (quote != '\0')
+                {
+                    if (current == '\\') index++;
+                    else if (current == quote) quote = '\0';
+                    continue;
+                }
+                if (current == '\'' && index + 1 < text.Length && text[index + 1] == '=') { operatorStart = index; break; }
+                if (current is '"' or '\'') { quote = current; continue; }
+                if (current is '(' or '[' or '{') { depth++; continue; }
+                if (current is ')' or ']' or '}') { if (depth == 0) return false; depth--; continue; }
+                if (depth != 0) continue;
+                if (index + 1 < text.Length && (current is '+' or '-' or '*' or '/' or '%' or '|' or '&' or '^') && text[index + 1] == '=') { operatorStart = index; break; }
+                if (current == '=' && (index + 1 == text.Length || text[index + 1] != '=') && (index == 0 || text[index - 1] is not ('=' or '!' or '<' or '>'))) { operatorStart = index; break; }
+            }
+            return operatorStart >= 0 && IsStructuralLValue(text[..operatorStart]);
+        }
+
+        static bool IsStructuralLValue(ReadOnlySpan<char> text)
+        {
+            text = text.Trim();
+            if (text.IsEmpty) return false;
+            var index = 0;
+            var sawIdentifier = false;
+            var afterColon = false;
+            while (index < text.Length)
+            {
+                while (index < text.Length && text[index] is ' ' or '\t' or '　') index++;
+                if (index == text.Length) break;
+                if (text[index] == ':') { if (!sawIdentifier) return false; afterColon = true; index++; continue; }
+                if (text[index] is '"' or '\'') { if (!sawIdentifier) return false; if (!SkipQuoted(text, ref index)) return false; afterColon = false; continue; }
+                if (text[index] == '@' && index + 1 < text.Length && (text[index + 1] is '"' or '\'')) { index++; if (!SkipQuoted(text, ref index)) return false; afterColon = false; continue; }
+                if (text[index] is '(' or '[' or '{') { if (!SkipBalanced(text, ref index)) return false; afterColon = false; continue; }
+                var length = LegacyIdentifierScanner.ReadIdentifierLength(text[index..]);
+                if (length == 0 || sawIdentifier && !afterColon) return false;
+                sawIdentifier = true;
+                afterColon = false;
+                index += length;
+            }
+            return sawIdentifier;
+        }
+
+        static bool SkipQuoted(ReadOnlySpan<char> text, ref int index)
+        {
+            var quote = text[index++];
+            while (index < text.Length)
+            {
+                if (text[index] == '\\') { index += Math.Min(2, text.Length - index); continue; }
+                if (text[index++] == quote) return true;
+            }
+            return false;
+        }
+
+        static bool SkipBalanced(ReadOnlySpan<char> text, ref int index)
+        {
+            var opening = text[index++];
+            var closing = opening switch { '(' => ')', '[' => ']', _ => '}' };
+            var depth = 1;
+            while (index < text.Length)
+            {
+                if (text[index] is '"' or '\'') { if (!SkipQuoted(text, ref index)) return false; continue; }
+                if (text[index] == opening) depth++;
+                else if (text[index] == closing && --depth == 0) { index++; return true; }
+                index++;
+            }
+            return false;
         }
 
     }

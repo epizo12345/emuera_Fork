@@ -99,3 +99,9 @@ Run IDは`20260827_Phase1B_R3_Final`。Legacy `FunctionIdentifier.GetInstruction
 Run IDは`20260827_Phase1B_R4_Final`。Legacyの全行頭識別子A=456件、statement command B=275件（`Method == null`）、method-backed line head C=181件（`Method != null`）を実測した。NextはAをB∪Cとしてassignment guardへ保持し、A/B/CのMissing・Extraは全て0、A=B∪C、B∩C=0、Duplicate・Empty=0、method-backedのstatement誤予約=0である。CALLFORM、TRYCALLFORM、TRYCCALLFORM、ENDCATCH、RESET_STAIN、VARSET、RESTART、ARRAYSHIFT、SPLITの`X=Y`、およびCHKFONT、GETFONT、RAND、ABS、MINの`X=Y`はSET化しない。RESULTS、A、日本語識別子の通常代入はSET、比較演算子はSET化しない。`A==B`はLegacyの代入意味をNextへ持ち込まず、安全側で比較意味の実装へ延期した。
 
 実ゲームはeligible 59,435、compiled 59,093、remaining unsupported 342、compiler errors 0。R3成功集合baseline lost 0、baseline/expandedのinstruction count・order・exact opcode mismatchは全て0、`PrototypeInstruction`は16 bytes。R4 expanded 5-run中央値はtotal 2,118.147 ms / source read 1,171.062 ms / compiler 88.684 ms / allocation 125,520,296 bytes。R3成功集合baseline allocation中央値124,527,416 bytesに対し10%超回帰はない。pure retainedは8,703,552 bytesを3回とも記録し、known payload 6,829,664、overhead 1,873,888、audit-inclusive retained 16,019,832 bytesを別計上した。Phase 1BはCOMPLETE/HOLDとし、VM、Expression/Format IR、Phase 1Cは開始しない。
+
+### Phase 1B-R5 最終Gate
+
+Run IDは`20260827_Phase1B_R5_Final`。Legacy actual oracleの4構成でA=456、B=275、C=181、A=B∪C、B∩C=0、map−B=0、map∩C=0を確認した。`SET`はstatement line-head mapから除外し、`TryMapStatementIdentifier("SET")`はfalse、代入構造の分類後だけでSET opcodeを生成する。Legacy first identifier、separator、全角空白、`//`、複雑lvalue、operand/source spanを照合し、CompilerSelfTestは80/80。
+
+実fixtureはeligible 59,435、compiled 59,093、remaining unsupported 342、errors 0。54,200件baseline lost 0、命令数・順序・exact opcode差分0。expanded 5-run中央値はtotal 1,858.849 ms / source read 992.243 ms / compiler 89.554 ms / allocation 119,904,656 bytes。pure retainedは8,703,552 bytesを独立3回、fixture変更はNew 0 / Changed 0 / Deleted 0、全角空白直後の実例は37件。artifact semantic verifierを含む全GateはPASS、`Phase1BDecision=COMPLETE`。VM、Expression/Format IR、Phase 1Cは開始しない。

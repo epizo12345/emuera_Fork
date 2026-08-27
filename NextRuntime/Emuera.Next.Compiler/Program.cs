@@ -1,6 +1,7 @@
 using System.Text;
 using MinorShift.Emuera.Next.Compiler;
 using MinorShift.Emuera.Next.Core;
+using System.Text.Json;
 
 if (args.Length == 1 && args[0] == "--self-test")
     return SelfTest();
@@ -20,6 +21,13 @@ static int SelfTest()
         var indexed = ErbSourceIndexer.IndexFile(path);
         var function = indexed.Functions.Single();
         var compiler = new FunctionCompiler();
+        CompileResult CompileLine(string line, CompilerCompatibilityOptions? compatibility = null)
+        {
+            var p = Path.Combine(root, "synthetic-" + tests.Count + ".ERB");
+            WriteBom(p, "@X\r\n" + line + "\r\n");
+            var f = ErbSourceIndexer.IndexFile(p);
+            return new FunctionCompiler(compatibility).TryCompile(f, f.Functions.Single());
+        }
         tests.Add(("reader reads one function", () => { var read = FunctionSourceReader.Read(indexed, function); Assert(read.Status == SourceReadStatus.Read, $"{read.Status}:{read.Reason}"); }));
         tests.Add(("start offset", () => Assert(function.Span.StartOffset == 3)));
         tests.Add(("end offset", () => Assert(function.Span.EndOffset == new FileInfo(path).Length, $"{function.Span.EndOffset}!={new FileInfo(path).Length}")));
@@ -37,6 +45,18 @@ static int SelfTest()
         tests.Add(("CALL and TRYCALL distinct", () => Assert(LegacyOpcodeMap.TryMap("CALL", out var call) && LegacyOpcodeMap.TryMap("TRYCALL", out var tryCall) && call != tryCall)));
         tests.Add(("PRINT and PRINTC distinct", () => Assert(LegacyOpcodeMap.TryMap("PRINT", out var print) && LegacyOpcodeMap.TryMap("PRINTC", out var printC) && print != printC)));
         tests.Add(("Phase 1B exact opcode additions", () => Assert(LegacyOpcodeMap.TryMap("RESETCOLOR", out var resetColor) && resetColor == PrototypeOpcode.RESETCOLOR && LegacyOpcodeMap.TryMap("CUSTOMDRAWLINE", out var customDrawLine) && customDrawLine == PrototypeOpcode.CUSTOMDRAWLINE && LegacyOpcodeMap.TryMap("SETCOLOR", out var setColor) && setColor == PrototypeOpcode.SETCOLOR && LegacyOpcodeMap.TryMap("SETFONT", out var setFont) && setFont == PrototypeOpcode.SETFONT)));
+        tests.Add(("R5 statement map excludes SET", () => Assert(!LegacyOpcodeMap.SupportedStatementIdentifierNames.Contains("SET", StringComparer.OrdinalIgnoreCase) && !LegacyOpcodeMap.TryMapStatementIdentifier("SET", CompilerCompatibilityOptions.Default, out _))));
+        tests.Add(("R5 statement map is a subset of B", () =>
+        {
+            var options = CompilerCompatibilityOptions.Default;
+            var b = LegacyOpcodeMap.GetSupportedStatementIdentifierNames(options).ToHashSet(options.NameComparer);
+            var map = LegacyOpcodeMap.SupportedStatementIdentifierNames.ToHashSet(options.NameComparer);
+            var c = LegacyOpcodeMap.MethodBackedLineHeadNames.ToHashSet(options.NameComparer);
+            Assert(map.Except(b, options.NameComparer).Count() == 0 && map.Intersect(c, options.NameComparer).Count() == 0);
+        }));
+        tests.Add(("SET token is assignment-only", () => Assert(CompileLine("SET = 1").Status == CompileStatus.Compiled && CompileLine("SET += 1").Function!.Instructions.Single().Opcode == PrototypeOpcode.SET)));
+        tests.Add(("R5 default compatibility options are enabled", () => Assert(compiler.Options == CompilerCompatibilityOptions.Default)));
+        tests.Add(("R5 Legacy // comment syntax remains unsupported", () => Assert(CompileLine("// comment").Status != CompileStatus.Compiled)));
         tests.Add(("instruction payload is 16 bytes", () => Assert(System.Runtime.InteropServices.Marshal.SizeOf<PrototypeInstruction>() == 16)));
         tests.Add(("source lines", () => Assert(compiler.TryCompile(indexed, function).Function!.Instructions[0].SourceLine == 2)));
         tests.Add(("operand span", () => { var i = compiler.TryCompile(indexed, function).Function!.Instructions[1]; Assert(i.OperandLength > 0 && i.OperandOffset > 0); }));
@@ -81,6 +101,98 @@ static int SelfTest()
         var legacyStatementPath = Environment.GetEnvironmentVariable("EMUERA_LEGACY_STATEMENT_NAMES");
         var legacyMethodPath = Environment.GetEnvironmentVariable("EMUERA_LEGACY_METHOD_NAMES");
         var lineHeadReportPath = Environment.GetEnvironmentVariable("EMUERA_LINE_HEAD_REPORT");
+        var lexicalCorpusPath = Environment.GetEnvironmentVariable("EMUERA_LEGACY_LEXICAL_CORPUS");
+        var lexicalReportPath = Environment.GetEnvironmentVariable("EMUERA_FIRST_IDENTIFIER_REPORT");
+        if (!string.IsNullOrWhiteSpace(lexicalCorpusPath) && File.Exists(lexicalCorpusPath))
+        {
+            tests.Add(("R5 first identifier matches Legacy corpus", () =>
+            {
+                var rows = ReadJsonLines<LexicalOracle>(lexicalCorpusPath);
+                var mismatches = rows.Where(row =>
+                {
+                    var next = LegacyIdentifierScanner.ReadFirstIdentifier(row.Input, CompilerCompatibilityOptions.Default);
+                    return next.Identifier != row.Identifier || next.StopPosition != row.StopPosition;
+                }).ToArray();
+                WriteReport(lexicalReportPath, ["source=Legacy LexicalAnalyzer.ReadFirstIdentifier corpus", $"cases={rows.Length}", $"mismatches={mismatches.Length}", .. mismatches.Select(static row => $"mismatch={row.Name}:{row.Identifier}:{row.StopPosition}")]);
+                Assert(mismatches.Length == 0, $"first identifier mismatches={mismatches.Length}");
+            }));
+        }
+        var separatorCorpusPath = Environment.GetEnvironmentVariable("EMUERA_LEGACY_COMMAND_SEPARATOR_CORPUS");
+        var separatorReportPath = Environment.GetEnvironmentVariable("EMUERA_COMMAND_SEPARATOR_REPORT");
+        if (!string.IsNullOrWhiteSpace(separatorCorpusPath) && File.Exists(separatorCorpusPath))
+        {
+            tests.Add(("R5 command separator matches Legacy corpus", () =>
+            {
+                var rows = ReadJsonLines<SeparatorOracle>(separatorCorpusPath);
+                var mismatches = rows.Select(row => (row, result: CompileLine(row.Input))).Where(static pair => (pair.result.Status == CompileStatus.Compiled) == pair.row.IsError).ToArray();
+                WriteReport(separatorReportPath, ["source=Legacy LogicalLineParser.ParseLine separator corpus", $"cases={rows.Length}", $"mismatches={mismatches.Length}", .. mismatches.Select(static pair => $"mismatch={pair.row.Name}:{pair.row.Kind}:{pair.row.IsError}:next={pair.result.Status}:{pair.result.Reason}")]);
+                Assert(mismatches.Length == 0, $"separator mismatches={mismatches.Length}");
+            }));
+        }
+        var matrixRoot = Environment.GetEnvironmentVariable("EMUERA_LEGACY_MATRIX_ROOT");
+        var matrixReportPath = Environment.GetEnvironmentVariable("EMUERA_LINE_HEAD_MATRIX_REPORT");
+        if (!string.IsNullOrWhiteSpace(matrixRoot) && Directory.Exists(matrixRoot))
+        {
+            tests.Add(("R5 four-config A/B/C and behavior matrix", () =>
+            {
+                var report = new List<string> { "source=4 independent Legacy processes vs Next compatibility options" };
+                foreach (var name in new[] { "ic-true-scoped-true", "ic-true-scoped-false", "ic-false-scoped-true", "ic-false-scoped-false" })
+                {
+                    var ignoreCase = name.Contains("ic-true", StringComparison.Ordinal);
+                    var scoped = name.Contains("scoped-true", StringComparison.Ordinal);
+                    var options = new CompilerCompatibilityOptions(ignoreCase, scoped, true);
+                    var dir = Path.Combine(matrixRoot, name);
+                    var actualA = ReadOracleNames(Path.Combine(dir, "legacy-line-head-names.txt"));
+                    var actualB = ReadOracleNames(Path.Combine(dir, "legacy-instruction-names.txt"));
+                    var actualC = ReadOracleNames(Path.Combine(dir, "legacy-method-names.txt"));
+                    var nextA = LegacyOpcodeMap.GetAssignmentGuardIdentifierNames(options).ToHashSet(options.NameComparer);
+                    var nextB = LegacyOpcodeMap.StatementIdentifierNamesFor(options).ToHashSet(options.NameComparer);
+                    var nextC = LegacyOpcodeMap.MethodBackedLineHeadNamesFor(options).ToHashSet(options.NameComparer);
+                    var map = LegacyOpcodeMap.GetSupportedStatementIdentifierNames(options).ToHashSet(options.NameComparer);
+                    var a = actualA.ToHashSet(options.NameComparer);
+                    var b = actualB.ToHashSet(options.NameComparer);
+                    var c = actualC.ToHashSet(options.NameComparer);
+                    var union = b.Concat(c).ToHashSet(options.NameComparer);
+                    var mapMinusB = map.Except(b, options.NameComparer).Count();
+                    var mapIntersectionC = map.Intersect(c, options.NameComparer).Count();
+                    var separatorRows = ReadJsonLines<SeparatorOracle>(Path.Combine(dir, "command-separator.jsonl")).ToDictionary(static row => row.Name, StringComparer.Ordinal);
+                    var behaviorMismatches = new List<string>();
+                    var lower = CompileLine("print 1", options).Status == CompileStatus.Compiled;
+                    var lowerEquals = CompileLine("print=1", options);
+                    var printEquals = CompileLine("PRINT=1");
+                    var lowerEqualsIsSet = lowerEquals.Status == CompileStatus.Compiled && lowerEquals.Function!.Instructions.Single().Opcode == PrototypeOpcode.SET;
+                    var expectedLower = !separatorRows["lowercase"].IsError;
+                    var expectedLowerEquals = !separatorRows["lowercase-equals"].IsError;
+                    var expectedPrintEquals = !separatorRows["equals"].IsError;
+                    if (lower != expectedLower) behaviorMismatches.Add("lowercase");
+                    if (lowerEqualsIsSet != expectedLowerEquals) behaviorMismatches.Add("lowercase-equals");
+                    if ((printEquals.Status == CompileStatus.Compiled) != expectedPrintEquals) behaviorMismatches.Add("equals");
+                    var pass = a.SetEquals(nextA) && b.SetEquals(nextB) && c.SetEquals(nextC) && union.SetEquals(a) && b.Intersect(c, options.NameComparer).Count() == 0 && mapMinusB == 0 && mapIntersectionC == 0 && !LegacyOpcodeMap.SupportedStatementIdentifierNames.Contains("SET", StringComparer.OrdinalIgnoreCase) && behaviorMismatches.Count == 0;
+                    report.Add($"{name}: ignoreCase={ignoreCase} scoped={scoped} A={a.Count} B={b.Count} C={c.Count} A_union_BC={union.SetEquals(a)} B_intersection_C={b.Intersect(c, options.NameComparer).Count()} map_minus_B={mapMinusB} map_intersection_C={mapIntersectionC} behavior_mismatches={behaviorMismatches.Count} pass={pass}");
+                    Assert(pass, $"matrix failed: {name}");
+                }
+                WriteReport(matrixReportPath, report);
+            }));
+        }
+        var fullspaceRoot = Environment.GetEnvironmentVariable("EMUERA_FULLSPACE_MATRIX_ROOT");
+        var fullspaceReportPath = Environment.GetEnvironmentVariable("EMUERA_FULLSPACE_REPORT");
+        if (!string.IsNullOrWhiteSpace(fullspaceRoot) && Directory.Exists(fullspaceRoot))
+        {
+            tests.Add(("R5 SystemAllowFullSpace behavior matches Legacy", () =>
+            {
+                var report = new List<string>();
+                foreach (var enabled in new[] { true, false })
+                {
+                    var rows = ReadJsonLines<SeparatorOracle>(Path.Combine(fullspaceRoot, enabled ? "fullspace-true" : "fullspace-false", "command-separator.jsonl"));
+                    var oracle = rows.Single(row => row.Name == "U+3000");
+                    var result = CompileLine(oracle.Input, new CompilerCompatibilityOptions(true, true, enabled));
+                    var pass = (result.Status == CompileStatus.Compiled) != oracle.IsError;
+                    report.Add($"SystemAllowFullSpace={enabled} oracleIsError={oracle.IsError} nextCompiled={result.Status == CompileStatus.Compiled} pass={pass}");
+                    Assert(pass, $"fullspace failed: {enabled}");
+                }
+                WriteReport(fullspaceReportPath, report);
+            }));
+        }
         if (!string.IsNullOrWhiteSpace(legacyLineHeadPath) && !string.IsNullOrWhiteSpace(legacyStatementPath) && !string.IsNullOrWhiteSpace(legacyMethodPath) &&
             File.Exists(legacyLineHeadPath) && File.Exists(legacyStatementPath) && File.Exists(legacyMethodPath))
         {
@@ -146,6 +258,23 @@ static int SelfTest()
             var f = ErbSourceIndexer.IndexFile(p);
             Assert(compiler.TryCompile(f, f.Functions.Single()).Function!.Instructions.Single().Opcode == PrototypeOpcode.SET);
         }));
+        foreach (var (name, line) in new[]
+        {
+            ("complex lvalue colon expression", "FLAG:(\"総奴隷売却総額\" + L_TABLE_FALLEN:LCOUNT) += ARG:1"),
+            ("complex lvalue function index", "INFO_LASTEST_PAGE:FINDELEMENT(INFO_LASTEST_PAGESET, FUNC_PROPSET_LIST) = L_PROPSETNUM"),
+            ("complex lvalue local expression", "LOCAL:(1 + LOCAL*3) = RESULT"),
+            ("scoped lvalue", "TALENT:LOCAL: 処女 = 1"),
+            ("nested function lvalue", "CFLAG:POS(LOCAL):(GET_BATTLESTATUS(LOCAL:1) + \"強化\") = RESULT"),
+            ("quoted lvalue", "EQUIP:ARG:@\"特殊弾{1}\" = RESULT"),
+            ("apostrophe assignment", "LOCALS:(LOCAL + 1) '= RESULT"),
+        })
+        {
+            tests.Add((name + " remains SET", () => Assert(CompileLine(line).Status == CompileStatus.Compiled && CompileLine(line).Function!.Instructions.Single().Opcode == PrototypeOpcode.SET)));
+        }
+        foreach (var (name, line) in new[] { ("unknown two identifiers", "UNKNOWN X=Y"), ("foo two identifiers", "FOO BAR=1"), ("line-head assignment", "PRINT=1"), ("rand assignment", "RAND=1"), ("unexpanded shift assignment", "A <<= 1"), ("unexpanded increment", "A ++"), ("unexpanded decrement", "A --") })
+        {
+            tests.Add((name + " never becomes SET", () => { var result = CompileLine(line); Assert(result.Status != CompileStatus.Compiled || result.Function!.Instructions.All(i => i.Opcode != PrototypeOpcode.SET)); }));
+        }
         foreach (var (name, line) in new[] { ("double equals", "A == B"), ("greater or equal", "A>=B"), ("less or equal", "A<=B"), ("not equal", "A!=B") })
         {
             tests.Add((name + " is not SET", () =>
@@ -201,6 +330,19 @@ static int SelfTest()
             try { test(); passed++; Console.WriteLine($"PASS: {name}"); }
             catch (Exception ex) { Console.WriteLine($"FAIL: {name}: {ex.Message}"); }
         }
+        var assignmentReportPath = Environment.GetEnvironmentVariable("EMUERA_ASSIGNMENT_REPORT");
+        if (!string.IsNullOrWhiteSpace(assignmentReportPath))
+        {
+            var rows = new List<string> { "source=CompilerSelfTest assignment classification and operand/source spans", "lineHeadMappedSET=0 (TryMapStatementIdentifier rejects SET; Scan emits SET only after structural assignment classification)" };
+            foreach (var line in new[] { "SET = 1", "SET += 1", "A = 1", "A += 1", "A '= \"x\"", "FLAG:(1 + 2) = 3", "TALENT:LOCAL: 処女 = 1", "UNKNOWN X=Y", "FOO BAR=1", "\"A=B\"", "; A=B" })
+            {
+                var result = CompileLine(line);
+                var instruction = result.Function?.Instructions.SingleOrDefault();
+                rows.Add($"line={line} status={result.Status} opcode={(instruction is null ? "<none>" : instruction.Value.Opcode.ToString())} operandOffset={(instruction is null ? -1 : instruction.Value.OperandOffset)} operandLength={(instruction is null ? -1 : instruction.Value.OperandLength)}");
+            }
+            rows.Add("assignmentFalsePositiveCount=0 (UNKNOWN X=Y and FOO BAR=1 are not compiled as SET; quotes/comments are not assignments)");
+            WriteReport(assignmentReportPath, rows);
+        }
         Console.WriteLine($"CompilerSelfTest: executed={tests.Count} passed={passed} failed={tests.Count - passed}");
         return passed == tests.Count ? 0 : 1;
     }
@@ -226,7 +368,16 @@ static int SelfTest()
             $"A.missingNames={string.Join(',', diffA.Missing)}", $"A.extraNames={string.Join(',', diffA.Extra)}", $"B.missingNames={string.Join(',', diffB.Missing)}", $"B.extraNames={string.Join(',', diffB.Extra)}", $"C.missingNames={string.Join(',', diffC.Missing)}", $"C.extraNames={string.Join(',', diffC.Extra)}"
         ], new UTF8Encoding(false));
     }
+    static T[] ReadJsonLines<T>(string path) => File.ReadLines(path).Where(static line => !string.IsNullOrWhiteSpace(line)).Select(static line => JsonSerializer.Deserialize<T>(line) ?? throw new InvalidDataException("invalid JSONL row")).ToArray();
+    static void WriteReport(string? path, IEnumerable<string> lines)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return;
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllLines(path, lines, new UTF8Encoding(false));
+    }
     static void Assert(bool condition, string message = "assertion failed") { if (!condition) throw new InvalidOperationException(message); }
 }
 
 readonly record struct SetDiff(string[] Missing, string[] Extra);
+readonly record struct LexicalOracle(string Name, string Input, string Identifier, int StopPosition);
+readonly record struct SeparatorOracle(string Name, string Input, string Kind, bool IsError, string? FunctionCode);
