@@ -149,6 +149,18 @@ R4ではPure known payloadからbaseline以前に存在するSource Index由来�
 
 R4の5-run raw TSVを正本とし、自動集計した性能はtotal中央値1,953.059 ms（mean 1,972.434 / min 1,929.404 / max 2,082.478）、source read中央値1,055.302 ms、compiler中央値60.184 ms、total allocation中央値87,163,032 bytesである。Run IDは`20260827_Phase1A_R4_Final`で、raw TSV・pure runs・summary・final-status・Review READMEへ共通記録する。Phase 1Aはこの計測定義、benchmark aggregation、Git証跡、canonical docsの整合確認をもって正式COMPLETEとする。
 
+### Phase 1B Compiler Coverage Expansion
+
+Run IDは`20260827_Phase1B_Final`。R4のcompiler eligible 59,435関数を再走査し、baseline success setをR4 compiler manifestの54,200関数として固定した。実装前のunsupportedは5,235関数・30,978 blocker occurrencesで、主要familyはSET/代入4,836関数、CALLFORM 201、RESETCOLOR 150、TRYCALLFORM 55、SETCOLOR 53だった。累積機会は関数重複を除外して算出し、分析artifactにはfirst reason、all blockers、代表例、Tier分類を分離して保存した。
+
+Tier Aとして、`SET`（変数代入）、`RESETCOLOR`、`CUSTOMDRAWLINE`、`SETCOLOR`、`SETFONT`を、Legacy FunctionCodeと同名のdistinct `PrototypeOpcode`およびraw operand spanだけで対応した。scannerは比較演算子を代入と誤認せず、instructionはsource line・operand offset・operand lengthを持つ。Legacy parser、LogicalLineParser、ExpressionParser、InstructionLineはproduction compiler pathで再利用しない。Tier Bは`CHKFONT`、`GETFONT`、`RESULT`、`RESET_STAIN`等のcommand/state境界、Tier Cは`CALLFORM`、`TRYCALLFORM`、`CATCH`/`ENDCATCH`、`LOCAL`、式・macro・preprocessor・dynamic name依存として延期した。`GETFONT`/`CHKFONT`を一度候補化した際にLegacy oracleの`__NULL__`との差分が出たため、対応から外し、Exact差分0を優先した。
+
+実ゲーム結果は、Previously compiled 54,200、Newly compiled 4,893、Total compiled 59,093、Remaining unsupported 342、Compiler errors 0である。Phase0B verified safe比は52.36%、Compiler eligible比は99.42%。baseline lost 0、baseline instruction count/order/exact opcode mismatchは各0、expanded mismatchも各0、`sizeof(PrototypeInstruction)`は16 bytesである。5-run baseline subsetはtotal中央値1,829.084ms、source read 1,009.519ms、compiler 57.156ms、allocation 75,036,176 bytesで、R4基準allocation 87,163,032 bytesを超えない。expanded set、191,399 instructions、Pure retained、audit-inclusive retainedは最終artifactへ記録した。
+
+Expanded pure retainedは9,261,512 bytes、instruction payload 3,062,384 bytes、descriptor theoretical payload 3,794,560 bytes、PureKnownPayloadTotal 6,856,944 bytes、estimated overhead 2,404,568 bytes。監査辞書等を含むaudit-inclusive retainedは`audit-inclusive-retained-memory.txt`へ分離した。Pure測定では`List<CompiledFunction>`だけをGCHandleでroot化し、同一rootに対する3回のfull-GC読値を採用する。これは監査辞書をretainedへ混ぜないための測定境界である。
+
+Phase 1B後の最上位残件は`TRYCALLFORM` 55、`CATCH`/`ENDCATCH`/`TRYCCALLFORM`各37系、`CHKFONT` 30、`GETFONT` 29、`RESULT` 29である。次候補は、Tier Bのfont/state命令をLegacy source例とoracleで精査するPhase 1C。VM、VariableStore、Expression/Format IR、disk cache、正式EXE、distributionはPhase 1Bでは開始しない。
+
 ## 20. Phase履歴
 
 - Phase 0A: Source Indexの基礎。実ゲーム9,458 ERB / 134,652関数。

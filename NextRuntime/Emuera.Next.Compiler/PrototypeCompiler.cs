@@ -18,6 +18,8 @@ public enum PrototypeOpcode : ushort
     WAIT, TWAIT, WAITANYKEY, FORCEWAIT, AWAIT,
     DRAWLINE, DRAWLINEFORM, BAR, BARL,
     ADDCHARA, ADDSPCHARA, ADDDEFCHARA, ADDVOIDCHARA, DELCHARA,
+    // [Emuera改修:NEXT-1B 2026-08-27] Legacy FunctionCodeごとにenumを分離し、実行意味の統合を先送りする。
+    RESETCOLOR, CUSTOMDRAWLINE, SETCOLOR, SETFONT,
     CALL, TRYCALL, CALLEVENT, CALLTRAIN, CALLF,
     RETURN, RETURNFORM, RETURNF,
     IF, SIF, ELSE, ELSEIF, ENDIF, SELECTCASE, CASE, CASEELSE, ENDSELECT,
@@ -156,9 +158,11 @@ public sealed class FunctionCompiler
             while (tokenLength < trimmed.Length && !char.IsWhiteSpace(trimmed[tokenLength]) && trimmed[tokenLength] is not (',' or '(')) tokenLength++;
             if (tokenLength == 0) return Fail(UnsupportedReason.UnknownSyntax, "empty instruction", out reason, out detail);
             var token = trimmed[..tokenLength];
-            if (!LegacyOpcodeMap.TryMap(token, out var opcode))
+            var isAssignment = !LegacyOpcodeMap.TryMap(token, out var opcode) && IsAssignment(trimmed);
+            if (isAssignment) opcode = PrototypeOpcode.SET;
+            else if (opcode == PrototypeOpcode.Unsupported)
                 return Fail(UnsupportedReason.UnsupportedInstruction, $"unsupported instruction: {token}", out reason, out detail);
-            var operandStart = tokenLength;
+            var operandStart = isAssignment ? 0 : tokenLength;
             while (operandStart < trimmed.Length && (trimmed[operandStart] == ' ' || trimmed[operandStart] == '\t' || trimmed[operandStart] == ',')) operandStart++;
             var operand = trimmed[operandStart..].TrimEnd();
             var operandOffset = lineStart + Encoding.UTF8.GetByteCount(text[..(text.Length - trimmed.Length + operandStart)]);
@@ -173,6 +177,16 @@ public sealed class FunctionCompiler
 
         static ImmutableArray<PrototypeInstruction> Fail(UnsupportedReason value, string message, out UnsupportedReason result, out string? detail)
         { result = value; detail = message; return ImmutableArray<PrototypeInstruction>.Empty; }
+
+        static bool IsAssignment(string text)
+        {
+            // [Emuera改修:NEXT-1B 2026-08-27]
+            // Legacyの変数代入をSETとして識別するが、比較演算子は式意味論を含むため取り込まない。
+            var equal = text.IndexOf('=');
+            if (equal < 0) return false;
+            if (equal > 0 && text[equal - 1] is '=' or '!' or '<' or '>') return false;
+            return equal + 1 >= text.Length || text[equal + 1] != '=';
+        }
     }
 
     private static int MetadataBytesEstimate(string name) => 32 + Encoding.UTF8.GetByteCount(name);

@@ -57,6 +57,12 @@ compileとは、ERBを実行しやすい形へ変換することです。cache�
 
 Phase 1A-R4でも、VM、VariableStore、Expression/Format IR、UI変更は行っていません。最新5回測定のtotal中央値は1,953.059msです。Phase 1BはChatレビュー後に明示承認されるまで開始しません。
 
+### Phase 1Bの結果
+
+5,235件の未対応関数を調べた結果、主因は変数代入構文4,836関数でした。そこで、代入と、Legacyの命令名をそのまま保持できるRESETCOLOR、CUSTOMDRAWLINE、SETCOLOR、SETFONTだけを小さい命令へ追加しました。54,200件から59,093件へ増え、未対応は342件です。Try/Catch、動的呼出し、ローカル変数、式やフォント状態の複雑な構文は安全側に残しました。
+
+新しい命令は実行せず、元ソースの命令名・行・operandの位置だけを保持します。PrototypeInstructionは16 bytesのままです。baseline 54,200件の失敗は0、Legacyとの命令数・順序・Exact Opcode差分も0です。VM、Expression/Format IR、正式EXE変更はまだありません。
+
 ## 7. 最終的には？
 
 今と同じように、`Emuera.exe`を1個ゲームフォルダへ置いて起動する形を目指します。

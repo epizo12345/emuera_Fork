@@ -24,6 +24,14 @@ fallbackは、DeclarationDirective 6844、FunctionMetadata 6817、LineContinuati
 
 CompilerはPhase0B verified safe、Compiler strict-clean、eligibleを別に判定します。`SourceChanged`、`InvalidSource`、`Unsupported`を明示的に返し、source fingerprintは関数byte spanのSHA-256を32-byte valueとしてCompileResult側だけに返します。PrototypeInstructionは実測16 bytesです。R4では共有name/path参照をPure known payloadから除外し、3回のpure retained中央値は7,050,736 bytes、Pure known payloadは4,808,976 bytes、overheadは2,241,760 bytes、監査込みrootは25,246,200 bytesでした。最新5-run性能中央値はtotal 1,953.059 ms、source read 1,055.302 ms、compiler 60.184 msです。まだVM、VariableStore、Expression/Format IR、disk cache、UI/正式EXE変更はありません。
 
+## Phase 1Bの結果
+
+R4のunsupported 5,235関数をLegacy FunctionCode・source syntax単位で再集計した。主因は代入構文（4,836関数、30,032 occurrences）、次いでCALLFORM（201）、RESETCOLOR（150）だった。Tier Aとして、source spanだけで意味を失わないSET（代入）、RESETCOLOR、CUSTOMDRAWLINE、SETCOLOR、SETFONTを追加した。Tier BのCHKFONT/GETFONT/RESULT等、Tier CのCALLFORM/TRYCALLFORM、CATCH/ENDCATCH、LOCAL、式・動的名前依存は延期した。
+
+実ゲームfixtureでは、Previously compiled 54,200、Newly compiled 4,893、Total compiled 59,093、Remaining unsupported 342、Compiler errors 0となった。baseline lost 0、baseline/expanded structural mismatch 0、Exact Opcode mismatch 0、PrototypeInstruction 16 bytesである。5-runのbaseline subset中央値はtotal 1,829.084ms、source read 1,009.519ms、compiler 57.156ms、allocation 75,036,176 bytes。expanded set、Pure retained、known payload、overhead、audit-inclusiveは最終artifactへ記録した。
+
+Phase 1Bはcompiler coverageと計測だけであり、命令を実行するVM、VariableStore、Expression/Format IR、disk cache、正式EXE変更は行わない。次候補は、残る145件のうちTier Bをsource例とLegacy oracleで精査するPhase 1Cである。
+
 ## 固定する設計
 
 長期目標は次の順です。

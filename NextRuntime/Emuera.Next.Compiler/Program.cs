@@ -36,9 +36,15 @@ static int SelfTest()
         tests.Add(("opcode mapping", () => Assert(LegacyOpcodeMap.TryMap("PRINT", out var opcode) && opcode == PrototypeOpcode.PRINT)));
         tests.Add(("CALL and TRYCALL distinct", () => Assert(LegacyOpcodeMap.TryMap("CALL", out var call) && LegacyOpcodeMap.TryMap("TRYCALL", out var tryCall) && call != tryCall)));
         tests.Add(("PRINT and PRINTC distinct", () => Assert(LegacyOpcodeMap.TryMap("PRINT", out var print) && LegacyOpcodeMap.TryMap("PRINTC", out var printC) && print != printC)));
+        tests.Add(("Phase 1B exact opcode additions", () => Assert(LegacyOpcodeMap.TryMap("RESETCOLOR", out var resetColor) && resetColor == PrototypeOpcode.RESETCOLOR && LegacyOpcodeMap.TryMap("CUSTOMDRAWLINE", out var customDrawLine) && customDrawLine == PrototypeOpcode.CUSTOMDRAWLINE && LegacyOpcodeMap.TryMap("SETCOLOR", out var setColor) && setColor == PrototypeOpcode.SETCOLOR && LegacyOpcodeMap.TryMap("SETFONT", out var setFont) && setFont == PrototypeOpcode.SETFONT)));
         tests.Add(("instruction payload is 16 bytes", () => Assert(System.Runtime.InteropServices.Marshal.SizeOf<PrototypeInstruction>() == 16)));
         tests.Add(("source lines", () => Assert(compiler.TryCompile(indexed, function).Function!.Instructions[0].SourceLine == 2)));
         tests.Add(("operand span", () => { var i = compiler.TryCompile(indexed, function).Function!.Instructions[1]; Assert(i.OperandLength > 0 && i.OperandOffset > 0); }));
+        var assignmentPath = Path.Combine(root, "assignment.ERB");
+        WriteBom(assignmentPath, "@ASSIGN\r\nRESULTS = 日本語\r\n");
+        var assignment = ErbSourceIndexer.IndexFile(assignmentPath);
+        tests.Add(("assignment becomes exact SET", () => Assert(compiler.TryCompile(assignment, assignment.Functions.Single()).Function!.Instructions.Single().Opcode == PrototypeOpcode.SET)));
+        tests.Add(("assignment operand span includes lhs", () => { var i = compiler.TryCompile(assignment, assignment.Functions.Single()).Function!.Instructions.Single(); Assert(i.OperandLength > 0 && i.OperandOffset == 9); }));
         var batchPath = Path.Combine(root, "batch.ERB");
         WriteBom(batchPath, "@A\nPRINT 1\n@B\nRETURN\n");
         var batchIndex = ErbSourceIndexer.IndexFile(batchPath);
