@@ -315,3 +315,13 @@ VM SelfTest=26/26、Phase1 Core=52/52、Phase1 Compiler=81/81、Differential=PAS
 Phase2ADecision=HOLD
 Phase2AStatus=SKELETON_IMPLEMENTED_RUNTIME_ORACLE_PENDING
 Phase2B/Phase3へ渡すもの=Legacy runtime oracleの自動化、loop reentrancy確定、expression/format/variable semantics、CALLFORM/dynamic call、GOTO/$label、TRY/CATCH、event dispatch、ARG/LOCAL/REF runtime、実ゲーム起動。
+
+### Phase 2A-R1 契約確定
+
+Physical SourceIndex identity（134652 FunctionId）とLegacy effective semantic nameをoverlayで分離する。FunctionCatalogはcompact value record、source file table、name table、NameRange、flattened candidate IDsで構成し、resolverはcatalog構築時固定comparerとfirst-definition authorityを使う。effective duplicate raw resultは3 groups / 9 definitions、rename 3 targetのresolutionはmissing=0である。
+
+Legacy semantic rowsは134652件である。凍結したSourceIndexとのexact `RelativeFile + StartLine` joinは134649/134652（missing 3、extra 3、position mismatch 3）。3件はLegacyがinline-brace宣言の閉じ括弧行をStartLineとし、SourceIndexは物理`@`ヘッダー境界を保持するためで、Phase1 semanticsを変更せずauditへ明示した。
+
+Control linkerのPCはfunction-local next-instruction index、valid domainは0..CodeLength、CodeLengthはimplicit returnである。JUMPはPropagate frame、operand spanはreal linked instruction全件で保持する。SIF、IF ordered clause、SELECTCASE ordered case、loop descriptorを別side tableに分離し、BREAK counter compatibilityとloop kind別CONTINUEをmetadataで表現する。real linked stateはLinkedSemanticPendingで、ExecutableReadyはsynthetic programだけに許可する。
+
+R1 actual retainedはcatalog / linked / combinedを独立GC測定し、performanceはSourceIndex、catalog、compile、ControlLink、totalを区間分離した。VM SelfTest=33/33、Phase1 regression=59435/59103/332/errors0/instruction191273。Legacy最小fixtureの既存StartupTest seamは本環境ではempty-log timeoutとなったためruntime oracle（BREAK、reentrant loop、implicit return）が未確定で、Phase2ADecision=HOLD。Phase2B/Phase3はNOT_STARTED。

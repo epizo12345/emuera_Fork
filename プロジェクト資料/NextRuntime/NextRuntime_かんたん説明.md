@@ -196,3 +196,13 @@ VM SelfTest=26/26、Phase1 Core=52/52、Phase1 Compiler=81/81、Differential=PAS
 Phase2ADecision=HOLD
 Phase2AStatus=SKELETON_IMPLEMENTED_RUNTIME_ORACLE_PENDING
 Phase2B/Phase3へ渡すもの=Legacy runtime oracleの自動化、loop reentrancy確定、expression/format/variable semantics、CALLFORM/dynamic call、GOTO/$label、TRY/CATCH、event dispatch、ARG/LOCAL/REF runtime、実ゲーム起動。
+
+### Phase 2A-R1
+
+FunctionIdはphysical definition、EffectiveNameはsemantic overlayとして分離する。effective duplicateは3 groups / 9 definitions、rename familyの3 targetも解決済み。fixed CALL resolverはfirst-definition semantics、CodeAvailable、LinkReady、ExecutableReadyを別状態として扱う。
+
+Legacy semantic rowsは134652件。凍結したSourceIndexとのexact position joinは134649/134652で、Legacyがinline-braceの閉じ括弧行を記録する既知3件の差分を証跡へ残しています。値を0へ合わせ込まず、Phase2AはHOLDです。
+
+PCは0..CodeLengthのlocal next-instruction contractで、CodeLengthはimplicit return sentinel。real instructionはoperand spanを保持し、SIF / IF clause / SELECT case / loop descriptorとBREAK・CONTINUE metadataを別side tableへ置く。real ExecutableReadyは0、synthetic VMだけが実行可能である。actual retainedと性能区間を分離して測定した。
+
+最小Legacy fixtureのStartupTestは本R1環境ではempty-log timeoutとなり、BREAK/reentrant loop/implicit returnの実行oracleが未確定のためPhase2AはHOLD。Phase2B/Phase3は未開始。
