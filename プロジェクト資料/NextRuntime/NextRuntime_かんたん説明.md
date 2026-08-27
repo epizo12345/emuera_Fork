@@ -88,3 +88,9 @@ Phase 1B-R2では、Legacyに実在するcommand/function名を固定予約表�
 Legacyが実際に行頭命令として登録している名前だけを正解にしました。statement commandは275件で、Nextの予約表とMissing 0 / Extra 0 / Duplicate 0 / Empty 0です。RAND・ABS・MINやCHKFONT・GETFONTのような式中methodはstatement予約に混ぜていません。命令の引数に`=`があっても、変数代入と取り違えない確認も追加しました。
 
 実ゲームでは59,093関数を変換でき、未対応は342件、エラーは0件でした。pure retainedは別々に3回測定し、各8,703,552 bytes、中央値も8,703,552 bytesです。known payloadは6,829,664 bytes、overheadは1,873,888 bytesです。Phase 1BはCOMPLETE/HOLDです。VM、Expression/Format IR、Phase 1Cはまだ始めません。
+
+### Phase 1B-R4の結果
+
+R3のstatement 275件だけでなく、Legacyが実際に行頭lookupする全456件を正解集合Aとして再確認しました。Aはstatement B=275件とmethod-backed C=181件の和集合で、Nextのassignment guard・statement metadata・method-backed metadataはA/B/C全てMissing 0、Extra 0、B∩C=0です。method-backedのCHKFONT、GETFONT、RAND、ABS、MINをstatement予約へ混ぜず、`X=Y`もSETへ誤認しません。コメントにしか現れないCHKVARDATA、CHKGLOBALDATA、FIND_VARDATAはLegacy A/B/Cに無く、Nextにも登録していません。
+
+実ゲームのeligibleは59,435、compiledは59,093、remaining unsupportedは342、errorsは0。R3成功集合をbaselineにしてbaseline lost 0、命令数・順序・exact opcode差分0を確認しました。R4の5-run expanded中央値はtotal 2,118.147 ms、allocation 125,520,296 bytes、pure retainedは8,703,552 bytesを3回とも再現しました。Phase 1BはCOMPLETE/HOLDで、VM・Expression/Format IR・Phase 1Cは未開始です。

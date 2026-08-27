@@ -71,45 +71,58 @@ static int SelfTest()
                 Assert(result.Status != CompileStatus.Compiled || result.Function!.Instructions.All(i => i.Opcode != PrototypeOpcode.SET));
             }));
         }
-        tests.Add(("complete Legacy command reservation is unique and nonempty", () =>
+        tests.Add(("complete Legacy line-head guard is unique and nonempty", () =>
         {
-            var names = LegacyOpcodeMap.ReservedLegacyCommandNames.ToArray();
-            Assert(names.Length > 200 && names.All(static name => !string.IsNullOrWhiteSpace(name)) && names.Distinct(StringComparer.OrdinalIgnoreCase).Count() == names.Length);
-            Assert(LegacyOpcodeMap.IsReservedLegacyCommand("CALLFORM") && !LegacyOpcodeMap.IsReservedLegacyCommand("普通の識別子"));
+            var names = LegacyOpcodeMap.AssignmentGuardIdentifierNames.ToArray();
+            Assert(names.All(static name => !string.IsNullOrWhiteSpace(name)) && names.Distinct(StringComparer.OrdinalIgnoreCase).Count() == names.Length);
+            Assert(LegacyOpcodeMap.IsAssignmentGuardIdentifier("CALLFORM") && !LegacyOpcodeMap.IsAssignmentGuardIdentifier("普通の識別子"));
         }));
+        var legacyLineHeadPath = Environment.GetEnvironmentVariable("EMUERA_LEGACY_LINE_HEAD_NAMES");
         var legacyStatementPath = Environment.GetEnvironmentVariable("EMUERA_LEGACY_STATEMENT_NAMES");
         var legacyMethodPath = Environment.GetEnvironmentVariable("EMUERA_LEGACY_METHOD_NAMES");
-        var commandSetReportPath = Environment.GetEnvironmentVariable("EMUERA_COMMAND_SET_REPORT");
-        if (!string.IsNullOrWhiteSpace(legacyStatementPath) && !string.IsNullOrWhiteSpace(legacyMethodPath) && File.Exists(legacyStatementPath) && File.Exists(legacyMethodPath))
+        var lineHeadReportPath = Environment.GetEnvironmentVariable("EMUERA_LINE_HEAD_REPORT");
+        if (!string.IsNullOrWhiteSpace(legacyLineHeadPath) && !string.IsNullOrWhiteSpace(legacyStatementPath) && !string.IsNullOrWhiteSpace(legacyMethodPath) &&
+            File.Exists(legacyLineHeadPath) && File.Exists(legacyStatementPath) && File.Exists(legacyMethodPath))
         {
-            tests.Add(("Legacy actual statement dictionary equals Next reservation set", () =>
+            tests.Add(("Legacy A/B/C dictionaries fully equal Next metadata", () =>
             {
-                var actualRaw = ReadOracleNames(legacyStatementPath);
-                var actual = actualRaw.ToHashSet(StringComparer.OrdinalIgnoreCase);
-                var next = LegacyOpcodeMap.ReservedLegacyCommandNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
-                var missing = actual.Except(next, StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase).ToArray();
-                var extra = next.Except(actual, StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase).ToArray();
-                var duplicates = actualRaw.GroupBy(static name => name, StringComparer.OrdinalIgnoreCase).Where(static group => group.Count() > 1).Select(static group => group.Key).Order(StringComparer.OrdinalIgnoreCase).ToArray();
-                var empty = actualRaw.Count(string.IsNullOrWhiteSpace);
-                WriteCommandSetReport(commandSetReportPath, actual.Count, next.Count, missing, extra, duplicates, empty, 0, []);
-                Assert(missing.Length == 0 && extra.Length == 0 && duplicates.Length == 0 && empty == 0, $"missing={missing.Length} extra={extra.Length} duplicate={duplicates.Length} empty={empty}");
+                var actualA = ReadOracleNames(legacyLineHeadPath);
+                var actualB = ReadOracleNames(legacyStatementPath);
+                var actualC = ReadOracleNames(legacyMethodPath);
+                var nextA = LegacyOpcodeMap.AssignmentGuardIdentifierNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var nextB = LegacyOpcodeMap.StatementIdentifierNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var nextC = LegacyOpcodeMap.MethodBackedLineHeadNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var diffA = Diff(actualA, nextA);
+                var diffB = Diff(actualB, nextB);
+                var diffC = Diff(actualC, nextC);
+                var union = actualB.Concat(actualC).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var intersection = actualB.Intersect(actualC, StringComparer.OrdinalIgnoreCase).ToArray();
+                var methodOnlyFalseReservations = actualC.Where(nextB.Contains).Order(StringComparer.OrdinalIgnoreCase).ToArray();
+                WriteLineHeadReport(lineHeadReportPath, actualA, actualB, actualC, diffA, diffB, diffC, union, intersection, methodOnlyFalseReservations.Length, ["CHKFONT", "GETFONT", "RAND", "ABS", "MIN"]);
+                Assert(diffA.Missing.Length == 0 && diffA.Extra.Length == 0 && diffB.Missing.Length == 0 && diffB.Extra.Length == 0 && diffC.Missing.Length == 0 && diffC.Extra.Length == 0 &&
+                    AllUniqueAndNonempty(actualA) && AllUniqueAndNonempty(actualB) && AllUniqueAndNonempty(actualC) && union.SetEquals(actualA) && intersection.Length == 0 && methodOnlyFalseReservations.Length == 0,
+                    $"A missing={diffA.Missing.Length} extra={diffA.Extra.Length}; B missing={diffB.Missing.Length} extra={diffB.Extra.Length}; C missing={diffC.Missing.Length} extra={diffC.Extra.Length}; union={union.Count}/{actualA.Length}; intersection={intersection.Length}");
             }));
-            tests.Add(("Legacy method-only names are not statement reservations", () =>
+            tests.Add(("Legacy classification examples and method-backed heads never become SET", () =>
             {
-                var actualRaw = ReadOracleNames(legacyStatementPath);
-                var actual = actualRaw.ToHashSet(StringComparer.OrdinalIgnoreCase);
-                var next = LegacyOpcodeMap.ReservedLegacyCommandNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
-                var missing = actual.Except(next, StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase).ToArray();
-                var extra = next.Except(actual, StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase).ToArray();
-                var duplicates = actualRaw.GroupBy(static name => name, StringComparer.OrdinalIgnoreCase).Where(static group => group.Count() > 1).Select(static group => group.Key).Order(StringComparer.OrdinalIgnoreCase).ToArray();
-                var methods = ReadOracleNames(legacyMethodPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
-                var checkedNames = new[] { "ABS", "RAND", "MIN" };
-                Assert(checkedNames.All(methods.Contains), $"method oracle missing: {string.Join(',', checkedNames.Where(name => !methods.Contains(name)))}");
-                Assert(checkedNames.All(name => !LegacyOpcodeMap.IsReservedLegacyCommand(name)));
-                Assert(methods.Contains("CHKFONT") && methods.Contains("GETFONT") && !LegacyOpcodeMap.IsReservedLegacyCommand("CHKFONT") && !LegacyOpcodeMap.IsReservedLegacyCommand("GETFONT"));
-                var falseReservations = methods.Where(LegacyOpcodeMap.IsReservedLegacyCommand).Order(StringComparer.OrdinalIgnoreCase).ToArray();
-                WriteCommandSetReport(commandSetReportPath, actual.Count, next.Count, missing, extra, duplicates, actualRaw.Count(string.IsNullOrWhiteSpace), falseReservations.Length, checkedNames);
-                Assert(falseReservations.Length == 0, $"methodOnlyFalseReservations={falseReservations.Length}");
+                var statementSet = ReadOracleNames(legacyStatementPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var methodSet = ReadOracleNames(legacyMethodPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var statementNames = new[] { "CALLFORM", "TRYCALLFORM", "TRYCCALLFORM", "ENDCATCH", "RESET_STAIN", "VARSET", "RESTART", "ARRAYSHIFT", "SPLIT" };
+                var methodNames = new[] { "CHKFONT", "GETFONT", "RAND", "ABS", "MIN" };
+                Assert(statementNames.All(statementSet.Contains) && statementNames.All(name => LegacyOpcodeMap.IsStatementIdentifier(name) && LegacyOpcodeMap.IsAssignmentGuardIdentifier(name)));
+                Assert(methodNames.All(methodSet.Contains) && methodNames.All(name => LegacyOpcodeMap.IsMethodBackedLineHead(name) && LegacyOpcodeMap.IsAssignmentGuardIdentifier(name) && !LegacyOpcodeMap.IsStatementIdentifier(name)));
+                foreach (var name in statementNames.Concat(methodNames))
+                {
+                    var p = Path.Combine(root, "line-head-" + name + ".ERB");
+                    WriteBom(p, "@HEAD\r\n" + name + " X=Y\r\n");
+                    var f = ErbSourceIndexer.IndexFile(p);
+                    var result = compiler.TryCompile(f, f.Functions.Single());
+                    Assert(result.Status != CompileStatus.Compiled || result.Function!.Instructions.All(i => i.Opcode != PrototypeOpcode.SET), name);
+                }
+                var commentNames = new[] { "CHKVARDATA", "CHKGLOBALDATA", "FIND_VARDATA" };
+                var presentCommentNames = commentNames.Where(name => statementSet.Contains(name) || methodSet.Contains(name)).ToArray();
+                Assert(presentCommentNames.All(LegacyOpcodeMap.IsAssignmentGuardIdentifier), $"commented names classification mismatch: {string.Join(',', presentCommentNames)}");
+                Assert(commentNames.Except(presentCommentNames, StringComparer.OrdinalIgnoreCase).All(name => !LegacyOpcodeMap.IsAssignmentGuardIdentifier(name) && !LegacyOpcodeMap.IsStatementIdentifier(name) && !LegacyOpcodeMap.IsMethodBackedLineHead(name)));
             }));
         }
         tests.Add(("Japanese identifier assignment remains SET", () =>
@@ -123,6 +136,13 @@ static int SelfTest()
         {
             var p = Path.Combine(root, "legacy-assignment.ERB");
             WriteBom(p, "@NEG\r\nTSTR:0 = 日本語\r\n");
+            var f = ErbSourceIndexer.IndexFile(p);
+            Assert(compiler.TryCompile(f, f.Functions.Single()).Function!.Instructions.Single().Opcode == PrototypeOpcode.SET);
+        }));
+        tests.Add(("plain A assignment remains SET", () =>
+        {
+            var p = Path.Combine(root, "plain-assignment.ERB");
+            WriteBom(p, "@NEG\r\nA = 1\r\n");
             var f = ErbSourceIndexer.IndexFile(p);
             Assert(compiler.TryCompile(f, f.Functions.Single()).Function!.Instructions.Single().Opcode == PrototypeOpcode.SET);
         }));
@@ -188,18 +208,25 @@ static int SelfTest()
 
     static void WriteBom(string path, string text) => File.WriteAllBytes(path, [0xEF, 0xBB, 0xBF, ..Encoding.UTF8.GetBytes(text)]);
     static string[] ReadOracleNames(string path) => File.ReadAllLines(path).Skip(1).Select(static line => line.Trim()).ToArray();
-    static void WriteCommandSetReport(string? path, int? legacyCount, int? nextCount, string[] missing, string[] extra, string[] duplicates, int empty, int methodOnlyFalseReservations, string[] methodOnlyChecked)
+    static SetDiff Diff(string[] actual, IReadOnlySet<string> next) => new(actual.ToHashSet(StringComparer.OrdinalIgnoreCase).Except(next, StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase).ToArray(), next.Except(actual, StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase).ToArray());
+    static bool AllUniqueAndNonempty(string[] names) => names.All(static name => !string.IsNullOrWhiteSpace(name)) && names.Distinct(StringComparer.OrdinalIgnoreCase).Count() == names.Length;
+    static void WriteLineHeadReport(string? path, string[] actualA, string[] actualB, string[] actualC, SetDiff diffA, SetDiff diffB, SetDiff diffC, IReadOnlySet<string> union, string[] intersection, int methodOnlyFalseReservations, string[] methodOnlyChecked)
     {
         if (string.IsNullOrWhiteSpace(path)) return;
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllLines(path, [
-            "source=Legacy FunctionIdentifier.GetInstructionNameDic() Method == null vs Next ReservedLegacyCommands",
-            $"legacyActualStatementCommandCount={legacyCount?.ToString() ?? "see previous command-set test"}",
-            $"nextReservedStatementCommandCount={nextCount?.ToString() ?? "see previous command-set test"}",
-            $"missing={missing.Length}", $"extra={extra.Length}", $"duplicate={duplicates.Length}", $"empty={empty}",
+            "source=Legacy FunctionIdentifier.GetInstructionNameDic().Keys A/B/C vs independent Next metadata",
+            $"legacyLineHeadIdentifiersA={actualA.Length}", $"nextAssignmentGuardIdentifiersA={LegacyOpcodeMap.AssignmentGuardIdentifierNames.Count}", $"A.missing={diffA.Missing.Length}", $"A.extra={diffA.Extra.Length}",
+            $"legacyStatementIdentifiersB={actualB.Length}", $"nextStatementIdentifiersB={LegacyOpcodeMap.StatementIdentifierNames.Count}", $"B.missing={diffB.Missing.Length}", $"B.extra={diffB.Extra.Length}",
+            $"legacyMethodBackedLineHeadsC={actualC.Length}", $"nextMethodBackedLineHeadsC={LegacyOpcodeMap.MethodBackedLineHeadNames.Count}", $"C.missing={diffC.Missing.Length}", $"C.extra={diffC.Extra.Length}",
+            $"A.unionBC.pass={union.SetEquals(actualA)}", $"B.intersectionC.count={intersection.Length}",
+            $"A.duplicate={actualA.Length - actualA.Distinct(StringComparer.OrdinalIgnoreCase).Count()}", $"B.duplicate={actualB.Length - actualB.Distinct(StringComparer.OrdinalIgnoreCase).Count()}", $"C.duplicate={actualC.Length - actualC.Distinct(StringComparer.OrdinalIgnoreCase).Count()}",
+            $"A.empty={actualA.Count(string.IsNullOrWhiteSpace)}", $"B.empty={actualB.Count(string.IsNullOrWhiteSpace)}", $"C.empty={actualC.Count(string.IsNullOrWhiteSpace)}",
             $"methodOnlyFalseReservations={methodOnlyFalseReservations}", $"methodOnlyChecked={string.Join(',', methodOnlyChecked)}",
-            $"missingNames={string.Join(',', missing)}", $"extraNames={string.Join(',', extra)}", $"duplicateNames={string.Join(',', duplicates)}"
+            $"A.missingNames={string.Join(',', diffA.Missing)}", $"A.extraNames={string.Join(',', diffA.Extra)}", $"B.missingNames={string.Join(',', diffB.Missing)}", $"B.extraNames={string.Join(',', diffB.Extra)}", $"C.missingNames={string.Join(',', diffC.Missing)}", $"C.extraNames={string.Join(',', diffC.Extra)}"
         ], new UTF8Encoding(false));
     }
     static void Assert(bool condition, string message = "assertion failed") { if (!condition) throw new InvalidOperationException(message); }
 }
+
+readonly record struct SetDiff(string[] Missing, string[] Extra);

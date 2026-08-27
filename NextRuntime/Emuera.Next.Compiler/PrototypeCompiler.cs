@@ -75,10 +75,10 @@ public static class LegacyOpcodeMap
     private static readonly IReadOnlyDictionary<string, PrototypeOpcode> Map =
         Enum.GetValues<PrototypeOpcode>().Where(static opcode => opcode != PrototypeOpcode.Unsupported)
             .ToDictionary(static opcode => opcode.ToString(), static opcode => opcode, StringComparer.OrdinalIgnoreCase);
-    // [Emuera改修:NEXT-1B-R3 2026-08-27]
-    // Legacy FunctionIdentifier.GetInstructionNameDic() の Method == null 登録キーだけを固定する。
-    // production pathでLegacy parserを呼ばず、未対応statementの「=」をSETへ誤認しないための予約表とする。
-    private static readonly HashSet<string> ReservedLegacyCommands = new(StringComparer.OrdinalIgnoreCase)
+    // [Emuera改修:NEXT-1B-R4 2026-08-27]
+    // Legacyの実instruction dictionaryをB(statement)とC(method-backed line-head)へ分類して保持する。
+    // production pathでLegacy parserを呼ばず、A=B∪Cの全行頭識別子をassignmentより先にguardする。
+    private static readonly HashSet<string> LegacyStatementIdentifiers = new(StringComparer.OrdinalIgnoreCase)
     {
         "PRINT", "PRINTL", "PRINTW", "PRINTN", "PRINTV", "PRINTVL", "PRINTVW", "PRINTVN",
         "PRINTS", "PRINTSL", "PRINTSW", "PRINTSN", "PRINTFORM", "PRINTFORML", "PRINTFORMW", "PRINTFORMN",
@@ -115,9 +115,48 @@ public static class LegacyOpcodeMap
         "TOOLTIP_SETDURATION", "PRINT_IMG", "PRINT_RECT", "PRINT_SPACE", "INPUTMOUSEKEY", "VARI", "VARS", "HTML_PRINT_ISLAND",
         "HTML_PRINT_ISLAND_CLEAR",
     };
+    private static readonly HashSet<string> LegacyMethodBackedLineHeads = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "ABS", "ALLSAMES", "ARRAYMSORT", "BARSTR", "CBGCLEAR", "CBGCLEARBUTTON", "CBGREMOVEBMAP", "CBGREMOVERANGE",
+        "CBGSETBMAPG", "CBGSETBUTTONSPRITE", "CBGSETG", "CBGSETSPRITE", "CBRT", "CHARATU", "CHKCHARADATA", "CHKDATA",
+        "CHKFONT", "CLIENTHEIGHT", "CLIENTWIDTH", "CMATCH", "COLOR_FROMNAME", "COLOR_FROMRGB", "CONVERT", "CSVABL",
+        "CSVBASE", "CSVCALLNAME", "CSVCFLAG", "CSVCSTR", "CSVEQUIP", "CSVEXP", "CSVJUEL", "CSVMARK", "CSVMASTERNAME",
+        "CSVNAME", "CSVNICKNAME", "CSVRELATION", "CSVTALENT", "CURRENTALIGN", "CURRENTREDRAW", "DICT_CONTAINS_KEY",
+        "DICT_CREATE", "DICT_EXIST", "DICT_GET_VALUE_LONG", "DICT_GET_VALUE_STRING", "DICT_SET_VALUE", "ESCAPE", "EXISTCSV",
+        "EXISTFUNCTION", "EXPONENT", "FINDCHARA", "FINDELEMENT", "FINDLASTCHARA", "FINDLASTELEMENT", "FIND_CHARADATA", "GCLEAR",
+        "GCREATE", "GCREATED", "GCREATEFROMFILE", "GDISPOSE", "GDRAWG", "GDRAWGWITHMASK", "GDRAWSPRITE", "GDRAWTEXT",
+        "GETBGCOLOR", "GETBIT", "GETCHARA", "GETCOLOR", "GETCONFIG", "GETCONFIGS", "GETCSVNOBYCALLNAME", "GETCSVNOBYMASTERNAME",
+        "GETCSVNOBYNAME", "GETCSVNOBYNICKNAME", "GETDEFBGCOLOR", "GETDEFCOLOR", "GETEXPLV", "GETFOCUSCOLOR", "GETFONT", "GETKEY",
+        "GETKEYTRIGGERED", "GETLINESTR", "GETMILLISECOND", "GETNUM", "GETNUMB", "GETPALAMLV", "GETSECOND", "GETSPCHARA", "GETSTYLE",
+        "GETTIMES", "GFILLRECTANGLE", "GGETCOLOR", "GHEIGHT", "GLOAD", "GROUPMATCH", "GSAVE", "GSETBRUSH", "GSETCOLOR",
+        "GSETFONT", "GSETPEN", "GWIDTH", "G_POLYGON_DRAW", "G_POLYGON_FILL", "G_POLYGON_POINT_ADD", "G_POLYGON_POINT_CLEAR",
+        "HASH_XXH3", "HASH_XXH32", "HTML_ESCAPE", "HTML_GETPRINTEDSTR", "HTML_POPPRINTINGSTR", "HTML_TOPLAINTEXT", "INRANGE",
+        "INRANGEARRAY", "INRANGECARRAY", "ISACTIVE", "ISNUMERIC", "ISSKIP", "LIMIT", "LINEISEMPTY", "LOADTEXT", "LOG", "LOG10",
+        "MATCH", "MAX", "MAXARRAY", "MAXCARRAY", "MESSKIP", "MIN", "MINARRAY", "MINCARRAY", "MONEYSTR", "MOUSESKIP",
+        "MOUSEX", "MOUSEY", "NOSAMES", "PRINTCLENGTH", "RAND", "REPLACE", "SAVETEXT", "SETANIMETIMER", "SIGN",
+        "SPRITEANIMEADDFRAME", "SPRITEANIMECREATE", "SPRITECREATE", "SPRITECREATED", "SPRITEDISPOSE", "SPRITEGETCOLOR",
+        "SPRITEHEIGHT", "SPRITEMOVE", "SPRITEPOSX", "SPRITEPOSY", "SPRITESETPOS", "SPRITEWIDTH", "SQL_CONNECTION_OPEN",
+        "SQL_EXECUTE_NONQUERY", "SQL_EXECUTE_READER", "SQL_EXECUTE_SCALER_LONG", "SQL_EXECUTE_SCALER_STRING", "SQL_READER_GET_LONG",
+        "SQL_READER_GET_STRING", "SQL_READER_IS_NULL", "SQL_READER_READ", "SQRT", "STRCOUNT", "STRFIND", "STRFINDU", "STRFORM",
+        "STRJOIN", "STRLENS", "STRLENSU", "SUBSTRING", "SUBSTRINGU", "SUMARRAY", "SUMCARRAY", "TOFULL", "TOHALF", "TOINT",
+        "TOLOWER", "TOSTR", "TOUPPER", "UNICODE", "UNICODEBYTE",
+    };
+    private static readonly HashSet<string> AssignmentGuardIdentifiers = BuildAssignmentGuardIdentifiers();
+
+    private static HashSet<string> BuildAssignmentGuardIdentifiers()
+    {
+        var result = new HashSet<string>(LegacyStatementIdentifiers, StringComparer.OrdinalIgnoreCase);
+        result.UnionWith(LegacyMethodBackedLineHeads);
+        return result;
+    }
+
     public static bool TryMap(string token, out PrototypeOpcode opcode) => Map.TryGetValue(token, out opcode);
-    public static bool IsReservedLegacyCommand(string token) => ReservedLegacyCommands.Contains(token);
-    public static IReadOnlyCollection<string> ReservedLegacyCommandNames => ReservedLegacyCommands;
+    public static bool IsAssignmentGuardIdentifier(string token) => AssignmentGuardIdentifiers.Contains(token);
+    public static bool IsStatementIdentifier(string token) => LegacyStatementIdentifiers.Contains(token);
+    public static bool IsMethodBackedLineHead(string token) => LegacyMethodBackedLineHeads.Contains(token);
+    public static IReadOnlyCollection<string> AssignmentGuardIdentifierNames => AssignmentGuardIdentifiers;
+    public static IReadOnlyCollection<string> StatementIdentifierNames => LegacyStatementIdentifiers;
+    public static IReadOnlyCollection<string> MethodBackedLineHeadNames => LegacyMethodBackedLineHeads;
     public static string[] SupportedLegacyNames => Map.Keys.Order(StringComparer.OrdinalIgnoreCase).ToArray();
     public static bool IsControlFlow(PrototypeOpcode opcode) => opcode is PrototypeOpcode.IF or PrototypeOpcode.SIF or
         PrototypeOpcode.ELSE or PrototypeOpcode.ELSEIF or PrototypeOpcode.ENDIF or PrototypeOpcode.SELECTCASE or
@@ -200,10 +239,10 @@ public sealed class FunctionCompiler
             if (tokenLength == 0) return Fail(UnsupportedReason.UnknownSyntax, "empty instruction", out reason, out detail);
             var token = trimmed[..tokenLength];
             var isMappedCommand = LegacyOpcodeMap.TryMap(token, out var opcode);
-            var isKnownCommand = isMappedCommand || LegacyOpcodeMap.IsReservedLegacyCommand(token);
-            if (!isMappedCommand && LegacyOpcodeMap.IsReservedLegacyCommand(token))
+            var isKnownLineHead = isMappedCommand || LegacyOpcodeMap.IsAssignmentGuardIdentifier(token);
+            if (!isMappedCommand && LegacyOpcodeMap.IsAssignmentGuardIdentifier(token))
                 return Fail(UnsupportedReason.UnsupportedInstruction, $"unsupported instruction: {token}", out reason, out detail);
-            var isAssignment = !isKnownCommand && IsAssignment(trimmed);
+            var isAssignment = !isKnownLineHead && IsAssignment(trimmed);
             if (isAssignment) opcode = PrototypeOpcode.SET;
             else if (opcode == PrototypeOpcode.Unsupported)
                 return Fail(UnsupportedReason.UnsupportedInstruction, $"unsupported instruction: {token}", out reason, out detail);
@@ -225,8 +264,8 @@ public sealed class FunctionCompiler
 
         static bool IsAssignment(string text)
         {
-            // [Emuera改修:NEXT-1B-R3 2026-08-27]
-            // 実体辞書のstatement判定を代入判定より先に適用し、Legacy commandのoperand中の「=」をSETへ誤認しない。
+            // [Emuera改修:NEXT-1B-R4 2026-08-27]
+            // Legacyはmethod-backed名も行頭funcDicで捕捉するため、A判定をassignmentより先に行い「=」のSET誤認を防ぐ。
             // 比較演算子は式意味論を含むため、単純な変数代入へ取り込まない。
             if (text.Length == 0 || text[0] is '"' or '\'') return false;
             var equal = text.IndexOf('=');

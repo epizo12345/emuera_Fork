@@ -2,6 +2,7 @@
 using MinorShift.Emuera.Runtime.Script.Data;
 using MinorShift.Emuera.Runtime.Script.Loader;
 using MinorShift.Emuera.Runtime.Script.Statements;
+using MinorShift.Emuera.Runtime.Config.JSON;
 using MinorShift.Emuera.GameProc.Function;
 using LegacyConfig = MinorShift.Emuera.Runtime.Config.Config;
 using System;
@@ -119,14 +120,43 @@ internal static class LegacyOracleExporter
             $"erbManagedAfterDiagnosticGc={baseline.ManagedAfterDiagnosticGc}",
             $"legacyRetainedManagedEstimate={Math.Max(0, baseline.ManagedAfterDiagnosticGc - baseline.ManagedBefore)}"
         ], new UTF8Encoding(false));
-        // [Emuera改修:NEXT-1B-R3 2026-08-27]
-        // LogicalLineParserが実際に行頭命令検索へ使うinstruction dictionaryの登録キーを、
-        // enum/Method一覧ではなくLegacy実体から診断artifactへ出力する。
+        // [Emuera改修:NEXT-1B-R4 2026-08-27]
+        // LogicalLineParserが実際に行頭命令検索へ使うinstruction dictionaryの全登録キーを、
+        // enum/Method一覧ではなくLegacy実体からA/B/C分類付き診断artifactへ出力する。
         var instructionDictionary = FunctionIdentifier.GetInstructionNameDic();
+        var dictionaryDirectory = Path.GetDirectoryName(fullPath)!;
+        var lineHeadNames = instructionDictionary.Keys.Order(StringComparer.OrdinalIgnoreCase).ToArray();
+        var statementNames = instructionDictionary.Where(static pair => pair.Value.Method is null).Select(static pair => pair.Key).Order(StringComparer.OrdinalIgnoreCase).ToArray();
+        var methodNames = instructionDictionary.Where(static pair => pair.Value.Method is not null).Select(static pair => pair.Key).Order(StringComparer.OrdinalIgnoreCase).ToArray();
+        File.WriteAllLines(Path.Combine(dictionaryDirectory, "legacy-line-head-names.txt"),
+            ["source=FunctionIdentifier.GetInstructionNameDic().Keys (LegacyLineHeadIdentifiers A)", ..lineHeadNames], new UTF8Encoding(false));
         File.WriteAllLines(Path.Combine(Path.GetDirectoryName(fullPath)!, "legacy-instruction-names.txt"),
-            ["source=FunctionIdentifier.GetInstructionNameDic() entries with Method == null (actual statement commands)", ..instructionDictionary.Where(static pair => pair.Value.Method is null).Select(static pair => pair.Key).Order(StringComparer.OrdinalIgnoreCase)], new UTF8Encoding(false));
-        File.WriteAllLines(Path.Combine(Path.GetDirectoryName(fullPath)!, "legacy-method-names.txt"),
-            ["source=FunctionIdentifier.GetInstructionNameDic() entries with Method != null (expression methods)", ..instructionDictionary.Where(static pair => pair.Value.Method is not null).Select(static pair => pair.Key).Order(StringComparer.OrdinalIgnoreCase)], new UTF8Encoding(false));
+            ["source=FunctionIdentifier.GetInstructionNameDic() entries with Method == null (LegacyStatementIdentifiers B)", ..statementNames], new UTF8Encoding(false));
+        File.WriteAllLines(Path.Combine(dictionaryDirectory, "legacy-method-names.txt"),
+            ["source=FunctionIdentifier.GetInstructionNameDic() entries with Method != null (LegacyMethodBackedLineHeads C)", ..methodNames], new UTF8Encoding(false));
+        File.WriteAllLines(Path.Combine(dictionaryDirectory, "legacy-line-head-oracle.txt"),
+        [
+            "source=Legacy code-path proof for actual line-head lookup",
+            "A=FunctionIdentifier.GetInstructionNameDic().Keys",
+            "B=A where FunctionIdentifier.Method == null",
+            "C=A where FunctionIdentifier.Method != null",
+            "A=B union C; B intersection C=empty",
+            "LogicalLineParser.cs:421 firstIdentifier -> GlobalStatic.IdentifierDictionary.GetFunctionIdentifier(firstIdentifier)",
+            "IdentifierDictionary.cs:514 GetFunctionIdentifier -> instructionDic.TryGetValue(key, out FunctionIdentifier ret)",
+            "IdentifierDictionary.cs:140 instructionDic = FunctionIdentifier.GetInstructionNameDic()",
+            "FunctionIdentifier.cs:66 addFunction -> funcDic.Add(key, identifier) for normal FunctionCode registrations",
+            "FunctionIdentifier.cs:421 JSONConfig.Game.UseScopedVariableInstruction conditionally registers VARI/VARS",
+            "FunctionIdentifier.cs:431 FunctionMethodCreator.GetMethodList() is merged into funcDic when key is absent",
+            "FunctionIdentifier.cs:437 method-backed entry uses FunctionCode.__NULL__ and methodInstruction",
+            "LogicalLineParser.cs:425-464 non-null func enters instruction path; Method is not checked before assignment is bypassed",
+            $"ignoreCase={LegacyConfig.IgnoreCase}",
+            $"stringComparison={LegacyConfig.StringComparison}",
+            $"useScopedVariableInstruction={JSONConfig.Game.UseScopedVariableInstruction}",
+            $"A.count={lineHeadNames.Length}", $"B.count={statementNames.Length}", $"C.count={methodNames.Length}",
+            $"A.unionBC.count={statementNames.Concat(methodNames).Distinct(StringComparer.OrdinalIgnoreCase).Count()}",
+            $"B.intersectionC.count={statementNames.Intersect(methodNames, StringComparer.OrdinalIgnoreCase).Count()}",
+            "SET is registered only as builtInByCode via registerBuiltIn(setFunc), not as a funcDic line-head key."
+        ], new UTF8Encoding(false));
         WritePreprocessorReports(Path.GetDirectoryName(fullPath)!, erbRoot, preprocessorDiagnostics);
     }
 
