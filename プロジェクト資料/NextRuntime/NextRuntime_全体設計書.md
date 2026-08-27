@@ -219,3 +219,29 @@ Run IDは`20260827_Phase1B_R4_Final`。Legacyの実行時 `FunctionIdentifier.Ge
 Run IDは`20260827_Phase1B_R5_Final`。Legacy実行時oracleを4構成（IgnoreCase × UseScopedVariableInstruction）で起動し、A=456、B=275、C=181を得た。Aは全行頭lookup、Bは`Method == null`、Cは`Method != null`で、A=B∪C、B∩C=0、statement map−B=0、map∩C=0。`SET`はstatement mapから除外し、`TryMapStatementIdentifier`では受理せず、保守的な構造代入の後だけで生成する。scannerはLegacy `ReadSingleIdentifierROS`のdelimiterとseparatorを再現し、`//` shortcutは持たない。
 
 実fixtureはeligible 59,435、compiled 59,093、remaining unsupported 342、compiler errors 0。Phase 1A-R4の54,200件baselineはlost 0、baseline/expandedのinstruction count・order・exact opcode差分は全て0。expanded 5-run中央値はtotal 1,858.849 ms、source read 992.243 ms、compiler 89.554 ms、allocation 119,904,656 bytes。pure retainedは独立3回が8,703,552 bytesで一致し、known payload 6,829,664、overhead 1,873,888。fixture変更は0件、実fixtureの全角空白直後例は37件。`Phase1BDecision=COMPLETE`。VM、Expression IR、Format IR、Phase 1Cは開始しない。
+
+<!-- BEGIN NEXT-1B-R6 METRICS -->
+RunId=20260827_Phase1B_R6_Final
+Phase1BDecision=COMPLETE
+LegacyDefaults.IgnoreCase=True
+LegacyDefaults.UseScopedVariableInstruction=False
+LegacyDefaults.SystemAllowFullSpace=True
+LegacyDefaults.DebugMode=False
+fixture.IgnoreCase=True source=Data/emuera.config
+fixture.UseScopedVariableInstruction=True source=Data/setting.json
+fixture.SystemAllowFullSpace=True source=Data/emuera.config
+fixture.DebugMode=False source=normal launch without -Debug
+matrix.ic-true-scoped-true.A=456 B=275 C=181 unionPass=True intersectionCount=0 mapMinusB=0 mapIntersectionC=0 behaviorMismatches=0
+matrix.ic-true-scoped-false.A=454 B=273 C=181 unionPass=True intersectionCount=0 mapMinusB=0 mapIntersectionC=0 behaviorMismatches=0
+matrix.ic-false-scoped-true.A=456 B=275 C=181 unionPass=True intersectionCount=0 mapMinusB=0 mapIntersectionC=0 behaviorMismatches=0
+matrix.ic-false-scoped-false.A=454 B=273 C=181 unionPass=True intersectionCount=0 mapMinusB=0 mapIntersectionC=0 behaviorMismatches=0
+debug.false=exact compiled count=1/1 silentDropped=0
+debug.true=fallback Unsupported for ;#; count=4/4 silentDropped=0
+eligible=59435 compiled=59093 remainingUnsupported=342 compilerErrors=0 baselineLost=0
+baselineInstructionCountMismatch=0 baselineInstructionOrderMismatch=0 baselineExactOpcodeMismatch=0
+expandedInstructionCountMismatch=0 expandedInstructionOrderMismatch=0 expandedExactOpcodeMismatch=0
+performance.runs=5 performance.totalMedianMs=1964.231 performance.sourceReadMedianMs=1058.747 performance.compilerMedianMs=93.265 performance.allocationMedianBytes=119904656
+pureRetained.runs=3 values=8703552,8703552,8703552 median=8703552 valid=True
+fixtureMutation.New=0 Changed=0 Deleted=0
+semanticVerifier=PASS mutationTests=4/4
+<!-- END NEXT-1B-R6 METRICS -->

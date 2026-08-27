@@ -68,9 +68,12 @@ public sealed record CompiledFunction(string FileIdentity, string Name, SourceSp
     public int InstructionStorageBytes => Instructions.Length * FunctionCompiler.InstructionPayloadBytes;
 }
 
-public readonly record struct CompilerCompatibilityOptions(bool IgnoreCase = true, bool UseScopedVariableInstruction = true, bool SystemAllowFullSpace = true)
+public readonly record struct CompilerCompatibilityOptions(bool IgnoreCase, bool UseScopedVariableInstruction, bool SystemAllowFullSpace, bool DebugMode)
 {
-    public static CompilerCompatibilityOptions Default => new(true, true, true);
+    // [Emuera改修:NEXT-1B-R6 2026-08-27]
+    // Legacy通常起動はconfig/JSON未指定ならIgnoreCase=true、Scoped=false、全角space=true、Debug=false。
+    // fixture固有設定はAuditが明示的に解決して渡すため、compiler既定へ持ち込まない。
+    public static CompilerCompatibilityOptions LegacyDefaults => new(true, false, true, false);
     public StringComparer NameComparer => IgnoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
     public StringComparison NameComparison => IgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
 }
@@ -218,16 +221,16 @@ public static class LegacyOpcodeMap
         return IsStatementIdentifier(token, options) && TryMap(token, options, out opcode) && opcode != PrototypeOpcode.SET;
     }
     public static bool IsLegacyLineHeadIdentifier(string token, CompilerCompatibilityOptions options) => IsStatementIdentifier(token, options) || IsMethodBackedLineHead(token, options);
-    public static bool IsAssignmentGuardIdentifier(string token) => IsLegacyLineHeadIdentifier(token, CompilerCompatibilityOptions.Default);
+    public static bool IsAssignmentGuardIdentifier(string token) => IsLegacyLineHeadIdentifier(token, CompilerCompatibilityOptions.LegacyDefaults);
     public static bool IsAssignmentGuardIdentifier(string token, CompilerCompatibilityOptions options) => IsLegacyLineHeadIdentifier(token, options);
-    public static bool IsStatementIdentifier(string token) => IsStatementIdentifier(token, CompilerCompatibilityOptions.Default);
+    public static bool IsStatementIdentifier(string token) => IsStatementIdentifier(token, CompilerCompatibilityOptions.LegacyDefaults);
     public static bool IsStatementIdentifier(string token, CompilerCompatibilityOptions options) => StatementSet(options).Contains(token);
-    public static bool IsMethodBackedLineHead(string token) => IsMethodBackedLineHead(token, CompilerCompatibilityOptions.Default);
+    public static bool IsMethodBackedLineHead(string token) => IsMethodBackedLineHead(token, CompilerCompatibilityOptions.LegacyDefaults);
     public static bool IsMethodBackedLineHead(string token, CompilerCompatibilityOptions options) => MethodSet(options).Contains(token);
-    public static IReadOnlyCollection<string> AssignmentGuardIdentifierNames => GetAssignmentGuardIdentifierNames(CompilerCompatibilityOptions.Default);
-    public static IReadOnlyCollection<string> StatementIdentifierNames => StatementSet(CompilerCompatibilityOptions.Default);
-    public static IReadOnlyCollection<string> MethodBackedLineHeadNames => MethodSet(CompilerCompatibilityOptions.Default);
-    public static IReadOnlyCollection<string> SupportedStatementIdentifierNames => GetSupportedStatementIdentifierNames(CompilerCompatibilityOptions.Default);
+    public static IReadOnlyCollection<string> AssignmentGuardIdentifierNames => GetAssignmentGuardIdentifierNames(CompilerCompatibilityOptions.LegacyDefaults);
+    public static IReadOnlyCollection<string> StatementIdentifierNames => StatementSet(CompilerCompatibilityOptions.LegacyDefaults);
+    public static IReadOnlyCollection<string> MethodBackedLineHeadNames => MethodSet(CompilerCompatibilityOptions.LegacyDefaults);
+    public static IReadOnlyCollection<string> SupportedStatementIdentifierNames => GetSupportedStatementIdentifierNames(CompilerCompatibilityOptions.LegacyDefaults);
     public static string[] GetAssignmentGuardIdentifierNames(CompilerCompatibilityOptions options) => StatementSet(options).Concat(MethodSet(options)).Distinct(options.NameComparer).Order(options.NameComparer).ToArray();
     public static string[] StatementIdentifierNamesFor(CompilerCompatibilityOptions options) => StatementSet(options).Order(options.NameComparer).ToArray();
     public static string[] MethodBackedLineHeadNamesFor(CompilerCompatibilityOptions options) => MethodSet(options).Order(options.NameComparer).ToArray();
@@ -251,7 +254,9 @@ public sealed class FunctionCompiler
     private static readonly UTF8Encoding StrictUtf8 = new(false, true);
     private readonly CompilerCompatibilityOptions options;
 
-    public FunctionCompiler(CompilerCompatibilityOptions? options = null) => this.options = options ?? CompilerCompatibilityOptions.Default;
+    // [Emuera改修:NEXT-1B-R6 2026-08-27]
+    // 無指定compilerはLegacy通常起動の意味だけを委譲し、現在fixtureの設定を暗黙には読まない。
+    public FunctionCompiler(CompilerCompatibilityOptions? options = null) => this.options = options ?? CompilerCompatibilityOptions.LegacyDefaults;
 
     public CompilerCompatibilityOptions Options => options;
 
@@ -312,7 +317,15 @@ public sealed class FunctionCompiler
             var scan = LegacyIdentifierScanner.ReadFirstIdentifier(text, options);
             var trimStart = scan.StartPosition;
             var trimmed = text[trimStart..];
-            if (trimmed.Length == 0 || trimmed[0] == ';') { line++; continue; }
+            if (trimmed.Length == 0) { line++; continue; }
+            // [Emuera改修:NEXT-1B-R6 2026-08-27]
+            // DebugModeの;#;は命令を消してCompiled扱いにせず、未実装の最小fallbackへ送る。
+            if (trimmed.StartsWith(";#;", StringComparison.Ordinal))
+            {
+                if (options.DebugMode) return Fail(UnsupportedReason.UnknownSyntax, "DebugMode ;#; prefix requires Legacy fallback", out reason, out detail);
+                line++; continue;
+            }
+            if (trimmed[0] == ';') { line++; continue; }
             if (trimmed.EndsWith('\\')) return Fail(UnsupportedReason.Multiline, "line continuation", out reason, out detail);
             if (trimmed[0] is '[' or '#' or '$' or '}' or '{' or '@')
                 return Fail(trimmed[0] == '$' ? UnsupportedReason.LocalLabelOrGoto : UnsupportedReason.UnknownSyntax, "unsupported structural line", out reason, out detail);

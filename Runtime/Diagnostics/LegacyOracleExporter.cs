@@ -162,6 +162,7 @@ internal static class LegacyOracleExporter
         WritePreprocessorReports(Path.GetDirectoryName(fullPath)!, erbRoot, preprocessorDiagnostics);
         WriteLexicalCorpusFromEnvironment();
         WriteCommandSeparatorCorpusFromEnvironment();
+        WriteDebugSemicolonHashCorpusFromEnvironment();
     }
 
     private static void WriteLexicalCorpusFromEnvironment()
@@ -202,6 +203,49 @@ internal static class LegacyOracleExporter
             var parsed = LogicalLineParser.ParseLine(item.Input, GlobalStatic.Console);
             var instruction = parsed as InstructionLine;
             lines.Add(JsonSerializer.Serialize(new { item.Name, item.Input, Kind = parsed?.GetType().Name, IsError = parsed?.IsError ?? false, FunctionCode = instruction?.FunctionCode.ToString() }));
+        }
+        File.WriteAllLines(Path.GetFullPath(path), lines, new UTF8Encoding(false));
+    }
+
+    private static void WriteDebugSemicolonHashCorpusFromEnvironment()
+    {
+        // [Emuera改修:NEXT-1B-R6 2026-08-27]
+        // DebugModeの;#;はLegacy SkipWhiteSpaceが実際に消費するため、通常comment扱いとの差を別processで残す。
+        var path = Environment.GetEnvironmentVariable("EMUERA_DEBUG_SEMICOLON_HASH_CORPUS");
+        if (string.IsNullOrWhiteSpace(path)) return;
+        var cases = new (string Name, string Input)[]
+        {
+            ("plain", ";#;PRINTL X"), ("leading-space", " ;#;PRINTL X"), ("leading-tab", "\t;#;PRINTL X"),
+            ("double", ";#; ;#;PRINTL X"), ("normal-comment", "; normal comment"), ("inline-comment", "PRINTL X ; comment")
+        };
+        var lines = new List<string>();
+        foreach (var item in cases)
+        {
+            var parsed = LogicalLineParser.ParseLine(item.Input, GlobalStatic.Console);
+            var instruction = parsed as InstructionLine;
+            var stream = new CharStream(item.Input);
+            string firstIdentifier;
+            try
+            {
+                LexicalAnalyzer.SkipWhiteSpace(stream);
+                firstIdentifier = LexicalAnalyzer.ReadFirstIdentifier(stream);
+            }
+            catch { firstIdentifier = "<none>"; }
+            var argument = instruction?.PopArgumentPrimitive();
+            lines.Add(JsonSerializer.Serialize(new
+            {
+                item.Name,
+                item.Input,
+                DebugMode = Program.DebugMode,
+                Kind = parsed?.GetType().Name,
+                IsError = parsed?.IsError ?? false,
+                FirstIdentifier = firstIdentifier,
+                InstructionCount = instruction is null ? 0 : 1,
+                FunctionCode = instruction?.FunctionCode.ToString(),
+                SourceLine = parsed?.Position?.LineNo ?? 0,
+                OperandOffset = argument?.CurrentPosition ?? -1,
+                OperandLength = argument?.RowString.Length ?? 0
+            }, JsonOptions));
         }
         File.WriteAllLines(Path.GetFullPath(path), lines, new UTF8Encoding(false));
     }

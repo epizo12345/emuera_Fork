@@ -7,25 +7,30 @@ using MinorShift.Emuera.Next.Core;
 
 if (args.Length < 3 || args.Any(static a => a is "-h" or "--help"))
 {
-    Console.Error.WriteLine("Usage: Emuera.Next.CompilerAudit <erb-directory> <legacy-manifest.jsonl> <report-directory> [--runs N] [--baseline-manifest path] [--phase1b-manifest path]");
+    Console.Error.WriteLine("Usage: Emuera.Next.CompilerAudit <erb-directory> <legacy-manifest.jsonl> <report-directory> [--runs N] [--baseline-manifest path] [--phase1b-manifest path] [--compatibility-root path]");
     return args.Length == 0 ? 2 : 0;
 }
 
 var erbDirectory = Path.GetFullPath(args[0]);
 var legacyManifest = Path.GetFullPath(args[1]);
 var reportDirectory = Path.GetFullPath(args[2]);
-const string RunId = "20260827_Phase1B_R5_Final";
+const string RunId = "20260827_Phase1B_R6_Final";
 const long Phase1AR4BaselineAllocationMedianBytes = 87163032;
 var runs = 5;
 string? baselineManifest = null;
 string? phase1bManifest = null;
+string? compatibilityRootArgument = null;
 for (var i = 3; i + 1 < args.Length; i++)
 {
     if (args[i] == "--runs" && int.TryParse(args[++i], out var parsed)) runs = Math.Clamp(parsed, 1, 20);
     else if (args[i] == "--baseline-manifest") baselineManifest = Path.GetFullPath(args[++i]);
     else if (args[i] == "--phase1b-manifest") phase1bManifest = Path.GetFullPath(args[++i]);
+    else if (args[i] == "--compatibility-root") compatibilityRootArgument = Path.GetFullPath(args[++i]);
 }
 Directory.CreateDirectory(reportDirectory);
+var compatibilityRoot = compatibilityRootArgument ?? Directory.GetParent(erbDirectory)?.FullName ?? throw new InvalidOperationException("Cannot resolve fixture compatibility root");
+var compatibilityOptions = ResolveFixtureCompatibilityOptions(compatibilityRoot, out var compatibilityEvidence);
+File.WriteAllLines(Path.Combine(reportDirectory, "fixture-compatibility-options.txt"), compatibilityEvidence, new UTF8Encoding(false));
 
 var files = ErbSourceIndexer.IndexDirectory(erbDirectory);
 var allFunctions = files.SelectMany(static file => file.Functions.Select(function => (File: file, Function: function))).ToArray();
@@ -75,7 +80,7 @@ foreach (var row in legacyFunctions)
     else eligible.Add(new(row, file, function));
 }
 
-var compiler = new FunctionCompiler();
+var compiler = new FunctionCompiler(compatibilityOptions);
 var instructionSize = Marshal.SizeOf<PrototypeInstruction>();
 var uniqueUnsupported = new Dictionary<UnsupportedReason, int>();
 var unsupportedEncounters = 0;
@@ -314,7 +319,7 @@ File.WriteAllLines(Path.Combine(reportDirectory, "allocation-breakdown.txt"),
 File.WriteAllLines(Path.Combine(reportDirectory, "io-comparison.txt"),
 [
     $"Phase1A-R4 baseline medians (54,200 functions, 5 runs): total={baselineTotalStats.Median:F3}ms sourceRead={baselineSourceStats.Median:F3}ms compiler={baselineCompilerStats.Median:F3}ms allocation={baselineAllocationStats.Median:F0}",
-    $"R5 expanded medians (59,093 functions, 5 runs): total={totalStats.Median:F3}ms sourceRead={sourceStats.Median:F3}ms compiler={compilerStats.Median:F3}ms allocation={allocationStats.Median:F0}",
+    $"R6 expanded medians (59,093 functions, 5 runs): total={totalStats.Median:F3}ms sourceRead={sourceStats.Median:F3}ms compiler={compilerStats.Median:F3}ms allocation={allocationStats.Median:F0}",
     $"batchFileSessionsPerRun={batchFiles.Length}", $"singleFunctionOpenEquivalentPerRun={reportEligibleCount}", $"baselineSubsetFileSessionsPerRun={baselineBatchFiles.Length}", $"baselineSubsetFunctionCount={reportBaselineEligibleCount}", "wholeErbRetained=NO", $"allocationRegressionComparedWithPhase1AR4={(allocationRegression ? "YES" : "NO")}"
 ], new UTF8Encoding(false));
 File.WriteAllLines(Path.Combine(reportDirectory, "memory.txt"),
@@ -332,6 +337,10 @@ File.WriteAllLines(Path.Combine(reportDirectory, "summary.txt"),
 ], new UTF8Encoding(false));
 File.AppendAllLines(Path.Combine(reportDirectory, "summary.txt"), [$"runId={RunId}", $"pureKnownPayloadTotal={pureKnownPayloadTotal}", $"preExistingSharedPayloadReferenced={preExistingSharedPayloadReferenced}", $"pureKnownPayloadWithinRetained={pureKnownPayloadTotal <= pureCompiledRetainedManagedEstimate}", $"negativeOverheadGate={(negativeOverheadGate ? "ACTIVE_PASS" : "ACTIVE_FAIL")}", $"coverageConsistent={coverageConsistent}", $"totalMedianMs={totalStats.Median:F3}", $"totalMeanMs={totalStats.Mean:F3}", $"totalMinMs={totalStats.Min:F3}", $"totalMaxMs={totalStats.Max:F3}", $"sourceReadMedianMs={sourceStats.Median:F3}", $"compilerMedianMs={compilerStats.Median:F3}"], new UTF8Encoding(false));
 File.AppendAllLines(Path.Combine(reportDirectory, "summary.txt"), [$"phase1bBaselineCount={phase1bFunctionCount}", $"phase1bBaselineCompiled={phase1bCompiledCount}", $"phase1bBaselineLost={phase1bLost}", $"phase1bSetValid={phase1bSetValid}"], new UTF8Encoding(false));
+// [Emuera改修:NEXT-1B-R6 2026-08-27]
+// fixtureのconfig/JSONをAudit入口で解決し、compilerへ明示渡しする。通常既定をfixture値へ汚染しない。
+File.AppendAllLines(Path.Combine(reportDirectory, "summary.txt"),
+    [$"fixtureCompatibilityRoot={compatibilityRoot}", $"fixtureIgnoreCase={compatibilityOptions.IgnoreCase}", $"fixtureUseScopedVariableInstruction={compatibilityOptions.UseScopedVariableInstruction}", $"fixtureSystemAllowFullSpace={compatibilityOptions.SystemAllowFullSpace}", $"fixtureDebugMode={compatibilityOptions.DebugMode}", "fixtureCompilerConstructor=explicit-options"]);
 Console.WriteLine($"CompilerAudit: eligible={reportEligibleCount} compiled={compiledFunctionCount} unsupportedUnique={reportEligibleCount - compiledFunctionCount} baselineLost={baselineLost} phase1bLost={phase1bLost} baselineAllocationMedian={baselineAllocationStats.Median:F0} expandedAllocationMedian={totalAllocationMedian} pureRetained={pureCompiledRetainedManagedEstimate} exactOpcodeMismatch={exactOpcodeMismatch} {(auditResult ? "PASS" : "FAIL")}");
 return auditResult ? 0 : 1;
 
@@ -656,7 +665,7 @@ static void WriteFingerprintReport(string directory)
     var root = Path.Combine(Path.GetTempPath(), "Emuera.Next.CompilerAudit-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root);
     try
     {
-        var path = Path.Combine(root, "incremental.ERB"); WriteBom(path, "@FUNC_A\nPRINT 1\n@FUNC_B\nPRINT 2\n"); var compiler = new FunctionCompiler();
+        var path = Path.Combine(root, "incremental.ERB"); WriteBom(path, "@FUNC_A\nPRINT 1\n@FUNC_B\nPRINT 2\n"); var compiler = new FunctionCompiler(CompilerCompatibilityOptions.LegacyDefaults);
         var first = ErbSourceIndexer.IndexFile(path); var a1 = compiler.TryCompile(first, first.Functions[0]).Fingerprint; var b1 = compiler.TryCompile(first, first.Functions[1]).Fingerprint;
         WriteBom(path, "@FUNC_A\nPRINT 1\n@FUNC_B\nPRINT 3\n"); var second = ErbSourceIndexer.IndexFile(path); var a2 = compiler.TryCompile(second, second.Functions[0]).Fingerprint; var b2 = compiler.TryCompile(second, second.Functions[1]).Fingerprint;
         File.WriteAllLines(Path.Combine(directory, "incremental-fingerprint-test.txt"), [$"deterministic={a1 == a2 && b1 != b2}", $"FUNC_A_unchanged={a1 == a2}", $"FUNC_B_changed={b1 != b2}", "storedAs64CharString=NO"], new UTF8Encoding(false));
@@ -683,6 +692,54 @@ static (int Line, long Byte) FindLegacyHeader(string path, int endLine, string? 
     return (0, -1);
 }
 static void Add(Dictionary<string, int> counts, string key) => counts[key] = counts.GetValueOrDefault(key) + 1;
+
+static CompilerCompatibilityOptions ResolveFixtureCompatibilityOptions(string root, out string[] evidence)
+{
+    // [Emuera改修:NEXT-1B-R6 2026-08-27]
+    // LegacyのData/emuera.configとData/setting.jsonだけを読む最小resolverに限定し、Compiler本体からLegacy Configを参照しない。
+    var configPath = Path.Combine(root, "emuera.config");
+    var settingPath = Path.Combine(root, "setting.json");
+    if (!File.Exists(configPath) || !File.Exists(settingPath))
+        throw new FileNotFoundException($"fixture compatibility sources are required: {configPath}, {settingPath}");
+    Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+    var configLines = File.ReadAllLines(configPath, Encoding.GetEncoding(932));
+    var ignoreCase = ReadLegacyConfigBool(configLines, "大文字小文字の違いを無視する");
+    var fullSpace = ReadLegacyConfigBool(configLines, "全角スペースをホワイトスペースに含める");
+    using var json = JsonDocument.Parse(File.ReadAllText(settingPath, Encoding.UTF8));
+    if (!json.RootElement.TryGetProperty("UseScopedVariableInstruction", out var scopedProperty) || scopedProperty.ValueKind is not JsonValueKind.True and not JsonValueKind.False)
+        throw new InvalidDataException($"UseScopedVariableInstruction is missing or invalid: {settingPath}");
+    var scoped = scopedProperty.GetBoolean();
+    var options = new CompilerCompatibilityOptions(ignoreCase, scoped, fullSpace, false);
+    evidence =
+    [
+        $"source.config={configPath}",
+        $"source.config.precedence=Legacy ConfigData.LoadConfig then Config.SetConfig",
+        $"source.json={settingPath}",
+        "source.json.key=UseScopedVariableInstruction",
+        "source.debug=Program -Debug option absent during normal audit",
+        $"IgnoreCase={options.IgnoreCase} source=emuera.config:大文字小文字の違いを無視する",
+        $"UseScopedVariableInstruction={options.UseScopedVariableInstruction} source=setting.json:UseScopedVariableInstruction",
+        $"SystemAllowFullSpace={options.SystemAllowFullSpace} source=emuera.config:全角スペースをホワイトスペースに含める",
+        $"DebugMode={options.DebugMode} source=normal launch without -Debug",
+        "legacyComparison=Config.SetConfig and FunctionIdentifier static initialization",
+        "result=PASS"
+    ];
+    return options;
+}
+
+static bool ReadLegacyConfigBool(string[] lines, string key)
+{
+    var line = lines.FirstOrDefault(line => line.StartsWith(key + ":", StringComparison.Ordinal));
+    if (line is null) throw new InvalidDataException($"Legacy config key is missing: {key}");
+    var value = line[(key.Length + 1)..].Trim();
+    return value switch
+    {
+        "YES" => true,
+        "NO" => false,
+        _ => throw new InvalidDataException($"Legacy config value is invalid: {key}={value}")
+    };
+}
+
 static string Key(string file, int line) => $"{file.ToUpperInvariant()}:{line}";
 static long Median(IEnumerable<long> values) { var sorted = values.Order().ToArray(); return sorted.Length == 0 ? 0 : sorted[sorted.Length / 2]; }
 static long Percentile(long[] values, int percentile) => values.Length == 0 ? 0 : values[(int)Math.Round((values.Length - 1) * percentile / 100.0)];

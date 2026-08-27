@@ -100,3 +100,29 @@ R3のstatement 275件だけでなく、Legacyが実際に行頭lookupする全45
 Run IDは`20260827_Phase1B_R5_Final`。4構成のLegacy oracleでA=456、B=275、C=181、A=B∪C、B∩C=0、statement map−B=0、map∩C=0を確認しました。`SET`は行頭statement mapから分離し、構造的に確認した代入だけで生成します。識別子delimiter、separator、`//`、SystemAllowFullSpace、複雑lvalue、source spanをLegacy実測と照合し、CompilerSelfTestは80/80です。
 
 実fixtureのeligibleは59,435、compiledは59,093、remaining unsupportedは342、errorsは0。54,200件baselineのlostは0、命令数・順序・exact opcode差分は0です。expanded 5-run中央値はtotal 1,858.849 ms、allocation 119,904,656 bytes、pure retainedは独立3回すべて8,703,552 bytesです。fixture変更はNew 0 / Changed 0 / Deleted 0、fullwidth-space実例は37件です。`Phase1BDecision=COMPLETE`。VM、Expression/Format IR、Phase 1Cは開始しません。
+
+<!-- BEGIN NEXT-1B-R6 METRICS -->
+RunId=20260827_Phase1B_R6_Final
+Phase1BDecision=COMPLETE
+LegacyDefaults.IgnoreCase=True
+LegacyDefaults.UseScopedVariableInstruction=False
+LegacyDefaults.SystemAllowFullSpace=True
+LegacyDefaults.DebugMode=False
+fixture.IgnoreCase=True source=Data/emuera.config
+fixture.UseScopedVariableInstruction=True source=Data/setting.json
+fixture.SystemAllowFullSpace=True source=Data/emuera.config
+fixture.DebugMode=False source=normal launch without -Debug
+matrix.ic-true-scoped-true.A=456 B=275 C=181 unionPass=True intersectionCount=0 mapMinusB=0 mapIntersectionC=0 behaviorMismatches=0
+matrix.ic-true-scoped-false.A=454 B=273 C=181 unionPass=True intersectionCount=0 mapMinusB=0 mapIntersectionC=0 behaviorMismatches=0
+matrix.ic-false-scoped-true.A=456 B=275 C=181 unionPass=True intersectionCount=0 mapMinusB=0 mapIntersectionC=0 behaviorMismatches=0
+matrix.ic-false-scoped-false.A=454 B=273 C=181 unionPass=True intersectionCount=0 mapMinusB=0 mapIntersectionC=0 behaviorMismatches=0
+debug.false=exact compiled count=1/1 silentDropped=0
+debug.true=fallback Unsupported for ;#; count=4/4 silentDropped=0
+eligible=59435 compiled=59093 remainingUnsupported=342 compilerErrors=0 baselineLost=0
+baselineInstructionCountMismatch=0 baselineInstructionOrderMismatch=0 baselineExactOpcodeMismatch=0
+expandedInstructionCountMismatch=0 expandedInstructionOrderMismatch=0 expandedExactOpcodeMismatch=0
+performance.runs=5 performance.totalMedianMs=1964.231 performance.sourceReadMedianMs=1058.747 performance.compilerMedianMs=93.265 performance.allocationMedianBytes=119904656
+pureRetained.runs=3 values=8703552,8703552,8703552 median=8703552 valid=True
+fixtureMutation.New=0 Changed=0 Deleted=0
+semanticVerifier=PASS mutationTests=4/4
+<!-- END NEXT-1B-R6 METRICS -->

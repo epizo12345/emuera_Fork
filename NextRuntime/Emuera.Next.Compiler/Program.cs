@@ -45,17 +45,19 @@ static int SelfTest()
         tests.Add(("CALL and TRYCALL distinct", () => Assert(LegacyOpcodeMap.TryMap("CALL", out var call) && LegacyOpcodeMap.TryMap("TRYCALL", out var tryCall) && call != tryCall)));
         tests.Add(("PRINT and PRINTC distinct", () => Assert(LegacyOpcodeMap.TryMap("PRINT", out var print) && LegacyOpcodeMap.TryMap("PRINTC", out var printC) && print != printC)));
         tests.Add(("Phase 1B exact opcode additions", () => Assert(LegacyOpcodeMap.TryMap("RESETCOLOR", out var resetColor) && resetColor == PrototypeOpcode.RESETCOLOR && LegacyOpcodeMap.TryMap("CUSTOMDRAWLINE", out var customDrawLine) && customDrawLine == PrototypeOpcode.CUSTOMDRAWLINE && LegacyOpcodeMap.TryMap("SETCOLOR", out var setColor) && setColor == PrototypeOpcode.SETCOLOR && LegacyOpcodeMap.TryMap("SETFONT", out var setFont) && setFont == PrototypeOpcode.SETFONT)));
-        tests.Add(("R5 statement map excludes SET", () => Assert(!LegacyOpcodeMap.SupportedStatementIdentifierNames.Contains("SET", StringComparer.OrdinalIgnoreCase) && !LegacyOpcodeMap.TryMapStatementIdentifier("SET", CompilerCompatibilityOptions.Default, out _))));
+        tests.Add(("R5 statement map excludes SET", () => Assert(!LegacyOpcodeMap.SupportedStatementIdentifierNames.Contains("SET", StringComparer.OrdinalIgnoreCase) && !LegacyOpcodeMap.TryMapStatementIdentifier("SET", CompilerCompatibilityOptions.LegacyDefaults, out _))));
         tests.Add(("R5 statement map is a subset of B", () =>
         {
-            var options = CompilerCompatibilityOptions.Default;
+            var options = CompilerCompatibilityOptions.LegacyDefaults;
             var b = LegacyOpcodeMap.GetSupportedStatementIdentifierNames(options).ToHashSet(options.NameComparer);
             var map = LegacyOpcodeMap.SupportedStatementIdentifierNames.ToHashSet(options.NameComparer);
             var c = LegacyOpcodeMap.MethodBackedLineHeadNames.ToHashSet(options.NameComparer);
             Assert(map.Except(b, options.NameComparer).Count() == 0 && map.Intersect(c, options.NameComparer).Count() == 0);
         }));
         tests.Add(("SET token is assignment-only", () => Assert(CompileLine("SET = 1").Status == CompileStatus.Compiled && CompileLine("SET += 1").Function!.Instructions.Single().Opcode == PrototypeOpcode.SET)));
-        tests.Add(("R5 default compatibility options are enabled", () => Assert(compiler.Options == CompilerCompatibilityOptions.Default)));
+        // [Emuera改修:NEXT-1B-R6 2026-08-27]
+        tests.Add(("R6 LegacyDefaults match normal startup", () => Assert(compiler.Options.IgnoreCase && !compiler.Options.UseScopedVariableInstruction && compiler.Options.SystemAllowFullSpace && !compiler.Options.DebugMode)));
+        tests.Add(("R6 Debug ;#; is never silently dropped", () => Assert(CompileLine(";#;PRINTL X", new CompilerCompatibilityOptions(true, false, true, true)).Status == CompileStatus.Unsupported && CompileLine(";#;PRINTL X", CompilerCompatibilityOptions.LegacyDefaults).Status == CompileStatus.Compiled)));
         tests.Add(("R5 Legacy // comment syntax remains unsupported", () => Assert(CompileLine("// comment").Status != CompileStatus.Compiled)));
         tests.Add(("instruction payload is 16 bytes", () => Assert(System.Runtime.InteropServices.Marshal.SizeOf<PrototypeInstruction>() == 16)));
         tests.Add(("source lines", () => Assert(compiler.TryCompile(indexed, function).Function!.Instructions[0].SourceLine == 2)));
@@ -110,7 +112,7 @@ static int SelfTest()
                 var rows = ReadJsonLines<LexicalOracle>(lexicalCorpusPath);
                 var mismatches = rows.Where(row =>
                 {
-                    var next = LegacyIdentifierScanner.ReadFirstIdentifier(row.Input, CompilerCompatibilityOptions.Default);
+                    var next = LegacyIdentifierScanner.ReadFirstIdentifier(row.Input, CompilerCompatibilityOptions.LegacyDefaults);
                     return next.Identifier != row.Identifier || next.StopPosition != row.StopPosition;
                 }).ToArray();
                 WriteReport(lexicalReportPath, ["source=Legacy LexicalAnalyzer.ReadFirstIdentifier corpus", $"cases={rows.Length}", $"mismatches={mismatches.Length}", .. mismatches.Select(static row => $"mismatch={row.Name}:{row.Identifier}:{row.StopPosition}")]);
@@ -140,7 +142,7 @@ static int SelfTest()
                 {
                     var ignoreCase = name.Contains("ic-true", StringComparison.Ordinal);
                     var scoped = name.Contains("scoped-true", StringComparison.Ordinal);
-                    var options = new CompilerCompatibilityOptions(ignoreCase, scoped, true);
+                    var options = new CompilerCompatibilityOptions(ignoreCase, scoped, true, false);
                     var dir = Path.Combine(matrixRoot, name);
                     var actualA = ReadOracleNames(Path.Combine(dir, "legacy-line-head-names.txt"));
                     var actualB = ReadOracleNames(Path.Combine(dir, "legacy-instruction-names.txt"));
@@ -185,12 +187,51 @@ static int SelfTest()
                 {
                     var rows = ReadJsonLines<SeparatorOracle>(Path.Combine(fullspaceRoot, enabled ? "fullspace-true" : "fullspace-false", "command-separator.jsonl"));
                     var oracle = rows.Single(row => row.Name == "U+3000");
-                    var result = CompileLine(oracle.Input, new CompilerCompatibilityOptions(true, true, enabled));
+                    var result = CompileLine(oracle.Input, new CompilerCompatibilityOptions(true, true, enabled, false));
                     var pass = (result.Status == CompileStatus.Compiled) != oracle.IsError;
                     report.Add($"SystemAllowFullSpace={enabled} oracleIsError={oracle.IsError} nextCompiled={result.Status == CompileStatus.Compiled} pass={pass}");
                     Assert(pass, $"fullspace failed: {enabled}");
                 }
                 WriteReport(fullspaceReportPath, report);
+            }));
+        }
+        // [Emuera改修:NEXT-1B-R6 2026-08-27]
+        var debugFalseCorpusPath = Environment.GetEnvironmentVariable("EMUERA_DEBUG_FALSE_CORPUS");
+        var debugTrueCorpusPath = Environment.GetEnvironmentVariable("EMUERA_DEBUG_TRUE_CORPUS");
+        var debugReportPath = Environment.GetEnvironmentVariable("EMUERA_DEBUG_REPORT");
+        if (!string.IsNullOrWhiteSpace(debugFalseCorpusPath) && !string.IsNullOrWhiteSpace(debugTrueCorpusPath) && File.Exists(debugFalseCorpusPath) && File.Exists(debugTrueCorpusPath))
+        {
+            tests.Add(("R6 DebugMode ;#; oracle and silent-drop gate", () =>
+            {
+                var falseRows = ReadJsonLines<DebugOracle>(debugFalseCorpusPath);
+                var trueRows = ReadJsonLines<DebugOracle>(debugTrueCorpusPath);
+                var report = new List<string> { "source=two independent Legacy processes; DebugMode false/true", $"casesFalse={falseRows.Length}", $"casesTrue={trueRows.Length}" };
+                var mismatches = 0;
+                var silentDropped = 0;
+                foreach (var expectedFalse in falseRows)
+                {
+                    var result = CompileLine(expectedFalse.Input, new CompilerCompatibilityOptions(true, false, true, false));
+                    var count = result.Function?.Instructions.Length ?? 0;
+                    var pass = count == expectedFalse.InstructionCount && (expectedFalse.InstructionCount == 0 ? result.Status == CompileStatus.Compiled : result.Status == CompileStatus.Compiled);
+                    if (!pass) mismatches++;
+                    report.Add($"debug=false name={expectedFalse.Name} legacyCount={expectedFalse.InstructionCount} nextStatus={result.Status} nextCount={count} pass={pass}");
+                }
+                foreach (var expectedTrue in trueRows)
+                {
+                    var result = CompileLine(expectedTrue.Input, new CompilerCompatibilityOptions(true, false, true, true));
+                    var count = result.Function?.Instructions.Length ?? 0;
+                    var fallback = expectedTrue.InstructionCount > 0 && result.Status == CompileStatus.Unsupported;
+                    var exact = result.Status == CompileStatus.Compiled && count == expectedTrue.InstructionCount;
+                    var pass = fallback || exact;
+                    if (!pass) mismatches++;
+                    if (expectedTrue.InstructionCount > 0 && result.Status == CompileStatus.Compiled && count == 0) silentDropped++;
+                    report.Add($"debug=true name={expectedTrue.Name} legacyCount={expectedTrue.InstructionCount} legacyOpcode={expectedTrue.FunctionCode ?? "<none>"} nextStatus={result.Status} nextCount={count} fallback={fallback} pass={pass}");
+                }
+                report.Add($"silentDroppedInstructionCount={silentDropped}");
+                report.Add($"mismatches={mismatches}");
+                report.Add($"result={mismatches == 0 && silentDropped == 0}");
+                WriteReport(debugReportPath, report);
+                Assert(mismatches == 0 && silentDropped == 0);
             }));
         }
         if (!string.IsNullOrWhiteSpace(legacyLineHeadPath) && !string.IsNullOrWhiteSpace(legacyStatementPath) && !string.IsNullOrWhiteSpace(legacyMethodPath) &&
@@ -381,3 +422,4 @@ static int SelfTest()
 readonly record struct SetDiff(string[] Missing, string[] Extra);
 readonly record struct LexicalOracle(string Name, string Input, string Identifier, int StopPosition);
 readonly record struct SeparatorOracle(string Name, string Input, string Kind, bool IsError, string? FunctionCode);
+readonly record struct DebugOracle(string Name, string Input, bool DebugMode, string? Kind, bool IsError, string FirstIdentifier, int InstructionCount, string? FunctionCode, int SourceLine, int OperandOffset, int OperandLength);
