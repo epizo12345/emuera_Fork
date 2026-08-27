@@ -269,20 +269,22 @@ fixture.New=0 Changed=0 Deleted=0
 
 
 
-### Phase 1C-R2: Final Evidence Closure
 
-EvidenceRunId=20260827_Phase1C_R2_Final
-CompilerAuditRunId=20260827_Phase1C_Final
+### Phase 1C-R3: Final Evidence Replay Closure
+
+EvidenceClosureRunId=20260827_Phase1C_R3_Final
+MeasurementRunId=20260827_Phase1C_R2_Final
+EvidenceClosureStartHead=7583926185aa4c30bc2361e67de4e7134af75641
+MeasurementStartHead=473ec72c812fd7356c65e5f4ee3d22f21b1c5cbf
 ProductionCompilerChanged=NO
 Phase1CDecision=COMPLETE
 Phase1CompilerStatus=COMPLETE_FOR_SCOPED_BOUNDARY
-Coverage=59093 -> 59103 compiled (+10); remainingUnsupported=332; compilerErrors=0
-AddedOpcodes=RESET_STAIN,VARSET,ALIGNMENT,ARRAYSHIFT,SPLIT; existing opcode IDs unchanged; append-only; PrototypeInstruction=16 bytes
-UnsupportedPrimary=MethodBacked 30; DynamicCall 289; FlowControl 3; AssignmentExpression 10; FrontendCompatibility 0; Unknown 0; AllCategoriesUnknown=0; secondary owner verification=PASS
-Differential counters=0; assignmentFalsePositive=0; realFixture PASS; fiveOpcodeLegacyExact PASS; matrix 4/4; debug silentDropped=0
-R2 raw performance: expanded total=2082.551 ms; sourceRead=1129.214 ms; compiler=96.101 ms; allocation=120035704 bytes; baseline total=2117.106 ms; allocation=118911944 bytes
-R2 raw retained: values=8717168,8717168,8717168; median=8717168; knownPayload=6842960; overhead=1874208; valid=3/3
-Fresh fixture: before/after fileCount=20103/20103; manifestSHA before=7ca75ad502d8669589037c59c4818bac63534646e283b389e5f72971a43ef194, after=7ca75ad502d8669589037c59c4818bac63534646e283b389e5f72971a43ef194; New/Changed/Deleted=0/0/0
-Compiler SelfTest provenance: executed=81 passed=81 failed=0; required named gates all PASS
-Core=52/52; Differential PASS; mutation=14/14 FalsePass=0
-R2 fixes evidence provenance/third-party reconstruction only; Production semantics and coverage unchanged. VM, Method/Expression IR, cache, Host/UI, and Phase 2 remain NOT_STARTED.
+Phase1Status=COMPLETE
+R2 raw replay coverage: eligible=59435; compiled=59103; remaining=332; errors=0; baseline=59093; baselineLost=0; delta=+10; unexpectedNewlyCompiled=0; instructionCount=191273
+AddedOpcodes=RESET_STAIN,VARSET,ALIGNMENT,ARRAYSHIFT,SPLIT; existing IDs unchanged; append-only; PrototypeInstruction=16 bytes
+Owner replay: MethodBacked 30; DynamicCall 289; FlowControl 3; AssignmentExpression 10; FrontendCompatibility 0; PrimaryUnknown=0; AllCategoriesUnknown=0
+R2 raw replay performance: baseline total=2117.106 ms; sourceRead=1131.082 ms; compiler=103.482 ms; allocation=118911944 bytes; expanded total=2082.551 ms; sourceRead=1129.214 ms; compiler=96.101 ms; allocation=120035704 bytes; expandedInstructionCount=191273
+R2 raw replay retained: values=8717168,8717168,8717168; median=8717168; knownPayload=6842960; overhead=1874208; valid=3/3
+Measurement fixture evidence=R2 (R3 did not create a fresh fixture): before/after=20103/20103; New/Changed/Deleted=0/0/0; manifestSHA=7ca75ad502d8669589037c59c4818bac63534646e283b389e5f72971a43ef194
+Tests replay: Core=52/52; Compiler=81/81; required named gates=PASS; Differential=PASS; oracle=5/5; matrix=4/4; Debug PASS silentDropped=0
+R3 independently reaggregated immutable R2 raw evidence; no Production semantics, coverage, performance measurement, or retained measurement was changed.
