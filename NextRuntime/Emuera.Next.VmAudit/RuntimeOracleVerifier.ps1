@@ -16,7 +16,7 @@ function Utf8Body([string]$path) {
     try { [Text.UTF8Encoding]::new($true,$true).GetString($bytes,3,$bytes.Length-3) } catch { ErrorTag 'BodyDecodeFailure'; '' }
 }
 function Lines([string]$text) { ($text -replace "`r`n", "`n" -replace "`r", "`n") -split "`n" }
-function Normalize([string]$text, [switch]$SentinelOnly) {
+function Normalize([string]$text, [switch]$SentinelOnly, [switch]$WholeText) {
     $all = Lines $text
     if ($SentinelOnly) {
         $begin = [Array]::FindIndex($all, [Predicate[string]]{ param($line) $line -match '^ORACLE_BEGIN_[0-9]+$' })
@@ -101,11 +101,16 @@ else {
         foreach ($runName in @('discovery','verify-1','verify-2')) {
             $run=Join-Path $caseRoot $runName; $log=Join-Path $run 'startup-test.log'; if (-not (Test-Path $log)) { ErrorTag 'ProcessEvidenceMissing'; continue }
             $text=[IO.File]::ReadAllText($log); $n=Normalize $text -SentinelOnly; $normalized += $n
-            if (([regex]::Matches($text,"(?m)^ORACLE_BEGIN_$($row.Case.Substring(0,2))\s*$")).Count -ne 1 -or ([regex]::Matches($text,"(?m)^ORACLE_END_$($row.Case.Substring(0,2))\s*$")).Count -ne 1) { ErrorTag 'SentinelCountMismatch' }
+            $lines=Lines $text;$beg=@($lines|?{$_ -match "^ORACLE_BEGIN_$($row.Case.Substring(0,2))$"});$end=@($lines|?{$_ -match "^ORACLE_END_$($row.Case.Substring(0,2))$"});$bi=[Array]::IndexOf($lines,$beg[0]);$ei=[Array]::IndexOf($lines,$end[0]);
+            if ($beg.Count -ne 1 -or $end.Count -ne 1 -or $bi -ge $ei) { ErrorTag 'SentinelCountMismatch' }
             $saved=Get-Content (Join-Path $caseRoot ("normalized-$runName.txt")) -Raw -ErrorAction SilentlyContinue
             if ($null -eq $saved -or $saved -ne $n) { ErrorTag "NormalizedMismatch:$($row.Case):$runName" }
             $before=(Get-Content (Join-Path $run 'state-before.txt') | Select-Object -First 1) -replace '^Hash=',''; if ($before -ne $pristine) { ErrorTag 'InitialStateMismatch' }
             if (-not (Test-Path (Join-Path $run 'stdout.txt')) -or -not (Test-Path (Join-Path $run 'stderr.txt')) -or -not (Test-Path (Join-Path $run 'process-result.txt'))) { ErrorTag 'ProcessEvidenceMissing' }
+            $pr=Get-Content (Join-Path $run 'process-result.txt') -Raw -ErrorAction SilentlyContinue;$st=Get-Content (Join-Path $run 'status.txt') -Raw -ErrorAction SilentlyContinue
+            if($pr -notmatch '(?m)^ExitCode=0\r?$' -or $pr -notmatch '(?m)^TimedOut=False\r?$'){ErrorTag 'ProcessResultMismatch'}
+            if($st -notmatch '(?m)^begin=1\r?$' -or $st -notmatch '(?m)^end=1\r?$' -or $st -notmatch '(?m)^fatal=0\r?$'){ErrorTag 'StatusMismatch'}
+            $or=Get-Content (Join-Path $caseRoot 'oracle-result.txt') -Raw -ErrorAction SilentlyContinue;if($or -notmatch 'OracleSource=LegacyRuntimeMeasured' -or $or -notmatch 'Deterministic=True' -or $or -notmatch 'BehaviorObserved=True' -or $or -notmatch 'NextRuntimeBehaviorMatch=NOT_CLAIMED'){ErrorTag 'OracleResultMismatch'}
         }
         if ($normalized.Count -eq 3 -and ($normalized[0] -ne $normalized[1] -or $normalized[0] -ne $normalized[2])) { ErrorTag 'NonDeterministic' }
     }

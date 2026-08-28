@@ -349,3 +349,6 @@ Phase1 compilerのSourceFunctionId=59103はruntimeへ59103件remapし、missing/
 ### Phase 2A-R4 closure
 
 R4は最終境界と証跡のclosureである。`VmInstruction.Call/Jump`と`VmMachine.Run`は`RuntimeFunctionId`のみ、obsolete `SemanticFunctionKey`/`SemanticFunctionMetadata`/`FromSourceIndex`は存在しない。fresh raw audit、24-case Legacy oracle、SemanticVerifier、46 mutation cases、fixture before/after、Phase1C-R2 byte-exact manifestを検証した。NextRuntime実行一致は`NOT_CLAIMED`、real `ExecutableReady=0`、Phase2B/Phase3=NOT_STARTED。R3 performance/retained rawはimmutable replayでありR4 fresh measurementとは呼ばない。
+## Phase 2A-R4-R1 最終証跡（2026-08-28）
+
+R4のProduction成果とLegacy raw oracle測定は採用維持。R4 reviewでformal closureをHOLDにしていたVerifier/mutation evidence defectを修正し、ActualMisbound=0とOrdinalWouldMisbind=2を分離、実プロセス出力を伴うmutation matrixを再構成した。全Gate PASS時のPhase2A決定はCOMPLETE（`COMPLETE_IDENTITY_AND_LEGACY_ORACLE`）。Next runtime behavior matchは未主張、real executable readinessは0であり、いずれもPhase2Aの境界条件である。Phase2B/Phase3は未開始。R1-R3の履歴記述は保持する。

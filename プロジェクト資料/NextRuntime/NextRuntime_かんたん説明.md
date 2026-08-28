@@ -226,3 +226,6 @@ Runtime-only 3件は名前解決可能だがsource定義・codeはなく、`Code
 ### Phase 2A-R4
 
 最終証跡を閉じた。SourceFunctionId/RuntimeFunctionIdをtyped APIで分離し、旧ordinal overlay APIを削除。fresh auditは134652/134652、exact 134649、source/runtime-only 3/3、compiled 59103、linked instructions 191273、CALL/JUMP 12254/15、resolved 12269。Legacy oracleは24ケースを3回ずつ再生し24/24 deterministic、mutationは46ケースを検証する。NextRuntimeとのbehavior一致は未主張、real ExecutableReady=0、Phase2B/Phase3=NOT_STARTED。性能値はR3 immutable raw replayとして扱う。
+## Phase 2A-R4-R1（2026-08-28）
+
+R4のProduction実装とLegacy raw oracleはPASS。Chat reviewで判明したVerifierのMisbound/Ordinal混同とmutation証跡の不備をR4-R1で修正し、raw stdout/stderr/exitを保存した最終証跡を作成した。Phase 2AはFunctionId identity・control/link skeleton・Legacy oracleの範囲でCOMPLETE。`NextRuntimeBehaviorMatch=NOT_CLAIMED` と `ExecutableReadyReal=0` は後続フェーズの責務であり、HOLD理由ではない。Phase 2B/3は未開始。過去のR1-R3 HOLD記録は変更しない。
