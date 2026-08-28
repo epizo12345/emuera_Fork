@@ -79,7 +79,7 @@ function StaticContract([string]$case,[string]$body) {
         '24-same-function-reentrant-control' { (Has $body '(?m)^@R3_24_SELF, R3_24_DEPTH, R3_24_STEP\s*$') -and ([regex]::Matches($body,'(?m)^FOR\b')).Count -eq 1 -and (Has $body 'FOR LOCAL, 0, 10, R3_24_STEP') -and (Has $body 'CALL R3_24_SELF, 2, 5') -and (Has $body '(?m)^BREAK\s*$') }
         default { $true }
     }
-    if (-not $ok) { ErrorTag $(if ($case -eq '01-empty-callee-fallthrough') {'Case01NotEmpty'} elseif ($case -eq '24-same-function-reentrant-control') {'Case24NotSameFunctionRecursive'} else {"StaticContractFailure:$case"}) }
+    if (-not $ok) { ErrorTag $(if ($case -eq '01-empty-callee-fallthrough') {'Case01NotEmpty'} elseif ($case -eq '24-same-function-reentrant-control') {'Case24NotSameFunctionRecursive'} else {'StaticContract'}) }
     return $ok
 }
 
@@ -87,15 +87,29 @@ if (-not (Test-Path $manifestPath)) { ErrorTag 'ManifestMissing' }
 else {
     $rows = @(Import-Csv -Delimiter "`t" $manifestPath)
     if ($rows.Count -ne 24) { ErrorTag 'CaseCountMismatch' }
+    # Precompute actual-body duplicate groups so an exact duplicate is classified by the
+    # primary invariant (DuplicateBodySha), not by mechanically derived hash/signature tags.
+    $bodyHashCounts=@{}
+    foreach($preRow in $rows){
+        $preBodyPath=Join-Path (Join-Path (Join-Path $runtime 'cases') $preRow.Case) 'case-body.erb'
+        if(Test-Path -LiteralPath $preBodyPath){
+            $preSha=(Get-FileHash -LiteralPath $preBodyPath -Algorithm SHA256).Hash.ToLowerInvariant()
+            if($bodyHashCounts.ContainsKey($preSha)){$bodyHashCounts[$preSha]++}else{$bodyHashCounts[$preSha]=1}
+        }
+    }
+    $duplicateBodyHashes=@($bodyHashCounts.Keys|Where-Object{$bodyHashCounts[$_] -gt 1})
     $bodyHashes = @(); $behaviorHashes=@()
     foreach ($row in $rows) {
         $caseRoot=Join-Path (Join-Path $runtime 'cases') $row.Case; $bodyPath=Join-Path $caseRoot 'case-body.erb'
         if (-not (Test-Path $bodyPath)) { ErrorTag 'CaseBodyMissing'; continue }
         $body=Utf8Body $bodyPath; $bodySha=(Get-FileHash $bodyPath -Algorithm SHA256).Hash.ToLowerInvariant(); $behavior=Sha (Normalize $body -WholeText)
         $bodyHashes += $bodySha; $behaviorHashes += $behavior
-        if ($bodySha -ne $row.BodySha256 -or $bodySha -ne (Get-Content (Join-Path $caseRoot 'source-sha256.txt') -Raw).Trim()) { ErrorTag 'BodyShaMismatch' }
-        if ($behavior -ne $row.BehaviorSignatureSha256 -or $behavior -ne (Get-Content (Join-Path $caseRoot 'behavior-signature.txt') -Raw).Trim()) { ErrorTag 'BehaviorSignatureMismatch' }
-        if (-not (StaticContract $row.Case $body)) { }
+        $staticOk=StaticContract $row.Case $body
+        $bodyIsDuplicate=($duplicateBodyHashes -contains $bodySha)
+        if ($staticOk -and -not $bodyIsDuplicate) {
+            if ($bodySha -ne $row.BodySha256 -or $bodySha -ne (Get-Content (Join-Path $caseRoot 'source-sha256.txt') -Raw).Trim()) { ErrorTag 'BodyShaMismatch' }
+            if ($behavior -ne $row.BehaviorSignatureSha256 -or $behavior -ne (Get-Content (Join-Path $caseRoot 'behavior-signature.txt') -Raw).Trim()) { ErrorTag 'BehaviorSignatureMismatch' }
+        }
         $pristine=(Get-Content (Join-Path $caseRoot 'pristine-state.txt') | Select-Object -First 1) -replace '^Hash=',''
         $normalized=@()
         foreach ($runName in @('discovery','verify-1','verify-2')) {
@@ -108,17 +122,19 @@ else {
             $before=(Get-Content (Join-Path $run 'state-before.txt') | Select-Object -First 1) -replace '^Hash=',''; if ($before -ne $pristine) { ErrorTag 'InitialStateMismatch' }
             if (-not (Test-Path (Join-Path $run 'stdout.txt')) -or -not (Test-Path (Join-Path $run 'stderr.txt')) -or -not (Test-Path (Join-Path $run 'process-result.txt'))) { ErrorTag 'ProcessEvidenceMissing' }
             $pr=Get-Content (Join-Path $run 'process-result.txt') -Raw -ErrorAction SilentlyContinue;$st=Get-Content (Join-Path $run 'status.txt') -Raw -ErrorAction SilentlyContinue
-            if($pr -notmatch '(?m)^ExitCode=0\r?$' -or $pr -notmatch '(?m)^TimedOut=False\r?$'){ErrorTag 'ProcessResultMismatch'}
+            if($pr -notmatch '(?m)^ExitCode=0\r?$' -or $pr -notmatch '(?m)^TimedOut=False\r?$'){ErrorTag 'ProcessExit'}
             if($st -notmatch '(?m)^begin=1\r?$' -or $st -notmatch '(?m)^end=1\r?$' -or $st -notmatch '(?m)^fatal=0\r?$'){ErrorTag 'StatusMismatch'}
             $or=Get-Content (Join-Path $caseRoot 'oracle-result.txt') -Raw -ErrorAction SilentlyContinue;if($or -notmatch 'OracleSource=LegacyRuntimeMeasured' -or $or -notmatch 'Deterministic=True' -or $or -notmatch 'BehaviorObserved=True' -or $or -notmatch 'NextRuntimeBehaviorMatch=NOT_CLAIMED'){ErrorTag 'OracleResultMismatch'}
         }
         if ($normalized.Count -eq 3 -and ($normalized[0] -ne $normalized[1] -or $normalized[0] -ne $normalized[2])) { ErrorTag 'NonDeterministic' }
     }
-    if (@($bodyHashes | Sort-Object -Unique).Count -ne 24) { ErrorTag 'DuplicateBodySha' }
-    if (@($behaviorHashes | Sort-Object -Unique).Count -ne 24) { ErrorTag 'DuplicateBehaviorSignature' }
+    if ($duplicateBodyHashes.Count -gt 0) { ErrorTag 'DuplicateBodySha' }
+    # Exact body duplication necessarily duplicates the normalized behavior signature too;
+    # report only the primary duplicate-body invariant in that case.
+    if ($duplicateBodyHashes.Count -eq 0 -and @($behaviorHashes | Sort-Object -Unique).Count -ne 24) { ErrorTag 'DuplicateBehaviorSignature' }
 }
 $status = if ($errors.Count -eq 0) { 'PASS' } else { 'FAIL' }
-$lines=@("RuntimeOracleVerifier=$status", "Cases=24", "Errors=$($errors.Count)", "ErrorTags=$($errors -join ',')")
+$lines=@("Verifier=RuntimeOracleVerifier", "Result=$status", "RuntimeOracleVerifier=$status", "Cases=24", "Errors=$($errors.Count)", "ErrorTags=$($errors -join ',')")
 if ($ResultPath) { [IO.File]::WriteAllLines($ResultPath,$lines,[Text.UTF8Encoding]::new($false)) }
 $lines | ForEach-Object { Write-Output $_ }
 if ($errors.Count -gt 0) { exit 1 } else { exit 0 }
