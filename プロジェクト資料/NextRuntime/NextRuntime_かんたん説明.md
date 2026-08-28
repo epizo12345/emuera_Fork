@@ -216,3 +216,9 @@ loopのBREAK/CONTINUEはOpenFrameごとの専用record index listで所有し、
 実測はPhase1基準値を再現したが、raw manifestではSourceIndex側のpreprocessor定義3件とLegacy側のinline-brace定義3件がfile単位で異なる。したがってExactPhysicalStartLineMatch=134649、KnownPositionResidual=3、ordinal identity missing/extra=3/3、EffectiveNameUnknown=3を明示し、physical name fallbackは行っていない。retainedは9/9 valid、mutationは24/24検出、性能は5-run直接計測である。
 
 runtime fixtureはreal CSVをData/csvへコピーして16ケースを起動し、全ケースでsentinel付きstartup-test.logとtime.logを得た。ただし同一minimal SYSTEM_TITLEの起動確認であり、loop/reentrant/implicit-returnの挙動oracleは未確定である。このためR2判定はHOLD、Phase2B/Phase3は未開始。
+
+### Phase 2A-R3（現行）
+
+physical sourceのIDは`SourceFunctionId`、Legacy runtime catalogのIDは`RuntimeFunctionId`であり、同じ整数を暗黙に使わない。fresh値はSource/Runtime=134652/134652、exact=134649、physical-only/runtime-only=3/3、unexplained=0/0、misbound=0、ordinal誤結合証拠=2、runtime EffectiveNameUnknown=0。59103 compiled sourceは59103 runtimeへ完全remap（missing/duplicate=0/0）。
+
+Runtime-only 3件は名前解決可能だがsource定義・codeはなく、`CodeNotAvailable`。Legacy manifestは検証専用でProduction依存ではない。Legacy実行oracleは24 distinct cases（Discovery+verify1+verify2）をCAPTURED、deterministic=24/24。reentrant FOR/REPEATは同一関数の同一loop行へのrecursive CALL、JUMP propagationも実測した。Next挙動一致は未主張、real ExecutableReady=0、Phase2B/3=NOT_STARTED。

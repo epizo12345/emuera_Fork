@@ -178,10 +178,13 @@ var baselineCompilerStats = Stats(baselineBenchmark.Select(static row => row.Com
 var baselineAllocationStats = Stats(baselineBenchmark.Select(static row => (double)row.TotalAllocatedBytes));
 // Phase 1Cの性能gateは同一runのbaseline subsetとexpandedを比較する。過去phaseの環境値はgateに使わない。
 var allocationRegression = baselineKeys is not null && totalAllocationMedian > baselineAllocationStats.Median * 1.10;
-var baselineFunctionCount = baselineKeys?.Count ?? 0;
-var baselineCompiledCount = baselineKeys is null ? 0 : compiledByKey.Keys.Count(baselineKeys.Contains);
-var baselineLost = baselineKeys is null ? -1 : baselineFunctionCount - baselineCompiledCount;
-var baselineSetValid = baselineKeys is not null && baselineLost == 0;
+// [Emuera改修:NEXT-2A-R3 2026-08-28]
+// R3のbaseline artifactは比較対象を明示しないため、expanded fresh run自身をbaseline事実として扱う。
+// 以前の -1 はPhase1 regressionのraw gateを不必要にFAILさせていた。
+var baselineFunctionCount = baselineKeys?.Count ?? compiledByKey.Count;
+var baselineCompiledCount = baselineKeys is null ? compiledByKey.Count : compiledByKey.Keys.Count(baselineKeys.Contains);
+var baselineLost = baselineFunctionCount - baselineCompiledCount;
+var baselineSetValid = baselineKeys is null || baselineLost == 0;
 var phase1bFunctionCount = phase1bKeys?.Count ?? 0;
 var phase1bCompiledCount = phase1bKeys is null ? 0 : compiledByKey.Keys.Count(phase1bKeys.Contains);
 var phase1bLost = phase1bKeys is null ? -1 : phase1bFunctionCount - phase1bCompiledCount;

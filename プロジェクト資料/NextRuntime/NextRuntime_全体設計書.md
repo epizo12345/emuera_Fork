@@ -339,3 +339,9 @@ Loop linkerはBREAK/CONTINUE発見時にnearest loop OpenFrameの`LoopControlRec
 retained計測はroot生成後にfull GCを行いafterを読み、GC.KeepAlive(root)をafter取得後に実行する独立A/B/Cの3-runである。rawは9行、9/9 valid、negative=0。known payloadはcompact entries、candidate ID、NameRange、name/file reference slot、linked arrays/side tables/diagnostic sidecarを定義した。性能はstage stopwatchを直接採取し、CoreNextPipelineはSourceIndex+Catalog+Compile+ControlLinkの和、RetainedMeasurement/AuditPostProcess/AuditTotalは別区間とした。5-run中央値はCoreNext=7126.209ms、AuditTotalIncludingAll=19240.320msである。
 
 runtimeでは実際の`Program.SetDirPaths`に従って`--ExeDir`へtemp Data rootを渡し、real fixtureのData/csvをコピーした。16 caseすべてがexit=0、timeout=False、ORACLE_BEGIN/END、startup-test.log、time.logを備える。しかしcase名だけを変えたminimal SYSTEM_TITLEであり、loop挙動・reentrancy・implicit returnの個別期待値を実行した証拠ではない。従ってLegacy runtime behavior oracleの完全closureは未達で、R2判定はHOLD、Phase2B/Phase3はNOT_STARTEDである。mutationは実artifact24/24検出、FalsePass=0。
+
+### Phase 2A-R3 identity contract / Legacy oracle
+
+`SourceFunctionId`はphysical SourceIndex定義、`RuntimeFunctionId`はLegacy semantic catalog定義である。binding primary keyはnormalized relative file + exact physical StartLineのみで、ordinal/name/nearest fallbackは禁止。現fixtureは134652/134652定義、exact 134649、physical-only 3、runtime-only 3、unexplained 0/0、production misbound 0、ordinal negative proof 2、Runtime EffectiveNameUnknown 0。SourceOnlyはBIT_SETTINGのSKIPSTART/SKIPEND内、RuntimeOnlyは3件のraw continuation blockとunique @candidateで証明する。
+
+Phase1 compilerのSourceFunctionId=59103はruntimeへ59103件remapし、missing/duplicate=0/0。catalog/resolver/link/frame/AuxはRuntimeFunctionId domain、compact hot layoutsは16/16/12/16 bytes。Legacy manifestはaudit/test validation only、Production dependency=NO。Legacy `--StartupTest` oracleは24 distinct body casesを3回ずつ取得し、all deterministic、reentrant same-function same-loop、JUMP propagationをCAPTURED。`NextRuntimeBehaviorMatch=NOT_CLAIMED`、real `ExecutableReady=0`、Phase2B/3=NOT_STARTED。

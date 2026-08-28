@@ -5,7 +5,11 @@ using MinorShift.Emuera.Next.Core;
 
 namespace MinorShift.Emuera.Next.Vm;
 
-// [Emuera改修:NEXT-2A-R2 2026-08-28] ordinal identity、loop owner、warning/fatalを分離してLegacyとの差を隠さない。
+// [Emuera改修:NEXT-2A-R3 2026-08-28]
+// SourceIndexのphysical definitionとLegacy runtime semantic definitionは、
+// preprocessor disabled / line-continuationにより一般に一対一ではない。
+// そのため、CALL/JUMP/VM frameはruntime semantic identityを使用し、
+// SourceFunctionIdをRuntimeFunctionIdとして暗黙利用しない。
 // Linked hot data is value-oriented. Legacy parser/runtime objects stay outside.
 public enum FunctionKind : byte { Normal, Event, Method }
 public enum VmFunctionState : int
@@ -103,13 +107,27 @@ public readonly struct LoopDescriptor
     public VmStructuralKind LoopKind => (VmStructuralKind)Kind;
 }
 
+public readonly record struct SourceFunctionId(int Value);
+public readonly record struct RuntimeFunctionId(int Value);
 public readonly record struct SemanticFunctionKey(string RelativeFile, int FunctionOrdinal);
 public readonly record struct SemanticFunctionMetadata(string EffectiveName, bool EffectiveNameKnown, FunctionKind Kind);
 public sealed record FunctionDefinition(string PhysicalName, string FileIdentity, SourceSpan Span,
     SourceIndexFlags Flags = SourceIndexFlags.None, FunctionKind Kind = FunctionKind.Normal,
     string? EffectiveName = null, bool EffectiveNameKnown = false)
 { public string Name => PhysicalName; }
-public readonly record struct CatalogSourceRef(int FileOrdinal, int FunctionOrdinal);
+public readonly record struct CatalogSourceRef(int FileOrdinal, int FunctionOrdinal)
+{
+    public static CatalogSourceRef None => new(-1, -1);
+    public bool IsValid => FileOrdinal >= 0 && FunctionOrdinal >= 0;
+}
+
+public readonly record struct RuntimeFunctionBinding(
+    RuntimeFunctionId RuntimeId,
+    string EffectiveName,
+    FunctionKind Kind,
+    SourceIndexFlags Flags,
+    bool EffectiveNameKnown,
+    CatalogSourceRef SourceRef);
 
 // 16-byte value entry: source identity + effective-name table id + packed metadata.
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
@@ -164,6 +182,27 @@ public sealed class FunctionCatalog
         }
         return Build(entries.ToArray(), files, [], [], [], names, ignoreCase);
     }
+
+    public static FunctionCatalog FromRuntimeBindings(IReadOnlyList<SourceFileIndex> files, IEnumerable<RuntimeFunctionBinding> bindings, bool ignoreCase = true)
+    {
+        var list = bindings.ToArray();
+        var entries = new FunctionCatalogEntry[list.Length];
+        var names = new List<string>();
+        var nameIds = new Dictionary<string, int>(StringComparer.Ordinal);
+        int NameId(string value)
+        {
+            if (!nameIds.TryGetValue(value, out var id)) { id = names.Count; names.Add(value); nameIds.Add(value, id); }
+            return id;
+        }
+        for (var id = 0; id < list.Length; id++)
+        {
+            if (list[id].RuntimeId.Value != id) throw new ArgumentException("RuntimeFunctionId must be contiguous catalog order", nameof(bindings));
+            var b = list[id];
+            var known = b.EffectiveNameKnown && !string.IsNullOrEmpty(b.EffectiveName);
+            entries[id] = new(b.SourceRef, known ? NameId(b.EffectiveName) : -1, known ? b.Kind : FunctionKind.Normal, b.Flags, known);
+        }
+        return Build(entries, files, [], [], [], names, ignoreCase);
+    }
     public static FunctionCatalog FromDefinitions(IEnumerable<FunctionDefinition> definitions, bool ignoreCase = true)
     {
         var list = definitions.ToArray(); var files = new List<string>(); var physicalNames = new string[list.Length]; var spans = new SourceSpan[list.Length]; var fileIds = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase); var functionOrdinals = new Dictionary<int, int>(); var names = new List<string>(); var nameIds = new Dictionary<string, int>(StringComparer.Ordinal); var entries = new FunctionCatalogEntry[list.Length];
@@ -183,14 +222,31 @@ public sealed class FunctionCatalog
     }
     private static string NormalizeRelative(string path) => path.Replace('\\', '/');
     public FunctionCatalogEntry this[int id] => entries[id];
-    public string GetPhysicalName(int id) => sourceFiles is null ? syntheticPhysicalNames[id] : sourceFiles[entries[id].SourceRef.FileOrdinal].Functions[entries[id].SourceRef.FunctionOrdinal].Name;
+    public bool HasSourceDefinition(int id) => entries[id].SourceRef.IsValid;
+    public bool TryGetSourceDefinition(int id, out FunctionIndex definition)
+    {
+        var entry = entries[id];
+        if (sourceFiles is not null && entry.SourceRef.IsValid)
+        {
+            definition = sourceFiles[entry.SourceRef.FileOrdinal].Functions[entry.SourceRef.FunctionOrdinal];
+            return true;
+        }
+        if (sourceFiles is null && entry.SourceRef.IsValid)
+        {
+            definition = new(syntheticPhysicalNames[id], syntheticSpans[id], SourceIndexFlags.None);
+            return true;
+        }
+        definition = default;
+        return false;
+    }
+    public string? GetPhysicalName(int id) => TryGetSourceDefinition(id, out var definition) ? definition.Name : null;
     public string? GetEffectiveName(int id) => Entries[id].EffectiveNameId < 0 ? null : nameTable[Entries[id].EffectiveNameId];
-    public SourceSpan GetSpan(int id) => sourceFiles is null ? syntheticSpans[id] : sourceFiles[entries[id].SourceRef.FileOrdinal].Functions[entries[id].SourceRef.FunctionOrdinal].Span;
-    public string GetFileIdentity(int id) => sourceFiles is null ? syntheticFiles[entries[id].SourceRef.FileOrdinal] : sourceFiles[entries[id].SourceRef.FileOrdinal].FileIdentity;
+    public SourceSpan? GetSpan(int id) => TryGetSourceDefinition(id, out var definition) ? definition.Span : null;
+    public string? GetFileIdentity(int id) => sourceFiles is null && entries[id].SourceRef.IsValid ? syntheticFiles[entries[id].SourceRef.FileOrdinal] : sourceFiles is not null && entries[id].SourceRef.IsValid ? sourceFiles[entries[id].SourceRef.FileOrdinal].FileIdentity : null;
     public IReadOnlyList<int> FindByName(string name, bool? requestedIgnoreCase = null)
     { if (requestedIgnoreCase.HasValue && requestedIgnoreCase.Value != IgnoreCase) return Array.Empty<int>(); return nameRanges.TryGetValue(name, out var range) ? new ArraySegment<int>(candidateFunctionIds, range.Start, range.Count) : Array.Empty<int>(); }
-    public void MarkCodeAvailable(IEnumerable<int> ids)
-    { foreach (var id in ids) { var e = entries[id]; entries[id] = new(e.SourceRef, e.EffectiveNameId, e.Kind, e.Flags, e.EffectiveNameKnown, true); } }
+    public void MarkCodeAvailable(IEnumerable<RuntimeFunctionId> ids)
+    { foreach (var runtimeId in ids) { var id = runtimeId.Value; var e = entries[id]; entries[id] = new(e.SourceRef, e.EffectiveNameId, e.Kind, e.Flags, e.EffectiveNameKnown, true); } }
 }
 
 public readonly record struct FixedTargetScan(string Target, int Start, int End);
@@ -199,17 +255,38 @@ public static class FixedCallTargetScanner
     public static bool TryScan(string operand, out FixedTargetScan result)
     { var start = 0; while (start < operand.Length && (operand[start] == ' ' || operand[start] == '\t')) start++; var end = start; while (end < operand.Length && operand[end] is not '(' and not '[' and not ',' and not ';') end++; while (end > start && (operand[end - 1] == ' ' || operand[end - 1] == '\t')) end--; result = new(operand[start..end], start, end); return end > start; }
 }
-public readonly record struct CallResolution(bool FunctionResolved, bool CodeAvailable, int FunctionId, string? Reason);
+public readonly record struct CallResolution(bool FunctionResolved, bool CodeAvailable, RuntimeFunctionId RuntimeId, string? Reason);
 public static class FixedCallResolver
 {
     public static CallResolution Resolve(FunctionCatalog catalog, string target, bool ignoreCase, bool compatiCallEvent)
     {
-        var candidates = catalog.FindByName(target, ignoreCase); if (candidates.Count == 0) return new(false, false, -1, "MissingTarget"); var entry = catalog[candidates[0]];
-        if (entry.Kind == FunctionKind.Method) return new(false, false, -1, "WrongKindMethod"); if (entry.Kind == FunctionKind.Event && !compatiCallEvent) return new(false, false, -1, "WrongKindEvent"); return new(true, entry.CodeAvailable, candidates[0], entry.CodeAvailable ? null : "CodeNotAvailable");
+        var candidates = catalog.FindByName(target, ignoreCase); if (candidates.Count == 0) return new(false, false, new(-1), "MissingTarget"); var entry = catalog[candidates[0]];
+        if (entry.Kind == FunctionKind.Method) return new(false, false, new(-1), "WrongKindMethod"); if (entry.Kind == FunctionKind.Event && !compatiCallEvent) return new(false, false, new(-1), "WrongKindEvent"); return new(true, entry.CodeAvailable, new(candidates[0]), entry.CodeAvailable ? null : "CodeNotAvailable");
     }
 }
 
-public sealed record FunctionPrototype(int FunctionId, ImmutableArray<PrototypeInstruction> Instructions, ImmutableArray<string> Operands);
+public sealed record SourceFunctionPrototype(SourceFunctionId SourceId, ImmutableArray<PrototypeInstruction> Instructions, ImmutableArray<string> Operands);
+public sealed record RuntimeFunctionPrototype(RuntimeFunctionId RuntimeId, ImmutableArray<PrototypeInstruction> Instructions, ImmutableArray<string> Operands);
+public static class RuntimeFunctionBinder
+{
+    public static IReadOnlyList<RuntimeFunctionPrototype> Remap(
+        IReadOnlyList<SourceFunctionPrototype> sourcePrototypes,
+        IReadOnlyDictionary<SourceFunctionId, RuntimeFunctionId> sourceToRuntime)
+    {
+        var seen = new HashSet<RuntimeFunctionId>();
+        var result = new RuntimeFunctionPrototype[sourcePrototypes.Count];
+        for (var i = 0; i < sourcePrototypes.Count; i++)
+        {
+            var source = sourcePrototypes[i];
+            if (!sourceToRuntime.TryGetValue(source.SourceId, out var runtimeId))
+                throw new InvalidOperationException($"No RuntimeFunctionId for SourceFunctionId {source.SourceId.Value}");
+            if (!seen.Add(runtimeId))
+                throw new InvalidOperationException($"Duplicate RuntimeFunctionId {runtimeId.Value}");
+            result[i] = new(runtimeId, source.Instructions, source.Operands);
+        }
+        return result;
+    }
+}
 public sealed class LinkedProgram
 {
     public VmInstruction[] Code { get; }
@@ -225,7 +302,7 @@ public sealed class LinkedProgram
         => (Code, Descriptors, StructuralLinks, SifLinks, IfGroups, IfClauses, SelectGroups, SelectCases, Loops) = (code, descriptors, structuralLinks, sifLinks ?? [], ifGroups ?? [], ifClauses ?? [], selectGroups ?? [], selectCases ?? [], loops ?? []);
 }
 public enum StructuralClassification : byte { Valid, ValidWithStructuralWarning, InvalidStructure }
-public readonly record struct StructuralDiagnostic(int FunctionId, int Pc, StructuralClassification Classification, string Message);
+public readonly record struct StructuralDiagnostic(RuntimeFunctionId RuntimeId, int Pc, StructuralClassification Classification, string Message);
 public sealed record ControlLinkResult(LinkedProgram Program, IReadOnlyList<string> Diagnostics, int Calls, int Jumps, int CallScanFailures, int ResolvedCalls, int MissingTargets, int WrongKinds, int CodeAvailableTargets, int CodeUnavailableTargets, int SemanticBarriers, int LinkReadyFunctions = 0, int SemanticPendingFunctions = 0)
 {
     public IReadOnlyList<StructuralDiagnostic> StructuralDiagnostics { get; init; } = [];
@@ -241,28 +318,29 @@ public static class ControlLinker
     // Source oracle: Runtime/Script/Statements/FunctionIdentifier.cs IsPartial and Instraction.Child.cs SIF parser.
     private static readonly HashSet<PrototypeOpcode> LegacyPartialOpcodes = [PrototypeOpcode.SIF, PrototypeOpcode.IF, PrototypeOpcode.ELSE, PrototypeOpcode.ELSEIF, PrototypeOpcode.ENDIF, PrototypeOpcode.SELECTCASE, PrototypeOpcode.CASE, PrototypeOpcode.CASEELSE, PrototypeOpcode.ENDSELECT, PrototypeOpcode.REPEAT, PrototypeOpcode.REND, PrototypeOpcode.CONTINUE, PrototypeOpcode.BREAK, PrototypeOpcode.FOR, PrototypeOpcode.NEXT, PrototypeOpcode.WHILE, PrototypeOpcode.WEND, PrototypeOpcode.DO, PrototypeOpcode.LOOP, PrototypeOpcode.PRINTDATA, PrototypeOpcode.PRINTDATAL, PrototypeOpcode.PRINTDATAW, PrototypeOpcode.DATA, PrototypeOpcode.DATAFORM];
     public static bool IsLegacyPartialOpcode(PrototypeOpcode opcode) => LegacyPartialOpcodes.Contains(opcode);
-    public static ControlLinkResult Link(FunctionCatalog catalog, IReadOnlyList<FunctionPrototype> prototypes, bool ignoreCase = true, bool compatiCallEvent = false)
+    public static ControlLinkResult Link(FunctionCatalog catalog, IReadOnlyList<RuntimeFunctionPrototype> prototypes, bool ignoreCase = true, bool compatiCallEvent = false)
     {
         var code = new List<VmInstruction>(); var descriptors = Enumerable.Range(0, catalog.Count).Select(id => new VmFunctionDescriptor(id, 0, 0, VmFunctionState.CodeNotAvailable)).ToArray(); var records = new List<StructuralLinkRecord>(); var sifs = new List<SifLinkRecord>(); var ifGroups = new List<IfGroupDescriptor>(); var ifClauses = new List<IfClauseRecord>(); var selectGroups = new List<SelectGroupDescriptor>(); var selectCases = new List<SelectCaseRecord>(); var loops = new List<LoopDescriptor>(); var diagnostics = new List<string>(); var structuralDiagnostics = new List<StructuralDiagnostic>();
         var calls = 0; var jumps = 0; var scans = 0; var resolved = 0; var missing = 0; var wrong = 0; var yes = 0; var no = 0; var barriers = 0;
-        foreach (var prototype in prototypes.OrderBy(x => x.FunctionId))
+        foreach (var prototype in prototypes.OrderBy(x => x.RuntimeId.Value))
         {
+            var runtimeId = prototype.RuntimeId.Value;
             var start = code.Count; var state = VmFunctionState.LinkedSemanticPending; var local = new List<StructuralLinkRecord>();
             for (var pc = 0; pc < prototype.Instructions.Length; pc++)
             {
                 var p = prototype.Instructions[pc]; var operand = pc < prototype.Operands.Length ? prototype.Operands[pc] : string.Empty;
                 if (p.Opcode is PrototypeOpcode.CALL or PrototypeOpcode.JUMP)
                 {
-                    if (p.Opcode == PrototypeOpcode.CALL) calls++; else jumps++; if (!FixedCallTargetScanner.TryScan(operand, out var scan)) { scans++; state = VmFunctionState.UnsupportedControl; diagnostics.Add($"function={prototype.FunctionId} pc={pc} scan-fail"); code.Add(Linked(p, VmOpcode.UnsupportedControl)); continue; }
+                    if (p.Opcode == PrototypeOpcode.CALL) calls++; else jumps++; if (!FixedCallTargetScanner.TryScan(operand, out var scan)) { scans++; state = VmFunctionState.UnsupportedControl; diagnostics.Add($"function={runtimeId} pc={pc} scan-fail"); code.Add(Linked(p, VmOpcode.UnsupportedControl)); continue; }
                     var resolution = FixedCallResolver.Resolve(catalog, scan.Target, ignoreCase, compatiCallEvent); if (!resolution.FunctionResolved) { if (resolution.Reason?.StartsWith("WrongKind", StringComparison.Ordinal) == true) wrong++; else missing++; state = VmFunctionState.UnsupportedControl; code.Add(Linked(p, VmOpcode.UnsupportedControl)); continue; }
-                    resolved++; if (resolution.CodeAvailable) yes++; else no++; code.Add(Linked(p, p.Opcode == PrototypeOpcode.CALL ? VmOpcode.Call : VmOpcode.Jump, resolution.FunctionId)); continue;
+                    resolved++; if (resolution.CodeAvailable) yes++; else no++; code.Add(Linked(p, p.Opcode == PrototypeOpcode.CALL ? VmOpcode.Call : VmOpcode.Jump, resolution.RuntimeId.Value)); continue;
                 }
                 if (p.Opcode == PrototypeOpcode.RETURN) { code.Add(Linked(p, VmOpcode.Return)); continue; }
-                if (Structure.Contains(p.Opcode)) { if (p.Opcode == PrototypeOpcode.SIF) { if (pc + 1 >= prototype.Instructions.Length) { state = VmFunctionState.InvalidStructure; diagnostics.Add($"function={prototype.FunctionId} pc={pc} malformed=SIF-no-next"); structuralDiagnostics.Add(new(prototype.FunctionId, pc, StructuralClassification.InvalidStructure, "SIF-no-next")); } else { if (IsLegacyPartialOpcode(prototype.Instructions[pc + 1].Opcode)) { diagnostics.Add($"function={prototype.FunctionId} pc={pc} warning=SIF-partial-next"); structuralDiagnostics.Add(new(prototype.FunctionId, pc, StructuralClassification.ValidWithStructuralWarning, "SIF-partial-next")); } sifs.Add(new(prototype.FunctionId, pc, pc + 1, pc + 2)); } } local.Add(new(prototype.FunctionId, pc, -1, -1, Kinds[p.Opcode], 0)); code.Add(Linked(p, VmOpcode.Structural)); continue; }
+                if (Structure.Contains(p.Opcode)) { if (p.Opcode == PrototypeOpcode.SIF) { if (pc + 1 >= prototype.Instructions.Length) { state = VmFunctionState.InvalidStructure; diagnostics.Add($"function={runtimeId} pc={pc} malformed=SIF-no-next"); structuralDiagnostics.Add(new(new(runtimeId), pc, StructuralClassification.InvalidStructure, "SIF-no-next")); } else { if (IsLegacyPartialOpcode(prototype.Instructions[pc + 1].Opcode)) { diagnostics.Add($"function={runtimeId} pc={pc} warning=SIF-partial-next"); structuralDiagnostics.Add(new(new(runtimeId), pc, StructuralClassification.ValidWithStructuralWarning, "SIF-partial-next")); } sifs.Add(new(runtimeId, pc, pc + 1, pc + 2)); } } local.Add(new(runtimeId, pc, -1, -1, Kinds[p.Opcode], 0)); code.Add(Linked(p, VmOpcode.Structural)); continue; }
                 if (p.Opcode is PrototypeOpcode.GOTO or PrototypeOpcode.TRYJUMP or PrototypeOpcode.TRYGOTO or PrototypeOpcode.TRYGOTOFORM) { state = VmFunctionState.UnsupportedControl; code.Add(Linked(p, VmOpcode.UnsupportedControl)); continue; }
                 barriers++; code.Add(Linked(p, VmOpcode.SemanticBarrier));
             }
-            var linked = LinkStructure(prototype.FunctionId, prototype.Instructions, local, diagnostics, structuralDiagnostics); if (linked.Invalid) state = VmFunctionState.InvalidStructure; records.AddRange(linked.Records); ifGroups.AddRange(linked.IfGroups); ifClauses.AddRange(linked.IfClauses); selectGroups.AddRange(linked.SelectGroups); selectCases.AddRange(linked.SelectCases); loops.AddRange(linked.Loops); descriptors[prototype.FunctionId] = new(prototype.FunctionId, start, code.Count - start, state);
+            var linked = LinkStructure(runtimeId, prototype.Instructions, local, diagnostics, structuralDiagnostics); if (linked.Invalid) state = VmFunctionState.InvalidStructure; records.AddRange(linked.Records); ifGroups.AddRange(linked.IfGroups); ifClauses.AddRange(linked.IfClauses); selectGroups.AddRange(linked.SelectGroups); selectCases.AddRange(linked.SelectCases); loops.AddRange(linked.Loops); descriptors[runtimeId] = new(runtimeId, start, code.Count - start, state);
         }
         var program = new LinkedProgram(code.ToArray(), descriptors, records.ToArray(), sifs.ToArray(), ifGroups.ToArray(), ifClauses.ToArray(), selectGroups.ToArray(), selectCases.ToArray(), loops.ToArray()); return new ControlLinkResult(program, diagnostics, calls, jumps, scans, resolved, missing, wrong, yes, no, barriers, 0, prototypes.Count) { StructuralDiagnostics = structuralDiagnostics.ToArray() };
     }
@@ -273,8 +351,8 @@ public static class ControlLinker
     private static StructureResult LinkStructure(int functionId, IReadOnlyList<PrototypeInstruction> instructions, List<StructuralLinkRecord> records, List<string> diagnostics, List<StructuralDiagnostic> structuralDiagnostics)
     {
         var stack = new List<OpenFrame>(); var invalid = false; var depth = 0; var ifGroups = new List<IfGroupDescriptor>(); var ifClauses = new List<IfClauseRecord>(); var selectGroups = new List<SelectGroupDescriptor>(); var selectCases = new List<SelectCaseRecord>(); var loops = new List<LoopDescriptor>(); var indexByPc = records.Select((x, i) => (x.Pc, Index: i)).ToDictionary(x => x.Pc, x => x.Index);
-        void Bad(int pc, string text) { invalid = true; diagnostics.Add($"function={functionId} pc={pc} malformed={text}"); structuralDiagnostics.Add(new(functionId, pc, StructuralClassification.InvalidStructure, text)); }
-        void Warn(int pc, string text) { diagnostics.Add($"function={functionId} pc={pc} warning={text}"); structuralDiagnostics.Add(new(functionId, pc, StructuralClassification.ValidWithStructuralWarning, text)); }
+        void Bad(int pc, string text) { invalid = true; diagnostics.Add($"function={functionId} pc={pc} malformed={text}"); structuralDiagnostics.Add(new(new(functionId), pc, StructuralClassification.InvalidStructure, text)); }
+        void Warn(int pc, string text) { diagnostics.Add($"function={functionId} pc={pc} warning={text}"); structuralDiagnostics.Add(new(new(functionId), pc, StructuralClassification.ValidWithStructuralWarning, text)); }
         foreach (var pair in indexByPc.OrderBy(x => x.Key))
         {
             var pc = pair.Key; var op = instructions[pc].Opcode; var recordIndex = pair.Value; var record = records[recordIndex];

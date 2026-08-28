@@ -221,3 +221,9 @@ retainedはbaseline→root生成→full GC後after→KeepAliveの順で独立3-r
 R2 mutation verifierは実artifactを24回変異させ、Detected=24、FalsePass=0。identity 0/0と16個の個別runtime behavior truthは未達のため、`Phase2ADecision=HOLD`、`Phase2B/Phase3=NOT_STARTED`とする。
 
 real fixtureはCodeAvailable=59103、LinkReady/LinkedSemanticPendingをExecutableReadyと分離し、ExecutableReady real=0。actual GC retainedはcatalog/linked/combinedを独立3回で測定した。VM SelfTest=33/33、Phase1 semantic regressionはeligible59435 / compiled59103 / remaining332 / errors0 / instructionCount191273 / baselineLost0。Legacy minimal fixtureのStartupTest oracleは本R1環境でログ生成まで到達せずtimeout/empty-logとなったため、BREAK・reentrant loop・implicit returnのruntime truthは未確定であり、Phase2ADecision=HOLD。Phase2B/Phase3=NOT_STARTED。
+
+### Phase 2A-R3: Runtime identity and Legacy control oracle
+
+R3では`SourceFunctionId`（physical SourceIndex identity）と`RuntimeFunctionId`（Legacy semantic catalog identity）を分離した。fresh reconciliationはSource/Runtime=134652/134652、exact=134649、physical-only/runtime-only=3/3、unexplained=0/0、production misbound=0、ordinal join would misbind=2、Runtime EffectiveNameUnknown=0。59103 compiled sourceは59103 runtimeへ完全remap（missing/duplicate=0/0）。Legacy manifestはaudit/oracle境界だけのValidation-only依存で、Production dependencyはNO。
+
+Legacy `--StartupTest`で24 distinct-body casesをDiscovery+独立verify 2回実行し、24/24 observed、24/24 deterministic、reentrant FOR/REPEATは同一関数・同一source loopへのrecursive CALL、JUMP propagationも実測した。`LegacyRuntimeBehaviorOracle=CAPTURED`だが`NextRuntimeBehaviorMatch=NOT_CLAIMED`、real `ExecutableReady=0`である。Phase2B/Phase3はNOT_STARTED。
