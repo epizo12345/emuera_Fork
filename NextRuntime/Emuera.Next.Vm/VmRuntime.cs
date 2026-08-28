@@ -35,8 +35,8 @@ public readonly struct VmInstruction
     public static VmInstruction Nop => new((ushort)VmOpcode.Nop);
     public static VmInstruction Halt => new((ushort)VmOpcode.Halt);
     public static VmInstruction Branch(int target) => new((ushort)VmOpcode.Branch, aux: target);
-    public static VmInstruction Call(int functionId) => new((ushort)VmOpcode.Call, aux: functionId);
-    public static VmInstruction Jump(int functionId) => new((ushort)VmOpcode.Jump, aux: functionId);
+    public static VmInstruction Call(RuntimeFunctionId functionId) => new((ushort)VmOpcode.Call, aux: functionId.Value);
+    public static VmInstruction Jump(RuntimeFunctionId functionId) => new((ushort)VmOpcode.Jump, aux: functionId.Value);
     public static VmInstruction Return => new((ushort)VmOpcode.Return);
 }
 public enum VmOpcode : ushort { Nop, Halt, Branch, Call, Jump, Return, Structural, SemanticBarrier, UnsupportedControl }
@@ -109,8 +109,6 @@ public readonly struct LoopDescriptor
 
 public readonly record struct SourceFunctionId(int Value);
 public readonly record struct RuntimeFunctionId(int Value);
-public readonly record struct SemanticFunctionKey(string RelativeFile, int FunctionOrdinal);
-public readonly record struct SemanticFunctionMetadata(string EffectiveName, bool EffectiveNameKnown, FunctionKind Kind);
 public sealed record FunctionDefinition(string PhysicalName, string FileIdentity, SourceSpan Span,
     SourceIndexFlags Flags = SourceIndexFlags.None, FunctionKind Kind = FunctionKind.Normal,
     string? EffectiveName = null, bool EffectiveNameKnown = false)
@@ -165,23 +163,6 @@ public sealed class FunctionCatalog
     public bool HasPermanentSourceLookup => false;
     private FunctionCatalog(FunctionCatalogEntry[] entries, IReadOnlyList<SourceFileIndex>? sourceFiles, string[] syntheticFiles, string[] physicalNames, SourceSpan[] spans, string[] names, Dictionary<string, NameRange> ranges, int[] candidates, bool ignoreCase)
         => (this.entries, Entries, this.sourceFiles, this.syntheticFiles, syntheticPhysicalNames, syntheticSpans, nameTable, nameRanges, candidateFunctionIds, IgnoreCase) = (entries, entries, sourceFiles, syntheticFiles, physicalNames, spans, names, ranges, candidates, ignoreCase);
-
-    public static FunctionCatalog FromSourceIndex(IReadOnlyList<SourceFileIndex> files, string sourceRoot, IReadOnlyDictionary<SemanticFunctionKey, SemanticFunctionMetadata>? overlay = null, bool ignoreCase = true)
-    {
-        var entries = new List<FunctionCatalogEntry>(); var names = new List<string>(); var nameIds = new Dictionary<string, int>(StringComparer.Ordinal);
-        int NameId(string value) { if (!nameIds.TryGetValue(value, out var id)) { id = names.Count; names.Add(value); nameIds.Add(value, id); } return id; }
-        for (var fileOrdinal = 0; fileOrdinal < files.Count; fileOrdinal++)
-        {
-            var file = files[fileOrdinal];
-            for (var ordinal = 0; ordinal < file.Functions.Count; ordinal++)
-            {
-            var function = file.Functions[ordinal]; var key = new SemanticFunctionKey(NormalizeRelative(Path.GetRelativePath(sourceRoot, file.FileIdentity)), ordinal); var metadata = default(SemanticFunctionMetadata);
-            var known = overlay is not null && overlay.TryGetValue(key, out metadata) && metadata.EffectiveNameKnown && !string.IsNullOrEmpty(metadata.EffectiveName);
-            entries.Add(new(new(fileOrdinal, ordinal), known ? NameId(metadata.EffectiveName) : -1, known ? metadata.Kind : FunctionKind.Normal, function.Flags, known));
-            }
-        }
-        return Build(entries.ToArray(), files, [], [], [], names, ignoreCase);
-    }
 
     public static FunctionCatalog FromRuntimeBindings(IReadOnlyList<SourceFileIndex> files, IEnumerable<RuntimeFunctionBinding> bindings, bool ignoreCase = true)
     {
@@ -377,9 +358,9 @@ public sealed class VmMachine
 {
     private readonly LinkedProgram program; private VmFrame[] stack = new VmFrame[16]; private int stackCount;
     public VmMachine(LinkedProgram program) => this.program = program;
-    public VmStopReason Run(int entryFunctionId, int maxSteps = 100_000)
+    public VmStopReason Run(RuntimeFunctionId entryFunctionId, int maxSteps = 100_000)
     {
-        stackCount = 0; if (!TryPush(entryFunctionId, VmReturnKind.Normal, out var reason)) return reason;
+        stackCount = 0; if (!TryPush(entryFunctionId.Value, VmReturnKind.Normal, out var reason)) return reason;
         for (var steps = 0; steps < maxSteps; steps++)
         {
             if (stackCount == 0) return VmStopReason.Returned; ref var frame = ref stack[stackCount - 1]; var descriptor = GetDescriptor(frame.FunctionId); if (descriptor.State != VmFunctionState.ExecutableReady) return StateReason(descriptor.State);

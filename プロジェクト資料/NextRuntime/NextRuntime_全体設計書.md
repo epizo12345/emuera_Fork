@@ -345,3 +345,7 @@ runtimeでは実際の`Program.SetDirPaths`に従って`--ExeDir`へtemp Data ro
 `SourceFunctionId`はphysical SourceIndex定義、`RuntimeFunctionId`はLegacy semantic catalog定義である。binding primary keyはnormalized relative file + exact physical StartLineのみで、ordinal/name/nearest fallbackは禁止。現fixtureは134652/134652定義、exact 134649、physical-only 3、runtime-only 3、unexplained 0/0、production misbound 0、ordinal negative proof 2、Runtime EffectiveNameUnknown 0。SourceOnlyはBIT_SETTINGのSKIPSTART/SKIPEND内、RuntimeOnlyは3件のraw continuation blockとunique @candidateで証明する。
 
 Phase1 compilerのSourceFunctionId=59103はruntimeへ59103件remapし、missing/duplicate=0/0。catalog/resolver/link/frame/AuxはRuntimeFunctionId domain、compact hot layoutsは16/16/12/16 bytes。Legacy manifestはaudit/test validation only、Production dependency=NO。Legacy `--StartupTest` oracleは24 distinct body casesを3回ずつ取得し、all deterministic、reentrant same-function same-loop、JUMP propagationをCAPTURED。`NextRuntimeBehaviorMatch=NOT_CLAIMED`、real `ExecutableReady=0`、Phase2B/3=NOT_STARTED。
+
+### Phase 2A-R4 closure
+
+R4は最終境界と証跡のclosureである。`VmInstruction.Call/Jump`と`VmMachine.Run`は`RuntimeFunctionId`のみ、obsolete `SemanticFunctionKey`/`SemanticFunctionMetadata`/`FromSourceIndex`は存在しない。fresh raw audit、24-case Legacy oracle、SemanticVerifier、46 mutation cases、fixture before/after、Phase1C-R2 byte-exact manifestを検証した。NextRuntime実行一致は`NOT_CLAIMED`、real `ExecutableReady=0`、Phase2B/Phase3=NOT_STARTED。R3 performance/retained rawはimmutable replayでありR4 fresh measurementとは呼ばない。

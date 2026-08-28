@@ -202,6 +202,10 @@ Phase2ADecision=HOLD
 Phase2AStatus=SKELETON_IMPLEMENTED_RUNTIME_ORACLE_PENDING
 Phase2B/Phase3へ渡すもの=Legacy runtime oracleの自動化、loop reentrancy確定、expression/format/variable semantics、CALLFORM/dynamic call、GOTO/$label、TRY/CATCH、event dispatch、ARG/LOCAL/REF runtime、実ゲーム起動。
 
+### Phase 2A-R4 final closure
+
+R4はaccepted start HEAD `abab22a1c326a8eda41661a5ca2a9882b14453cf`から、typed `RuntimeFunctionId` API境界、obsolete ordinal API削除、実測identity/mapping、24-case Legacy oracle、raw semantic verifier、46-case mutation evidenceを確定した。fresh値はidentity 134652/134652、exact 134649、source/runtime-only 3/3、compiled 59103、instructions 191273、CALL/JUMP 12254/15、resolved 12269、runtime oracle 24/24、fixture unchanged、SelfTest 54/54。`NextRuntimeBehaviorMatch=NOT_CLAIMED`、real `ExecutableReady=0`、Phase2B/Phase3はNOT_STARTED。Performance/retainedはimmutable R3 raw replay（fresh R4 performanceではない）。
+
 ### Phase 2A-R1: Semantic Identity / Control Link / Legacy Runtime Oracle Closure
 
 FunctionIdはSourceIndexのphysical definition順で134652件を保持し、Legacy effective nameはgeneric semantic overlayへ分離した。R1ではLegacy diagnostic exporterのfresh実行を一時real-fixture copyで試みたが15分でmanifest生成前timeoutとなったため、audit数値は変更前から保存済みのimmutable Legacy manifestをreplayしている。replayではsemantic rows 134652、exact position join 134649/134652（Legacy inline-braceの既知3件は隠さず記録）、effective duplicateは3 groups / 9 definitions、SET_BASE_5604・SET_BTL_TALENT_5604・SET_LEARN_SKILL_5604はFunctionIdへ解決、CALL/JUMPは12254/15、resolved=12269、missing=0、wrongKind=0となった。resolverはfirst-definition authority（method/eventを後続候補へskipしない）、comparerはcatalog構築時固定である。

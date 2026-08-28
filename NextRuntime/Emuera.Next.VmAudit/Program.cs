@@ -42,8 +42,13 @@ for (var fileOrdinal = 0; fileOrdinal < files.Count; fileOrdinal++)
 var oracleWatch = Stopwatch.StartNew();
 var legacyRows = ReadLegacy(legacyPath);
 oracleWatch.Stop();
-var sourceByPosition = sourceRows.GroupBy(x => PositionKey(x.RelativeFile, x.StartLine), StringComparer.OrdinalIgnoreCase).ToDictionary(x => x.Key, x => x.Single(), StringComparer.OrdinalIgnoreCase);
-var legacyByPosition = legacyRows.GroupBy(x => PositionKey(x.RelativeFile, x.StartLine), StringComparer.OrdinalIgnoreCase).ToDictionary(x => x.Key, x => x.Single(), StringComparer.OrdinalIgnoreCase);
+var sourcePositionGroups = sourceRows.GroupBy(x => PositionKey(x.RelativeFile, x.StartLine), StringComparer.OrdinalIgnoreCase).ToArray();
+var legacyPositionGroups = legacyRows.GroupBy(x => PositionKey(x.RelativeFile, x.StartLine), StringComparer.OrdinalIgnoreCase).ToArray();
+var bindingCollisions = sourcePositionGroups.Where(x => x.Count() != 1).Select(x => $"Source\t{x.First().RelativeFile}\t{x.First().StartLine}\t{x.Count()}\t{string.Join(",", x.Select(y => y.SourceId.Value))}")
+    .Concat(legacyPositionGroups.Where(x => x.Count() != 1).Select(x => $"Runtime\t{x.First().RelativeFile}\t{x.First().StartLine}\t{x.Count()}\t{string.Join(",", x.Select(y => y.RuntimeId.Value))}"))
+    .ToArray();
+var sourceByPosition = sourcePositionGroups.Where(x => x.Count() == 1).ToDictionary(x => x.Key, x => x.Single(), StringComparer.OrdinalIgnoreCase);
+var legacyByPosition = legacyPositionGroups.Where(x => x.Count() == 1).ToDictionary(x => x.Key, x => x.Single(), StringComparer.OrdinalIgnoreCase);
 var exactBound = legacyRows.Where(x => sourceByPosition.ContainsKey(PositionKey(x.RelativeFile, x.StartLine))).ToArray();
 var sourceOnly = sourceRows.Where(x => !legacyByPosition.ContainsKey(PositionKey(x.RelativeFile, x.StartLine))).ToArray();
 var runtimeOnly = legacyRows.Where(x => !sourceByPosition.ContainsKey(PositionKey(x.RelativeFile, x.StartLine))).ToArray();
@@ -52,6 +57,7 @@ var sourceOnlyEvidence = sourceOnly.Select(x => ProveSourceOnly(x, files, erbRoo
 var runtimeOnlyEvidence = runtimeOnly.Select(x => ProveRuntimeOnly(x, files, erbRoot)).ToArray();
 var sourceOnlyProof = sourceOnlyEvidence.Length == 3 && sourceOnlyEvidence.All(x => x.Proven && x.Classification == "PhysicalOnlyPreprocessorDisabled");
 var runtimeOnlyProof = runtimeOnlyEvidence.Length == 3 && runtimeOnlyEvidence.All(x => x.Proven && x.Classification == "RuntimeOnlyLineContinuation");
+var ambiguousBinding = bindingCollisions.Length;
 
 var runtimeBindings = new RuntimeFunctionBinding[legacyRows.Length];
 var sourceToRuntime = new Dictionary<SourceFunctionId, RuntimeFunctionId>();
@@ -69,6 +75,10 @@ foreach (var row in legacyRows)
         runtimeBindings[row.RuntimeId.Value] = new(row.RuntimeId, row.FunctionName, row.Kind, SourceIndexFlags.LineContinuation, true, CatalogSourceRef.None);
     }
 }
+var misbound = 0;
+foreach (var row in legacyRows)
+    if (sourceByPosition.TryGetValue(PositionKey(row.RelativeFile, row.StartLine), out var source) &&
+        (!sourceToRuntime.TryGetValue(source.SourceId, out var mapped) || mapped != row.RuntimeId || !runtimeBindings[row.RuntimeId.Value].SourceRef.Equals(new CatalogSourceRef(source.FileOrdinal, source.FunctionOrdinal)))) misbound++;
 
 var catalogWatch = Stopwatch.StartNew();
 var catalog = FunctionCatalog.FromRuntimeBindings(files, runtimeBindings, true);
@@ -140,13 +150,16 @@ var knownLinkedPayload = instructionPayload + descriptorPayload + recordPayload 
 var catalogKnownPayload = (long)catalog.Count * Marshal.SizeOf<FunctionCatalogEntry>() + (long)catalog.CandidateIdCount * 4 + (long)catalog.NameRangeCount * 8 + (long)catalog.NameTable.Count * 8 + (long)catalog.FileTableCount * 8;
 var retained = MeasureRetained(files, runtimeBindings, sourcePrototypes, sourceToRuntime, catalogKnownPayload, knownLinkedPayload);
 var coreNextPipelineMs = indexWatch.Elapsed.TotalMilliseconds + oracleWatch.Elapsed.TotalMilliseconds + catalogWatch.Elapsed.TotalMilliseconds + compileWatch.Elapsed.TotalMilliseconds + linkWatch.Elapsed.TotalMilliseconds;
-var auditResult = sourceRows.Count == 134652 && legacyRows.Length == 134652 && exactBound.Length == 134649 && sourceOnlyProof && runtimeOnlyProof && ordinalMisbinds.Length == 2 && effectiveUnknown == 0 && remapMissing == 0 && !remapDuplicate && compileErrors == 0 && spanMismatch == 0 && localPcErrors == 0 && invalidStructure == 0 && unsupportedControl == 0 && codeAvailable == 59103 && retained.AllValid ? "PASS" : "HOLD";
+var auditResult = sourceRows.Count == 134652 && legacyRows.Length == 134652 && exactBound.Length == 134649 && sourceOnlyProof && runtimeOnlyProof && ambiguousBinding == 0 && misbound == 0 && ordinalMisbinds.Length == 2 && effectiveUnknown == 0 && remapMissing == 0 && !remapDuplicate && compileErrors == 0 && spanMismatch == 0 && localPcErrors == 0 && invalidStructure == 0 && unsupportedControl == 0 && codeAvailable == 59103 && retained.AllValid ? "PASS" : "HOLD";
 
-Write("semantic-binding-summary.txt", $"SourceDefinitions={sourceRows.Count}\nRuntimeDefinitions={legacyRows.Length}\nExactBound={exactBound.Length}\nPhysicalOnlyPreprocessorDisabled={sourceOnlyEvidence.Count(x => x.Classification == "PhysicalOnlyPreprocessorDisabled")}\nRuntimeOnlyLineContinuation={runtimeOnlyEvidence.Count(x => x.Classification == "RuntimeOnlyLineContinuation")}\nUnexplainedSourceOnly={sourceOnlyEvidence.Count(x => !x.Proven)}\nUnexplainedRuntimeOnly={runtimeOnlyEvidence.Count(x => !x.Proven)}\nAmbiguousBinding=0\nMisbound=0\nOrdinalWouldMisbind={ordinalMisbinds.Length}\nEffectiveNameUnknownRuntime={effectiveUnknown}\nCompiledSourceFunctions={sourcePrototypes.Count}\nCompiledRuntimeMappings={prototypes.Count}\nCompiledMappingMissing={remapMissing}\nCompiledMappingDuplicate={(remapDuplicate ? 1 : 0)}\nresult={auditResult}\n");
+Write("semantic-binding-summary.txt", $"SourceDefinitions={sourceRows.Count}\nRuntimeDefinitions={legacyRows.Length}\nExactBound={exactBound.Length}\nPhysicalOnlyPreprocessorDisabled={sourceOnlyEvidence.Count(x => x.Classification == "PhysicalOnlyPreprocessorDisabled")}\nRuntimeOnlyLineContinuation={runtimeOnlyEvidence.Count(x => x.Classification == "RuntimeOnlyLineContinuation")}\nUnexplainedSourceOnly={sourceOnlyEvidence.Count(x => !x.Proven)}\nUnexplainedRuntimeOnly={runtimeOnlyEvidence.Count(x => !x.Proven)}\nAmbiguousBinding={ambiguousBinding}\nMisbound={misbound}\nOrdinalWouldMisbind={ordinalMisbinds.Length}\nEffectiveNameUnknownRuntime={effectiveUnknown}\nCompiledSourceFunctions={sourcePrototypes.Count}\nCompiledRuntimeMappings={prototypes.Count}\nCompiledMappingMissing={remapMissing}\nCompiledMappingDuplicate={(remapDuplicate ? 1 : 0)}\nresult={auditResult}\n");
 Write("semantic-bindings.tsv", "RuntimeFunctionId\tEffectiveName\tBindingKind\tSourceFunctionId\tRelativeFile\tRuntimeStartLine\tSourceStartLine\tKind\tCodeAvailable\n" + string.Join("\n", legacyRows.Select(row => { var key = PositionKey(row.RelativeFile, row.StartLine); var has = sourceByPosition.TryGetValue(key, out var s); var binding = has ? "ExactBound" : "RuntimeOnlyLineContinuation"; return $"{row.RuntimeId.Value}\t{row.FunctionName}\t{binding}\t{(has ? s.SourceId.Value.ToString() : "-1")}\t{row.RelativeFile}\t{row.StartLine}\t{(has ? s.StartLine.ToString() : "-1")}\t{row.Kind}\t{catalog[row.RuntimeId.Value].CodeAvailable}"; })));
 Write("source-only.tsv", "SourceFunctionId\tRelativeFile\tStartLine\tPhysicalName\tDisabledRangeStart\tDisabledRangeEnd\tClassification\tReason\n" + string.Join("\n", sourceOnlyEvidence.Select(x => $"{x.Row.SourceId.Value}\t{x.Row.RelativeFile}\t{x.Row.StartLine}\t{x.Row.PhysicalName}\t{x.RangeStart}\t{x.RangeEnd}\t{x.Classification}\t{x.Reason}")));
 Write("runtime-only.tsv", "RuntimeFunctionId\tRelativeFile\tLegacyStartLine\tEffectiveName\tContinuationStartLine\tContinuationEndLine\tPhysicalHeaderCandidate\tClassification\tReason\n" + string.Join("\n", runtimeOnlyEvidence.Select(x => $"{x.Row.RuntimeId.Value}\t{x.Row.RelativeFile}\t{x.Row.StartLine}\t{x.Row.FunctionName}\t{x.RangeStart}\t{x.RangeEnd}\t{x.Candidate}\t{x.Classification}\t{x.Reason}")));
+Write("binding-collisions.tsv", "Domain\tRelativeFile\tStartLine\tCount\tNamesOrIds\n" + string.Join("\n", bindingCollisions));
 Write("ordinal-would-misbind.tsv", "RelativeFile\tOrdinal\tSourceStartLine\tSourcePhysicalName\tLegacyStartLine\tLegacyEffectiveName\tWouldMisbind\n" + string.Join("\n", ordinalMisbinds.Select(x => $"{x.RelativeFile}\t{x.Ordinal}\t{x.SourceStartLine}\t{x.SourcePhysicalName}\t{x.LegacyStartLine}\t{x.LegacyEffectiveName}\tTrue")));
+Write("compiled-remap.tsv", "SourceFunctionId\tRuntimeFunctionId\tRelativeFile\tStartLine\tEffectiveName\n" + string.Join("\n", sourcePrototypes.Select(x => { var s = sourceRows[x.SourceId.Value]; var r = sourceToRuntime[x.SourceId]; return $"{x.SourceId.Value}\t{r.Value}\t{s.RelativeFile}\t{s.StartLine}\t{catalog.GetEffectiveName(r.Value)}"; })));
+Write("fixed-call-links.tsv", "CallerRuntimeId\tPc\tOpcode\tTargetText\tResolved\tTargetRuntimeId\tCodeAvailable\tReason\n" + string.Join("\n", prototypes.SelectMany(p => p.Instructions.Select((instruction, pc) => (p, instruction, pc))).Where(x => x.instruction.Opcode is PrototypeOpcode.CALL or PrototypeOpcode.JUMP).Select(x => { var operand = x.pc < x.p.Operands.Length ? x.p.Operands[x.pc] : string.Empty; var scanned = FixedCallTargetScanner.TryScan(operand, out var scan); var resolution = scanned ? FixedCallResolver.Resolve(catalog, scan.Target, true, false) : new(false, false, new(-1), "ScanFailure"); return $"{x.p.RuntimeId.Value}\t{x.pc}\t{x.instruction.Opcode}\t{(scanned ? scan.Target : "")}\t{resolution.FunctionResolved}\t{(resolution.FunctionResolved ? resolution.RuntimeId.Value : -1)}\t{resolution.CodeAvailable}\t{resolution.Reason ?? ""}"; })));
 Write("source-runtime-remap-summary.txt", $"compiledSource={sourcePrototypes.Count}\ncompiledRuntime={prototypes.Count}\nmappingMissing={remapMissing}\nmappingDuplicate={(remapDuplicate ? 1 : 0)}\nsourceOnlyRuntimeId=NONE\nruntimeOnlySourceId=NONE\nordinalJoin=REJECTED\n");
 Write("function-id-catalog-summary.txt", $"definitions={catalog.Count}\nuniqueFunctionIds={catalog.Count}\nduplicateFunctionIds=0\nsourceDefinitions={sourceRows.Count}\nruntimeDefinitions={legacyRows.Length}\ncompiledFunctions={prototypes.Count}\ncodeAvailableTrue={codeAvailable}\ncodeAvailableFalse={catalog.Count - codeAvailable}\ncompactEntrySize={catalog.CompactEntrySize}\nsemanticAuthority=LegacyManifestValidationOnly\n");
 Write("duplicate-summary.txt", $"effectiveNameDuplicateGroups={effectiveGroups.Length}\neffectiveDuplicateDefinitions={effectiveGroups.Sum(x => x.Count())}\nphysicalSourceNameDuplicateGroups={physicalGroups.Length}\nexpectedEffectiveGroups=3\nexpectedEffectiveDefinitions=9\n");
@@ -196,8 +209,13 @@ static OrdinalMisbind[] DetectOrdinalMisbinds(IReadOnlyList<SourceRow> source, I
 }
 static SourceOnlyEvidence ProveSourceOnly(SourceRow row, IReadOnlyList<SourceFileIndex> files, string root)
 {
-    var file = files[row.FileOrdinal]; var range = file.ContinuationBlocks is null ? null : (ContinuationBlock?)null; var path = file.FileIdentity; var lines = File.ReadAllLines(path); var start = Array.FindLastIndex(lines, x => x.Contains("[SKIPSTART]", StringComparison.OrdinalIgnoreCase) && Array.IndexOf(lines, x) < row.StartLine); var end = Array.FindIndex(lines, row.StartLine - 1, x => x.Contains("[SKIPEND]", StringComparison.OrdinalIgnoreCase));
-    var proven = start >= 0 && end >= row.StartLine - 1 && lines.Skip(start).Take(end - start + 1).Any(x => x.Contains("[SKIPSTART]", StringComparison.OrdinalIgnoreCase));
+    var file = files[row.FileOrdinal]; var path = file.FileIdentity; var lines = File.ReadAllLines(path); var start = -1; var end = -1;
+    for (var i = 0; i < Math.Min(row.StartLine - 1, lines.Length); i++)
+        if (lines[i].Contains("[SKIPSTART]", StringComparison.OrdinalIgnoreCase)) start = i;
+    if (start >= 0)
+        for (var i = start + 1; i < lines.Length; i++)
+            if (lines[i].Contains("[SKIPEND]", StringComparison.OrdinalIgnoreCase)) { end = i; break; }
+    var proven = start >= 0 && end >= row.StartLine - 1;
     return new(row, start + 1, end + 1, proven, proven ? "PhysicalOnlyPreprocessorDisabled" : "No raw SKIPSTART/SKIPEND enclosure", proven ? "physical function line is inside raw disabled range" : "physical source proof failed");
 }
 static RuntimeOnlyEvidence ProveRuntimeOnly(LegacyRow row, IReadOnlyList<SourceFileIndex> files, string root)

@@ -222,3 +222,7 @@ runtime fixtureはreal CSVをData/csvへコピーして16ケースを起動し�
 physical sourceのIDは`SourceFunctionId`、Legacy runtime catalogのIDは`RuntimeFunctionId`であり、同じ整数を暗黙に使わない。fresh値はSource/Runtime=134652/134652、exact=134649、physical-only/runtime-only=3/3、unexplained=0/0、misbound=0、ordinal誤結合証拠=2、runtime EffectiveNameUnknown=0。59103 compiled sourceは59103 runtimeへ完全remap（missing/duplicate=0/0）。
 
 Runtime-only 3件は名前解決可能だがsource定義・codeはなく、`CodeNotAvailable`。Legacy manifestは検証専用でProduction依存ではない。Legacy実行oracleは24 distinct cases（Discovery+verify1+verify2）をCAPTURED、deterministic=24/24。reentrant FOR/REPEATは同一関数の同一loop行へのrecursive CALL、JUMP propagationも実測した。Next挙動一致は未主張、real ExecutableReady=0、Phase2B/3=NOT_STARTED。
+
+### Phase 2A-R4
+
+最終証跡を閉じた。SourceFunctionId/RuntimeFunctionIdをtyped APIで分離し、旧ordinal overlay APIを削除。fresh auditは134652/134652、exact 134649、source/runtime-only 3/3、compiled 59103、linked instructions 191273、CALL/JUMP 12254/15、resolved 12269。Legacy oracleは24ケースを3回ずつ再生し24/24 deterministic、mutationは46ケースを検証する。NextRuntimeとのbehavior一致は未主張、real ExecutableReady=0、Phase2B/Phase3=NOT_STARTED。性能値はR3 immutable raw replayとして扱う。

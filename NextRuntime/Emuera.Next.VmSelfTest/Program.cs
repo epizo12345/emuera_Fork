@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using MinorShift.Emuera.Next.Compiler;
 using MinorShift.Emuera.Next.Core;
@@ -12,12 +13,12 @@ var tests = new List<(string Name, Action Run)>
     ("empty function", () => Check(Run([]) == VmStopReason.Returned)),
     ("branch to end", () => Check(Run([VmInstruction.Branch(1)]) == VmStopReason.Returned)),
     ("branch past end invalid", () => Check(Run([VmInstruction.Branch(2)]) == VmStopReason.InvalidLocalPc)),
-    ("CALL exact return PC", () => { var b = new VmSyntheticProgramBuilder(); var a = b.AddFunction(VmInstruction.Call(1), VmInstruction.Halt); b.AddFunction(VmInstruction.Return); Check(new VmMachine(b.Build()).Run(a) == VmStopReason.Halted); }),
-    ("CALL empty returns", () => { var b = new VmSyntheticProgramBuilder(); var a = b.AddFunction(VmInstruction.Call(1), VmInstruction.Halt); b.AddFunction(); Check(new VmMachine(b.Build()).Run(a) == VmStopReason.Halted); }),
-    ("JUMP propagation", () => { var b = new VmSyntheticProgramBuilder(); var a = b.AddFunction(VmInstruction.Jump(1)); b.AddFunction(VmInstruction.Return); Check(new VmMachine(b.Build()).Run(a) == VmStopReason.Returned); }),
-    ("nested implicit returns", () => { var b = new VmSyntheticProgramBuilder(); var a = b.AddFunction(VmInstruction.Call(1), VmInstruction.Halt); b.AddFunction(VmInstruction.Call(2)); b.AddFunction(); Check(new VmMachine(b.Build()).Run(a) == VmStopReason.Halted); }),
-    ("CodeAvailable vs ExecutableReady", () => { var b = new VmSyntheticProgramBuilder(); var a = b.AddFunction(VmInstruction.Nop); var p = b.Build(); p.Descriptors[a] = new(a, 0, 1, VmFunctionState.LinkedSemanticPending); Check(new VmMachine(p).Run(a) == VmStopReason.SemanticNotAvailable); }),
-    ("real execution barrier", () => { var c = Catalog("X"); c.MarkCodeAvailable([new RuntimeFunctionId(0)]); var link = ControlLinker.Link(c, [RP(0, [PrototypeOpcode.PRINT])]); Check(link.Program.Descriptors[0].State == VmFunctionState.LinkedSemanticPending && new VmMachine(link.Program).Run(0) == VmStopReason.SemanticNotAvailable); }),
+    ("CALL exact return PC", () => { var b = new VmSyntheticProgramBuilder(); var a = b.AddFunction(VmInstruction.Call(new RuntimeFunctionId(1)), VmInstruction.Halt); b.AddFunction(VmInstruction.Return); Check(new VmMachine(b.Build()).Run(new RuntimeFunctionId(a)) == VmStopReason.Halted); }),
+    ("CALL empty returns", () => { var b = new VmSyntheticProgramBuilder(); var a = b.AddFunction(VmInstruction.Call(new RuntimeFunctionId(1)), VmInstruction.Halt); b.AddFunction(); Check(new VmMachine(b.Build()).Run(new RuntimeFunctionId(a)) == VmStopReason.Halted); }),
+    ("JUMP propagation", () => { var b = new VmSyntheticProgramBuilder(); var a = b.AddFunction(VmInstruction.Jump(new RuntimeFunctionId(1))); b.AddFunction(VmInstruction.Return); Check(new VmMachine(b.Build()).Run(new RuntimeFunctionId(a)) == VmStopReason.Returned); }),
+    ("nested implicit returns", () => { var b = new VmSyntheticProgramBuilder(); var a = b.AddFunction(VmInstruction.Call(new RuntimeFunctionId(1)), VmInstruction.Halt); b.AddFunction(VmInstruction.Call(new RuntimeFunctionId(2))); b.AddFunction(); Check(new VmMachine(b.Build()).Run(new RuntimeFunctionId(a)) == VmStopReason.Halted); }),
+    ("CodeAvailable vs ExecutableReady", () => { var b = new VmSyntheticProgramBuilder(); var a = b.AddFunction(VmInstruction.Nop); var p = b.Build(); p.Descriptors[a] = new(a, 0, 1, VmFunctionState.LinkedSemanticPending); Check(new VmMachine(p).Run(new RuntimeFunctionId(a)) == VmStopReason.SemanticNotAvailable); }),
+    ("real execution barrier", () => { var c = Catalog("X"); c.MarkCodeAvailable([new RuntimeFunctionId(0)]); var link = ControlLinker.Link(c, [RP(0, [PrototypeOpcode.PRINT])]); Check(link.Program.Descriptors[0].State == VmFunctionState.LinkedSemanticPending && new VmMachine(link.Program).Run(new RuntimeFunctionId(0)) == VmStopReason.SemanticNotAvailable); }),
     ("effective-name catalog", () => { var c = FunctionCatalog.FromDefinitions([D("RAW", "a", Span(1), effectiveName: "EFFECTIVE")]); Check(c.GetPhysicalName(0) == "RAW" && c.GetEffectiveName(0) == "EFFECTIVE" && c.FindByName("EFFECTIVE").SequenceEqual([0])); }),
     ("unknown effective name excluded", () => { var c = FunctionCatalog.FromDefinitions([new("RAW", "a", Span(1))]); Check(!c[0].EffectiveNameKnown && c.GetEffectiveName(0) is null && c.FindByName("RAW").Count == 0); }),
     ("resolver unique normal", () => Check(FixedCallResolver.Resolve(Catalog("X"), "X", true, false).RuntimeId.Value == 0)),
@@ -59,6 +60,17 @@ var tests = new List<(string Name, Action Run)>
     ("source/runtime domains are distinct", () => Check(!Equals(new SourceFunctionId(1), new RuntimeFunctionId(1)))),
     ("runtime catalog order is explicit", () => { var c = FunctionCatalog.FromRuntimeBindings([], [new(new(0), "FIRST", FunctionKind.Normal, SourceIndexFlags.None, true, CatalogSourceRef.None), new(new(1), "SECOND", FunctionKind.Normal, SourceIndexFlags.None, true, CatalogSourceRef.None)]); Check(FixedCallResolver.Resolve(c, "FIRST", true, false).RuntimeId.Value == 0); }),
     ("source ref absent API is safe", () => { var c = FunctionCatalog.FromRuntimeBindings([], [new(new(0), "R", FunctionKind.Normal, SourceIndexFlags.None, true, CatalogSourceRef.None)]); Check(c.GetPhysicalName(0) is null && c.GetSpan(0) is null && c.GetFileIdentity(0) is null); }),
+    ("typed public API boundary", () => {
+        var publicStatic = BindingFlags.Public | BindingFlags.Static;
+        var publicInstance = BindingFlags.Public | BindingFlags.Instance;
+        Check(typeof(VmInstruction).GetMethod("Call", publicStatic, null, [typeof(RuntimeFunctionId)], null) is not null);
+        Check(typeof(VmInstruction).GetMethod("Call", publicStatic, null, [typeof(int)], null) is null);
+        Check(typeof(VmInstruction).GetMethod("Jump", publicStatic, null, [typeof(RuntimeFunctionId)], null) is not null);
+        Check(typeof(VmInstruction).GetMethod("Jump", publicStatic, null, [typeof(int)], null) is null);
+        Check(typeof(VmMachine).GetMethod("Run", publicInstance, null, [typeof(RuntimeFunctionId), typeof(int)], null) is not null);
+        Check(typeof(VmMachine).GetMethod("Run", publicInstance, null, [typeof(int), typeof(int)], null) is null);
+        Check(typeof(FunctionCatalog).GetMethod("From" + "SourceIndex", publicStatic) is null);
+    }),
 };
 var passed = 0;
 foreach (var test in tests) try { test.Run(); passed++; Console.WriteLine($"PASS {test.Name}"); } catch (Exception ex) { Console.WriteLine($"FAIL {test.Name}: {ex.Message}"); }
@@ -71,8 +83,8 @@ static SourceSpan Span(int line) => new(0, 1, line, line);
 static FunctionCatalog Catalog(string name) => FunctionCatalog.FromDefinitions([D(name, "test.erb", Span(1))]);
 static FunctionDefinition D(string physicalName, string file, SourceSpan span, FunctionKind kind = FunctionKind.Normal, string? effectiveName = null) => new(physicalName, file, span, Kind: kind, EffectiveName: effectiveName ?? physicalName, EffectiveNameKnown: true);
 static RuntimeFunctionPrototype RP(int id, IReadOnlyList<PrototypeOpcode> opcodes) => new(new(id), opcodes.Select(P).ToImmutableArray(), opcodes.Select(_ => "").ToImmutableArray());
-static VmStopReason RunLinked(LinkedProgram program, int id) => new VmMachine(program).Run(id);
-static VmStopReason Run(VmInstruction[] code, int maxSteps = 100_000) { var b = new VmSyntheticProgramBuilder(); var id = b.AddFunction(code); return new VmMachine(b.Build()).Run(id, maxSteps); }
+static VmStopReason RunLinked(LinkedProgram program, int id) => new VmMachine(program).Run(new RuntimeFunctionId(id));
+static VmStopReason Run(VmInstruction[] code, int maxSteps = 100_000) { var b = new VmSyntheticProgramBuilder(); var id = b.AddFunction(code); return new VmMachine(b.Build()).Run(new RuntimeFunctionId(id), maxSteps); }
 static PrototypeInstruction P(PrototypeOpcode opcode) => new(opcode, PrototypeInstructionFlags.ControlFlow, 1, 2, 3);
 static StructuralLinkRecord[] LinkRows(IReadOnlyList<PrototypeOpcode> opcodes) => ControlLinker.Link(Catalog("X"), [RP(0, opcodes)]).Program.StructuralLinks;
 static StructuralLinkRecord[] LoopLink(IReadOnlyList<PrototypeOpcode> opcodes) => LinkRows(opcodes).Where(x => x.Kind == VmStructuralKind.Continue).ToArray();
