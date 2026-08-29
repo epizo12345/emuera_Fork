@@ -8,10 +8,11 @@ using System.Text.Json;
 using MinorShift.Emuera.Next.Compiler;
 using MinorShift.Emuera.Next.Core;
 using MinorShift.Emuera.Next.Vm;
+using MinorShift.Emuera.Next.VmAudit;
 
 if (args.Length < 4)
 {
-    Console.Error.WriteLine("Usage: Emuera.Next.VmAudit <fixture-root> <report-directory> <legacy-manifest.jsonl> <phase1-compiler-manifest.jsonl> [--phase3-environment-only|--phase3-semantic]");
+    Console.Error.WriteLine("Usage: Emuera.Next.VmAudit <fixture-root> <report-directory> <legacy-manifest.jsonl> <phase1-compiler-manifest.jsonl> [--phase3-environment-only|--phase3-semantic|--phase3b-semantic-execution]");
     return 2;
 }
 
@@ -25,8 +26,9 @@ var legacyPath = Path.GetFullPath(args[2]);
 var phase1Path = Path.GetFullPath(args[3]);
 var phase3Options = args.Skip(4).ToArray();
 var phase3EnvironmentOnly = phase3Options.Contains("--phase3-environment-only", StringComparer.Ordinal);
-var phase3Semantic = phase3Options.Contains("--phase3-semantic", StringComparer.Ordinal);
-if (phase3Options.Any(x => x is not ("--phase3-environment-only" or "--phase3-semantic")) || phase3EnvironmentOnly && phase3Semantic) { Console.Error.WriteLine("Invalid Phase3 option."); return 2; }
+var phase3BSemanticExecution = phase3Options.Contains("--phase3b-semantic-execution", StringComparer.Ordinal);
+var phase3Semantic = phase3Options.Contains("--phase3-semantic", StringComparer.Ordinal) || phase3BSemanticExecution;
+if (phase3Options.Any(x => x is not ("--phase3-environment-only" or "--phase3-semantic" or "--phase3b-semantic-execution")) || phase3EnvironmentOnly && phase3Semantic) { Console.Error.WriteLine("Invalid Phase3 option."); return 2; }
 Phase3HarnessEnvironment? phase3Environment = null;
 if (phase3EnvironmentOnly || phase3Semantic)
 {
@@ -156,8 +158,19 @@ var localPcErrors = VerifyLocalPcs(link.Program);
 var sideTableIndexErrors = VerifySideTableIndices(link.Program);
 var structuralAux = VerifyStructuralInstructionAux(link.Program);
 var phase3Linked = phase3Semantic ? VerifyPhase3LinkedProgram(link.Program) : Phase3LinkedVerification.NotRun;
+var phase3BCoverage = phase3BSemanticExecution ? Phase3BSemanticAudit.Analyze(link.Program) : null;
 if (phase3Semantic)
-    Write("phase3-semantic-linkage.txt", $"Phase3SemanticUsesStructuralSemanticEnvironment=True\nSemanticPayloadPropagatedToSourcePrototype=True\nSemanticPayloadSurvivesRuntimeRemap=True\nCompilerFingerprintFileStrictParser=True\nCompilerEnvironmentFingerprintMatched=True\nStructuralSemanticFunctionIdRangeSafe=True\nStructuralSemanticLinkMappingErrors={phase3Linked.MappingErrors}\nDuplicateSemanticMappings={phase3Linked.DuplicateMappings}\nUnreferencedSemanticRecords={phase3Linked.UnreferencedRecords}\nSemanticArenaRecordCount={phase3Linked.SemanticArenaRecordCount}\nTargetSemanticStructuralLinkCount={phase3Linked.TargetSemanticStructuralLinkCount}\nSemanticExactCountExpected=37366\nSemanticExactCountMatch={phase3Linked.ExactCountMatch}\nVmSemanticExactCountGate=True\nSemanticOutOfRangeIndices={phase3Linked.Semantic.Errors}\nSemanticRecordNodeCountSumMatchesNodes={phase3Linked.Semantic.RecordNodeCountSumMatchesNodes}\nSemanticRecordRootOwnedByRecordSegment={phase3Linked.Semantic.RecordRootOwnedByRecordSegment}\nSemanticVerifierUnexpectedException={phase3Linked.Semantic.UnexpectedExceptions}\nMacroCatalogRetainedByLinkedProgram={phase3Linked.MacroCatalogRetained}\nLinkedProgramRetainsRawSemanticOperandStrings={phase3Linked.RawStringsRetained}\nSemanticProgramManagedStringFields={phase3Linked.SemanticStringFields}\nPhase3ExpressionEvaluationDeferred=True\nExecutableReadyReal=0\nNextRuntimeBehaviorMatch=NOT_CLAIMED\nPhase3SemanticGatesAffectExitCode=True\n");
+    Write("phase3-semantic-linkage.txt", $"Phase3SemanticUsesStructuralSemanticEnvironment=True\nSemanticPayloadPropagatedToSourcePrototype=True\nSemanticPayloadSurvivesRuntimeRemap=True\nCompilerFingerprintFileStrictParser=True\nCompilerEnvironmentFingerprintMatched=True\nStructuralSemanticFunctionIdRangeSafe=True\nStructuralSemanticLinkMappingErrors={phase3Linked.MappingErrors}\nDuplicateSemanticMappings={phase3Linked.DuplicateMappings}\nUnreferencedSemanticRecords={phase3Linked.UnreferencedRecords}\nSemanticArenaRecordCount={phase3Linked.SemanticArenaRecordCount}\nTargetSemanticStructuralLinkCount={phase3Linked.TargetSemanticStructuralLinkCount}\nSemanticExactCountExpected=37366\nSemanticExactCountMatch={phase3Linked.ExactCountMatch}\nVmSemanticExactCountGate=True\nSemanticOutOfRangeIndices={phase3Linked.Semantic.Errors}\nSemanticRecordNodeCountSumMatchesNodes={phase3Linked.Semantic.RecordNodeCountSumMatchesNodes}\nSemanticRecordRootOwnedByRecordSegment={phase3Linked.Semantic.RecordRootOwnedByRecordSegment}\nSemanticVerifierUnexpectedException={phase3Linked.Semantic.UnexpectedExceptions}\nMacroCatalogRetainedByLinkedProgram={phase3Linked.MacroCatalogRetained}\nLinkedProgramRetainsRawSemanticOperandStrings={phase3Linked.RawStringsRetained}\nSemanticProgramManagedStringFields={phase3Linked.SemanticStringFields}\nPhase3BPartialSemanticExecution={phase3BSemanticExecution}\nPhase3ExpressionEvaluationDeferred=True\nExecutableReadyReal=0\nNextRuntimeBehaviorMatch=NOT_CLAIMED\nPhase3SemanticGatesAffectExitCode=True\n");
+if (phase3BCoverage is not null)
+{
+    Write("phase3b-semantic-execution-summary.txt", $"Phase3BSemanticExecution=True\nSemanticExecutionMode=Accelerated\nSemanticRecordsTotal={phase3BCoverage.SemanticRecordsTotal}\nConstantEvaluableRecords={phase3BCoverage.ConstantEvaluable}\nHostDependentRecords={phase3BCoverage.HostDependent}\nContextEvaluableRecords={phase3BCoverage.ContextEvaluable}\nExplicitDeferredRecords={phase3BCoverage.TrueDeferred}\nClassificationPartitionMatch={phase3BCoverage.ClassificationPartitionMatch}\nSemanticMappingErrors={phase3BCoverage.MappingErrors}\nSemanticOutOfRangeIndices={phase3BCoverage.OutOfRange}\nSemanticInvalidRecords={phase3BCoverage.Invalid}\nEvaluatorUnknownNodeKinds={phase3BCoverage.UnknownNodeKinds}\nEvaluatorUnknownOperators={phase3BCoverage.UnknownOperators}\nUnknownRequiredSemanticShapes={phase3BCoverage.UnknownRequiredShapes}\nTrueDeferredRequiredSemanticRecords={phase3BCoverage.DeferredRequired}\nStructuralSemanticExecutionReady={phase3BCoverage.Passed}\nExecutableReadyReal=0\n");
+    Write("phase3b-structural-semantic-summary.txt", $"StructuralSemanticRecords={phase3BCoverage.StructuralRecords}\nSifSemanticRecords={phase3BCoverage.StructuralKinds.GetValueOrDefault(nameof(VmStructuralKind.Sif))}\nIfSemanticRecords={phase3BCoverage.StructuralKinds.GetValueOrDefault(nameof(VmStructuralKind.If)) + phase3BCoverage.StructuralKinds.GetValueOrDefault(nameof(VmStructuralKind.ElseIf))}\nSelectSemanticRecords={phase3BCoverage.StructuralKinds.GetValueOrDefault(nameof(VmStructuralKind.SelectCase)) + phase3BCoverage.StructuralKinds.GetValueOrDefault(nameof(VmStructuralKind.Case))}\nCountedLoopSemanticRecords={phase3BCoverage.StructuralKinds.GetValueOrDefault(nameof(VmStructuralKind.For)) + phase3BCoverage.StructuralKinds.GetValueOrDefault(nameof(VmStructuralKind.Repeat))}\nConditionalLoopSemanticRecords={phase3BCoverage.StructuralKinds.GetValueOrDefault(nameof(VmStructuralKind.While)) + phase3BCoverage.StructuralKinds.GetValueOrDefault(nameof(VmStructuralKind.Loop))}\nStructuralSemanticMappingErrors={phase3BCoverage.MappingErrors}\nStructuralSemanticOutOfRange={phase3BCoverage.OutOfRange}\nStructuralSemanticUnmappedRequired={phase3BCoverage.UnmappedRequired}\nUnknownRequiredSemanticShapes={phase3BCoverage.UnknownRequiredShapes}\nTrueDeferredRequiredSemanticRecords={phase3BCoverage.DeferredRequired}\nStructuralSemanticExecutionReady={phase3BCoverage.Passed}\n");
+    Write("semantic-node-coverage.tsv", Phase3BSemanticAudit.NodeTsv(phase3BCoverage));
+    Write("semantic-operator-coverage.tsv", Phase3BSemanticAudit.OperatorTsv(phase3BCoverage));
+    Write("structural-semantic-coverage.tsv", Phase3BSemanticAudit.StructuralTsv(phase3BCoverage));
+    Write("deferred-semantic-reasons.tsv", Phase3BSemanticAudit.DeferredTsv(phase3BCoverage));
+    Write("unsupported-or-invalid-examples.tsv", "Category\tRecordIndex\tReason\n");
+}
 var linkedProgramRetainsRawOperandStrings = typeof(LinkedProgram).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
     .Any(x => x.FieldType == typeof(string[]) || x.FieldType == typeof(string) || typeof(IEnumerable<string>).IsAssignableFrom(x.FieldType));
 var machineSemanticHostFields = typeof(VmMachine).GetFields(BindingFlags.Instance | BindingFlags.NonPublic).Count(x => x.FieldType == typeof(IVmStructuralSemantics));
@@ -227,7 +240,7 @@ var knownLinkedPayload = instructionPayload + descriptorPayload + recordPayload 
 var catalogKnownPayload = (long)catalog.Count * Marshal.SizeOf<FunctionCatalogEntry>() + (long)catalog.CandidateIdCount * 4 + (long)catalog.NameRangeCount * 8 + (long)catalog.NameTable.Count * 8 + (long)catalog.FileTableCount * 8;
 var retained = MeasureRetained(files, runtimeBindings, sourcePrototypes, sourceToRuntime, catalogKnownPayload, knownLinkedPayload);
 var coreNextPipelineMs = indexWatch.Elapsed.TotalMilliseconds + oracleWatch.Elapsed.TotalMilliseconds + catalogWatch.Elapsed.TotalMilliseconds + compileWatch.Elapsed.TotalMilliseconds + linkWatch.Elapsed.TotalMilliseconds;
-var phase3GatePassed = !phase3Semantic || phase3Linked.Passed;
+var phase3GatePassed = (!phase3Semantic || phase3Linked.Passed) && (phase3BCoverage?.Passed ?? true);
 var auditResult = sourceRows.Count == 134652 && legacyRows.Length == 134652 && exactBound.Length == 134649 && sourceOnlyProof && runtimeOnlyProof && ambiguousBinding == 0 && misbound == 0 && ordinalMisbinds.Length == 2 && effectiveUnknown == 0 && remapMissing == 0 && !remapDuplicate && compileErrors == 0 && spanMismatch == 0 && localPcErrors == 0 && sideTableIndexErrors == 0 && loopRuntimeStateErrors == 0 && structuralExecutionContractErrors == 0 && invalidStructure == 0 && unsupportedControl == 0 && codeAvailable == 59103 && retained.AllValid && phase3GatePassed ? "PASS" : "HOLD";
 
 Write("semantic-binding-summary.txt", $"SourceDefinitions={sourceRows.Count}\nRuntimeDefinitions={legacyRows.Length}\nExactBound={exactBound.Length}\nPhysicalOnlyPreprocessorDisabled={sourceOnlyEvidence.Count(x => x.Classification == "PhysicalOnlyPreprocessorDisabled")}\nRuntimeOnlyLineContinuation={runtimeOnlyEvidence.Count(x => x.Classification == "RuntimeOnlyLineContinuation")}\nUnexplainedSourceOnly={sourceOnlyEvidence.Count(x => !x.Proven)}\nUnexplainedRuntimeOnly={runtimeOnlyEvidence.Count(x => !x.Proven)}\nAmbiguousBinding={ambiguousBinding}\nMisbound={misbound}\nOrdinalWouldMisbind={ordinalMisbinds.Length}\nEffectiveNameUnknownRuntime={effectiveUnknown}\nCompiledSourceFunctions={sourcePrototypes.Count}\nCompiledRuntimeMappings={prototypes.Count}\nCompiledMappingMissing={remapMissing}\nCompiledMappingDuplicate={(remapDuplicate ? 1 : 0)}\nresult={auditResult}\n");

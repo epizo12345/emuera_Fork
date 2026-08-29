@@ -17,7 +17,7 @@ public enum VmFunctionState : int
     CodeNotAvailable, LinkReady, LinkedSemanticPending, UnsupportedControl,
     InvalidStructure, ExecutableReady, Ready = ExecutableReady,
 }
-public enum VmStopReason : byte { Halted, Returned, CodeNotAvailable, SemanticNotAvailable, UnsupportedControl, InvalidStructure, InvalidFunctionId, InvalidLocalPc, StackUnderflow, StepLimit }
+public enum VmStopReason : byte { Halted, Returned, CodeNotAvailable, SemanticNotAvailable, SemanticEvaluationFault, UnsupportedControl, InvalidStructure, InvalidFunctionId, InvalidLocalPc, StackUnderflow, StepLimit }
 public enum VmReturnKind : int { Normal, Propagate }
 public enum VmStructuralKind : int { None, Sif, If, ElseIf, Else, EndIf, SelectCase, Case, CaseElse, EndSelect, Repeat, Rend, For, Next, While, Wend, Do, Loop, Break, Continue }
 [Flags] public enum LoopDescriptorFlags : int { None = 0, BreakAdvancesCounter = 1 }
@@ -402,17 +402,40 @@ public static class ControlLinker
 // Keep semantic values behind this interface so LinkedProgram does not retain raw operand strings
 // or Legacy parser objects just to execute control flow.
 public readonly record struct VmCountedLoopEntry(long Counter, long End, long Step);
+public enum VmSemanticStatus : byte { Success, Unavailable, Fault }
+public enum VmSemanticFault : byte { None, DivideByZero, ModuloByZero, StringMultiplierOutOfRange }
+public readonly record struct VmSemanticIntResult(VmSemanticStatus Status, long Value, VmSemanticFault Fault)
+{
+    public bool Available => Status == VmSemanticStatus.Success;
+    public static VmSemanticIntResult NotAvailable => new(VmSemanticStatus.Unavailable, 0, VmSemanticFault.None);
+    public static VmSemanticIntResult From(long value) => new(VmSemanticStatus.Success, value, VmSemanticFault.None);
+    public static VmSemanticIntResult Faulted(VmSemanticFault fault) => new(VmSemanticStatus.Fault, 0, fault);
+}
+public readonly record struct VmSemanticCaseResult(VmSemanticStatus Status, int Ordinal, VmSemanticFault Fault)
+{
+    public bool Available => Status == VmSemanticStatus.Success;
+    public static VmSemanticCaseResult NotAvailable => new(VmSemanticStatus.Unavailable, -1, VmSemanticFault.None);
+    public static VmSemanticCaseResult From(int ordinal) => new(VmSemanticStatus.Success, ordinal, VmSemanticFault.None);
+    public static VmSemanticCaseResult Faulted(VmSemanticFault fault) => new(VmSemanticStatus.Fault, -1, fault);
+}
+public readonly record struct VmCountedLoopResult(VmSemanticStatus Status, VmCountedLoopEntry Entry, VmSemanticFault Fault)
+{
+    public bool Available => Status == VmSemanticStatus.Success;
+    public static VmCountedLoopResult NotAvailable => new(VmSemanticStatus.Unavailable, default, VmSemanticFault.None);
+    public static VmCountedLoopResult From(VmCountedLoopEntry entry) => new(VmSemanticStatus.Success, entry, VmSemanticFault.None);
+    public static VmCountedLoopResult Faulted(VmSemanticFault fault) => new(VmSemanticStatus.Fault, default, fault);
+}
 
 public interface IVmStructuralSemantics
 {
-    long EvaluateInt(RuntimeFunctionId functionId, int pc, VmStructuralKind kind);
+    VmSemanticIntResult EvaluateInt(RuntimeFunctionId functionId, int pc, VmStructuralKind kind);
     // Return a relative ordinal in the CASE-only prefix, or -1 when no CASE matches.
     // VmMachine truncates at the first CASEELSE so Legacy ordering is preserved.
-    int SelectCase(RuntimeFunctionId functionId, int groupIndex, ReadOnlySpan<SelectCaseRecord> cases);
+    VmSemanticCaseResult SelectCase(RuntimeFunctionId functionId, int groupIndex, ReadOnlySpan<SelectCaseRecord> cases);
     // BeginCounted performs Legacy's counter = Start and returns the resulting counter plus captured End/Step.
-    VmCountedLoopEntry BeginCounted(RuntimeFunctionId functionId, int loopIndex, LoopDescriptor loop);
+    VmCountedLoopResult BeginCounted(RuntimeFunctionId functionId, int loopIndex, LoopDescriptor loop);
     // AdvanceCounted dynamically re-resolves the counter lvalue in the current scope and applies captured Step.
-    long AdvanceCounted(RuntimeFunctionId functionId, int loopIndex, LoopDescriptor loop, long step);
+    VmSemanticIntResult AdvanceCounted(RuntimeFunctionId functionId, int loopIndex, LoopDescriptor loop, long step);
 }
 
 // Counted FOR/REPEAT state belongs to the source loop identity, not to an invocation frame.
@@ -566,7 +589,9 @@ public sealed class VmMachine
         {
             case VmStructuralKind.Sif:
                 if (record.AuxiliaryPc < 0) return VmStopReason.InvalidStructure;
-                if (structuralSemantics.EvaluateInt(runtimeId, pc, record.Kind) == 0 && !SetPc(record.AuxiliaryPc))
+                var sif = structuralSemantics.EvaluateInt(runtimeId, pc, record.Kind);
+                if (!sif.Available) return SemanticResultReason(sif.Status);
+                if (sif.Value == 0 && !SetPc(record.AuxiliaryPc))
                     return VmStopReason.InvalidLocalPc;
                 return null;
 
@@ -624,7 +649,9 @@ public sealed class VmMachine
             var clause = program.IfClauses[index];
             if (clause.FunctionId != runtimeId.Value)
                 return VmStopReason.InvalidStructure;
-            if (clause.Kind == VmStructuralKind.Else || structuralSemantics!.EvaluateInt(runtimeId, clause.Pc, clause.Kind) != 0)
+            var condition = clause.Kind == VmStructuralKind.Else ? VmSemanticIntResult.From(1) : structuralSemantics!.EvaluateInt(runtimeId, clause.Pc, clause.Kind);
+            if (!condition.Available) return SemanticResultReason(condition.Status);
+            if (condition.Value != 0)
                 return SetPc(clause.Pc + 1) ? null : VmStopReason.InvalidLocalPc;
         }
         return SetPc(group.ExitPc) ? null : VmStopReason.InvalidLocalPc;
@@ -654,7 +681,9 @@ public sealed class VmMachine
             matchCount++;
         }
 
-        var selected = structuralSemantics!.SelectCase(runtimeId, record.GroupIndex, program.SelectCases.AsSpan(group.FirstCaseIndex, matchCount));
+        var selection = structuralSemantics!.SelectCase(runtimeId, record.GroupIndex, program.SelectCases.AsSpan(group.FirstCaseIndex, matchCount));
+        if (!selection.Available) return SemanticResultReason(selection.Status);
+        var selected = selection.Ordinal;
         if (selected < -1 || selected >= matchCount)
             return VmStopReason.UnsupportedControl;
         if (selected >= 0)
@@ -672,7 +701,9 @@ public sealed class VmMachine
     {
         if (!TryGetLoop(record, out var loop))
             return VmStopReason.InvalidStructure;
-        var entry = structuralSemantics!.BeginCounted(runtimeId, record.LoopIndex, loop);
+        var begin = structuralSemantics!.BeginCounted(runtimeId, record.LoopIndex, loop);
+        if (!begin.Available) return SemanticResultReason(begin.Status);
+        var entry = begin.Entry;
         loopRuntime.CaptureCounted(record.LoopIndex, entry.End, entry.Step);
         if (CountedContinues(entry.Counter, entry.End, entry.Step))
             return null;
@@ -689,7 +720,9 @@ public sealed class VmMachine
                 return VmStopReason.SemanticNotAvailable;
             return SetPc(loop.ExitPc) ? null : VmStopReason.InvalidLocalPc;
         }
-        var counter = structuralSemantics!.AdvanceCounted(runtimeId, record.LoopIndex, loop, step);
+        var advance = structuralSemantics!.AdvanceCounted(runtimeId, record.LoopIndex, loop, step);
+        if (!advance.Available) return SemanticResultReason(advance.Status);
+        var counter = advance.Value;
         if (breakAfterAdvance)
             return SetPc(loop.ExitPc) ? null : VmStopReason.InvalidLocalPc;
         if (CountedContinues(counter, end, step))
@@ -701,7 +734,9 @@ public sealed class VmMachine
     {
         if (!TryGetLoop(record, out var loop))
             return VmStopReason.InvalidStructure;
-        if (structuralSemantics!.EvaluateInt(runtimeId, evaluatePc, evaluateKind) != 0)
+        var condition = structuralSemantics!.EvaluateInt(runtimeId, evaluatePc, evaluateKind);
+        if (!condition.Available) return SemanticResultReason(condition.Status);
+        if (condition.Value != 0)
             return SetPc(loop.BodyEntryPc) ? null : VmStopReason.InvalidLocalPc;
         return SetPc(loop.ExitPc) ? null : VmStopReason.InvalidLocalPc;
     }
@@ -821,6 +856,7 @@ public sealed class VmMachine
         VmFunctionState.UnsupportedControl => VmStopReason.UnsupportedControl,
         _ => VmStopReason.SemanticNotAvailable,
     };
+    private static VmStopReason SemanticResultReason(VmSemanticStatus status) => status == VmSemanticStatus.Fault ? VmStopReason.SemanticEvaluationFault : VmStopReason.SemanticNotAvailable;
 }
 public sealed class VmSyntheticProgramBuilder
 {

@@ -127,6 +127,28 @@ var tests = new List<(string Name, Action Run)>
     ("semantic edge is child-only and sequence-owned", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var payload = SemanticIrCompiler.CompileFormat("a%B%b{C}c", env); var sequence = payload.Nodes.Single(x => x.Kind == SemanticNodeKind.FormattedSequence); Check(Marshal.SizeOf<SemanticEdge>() == 4 && typeof(SemanticEdge).GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public).Length == 1 && sequence.B == payload.Edges.Length && payload.Edges.All(x => (uint)x.To < (uint)payload.Nodes.Length)); }),
     ("semantic mapping rejects bad length and duplicate entries", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var payload = SemanticIrCompiler.CompileExpression("A", env); var link = new StructuralLinkRecord(0, 0, -1, -1, VmStructuralKind.Sif, 0); Expect<ArgumentOutOfRangeException>(() => new LinkedProgram([], [], [link], semanticArena: payload, structuralSemanticRecordIndices: [99])); Expect<ArgumentException>(() => new LinkedProgram([], [], [link, link], semanticArena: payload, structuralSemanticRecordIndices: [0, 0])); }),
     ("multiple functions retain multiple semantic record bases", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var a0 = SemanticIrCompiler.CompileExpression("A", env, 0); var a1 = SemanticIrCompiler.CompileExpression("A", env, 1); var b = SemanticIrCompiler.CompileExpression("B", env, 0); var c = FunctionCatalog.FromDefinitions([D("A", "a", Span(1)), D("B", "b", Span(1))]); var program = ControlLinker.Link(c, [new RuntimeFunctionPrototype(new(0), ImmutableArray.Create(P(PrototypeOpcode.SIF), P(PrototypeOpcode.SIF)), ImmutableArray.Create("A", "A"), SemanticPayload.Merge([a0, a1])), new RuntimeFunctionPrototype(new(1), ImmutableArray.Create(P(PrototypeOpcode.SIF)), ImmutableArray.Create("B"), b)]).Program; Check(program.SemanticArena.Records.Length == 3 && program.StructuralSemanticRecordIndices.Length == program.StructuralLinks.Length && program.StructuralSemanticRecordIndices.All(i => i >= 0)); }),
+    ("semantic arithmetic comparison and bitwise", () => { var h = new SemanticHost(); Check(Evaluate("1+2*3", h).TryGetInteger(out var a) && a == 7 && Evaluate("7&3|8", h).TryGetInteger(out var b) && b == 11 && Evaluate("3<4", h).TryGetInteger(out var c) && c == 1); }),
+    ("semantic complete comparisons bitwise and logical xor", () => { var h = new SemanticHost(); Check(EvaluateBinary(SemanticOperator.Equal, 3, 3, h) == 1 && EvaluateBinary(SemanticOperator.NotEqual, 3, 4, h) == 1 && EvaluateBinary(SemanticOperator.Greater, 4, 3, h) == 1 && EvaluateBinary(SemanticOperator.Less, 3, 4, h) == 1 && EvaluateBinary(SemanticOperator.GreaterEqual, 4, 4, h) == 1 && EvaluateBinary(SemanticOperator.LessEqual, 3, 4, h) == 1 && EvaluateBinary(SemanticOperator.BitAnd, 6, 3, h) == 2 && EvaluateBinary(SemanticOperator.BitOr, 6, 3, h) == 7 && EvaluateBinary(SemanticOperator.BitXor, 6, 3, h) == 5 && EvaluateBinary(SemanticOperator.ShiftLeft, 3, 2, h) == 12 && EvaluateBinary(SemanticOperator.ShiftRight, 12, 2, h) == 3 && EvaluateBinary(SemanticOperator.LogicalXor, 1, 0, h) == 1); }),
+    ("semantic defined faults are not unavailable", () => { var h = new SemanticHost(); var divide = SemanticExecutor("1/0", h); var modulo = SemanticExecutor("1%0", h); var negative = SemanticExecutor("\"x\"*-1", h); var large = SemanticExecutor("\"x\"*10000", h); Check(!divide.TryEvaluateRecord(0, out _) && divide.LastStatus == VmSemanticStatus.Fault && divide.LastFault == VmSemanticFault.DivideByZero && !modulo.TryEvaluateRecord(0, out _) && modulo.LastFault == VmSemanticFault.ModuloByZero && !negative.TryEvaluateRecord(0, out _) && negative.LastFault == VmSemanticFault.StringMultiplierOutOfRange && !large.TryEvaluateRecord(0, out _) && large.LastFault == VmSemanticFault.StringMultiplierOutOfRange); var p = SemanticStructural((PrototypeOpcode.SIF, "1/0"), (PrototypeOpcode.RETURN, "")); Check(new VmMachine(p, new VmSemanticExecutor(p, h)).Run(new(0)) == VmStopReason.SemanticEvaluationFault); }),
+    ("semantic logical operations short circuit", () => { var h = new SemanticHost(); h.Calls["SIDE"] = _ => VmSemanticValue.From(1L); Check(Evaluate("0&&SIDE()", h).TryGetInteger(out var a) && a == 0 && Evaluate("1||SIDE()", h).TryGetInteger(out var b) && b == 1 && Evaluate("0!&SIDE()", h).TryGetInteger(out var c) && c == 1 && Evaluate("1!|SIDE()", h).TryGetInteger(out var d) && d == 0 && h.CallCount == 0); }),
+    ("semantic ternary evaluates selected branch only", () => { var h = new SemanticHost(); h.Calls["SIDE"] = _ => VmSemanticValue.From(99L); Check(Evaluate("1?7#SIDE()", h).TryGetInteger(out var value) && value == 7 && h.CallCount == 0); }),
+    ("semantic variables indexed subkey and call arguments", () => { var h = new SemanticHost(); h.Set("V", null, [VmSemanticValue.From(2L)], VmSemanticValue.From(9L)); h.Set("S", "K", [], VmSemanticValue.From("ok")); h.Calls["F"] = values => values.Length == 2 && values[0].Kind == VmSemanticValueKind.Missing && values[1].TryGetInteger(out var n) ? VmSemanticValue.From(n + 1) : VmSemanticValue.Unavailable; Check(Evaluate("V:2", h).TryGetInteger(out var v) && v == 9 && Evaluate("S@K", h).TryGetString(out var s) && s == "ok" && Evaluate("F(,2)", h).TryGetInteger(out var f) && f == 3); }),
+    ("semantic prefix postfix mutation", () => { var h = new SemanticHost(); h.Set("X", null, [], VmSemanticValue.From(3L)); Check(Evaluate("X++", h).TryGetInteger(out var post) && post == 3 && h.GetInt("X") == 4 && Evaluate("++X", h).TryGetInteger(out var pre) && pre == 5 && h.GetInt("X") == 5); }),
+    ("semantic lvalue mutation resolves dynamic index once", () => { var h = new SemanticHost(); h.Calls["INDEX"] = _ => VmSemanticValue.From(2L); h.Set("A", null, [VmSemanticValue.From(2L)], VmSemanticValue.From(3L)); Check(Evaluate("A:INDEX()++", h).TryGetInteger(out var post) && post == 3 && h.CallCountFor("INDEX") == 1 && h.GetInt("A", 2) == 4 && h.Trace.SequenceEqual(["Call:INDEX", "Read:A@:2", "Write:A@:2"])); var prefix = new SemanticHost(); prefix.Calls["INDEX"] = _ => VmSemanticValue.From(2L); prefix.Set("A", null, [VmSemanticValue.From(2L)], VmSemanticValue.From(3L)); Check(Evaluate("++A:INDEX()", prefix).TryGetInteger(out var pre) && pre == 4 && prefix.CallCountFor("INDEX") == 1 && prefix.GetInt("A", 2) == 4); }),
+    ("semantic format and conditional format", () => { var h = new SemanticHost(); h.Set("A", null, [], VmSemanticValue.From(1L)); Check(Evaluate("@\"x%A,3,LEFT%\"", h).TryGetString(out var text) && text == "x1  " && Evaluate("\\@A?YES#NO\\@", h).TryGetString(out var yes) && yes == "YES"); h.Set("A", null, [], VmSemanticValue.From(0L)); Check(Evaluate("\\@A?YES\\@", h).TryGetString(out var empty) && empty == ""); }),
+    ("semantic CASE exact IS TO and string", () => { var h = new SemanticHost(); var p = SemanticStructural((PrototypeOpcode.SELECTCASE, "3"), (PrototypeOpcode.CASE, "1, IS >= 3, 4 TO 5"), (PrototypeOpcode.RETURN, ""), (PrototypeOpcode.CASEELSE, ""), (PrototypeOpcode.RETURN, ""), (PrototypeOpcode.ENDSELECT, "")); Check(new VmMachine(p, new VmSemanticExecutor(p, h)).Run(new(0)) == VmStopReason.Returned); var stringCase = SemanticStructural((PrototypeOpcode.SELECTCASE, "\"b\""), (PrototypeOpcode.CASE, "\"a\" TO \"c\""), (PrototypeOpcode.RETURN, ""), (PrototypeOpcode.ENDSELECT, "")); Check(new VmMachine(stringCase, new VmSemanticExecutor(stringCase, h)).Run(new(0)) == VmStopReason.Returned); }),
+    ("semantic CASE TO skips integer upper side effect when lower misses", () => { var h = new SemanticHost(); h.Calls["SIDE"] = _ => VmSemanticValue.From(2L); var p = SemanticStructural((PrototypeOpcode.SELECTCASE, "0"), (PrototypeOpcode.CASE, "1 TO SIDE()"), (PrototypeOpcode.RETURN, ""), (PrototypeOpcode.ENDSELECT, ""), (PrototypeOpcode.RETURN, "")); var executor = new VmSemanticExecutor(p, h); var result = executor.SelectCase(new(0), 0, p.SelectCases); Check(result.Available && result.Ordinal == -1 && h.CallCountFor("SIDE") == 0 && new VmMachine(p, executor).Run(new(0)) == VmStopReason.Returned); }),
+    ("semantic CASE TO evaluates integer upper after lower match", () => { var h = new SemanticHost(); h.Calls["SIDE"] = _ => VmSemanticValue.From(2L); var p = SemanticStructural((PrototypeOpcode.SELECTCASE, "2"), (PrototypeOpcode.CASE, "1 TO SIDE()"), (PrototypeOpcode.RETURN, ""), (PrototypeOpcode.ENDSELECT, ""), (PrototypeOpcode.RETURN, "")); var result = new VmSemanticExecutor(p, h).SelectCase(new(0), 0, p.SelectCases); Check(result.Available && result.Ordinal == 0 && h.CallCountFor("SIDE") == 1); }),
+    ("semantic CASE TO skips lower-miss upper divide fault", () => { var h = new SemanticHost(); var p = SemanticStructural((PrototypeOpcode.SELECTCASE, "0"), (PrototypeOpcode.CASE, "1 TO 1/0"), (PrototypeOpcode.RETURN, ""), (PrototypeOpcode.ENDSELECT, ""), (PrototypeOpcode.RETURN, "")); var executor = new VmSemanticExecutor(p, h); var result = executor.SelectCase(new(0), 0, p.SelectCases); Check(result.Available && result.Ordinal == -1 && new VmMachine(p, executor).Run(new(0)) == VmStopReason.Returned); }),
+    ("semantic CASE TO propagates upper divide fault after lower match", () => { var h = new SemanticHost(); var p = SemanticStructural((PrototypeOpcode.SELECTCASE, "2"), (PrototypeOpcode.CASE, "1 TO 1/0"), (PrototypeOpcode.RETURN, ""), (PrototypeOpcode.ENDSELECT, ""), (PrototypeOpcode.RETURN, "")); var result = new VmSemanticExecutor(p, h).SelectCase(new(0), 0, p.SelectCases); Check(result.Status == VmSemanticStatus.Fault && result.Fault == VmSemanticFault.DivideByZero && new VmMachine(p, new VmSemanticExecutor(p, h)).Run(new(0)) == VmStopReason.SemanticEvaluationFault); }),
+    ("semantic CASE TO skips string upper side effect when lower misses", () => { var h = new SemanticHost(); h.Calls["SIDE_STR"] = _ => VmSemanticValue.From("z"); var p = SemanticStructural((PrototypeOpcode.SELECTCASE, "\"a\""), (PrototypeOpcode.CASE, "\"b\" TO SIDE_STR()"), (PrototypeOpcode.RETURN, ""), (PrototypeOpcode.ENDSELECT, ""), (PrototypeOpcode.RETURN, "")); var result = new VmSemanticExecutor(p, h).SelectCase(new(0), 0, p.SelectCases); Check(result.Available && result.Ordinal == -1 && h.CallCountFor("SIDE_STR") == 0); }),
+    ("semantic SIF IF WHILE and DO execution", () => { var h = new SemanticHost(); var sif = SemanticStructural((PrototypeOpcode.SIF, "1"), (PrototypeOpcode.RETURN, "")); var iff = SemanticStructural((PrototypeOpcode.IF, "0"), (PrototypeOpcode.RETURN, ""), (PrototypeOpcode.ELSE, ""), (PrototypeOpcode.RETURN, ""), (PrototypeOpcode.ENDIF, "")); var whileLoop = SemanticStructural((PrototypeOpcode.WHILE, "0"), (PrototypeOpcode.WEND, ""), (PrototypeOpcode.RETURN, "")); var doLoop = SemanticStructural((PrototypeOpcode.DO, ""), (PrototypeOpcode.LOOP, "0"), (PrototypeOpcode.RETURN, "")); Check(new VmMachine(sif, new VmSemanticExecutor(sif, h)).Run(new(0)) == VmStopReason.Returned && new VmMachine(iff, new VmSemanticExecutor(iff, h)).Run(new(0)) == VmStopReason.Returned && new VmMachine(whileLoop, new VmSemanticExecutor(whileLoop, h)).Run(new(0)) == VmStopReason.Returned && new VmMachine(doLoop, new VmSemanticExecutor(doLoop, h)).Run(new(0)) == VmStopReason.Returned); }),
+    ("semantic FOR and REPEAT execution", () => { var h = new SemanticHost(); h.Set("I", null, [], VmSemanticValue.From(0L)); var forLoop = SemanticStructural((PrototypeOpcode.FOR, "I,0,3,1"), (PrototypeOpcode.NEXT, ""), (PrototypeOpcode.RETURN, "")); var repeat = SemanticStructural((PrototypeOpcode.REPEAT, "3"), (PrototypeOpcode.REND, ""), (PrototypeOpcode.RETURN, "")); Check(new VmMachine(forLoop, new VmSemanticExecutor(forLoop, h)).Run(new(0)) == VmStopReason.Returned && h.GetInt("I") == 3 && new VmMachine(repeat, new VmSemanticExecutor(repeat, h)).Run(new(0)) == VmStopReason.Returned); }),
+    ("semantic FOR begin preserves Legacy evaluation order", () => { var h = new SemanticHost(); h.Calls["START"] = _ => VmSemanticValue.From(1L); h.Calls["INDEX"] = _ => VmSemanticValue.From(2L); h.Calls["END"] = _ => VmSemanticValue.From(5L); h.Calls["STEP"] = _ => VmSemanticValue.From(1L); var p = SemanticStructural((PrototypeOpcode.FOR, "A:INDEX(),START(),END(),STEP()"), (PrototypeOpcode.NEXT, ""), (PrototypeOpcode.RETURN, "")); var executor = new VmSemanticExecutor(p, h); var begin = executor.BeginCounted(new(0), 0, p.Loops.Single()); Check(begin.Available && begin.Entry.Counter == 1 && begin.Entry.End == 5 && begin.Entry.Step == 1 && h.Trace.SequenceEqual(["Call:START", "Call:INDEX", "Write:A@:2", "Call:END", "Call:STEP", "Call:INDEX", "Read:A@:2"])); }),
+    ("semantic counted loop mutation resolves dynamic index once", () => { var h = new SemanticHost(); h.Calls["INDEX"] = _ => VmSemanticValue.From(2L); h.Set("A", null, [VmSemanticValue.From(2L)], VmSemanticValue.From(0L)); var next = SemanticStructural((PrototypeOpcode.FOR, "A:INDEX(),0,2,1"), (PrototypeOpcode.NEXT, ""), (PrototypeOpcode.RETURN, "")); Check(new VmMachine(next, new VmSemanticExecutor(next, h)).Run(new(0)) == VmStopReason.Returned && h.CallCountFor("INDEX") == 4 && h.GetInt("A", 2) == 2); var breakHost = new SemanticHost(); breakHost.Calls["INDEX"] = _ => VmSemanticValue.From(2L); breakHost.Set("A", null, [VmSemanticValue.From(2L)], VmSemanticValue.From(0L)); var breakLoop = SemanticStructural((PrototypeOpcode.FOR, "A:INDEX(),0,2,1"), (PrototypeOpcode.BREAK, ""), (PrototypeOpcode.NEXT, ""), (PrototypeOpcode.RETURN, "")); Check(new VmMachine(breakLoop, new VmSemanticExecutor(breakLoop, breakHost)).Run(new(0)) == VmStopReason.Returned && breakHost.CallCountFor("INDEX") == 3 && breakHost.GetInt("A", 2) == 1); }),
+    ("semantic FOR negative zero BREAK and CONTINUE", () => { var negativeHost = new SemanticHost(); negativeHost.Set("I", null, [], VmSemanticValue.From(0L)); var negative = SemanticStructural((PrototypeOpcode.FOR, "I,3,0,-1"), (PrototypeOpcode.NEXT, ""), (PrototypeOpcode.RETURN, "")); var zeroHost = new SemanticHost(); zeroHost.Set("I", null, [], VmSemanticValue.From(9L)); var zero = SemanticStructural((PrototypeOpcode.FOR, "I,0,3,0"), (PrototypeOpcode.NEXT, ""), (PrototypeOpcode.RETURN, "")); var continueHost = new SemanticHost(); continueHost.Set("I", null, [], VmSemanticValue.From(0L)); var continued = SemanticStructural((PrototypeOpcode.FOR, "I,0,3,1"), (PrototypeOpcode.CONTINUE, ""), (PrototypeOpcode.NEXT, ""), (PrototypeOpcode.RETURN, "")); Check(new VmMachine(negative, new VmSemanticExecutor(negative, negativeHost)).Run(new(0)) == VmStopReason.Returned && negativeHost.GetInt("I") == 0 && new VmMachine(zero, new VmSemanticExecutor(zero, zeroHost)).Run(new(0)) == VmStopReason.Returned && zeroHost.GetInt("I") == 0 && new VmMachine(continued, new VmSemanticExecutor(continued, continueHost)).Run(new(0)) == VmStopReason.Returned && continueHost.GetInt("I") == 3); }),
+    ("semantic unavailable host stops safely", () => { var h = new SemanticHost(); var p = SemanticStructural((PrototypeOpcode.SIF, "MISSING"), (PrototypeOpcode.RETURN, "")); Check(new VmMachine(p, new VmSemanticExecutor(p, h)).Run(new(0)) == VmStopReason.SemanticNotAvailable); }),
+    ("semantic barrier remains safe", () => { var p = new VmSyntheticProgramBuilder(); var id = p.AddFunction(new VmInstruction[] { new((ushort)VmOpcode.SemanticBarrier) }); Check(new VmMachine(p.Build()).Run(new RuntimeFunctionId(id)) == VmStopReason.SemanticNotAvailable); }),
 };
 var passed = 0;
 foreach (var test in tests) try { test.Run(); passed++; Console.WriteLine($"PASS {test.Name}"); } catch (Exception ex) { Console.WriteLine($"FAIL {test.Name}: {ex.Message}"); }
@@ -159,6 +181,41 @@ static StructuralLinkRecord[] LinkRows(IReadOnlyList<PrototypeOpcode> opcodes) =
 static StructuralLinkRecord[] LoopLink(IReadOnlyList<PrototypeOpcode> opcodes) => LinkRows(opcodes).Where(x => x.Kind == VmStructuralKind.Continue).ToArray();
 static IEnumerable<int> LoopOwners(IReadOnlyList<PrototypeOpcode> opcodes) => LinkRows(opcodes).Where(x => x.Kind is VmStructuralKind.Break or VmStructuralKind.Continue).Select(x => x.LoopIndex);
 static LinkedProgram CountedLoopProgram(params VmStructuralKind[] kinds) => new([], [], [], loops: kinds.Select((kind, i) => new LoopDescriptor(0, kind, i * 4, i * 4 + 1, i * 4 + 2, i * 4 + 3, i * 4 + 2, (kind is VmStructuralKind.For or VmStructuralKind.Repeat) ? LoopDescriptorFlags.BreakAdvancesCounter : LoopDescriptorFlags.None)).ToArray());
+static VmSemanticValue Evaluate(string expression, SemanticHost host) { Check(TryEvaluate(expression, host, out var value)); return value; }
+static long EvaluateBinary(SemanticOperator op, long left, long right, SemanticHost host)
+{
+    var leftText = left.ToString(System.Globalization.CultureInfo.InvariantCulture); var rightText = right.ToString(System.Globalization.CultureInfo.InvariantCulture); var utf8 = System.Text.Encoding.UTF8.GetBytes(leftText + rightText);
+    var payload = new SemanticPayload([new(SemanticNodeKind.IntegerLiteral, SemanticOperator.None, 0, -1, -1, -1), new(SemanticNodeKind.IntegerLiteral, SemanticOperator.None, 1, -1, -1, -1), new(SemanticNodeKind.Binary, op, 0, 1, -1, -1)], [], [new(0, leftText.Length), new(leftText.Length, rightText.Length)], [], [new(0, 2, 3)], utf8);
+    if (new VmSemanticExecutor(new LinkedProgram([], [], [], semanticArena: payload), host).TryEvaluateRecord(0, out var value) && value.TryGetInteger(out var integer)) return integer;
+    throw new InvalidOperationException("binary semantic evaluation failed");
+}
+static bool TryEvaluate(string expression, SemanticHost host, out VmSemanticValue value)
+{
+    var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false));
+    var payload = SemanticIrCompiler.CompileExpression(expression, env);
+    return new VmSemanticExecutor(new LinkedProgram([], [], [], semanticArena: payload), host).TryEvaluateRecord(0, out value);
+}
+static VmSemanticExecutor SemanticExecutor(string expression, SemanticHost host)
+{
+    var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false));
+    var payload = SemanticIrCompiler.CompileExpression(expression, env);
+    return new VmSemanticExecutor(new LinkedProgram([], [], [], semanticArena: payload), host);
+}
+static LinkedProgram SemanticStructural(params (PrototypeOpcode Opcode, string Operand)[] rows)
+{
+    var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false));
+    var payloads = new List<SemanticPayload>();
+    for (var pc = 0; pc < rows.Length; pc++)
+    {
+        var (opcode, operand) = rows[pc];
+        if (opcode is PrototypeOpcode.SIF or PrototypeOpcode.IF or PrototypeOpcode.ELSEIF or PrototypeOpcode.SELECTCASE or PrototypeOpcode.WHILE or PrototypeOpcode.LOOP) payloads.Add(SemanticIrCompiler.CompileExpression(operand, env, pc));
+        else if (opcode == PrototypeOpcode.CASE) payloads.Add(SemanticIrCompiler.CompileCase(operand, env, pc));
+        else if (opcode == PrototypeOpcode.FOR) payloads.Add(SemanticIrCompiler.CompileCountedLoop(operand, env, pc, false));
+        else if (opcode == PrototypeOpcode.REPEAT) payloads.Add(SemanticIrCompiler.CompileCountedLoop(operand, env, pc, true));
+    }
+    var prototype = new RuntimeFunctionPrototype(new(0), rows.Select(x => P(x.Opcode)).ToImmutableArray(), rows.Select(x => x.Operand).ToImmutableArray(), payloads.Count == 0 ? null : SemanticPayload.Merge(payloads));
+    return Executable(ControlLinker.Link(Catalog("X"), [prototype]).Program);
+}
 
 sealed class StructuralHost : IVmStructuralSemantics
 {
@@ -171,34 +228,55 @@ sealed class StructuralHost : IVmStructuralSemantics
     public long DefaultInt { get; set; }
     public int LastSelectCaseCount { get; private set; } = -1;
 
-    public long EvaluateInt(RuntimeFunctionId functionId, int pc, VmStructuralKind kind)
+    public VmSemanticIntResult EvaluateInt(RuntimeFunctionId functionId, int pc, VmStructuralKind kind)
     {
         var key = (functionId.Value, pc, kind);
         IntTrace.Add(key);
-        return IntValues.TryGetValue(key, out var values) && values.Count > 0 ? values.Dequeue() : DefaultInt;
+        return VmSemanticIntResult.From(IntValues.TryGetValue(key, out var values) && values.Count > 0 ? values.Dequeue() : DefaultInt);
     }
 
-    public int SelectCase(RuntimeFunctionId functionId, int groupIndex, ReadOnlySpan<SelectCaseRecord> cases)
+    public VmSemanticCaseResult SelectCase(RuntimeFunctionId functionId, int groupIndex, ReadOnlySpan<SelectCaseRecord> cases)
     {
         LastSelectCaseCount = cases.Length;
-        return SelectResults.Count > 0 ? SelectResults.Dequeue() : -1;
+        return VmSemanticCaseResult.From(SelectResults.Count > 0 ? SelectResults.Dequeue() : -1);
     }
 
-    public VmCountedLoopEntry BeginCounted(RuntimeFunctionId functionId, int loopIndex, LoopDescriptor loop)
+    public VmCountedLoopResult BeginCounted(RuntimeFunctionId functionId, int loopIndex, LoopDescriptor loop)
     {
         if (!Begins.TryGetValue(loopIndex, out var values) || values.Count == 0)
             throw new InvalidOperationException($"missing BeginCounted value for loop {loopIndex}");
         var entry = values.Dequeue();
         Counters[loopIndex] = entry.Counter;
-        return entry;
+        return VmCountedLoopResult.From(entry);
     }
 
-    public long AdvanceCounted(RuntimeFunctionId functionId, int loopIndex, LoopDescriptor loop, long step)
+    public VmSemanticIntResult AdvanceCounted(RuntimeFunctionId functionId, int loopIndex, LoopDescriptor loop, long step)
     {
         AdvanceSteps.Add(step);
         var counter = Counters.TryGetValue(loopIndex, out var current) ? current : 0;
         counter = unchecked(counter + step);
         Counters[loopIndex] = counter;
-        return counter;
+        return VmSemanticIntResult.From(counter);
     }
+}
+
+delegate VmSemanticValue SemanticCall(ReadOnlySpan<VmSemanticValue> arguments);
+
+sealed class SemanticHost : IVmSemanticHost
+{
+    private readonly Dictionary<string, VmSemanticValue> values = [];
+    public readonly Dictionary<string, SemanticCall> Calls = [];
+    public readonly List<string> Trace = [];
+    public readonly Dictionary<string, int> CallCounts = [];
+    public int CallCount { get; private set; }
+    public void Set(string name, string? subkey, ReadOnlySpan<VmSemanticValue> indices, VmSemanticValue value) => values[Key(name, subkey, indices)] = value;
+    public long GetInt(string name) => GetInt(name, null, []);
+    public long GetInt(string name, long index) => GetInt(name, null, [VmSemanticValue.From(index)]);
+    public int CallCountFor(string name) => CallCounts.GetValueOrDefault(name);
+    public bool TryRead(string name, string? subkey, ReadOnlySpan<VmSemanticValue> indices, out VmSemanticValue value) { Trace.Add("Read:" + Key(name, subkey, indices)); return values.TryGetValue(Key(name, subkey, indices), out value); }
+    public bool TryWrite(string name, string? subkey, ReadOnlySpan<VmSemanticValue> indices, VmSemanticValue value) { Trace.Add("Write:" + Key(name, subkey, indices)); values[Key(name, subkey, indices)] = value; return true; }
+    public bool TryCall(string name, ReadOnlySpan<VmSemanticValue> arguments, out VmSemanticValue value) { CallCount++; CallCounts[name] = CallCountFor(name) + 1; Trace.Add("Call:" + name); if (Calls.TryGetValue(name, out var call)) { value = call(arguments); return value.Kind != VmSemanticValueKind.Unavailable; } value = VmSemanticValue.Unavailable; return false; }
+    public int CompareStrings(string left, string right) => string.CompareOrdinal(left, right);
+    private static string Key(string name, string? subkey, ReadOnlySpan<VmSemanticValue> indices) => name + "@" + subkey + ":" + string.Join(',', indices.ToArray().Select(x => x.ToString()));
+    private long GetInt(string name, string? subkey, ReadOnlySpan<VmSemanticValue> indices) => values[Key(name, subkey, indices)].TryGetInteger(out var value) ? value : throw new InvalidOperationException("missing integer");
 }
