@@ -246,8 +246,8 @@ public static class FixedCallResolver
     }
 }
 
-public sealed record SourceFunctionPrototype(SourceFunctionId SourceId, ImmutableArray<PrototypeInstruction> Instructions, ImmutableArray<string> Operands);
-public sealed record RuntimeFunctionPrototype(RuntimeFunctionId RuntimeId, ImmutableArray<PrototypeInstruction> Instructions, ImmutableArray<string> Operands);
+public sealed record SourceFunctionPrototype(SourceFunctionId SourceId, ImmutableArray<PrototypeInstruction> Instructions, ImmutableArray<string> Operands, SemanticPayload? SemanticPayload = null);
+public sealed record RuntimeFunctionPrototype(RuntimeFunctionId RuntimeId, ImmutableArray<PrototypeInstruction> Instructions, ImmutableArray<string> Operands, SemanticPayload? SemanticPayload = null);
 public static class RuntimeFunctionBinder
 {
     public static IReadOnlyList<RuntimeFunctionPrototype> Remap(
@@ -263,7 +263,7 @@ public static class RuntimeFunctionBinder
                 throw new InvalidOperationException($"No RuntimeFunctionId for SourceFunctionId {source.SourceId.Value}");
             if (!seen.Add(runtimeId))
                 throw new InvalidOperationException($"Duplicate RuntimeFunctionId {runtimeId.Value}");
-            result[i] = new(runtimeId, source.Instructions, source.Operands);
+            result[i] = new(runtimeId, source.Instructions, source.Operands, source.SemanticPayload);
         }
         return result;
     }
@@ -279,8 +279,17 @@ public sealed class LinkedProgram
     public SelectGroupDescriptor[] SelectGroups { get; }
     public SelectCaseRecord[] SelectCases { get; }
     public LoopDescriptor[] Loops { get; }
-    public LinkedProgram(VmInstruction[] code, VmFunctionDescriptor[] descriptors, StructuralLinkRecord[] structuralLinks, SifLinkRecord[]? sifLinks = null, IfGroupDescriptor[]? ifGroups = null, IfClauseRecord[]? ifClauses = null, SelectGroupDescriptor[]? selectGroups = null, SelectCaseRecord[]? selectCases = null, LoopDescriptor[]? loops = null)
-        => (Code, Descriptors, StructuralLinks, SifLinks, IfGroups, IfClauses, SelectGroups, SelectCases, Loops) = (code, descriptors, structuralLinks, sifLinks ?? [], ifGroups ?? [], ifClauses ?? [], selectGroups ?? [], selectCases ?? [], loops ?? []);
+    public SemanticPayload SemanticArena { get; }
+    public int[] StructuralSemanticRecordIndices { get; }
+    public LinkedProgram(VmInstruction[] code, VmFunctionDescriptor[] descriptors, StructuralLinkRecord[] structuralLinks, SifLinkRecord[]? sifLinks = null, IfGroupDescriptor[]? ifGroups = null, IfClauseRecord[]? ifClauses = null, SelectGroupDescriptor[]? selectGroups = null, SelectCaseRecord[]? selectCases = null, LoopDescriptor[]? loops = null, SemanticPayload? semanticArena = null, int[]? structuralSemanticRecordIndices = null)
+    {
+        var arena = semanticArena ?? SemanticPayload.Empty;
+        var mapping = structuralSemanticRecordIndices ?? Enumerable.Repeat(-1, structuralLinks.Length).ToArray();
+        if (mapping.Length != structuralLinks.Length) throw new ArgumentException("semantic mapping length must equal structural link length");
+        if (mapping.Any(index => index < -1 || index >= arena.Records.Length)) throw new ArgumentOutOfRangeException(nameof(structuralSemanticRecordIndices));
+        if (mapping.Where(index => index >= 0).GroupBy(index => index).Any(group => group.Count() > 1)) throw new ArgumentException("duplicate semantic record mapping");
+        (Code, Descriptors, StructuralLinks, SifLinks, IfGroups, IfClauses, SelectGroups, SelectCases, Loops, SemanticArena, StructuralSemanticRecordIndices) = (code, descriptors, structuralLinks, sifLinks ?? [], ifGroups ?? [], ifClauses ?? [], selectGroups ?? [], selectCases ?? [], loops ?? [], arena, mapping);
+    }
 }
 public enum StructuralClassification : byte { Valid, ValidWithStructuralWarning, InvalidStructure }
 public readonly record struct StructuralDiagnostic(RuntimeFunctionId RuntimeId, int Pc, StructuralClassification Classification, string Message);
@@ -301,12 +310,16 @@ public static class ControlLinker
     public static bool IsLegacyPartialOpcode(PrototypeOpcode opcode) => LegacyPartialOpcodes.Contains(opcode);
     public static ControlLinkResult Link(FunctionCatalog catalog, IReadOnlyList<RuntimeFunctionPrototype> prototypes, bool ignoreCase = true, bool compatiCallEvent = false)
     {
-        var code = new List<VmInstruction>(); var descriptors = Enumerable.Range(0, catalog.Count).Select(id => new VmFunctionDescriptor(id, 0, 0, VmFunctionState.CodeNotAvailable)).ToArray(); var records = new List<StructuralLinkRecord>(); var sifs = new List<SifLinkRecord>(); var ifGroups = new List<IfGroupDescriptor>(); var ifClauses = new List<IfClauseRecord>(); var selectGroups = new List<SelectGroupDescriptor>(); var selectCases = new List<SelectCaseRecord>(); var loops = new List<LoopDescriptor>(); var diagnostics = new List<string>(); var structuralDiagnostics = new List<StructuralDiagnostic>();
+        var code = new List<VmInstruction>(); var descriptors = Enumerable.Range(0, catalog.Count).Select(id => new VmFunctionDescriptor(id, 0, 0, VmFunctionState.CodeNotAvailable)).ToArray(); var records = new List<StructuralLinkRecord>(); var structuralSemanticIndices = new List<int>(); var semanticParts = new List<SemanticPayload>(); var sifs = new List<SifLinkRecord>(); var ifGroups = new List<IfGroupDescriptor>(); var ifClauses = new List<IfClauseRecord>(); var selectGroups = new List<SelectGroupDescriptor>(); var selectCases = new List<SelectCaseRecord>(); var loops = new List<LoopDescriptor>(); var diagnostics = new List<string>(); var structuralDiagnostics = new List<StructuralDiagnostic>();
         var calls = 0; var jumps = 0; var scans = 0; var resolved = 0; var missing = 0; var wrong = 0; var yes = 0; var no = 0; var barriers = 0;
+        var semanticRecordCount = 0;
         foreach (var prototype in prototypes.OrderBy(x => x.RuntimeId.Value))
         {
             var runtimeId = prototype.RuntimeId.Value;
             var start = code.Count; var state = VmFunctionState.LinkedSemanticPending; var local = new List<StructuralLinkRecord>();
+            var semanticRecordBase = semanticRecordCount;
+            if (prototype.SemanticPayload is not null) { semanticParts.Add(prototype.SemanticPayload); semanticRecordCount += prototype.SemanticPayload.Records.Length; }
+            var semanticByPc = prototype.SemanticPayload?.Records.Select((record, index) => (record.InstructionIndex, Index: semanticRecordBase + index)).ToDictionary(static x => x.InstructionIndex, static x => x.Index) ?? [];
             for (var pc = 0; pc < prototype.Instructions.Length; pc++)
             {
                 var p = prototype.Instructions[pc]; var operand = pc < prototype.Operands.Length ? prototype.Operands[pc] : string.Empty;
@@ -343,6 +356,7 @@ public static class ControlLinker
                         }
                     }
                     local.Add(new(runtimeId, pc, targetPc, auxiliaryPc, Kinds[p.Opcode], 0));
+                    structuralSemanticIndices.Add(semanticByPc.TryGetValue(pc, out var semanticIndex) ? semanticIndex : -1);
                     // Aux is the program-global StructuralLinks identity. Structural execution must not
                     // scan by (FunctionId,Pc) in the hot loop.
                     code.Add(Linked(p, VmOpcode.Structural, structuralIndex));
@@ -353,7 +367,7 @@ public static class ControlLinker
             }
             var linked = LinkStructure(runtimeId, prototype.Instructions, local, diagnostics, structuralDiagnostics, ifGroups.Count, ifClauses.Count, selectGroups.Count, selectCases.Count, loops.Count); if (linked.Invalid) state = VmFunctionState.InvalidStructure; records.AddRange(linked.Records); ifGroups.AddRange(linked.IfGroups); ifClauses.AddRange(linked.IfClauses); selectGroups.AddRange(linked.SelectGroups); selectCases.AddRange(linked.SelectCases); loops.AddRange(linked.Loops); descriptors[runtimeId] = new(runtimeId, start, code.Count - start, state);
         }
-        var program = new LinkedProgram(code.ToArray(), descriptors, records.ToArray(), sifs.ToArray(), ifGroups.ToArray(), ifClauses.ToArray(), selectGroups.ToArray(), selectCases.ToArray(), loops.ToArray()); return new ControlLinkResult(program, diagnostics, calls, jumps, scans, resolved, missing, wrong, yes, no, barriers, 0, prototypes.Count) { StructuralDiagnostics = structuralDiagnostics.ToArray() };
+        var program = new LinkedProgram(code.ToArray(), descriptors, records.ToArray(), sifs.ToArray(), ifGroups.ToArray(), ifClauses.ToArray(), selectGroups.ToArray(), selectCases.ToArray(), loops.ToArray(), semanticParts.Count == 0 ? SemanticPayload.Empty : SemanticPayload.Merge(semanticParts), structuralSemanticIndices.ToArray()); return new ControlLinkResult(program, diagnostics, calls, jumps, scans, resolved, missing, wrong, yes, no, barriers, 0, prototypes.Count) { StructuralDiagnostics = structuralDiagnostics.ToArray() };
     }
     private static VmInstruction Linked(PrototypeInstruction p, VmOpcode opcode, int aux = -1) => new((ushort)opcode, (ushort)p.Flags, p.OperandOffset, p.OperandLength, aux);
     private sealed class OpenFrame

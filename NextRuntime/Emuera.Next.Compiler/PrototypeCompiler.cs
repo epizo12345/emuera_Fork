@@ -65,7 +65,7 @@ public sealed record CompileResult(CompileStatus Status, CompiledFunction? Funct
 }
 
 public sealed record CompiledFunction(string FileIdentity, string Name, SourceSpan Span,
-    ImmutableArray<PrototypeInstruction> Instructions, int MetadataBytesEstimate)
+    ImmutableArray<PrototypeInstruction> Instructions, int MetadataBytesEstimate, SemanticPayload? SemanticPayload = null)
 {
     public int InstructionStorageBytes => Instructions.Length * FunctionCompiler.InstructionPayloadBytes;
 }
@@ -86,7 +86,7 @@ public static class LegacyIdentifierScanner
 {
     // [Emuera改修:NEXT-1B-R5 2026-08-27]
     // Legacy ReadSingleIdentifierROSのdelimiter集合をそのまま小さいscannerへ移す。
-    // char.IsWhiteSpaceはVT/FFまで区切るため使わず、SystemAllowFullSpaceだけを先頭/命令separatorへ反映する。
+    // Unicode-wide whitespaceは使わず、SystemAllowFullSpaceだけを先頭/命令separatorへ反映する。
     private const string Delimiters = " 　.+-*/%=!<>|&^~?#)}],:({[$\\'\"@;\t";
 
     public static LegacyIdentifierScan ReadFirstIdentifier(string text, CompilerCompatibilityOptions options)
@@ -256,10 +256,20 @@ public sealed class FunctionCompiler
     public const int FunctionDescriptorFieldPayloadBytes = 64;
     private static readonly UTF8Encoding StrictUtf8 = new(false, true);
     private readonly CompilerCompatibilityOptions options;
+    private readonly StructuralSemanticEnvironment? semanticEnvironment;
 
     // [Emuera改修:NEXT-1B-R6 2026-08-27]
     // 無指定compilerはLegacy通常起動の意味だけを委譲し、現在fixtureの設定を暗黙には読まない。
-    public FunctionCompiler(CompilerCompatibilityOptions? options = null) => this.options = options ?? CompilerCompatibilityOptions.LegacyDefaults;
+    public FunctionCompiler(CompilerCompatibilityOptions? options = null, StructuralSemanticEnvironment? semanticEnvironment = null)
+    {
+        if (semanticEnvironment is not null && options is not null && options.Value != semanticEnvironment.Compatibility)
+            throw new ArgumentException("semantic environment is the compatibility source");
+        this.options = semanticEnvironment?.Compatibility ?? options ?? CompilerCompatibilityOptions.LegacyDefaults;
+        this.semanticEnvironment = semanticEnvironment;
+    }
+
+    public FunctionCompiler(StructuralSemanticEnvironment semanticEnvironment)
+        : this(semanticEnvironment.Compatibility, semanticEnvironment) { }
 
     public CompilerCompatibilityOptions Options => options;
 
@@ -281,17 +291,21 @@ public sealed class FunctionCompiler
     {
         try
         {
-            var instructions = Scan(source.Bytes, source.Function.Span.StartLine, options, out var reason, out var detail);
+            var scanned = Scan(source.Bytes, source.Function.Span.StartLine, options, semanticEnvironment, out var reason, out var detail);
             if (reason != UnsupportedReason.None)
                 return CompileResult.Unsupported(reason, detail!);
             var fingerprint = SourceFingerprint.FromBytes(source.Bytes);
             return new(CompileStatus.Compiled,
-                new(source.File.FileIdentity, source.Function.Name, source.Function.Span, instructions,
-                    MetadataBytesEstimate(source.Function.Name)), UnsupportedReason.None, null, fingerprint);
+                new(source.File.FileIdentity, source.Function.Name, source.Function.Span, scanned.Instructions,
+                    MetadataBytesEstimate(source.Function.Name), scanned.SemanticPayload), UnsupportedReason.None, null, fingerprint);
         }
         catch (DecoderFallbackException ex)
         {
             return new(CompileStatus.InvalidSource, null, UnsupportedReason.InvalidSource, ex.Message, default);
+        }
+        catch (SemanticParseException ex)
+        {
+            return CompileResult.Unsupported(UnsupportedReason.ExpressionSensitiveSyntax, ex.Message);
         }
         catch (Exception ex) when (ex is ArgumentException or OverflowException)
         {
@@ -299,9 +313,10 @@ public sealed class FunctionCompiler
         }
     }
 
-    private static ImmutableArray<PrototypeInstruction> Scan(byte[] bytes, int startLine, CompilerCompatibilityOptions options, out UnsupportedReason reason, out string? detail)
+    private static (ImmutableArray<PrototypeInstruction> Instructions, SemanticPayload? SemanticPayload) Scan(byte[] bytes, int startLine, CompilerCompatibilityOptions options, StructuralSemanticEnvironment? semanticEnvironment, out UnsupportedReason reason, out string? detail)
     {
         var list = ImmutableArray.CreateBuilder<PrototypeInstruction>();
+        var semanticParts = new List<SemanticPayload>();
         reason = UnsupportedReason.None;
         detail = null;
         var offset = 0;
@@ -352,19 +367,34 @@ public sealed class FunctionCompiler
             var isAssignment = !isKnownLineHead;
             if (isAssignment) opcode = PrototypeOpcode.SET;
             var operandStart = isAssignment ? 0 : LegacyIdentifierScanner.SkipCommandSeparators(trimmed, tokenLength, options);
-            var operand = operandStart < trimmed.Length && trimmed[operandStart] != ';' ? trimmed[operandStart..].TrimEnd() : string.Empty;
+            var rawOperand = operandStart < trimmed.Length && trimmed[operandStart] != ';' ? trimmed[operandStart..] : string.Empty;
+            var operand = rawOperand.TrimEnd(' ', '\t', '　');
             var operandOffset = lineStart + Encoding.UTF8.GetByteCount(text[..(trimStart + operandStart)]);
             var operandLength = Encoding.UTF8.GetByteCount(operand);
             var flags = operandLength > 0 ? PrototypeInstructionFlags.HasOperand : PrototypeInstructionFlags.None;
             if (LegacyOpcodeMap.IsControlFlow(opcode)) flags |= PrototypeInstructionFlags.ControlFlow;
             if (LegacyOpcodeMap.IsCall(opcode)) flags |= PrototypeInstructionFlags.Call;
+            var instructionIndex = list.Count;
             list.Add(new(opcode, flags, line, operandOffset, operandLength));
+            if (semanticEnvironment is not null && IsSemanticOperand(opcode))
+            {
+                var semanticKind = opcode == PrototypeOpcode.CASE ? SemanticOperandKind.Case : opcode is PrototypeOpcode.FOR or PrototypeOpcode.REPEAT ? SemanticOperandKind.CountedLoop : SemanticOperandKind.Expression;
+                semanticParts.Add(opcode == PrototypeOpcode.REPEAT
+                    ? SemanticIrCompiler.CompileCountedLoop(rawOperand, semanticEnvironment, instructionIndex, true)
+                    : opcode == PrototypeOpcode.FOR
+                        ? SemanticIrCompiler.CompileCountedLoop(rawOperand, semanticEnvironment, instructionIndex, false)
+                        : opcode is PrototypeOpcode.SIF or PrototypeOpcode.IF or PrototypeOpcode.ELSEIF or PrototypeOpcode.WHILE or PrototypeOpcode.LOOP
+                            ? SemanticIrCompiler.CompileOptionalIntExpression(rawOperand, semanticEnvironment, instructionIndex)
+                            : SemanticIrCompiler.Compile(rawOperand, semanticEnvironment, instructionIndex, semanticKind));
+            }
             line++;
         }
-        return list.ToImmutable();
+        return (list.ToImmutable(), semanticParts.Count == 0 ? null : SemanticPayload.Merge(semanticParts));
 
-        static ImmutableArray<PrototypeInstruction> Fail(UnsupportedReason value, string message, out UnsupportedReason result, out string? detail)
-        { result = value; detail = message; return ImmutableArray<PrototypeInstruction>.Empty; }
+        static bool IsSemanticOperand(PrototypeOpcode opcode) => opcode is PrototypeOpcode.SIF or PrototypeOpcode.IF or PrototypeOpcode.ELSEIF or PrototypeOpcode.SELECTCASE or PrototypeOpcode.CASE or PrototypeOpcode.REPEAT or PrototypeOpcode.FOR or PrototypeOpcode.WHILE or PrototypeOpcode.LOOP;
+
+        static (ImmutableArray<PrototypeInstruction> Instructions, SemanticPayload? SemanticPayload) Fail(UnsupportedReason value, string message, out UnsupportedReason result, out string? detail)
+        { result = value; detail = message; return (ImmutableArray<PrototypeInstruction>.Empty, null); }
 
         static bool TryFindAssignment(ReadOnlySpan<char> text, out int operatorStart)
         {
@@ -395,7 +425,7 @@ public sealed class FunctionCompiler
 
         static bool IsStructuralLValue(ReadOnlySpan<char> text)
         {
-            text = text.Trim();
+            text = text.Trim(new[] { ' ', '\t', '　' });
             if (text.IsEmpty) return false;
             var index = 0;
             var sawIdentifier = false;

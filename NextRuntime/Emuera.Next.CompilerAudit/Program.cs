@@ -1,13 +1,15 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Globalization;
 using MinorShift.Emuera.Next.Compiler;
 using MinorShift.Emuera.Next.Core;
 
 if (args.Length < 3 || args.Any(static a => a is "-h" or "--help"))
 {
-    Console.Error.WriteLine("Usage: Emuera.Next.CompilerAudit <erb-directory> <legacy-manifest.jsonl> <report-directory> [--runs N] [--baseline-manifest path] [--phase1b-manifest path] [--compatibility-root path]");
+    Console.Error.WriteLine("Usage: Emuera.Next.CompilerAudit <erb-directory> <legacy-manifest.jsonl> <report-directory> [--runs N] [--baseline-manifest path] [--phase1b-manifest path] [--compatibility-root path] [--phase3-environment-only|--phase3-manifest-only]");
     return args.Length == 0 ? 2 : 0;
 }
 
@@ -20,17 +22,44 @@ var runs = 5;
 string? baselineManifest = null;
 string? phase1bManifest = null;
 string? compatibilityRootArgument = null;
-for (var i = 3; i + 1 < args.Length; i++)
+var phase3EnvironmentOnly = false;
+var phase3ManifestOnly = false;
+var sawRuns = false;
+var sawBaseline = false;
+var sawPhase1B = false;
+for (var i = 3; i < args.Length;)
 {
-    if (args[i] == "--runs" && int.TryParse(args[++i], out var parsed)) runs = Math.Clamp(parsed, 1, 20);
-    else if (args[i] == "--baseline-manifest") baselineManifest = Path.GetFullPath(args[++i]);
-    else if (args[i] == "--phase1b-manifest") phase1bManifest = Path.GetFullPath(args[++i]);
-    else if (args[i] == "--compatibility-root") compatibilityRootArgument = Path.GetFullPath(args[++i]);
+    var option = args[i++];
+    if (option == "--phase3-environment-only") { phase3EnvironmentOnly = true; continue; }
+    if (option == "--phase3-manifest-only") { phase3ManifestOnly = true; continue; }
+    if (option is not ("--runs" or "--baseline-manifest" or "--phase1b-manifest" or "--compatibility-root") || i >= args.Length) { Console.Error.WriteLine($"Invalid option: {option}"); return 2; }
+    var value = args[i++];
+    if (option == "--runs" && int.TryParse(value, out var parsed)) { runs = Math.Clamp(parsed, 1, 20); sawRuns = true; }
+    else if (option == "--baseline-manifest") { baselineManifest = Path.GetFullPath(value); sawBaseline = true; }
+    else if (option == "--phase1b-manifest") { phase1bManifest = Path.GetFullPath(value); sawPhase1B = true; }
+    else if (option == "--compatibility-root") compatibilityRootArgument = Path.GetFullPath(value);
+    else { Console.Error.WriteLine($"Invalid value for {option}: {value}"); return 2; }
 }
+if (phase3EnvironmentOnly && phase3ManifestOnly) { Console.Error.WriteLine("Phase3 modes are mutually exclusive."); return 2; }
+if ((phase3EnvironmentOnly || phase3ManifestOnly) && (sawRuns || sawBaseline || sawPhase1B)) { Console.Error.WriteLine("Phase3 modes cannot combine with normal audit options."); return 2; }
 Directory.CreateDirectory(reportDirectory);
 var compatibilityRoot = compatibilityRootArgument ?? Directory.GetParent(erbDirectory)?.FullName ?? throw new InvalidOperationException("Cannot resolve fixture compatibility root");
 var compatibilityOptions = ResolveFixtureCompatibilityOptions(compatibilityRoot, out var compatibilityEvidence);
 File.WriteAllLines(Path.Combine(reportDirectory, "fixture-compatibility-options.txt"), compatibilityEvidence, new UTF8Encoding(false));
+Phase3HarnessEnvironment? phase3Environment = null;
+if (phase3EnvironmentOnly || phase3ManifestOnly)
+{
+    phase3Environment = BuildPhase3Environment(compatibilityRoot);
+    WritePhase3Environment(reportDirectory, phase3Environment);
+}
+if (phase3EnvironmentOnly)
+{
+    File.WriteAllText(Path.Combine(reportDirectory, "phase3-environment-only.txt"), "Mode=PHASE3_ENVIRONMENT_ONLY\nErbIndexingPerformed=NO\nLegacyManifestRead=NO\nCompilerInvocationCount=0\nBenchmarkRuns=0\nMemoryMeasurementRuns=0\nFormalSemanticManifestWritten=NO\n", new UTF8Encoding(false));
+    Console.WriteLine("CompilerAudit: phase3 environment-only PASS");
+    return 0;
+}
+if (phase3ManifestOnly && !phase3Environment!.AuthorityMatched)
+    return RunPhase3ManifestOnly(reportDirectory, erbDirectory, Array.Empty<Candidate>(), phase3Environment);
 
 var files = ErbSourceIndexer.IndexDirectory(erbDirectory);
 var allFunctions = files.SelectMany(static file => file.Functions.Select(function => (File: file, Function: function))).ToArray();
@@ -79,6 +108,9 @@ foreach (var row in legacyFunctions)
     else if (duplicateNames.Contains(row.FunctionName!)) Add(exclusions, "DuplicateAmbiguity");
     else eligible.Add(new(row, file, function));
 }
+
+if (phase3ManifestOnly)
+    return RunPhase3ManifestOnly(reportDirectory, erbDirectory, eligible, phase3Environment!);
 
 var compiler = new FunctionCompiler(compatibilityOptions);
 var instructionSize = Marshal.SizeOf<PrototypeInstruction>();
@@ -780,6 +812,336 @@ static bool ReadLegacyConfigBool(string[] lines, string key)
         _ => throw new InvalidDataException($"Legacy config value is invalid: {key}={value}")
     };
 }
+static int RunPhase3ManifestOnly(string report, string erbRoot, IReadOnlyList<Candidate> eligible, Phase3HarnessEnvironment environment)
+{
+    File.WriteAllLines(Path.Combine(report, "phase3-manifest-mode.txt"), ["Mode=PHASE3_MANIFEST_ONLY", "Phase3ManifestDedicatedBranch=True", "Phase3ManifestFallsThroughNormalAudit=False", "Phase3ManifestUsesStructuralSemanticEnvironment=True", "Phase3ManifestCompilePasses=1", "Phase3ManifestRunsBenchmark=False", "Phase3ManifestRunsMemoryAcceptance=False"], new UTF8Encoding(false));
+    if (!environment.AuthorityMatched)
+    {
+        File.WriteAllLines(Path.Combine(report, "phase3-semantic-summary.txt"), ["Phase3EnvironmentAuthorityMatched=False", $"Phase3EnvironmentGateErrors={environment.AuthorityGateErrors}", "SemanticCompileErrors=0", "Phase3ExpressionEvaluationDeferred=True", "ExecutableReadyReal=0", "NextRuntimeBehaviorMatch=NOT_CLAIMED"], new UTF8Encoding(false));
+        return 1;
+    }
+    var compiler = new FunctionCompiler(environment.SemanticEnvironment);
+    var errors = new List<string>();
+    var manifest = new List<string>();
+    var opcodeCounts = new Dictionary<PrototypeOpcode, int>();
+    var semanticCompileErrors = 0;
+    var mappingErrors = 0;
+    var duplicateMappings = 0;
+    var semanticRangeErrors = 0;
+    var unexpectedExceptions = 0;
+    var recordNodeCountSumMatches = true;
+    var recordRootOwned = true;
+    var renameTemplateNodes = 0;
+    var macroNamesRemaining = 0;
+    var macroProof = 0;
+    var compiledFunctions = 0;
+    var semanticUnsupportedFunctions = 0;
+    var semanticRecordCount = 0;
+    var semanticOperandCount = 0;
+    var unsupportedRows = new List<(string RelativeFile, string FunctionName, int StartLine, string Status, string Reason, string Detail)>();
+    var unsupportedDetails = new Dictionary<string, int>(StringComparer.Ordinal);
+    foreach (var candidate in eligible)
+    {
+        var read = FunctionSourceReader.Read(candidate.File, candidate.Function);
+        if (read.Status != SourceReadStatus.Read)
+        {
+            semanticCompileErrors++;
+            errors.Add($"{candidate.Row.RelativeFile}\t{candidate.Row.FunctionName}\t{candidate.Row.StartLine}\t{read.Status}\tRead\t{read.Reason}");
+            continue;
+        }
+        var result = compiler.TryCompile(read.Source!.Value);
+        if (result.Status != CompileStatus.Compiled)
+        {
+            if (result.Status == CompileStatus.Unsupported)
+            {
+                semanticUnsupportedFunctions++;
+                var detail = result.Detail ?? string.Empty;
+                var detailKey = detail.StartsWith("unsupported instruction: ", StringComparison.Ordinal)
+                    ? detail["unsupported instruction: ".Length..].Trim()
+                    : detail;
+                unsupportedDetails[detailKey] = unsupportedDetails.GetValueOrDefault(detailKey) + 1;
+                unsupportedRows.Add((candidate.Row.RelativeFile, candidate.Row.FunctionName ?? string.Empty, candidate.Row.StartLine,
+                    result.Status.ToString(), result.Reason.ToString(), detail));
+                continue;
+            }
+            semanticCompileErrors++;
+            errors.Add($"{candidate.Row.RelativeFile}\t{candidate.Row.FunctionName}\t{candidate.Row.StartLine}\t{result.Status}\t{result.Reason}\t{result.Detail}");
+            continue;
+        }
+        compiledFunctions++;
+        var compiled = result.Function!;
+        var payload = compiled.SemanticPayload ?? SemanticPayload.Empty;
+        var verify = VerifySemanticPayload(payload, compiled.Instructions.Length);
+        semanticRangeErrors += verify.Errors;
+        unexpectedExceptions += verify.UnexpectedExceptions;
+        recordNodeCountSumMatches &= verify.RecordNodeCountSumMatchesNodes;
+        recordRootOwned &= verify.RecordRootOwnedByRecordSegment;
+        var targetIndices = compiled.Instructions.Select((instruction, index) => (instruction.Opcode, index)).Where(item => IsSemanticTarget(item.Opcode)).Select(item => item.index).ToArray();
+        semanticOperandCount += targetIndices.Length;
+        semanticRecordCount += payload.Records.Length;
+        var mapping = payload.Records.GroupBy(record => record.InstructionIndex).ToDictionary(group => group.Key, group => group.Count());
+        foreach (var index in targetIndices) if (!mapping.TryGetValue(index, out var count) || count != 1) mappingErrors++;
+        foreach (var item in mapping) { if (!targetIndices.Contains(item.Key)) mappingErrors++; if (item.Value > 1) duplicateMappings += item.Value - 1; }
+        foreach (var instruction in compiled.Instructions) opcodeCounts[instruction.Opcode] = opcodeCounts.GetValueOrDefault(instruction.Opcode) + 1;
+        if (verify.Errors == 0)
+        {
+            renameTemplateNodes += payload.Nodes.Count(node => node.Kind == SemanticNodeKind.RenameTemplate);
+            macroNamesRemaining += CountRemainingMacroNames(payload, environment.MacroCatalog);
+        }
+        foreach (var index in targetIndices)
+        {
+            var instruction = compiled.Instructions[index];
+            if (instruction.OperandLength == 0) continue;
+            var raw = Encoding.UTF8.GetString(read.Source.Value.Bytes, instruction.OperandOffset, instruction.OperandLength);
+            _ = environment.MacroCatalog.Expand(SemanticLexicalTokenStream.ApplyRename(raw, environment.RenameResolver), environment.Compatibility, out var substitutions);
+            macroProof += substitutions;
+        }
+        manifest.Add(JsonSerializer.Serialize(new { candidate.Row.FunctionName, candidate.Row.RelativeFile, candidate.Row.StartLine, InstructionCount = compiled.Instructions.Length, PrototypeOpcodes = compiled.Instructions.Select(instruction => instruction.Opcode.ToString()).ToArray(), SourceLines = compiled.Instructions.Select(instruction => instruction.SourceLine).ToArray(), SemanticRecordCount = payload.Records.Length, SemanticNodeCount = payload.Nodes.Length, SemanticEdgeCount = payload.Edges.Length, SemanticSymbolCount = payload.Symbols.Length, SemanticCaseArmCount = payload.CaseArms.Length }));
+    }
+    File.WriteAllLines(Path.Combine(report, "compiler-manifest.jsonl"), manifest, new UTF8Encoding(false));
+    File.WriteAllLines(Path.Combine(report, "phase3-semantic-errors.tsv"), ["RelativeFile\tFunctionName\tStartLine\tStatus\tReason\tDetail", ..errors], new UTF8Encoding(false));
+    var unsupported = unsupportedRows.OrderBy(static row => row.RelativeFile, StringComparer.Ordinal)
+        .ThenBy(static row => row.StartLine).ThenBy(static row => row.FunctionName, StringComparer.Ordinal).ToArray();
+    File.WriteAllLines(Path.Combine(report, "phase3-semantic-unsupported.tsv"),
+        ["RelativeFile\tFunctionName\tStartLine\tStatus\tReason\tDetail",
+         ..unsupported.Select(static row => $"{row.RelativeFile}\t{row.FunctionName}\t{row.StartLine.ToString(CultureInfo.InvariantCulture)}\t{row.Status}\t{row.Reason}\t{row.Detail}")], new UTF8Encoding(false));
+    var unsupportedKeyText = string.Join("\n", unsupported.Select(static row =>
+        $"{row.RelativeFile.Replace('\\', '/')}\t{row.FunctionName}\t{row.StartLine.ToString(CultureInfo.InvariantCulture)}")) + "\n";
+    var unsupportedKeySetHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(unsupportedKeyText)));
+    var expectedUnsupportedDetails = new Dictionary<string, int>(StringComparer.Ordinal)
+    {
+        ["CALLFORM"] = 200, ["TRYCALLFORM"] = 52, ["TRYCCALLFORM"] = 37, ["GETFONT"] = 29,
+        ["TFLAG"] = 5, ["LOCAL"] = 3, ["RESTART"] = 3, ["ITEM"] = 1, ["FLAG"] = 1, ["CHKFONT"] = 1
+    };
+    var unsupportedPartitionMatch = semanticUnsupportedFunctions == 332
+        && unsupportedDetails.Count == expectedUnsupportedDetails.Count
+        && expectedUnsupportedDetails.All(pair => unsupportedDetails.GetValueOrDefault(pair.Key) == pair.Value)
+        && unsupported.All(static row => row.Status == nameof(CompileStatus.Unsupported) && row.Reason == nameof(UnsupportedReason.UnsupportedInstruction));
+    var semanticCandidatePartitionMatch = eligible.Count == compiledFunctions + semanticUnsupportedFunctions + semanticCompileErrors;
+    var unsupportedKeySetMatched = unsupportedKeySetHash == "25DD78614D5EBB579F346B6E035B4A800AC300DCC7EF0768AB3506578C00BD3F";
+    File.WriteAllLines(Path.Combine(report, "phase3-semantic-unsupported-summary.txt"),
+    [
+        $"SemanticUnsupportedFunctions={semanticUnsupportedFunctions}", $"SemanticUnsupportedInstructionFunctions={unsupportedDetails.GetValueOrDefault("CALLFORM") + unsupportedDetails.GetValueOrDefault("TRYCALLFORM") + unsupportedDetails.GetValueOrDefault("TRYCCALLFORM") + unsupportedDetails.GetValueOrDefault("GETFONT") + unsupportedDetails.GetValueOrDefault("TFLAG") + unsupportedDetails.GetValueOrDefault("LOCAL") + unsupportedDetails.GetValueOrDefault("RESTART") + unsupportedDetails.GetValueOrDefault("ITEM") + unsupportedDetails.GetValueOrDefault("FLAG") + unsupportedDetails.GetValueOrDefault("CHKFONT")}",
+        ..expectedUnsupportedDetails.Select(pair => $"Unsupported.{pair.Key}={unsupportedDetails.GetValueOrDefault(pair.Key)}"),
+        $"SemanticUnsupportedPartitionMatch={unsupportedPartitionMatch}", "UnsupportedStillDeferred=True", "UnsupportedFunctionsAddedToManifest=0", "CompilerCoverageExpandedInH1R4=NO",
+        $"SemanticUnsupportedKeySetSHA256={unsupportedKeySetHash}", $"SemanticUnsupportedKeySetMatched={unsupportedKeySetMatched}"
+    ], new UTF8Encoding(false));
+    File.WriteAllLines(Path.Combine(report, "phase3-semantic-opcodes.txt"), opcodeCounts.OrderBy(item => item.Key).Select(item => $"{item.Key}={item.Value}"), new UTF8Encoding(false));
+    var success = eligible.Count == 59435 && compiledFunctions == 59103 && semanticUnsupportedFunctions == 332 && semanticCompileErrors == 0 && semanticCandidatePartitionMatch && unsupportedPartitionMatch && unsupportedKeySetMatched && semanticOperandCount == 37366 && semanticRecordCount == 37366 && mappingErrors == 0 && duplicateMappings == 0 && semanticRangeErrors == 0 && unexpectedExceptions == 0 && recordNodeCountSumMatches && recordRootOwned && renameTemplateNodes == 0 && macroNamesRemaining == 0 && macroProof > 0 && environment.AuthorityMatched;
+    File.WriteAllLines(Path.Combine(report, "phase3-semantic-summary.txt"),
+    [
+        $"EligibleFunctions={eligible.Count}", $"CompiledFunctions={compiledFunctions}", $"SemanticUnsupportedFunctions={semanticUnsupportedFunctions}", $"SemanticCandidatePartitionMatch={semanticCandidatePartitionMatch}", $"SemanticUnsupportedPartitionMatch={unsupportedPartitionMatch}", $"SemanticUnsupportedKeySetSHA256={unsupportedKeySetHash}", $"SemanticUnsupportedKeySetMatched={unsupportedKeySetMatched}", $"SemanticOperandCount={semanticOperandCount}", $"SemanticRecordCount={semanticRecordCount}",
+        $"SemanticCompileErrors={semanticCompileErrors}", $"SemanticInstructionMappingErrors={mappingErrors}", $"SemanticOutOfRangeIndices={semanticRangeErrors}", $"DuplicateSemanticMappings={duplicateMappings}",
+        $"SemanticRecordNodeCountSumMatchesNodes={recordNodeCountSumMatches}", $"SemanticRecordRootOwnedByRecordSegment={recordRootOwned}", $"SemanticVerifierUnexpectedException={unexpectedExceptions}",
+        $"RenameTemplateNodes={renameTemplateNodes}", "RenameResolutionDeferred=False", $"MacroNamesRemainingAfterExpansion={macroNamesRemaining}", $"FormalMacroExpansionProofCount={macroProof}", "FormalMacroExpansionProofCountIsLowerBound=True",
+        $"RawFormattedMacroDefinitions={environment.RawFormattedMacroDefinitions}", $"EffectiveFormattedMacroDefinitions={environment.EffectiveFormattedMacroDefinitions}", $"Phase3EnvironmentAuthorityMatched={environment.AuthorityMatched}", $"Phase3EnvironmentGateErrors={environment.AuthorityGateErrors}",
+        "Phase3ExpressionEvaluationDeferred=True", "ExecutableReadyReal=0", "NextRuntimeBehaviorMatch=NOT_CLAIMED", $"Result={(success ? "PASS" : "FAIL")}"], new UTF8Encoding(false));
+    return success ? 0 : 1;
+}
+
+static bool IsSemanticTarget(PrototypeOpcode opcode) => opcode is PrototypeOpcode.SIF or PrototypeOpcode.IF or PrototypeOpcode.ELSEIF or PrototypeOpcode.SELECTCASE or PrototypeOpcode.CASE or PrototypeOpcode.REPEAT or PrototypeOpcode.FOR or PrototypeOpcode.WHILE or PrototypeOpcode.LOOP;
+
+static int CountRemainingMacroNames(SemanticPayload payload, MacroCatalog catalog)
+{
+    var count = 0;
+    foreach (var node in payload.Nodes)
+    {
+        var indices = node.Kind switch { SemanticNodeKind.Symbol or SemanticNodeKind.Variable or SemanticNodeKind.Call => [node.A], SemanticNodeKind.VariableSubkey => [node.A, node.B], _ => Array.Empty<int>() };
+        foreach (var index in indices)
+            if (TryReadSymbol(payload, index, out var name) && catalog.TryGet(name, out _)) count++;
+    }
+    return count;
+}
+
+static SemanticVerification VerifySemanticPayload(SemanticPayload payload, int instructionCount)
+{
+    try
+    {
+        var errors = 0;
+        bool SafeIndex(int value, int length) => value >= 0 && value < length;
+        bool SafeSlice(int start, int count, int length) => start >= 0 && count >= 0 && start <= length && count <= length - start;
+        bool Node(int index) { var valid = SafeIndex(index, payload.Nodes.Length); if (!valid) errors++; return valid; }
+        bool Symbol(int index) { var valid = SafeIndex(index, payload.Symbols.Length); if (!valid) errors++; return valid; }
+        bool Edges(int start, int count) { var valid = SafeSlice(start, count, payload.Edges.Length); if (!valid) errors++; return valid; }
+        bool Arms(int start, int count) { var valid = SafeSlice(start, count, payload.CaseArms.Length); if (!valid) errors++; return valid; }
+        foreach (var edge in payload.Edges) Node(edge.To);
+        foreach (var symbol in payload.Symbols) if (!SafeSlice(symbol.Offset, symbol.Length, payload.Utf8.Length)) errors++;
+        var nodeBase = 0;
+        var nodeSum = true;
+        var rootOwnership = true;
+        foreach (var record in payload.Records)
+        {
+            if (record.InstructionIndex < 0 || record.InstructionIndex >= instructionCount) errors++;
+            if (record.NodeCount <= 0 || record.NodeCount > payload.Nodes.Length - nodeBase) { errors++; nodeSum = false; rootOwnership = false; continue; }
+            if (record.RootNodeIndex < nodeBase || record.RootNodeIndex >= nodeBase + record.NodeCount) { errors++; rootOwnership = false; }
+            nodeBase += record.NodeCount;
+        }
+        if (nodeBase != payload.Nodes.Length) { errors++; nodeSum = false; }
+        var caseValues = payload.CaseArms.Where(arm => SafeIndex(arm.ValueNode, payload.Nodes.Length)).Select(arm => arm.ValueNode).ToHashSet();
+        foreach (var arm in payload.CaseArms) { Node(arm.ValueNode); if (arm.ToNode != -1) Node(arm.ToNode); }
+        for (var index = 0; index < payload.Nodes.Length; index++)
+        {
+            var node = payload.Nodes[index];
+            if (!Enum.IsDefined(node.Kind) || !Enum.IsDefined(node.Operator)) { errors++; continue; }
+            switch (node.Kind)
+            {
+                case SemanticNodeKind.IntegerLiteral: case SemanticNodeKind.StringLiteral: case SemanticNodeKind.Symbol: case SemanticNodeKind.RenameTemplate: case SemanticNodeKind.TripleLiteral: Symbol(node.A); break;
+                case SemanticNodeKind.Variable: Symbol(node.A); Edges(node.B, node.C); break;
+                case SemanticNodeKind.VariableSubkey: Symbol(node.A); Symbol(node.B); if (node.C == -1 && node.D == -1) { } else if (node.C >= 0 && node.D > 0) Edges(node.C, node.D); else errors++; break;
+                case SemanticNodeKind.Call: Symbol(node.A); Edges(node.B, node.C); break;
+                case SemanticNodeKind.Unary: Node(node.A); break;
+                case SemanticNodeKind.Binary: if (node.A == -1) { if (!caseValues.Contains(index)) errors++; } else Node(node.A); Node(node.B); break;
+                case SemanticNodeKind.Ternary: Node(node.A); Node(node.B); Node(node.C); break;
+                case SemanticNodeKind.Format: Node(node.A); if (node.B != -1) Node(node.B); Symbol(node.C); if (!Enum.IsDefined((SemanticFormatKind)node.D)) errors++; break;
+                case SemanticNodeKind.ConditionalFormat: Node(node.A); Node(node.B); if (node.C != -1) Node(node.C); break;
+                case SemanticNodeKind.Case: Arms(node.A, node.B); break;
+                case SemanticNodeKind.FormattedSequence: Edges(node.A, node.B); break;
+                case SemanticNodeKind.CountedLoop: Node(node.A); Node(node.B); Node(node.C); Node(node.D); break;
+                case SemanticNodeKind.MissingArgument: break;
+                default: errors++; break;
+            }
+        }
+        return new(errors, nodeSum, rootOwnership, 0);
+    }
+    catch
+    {
+        return new(1, false, false, 1);
+    }
+}
+
+static bool TryReadSymbol(SemanticPayload payload, int index, out string value)
+{
+    value = string.Empty;
+    if (index < 0 || index >= payload.Symbols.Length) return false;
+    var slice = payload.Symbols[index];
+    if (slice.Offset < 0 || slice.Length < 0 || slice.Offset > payload.Utf8.Length || slice.Length > payload.Utf8.Length - slice.Offset) return false;
+    value = Encoding.UTF8.GetString(payload.Utf8, slice.Offset, slice.Length);
+    return true;
+}
+
+static Phase3HarnessEnvironment BuildPhase3Environment(string dataRoot)
+{
+    Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+    var config = ReadCp932(Path.Combine(dataRoot, "emuera.config")).Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
+    bool Flag(string key)
+    {
+        var values = config.Where(line => line.StartsWith(key + ":", StringComparison.Ordinal)).Select(line => line[(key.Length + 1)..].Trim()).ToArray();
+        if (values.Length != 1) throw new InvalidDataException($"Invalid config key: {key}");
+        return values[0] switch { "YES" => true, "NO" => false, _ => throw new InvalidDataException($"Invalid config value: {key}") };
+    }
+    using var settings = JsonDocument.Parse(ReadCp932(Path.Combine(dataRoot, "setting.json")));
+    if (!settings.RootElement.TryGetProperty("UseScopedVariableInstruction", out var scoped) || scoped.ValueKind is not JsonValueKind.True and not JsonValueKind.False)
+        throw new InvalidDataException("UseScopedVariableInstruction");
+    var ignoreCase = Flag("大文字小文字の違いを無視する");
+    var fullSpace = Flag("全角スペースをホワイトスペースに含める");
+    var ignoreTriple = Flag("FORM中の三連記号を展開しない");
+    var searchSubdirectory = Flag("サブディレクトリを検索する");
+    var sortWithFilename = Flag("読み込み順をファイル名順にソートする");
+    var useRenameFile = Flag("_Rename.csvを利用する");
+    var options = new CompilerCompatibilityOptions(ignoreCase, scoped.GetBoolean(), fullSpace, false);
+    var erbRoot = Path.Combine(dataRoot, "ERB");
+    var headers = new List<string>();
+    void Visit(string directory)
+    {
+        var files = Directory.GetFiles(directory, "*.ERH", SearchOption.TopDirectoryOnly);
+        if (sortWithFilename) Array.Sort(files);
+        headers.AddRange(files);
+        if (!searchSubdirectory) return;
+        var directories = Directory.GetDirectories(directory, "*", SearchOption.TopDirectoryOnly);
+        if (sortWithFilename) Array.Sort(directories);
+        foreach (var child in directories) Visit(child);
+    }
+    Visit(erbRoot);
+    var headerRows = headers.Select((path, index) => new Phase3Header(index + 1, Path.GetRelativePath(erbRoot, path).Replace('\\', '/'), new FileInfo(path).Length, Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))), path)).ToArray();
+    var headerOrder = HashText(string.Concat(headerRows.Select(row => row.RelativePath + "\n")));
+    var headerContentOrder = HashText(string.Concat(headerRows.Select(row => row.RelativePath + "\0" + row.SHA256 + "\n")));
+    var renamePath = Path.Combine(dataRoot, "CSV", "_Rename.csv");
+    var mappings = new Dictionary<string, string>(StringComparer.Ordinal);
+    var parsed = 0;
+    var duplicate = 0;
+    var malformed = 0;
+    if (useRenameFile)
+    {
+        foreach (var line in ReadCp932(renamePath).Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n'))
+        {
+            if (line.Length == 0 || line.StartsWith(';')) continue;
+            var parts = System.Text.RegularExpressions.Regex.Split(line, "(?<!\\\\),");
+            if (parts.Length != 2) { malformed++; continue; }
+            var key = "[[" + parts[1].Trim() + "]]";
+            if (!mappings.TryAdd(key, parts[0].Trim())) { duplicate++; mappings[key] = parts[0].Trim(); }
+            parsed++;
+        }
+    }
+    var resolver = useRenameFile ? new SemanticRenameResolver(mappings) : null;
+    var rawDefinitions = new Dictionary<string, Phase3RawDefinition>(options.NameComparer);
+    var rawHeaderRenameTemplates = 0;
+    foreach (var header in headers)
+    foreach (var line in ReadCp932(header).Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n'))
+    {
+        if (line.StartsWith("#DEFINE", StringComparison.Ordinal) && line.Contains("[[", StringComparison.Ordinal) && line.Contains("]]", StringComparison.Ordinal)) rawHeaderRenameTemplates++;
+        if (TryReadRawDefine(line, options, resolver, out var definition)) rawDefinitions[definition.Name] = definition;
+    }
+    var catalog = MacroCatalog.FromHeaderSources(headers.Select(ReadCp932), options, resolver);
+    var rawFormatted = rawDefinitions.Values.Count(definition => SemanticLexicalTokenStream.Tokenize(definition.Replacement, options).Any(token => token.Kind == SemanticTokenKind.Formatted));
+    var effectiveFormatted = catalog.Definitions.Count(definition => SemanticLexicalTokenStream.Tokenize(definition.Replacement, options).Any(token => token.Kind == SemanticTokenKind.Formatted));
+    var functionLike = rawDefinitions.Values.Count(definition => definition.FunctionLike);
+    var rawTemplates = rawHeaderRenameTemplates;
+    var renameHash = useRenameFile ? Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(renamePath))) : string.Empty;
+    var canonical = new[]
+    {
+        $"IgnoreCase={options.IgnoreCase}", $"UseScopedVariableInstruction={options.UseScopedVariableInstruction}", $"SystemAllowFullSpace={options.SystemAllowFullSpace}", "DebugMode=False",
+        $"SystemIgnoreTripleSymbol={ignoreTriple}", $"SearchSubdirectory={searchSubdirectory}", $"SortWithFilename={sortWithFilename}", $"UseRenameFile={useRenameFile}",
+        $"HeaderErhFiles={headerRows.Length}", $"HeaderOrderSHA256={headerOrder}", $"HeaderContentOrderSHA256={headerContentOrder}", $"RenameFileSHA256={renameHash}", $"RenameUniqueMappings={mappings.Count}",
+        $"MacroDefinitions={catalog.Count}", $"FunctionLikeMacroDefinitions={functionLike}", $"EmptyMacroDefinitions={catalog.Definitions.Count(definition => definition.Replacement.Length == 0)}", $"FormattedMacroDefinitions={effectiveFormatted}", $"RawHeaderRenameTemplateDefinitions={rawTemplates}"
+    };
+    var fingerprint = HashText(string.Concat(canonical.Select(field => field + "\n")));
+    return new(options, new StructuralSemanticEnvironment(options, catalog, ignoreTriple, resolver), catalog, resolver, ignoreTriple, searchSubdirectory, sortWithFilename, useRenameFile, headerRows, renamePath, renameHash, parsed, mappings.Count, duplicate, malformed, functionLike, catalog.Definitions.Count(definition => definition.Replacement.Length == 0), rawTemplates, rawFormatted, effectiveFormatted, headerOrder, headerContentOrder, fingerprint, canonical);
+}
+
+static void WritePhase3Environment(string report, Phase3HarnessEnvironment environment)
+{
+    File.WriteAllLines(Path.Combine(report, "phase3-header-order.tsv"), ["Ordinal\tRelativePath\tLength\tSHA256", ..environment.Headers.Select(row => $"{row.Ordinal}\t{row.RelativePath}\t{row.Length}\t{row.SHA256}")], new UTF8Encoding(false));
+    File.WriteAllLines(Path.Combine(report, "phase3-rename-summary.txt"), [$"RenamePath={environment.RenamePath}", $"RenameFileSHA256={environment.RenameFileSHA256}", $"RenameParsedRows={environment.RenameParsedRows}", $"RenameUniqueMappings={environment.RenameUniqueMappings}", $"RenameDuplicateKeys={environment.RenameDuplicateKeys}", $"RenameMalformedNonemptyLines={environment.RenameMalformedNonemptyLines}"], new UTF8Encoding(false));
+    File.WriteAllLines(Path.Combine(report, "phase3-macro-summary.txt"), [$"MacroDefinitions={environment.MacroCatalog.Count}", $"FunctionLikeMacroDefinitions={environment.FunctionLikeMacroDefinitions}", $"EmptyMacroDefinitions={environment.EmptyMacroDefinitions}", $"RawFormattedMacroDefinitions={environment.RawFormattedMacroDefinitions}", $"EffectiveFormattedMacroDefinitions={environment.EffectiveFormattedMacroDefinitions}", $"FormattedMacroDefinitions={environment.EffectiveFormattedMacroDefinitions}", $"RawHeaderRenameTemplateDefinitions={environment.RawHeaderRenameTemplateDefinitions}"], new UTF8Encoding(false));
+    File.WriteAllLines(Path.Combine(report, "phase3-environment-summary.txt"), [..environment.CanonicalFields, $"RawFormattedMacroDefinitions={environment.RawFormattedMacroDefinitions}", $"EffectiveFormattedMacroDefinitions={environment.EffectiveFormattedMacroDefinitions}", $"Phase3EnvironmentAuthorityMatched={environment.AuthorityMatched}", $"Phase3EnvironmentGateErrors={environment.AuthorityGateErrors}", "Phase3EnvironmentReusableByFormalModes=True", "SystemIgnoreTripleSymbolFromConfig=True", "SearchSubdirectoryFromConfig=True", "SortWithFilenameFromConfig=True", "UseRenameFileFromConfig=True", "EnvironmentBooleanFactsHardcoded=False", "SemanticEnvironmentUsesActualTripleSymbolConfig=True"], new UTF8Encoding(false));
+    File.WriteAllText(Path.Combine(report, "phase3-environment-fingerprint.txt"), $"Phase3EnvironmentFingerprintSHA256={environment.Fingerprint}\n", new UTF8Encoding(false));
+}
+
+static bool TryReadRawDefine(string raw, CompilerCompatibilityOptions options, SemanticRenameResolver? resolver, out Phase3RawDefinition definition)
+{
+    definition = default;
+    var line = SemanticLexicalTokenStream.ApplyRename(raw, resolver);
+    var index = 0;
+    while (true)
+    {
+        while (index < line.Length && (line[index] is ' ' or '\t' || options.SystemAllowFullSpace && line[index] == '　')) index++;
+        if (line.AsSpan(index).StartsWith(";!;", StringComparison.Ordinal)) { index += 3; continue; }
+        if (options.DebugMode && line.AsSpan(index).StartsWith(";#;", StringComparison.Ordinal)) { index += 3; continue; }
+        break;
+    }
+    if (index >= line.Length || line[index] == ';' || line[index++] != '#') return false;
+    var directiveLength = ReadIdentifierLength(line, index);
+    if (directiveLength == 0 || !line.Substring(index, directiveLength).Equals("DEFINE", options.NameComparison)) return false;
+    index += directiveLength;
+    while (index < line.Length && (line[index] is ' ' or '\t' || options.SystemAllowFullSpace && line[index] == '　')) index++;
+    var nameLength = ReadIdentifierLength(line, index);
+    if (nameLength == 0) return false;
+    var name = line.Substring(index, nameLength);
+    index += nameLength;
+    var replacement = index < line.Length ? line[index..] : string.Empty;
+    definition = new(name, SemanticLexicalTokenStream.ApplyRename(replacement, resolver), index < line.Length && line[index] == '(', replacement.Contains("[[", StringComparison.Ordinal) && replacement.Contains("]]", StringComparison.Ordinal));
+    return true;
+}
+
+static int ReadIdentifierLength(string value, int index)
+{
+    if (index >= value.Length || !(value[index] == '_' || char.IsLetter(value[index]))) return 0;
+    var end = index + 1;
+    while (end < value.Length && (value[end] == '_' || char.IsLetterOrDigit(value[end]))) end++;
+    return end - index;
+}
+static string ReadCp932(string path) { using var reader = new StreamReader(path, Encoding.GetEncoding(932), true); return reader.ReadToEnd(); }
+static string HashText(string text) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
 
 static string Key(string file, int line) => $"{file.ToUpperInvariant()}:{line}";
 static long Median(IEnumerable<long> values) { var sorted = values.Order().ToArray(); return sorted.Length == 0 ? 0 : sorted[sorted.Length / 2]; }
@@ -788,6 +1150,40 @@ static StatsRow Stats(IEnumerable<double> values) { var sorted = values.Order().
 readonly record struct BenchmarkRow(int Run, double TotalElapsedMs, double SourceReadElapsedMs, double CompilerElapsedMs, long SourceReadAllocatedBytes, long CompilerAllocatedBytes, long TotalAllocatedBytes, int Compiled, int Instructions);
 readonly record struct StatsRow(double Median, double Mean, double Min, double Max);
 readonly record struct Candidate(LegacyRow Row, SourceFileIndex File, FunctionIndex Function);
+readonly record struct Phase3Header(int Ordinal, string RelativePath, long Length, string SHA256, string FullPath);
+readonly record struct Phase3RawDefinition(string Name, string Replacement, bool FunctionLike, bool RawRenameTemplate);
+readonly record struct SemanticVerification(int Errors, bool RecordNodeCountSumMatchesNodes, bool RecordRootOwnedByRecordSegment, int UnexpectedExceptions);
+sealed class Phase3HarnessEnvironment
+{
+    public CompilerCompatibilityOptions Compatibility { get; }
+    public StructuralSemanticEnvironment SemanticEnvironment { get; }
+    public MacroCatalog MacroCatalog { get; }
+    public SemanticRenameResolver? RenameResolver { get; }
+    public bool SystemIgnoreTripleSymbol { get; }
+    public bool SearchSubdirectory { get; }
+    public bool SortWithFilename { get; }
+    public bool UseRenameFile { get; }
+    public IReadOnlyList<Phase3Header> Headers { get; }
+    public string RenamePath { get; }
+    public string RenameFileSHA256 { get; }
+    public int RenameParsedRows { get; }
+    public int RenameUniqueMappings { get; }
+    public int RenameDuplicateKeys { get; }
+    public int RenameMalformedNonemptyLines { get; }
+    public int FunctionLikeMacroDefinitions { get; }
+    public int EmptyMacroDefinitions { get; }
+    public int RawHeaderRenameTemplateDefinitions { get; }
+    public int RawFormattedMacroDefinitions { get; }
+    public int EffectiveFormattedMacroDefinitions { get; }
+    public string HeaderOrderSHA256 { get; }
+    public string HeaderContentOrderSHA256 { get; }
+    public string Fingerprint { get; }
+    public IReadOnlyList<string> CanonicalFields { get; }
+    public bool AuthorityMatched => Fingerprint == "DB7E034B3DC1DDCCB8516BB2335D45860161761AC3AF90D651DD2E88DEC5A518" && RawFormattedMacroDefinitions == 0 && EffectiveFormattedMacroDefinitions == 0;
+    public int AuthorityGateErrors => (Fingerprint == "DB7E034B3DC1DDCCB8516BB2335D45860161761AC3AF90D651DD2E88DEC5A518" ? 0 : 1) + (RawFormattedMacroDefinitions == 0 ? 0 : 1) + (EffectiveFormattedMacroDefinitions == 0 ? 0 : 1);
+    public Phase3HarnessEnvironment(CompilerCompatibilityOptions compatibility, StructuralSemanticEnvironment semanticEnvironment, MacroCatalog macroCatalog, SemanticRenameResolver? renameResolver, bool systemIgnoreTripleSymbol, bool searchSubdirectory, bool sortWithFilename, bool useRenameFile, IReadOnlyList<Phase3Header> headers, string renamePath, string renameFileSHA256, int renameParsedRows, int renameUniqueMappings, int renameDuplicateKeys, int renameMalformedNonemptyLines, int functionLikeMacroDefinitions, int emptyMacroDefinitions, int rawHeaderRenameTemplateDefinitions, int rawFormattedMacroDefinitions, int effectiveFormattedMacroDefinitions, string headerOrderSHA256, string headerContentOrderSHA256, string fingerprint, IReadOnlyList<string> canonicalFields)
+        => (Compatibility, SemanticEnvironment, MacroCatalog, RenameResolver, SystemIgnoreTripleSymbol, SearchSubdirectory, SortWithFilename, UseRenameFile, Headers, RenamePath, RenameFileSHA256, RenameParsedRows, RenameUniqueMappings, RenameDuplicateKeys, RenameMalformedNonemptyLines, FunctionLikeMacroDefinitions, EmptyMacroDefinitions, RawHeaderRenameTemplateDefinitions, RawFormattedMacroDefinitions, EffectiveFormattedMacroDefinitions, HeaderOrderSHA256, HeaderContentOrderSHA256, Fingerprint, CanonicalFields) = (compatibility, semanticEnvironment, macroCatalog, renameResolver, systemIgnoreTripleSymbol, searchSubdirectory, sortWithFilename, useRenameFile, headers, renamePath, renameFileSHA256, renameParsedRows, renameUniqueMappings, renameDuplicateKeys, renameMalformedNonemptyLines, functionLikeMacroDefinitions, emptyMacroDefinitions, rawHeaderRenameTemplateDefinitions, rawFormattedMacroDefinitions, effectiveFormattedMacroDefinitions, headerOrderSHA256, headerContentOrderSHA256, fingerprint, canonicalFields);
+}
 readonly record struct RetainedMeasurement(List<CompiledFunction> Compiled, Dictionary<string, CompiledFunction> CompiledByKey, Dictionary<string, SourceFingerprint> Fingerprints);
 readonly record struct PureRetainedMeasurement(List<CompiledFunction> Compiled, long BeforeCompile, long ImmediatelyAfterCompile, long AfterDiagnosticGc, long AfterRootReleased);
 readonly record struct UnsupportedObservation(Candidate Candidate, UnsupportedReason FirstReason, string? Detail, string[] Blockers)
