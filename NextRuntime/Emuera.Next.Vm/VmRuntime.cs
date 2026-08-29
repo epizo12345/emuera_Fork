@@ -317,7 +317,37 @@ public static class ControlLinker
                     resolved++; if (resolution.CodeAvailable) yes++; else no++; code.Add(Linked(p, p.Opcode == PrototypeOpcode.CALL ? VmOpcode.Call : VmOpcode.Jump, resolution.RuntimeId.Value)); continue;
                 }
                 if (p.Opcode == PrototypeOpcode.RETURN) { code.Add(Linked(p, VmOpcode.Return)); continue; }
-                if (Structure.Contains(p.Opcode)) { if (p.Opcode == PrototypeOpcode.SIF) { if (pc + 1 >= prototype.Instructions.Length) { state = VmFunctionState.InvalidStructure; diagnostics.Add($"function={runtimeId} pc={pc} malformed=SIF-no-next"); structuralDiagnostics.Add(new(new(runtimeId), pc, StructuralClassification.InvalidStructure, "SIF-no-next")); } else { if (IsLegacyPartialOpcode(prototype.Instructions[pc + 1].Opcode)) { diagnostics.Add($"function={runtimeId} pc={pc} warning=SIF-partial-next"); structuralDiagnostics.Add(new(new(runtimeId), pc, StructuralClassification.ValidWithStructuralWarning, "SIF-partial-next")); } sifs.Add(new(runtimeId, pc, pc + 1, pc + 2)); } } local.Add(new(runtimeId, pc, -1, -1, Kinds[p.Opcode], 0)); code.Add(Linked(p, VmOpcode.Structural)); continue; }
+                if (Structure.Contains(p.Opcode))
+                {
+                    var structuralIndex = checked(records.Count + local.Count);
+                    var targetPc = -1;
+                    var auxiliaryPc = -1;
+                    if (p.Opcode == PrototypeOpcode.SIF)
+                    {
+                        if (pc + 1 >= prototype.Instructions.Length)
+                        {
+                            state = VmFunctionState.InvalidStructure;
+                            diagnostics.Add($"function={runtimeId} pc={pc} malformed=SIF-no-next");
+                            structuralDiagnostics.Add(new(new(runtimeId), pc, StructuralClassification.InvalidStructure, "SIF-no-next"));
+                        }
+                        else
+                        {
+                            if (IsLegacyPartialOpcode(prototype.Instructions[pc + 1].Opcode))
+                            {
+                                diagnostics.Add($"function={runtimeId} pc={pc} warning=SIF-partial-next");
+                                structuralDiagnostics.Add(new(new(runtimeId), pc, StructuralClassification.ValidWithStructuralWarning, "SIF-partial-next"));
+                            }
+                            targetPc = pc + 1;
+                            auxiliaryPc = pc + 2;
+                            sifs.Add(new(runtimeId, pc, targetPc, auxiliaryPc));
+                        }
+                    }
+                    local.Add(new(runtimeId, pc, targetPc, auxiliaryPc, Kinds[p.Opcode], 0));
+                    // Aux is the program-global StructuralLinks identity. Structural execution must not
+                    // scan by (FunctionId,Pc) in the hot loop.
+                    code.Add(Linked(p, VmOpcode.Structural, structuralIndex));
+                    continue;
+                }
                 if (p.Opcode is PrototypeOpcode.GOTO or PrototypeOpcode.TRYJUMP or PrototypeOpcode.TRYGOTO or PrototypeOpcode.TRYGOTOFORM) { state = VmFunctionState.UnsupportedControl; code.Add(Linked(p, VmOpcode.UnsupportedControl)); continue; }
                 barriers++; code.Add(Linked(p, VmOpcode.SemanticBarrier));
             }
@@ -354,27 +384,429 @@ public static class ControlLinker
     }
 }
 
+// Phase 2 owns structural control and stable identities; Phase 3 owns expression/format IR.
+// Keep semantic values behind this interface so LinkedProgram does not retain raw operand strings
+// or Legacy parser objects just to execute control flow.
+public readonly record struct VmCountedLoopEntry(long Counter, long End, long Step);
+
+public interface IVmStructuralSemantics
+{
+    long EvaluateInt(RuntimeFunctionId functionId, int pc, VmStructuralKind kind);
+    // Return a relative ordinal in the CASE-only prefix, or -1 when no CASE matches.
+    // VmMachine truncates at the first CASEELSE so Legacy ordering is preserved.
+    int SelectCase(RuntimeFunctionId functionId, int groupIndex, ReadOnlySpan<SelectCaseRecord> cases);
+    // BeginCounted performs Legacy's counter = Start and returns the resulting counter plus captured End/Step.
+    VmCountedLoopEntry BeginCounted(RuntimeFunctionId functionId, int loopIndex, LoopDescriptor loop);
+    // AdvanceCounted dynamically re-resolves the counter lvalue in the current scope and applies captured Step.
+    long AdvanceCounted(RuntimeFunctionId functionId, int loopIndex, LoopDescriptor loop, long step);
+}
+
+// Counted FOR/REPEAT state belongs to the source loop identity, not to an invocation frame.
+// Legacy LoopInstructionLine is shared by recursive re-entry, so the same global LoopIndex must
+// overwrite the previously captured End/Step. Counter lvalue identity is intentionally not stored
+// here: its dynamic indices must be re-evaluated in the current scope when semantic execution lands.
+public sealed class LoopRuntimeState
+{
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    private struct LoopRuntimeCell
+    {
+        public long CapturedEnd;
+        public long CapturedStep;
+        public int Initialized;
+    }
+
+    private readonly LoopDescriptor[] loops;
+    private readonly LoopRuntimeCell[] cells;
+
+    public LoopRuntimeState(LinkedProgram program)
+    {
+        ArgumentNullException.ThrowIfNull(program);
+        loops = program.Loops;
+        cells = new LoopRuntimeCell[loops.Length];
+    }
+
+    public int Count => cells.Length;
+
+    public void CaptureCounted(int loopIndex, long end, long step)
+    {
+        ValidateCounted(loopIndex);
+        ref var cell = ref cells[loopIndex];
+        cell.CapturedEnd = end;
+        cell.CapturedStep = step;
+        cell.Initialized = 1;
+    }
+
+    public bool TryGetCounted(int loopIndex, out long end, out long step)
+    {
+        ValidateCounted(loopIndex);
+        ref var cell = ref cells[loopIndex];
+        if (cell.Initialized == 0)
+        {
+            end = 0;
+            step = 0;
+            return false;
+        }
+        end = cell.CapturedEnd;
+        step = cell.CapturedStep;
+        return true;
+    }
+
+    private void ValidateCounted(int loopIndex)
+    {
+        if ((uint)loopIndex >= (uint)loops.Length)
+            throw new ArgumentOutOfRangeException(nameof(loopIndex));
+        if (loops[loopIndex].LoopKind is not (VmStructuralKind.Repeat or VmStructuralKind.For))
+            throw new InvalidOperationException($"LoopIndex {loopIndex} is not a counted FOR/REPEAT loop");
+    }
+}
+
 public sealed class VmMachine
 {
-    private readonly LinkedProgram program; private VmFrame[] stack = new VmFrame[16]; private int stackCount;
-    public VmMachine(LinkedProgram program) => this.program = program;
+    private readonly LinkedProgram program;
+    private readonly IVmStructuralSemantics? structuralSemantics;
+    // Do not clear this in Run/TryPush/Return. Legacy source LoopInstructionLine state survives
+    // calls and recursive re-entry, and a later traversal of the same source loop overwrites it.
+    private readonly LoopRuntimeState loopRuntime;
+    private VmFrame[] stack = new VmFrame[16];
+    private int stackCount;
+
+    public VmMachine(LinkedProgram program, IVmStructuralSemantics? structuralSemantics = null)
+    {
+        ArgumentNullException.ThrowIfNull(program);
+        this.program = program;
+        this.structuralSemantics = structuralSemantics;
+        loopRuntime = new(program);
+    }
+
     public VmStopReason Run(RuntimeFunctionId entryFunctionId, int maxSteps = 100_000)
     {
-        stackCount = 0; if (!TryPush(entryFunctionId.Value, VmReturnKind.Normal, out var reason)) return reason;
+        stackCount = 0;
+        if (!TryPush(entryFunctionId.Value, VmReturnKind.Normal, out var reason))
+            return reason;
         for (var steps = 0; steps < maxSteps; steps++)
         {
-            if (stackCount == 0) return VmStopReason.Returned; ref var frame = ref stack[stackCount - 1]; var descriptor = GetDescriptor(frame.FunctionId); if (descriptor.State != VmFunctionState.ExecutableReady) return StateReason(descriptor.State);
-            if (frame.Pc == descriptor.CodeLength) { if (!Return()) return VmStopReason.StackUnderflow; continue; }
-            if (frame.Pc < 0 || frame.Pc > descriptor.CodeLength) return VmStopReason.InvalidLocalPc; var instruction = program.Code[descriptor.CodeStart + frame.Pc]; frame = new(frame.FunctionId, frame.Pc + 1, frame.ReturnKind);
-            switch ((VmOpcode)instruction.Opcode) { case VmOpcode.Nop: break; case VmOpcode.Halt: return VmStopReason.Halted; case VmOpcode.Branch: if (!SetPc(instruction.Aux)) return VmStopReason.InvalidLocalPc; break; case VmOpcode.Call: if (!TryPush(instruction.Aux, VmReturnKind.Normal, out reason)) return reason; break; case VmOpcode.Jump: if (!TryPush(instruction.Aux, VmReturnKind.Propagate, out reason)) return reason; break; case VmOpcode.Return: if (!Return()) return VmStopReason.StackUnderflow; break; case VmOpcode.SemanticBarrier: return VmStopReason.SemanticNotAvailable; default: return VmStopReason.UnsupportedControl; }
+            if (stackCount == 0)
+                return VmStopReason.Returned;
+            ref var frame = ref stack[stackCount - 1];
+            var descriptor = GetDescriptor(frame.FunctionId);
+            if (descriptor.State != VmFunctionState.ExecutableReady)
+                return StateReason(descriptor.State);
+            if (frame.Pc == descriptor.CodeLength)
+            {
+                if (!Return())
+                    return VmStopReason.StackUnderflow;
+                continue;
+            }
+            if (frame.Pc < 0 || frame.Pc > descriptor.CodeLength)
+                return VmStopReason.InvalidLocalPc;
+
+            var executingFunctionId = frame.FunctionId;
+            var executingPc = frame.Pc;
+            var instruction = program.Code[descriptor.CodeStart + executingPc];
+            frame = new(frame.FunctionId, executingPc + 1, frame.ReturnKind);
+            switch ((VmOpcode)instruction.Opcode)
+            {
+                case VmOpcode.Nop:
+                    break;
+                case VmOpcode.Halt:
+                    return VmStopReason.Halted;
+                case VmOpcode.Branch:
+                    if (!SetPc(instruction.Aux)) return VmStopReason.InvalidLocalPc;
+                    break;
+                case VmOpcode.Call:
+                    if (!TryPush(instruction.Aux, VmReturnKind.Normal, out reason)) return reason;
+                    break;
+                case VmOpcode.Jump:
+                    if (!TryPush(instruction.Aux, VmReturnKind.Propagate, out reason)) return reason;
+                    break;
+                case VmOpcode.Return:
+                    if (!Return()) return VmStopReason.StackUnderflow;
+                    break;
+                case VmOpcode.Structural:
+                {
+                    var structuralReason = ExecuteStructural(instruction.Aux, executingFunctionId, executingPc);
+                    if (structuralReason.HasValue) return structuralReason.Value;
+                    break;
+                }
+                case VmOpcode.SemanticBarrier:
+                    return VmStopReason.SemanticNotAvailable;
+                default:
+                    return VmStopReason.UnsupportedControl;
+            }
         }
         return VmStopReason.StepLimit;
     }
-    private bool TryPush(int id, VmReturnKind kind, out VmStopReason reason) { if ((uint)id >= (uint)program.Descriptors.Length) { reason = VmStopReason.InvalidFunctionId; return false; } var d = program.Descriptors[id]; if (d.State != VmFunctionState.ExecutableReady) { reason = StateReason(d.State); return false; } if (stackCount == stack.Length) Array.Resize(ref stack, checked(stack.Length * 2)); stack[stackCount++] = new(id, 0, kind); reason = VmStopReason.Returned; return true; }
-    private bool Return() { if (stackCount == 0) return false; var propagate = stack[stackCount - 1].ReturnKind == VmReturnKind.Propagate; stackCount--; while (propagate && stackCount > 0) { propagate = stack[stackCount - 1].ReturnKind == VmReturnKind.Propagate; stackCount--; } return true; }
-    private bool SetPc(int pc) { var d = GetDescriptor(stack[stackCount - 1].FunctionId); if (pc < 0 || pc > d.CodeLength) return false; var f = stack[stackCount - 1]; stack[stackCount - 1] = new(f.FunctionId, pc, f.ReturnKind); return true; }
-    private VmFunctionDescriptor GetDescriptor(int id) => (uint)id < (uint)program.Descriptors.Length ? program.Descriptors[id] : new(-1, 0, 0, VmFunctionState.CodeNotAvailable);
-    private static VmStopReason StateReason(VmFunctionState state) => state switch { VmFunctionState.CodeNotAvailable => VmStopReason.CodeNotAvailable, VmFunctionState.InvalidStructure => VmStopReason.InvalidStructure, VmFunctionState.UnsupportedControl => VmStopReason.UnsupportedControl, _ => VmStopReason.SemanticNotAvailable };
+
+    private VmStopReason? ExecuteStructural(int structuralIndex, int functionId, int pc)
+    {
+        if (structuralSemantics is null)
+            return VmStopReason.SemanticNotAvailable;
+        if ((uint)structuralIndex >= (uint)program.StructuralLinks.Length)
+            return VmStopReason.UnsupportedControl;
+        var record = program.StructuralLinks[structuralIndex];
+        if (record.FunctionId != functionId || record.Pc != pc)
+            return VmStopReason.UnsupportedControl;
+        var runtimeId = new RuntimeFunctionId(functionId);
+
+        switch (record.Kind)
+        {
+            case VmStructuralKind.Sif:
+                if (record.AuxiliaryPc < 0) return VmStopReason.InvalidStructure;
+                if (structuralSemantics.EvaluateInt(runtimeId, pc, record.Kind) == 0 && !SetPc(record.AuxiliaryPc))
+                    return VmStopReason.InvalidLocalPc;
+                return null;
+
+            case VmStructuralKind.If:
+                return ExecuteIf(runtimeId, record);
+            case VmStructuralKind.ElseIf:
+            case VmStructuralKind.Else:
+                return SetGroupExit(program.IfGroups, record.GroupIndex, functionId);
+            case VmStructuralKind.EndIf:
+                return null;
+
+            case VmStructuralKind.SelectCase:
+                return ExecuteSelect(runtimeId, record);
+            case VmStructuralKind.Case:
+            case VmStructuralKind.CaseElse:
+                return SetGroupExit(program.SelectGroups, record.GroupIndex, functionId);
+            case VmStructuralKind.EndSelect:
+                return null;
+
+            case VmStructuralKind.For:
+            case VmStructuralKind.Repeat:
+                return BeginCounted(runtimeId, record);
+            case VmStructuralKind.Next:
+            case VmStructuralKind.Rend:
+                return AdvanceCounted(runtimeId, record, breakAfterAdvance: false);
+            case VmStructuralKind.While:
+                return CheckConditionalLoop(runtimeId, record, pc, VmStructuralKind.While);
+            case VmStructuralKind.Wend:
+            {
+                if (!TryGetLoop(record, out var loop)) return VmStopReason.InvalidStructure;
+                return CheckConditionalLoop(runtimeId, record, loop.HeaderPc, VmStructuralKind.While);
+            }
+            case VmStructuralKind.Do:
+                return null;
+            case VmStructuralKind.Loop:
+                return CheckConditionalLoop(runtimeId, record, pc, VmStructuralKind.Loop);
+            case VmStructuralKind.Break:
+                return BreakLoop(runtimeId, record);
+            case VmStructuralKind.Continue:
+                return ContinueLoop(runtimeId, record);
+            default:
+                return VmStopReason.UnsupportedControl;
+        }
+    }
+
+    private VmStopReason? ExecuteIf(RuntimeFunctionId runtimeId, StructuralLinkRecord record)
+    {
+        if (!TryGetIfGroup(record.GroupIndex, runtimeId.Value, out var group))
+            return VmStopReason.InvalidStructure;
+        var end = checked(group.FirstClauseIndex + group.ClauseCount);
+        for (var index = group.FirstClauseIndex; index < end; index++)
+        {
+            if ((uint)index >= (uint)program.IfClauses.Length)
+                return VmStopReason.InvalidStructure;
+            var clause = program.IfClauses[index];
+            if (clause.FunctionId != runtimeId.Value)
+                return VmStopReason.InvalidStructure;
+            if (clause.Kind == VmStructuralKind.Else || structuralSemantics!.EvaluateInt(runtimeId, clause.Pc, clause.Kind) != 0)
+                return SetPc(clause.Pc + 1) ? null : VmStopReason.InvalidLocalPc;
+        }
+        return SetPc(group.ExitPc) ? null : VmStopReason.InvalidLocalPc;
+    }
+
+    private VmStopReason? ExecuteSelect(RuntimeFunctionId runtimeId, StructuralLinkRecord record)
+    {
+        if (!TryGetSelectGroup(record.GroupIndex, runtimeId.Value, out var group))
+            return VmStopReason.InvalidStructure;
+        var end = checked(group.FirstCaseIndex + group.CaseCount);
+        var matchCount = 0;
+        var fallbackPc = -1;
+        for (var index = group.FirstCaseIndex; index < end; index++)
+        {
+            if ((uint)index >= (uint)program.SelectCases.Length)
+                return VmStopReason.InvalidStructure;
+            var candidate = program.SelectCases[index];
+            if (candidate.FunctionId != runtimeId.Value)
+                return VmStopReason.InvalidStructure;
+            if (candidate.Kind == VmStructuralKind.CaseElse)
+            {
+                fallbackPc = candidate.Pc;
+                break;
+            }
+            if (candidate.Kind != VmStructuralKind.Case)
+                return VmStopReason.InvalidStructure;
+            matchCount++;
+        }
+
+        var selected = structuralSemantics!.SelectCase(runtimeId, record.GroupIndex, program.SelectCases.AsSpan(group.FirstCaseIndex, matchCount));
+        if (selected < -1 || selected >= matchCount)
+            return VmStopReason.UnsupportedControl;
+        if (selected >= 0)
+        {
+            var selectedIndex = checked(group.FirstCaseIndex + selected);
+            var selectedCase = program.SelectCases[selectedIndex];
+            return SetPc(selectedCase.Pc + 1) ? null : VmStopReason.InvalidLocalPc;
+        }
+        if (fallbackPc >= 0)
+            return SetPc(fallbackPc + 1) ? null : VmStopReason.InvalidLocalPc;
+        return SetPc(group.ExitPc) ? null : VmStopReason.InvalidLocalPc;
+    }
+
+    private VmStopReason? BeginCounted(RuntimeFunctionId runtimeId, StructuralLinkRecord record)
+    {
+        if (!TryGetLoop(record, out var loop))
+            return VmStopReason.InvalidStructure;
+        var entry = structuralSemantics!.BeginCounted(runtimeId, record.LoopIndex, loop);
+        loopRuntime.CaptureCounted(record.LoopIndex, entry.End, entry.Step);
+        if (CountedContinues(entry.Counter, entry.End, entry.Step))
+            return null;
+        return SetPc(loop.ExitPc) ? null : VmStopReason.InvalidLocalPc;
+    }
+
+    private VmStopReason? AdvanceCounted(RuntimeFunctionId runtimeId, StructuralLinkRecord record, bool breakAfterAdvance)
+    {
+        if (!TryGetLoop(record, out var loop))
+            return VmStopReason.InvalidStructure;
+        if (!loopRuntime.TryGetCounted(record.LoopIndex, out var end, out var step))
+        {
+            if (breakAfterAdvance)
+                return VmStopReason.SemanticNotAvailable;
+            return SetPc(loop.ExitPc) ? null : VmStopReason.InvalidLocalPc;
+        }
+        var counter = structuralSemantics!.AdvanceCounted(runtimeId, record.LoopIndex, loop, step);
+        if (breakAfterAdvance)
+            return SetPc(loop.ExitPc) ? null : VmStopReason.InvalidLocalPc;
+        if (CountedContinues(counter, end, step))
+            return SetPc(loop.BodyEntryPc) ? null : VmStopReason.InvalidLocalPc;
+        return SetPc(loop.ExitPc) ? null : VmStopReason.InvalidLocalPc;
+    }
+
+    private VmStopReason? CheckConditionalLoop(RuntimeFunctionId runtimeId, StructuralLinkRecord record, int evaluatePc, VmStructuralKind evaluateKind)
+    {
+        if (!TryGetLoop(record, out var loop))
+            return VmStopReason.InvalidStructure;
+        if (structuralSemantics!.EvaluateInt(runtimeId, evaluatePc, evaluateKind) != 0)
+            return SetPc(loop.BodyEntryPc) ? null : VmStopReason.InvalidLocalPc;
+        return SetPc(loop.ExitPc) ? null : VmStopReason.InvalidLocalPc;
+    }
+
+    private VmStopReason? BreakLoop(RuntimeFunctionId runtimeId, StructuralLinkRecord record)
+    {
+        if (!TryGetLoop(record, out var loop))
+            return VmStopReason.InvalidStructure;
+        if ((loop.Flags & LoopDescriptorFlags.BreakAdvancesCounter) != 0)
+            return AdvanceCounted(runtimeId, record, breakAfterAdvance: true);
+        return SetPc(loop.ExitPc) ? null : VmStopReason.InvalidLocalPc;
+    }
+
+    private VmStopReason? ContinueLoop(RuntimeFunctionId runtimeId, StructuralLinkRecord record)
+    {
+        if (!TryGetLoop(record, out var loop))
+            return VmStopReason.InvalidStructure;
+        return loop.LoopKind switch
+        {
+            VmStructuralKind.For or VmStructuralKind.Repeat => AdvanceCounted(runtimeId, record, breakAfterAdvance: false),
+            VmStructuralKind.While => CheckConditionalLoop(runtimeId, record, loop.HeaderPc, VmStructuralKind.While),
+            VmStructuralKind.Do => CheckConditionalLoop(runtimeId, record, loop.EndPc, VmStructuralKind.Loop),
+            _ => VmStopReason.InvalidStructure,
+        };
+    }
+
+    private bool TryGetLoop(StructuralLinkRecord record, out LoopDescriptor loop)
+    {
+        if ((uint)record.LoopIndex >= (uint)program.Loops.Length)
+        {
+            loop = default;
+            return false;
+        }
+        loop = program.Loops[record.LoopIndex];
+        return loop.FunctionId == record.FunctionId;
+    }
+
+    private bool TryGetIfGroup(int groupIndex, int functionId, out IfGroupDescriptor group)
+    {
+        if ((uint)groupIndex >= (uint)program.IfGroups.Length)
+        {
+            group = default;
+            return false;
+        }
+        group = program.IfGroups[groupIndex];
+        return group.FunctionId == functionId;
+    }
+
+    private bool TryGetSelectGroup(int groupIndex, int functionId, out SelectGroupDescriptor group)
+    {
+        if ((uint)groupIndex >= (uint)program.SelectGroups.Length)
+        {
+            group = default;
+            return false;
+        }
+        group = program.SelectGroups[groupIndex];
+        return group.FunctionId == functionId;
+    }
+
+    private VmStopReason? SetGroupExit(IfGroupDescriptor[] groups, int groupIndex, int functionId)
+    {
+        if ((uint)groupIndex >= (uint)groups.Length || groups[groupIndex].FunctionId != functionId)
+            return VmStopReason.InvalidStructure;
+        return SetPc(groups[groupIndex].ExitPc) ? null : VmStopReason.InvalidLocalPc;
+    }
+
+    private VmStopReason? SetGroupExit(SelectGroupDescriptor[] groups, int groupIndex, int functionId)
+    {
+        if ((uint)groupIndex >= (uint)groups.Length || groups[groupIndex].FunctionId != functionId)
+            return VmStopReason.InvalidStructure;
+        return SetPc(groups[groupIndex].ExitPc) ? null : VmStopReason.InvalidLocalPc;
+    }
+
+    private static bool CountedContinues(long counter, long end, long step) =>
+        step > 0 ? end > counter : step < 0 && end < counter;
+
+    private bool TryPush(int id, VmReturnKind kind, out VmStopReason reason)
+    {
+        if ((uint)id >= (uint)program.Descriptors.Length) { reason = VmStopReason.InvalidFunctionId; return false; }
+        var d = program.Descriptors[id];
+        if (d.State != VmFunctionState.ExecutableReady) { reason = StateReason(d.State); return false; }
+        if (stackCount == stack.Length) Array.Resize(ref stack, checked(stack.Length * 2));
+        stack[stackCount++] = new(id, 0, kind);
+        reason = VmStopReason.Returned;
+        return true;
+    }
+
+    private bool Return()
+    {
+        if (stackCount == 0) return false;
+        var propagate = stack[stackCount - 1].ReturnKind == VmReturnKind.Propagate;
+        stackCount--;
+        while (propagate && stackCount > 0)
+        {
+            propagate = stack[stackCount - 1].ReturnKind == VmReturnKind.Propagate;
+            stackCount--;
+        }
+        return true;
+    }
+
+    private bool SetPc(int pc)
+    {
+        var d = GetDescriptor(stack[stackCount - 1].FunctionId);
+        if (pc < 0 || pc > d.CodeLength) return false;
+        var f = stack[stackCount - 1];
+        stack[stackCount - 1] = new(f.FunctionId, pc, f.ReturnKind);
+        return true;
+    }
+
+    private VmFunctionDescriptor GetDescriptor(int id) =>
+        (uint)id < (uint)program.Descriptors.Length ? program.Descriptors[id] : new(-1, 0, 0, VmFunctionState.CodeNotAvailable);
+
+    private static VmStopReason StateReason(VmFunctionState state) => state switch
+    {
+        VmFunctionState.CodeNotAvailable => VmStopReason.CodeNotAvailable,
+        VmFunctionState.InvalidStructure => VmStopReason.InvalidStructure,
+        VmFunctionState.UnsupportedControl => VmStopReason.UnsupportedControl,
+        _ => VmStopReason.SemanticNotAvailable,
+    };
 }
 public sealed class VmSyntheticProgramBuilder
 {

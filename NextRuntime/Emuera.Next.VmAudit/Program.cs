@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -132,6 +133,57 @@ var physicalGroups = sourceRows.GroupBy(x => x.PhysicalName, StringComparer.Ordi
 var spanMismatch = CompareSpans(prototypes, link.Program);
 var localPcErrors = VerifyLocalPcs(link.Program);
 var sideTableIndexErrors = VerifySideTableIndices(link.Program);
+var structuralAux = VerifyStructuralInstructionAux(link.Program);
+var linkedProgramRetainsRawOperandStrings = typeof(LinkedProgram).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+    .Any(x => x.FieldType == typeof(string[]) || x.FieldType == typeof(string) || typeof(IEnumerable<string>).IsAssignableFrom(x.FieldType));
+var machineSemanticHostFields = typeof(VmMachine).GetFields(BindingFlags.Instance | BindingFlags.NonPublic).Count(x => x.FieldType == typeof(IVmStructuralSemantics));
+var frameOwnsSemanticHost = typeof(VmFrame).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).Any(x => x.FieldType == typeof(IVmStructuralSemantics));
+var semanticMethods = typeof(IVmStructuralSemantics).GetMethods().Select(x => x.Name).OrderBy(x => x, StringComparer.Ordinal).ToArray();
+var expectedSemanticMethods = new[] { "AdvanceCounted", "BeginCounted", "EvaluateInt", "SelectCase" };
+var semanticContractShape = semanticMethods.SequenceEqual(expectedSemanticMethods, StringComparer.Ordinal);
+var semanticGateProbe = new LinkedProgram(
+    [new VmInstruction((ushort)VmOpcode.Structural, aux: 0)],
+    [new VmFunctionDescriptor(0, 0, 1, VmFunctionState.ExecutableReady)],
+    [new StructuralLinkRecord(0, 0, 0, 1, VmStructuralKind.Sif, 0)]);
+var semanticHostRequired = new VmMachine(semanticGateProbe).Run(new RuntimeFunctionId(0)) == VmStopReason.SemanticNotAvailable;
+var structuralExecutionContractErrors = structuralAux.Errors
+    + (!linkedProgramRetainsRawOperandStrings ? 0 : 1)
+    + (machineSemanticHostFields == 1 ? 0 : 1)
+    + (!frameOwnsSemanticHost ? 0 : 1)
+    + (semanticContractShape ? 0 : 1)
+    + (semanticHostRequired ? 0 : 1);
+var loopRuntimeState = new LoopRuntimeState(link.Program);
+var loopForCount = link.Program.Loops.Count(x => x.LoopKind == VmStructuralKind.For);
+var loopRepeatCount = link.Program.Loops.Count(x => x.LoopKind == VmStructuralKind.Repeat);
+var loopWhileCount = link.Program.Loops.Count(x => x.LoopKind == VmStructuralKind.While);
+var loopDoCount = link.Program.Loops.Count(x => x.LoopKind == VmStructuralKind.Do);
+var countedLoopCount = loopForCount + loopRepeatCount;
+var machineLoopStateFieldRows = typeof(VmMachine).GetFields(BindingFlags.Instance | BindingFlags.NonPublic).Where(x => x.FieldType == typeof(LoopRuntimeState)).ToArray();
+var machineLoopStateFields = machineLoopStateFieldRows.Length;
+var machineLoopStateField = machineLoopStateFieldRows.FirstOrDefault();
+var frameOwnsLoopState = typeof(VmFrame).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).Any(x => x.FieldType == typeof(LoopRuntimeState));
+var cellType = typeof(LoopRuntimeState).GetNestedType("LoopRuntimeCell", BindingFlags.NonPublic);
+var cellFields = cellType?.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).Select(x => x.Name).OrderBy(x => x).ToArray() ?? [];
+var expectedCellFields = new[] { "CapturedEnd", "CapturedStep", "Initialized" }.OrderBy(x => x).ToArray();
+var counterSlotStored = cellFields.Any(x => x.Contains("Counter", StringComparison.OrdinalIgnoreCase));
+var globalLoopIndexDomain = loopRuntimeState.Count == link.Program.Loops.Length && sideTableIndexErrors == 0;
+var runtimeProbeProgram = new LinkedProgram([VmInstruction.Halt], [new VmFunctionDescriptor(0, 0, 1, VmFunctionState.ExecutableReady)], [], loops: [new LoopDescriptor(0, VmStructuralKind.For, 0, 1, 2, 3, 2, LoopDescriptorFlags.BreakAdvancesCounter)]);
+var runtimeProbeMachine = new VmMachine(runtimeProbeProgram);
+var runtimeProbeState = machineLoopStateField?.GetValue(runtimeProbeMachine) as LoopRuntimeState;
+runtimeProbeState?.CaptureCounted(0, 9, 3);
+var runtimeProbeReason = runtimeProbeMachine.Run(new RuntimeFunctionId(0));
+var runtimeProbeAfter = machineLoopStateField?.GetValue(runtimeProbeMachine) as LoopRuntimeState;
+var stateSurvivesRun = runtimeProbeState is not null && ReferenceEquals(runtimeProbeState, runtimeProbeAfter) && runtimeProbeReason == VmStopReason.Halted && runtimeProbeAfter!.TryGetCounted(0, out var runtimeProbeEnd, out var runtimeProbeStep) && runtimeProbeEnd == 9 && runtimeProbeStep == 3;
+var freshProbeState = machineLoopStateField?.GetValue(new VmMachine(runtimeProbeProgram)) as LoopRuntimeState;
+var newMachineStartsFresh = freshProbeState is not null && !freshProbeState.TryGetCounted(0, out _, out _);
+var loopRuntimeStateErrors = (loopRuntimeState.Count == link.Program.Loops.Length ? 0 : 1)
+    + (machineLoopStateFields == 1 ? 0 : 1)
+    + (!frameOwnsLoopState ? 0 : 1)
+    + (cellFields.SequenceEqual(expectedCellFields, StringComparer.Ordinal) ? 0 : 1)
+    + (!counterSlotStored ? 0 : 1)
+    + (globalLoopIndexDomain ? 0 : 1)
+    + (stateSurvivesRun ? 0 : 1)
+    + (newMachineStartsFresh ? 0 : 1);
 var codeAvailable = ids.Count(id => catalog[id].CodeAvailable);
 var effectiveUnknown = ids.Count(id => !catalog[id].EffectiveNameKnown);
 var invalidStructure = link.Program.Descriptors.Count(x => x.State == VmFunctionState.InvalidStructure);
@@ -151,7 +203,7 @@ var knownLinkedPayload = instructionPayload + descriptorPayload + recordPayload 
 var catalogKnownPayload = (long)catalog.Count * Marshal.SizeOf<FunctionCatalogEntry>() + (long)catalog.CandidateIdCount * 4 + (long)catalog.NameRangeCount * 8 + (long)catalog.NameTable.Count * 8 + (long)catalog.FileTableCount * 8;
 var retained = MeasureRetained(files, runtimeBindings, sourcePrototypes, sourceToRuntime, catalogKnownPayload, knownLinkedPayload);
 var coreNextPipelineMs = indexWatch.Elapsed.TotalMilliseconds + oracleWatch.Elapsed.TotalMilliseconds + catalogWatch.Elapsed.TotalMilliseconds + compileWatch.Elapsed.TotalMilliseconds + linkWatch.Elapsed.TotalMilliseconds;
-var auditResult = sourceRows.Count == 134652 && legacyRows.Length == 134652 && exactBound.Length == 134649 && sourceOnlyProof && runtimeOnlyProof && ambiguousBinding == 0 && misbound == 0 && ordinalMisbinds.Length == 2 && effectiveUnknown == 0 && remapMissing == 0 && !remapDuplicate && compileErrors == 0 && spanMismatch == 0 && localPcErrors == 0 && sideTableIndexErrors == 0 && invalidStructure == 0 && unsupportedControl == 0 && codeAvailable == 59103 && retained.AllValid ? "PASS" : "HOLD";
+var auditResult = sourceRows.Count == 134652 && legacyRows.Length == 134652 && exactBound.Length == 134649 && sourceOnlyProof && runtimeOnlyProof && ambiguousBinding == 0 && misbound == 0 && ordinalMisbinds.Length == 2 && effectiveUnknown == 0 && remapMissing == 0 && !remapDuplicate && compileErrors == 0 && spanMismatch == 0 && localPcErrors == 0 && sideTableIndexErrors == 0 && loopRuntimeStateErrors == 0 && structuralExecutionContractErrors == 0 && invalidStructure == 0 && unsupportedControl == 0 && codeAvailable == 59103 && retained.AllValid ? "PASS" : "HOLD";
 
 Write("semantic-binding-summary.txt", $"SourceDefinitions={sourceRows.Count}\nRuntimeDefinitions={legacyRows.Length}\nExactBound={exactBound.Length}\nPhysicalOnlyPreprocessorDisabled={sourceOnlyEvidence.Count(x => x.Classification == "PhysicalOnlyPreprocessorDisabled")}\nRuntimeOnlyLineContinuation={runtimeOnlyEvidence.Count(x => x.Classification == "RuntimeOnlyLineContinuation")}\nUnexplainedSourceOnly={sourceOnlyEvidence.Count(x => !x.Proven)}\nUnexplainedRuntimeOnly={runtimeOnlyEvidence.Count(x => !x.Proven)}\nAmbiguousBinding={ambiguousBinding}\nMisbound={misbound}\nOrdinalWouldMisbind={ordinalMisbinds.Length}\nEffectiveNameUnknownRuntime={effectiveUnknown}\nCompiledSourceFunctions={sourcePrototypes.Count}\nCompiledRuntimeMappings={prototypes.Count}\nCompiledMappingMissing={remapMissing}\nCompiledMappingDuplicate={(remapDuplicate ? 1 : 0)}\nresult={auditResult}\n");
 Write("semantic-bindings.tsv", "RuntimeFunctionId\tEffectiveName\tBindingKind\tSourceFunctionId\tRelativeFile\tRuntimeStartLine\tSourceStartLine\tKind\tCodeAvailable\n" + string.Join("\n", legacyRows.Select(row => { var key = PositionKey(row.RelativeFile, row.StartLine); var has = sourceByPosition.TryGetValue(key, out var s); var binding = has ? "ExactBound" : "RuntimeOnlyLineContinuation"; return $"{row.RuntimeId.Value}\t{row.FunctionName}\t{binding}\t{(has ? s.SourceId.Value.ToString() : "-1")}\t{row.RelativeFile}\t{row.StartLine}\t{(has ? s.StartLine.ToString() : "-1")}\t{row.Kind}\t{catalog[row.RuntimeId.Value].CodeAvailable}"; })));
@@ -171,6 +223,8 @@ Write("fixed-call-link-summary.txt", $"calls={link.Calls}\njumps={link.Jumps}\ns
 Write("operand-span-differential.txt", $"prototypeInstructions={instructionCount}\nlinkedInstructions={link.Program.Code.Length}\noperandSpanMismatch={spanMismatch}\nresult={(spanMismatch == 0 ? "PASS" : "HOLD")}\n");
 Write("local-pc-verification.txt", $"errors={localPcErrors}\nallTargetPcFieldsAreLocal=True\nsideTableIndicesSeparate=True\n");
 Write("side-table-index-verification.txt", $"errors={sideTableIndexErrors}\nifGroups={link.Program.IfGroups.Length}\nifClauses={link.Program.IfClauses.Length}\nselectGroups={link.Program.SelectGroups.Length}\nselectCases={link.Program.SelectCases.Length}\nloops={link.Program.Loops.Length}\nindicesAreProgramGlobal=True\nresult={(sideTableIndexErrors == 0 ? "PASS" : "HOLD")}\n");
+Write("structural-execution-contract.txt", $"errors={structuralExecutionContractErrors}\nstructuralInstructions={structuralAux.StructuralInstructions}\nstructuralLinks={link.Program.StructuralLinks.Length}\ninvalidAux={structuralAux.InvalidAux}\nfunctionPcMismatch={structuralAux.FunctionPcMismatch}\nduplicateStructuralLinkRefs={structuralAux.DuplicateRefs}\nunreferencedStructuralLinks={structuralAux.UnreferencedRefs}\nsifRoutingMismatch={structuralAux.SifRoutingMismatch}\ndirectStructuralLookup={structuralAux.Errors == 0}\nsemanticHostRequired={semanticHostRequired}\nVmMachineSemanticHostFields={machineSemanticHostFields}\nVmFrameOwnsSemanticHost={frameOwnsSemanticHost}\nsemanticMethods={string.Join(",", semanticMethods)}\nlinkedProgramRetainsRawOperandStrings={linkedProgramRetainsRawOperandStrings}\nphase3ExpressionIrDeferred=True\nExecutableReadyReal={link.Program.Descriptors.Count(x => x.State == VmFunctionState.ExecutableReady)}\nresult={(structuralExecutionContractErrors == 0 ? "PASS" : "HOLD")}\n");
+Write("loop-runtime-state.txt", $"errors={loopRuntimeStateErrors}\nloopDescriptors={link.Program.Loops.Length}\nruntimeCells={loopRuntimeState.Count}\ncountedLoops={countedLoopCount}\nforLoops={loopForCount}\nrepeatLoops={loopRepeatCount}\nwhileLoops={loopWhileCount}\ndoLoops={loopDoCount}\nVmMachineLoopRuntimeStateFields={machineLoopStateFields}\nVmFrameOwnsLoopRuntimeState={frameOwnsLoopState}\ncellFields={string.Join(",", cellFields)}\nindexedByProgramGlobalLoopIndex={globalLoopIndexDomain}\ncounterSlotStored={counterSlotStored}\nstateSurvivesRun={stateSurvivesRun}\nnewMachineStartsFresh={newMachineStartsFresh}\nresult={(loopRuntimeStateErrors == 0 ? "PASS" : "HOLD")}\n");
 Write("control-link-summary.txt", $"linkedFunctions={prototypes.Count}\nlinkedInstructions={link.Program.Code.Length}\nstructuralLinks={link.Program.StructuralLinks.Length}\nsifLinks={link.Program.SifLinks.Length}\nifGroups={link.Program.IfGroups.Length}\nifClauses={link.Program.IfClauses.Length}\nselectGroups={link.Program.SelectGroups.Length}\nselectCases={link.Program.SelectCases.Length}\nloopDescriptors={link.Program.Loops.Length}\ninvalidStructure={invalidStructure}\nunsupportedControl={unsupportedControl}\nexecutableRealReady=0\nsemanticBarriers={link.SemanticBarriers}\nmaxStructuralNesting={maxDepth}\nmaxLoopNesting={MaxLoopDepth(allInstructions)}\nstructuralWarnings={warningDiagnostics}\nfatalDiagnostics={fatalDiagnostics}\n");
 Write("real-execution-readiness.txt", $"CodeAvailable={codeAvailable}\nLinkReady={link.LinkReadyFunctions}\nLinkedSemanticPending={link.SemanticPendingFunctions}\nExecutableReadyReal=0\nSemanticNotAvailableBeforeFetch=True\nInvalidStructureStopReason=InvalidStructure\n");
 var allocatedBytes = GC.GetTotalAllocatedBytes(false) - allocatedStart;
@@ -179,7 +233,7 @@ Write("memory.txt", $"catalogActualRetainedBytes={retained.Catalog.RetainedBytes
 Write("retained-raw.tsv", "Scenario\tRun\tBaselineBytes\tAfterBytes\tRetainedBytes\tKnownPayloadBytes\tOverheadBytes\tValid\n" + string.Join("\n", retained.AllSamples.Select(x => $"{x.Scenario}\t{x.Run}\t{x.BaselineBytes}\t{x.AfterBytes}\t{x.RetainedBytes}\t{x.KnownPayloadBytes}\t{x.OverheadBytes}\t{x.Valid}")));
 Write("structural-diagnostics.tsv", "RuntimeFunctionId\tPc\tClassification\tMessage\n" + string.Join("\n", link.StructuralDiagnostics.Select(x => $"{x.RuntimeId.Value}\t{x.Pc}\t{x.Classification}\t{x.Message}")));
 auditWatch.Stop();
-Console.WriteLine($"VmAudit: source={sourceRows.Count} runtime={legacyRows.Length} exact={exactBound.Length} sourceOnly={sourceOnly.Length} runtimeOnly={runtimeOnly.Length} ordinalMisbind={ordinalMisbinds.Length} compiled={prototypes.Count} instructions={instructionCount} linked={link.Program.Code.Length} calls={link.Calls} jumps={link.Jumps} resolved={link.ResolvedCalls} missing={link.MissingTargets} unknown={effectiveUnknown} sideTableIndexErrors={sideTableIndexErrors} retainedValid={retained.AllValid} result={auditResult}");
+Console.WriteLine($"VmAudit: source={sourceRows.Count} runtime={legacyRows.Length} exact={exactBound.Length} sourceOnly={sourceOnly.Length} runtimeOnly={runtimeOnly.Length} ordinalMisbind={ordinalMisbinds.Length} compiled={prototypes.Count} instructions={instructionCount} linked={link.Program.Code.Length} calls={link.Calls} jumps={link.Jumps} resolved={link.ResolvedCalls} missing={link.MissingTargets} unknown={effectiveUnknown} sideTableIndexErrors={sideTableIndexErrors} loopRuntimeStateErrors={loopRuntimeStateErrors} structuralExecutionContractErrors={structuralExecutionContractErrors} retainedValid={retained.AllValid} result={auditResult}");
 return auditResult == "PASS" ? 0 : 1;
 
 void Write(string name, string text) => File.WriteAllText(Path.Combine(report, name), text, new UTF8Encoding(false));
@@ -232,6 +286,36 @@ static RuntimeOnlyEvidence ProveRuntimeOnly(LegacyRow row, IReadOnlyList<SourceF
 }
 static int CompareSpans(IReadOnlyList<RuntimeFunctionPrototype> ps, LinkedProgram program) { var errors = 0; foreach (var p in ps) { var d = program.Descriptors[p.RuntimeId.Value]; for (var i = 0; i < p.Instructions.Length; i++) { var x = program.Code[d.CodeStart + i]; var y = p.Instructions[i]; if (x.OperandOffset != y.OperandOffset || x.OperandLength != y.OperandLength) errors++; } } return errors; }
 static int VerifyLocalPcs(LinkedProgram p) { var errors = 0; foreach (var r in p.StructuralLinks) { var length = p.Descriptors[r.FunctionId].CodeLength; if (r.Pc < 0 || r.Pc >= length || r.TargetPc < -1 || r.TargetPc > length || r.AuxiliaryPc < -1 || r.AuxiliaryPc > length) errors++; } foreach (var s in p.SifLinks) { var length = p.Descriptors[s.FunctionId].CodeLength; if (s.Pc < 0 || s.Pc >= length || s.FallthroughPc < 0 || s.FallthroughPc > length || s.FalsePc < 0 || s.FalsePc > length) errors++; } return errors; }
+static StructuralAuxAudit VerifyStructuralInstructionAux(LinkedProgram p)
+{
+    var refs = new int[p.StructuralLinks.Length];
+    var structuralInstructions = 0;
+    var invalidAux = 0;
+    var functionPcMismatch = 0;
+    foreach (var descriptor in p.Descriptors)
+    {
+        for (var pc = 0; pc < descriptor.CodeLength; pc++)
+        {
+            var instruction = p.Code[descriptor.CodeStart + pc];
+            if ((VmOpcode)instruction.Opcode != VmOpcode.Structural) continue;
+            structuralInstructions++;
+            if ((uint)instruction.Aux >= (uint)p.StructuralLinks.Length) { invalidAux++; continue; }
+            refs[instruction.Aux]++;
+            var row = p.StructuralLinks[instruction.Aux];
+            if (row.FunctionId != descriptor.FunctionId || row.Pc != pc) functionPcMismatch++;
+        }
+    }
+    var duplicateRefs = refs.Count(x => x > 1);
+    var unreferencedRefs = refs.Count(x => x == 0);
+    var sifRoutingMismatch = 0;
+    foreach (var sif in p.SifLinks)
+    {
+        var matches = p.StructuralLinks.Where(x => x.FunctionId == sif.FunctionId && x.Pc == sif.Pc && x.Kind == VmStructuralKind.Sif).ToArray();
+        if (matches.Length != 1 || matches[0].TargetPc != sif.FallthroughPc || matches[0].AuxiliaryPc != sif.FalsePc) sifRoutingMismatch++;
+    }
+    return new(structuralInstructions, invalidAux, functionPcMismatch, duplicateRefs, unreferencedRefs, sifRoutingMismatch);
+}
+
 static int VerifySideTableIndices(LinkedProgram p)
 {
     var errors = 0;
@@ -308,6 +392,7 @@ static RetainedMeasurement MeasureRetained(IReadOnlyList<SourceFileIndex> files,
     for (var run = 1; run <= 3; run++) { samples.Add(Measure("Catalog", run, () => FunctionCatalog.FromRuntimeBindings(files, bindings), catalogPayload)); samples.Add(Measure("Linked", run, () => ControlLinker.Link(FunctionCatalog.FromRuntimeBindings(files, bindings), RuntimeFunctionBinder.Remap(sourcePrototypes, sourceToRuntime)), linkedPayload)); samples.Add(Measure("Combined", run, () => new object[] { FunctionCatalog.FromRuntimeBindings(files, bindings), ControlLinker.Link(FunctionCatalog.FromRuntimeBindings(files, bindings), RuntimeFunctionBinder.Remap(sourcePrototypes, sourceToRuntime)) }, catalogPayload + linkedPayload)); }
     return new(samples.ToArray());
 }
+readonly record struct StructuralAuxAudit(int StructuralInstructions, int InvalidAux, int FunctionPcMismatch, int DuplicateRefs, int UnreferencedRefs, int SifRoutingMismatch) { public int Errors => InvalidAux + FunctionPcMismatch + DuplicateRefs + UnreferencedRefs + SifRoutingMismatch + (StructuralInstructions == 56912 ? 0 : 1); }
 readonly record struct SourceRow(SourceFunctionId SourceId, string RelativeFile, int FunctionOrdinal, int StartLine, string PhysicalName, int FileOrdinal, SourceIndexFlags Flags);
 readonly record struct LegacyRow(RuntimeFunctionId RuntimeId, string RelativeFile, int FunctionOrdinal, int StartLine, string FunctionName, FunctionKind Kind);
 readonly record struct OrdinalMisbind(string RelativeFile, int Ordinal, int SourceStartLine, string SourcePhysicalName, int LegacyStartLine, string LegacyEffectiveName);
