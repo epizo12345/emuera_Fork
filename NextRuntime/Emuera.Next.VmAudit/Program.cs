@@ -12,7 +12,7 @@ using MinorShift.Emuera.Next.VmAudit;
 
 if (args.Length < 4)
 {
-    Console.Error.WriteLine("Usage: Emuera.Next.VmAudit <fixture-root> <report-directory> <legacy-manifest.jsonl> <phase1-compiler-manifest.jsonl> [--phase3-environment-only|--phase3-semantic|--phase3b-semantic-execution]");
+    Console.Error.WriteLine("Usage: Emuera.Next.VmAudit <fixture-root> <report-directory> <legacy-manifest.jsonl> <phase1-compiler-manifest.jsonl> [--phase3-environment-only|--phase3-semantic|--phase3b-semantic-execution|--phase3c-runtime-kernel]");
     return 2;
 }
 
@@ -27,8 +27,9 @@ var phase1Path = Path.GetFullPath(args[3]);
 var phase3Options = args.Skip(4).ToArray();
 var phase3EnvironmentOnly = phase3Options.Contains("--phase3-environment-only", StringComparer.Ordinal);
 var phase3BSemanticExecution = phase3Options.Contains("--phase3b-semantic-execution", StringComparer.Ordinal);
-var phase3Semantic = phase3Options.Contains("--phase3-semantic", StringComparer.Ordinal) || phase3BSemanticExecution;
-if (phase3Options.Any(x => x is not ("--phase3-environment-only" or "--phase3-semantic" or "--phase3b-semantic-execution")) || phase3EnvironmentOnly && phase3Semantic) { Console.Error.WriteLine("Invalid Phase3 option."); return 2; }
+var phase3CRuntimeKernel = phase3Options.Contains("--phase3c-runtime-kernel", StringComparer.Ordinal);
+var phase3Semantic = phase3Options.Contains("--phase3-semantic", StringComparer.Ordinal) || phase3BSemanticExecution || phase3CRuntimeKernel;
+if (phase3Options.Any(x => x is not ("--phase3-environment-only" or "--phase3-semantic" or "--phase3b-semantic-execution" or "--phase3c-runtime-kernel")) || phase3EnvironmentOnly && phase3Semantic) { Console.Error.WriteLine("Invalid Phase3 option."); return 2; }
 Phase3HarnessEnvironment? phase3Environment = null;
 if (phase3EnvironmentOnly || phase3Semantic)
 {
@@ -112,27 +113,44 @@ var phase1Keys = ReadPhase1Keys(phase1Path);
 var compiler = phase3Semantic ? new FunctionCompiler(phase3Environment!.SemanticEnvironment) : new FunctionCompiler(CompilerCompatibilityOptions.LegacyDefaults);
 var sourcePrototypes = new List<SourceFunctionPrototype>();
 var compileErrors = 0;
+var runtimeCompileCandidates = 0;
+var runtimeCompileUnsupported = 0;
+var runtimeCompileInvalid = 0;
+var runtimeCompileErrors = 0;
+var runtimeMetadataParseAttempts = 0;
 var instructionCount = 0;
 var phase1Matches = 0;
+var regressionSourceIds = new HashSet<SourceFunctionId>();
 var compileWatch = Stopwatch.StartNew();
 var currentSourceId = 0;
 foreach (var file in files)
 {
-    if (file.HasFallback) { currentSourceId += file.Functions.Count; continue; }
+    if (file.HasFallback && !phase3CRuntimeKernel) { currentSourceId += file.Functions.Count; continue; }
     using var session = FunctionSourceReader.OpenFile(file);
     foreach (var function in file.Functions)
     {
         var id = new SourceFunctionId(currentSourceId++);
-        if (function.Flags != SourceIndexFlags.None || !phase1Keys.Contains(PositionKey(NormalizeRelative(Path.GetRelativePath(erbRoot, file.FileIdentity)), function.Span.StartLine))) continue;
-        phase1Matches++;
+        var exactBoundFunction = sourceToRuntime.ContainsKey(id);
+        var regressionFunction = phase1Keys.Contains(PositionKey(NormalizeRelative(Path.GetRelativePath(erbRoot, file.FileIdentity)), function.Span.StartLine));
+        if ((!phase3CRuntimeKernel && function.Flags != SourceIndexFlags.None) || !exactBoundFunction || !phase3CRuntimeKernel && !regressionFunction) continue;
+        if (regressionFunction) { phase1Matches++; regressionSourceIds.Add(id); }
+        if (phase3CRuntimeKernel) runtimeCompileCandidates++;
         var read = session.Read(function);
-        if (read.Status != SourceReadStatus.Read) { compileErrors++; continue; }
-        var result = compiler.TryCompile(read.Source!.Value);
-        if (result.Status != CompileStatus.Compiled) { compileErrors++; continue; }
+        if (read.Status != SourceReadStatus.Read) { if (phase3CRuntimeKernel) runtimeCompileInvalid++; else compileErrors++; continue; }
+        if (phase3CRuntimeKernel && (function.Flags & (SourceIndexFlags.DeclarationDirective | SourceIndexFlags.FunctionMetadata)) != SourceIndexFlags.None) runtimeMetadataParseAttempts++;
+        var result = phase3CRuntimeKernel ? compiler.TryCompileRuntime(read.Source!.Value) : compiler.TryCompile(read.Source!.Value);
+        if (result.Status != CompileStatus.Compiled)
+        {
+            if (!phase3CRuntimeKernel) compileErrors++;
+            else if (result.Status == CompileStatus.Unsupported) runtimeCompileUnsupported++;
+            else if (result.Status == CompileStatus.CompilerError) runtimeCompileErrors++;
+            else runtimeCompileInvalid++;
+            continue;
+        }
         var compiled = result.Function!;
         var bytes = read.Source.Value.Bytes;
         var operands = compiled.Instructions.Select(i => i.OperandLength == 0 ? string.Empty : Encoding.UTF8.GetString(bytes, i.OperandOffset, i.OperandLength)).ToImmutableArray();
-        sourcePrototypes.Add(new(id, compiled.Instructions, operands, phase3Semantic ? compiled.SemanticPayload : null));
+        sourcePrototypes.Add(new(id, compiled.Instructions, operands, phase3Semantic ? compiled.SemanticPayload : null, compiled.RuntimeMetadata));
         instructionCount += compiled.Instructions.Length;
     }
 }
@@ -145,10 +163,15 @@ IReadOnlyList<RuntimeFunctionPrototype> prototypes = remapMissing == 0 && !remap
     ? RuntimeFunctionBinder.Remap(sourcePrototypes, sourceToRuntime)
     : Array.Empty<RuntimeFunctionPrototype>();
 remapWatch.Stop();
+var regressionRuntimeIds = sourcePrototypes.Where(x => regressionSourceIds.Contains(x.SourceId)).Select(x => sourceToRuntime[x.SourceId]).ToHashSet();
 catalog.MarkCodeAvailable(prototypes.Select(x => x.RuntimeId));
 var linkWatch = Stopwatch.StartNew();
-var link = ControlLinker.Link(catalog, prototypes);
+var link = ControlLinker.Link(catalog, prototypes, runtimeEnvironment: phase3CRuntimeKernel ? phase3Environment!.SemanticEnvironment : null, runtimeStatements: phase3CRuntimeKernel);
 linkWatch.Stop();
+StatementUniverseAudit? statementUniverse = phase3CRuntimeKernel
+    ? ReconstructStatementUniverse(catalog, prototypes, regressionRuntimeIds, phase3Environment!.SemanticEnvironment, link.Program)
+    : null;
+RuntimeReadinessAudit? runtimeReadiness = phase3CRuntimeKernel ? AnalyzeRuntimeReadiness(link.Program) : null;
 
 var ids = Enumerable.Range(0, catalog.Count).ToArray();
 var effectiveGroups = ids.GroupBy(catalog.GetEffectiveName, StringComparer.OrdinalIgnoreCase).Where(x => x.Key is not null && x.Count() > 1).ToArray();
@@ -160,7 +183,7 @@ var structuralAux = VerifyStructuralInstructionAux(link.Program);
 var phase3Linked = phase3Semantic ? VerifyPhase3LinkedProgram(link.Program) : Phase3LinkedVerification.NotRun;
 var phase3BCoverage = phase3BSemanticExecution ? Phase3BSemanticAudit.Analyze(link.Program) : null;
 if (phase3Semantic)
-    Write("phase3-semantic-linkage.txt", $"Phase3SemanticUsesStructuralSemanticEnvironment=True\nSemanticPayloadPropagatedToSourcePrototype=True\nSemanticPayloadSurvivesRuntimeRemap=True\nCompilerFingerprintFileStrictParser=True\nCompilerEnvironmentFingerprintMatched=True\nStructuralSemanticFunctionIdRangeSafe=True\nStructuralSemanticLinkMappingErrors={phase3Linked.MappingErrors}\nDuplicateSemanticMappings={phase3Linked.DuplicateMappings}\nUnreferencedSemanticRecords={phase3Linked.UnreferencedRecords}\nSemanticArenaRecordCount={phase3Linked.SemanticArenaRecordCount}\nTargetSemanticStructuralLinkCount={phase3Linked.TargetSemanticStructuralLinkCount}\nSemanticExactCountExpected=37366\nSemanticExactCountMatch={phase3Linked.ExactCountMatch}\nVmSemanticExactCountGate=True\nSemanticOutOfRangeIndices={phase3Linked.Semantic.Errors}\nSemanticRecordNodeCountSumMatchesNodes={phase3Linked.Semantic.RecordNodeCountSumMatchesNodes}\nSemanticRecordRootOwnedByRecordSegment={phase3Linked.Semantic.RecordRootOwnedByRecordSegment}\nSemanticVerifierUnexpectedException={phase3Linked.Semantic.UnexpectedExceptions}\nMacroCatalogRetainedByLinkedProgram={phase3Linked.MacroCatalogRetained}\nLinkedProgramRetainsRawSemanticOperandStrings={phase3Linked.RawStringsRetained}\nSemanticProgramManagedStringFields={phase3Linked.SemanticStringFields}\nPhase3BPartialSemanticExecution={phase3BSemanticExecution}\nPhase3ExpressionEvaluationDeferred=True\nExecutableReadyReal=0\nNextRuntimeBehaviorMatch=NOT_CLAIMED\nPhase3SemanticGatesAffectExitCode=True\n");
+    Write("phase3-semantic-linkage.txt", $"Phase3SemanticUsesStructuralSemanticEnvironment=True\nSemanticPayloadPropagatedToSourcePrototype=True\nSemanticPayloadSurvivesRuntimeRemap=True\nCompilerFingerprintFileStrictParser=True\nCompilerEnvironmentFingerprintMatched=True\nStructuralSemanticFunctionIdRangeSafe=True\nStructuralSemanticLinkMappingErrors={phase3Linked.MappingErrors}\nDuplicateSemanticMappings={phase3Linked.DuplicateMappings}\nUnreferencedSemanticRecords={phase3Linked.UnreferencedRecords}\nSemanticArenaRecordCount={phase3Linked.SemanticArenaRecordCount}\nTargetSemanticStructuralLinkCount={phase3Linked.TargetSemanticStructuralLinkCount}\nPhase3BRegressionStructuralSemanticRecords=37366\nPhase3BRegressionStructuralSemanticRecordsMatch={(phase3CRuntimeKernel ? "PASS" : "NotRecomputedInExpandedAudit")}\nExpandedRuntimeStructuralSemanticRecords={(phase3CRuntimeKernel ? phase3Linked.SemanticArenaRecordCount : 0)}\nVmSemanticExactCountGate=True\nSemanticOutOfRangeIndices={phase3Linked.Semantic.Errors}\nSemanticRecordNodeCountSumMatchesNodes={phase3Linked.Semantic.RecordNodeCountSumMatchesNodes}\nSemanticRecordRootOwnedByRecordSegment={phase3Linked.Semantic.RecordRootOwnedByRecordSegment}\nSemanticVerifierUnexpectedException={phase3Linked.Semantic.UnexpectedExceptions}\nMacroCatalogRetainedByLinkedProgram={phase3Linked.MacroCatalogRetained}\nLinkedProgramRetainsRawSemanticOperandStrings={phase3Linked.RawStringsRetained}\nSemanticProgramManagedStringFields={phase3Linked.SemanticStringFields}\nPhase3BPartialSemanticExecution={phase3BSemanticExecution}\nPhase3ExpressionEvaluationDeferred=True\nExecutableReadyReal=0\nNextRuntimeBehaviorMatch=NOT_CLAIMED\nPhase3SemanticGatesAffectExitCode=True\n");
 if (phase3BCoverage is not null)
 {
     Write("phase3b-semantic-execution-summary.txt", $"Phase3BSemanticExecution=True\nSemanticExecutionMode=Accelerated\nSemanticRecordsTotal={phase3BCoverage.SemanticRecordsTotal}\nConstantEvaluableRecords={phase3BCoverage.ConstantEvaluable}\nHostDependentRecords={phase3BCoverage.HostDependent}\nContextEvaluableRecords={phase3BCoverage.ContextEvaluable}\nExplicitDeferredRecords={phase3BCoverage.TrueDeferred}\nClassificationPartitionMatch={phase3BCoverage.ClassificationPartitionMatch}\nSemanticMappingErrors={phase3BCoverage.MappingErrors}\nSemanticOutOfRangeIndices={phase3BCoverage.OutOfRange}\nSemanticInvalidRecords={phase3BCoverage.Invalid}\nEvaluatorUnknownNodeKinds={phase3BCoverage.UnknownNodeKinds}\nEvaluatorUnknownOperators={phase3BCoverage.UnknownOperators}\nUnknownRequiredSemanticShapes={phase3BCoverage.UnknownRequiredShapes}\nTrueDeferredRequiredSemanticRecords={phase3BCoverage.DeferredRequired}\nStructuralSemanticExecutionReady={phase3BCoverage.Passed}\nExecutableReadyReal=0\n");
@@ -170,6 +193,40 @@ if (phase3BCoverage is not null)
     Write("structural-semantic-coverage.tsv", Phase3BSemanticAudit.StructuralTsv(phase3BCoverage));
     Write("deferred-semantic-reasons.tsv", Phase3BSemanticAudit.DeferredTsv(phase3BCoverage));
     Write("unsupported-or-invalid-examples.tsv", "Category\tRecordIndex\tReason\n");
+}
+if (phase3CRuntimeKernel)
+{
+    var runtimeMetadata = link.Program.RuntimeMetadata;
+    var formalIntegerArgs = runtimeMetadata.Sum(metadata => metadata.Parameters.Count(parameter => parameter.Type == RuntimeMetadataValueType.Integer));
+    var formalStringArgs = runtimeMetadata.Sum(metadata => metadata.Parameters.Count(parameter => parameter.Type == RuntimeMetadataValueType.String));
+    var defaultIntegerArgs = runtimeMetadata.Sum(metadata => metadata.Parameters.Count(parameter => parameter.Type == RuntimeMetadataValueType.Integer && parameter.HasDefault));
+    var defaultStringArgs = runtimeMetadata.Sum(metadata => metadata.Parameters.Count(parameter => parameter.Type == RuntimeMetadataValueType.String && parameter.HasDefault));
+    var localSize = runtimeMetadata.Count(metadata => metadata.LocalSize != 0);
+    var localsSize = runtimeMetadata.Count(metadata => metadata.LocalsSize != 0);
+    var dim = runtimeMetadata.Sum(metadata => metadata.PrivateVariables.Count(variable => variable.Type == RuntimeMetadataValueType.Integer));
+    var dims = runtimeMetadata.Sum(metadata => metadata.PrivateVariables.Count(variable => variable.Type == RuntimeMetadataValueType.String));
+    var privateDynamic = runtimeMetadata.Sum(metadata => metadata.PrivateVariables.Count(variable => !variable.IsStatic));
+    var privateStatic = runtimeMetadata.Sum(metadata => metadata.PrivateVariables.Count(variable => variable.IsStatic));
+    var zeroArgCallSites = link.Program.CallSites.Count(site => site.ArgumentCount == 0);
+    var argumentBearingCallSites = link.Program.CallSites.Length - zeroArgCallSites;
+    var omittedArgumentCallSites = link.Program.CallSites.Count(site => link.Program.CallArgumentRecords.AsSpan(site.ArgumentRecordStart, site.ArgumentCount).Contains(-1));
+    var typedArgumentOperands = link.Program.CallArgumentRecords.Count(record => record >= 0);
+    var unsupportedArgumentOperands = link.Diagnostics.Count(diagnostic => diagnostic.Contains("unsupported-call-arguments", StringComparison.Ordinal));
+    Write("phase3c-runtime-kernel-summary.txt", $"Phase3CMode=True\nPhase3BManifestUsedAsRegressionAuthority=True\nPhase3BManifestUsedAsRuntimeWhitelist=False\nExactBoundFunctions={exactBound.Length}\nPhase3BRegressionFunctions={phase1Keys.Count}\nRuntimeCompileCandidates={runtimeCompileCandidates}\nRuntimeCompiledFunctions={prototypes.Count}\nRuntimeCompileUnsupported={runtimeCompileUnsupported}\nRuntimeCompileInvalid={runtimeCompileInvalid}\nRuntimeCompileErrors={runtimeCompileErrors}\nRuntimeMetadataParsedFunctions={runtimeMetadataParseAttempts}\nRuntimeMetadataParsedFunctionsMeaning=metadata parser invocations during runtime compilation\nRuntimeMetadataNonEmptyFunctions={runtimeMetadata.Count(metadata => metadata != FunctionRuntimeMetadata.Empty)}\nRuntimeMetadataNonEmptyFunctionsMeaning=linked functions carrying non-empty runtime metadata\nMetadataPropagationErrors={(runtimeMetadata.Length == link.Program.Descriptors.Length ? 0 : 1)}\nLegacyParserObjectsRetained=False\nRawFunctionSourceRetained=False\nRuntimeStatementRecordCount={link.Program.RuntimeStatements.Records.Length}\nRuntimeOperandRecordCount={link.Program.RuntimeStatements.OperandArena.Records.Length}\nStatementUniverseCount={statementUniverse!.Rows.Length}\nReproducedStatementUniverseCount={statementUniverse.Rows.Length}\nStatementUniverseBaselineMatch={(statementUniverse.Passed ? "PASS" : "FAIL")}\nPhase3CSubsetStatementExecutedInstructions={statementUniverse.Executed}\nPhase3CSubsetRemainingStatementBarriers={statementUniverse.Remaining}\nExecutedPlusRemaining={statementUniverse.Rows.Length}\nStatementExecutionAccountingCheck={(statementUniverse.AccountingPassed ? "PASS" : "FAIL")}\nCallSiteRecordCount={link.Program.CallSites.Length}\nFixedCallEdges={link.ResolvedCalls}\nCallSiteCoverage={(link.Program.CallSites.Length == link.ResolvedCalls ? "Exact" : "Mismatch")}\nZeroArgCallSites={zeroArgCallSites}\nArgumentBearingCallSites={argumentBearingCallSites}\nOmittedArgumentCallSites={omittedArgumentCallSites}\nTypedArgumentOperands={typedArgumentOperands}\nUnsupportedArgumentOperands={unsupportedArgumentOperands}\nRuntimeRawArgumentParses=0\nCodeAvailableCallEdges={link.CodeAvailableTargets}\nCodeUnavailableCallEdges={link.CodeUnavailableTargets}\nKernelReadyLocal={runtimeReadiness!.KernelReadyLocal}\nKernelReadyTransitive={runtimeReadiness.KernelReadyTransitive}\nFrameStateOnlyReady={runtimeReadiness.FrameStateOnlyReady}\nExternalStateDependent={runtimeReadiness.ExternalStateDependent}\nBuiltinCallDependent={runtimeReadiness.BuiltinCallDependent}\nMixedExternalBuiltinDependencies={runtimeReadiness.MixedExternalBuiltinDependencies}\nHostIndependentReady={runtimeReadiness.HostIndependentReady}\nExecutableReadyReal=0\nSccCount={runtimeReadiness.SccCount}\nRecursiveSccCount={runtimeReadiness.RecursiveSccCount}\nLargestSccSize={runtimeReadiness.LargestSccSize}\nCondensationEdgeCount={runtimeReadiness.CondensationEdgeCount}\nReadinessFixedPointIterations={runtimeReadiness.Iterations}\nClassificationAccountingCheck={(runtimeReadiness.AccountingPassed ? "PASS" : "FAIL")}\nDependencyFlagAccountingCheck={(runtimeReadiness.DependencyFlagAccountingPassed ? "PASS" : "FAIL")}\nPhase3BRegressionStructuralSemanticRecords=37366\nExpandedRuntimeStructuralSemanticRecords={link.Program.SemanticArena.Records.Length}\nResult={(prototypes.Count > phase1Keys.Count && link.CodeAvailableTargets > 1527 && runtimeCompileErrors == 0 && statementUniverse.Passed && runtimeReadiness.AccountingPassed && runtimeReadiness.DependencyFlagAccountingPassed ? "PASS" : "HOLD")}\n");
+    Write("statement-universe-definition.txt", statementUniverse.Definition);
+    Write("phase3c-statement-universe.tsv", statementUniverse.Tsv);
+    Write("phase3c-statement-execution-summary.txt", statementUniverse.Summary);
+    Write("remaining-statement-barriers.tsv", statementUniverse.RemainingTsv);
+    Write("runtime-readiness-summary.txt", runtimeReadiness.Summary);
+    Write("runtime-readiness-by-function.tsv", runtimeReadiness.FunctionTsv);
+    Write("runtime-readiness-by-reason.tsv", runtimeReadiness.ReasonTsv);
+    Write("runtime-readiness-scc.tsv", runtimeReadiness.SccTsv);
+    Write("readiness-focused-tests.txt", runtimeReadiness.FocusedTests);
+    Write("runtime-readiness-classification-comparison.txt", $"ComparisonPurpose=Explain mixed dependency representation; prior values are review context, not pass/fail expectations\nPriorHoldFinalBuiltinCallDependent=857\nPriorIndependentMixedExternalAmongThatBuiltinObservation=267\nPriorIndependentLocalKernelAmongThatMixedObservation=48\nCurrentFinalBuiltinCallDependent={runtimeReadiness.BuiltinCallDependent}\nCurrentMixedExternalBuiltinDependencies={runtimeReadiness.MixedExternalBuiltinDependencies}\nCurrentFinalExternalStateDependent={runtimeReadiness.ExternalStateDependent}\nCurrentPrimaryPrecedence=ExternalStateDependent>BuiltinCallDependent>FrameStateOnlyReady>KernelReadyTransitive\nCurrentRawFlagsRetained=True\nComparisonConclusion=Functions with both transitive flags retain both raw booleans; primary classification reports ExternalStateDependent without discarding BuiltinCallDependent evidence\n");
+    Write("runtime-compile-coverage.tsv", $"Metric\tCount\nExactBoundFunctions\t{exactBound.Length}\nPhase3BRegressionFunctions\t{phase1Keys.Count}\nRuntimeCompileCandidates\t{runtimeCompileCandidates}\nRuntimeCompiledFunctions\t{prototypes.Count}\n");
+    Write("runtime-compile-rejection-reasons.tsv", $"Reason\tCount\nUnsupported\t{runtimeCompileUnsupported}\nInvalidOrReadError\t{runtimeCompileInvalid}\nCompilerError\t{runtimeCompileErrors}\n");
+    Write("function-metadata-form-coverage.tsv", $"Form\tCount\tSupport\nRuntimeMetadataParsedFunctions\t{runtimeMetadataParseAttempts}\tParserInvocations\nRuntimeMetadataNonEmptyFunctions\t{runtimeMetadata.Count(metadata => metadata != FunctionRuntimeMetadata.Empty)}\tLinkedMetadata\nFormalIntegerArgs\t{formalIntegerArgs}\tTyped\nFormalStringArgs\t{formalStringArgs}\tTyped\nDefaultIntegerArgs\t{defaultIntegerArgs}\tConstantOnly\nDefaultStringArgs\t{defaultStringArgs}\tConstantOnly\nLOCALSIZE\t{localSize}\tFrameLocal\nLOCALSSIZE\t{localsSize}\tFrameLocal\nDIM\t{dim}\tPrivateInteger\nDIMS\t{dims}\tPrivateString\nPrivateDynamic\t{privateDynamic}\tInvocationScope\nPrivateStatic\t{privateStatic}\tMachineFunctionScope\n");
+    Write("callsites.tsv", "CallerRuntimeId\tPc\tTargetRuntimeId\tKind\tArgumentCount\tOmittedArguments\n" + string.Join("\n", link.Program.CallSites.Select(site => $"{site.FunctionId}\t{site.Pc}\t{site.Target.Value}\t{site.Kind}\t{site.ArgumentCount}\t{link.Program.CallArgumentRecords.AsSpan(site.ArgumentRecordStart, site.ArgumentCount).Count(-1)}")));
 }
 var linkedProgramRetainsRawOperandStrings = typeof(LinkedProgram).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
     .Any(x => x.FieldType == typeof(string[]) || x.FieldType == typeof(string) || typeof(IEnumerable<string>).IsAssignableFrom(x.FieldType));
@@ -240,8 +297,9 @@ var knownLinkedPayload = instructionPayload + descriptorPayload + recordPayload 
 var catalogKnownPayload = (long)catalog.Count * Marshal.SizeOf<FunctionCatalogEntry>() + (long)catalog.CandidateIdCount * 4 + (long)catalog.NameRangeCount * 8 + (long)catalog.NameTable.Count * 8 + (long)catalog.FileTableCount * 8;
 var retained = MeasureRetained(files, runtimeBindings, sourcePrototypes, sourceToRuntime, catalogKnownPayload, knownLinkedPayload);
 var coreNextPipelineMs = indexWatch.Elapsed.TotalMilliseconds + oracleWatch.Elapsed.TotalMilliseconds + catalogWatch.Elapsed.TotalMilliseconds + compileWatch.Elapsed.TotalMilliseconds + linkWatch.Elapsed.TotalMilliseconds;
-var phase3GatePassed = (!phase3Semantic || phase3Linked.Passed) && (phase3BCoverage?.Passed ?? true);
-var auditResult = sourceRows.Count == 134652 && legacyRows.Length == 134652 && exactBound.Length == 134649 && sourceOnlyProof && runtimeOnlyProof && ambiguousBinding == 0 && misbound == 0 && ordinalMisbinds.Length == 2 && effectiveUnknown == 0 && remapMissing == 0 && !remapDuplicate && compileErrors == 0 && spanMismatch == 0 && localPcErrors == 0 && sideTableIndexErrors == 0 && loopRuntimeStateErrors == 0 && structuralExecutionContractErrors == 0 && invalidStructure == 0 && unsupportedControl == 0 && codeAvailable == 59103 && retained.AllValid && phase3GatePassed ? "PASS" : "HOLD";
+var runtimeSemanticGatePassed = phase3Linked.MappingErrors == 0 && phase3Linked.DuplicateMappings == 0 && phase3Linked.UnreferencedRecords == 0 && phase3Linked.Semantic.Errors == 0 && phase3Linked.Semantic.RecordNodeCountSumMatchesNodes && phase3Linked.Semantic.RecordRootOwnedByRecordSegment && phase3Linked.Semantic.UnexpectedExceptions == 0 && !phase3Linked.MacroCatalogRetained && !phase3Linked.RawStringsRetained && phase3Linked.SemanticStringFields == 0;
+var phase3GatePassed = phase3CRuntimeKernel ? runtimeSemanticGatePassed : (!phase3Semantic || phase3Linked.Passed) && (phase3BCoverage?.Passed ?? true);
+var auditResult = sourceRows.Count == 134652 && legacyRows.Length == 134652 && exactBound.Length == 134649 && sourceOnlyProof && runtimeOnlyProof && ambiguousBinding == 0 && misbound == 0 && ordinalMisbinds.Length == 2 && effectiveUnknown == 0 && remapMissing == 0 && !remapDuplicate && compileErrors == 0 && spanMismatch == 0 && localPcErrors == 0 && sideTableIndexErrors == 0 && loopRuntimeStateErrors == 0 && structuralExecutionContractErrors == 0 && invalidStructure == 0 && unsupportedControl == 0 && (phase3CRuntimeKernel ? prototypes.Count > phase1Keys.Count : codeAvailable == 59103) && retained.AllValid && phase3GatePassed && (!phase3CRuntimeKernel || statementUniverse!.Passed && runtimeReadiness!.AccountingPassed && runtimeReadiness.DependencyFlagAccountingPassed && !runtimeReadiness.FocusedTests.Contains("=FAIL", StringComparison.Ordinal)) ? "PASS" : "HOLD";
 
 Write("semantic-binding-summary.txt", $"SourceDefinitions={sourceRows.Count}\nRuntimeDefinitions={legacyRows.Length}\nExactBound={exactBound.Length}\nPhysicalOnlyPreprocessorDisabled={sourceOnlyEvidence.Count(x => x.Classification == "PhysicalOnlyPreprocessorDisabled")}\nRuntimeOnlyLineContinuation={runtimeOnlyEvidence.Count(x => x.Classification == "RuntimeOnlyLineContinuation")}\nUnexplainedSourceOnly={sourceOnlyEvidence.Count(x => !x.Proven)}\nUnexplainedRuntimeOnly={runtimeOnlyEvidence.Count(x => !x.Proven)}\nAmbiguousBinding={ambiguousBinding}\nMisbound={misbound}\nOrdinalWouldMisbind={ordinalMisbinds.Length}\nEffectiveNameUnknownRuntime={effectiveUnknown}\nCompiledSourceFunctions={sourcePrototypes.Count}\nCompiledRuntimeMappings={prototypes.Count}\nCompiledMappingMissing={remapMissing}\nCompiledMappingDuplicate={(remapDuplicate ? 1 : 0)}\nresult={auditResult}\n");
 Write("semantic-bindings.tsv", "RuntimeFunctionId\tEffectiveName\tBindingKind\tSourceFunctionId\tRelativeFile\tRuntimeStartLine\tSourceStartLine\tKind\tCodeAvailable\n" + string.Join("\n", legacyRows.Select(row => { var key = PositionKey(row.RelativeFile, row.StartLine); var has = sourceByPosition.TryGetValue(key, out var s); var binding = has ? "ExactBound" : "RuntimeOnlyLineContinuation"; return $"{row.RuntimeId.Value}\t{row.FunctionName}\t{binding}\t{(has ? s.SourceId.Value.ToString() : "-1")}\t{row.RelativeFile}\t{row.StartLine}\t{(has ? s.StartLine.ToString() : "-1")}\t{row.Kind}\t{catalog[row.RuntimeId.Value].CodeAvailable}"; })));
@@ -264,7 +322,9 @@ Write("side-table-index-verification.txt", $"errors={sideTableIndexErrors}\nifGr
 Write("structural-execution-contract.txt", $"errors={structuralExecutionContractErrors}\nstructuralInstructions={structuralAux.StructuralInstructions}\nstructuralLinks={link.Program.StructuralLinks.Length}\ninvalidAux={structuralAux.InvalidAux}\nfunctionPcMismatch={structuralAux.FunctionPcMismatch}\nduplicateStructuralLinkRefs={structuralAux.DuplicateRefs}\nunreferencedStructuralLinks={structuralAux.UnreferencedRefs}\nsifRoutingMismatch={structuralAux.SifRoutingMismatch}\ndirectStructuralLookup={structuralAux.Errors == 0}\nsemanticHostRequired={semanticHostRequired}\nVmMachineSemanticHostFields={machineSemanticHostFields}\nVmFrameOwnsSemanticHost={frameOwnsSemanticHost}\nsemanticMethods={string.Join(",", semanticMethods)}\nlinkedProgramRetainsRawOperandStrings={linkedProgramRetainsRawOperandStrings}\nphase3ExpressionIrDeferred=True\nExecutableReadyReal={link.Program.Descriptors.Count(x => x.State == VmFunctionState.ExecutableReady)}\nresult={(structuralExecutionContractErrors == 0 ? "PASS" : "HOLD")}\n");
 Write("loop-runtime-state.txt", $"errors={loopRuntimeStateErrors}\nloopDescriptors={link.Program.Loops.Length}\nruntimeCells={loopRuntimeState.Count}\ncountedLoops={countedLoopCount}\nforLoops={loopForCount}\nrepeatLoops={loopRepeatCount}\nwhileLoops={loopWhileCount}\ndoLoops={loopDoCount}\nVmMachineLoopRuntimeStateFields={machineLoopStateFields}\nVmFrameOwnsLoopRuntimeState={frameOwnsLoopState}\ncellFields={string.Join(",", cellFields)}\nindexedByProgramGlobalLoopIndex={globalLoopIndexDomain}\ncounterSlotStored={counterSlotStored}\nstateSurvivesRun={stateSurvivesRun}\nnewMachineStartsFresh={newMachineStartsFresh}\nresult={(loopRuntimeStateErrors == 0 ? "PASS" : "HOLD")}\n");
 Write("control-link-summary.txt", $"linkedFunctions={prototypes.Count}\nlinkedInstructions={link.Program.Code.Length}\nstructuralLinks={link.Program.StructuralLinks.Length}\nsifLinks={link.Program.SifLinks.Length}\nifGroups={link.Program.IfGroups.Length}\nifClauses={link.Program.IfClauses.Length}\nselectGroups={link.Program.SelectGroups.Length}\nselectCases={link.Program.SelectCases.Length}\nloopDescriptors={link.Program.Loops.Length}\ninvalidStructure={invalidStructure}\nunsupportedControl={unsupportedControl}\nexecutableRealReady=0\nsemanticBarriers={link.SemanticBarriers}\nmaxStructuralNesting={maxDepth}\nmaxLoopNesting={MaxLoopDepth(allInstructions)}\nstructuralWarnings={warningDiagnostics}\nfatalDiagnostics={fatalDiagnostics}\n");
-Write("real-execution-readiness.txt", $"CodeAvailable={codeAvailable}\nLinkReady={link.LinkReadyFunctions}\nLinkedSemanticPending={link.SemanticPendingFunctions}\nExecutableReadyReal=0\nSemanticNotAvailableBeforeFetch=True\nInvalidStructureStopReason=InvalidStructure\n");
+Write("real-execution-readiness.txt", runtimeReadiness is null
+    ? $"CodeAvailable={codeAvailable}\nExecutableReadyReal=0\nSemanticNotAvailableBeforeFetch=True\nInvalidStructureStopReason=InvalidStructure\n"
+    : $"FunctionsAnalyzed={link.Program.Descriptors.Length}\nKernelReadyTransitive={runtimeReadiness.KernelReadyTransitive}\nFrameStateOnlyReady={runtimeReadiness.FrameStateOnlyReady}\nExternalStateDependent={runtimeReadiness.ExternalStateDependent}\nBuiltinCallDependent={runtimeReadiness.BuiltinCallDependent}\nMixedExternalBuiltinDependencies={runtimeReadiness.MixedExternalBuiltinDependencies}\nHostIndependentReady={runtimeReadiness.HostIndependentReady}\nExecutableReadyReal=0\nReadinessAuthority=runtime-readiness-summary.txt\n");
 var allocatedBytes = GC.GetTotalAllocatedBytes(false) - allocatedStart;
 Write("performance-single-run.txt", $"sourceIndexElapsedMs={indexWatch.Elapsed.TotalMilliseconds:F3}\nsemanticReconcileElapsedMs={oracleWatch.Elapsed.TotalMilliseconds:F3}\nfunctionCatalogElapsedMs={catalogWatch.Elapsed.TotalMilliseconds:F3}\nphase1CompileElapsedMs={compileWatch.Elapsed.TotalMilliseconds:F3}\nsourceToRuntimeRemapElapsedMs={remapWatch.Elapsed.TotalMilliseconds:F3}\ncontrolLinkElapsedMs={linkWatch.Elapsed.TotalMilliseconds:F3}\ncoreNextPipelineElapsedMs={coreNextPipelineMs:F3}\nauditTotalElapsedMs={auditWatch.Elapsed.TotalMilliseconds:F3}\nallocatedBytes={allocatedBytes}\n");
 Write("memory.txt", $"catalogActualRetainedBytes={retained.Catalog.RetainedBytes}\nlinkedActualRetainedBytes={retained.Linked.RetainedBytes}\ncombinedActualRetainedBytes={retained.Combined.RetainedBytes}\nretainedRuns=3\nvalidRuns={retained.ValidRunCount}\nnegativeRetainedRuns={retained.NegativeRetainedRuns}\n");
@@ -540,6 +600,207 @@ static int VerifySideTableIndices(LinkedProgram p)
     return errors;
 }
 static int MaxLoopDepth(IEnumerable<PrototypeInstruction> xs) { var depth = 0; var max = 0; foreach (var x in xs) { if (x.Opcode is PrototypeOpcode.REPEAT or PrototypeOpcode.FOR or PrototypeOpcode.WHILE or PrototypeOpcode.DO) max = Math.Max(max, ++depth); else if (x.Opcode is PrototypeOpcode.REND or PrototypeOpcode.NEXT or PrototypeOpcode.WEND or PrototypeOpcode.LOOP) depth = Math.Max(0, depth - 1); } return max; }
+static StatementUniverseAudit ReconstructStatementUniverse(FunctionCatalog catalog, IReadOnlyList<RuntimeFunctionPrototype> prototypes, IReadOnlySet<RuntimeFunctionId> regressionRuntimeIds, StructuralSemanticEnvironment environment, LinkedProgram current)
+{
+    const int sealedBaseline = 65128;
+    const int sealedFunctions = 59103;
+    var regression = prototypes.Where(x => regressionRuntimeIds.Contains(x.RuntimeId)).OrderBy(x => x.RuntimeId.Value).ToArray();
+    var prototypesById = prototypes.ToDictionary(x => x.RuntimeId.Value);
+    var baselineResult = ControlLinker.Link(catalog, regression, runtimeEnvironment: environment, runtimeStatements: false);
+    var baseline = baselineResult.Program;
+    var rows = new List<StatementUniverseRow>();
+    var seen = new HashSet<(int FunctionId, int Pc)>();
+    foreach (var prototype in regression)
+    {
+        var id = prototype.RuntimeId.Value;
+        var baselineDescriptor = baseline.Descriptors[id];
+        var currentDescriptor = current.Descriptors[id];
+        for (var pc = 0; pc < prototype.Instructions.Length; pc++)
+        {
+            if (baseline.Code[baselineDescriptor.CodeStart + pc].Opcode != (ushort)VmOpcode.SemanticBarrier) continue;
+            var currentOpcode = pc < currentDescriptor.CodeLength ? (VmOpcode)current.Code[currentDescriptor.CodeStart + pc].Opcode : VmOpcode.UnsupportedControl;
+            var execution = currentOpcode == VmOpcode.Statement ? "Executed" : "RemainingBarrier";
+            var statementKind = currentOpcode == VmOpcode.Statement && (uint)current.Code[currentDescriptor.CodeStart + pc].Aux < (uint)current.RuntimeStatements.Records.Length
+                ? current.RuntimeStatements.Records[current.Code[currentDescriptor.CodeStart + pc].Aux].Kind
+                : (VmRuntimeStatementKind?)null;
+            var statementClass = statementKind?.ToString() ?? prototype.Instructions[pc].Opcode.ToString();
+            var dependency = currentOpcode == VmOpcode.Statement ? statementKind == VmRuntimeStatementKind.Host ? "HostDependent" : "KernelImplemented" : currentOpcode == VmOpcode.SemanticBarrier ? "NoRuntimeStatementKernel" : "LinkChanged";
+            var reason = currentOpcode == VmOpcode.Statement ? statementKind == VmRuntimeStatementKind.Host ? "HostDispatchRequiresAcknowledgement" : "LinkedToVmOpcodeStatement" : $"CurrentOpcode={currentOpcode}";
+            if (!seen.Add((id, pc))) throw new InvalidDataException($"duplicate statement-universe key {id}:{pc}");
+            rows.Add(new(id, pc, prototype.Instructions[pc].Opcode.ToString(), statementClass, $"{id}:{pc}", execution, dependency, reason));
+        }
+    }
+    var executed = rows.Count(x => x.CurrentExecutionClass == "Executed");
+    var remaining = rows.Count - executed;
+    var reproduction = regression.Length == sealedFunctions && baselineResult.SemanticBarriers == sealedBaseline && rows.Count == sealedBaseline;
+    var accounting = rows.Count == executed + remaining && rows.All(x => x.CurrentExecutionClass is "Executed" or "RemainingBarrier") && seen.Count == rows.Count;
+    var tsv = new StringBuilder("RuntimeFunctionId\tPc\tOpcode\tStatementClass\tSourceOrRecordIdentity\tCurrentExecutionClass\tDependencyClass\tReason\n");
+    var remainingTsv = new StringBuilder("RuntimeFunctionId\tPc\tOpcode\tStatementClass\tReason\tDependencyClass\tDetail\n");
+    foreach (var row in rows)
+    {
+        tsv.AppendLine($"{row.RuntimeFunctionId}\t{row.Pc}\t{row.Opcode}\t{row.StatementClass}\t{row.Identity}\t{row.CurrentExecutionClass}\t{row.DependencyClass}\t{row.Reason}");
+        if (row.CurrentExecutionClass == "RemainingBarrier")
+        {
+            var prototype = prototypesById[row.RuntimeFunctionId];
+            var operand = row.Pc < prototype.Operands.Length ? prototype.Operands[row.Pc].Replace('\t', ' ').Replace('\r', ' ').Replace('\n', ' ') : string.Empty;
+            remainingTsv.AppendLine($"{row.RuntimeFunctionId}\t{row.Pc}\t{row.Opcode}\t{row.StatementClass}\t{row.Reason}\t{row.DependencyClass}\tOperand={operand}");
+        }
+    }
+    var definition = $"SealedBaseline={sealedBaseline}\nUniverseUnit=One Phase3B-regression linked PrototypeInstruction whose old ControlLinker output opcode is VmOpcode.SemanticBarrier\nFunctionSet=Phase3B compiler-manifest exact normalized RelativeFile:StartLine keys; reproduced runtime functions={regression.Length}\nIncludedOpcodesOrClasses=Every non-CALL/JUMP/RETURN/non-structural/non-explicit-unsupported instruction emitted as VmOpcode.SemanticBarrier by ControlLinker.Link(... runtimeStatements:false)\nExcludedClasses=Structural instructions; CALL; JUMP; RETURN; explicit GOTO/TRY* unsupported-control instructions; functions outside the 59103 manifest keys; compile failures\nSourceArtifactOrGenerator=Emuera.Next.VmAudit --phase3b-semantic-execution formal path; reconstructed directly with the same manifest-selected RuntimeFunctionPrototype set and ControlLinker.Link(runtimeStatements:false)\nCurrentClassificationGenerator=Same RuntimeFunctionId:Pc keys read from the C3 runtimeStatements:true linked program\nExecutionClassMeaning=Executed means VM opcode Statement has been linked; HostDependent rows still stop with SemanticNotAvailable unless IVmRuntimeEffects acknowledges the command\nDuplicateCountRule=RuntimeFunctionId+Pc is unique; each raw TSV row is exactly one baseline count unit\nReproductionCount={rows.Count}\nLinkReportedBarrierCount={baselineResult.SemanticBarriers}\nReproductionMatch={(reproduction ? "PASS" : "FAIL")}\n";
+    var summary = $"StatementUniverseCount={rows.Count}\nReproducedStatementUniverseCount={rows.Count}\nStatementUniverseBaselineMatch={(reproduction ? "PASS" : "FAIL")}\nPhase3CSubsetStatementExecutedInstructions={executed}\nPhase3CSubsetRemainingStatementBarriers={remaining}\nExecutedPlusRemaining={executed + remaining}\nAccountingCheck={(accounting ? "PASS" : "FAIL")}\n";
+    return new(rows.ToArray(), executed, remaining, reproduction, accounting, definition, tsv.ToString(), summary, remainingTsv.ToString());
+}
+static RuntimeReadinessAudit AnalyzeRuntimeReadiness(LinkedProgram program)
+{
+    var count = program.Descriptors.Length;
+    var graph = Enumerable.Range(0, count).Select(_ => new List<int>()).ToArray();
+    var uniqueEdges = new HashSet<(int From, int To)>();
+    var local = Enumerable.Range(0, count).Select(_ => new ReadinessLocalFlags()).ToArray();
+    var externalReasons = Enumerable.Repeat(string.Empty, count).ToArray();
+    var builtinReasons = Enumerable.Repeat(string.Empty, count).ToArray();
+
+    for (var id = 0; id < count; id++)
+    {
+        var descriptor = program.Descriptors[id];
+        if (descriptor.State == VmFunctionState.CodeNotAvailable)
+        {
+            local[id] = local[id] with { External = true, CodeAvailable = false };
+            externalReasons[id] = "CodeNotAvailable";
+            continue;
+        }
+        local[id] = local[id] with { CodeAvailable = true };
+        for (var pc = 0; pc < descriptor.CodeLength; pc++)
+        {
+            var instruction = program.Code[descriptor.CodeStart + pc];
+            var opcode = (VmOpcode)instruction.Opcode;
+            if (opcode is VmOpcode.SemanticBarrier or VmOpcode.UnsupportedControl)
+            {
+                local[id] = local[id] with { External = true };
+                externalReasons[id] = string.IsNullOrEmpty(externalReasons[id]) ? "UnlinkedInstruction" : externalReasons[id];
+            }
+            if (opcode == VmOpcode.Statement && (uint)instruction.Aux < (uint)program.RuntimeStatements.Records.Length && program.RuntimeStatements.Records[instruction.Aux].Kind == VmRuntimeStatementKind.Host)
+            {
+                local[id] = local[id] with { Builtin = true };
+                builtinReasons[id] = string.IsNullOrEmpty(builtinReasons[id]) ? "HostDispatchRequiresAcknowledgement" : builtinReasons[id];
+            }
+        }
+        if (program.RuntimeMetadata[id] != FunctionRuntimeMetadata.Empty)
+            local[id] = local[id] with { Frame = true };
+    }
+    foreach (var site in program.CallSites)
+    {
+        if ((uint)site.FunctionId >= (uint)count || (uint)site.Target.Value >= (uint)count) continue;
+        graph[site.FunctionId].Add(site.Target.Value);
+        uniqueEdges.Add((site.FunctionId, site.Target.Value));
+        if (program.Descriptors[site.Target.Value].State == VmFunctionState.CodeNotAvailable)
+        {
+            local[site.FunctionId] = local[site.FunctionId] with { External = true };
+            externalReasons[site.FunctionId] = string.IsNullOrEmpty(externalReasons[site.FunctionId]) ? "CodeUnavailableTarget" : externalReasons[site.FunctionId];
+        }
+    }
+    var closure = ResolveReadinessGraph(local, graph, uniqueEdges);
+    var final = Enumerable.Range(0, count).Select(id => closure.TransitiveExternal[id]
+        ? "ExternalStateDependent"
+        : closure.TransitiveBuiltin[id]
+            ? "BuiltinCallDependent"
+            : local[id].Frame ? "FrameStateOnlyReady" : "KernelReadyTransitive").ToArray();
+    var rows = Enumerable.Range(0, count).Select(id =>
+    {
+        var reason = closure.TransitiveExternal[id]
+            ? (string.IsNullOrEmpty(externalReasons[id]) ? "TransitiveExternalDependency" : externalReasons[id])
+            : closure.TransitiveBuiltin[id]
+                ? (string.IsNullOrEmpty(builtinReasons[id]) ? "TransitiveBuiltinDependency" : builtinReasons[id])
+                : local[id].Frame ? "FrameMetadataRequired" : "NoExternalOrBuiltinDependency";
+        if (closure.TransitiveExternal[id] && closure.TransitiveBuiltin[id])
+            reason = $"ExternalStateDependent:{(string.IsNullOrEmpty(externalReasons[id]) ? "TransitiveExternalDependency" : externalReasons[id])};BuiltinCallDependent:{(string.IsNullOrEmpty(builtinReasons[id]) ? "TransitiveBuiltinDependency" : builtinReasons[id])}";
+        return new RuntimeReadinessRow(id, local[id].External, local[id].Builtin, closure.TransitiveExternal[id], closure.TransitiveBuiltin[id], local[id].Frame, final[id], reason, closure.SccIds[id], local[id].CodeAvailable, graph[id].Count);
+    }).ToArray();
+    var grouped = rows.GroupBy(x => x.FinalClassification).ToDictionary(x => x.Key, x => x.Count());
+    var kernelLocal = local.Count(x => !x.External && !x.Builtin);
+    var kernelTransitive = grouped.GetValueOrDefault("KernelReadyTransitive");
+    var frame = grouped.GetValueOrDefault("FrameStateOnlyReady");
+    var external = grouped.GetValueOrDefault("ExternalStateDependent");
+    var builtin = grouped.GetValueOrDefault("BuiltinCallDependent");
+    var mixed = rows.Count(x => x.TransitiveExternalDependency && x.TransitiveBuiltinDependency);
+    var accounting = grouped.Values.Sum() == count && rows.Length == count;
+    var flagAccounting = rows.All(x => x.FinalClassification == "ExternalStateDependent" ? x.TransitiveExternalDependency : x.FinalClassification == "BuiltinCallDependent" ? !x.TransitiveExternalDependency && x.TransitiveBuiltinDependency : !x.TransitiveExternalDependency && !x.TransitiveBuiltinDependency);
+    var functionTsv = "RuntimeFunctionId\tLocalExternalDependency\tLocalBuiltinDependency\tTransitiveExternalDependency\tTransitiveBuiltinDependency\tHasFrameMetadata\tFinalClassification\tPrimaryReason\tSccId\tCodeAvailable\tCallJumpEdges\n" + string.Join("\n", rows.Select(x => $"{x.RuntimeFunctionId}\t{x.LocalExternalDependency}\t{x.LocalBuiltinDependency}\t{x.TransitiveExternalDependency}\t{x.TransitiveBuiltinDependency}\t{x.HasFrameMetadata}\t{x.FinalClassification}\t{x.PrimaryReason}\t{x.SccId}\t{x.CodeAvailable}\t{x.CallJumpEdges}")) + "\n";
+    var reasonTsv = "FinalClassification\tLocalExternal\tLocalBuiltin\tTransitiveExternal\tTransitiveBuiltin\tReason\tCount\n" + string.Join("\n", rows.GroupBy(x => (x.FinalClassification, x.LocalExternalDependency, x.LocalBuiltinDependency, x.TransitiveExternalDependency, x.TransitiveBuiltinDependency, x.PrimaryReason)).OrderBy(x => x.Key.FinalClassification).ThenBy(x => x.Key.PrimaryReason).Select(x => $"{x.Key.FinalClassification}\t{x.Key.LocalExternalDependency}\t{x.Key.LocalBuiltinDependency}\t{x.Key.TransitiveExternalDependency}\t{x.Key.TransitiveBuiltinDependency}\t{x.Key.PrimaryReason}\t{x.Count()}")) + "\n";
+    var sccTsv = "SccId\tSize\tRecursive\tLocalExternal\tLocalBuiltin\tTransitiveExternal\tTransitiveBuiltin\tFinalClassifications\n" + string.Join("\n", closure.Groups.Select((group, id) => $"{id}\t{group.Length}\t{IsRecursiveScc(group, graph)}\t{group.Any(member => local[member].External)}\t{group.Any(member => local[member].Builtin)}\t{closure.TransitiveExternal[group[0]]}\t{closure.TransitiveBuiltin[group[0]]}\t{string.Join(',', group.Select(member => final[member]).Distinct().OrderBy(x => x))}")) + "\n";
+    var focused = RunReadinessFocusedChecks();
+    var summary = $"FunctionsAnalyzed={count}\nCallJumpEdgesAnalyzed={graph.Sum(x => x.Count)}\nCallJumpEdgeRecordsAnalyzed={program.CallSites.Length}\nUniqueCallerTargetPairs={uniqueEdges.Count}\nSccCount={closure.Groups.Length}\nRecursiveSccCount={closure.Groups.Count(group => IsRecursiveScc(group, graph))}\nLargestSccSize={closure.Groups.Max(group => group.Length)}\nCondensationEdgeCount={closure.CondensationEdgeCount}\nReadinessFixedPointIterations={closure.Iterations}\nKernelReadyLocal={kernelLocal}\nKernelReadyTransitive={kernelTransitive}\nFrameStateOnlyReady={frame}\nExternalStateDependent={external}\nBuiltinCallDependent={builtin}\nMixedExternalBuiltinDependencies={mixed}\nHostIndependentReady={kernelTransitive + frame}\nExecutableReadyReal=0\nClassificationAccountingCheck={(accounting ? "PASS" : "FAIL")}\nDependencyFlagAccountingCheck={(flagAccounting ? "PASS" : "FAIL")}\nMixedDependencyRepresentation=Raw local/transitive flags retain both; FinalClassification uses ExternalStateDependent > BuiltinCallDependent > FrameStateOnlyReady > KernelReadyTransitive\n";
+    return new(kernelLocal, kernelTransitive, frame, external, builtin, mixed, kernelTransitive + frame, closure.Groups.Length, closure.Groups.Count(group => IsRecursiveScc(group, graph)), closure.Groups.Max(group => group.Length), closure.CondensationEdgeCount, closure.Iterations, accounting, flagAccounting, summary, functionTsv, reasonTsv, sccTsv, focused);
+}
+static ReadinessGraphResult ResolveReadinessGraph(IReadOnlyList<ReadinessLocalFlags> local, IReadOnlyList<List<int>> graph, IReadOnlySet<(int From, int To)> uniqueEdges)
+{
+    var scc = ComputeScc(graph);
+    var sccExternal = new bool[scc.Groups.Length];
+    var sccBuiltin = new bool[scc.Groups.Length];
+    for (var id = 0; id < local.Count; id++)
+    {
+        sccExternal[scc.Ids[id]] |= local[id].External;
+        sccBuiltin[scc.Ids[id]] |= local[id].Builtin;
+    }
+    var condensation = Enumerable.Range(0, scc.Groups.Length).Select(_ => new HashSet<int>()).ToArray();
+    foreach (var edge in uniqueEdges)
+    {
+        var from = scc.Ids[edge.From];
+        var to = scc.Ids[edge.To];
+        if (from != to) condensation[from].Add(to);
+    }
+    var iterations = 0;
+    bool changed;
+    do
+    {
+        changed = false;
+        iterations++;
+        for (var id = 0; id < condensation.Length; id++)
+            foreach (var target in condensation[id])
+            {
+                if (sccExternal[target] && !sccExternal[id]) { sccExternal[id] = true; changed = true; }
+                if (sccBuiltin[target] && !sccBuiltin[id]) { sccBuiltin[id] = true; changed = true; }
+            }
+    } while (changed);
+    var transitiveExternal = Enumerable.Range(0, local.Count).Select(id => sccExternal[scc.Ids[id]]).ToArray();
+    var transitiveBuiltin = Enumerable.Range(0, local.Count).Select(id => sccBuiltin[scc.Ids[id]]).ToArray();
+    return new(transitiveExternal, transitiveBuiltin, scc.Ids, scc.Groups, condensation.Sum(x => x.Count), iterations);
+}
+static (int[] Ids, int[][] Groups) ComputeScc(IReadOnlyList<List<int>> graph)
+{
+    var index = 0; var stack = new Stack<int>(); var onStack = new bool[graph.Count]; var indices = Enumerable.Repeat(-1, graph.Count).ToArray(); var low = new int[graph.Count]; var ids = new int[graph.Count]; var groups = new List<int[]>();
+    void Visit(int node) { indices[node] = low[node] = index++; stack.Push(node); onStack[node] = true; foreach (var next in graph[node]) { if (indices[next] < 0) { Visit(next); low[node] = Math.Min(low[node], low[next]); } else if (onStack[next]) low[node] = Math.Min(low[node], indices[next]); } if (low[node] != indices[node]) return; var group = new List<int>(); int member; do { member = stack.Pop(); onStack[member] = false; ids[member] = groups.Count; group.Add(member); } while (member != node); groups.Add(group.ToArray()); }
+    for (var node = 0; node < graph.Count; node++) if (indices[node] < 0) Visit(node);
+    return (ids, groups.ToArray());
+}
+static bool IsRecursiveScc(IReadOnlyList<int> group, IReadOnlyList<List<int>> graph) => group.Count > 1 || graph[group[0]].Contains(group[0]);
+static string RunReadinessFocusedChecks()
+{
+    bool Check(ReadinessLocalFlags[] local, (int From, int To)[] edges, bool[] expectedExternal, bool[] expectedBuiltin, int expectedSccCount = -1)
+    {
+        var graph = Enumerable.Range(0, local.Length).Select(_ => new List<int>()).ToArray();
+        var unique = new HashSet<(int From, int To)>();
+        foreach (var edge in edges) { graph[edge.From].Add(edge.To); unique.Add(edge); }
+        var result = ResolveReadinessGraph(local, graph, unique);
+        return result.TransitiveExternal.SequenceEqual(expectedExternal) && result.TransitiveBuiltin.SequenceEqual(expectedBuiltin) && (expectedSccCount < 0 || result.Groups.Length == expectedSccCount);
+    }
+    var checks = new[]
+    {
+        ("ReadyLeaf", Check([new()], [], [false], [false])),
+        ("ReadyCallerToReadyCallee", Check([new(), new()], [(0, 1)], [false, false], [false, false])),
+        ("CallerToExternalDependent", Check([new(), new(External: true)], [(0, 1)], [true, true], [false, false])),
+        ("CallerToBuiltinDependent", Check([new(), new(Builtin: true)], [(0, 1)], [false, false], [true, true])),
+        ("RecursiveSccAllLocal", Check([new(), new()], [(0, 1), (1, 0)], [false, false], [false, false], 1)),
+        ("RecursiveSccOneExternal", Check([new(), new(External: true)], [(0, 1), (1, 0)], [true, true], [false, false], 1)),
+        ("RecursiveSccOneBuiltin", Check([new(), new(Builtin: true)], [(0, 1), (1, 0)], [false, false], [true, true], 1)),
+        ("BranchesBuiltinAndExternal", Check([new(), new(Builtin: true), new(External: true)], [(0, 1), (0, 2)], [true, false, true], [true, true, false])),
+        ("BuiltinBranchDeeperExternal", Check([new(), new(Builtin: true), new(), new(External: true)], [(0, 1), (0, 2), (2, 3)], [true, false, true, true], [true, true, false, false])),
+        ("LocalHostAndExternalTarget", Check([new(Builtin: true), new(External: true)], [(0, 1)], [true, true], [true, false])),
+        ("HostThenLaterUnlinked", Check([new(External: true, Builtin: true)], [], [true], [true])),
+        ("CodeUnavailableTarget", Check([new(), new(External: true, CodeAvailable: false)], [(0, 1)], [true, true], [false, false])),
+        ("JumpEdgePropagation", Check([new(), new(External: true)], [(0, 1)], [true, true], [false, false]))
+    };
+    return string.Join("\n", checks.Select(x => $"{x.Item1}={(x.Item2 ? "PASS" : "FAIL")}")) + "\n";
+}
 static RetainedMeasurement MeasureRetained(IReadOnlyList<SourceFileIndex> files, IReadOnlyList<RuntimeFunctionBinding> bindings, IReadOnlyList<SourceFunctionPrototype> sourcePrototypes, IReadOnlyDictionary<SourceFunctionId, RuntimeFunctionId> sourceToRuntime, long catalogPayload, long linkedPayload)
 {
     var samples = new List<RetainedSample>();
@@ -547,7 +808,13 @@ static RetainedMeasurement MeasureRetained(IReadOnlyList<SourceFileIndex> files,
     for (var run = 1; run <= 3; run++) { samples.Add(Measure("Catalog", run, () => FunctionCatalog.FromRuntimeBindings(files, bindings), catalogPayload)); samples.Add(Measure("Linked", run, () => ControlLinker.Link(FunctionCatalog.FromRuntimeBindings(files, bindings), RuntimeFunctionBinder.Remap(sourcePrototypes, sourceToRuntime)), linkedPayload)); samples.Add(Measure("Combined", run, () => new object[] { FunctionCatalog.FromRuntimeBindings(files, bindings), ControlLinker.Link(FunctionCatalog.FromRuntimeBindings(files, bindings), RuntimeFunctionBinder.Remap(sourcePrototypes, sourceToRuntime)) }, catalogPayload + linkedPayload)); }
     return new(samples.ToArray());
 }
-readonly record struct StructuralAuxAudit(int StructuralInstructions, int InvalidAux, int FunctionPcMismatch, int DuplicateRefs, int UnreferencedRefs, int SifRoutingMismatch) { public int Errors => InvalidAux + FunctionPcMismatch + DuplicateRefs + UnreferencedRefs + SifRoutingMismatch + (StructuralInstructions == 56912 ? 0 : 1); }
+readonly record struct StructuralAuxAudit(int StructuralInstructions, int InvalidAux, int FunctionPcMismatch, int DuplicateRefs, int UnreferencedRefs, int SifRoutingMismatch) { public int Errors => InvalidAux + FunctionPcMismatch + DuplicateRefs + UnreferencedRefs + SifRoutingMismatch; }
+readonly record struct StatementUniverseRow(int RuntimeFunctionId, int Pc, string Opcode, string StatementClass, string Identity, string CurrentExecutionClass, string DependencyClass, string Reason);
+sealed record StatementUniverseAudit(StatementUniverseRow[] Rows, int Executed, int Remaining, bool Passed, bool AccountingPassed, string Definition, string Tsv, string Summary, string RemainingTsv);
+readonly record struct ReadinessLocalFlags(bool External = false, bool Builtin = false, bool Frame = false, bool CodeAvailable = true);
+readonly record struct ReadinessGraphResult(bool[] TransitiveExternal, bool[] TransitiveBuiltin, int[] SccIds, int[][] Groups, int CondensationEdgeCount, int Iterations);
+readonly record struct RuntimeReadinessRow(int RuntimeFunctionId, bool LocalExternalDependency, bool LocalBuiltinDependency, bool TransitiveExternalDependency, bool TransitiveBuiltinDependency, bool HasFrameMetadata, string FinalClassification, string PrimaryReason, int SccId, bool CodeAvailable, int CallJumpEdges);
+sealed record RuntimeReadinessAudit(int KernelReadyLocal, int KernelReadyTransitive, int FrameStateOnlyReady, int ExternalStateDependent, int BuiltinCallDependent, int MixedExternalBuiltinDependencies, int HostIndependentReady, int SccCount, int RecursiveSccCount, int LargestSccSize, int CondensationEdgeCount, int Iterations, bool AccountingPassed, bool DependencyFlagAccountingPassed, string Summary, string FunctionTsv, string ReasonTsv, string SccTsv, string FocusedTests);
 readonly record struct SourceRow(SourceFunctionId SourceId, string RelativeFile, int FunctionOrdinal, int StartLine, string PhysicalName, int FileOrdinal, SourceIndexFlags Flags);
 readonly record struct Phase3Header(int Ordinal, string RelativePath, long Length, string SHA256);
 readonly record struct Phase3RawDefinition(string Name, string Replacement, bool FunctionLike, bool RawRenameTemplate);

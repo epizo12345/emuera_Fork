@@ -20,6 +20,8 @@ public readonly struct VmSemanticValue
     public override string ToString() => Kind switch { VmSemanticValueKind.Integer => integer.ToString(CultureInfo.InvariantCulture), VmSemanticValueKind.String => text ?? string.Empty, VmSemanticValueKind.Missing => string.Empty, _ => "<unavailable>" };
 }
 
+public readonly record struct VmResolvedLValue(string Name, string? Subkey, VmSemanticValue[] Indices);
+
 // This is the NextRuntime boundary for future Legacy/runtime-state adapters.  The executor never
 // reaches into Legacy globals; the host owns variable identity, comparison policy, and calls.
 public interface IVmSemanticHost
@@ -29,15 +31,28 @@ public interface IVmSemanticHost
     bool TryCall(string name, ReadOnlySpan<VmSemanticValue> arguments, out VmSemanticValue value);
     int CompareStrings(string left, string right);
 }
+public interface IVmFrameVariables
+{
+    bool OwnsFrameVariable(string name);
+    bool TryReadFrame(string name, string? subkey, ReadOnlySpan<VmSemanticValue> indices, out VmSemanticValue value);
+    bool TryWriteFrame(string name, string? subkey, ReadOnlySpan<VmSemanticValue> indices, VmSemanticValue value);
+}
+
+// Optional runtime policy. Hosts that do not opt in use the rigorous Legacy TIMES path.
+public interface IVmRuntimeNumericOptions { bool TimesNotRigorousCalculation { get; } }
 
 public sealed class VmSemanticExecutor : IVmStructuralSemantics
 {
     private readonly LinkedProgram program;
     private readonly IVmSemanticHost host;
+    private SemanticPayload? activeArena;
     private readonly int[][] structuralByFunctionPc;
     private readonly long[] repeatCounters;
+    public IVmFrameVariables? FrameVariables { get; set; }
     public VmSemanticStatus LastStatus { get; private set; }
     public VmSemanticFault LastFault { get; private set; }
+    public bool TimesNotRigorousCalculation => host is IVmRuntimeNumericOptions options && options.TimesNotRigorousCalculation;
+    private SemanticPayload Arena => activeArena ?? program.SemanticArena;
 
     public VmSemanticExecutor(LinkedProgram program, IVmSemanticHost host)
     {
@@ -60,6 +75,35 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
         LastStatus = success ? VmSemanticStatus.Success : LastFault == VmSemanticFault.None ? VmSemanticStatus.Unavailable : VmSemanticStatus.Fault;
         return success;
     }
+
+    // Runtime statement operands use their own immutable arena. The active arena is scoped with
+    // try/finally so structural evaluation always returns to the Phase3B arena.
+    public bool TryEvaluateRuntimeRecord(SemanticPayload arena, int recordIndex, out VmSemanticValue value)
+    {
+        ArgumentNullException.ThrowIfNull(arena);
+        var prior = activeArena;
+        activeArena = arena;
+        try { ResetStatus(); var success = TryEvaluateRecordCore(recordIndex, out value); LastStatus = success ? VmSemanticStatus.Success : LastFault == VmSemanticFault.None ? VmSemanticStatus.Unavailable : VmSemanticStatus.Fault; return success; }
+        finally { activeArena = prior; }
+    }
+
+    public bool TryResolveRuntimeLValue(SemanticPayload arena, int recordIndex, out VmResolvedLValue result)
+    {
+        ArgumentNullException.ThrowIfNull(arena);
+        var prior = activeArena;
+        activeArena = arena;
+        try
+        {
+            result = default;
+            if ((uint)recordIndex >= (uint)Arena.Records.Length || !TryResolveLValue(Arena.Records[recordIndex].RootNodeIndex, out var lvalue)) return false;
+            result = new(lvalue.Name, lvalue.Subkey, lvalue.Indices);
+            return true;
+        }
+        finally { activeArena = prior; }
+    }
+
+    public bool TryReadRuntimeLValue(in VmResolvedLValue lvalue, out VmSemanticValue value) => TryRead(lvalue.Name, lvalue.Subkey, lvalue.Indices, out value);
+    public bool TryWriteRuntimeLValue(in VmResolvedLValue lvalue, VmSemanticValue value) => TryWrite(lvalue.Name, lvalue.Subkey, lvalue.Indices, value);
 
     public VmSemanticIntResult EvaluateInt(RuntimeFunctionId functionId, int pc, VmStructuralKind kind)
     {
@@ -118,7 +162,7 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
     private bool TryEvaluateRecordCore(int recordIndex, out VmSemanticValue value)
     {
         value = VmSemanticValue.Unavailable;
-        return (uint)recordIndex < (uint)program.SemanticArena.Records.Length && TryEvaluateNode(program.SemanticArena.Records[recordIndex].RootNodeIndex, out value);
+        return (uint)recordIndex < (uint)Arena.Records.Length && TryEvaluateNode(Arena.Records[recordIndex].RootNodeIndex, out value);
     }
     private void ResetStatus() => (LastStatus, LastFault) = (VmSemanticStatus.Unavailable, VmSemanticFault.None);
     private bool Fault(VmSemanticFault fault) { LastFault = fault; return false; }
@@ -139,10 +183,10 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
     private bool TryGetCountedLoop(int record, out SemanticNode node)
     {
         node = default;
-        if ((uint)record >= (uint)program.SemanticArena.Records.Length) return false;
-        var root = program.SemanticArena.Records[record].RootNodeIndex;
-        if ((uint)root >= (uint)program.SemanticArena.Nodes.Length) return false;
-        node = program.SemanticArena.Nodes[root];
+        if ((uint)record >= (uint)Arena.Records.Length) return false;
+        var root = Arena.Records[record].RootNodeIndex;
+        if ((uint)root >= (uint)Arena.Nodes.Length) return false;
+        node = Arena.Nodes[root];
         return node.Kind == SemanticNodeKind.CountedLoop && node.Operator is SemanticOperator.CountedFor or SemanticOperator.CountedRepeat;
     }
 
@@ -155,7 +199,7 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
     private bool TryEvaluateNode(int index, out VmSemanticValue value)
     {
         value = VmSemanticValue.Unavailable;
-        var nodes = program.SemanticArena.Nodes;
+        var nodes = Arena.Nodes;
         if ((uint)index >= (uint)nodes.Length) return false;
         var node = nodes[index];
         switch (node.Kind)
@@ -165,11 +209,11 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
             case SemanticNodeKind.StringLiteral:
                 return TryReadSymbol(node.A, out var text) && Return(VmSemanticValue.From(text), out value);
             case SemanticNodeKind.Symbol:
-                return TryReadSymbol(node.A, out var symbol) && host.TryRead(symbol, null, [], out value);
+                return TryReadSymbol(node.A, out var symbol) && TryRead(symbol, null, [], out value);
             case SemanticNodeKind.Variable:
-                return TryReadSymbol(node.A, out var variable) && TryEvaluateEdges(node.B, node.C, out var indices) && host.TryRead(variable, null, indices, out value);
+                return TryReadSymbol(node.A, out var variable) && TryEvaluateEdges(node.B, node.C, out var indices) && TryRead(variable, null, indices, out value);
             case SemanticNodeKind.VariableSubkey:
-                return TryReadSymbol(node.A, out var name) && TryReadSymbol(node.B, out var subkey) && TryEvaluateOptionalEdges(node.C, node.D, out var subkeys) && host.TryRead(name, subkey, subkeys, out value);
+                return TryReadSymbol(node.A, out var name) && TryReadSymbol(node.B, out var subkey) && TryEvaluateOptionalEdges(node.C, node.D, out var subkeys) && TryRead(name, subkey, subkeys, out value);
             case SemanticNodeKind.Call:
                 return TryReadSymbol(node.A, out var call) && TryEvaluateEdges(node.B, node.C, out var arguments) && host.TryCall(call, arguments, out value);
             case SemanticNodeKind.Unary:
@@ -198,10 +242,10 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
         value = VmSemanticValue.Unavailable;
         if (node.Operator is SemanticOperator.PrefixIncrement or SemanticOperator.PrefixDecrement or SemanticOperator.PostfixIncrement or SemanticOperator.PostfixDecrement)
         {
-            if (!TryResolveLValue(node.A, out var lvalue) || !host.TryRead(lvalue.Name, lvalue.Subkey, lvalue.Indices, out var current) || !current.TryGetInteger(out var number)) return false;
+            if (!TryResolveLValue(node.A, out var lvalue) || !TryRead(lvalue.Name, lvalue.Subkey, lvalue.Indices, out var current) || !current.TryGetInteger(out var number)) return false;
             var delta = node.Operator is SemanticOperator.PrefixIncrement or SemanticOperator.PostfixIncrement ? 1L : -1L;
             var changed = unchecked(number + delta);
-            if (!host.TryWrite(lvalue.Name, lvalue.Subkey, lvalue.Indices, VmSemanticValue.From(changed))) return false;
+            if (!TryWrite(lvalue.Name, lvalue.Subkey, lvalue.Indices, VmSemanticValue.From(changed))) return false;
             value = VmSemanticValue.From(node.Operator is SemanticOperator.PrefixIncrement or SemanticOperator.PrefixDecrement ? changed : number);
             return true;
         }
@@ -260,14 +304,14 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
     private bool TryMatchCase(VmSemanticValue selector, int record, out bool match)
     {
         match = false;
-        if ((uint)record >= (uint)program.SemanticArena.Records.Length) return false;
-        var root = program.SemanticArena.Records[record].RootNodeIndex;
-        if ((uint)root >= (uint)program.SemanticArena.Nodes.Length) return false;
-        var node = program.SemanticArena.Nodes[root];
+        if ((uint)record >= (uint)Arena.Records.Length) return false;
+        var root = Arena.Records[record].RootNodeIndex;
+        if ((uint)root >= (uint)Arena.Nodes.Length) return false;
+        var node = Arena.Nodes[root];
         if (node.Kind != SemanticNodeKind.Case) return false;
         for (var i = 0; i < node.B; i++)
         {
-            var arm = program.SemanticArena.CaseArms[node.A + i];
+            var arm = Arena.CaseArms[node.A + i];
             if (!TryMatchArm(selector, arm, out var armMatch)) return false;
             if (armMatch) { match = true; return true; }
         }
@@ -277,7 +321,7 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
     private bool TryMatchArm(VmSemanticValue selector, SemanticCaseArm arm, out bool match)
     {
         match = false;
-        var node = program.SemanticArena.Nodes[arm.ValueNode];
+        var node = Arena.Nodes[arm.ValueNode];
         if (arm.ToNode >= 0)
         {
             if (!TryEvaluateNode(arm.ValueNode, out var low) || !TryCompare(low, selector, out var lower)) return false;
@@ -310,7 +354,7 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
         var builder = new System.Text.StringBuilder();
         for (var i = 0; i < node.B; i++)
         {
-            if (!TryEvaluateNode(program.SemanticArena.Edges[node.A + i].To, out var child) || !TryAsString(child, out var text)) return false;
+            if (!TryEvaluateNode(Arena.Edges[node.A + i].To, out var child) || !TryAsString(child, out var text)) return false;
             builder.Append(text);
         }
         value = VmSemanticValue.From(builder.ToString()); return true;
@@ -320,8 +364,8 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
     private bool TryResolveLValue(int index, out ResolvedLValue lvalue)
     {
         lvalue = default;
-        if ((uint)index >= (uint)program.SemanticArena.Nodes.Length) return false;
-        var node = program.SemanticArena.Nodes[index];
+        if ((uint)index >= (uint)Arena.Nodes.Length) return false;
+        var node = Arena.Nodes[index];
         if (node.Kind == SemanticNodeKind.Symbol && TryReadSymbol(node.A, out var symbol)) { lvalue = new(symbol, null, []); return true; }
         if (node.Kind == SemanticNodeKind.Variable && TryReadSymbol(node.A, out var name) && TryEvaluateEdges(node.B, node.C, out var indices)) { lvalue = new(name, null, indices); return true; }
         if (node.Kind == SemanticNodeKind.VariableSubkey && TryReadSymbol(node.A, out name) && TryReadSymbol(node.B, out var subkey) && TryEvaluateOptionalEdges(node.C, node.D, out indices)) { lvalue = new(name, subkey, indices); return true; }
@@ -330,20 +374,22 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
     private bool TryEvaluateEdges(int start, int count, out VmSemanticValue[] values)
     {
         values = [];
-        if (count < 0 || start < 0 || start > program.SemanticArena.Edges.Length || count > program.SemanticArena.Edges.Length - start) return false;
+        if (count < 0 || start < 0 || start > Arena.Edges.Length || count > Arena.Edges.Length - start) return false;
         values = new VmSemanticValue[count];
-        for (var i = 0; i < count; i++) if (!TryEvaluateNode(program.SemanticArena.Edges[start + i].To, out values[i])) return false;
+        for (var i = 0; i < count; i++) if (!TryEvaluateNode(Arena.Edges[start + i].To, out values[i])) return false;
         return true;
     }
     private bool TryEvaluateOptionalEdges(int start, int count, out VmSemanticValue[] values) => start == -1 && count == -1 ? Return([], out values) : TryEvaluateEdges(start, count, out values);
     private bool TryReadSymbol(int index, out string value)
     {
         value = string.Empty;
-        if ((uint)index >= (uint)program.SemanticArena.Symbols.Length) return false;
-        var slice = program.SemanticArena.Symbols[index];
-        if (slice.Offset < 0 || slice.Length < 0 || slice.Offset > program.SemanticArena.Utf8.Length || slice.Length > program.SemanticArena.Utf8.Length - slice.Offset) return false;
-        value = System.Text.Encoding.UTF8.GetString(program.SemanticArena.Utf8, slice.Offset, slice.Length); return true;
+        if ((uint)index >= (uint)Arena.Symbols.Length) return false;
+        var slice = Arena.Symbols[index];
+        if (slice.Offset < 0 || slice.Length < 0 || slice.Offset > Arena.Utf8.Length || slice.Length > Arena.Utf8.Length - slice.Offset) return false;
+        value = System.Text.Encoding.UTF8.GetString(Arena.Utf8, slice.Offset, slice.Length); return true;
     }
+    private bool TryRead(string name, string? subkey, ReadOnlySpan<VmSemanticValue> indices, out VmSemanticValue value) => FrameVariables is not null && FrameVariables.OwnsFrameVariable(name) ? FrameVariables.TryReadFrame(name, subkey, indices, out value) : host.TryRead(name, subkey, indices, out value);
+    private bool TryWrite(string name, string? subkey, ReadOnlySpan<VmSemanticValue> indices, VmSemanticValue value) => FrameVariables is not null && FrameVariables.OwnsFrameVariable(name) ? FrameVariables.TryWriteFrame(name, subkey, indices, value) : host.TryWrite(name, subkey, indices, value);
     private static bool TryParseInteger(string text, out VmSemanticValue value)
     {
         value = VmSemanticValue.Unavailable;

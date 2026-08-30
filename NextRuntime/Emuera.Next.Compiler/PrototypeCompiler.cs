@@ -65,7 +65,7 @@ public sealed record CompileResult(CompileStatus Status, CompiledFunction? Funct
 }
 
 public sealed record CompiledFunction(string FileIdentity, string Name, SourceSpan Span,
-    ImmutableArray<PrototypeInstruction> Instructions, int MetadataBytesEstimate, SemanticPayload? SemanticPayload = null)
+    ImmutableArray<PrototypeInstruction> Instructions, int MetadataBytesEstimate, SemanticPayload? SemanticPayload = null, FunctionRuntimeMetadata? RuntimeMetadata = null)
 {
     public int InstructionStorageBytes => Instructions.Length * FunctionCompiler.InstructionPayloadBytes;
 }
@@ -287,17 +287,45 @@ public sealed class FunctionCompiler
         };
     }
 
-    public CompileResult TryCompile(FunctionSource source)
+    // Phase3C runtime discovery may isolate an exact function from unrelated file-level fallback.
+    // It deliberately keeps every function-local fallback as a hard rejection.
+    public CompileResult TryCompileRuntime(SourceFileIndex file, FunctionIndex function)
+    {
+        var read = FunctionSourceReader.Read(file, function);
+        return read.Status switch
+        {
+            SourceReadStatus.Read => TryCompileRuntime(read.Source!.Value),
+            SourceReadStatus.SourceChanged => new(CompileStatus.SourceChanged, null, UnsupportedReason.SourceChanged, read.Reason, default),
+            SourceReadStatus.InvalidSource => new(CompileStatus.InvalidSource, null, UnsupportedReason.InvalidSource, read.Reason, default),
+            _ => new(CompileStatus.CompilerError, null, UnsupportedReason.ReadError, read.Reason, default),
+        };
+    }
+
+    public CompileResult TryCompileRuntime(FunctionSource source)
+    {
+        const SourceIndexFlags metadataFlags = SourceIndexFlags.DeclarationDirective | SourceIndexFlags.FunctionMetadata;
+        if ((source.Function.Flags & ~metadataFlags) != SourceIndexFlags.None)
+            return CompileResult.Unsupported(UnsupportedReason.IndexFallback, "unresolved function-local Source Index fallback flags");
+        if ((source.Function.Flags & metadataFlags) == SourceIndexFlags.None)
+            return TryCompileCore(source, FunctionRuntimeMetadata.Empty);
+        if (!FunctionRuntimeMetadataParser.TryParse(source, options, out var metadata, out var detail))
+            return CompileResult.Unsupported(UnsupportedReason.IndexFallback, detail);
+        return TryCompileCore(source, metadata);
+    }
+
+    public CompileResult TryCompile(FunctionSource source) => TryCompileCore(source, null);
+
+    private CompileResult TryCompileCore(FunctionSource source, FunctionRuntimeMetadata? runtimeMetadata)
     {
         try
         {
-            var scanned = Scan(source.Bytes, source.Function.Span.StartLine, options, semanticEnvironment, out var reason, out var detail);
+            var scanned = Scan(source.Bytes, source.Function.Span.StartLine, options, semanticEnvironment, runtimeMetadata is not null, out var reason, out var detail);
             if (reason != UnsupportedReason.None)
                 return CompileResult.Unsupported(reason, detail!);
             var fingerprint = SourceFingerprint.FromBytes(source.Bytes);
             return new(CompileStatus.Compiled,
                 new(source.File.FileIdentity, source.Function.Name, source.Function.Span, scanned.Instructions,
-                    MetadataBytesEstimate(source.Function.Name), scanned.SemanticPayload), UnsupportedReason.None, null, fingerprint);
+                    MetadataBytesEstimate(source.Function.Name), scanned.SemanticPayload, runtimeMetadata), UnsupportedReason.None, null, fingerprint);
         }
         catch (DecoderFallbackException ex)
         {
@@ -313,7 +341,7 @@ public sealed class FunctionCompiler
         }
     }
 
-    private static (ImmutableArray<PrototypeInstruction> Instructions, SemanticPayload? SemanticPayload) Scan(byte[] bytes, int startLine, CompilerCompatibilityOptions options, StructuralSemanticEnvironment? semanticEnvironment, out UnsupportedReason reason, out string? detail)
+    private static (ImmutableArray<PrototypeInstruction> Instructions, SemanticPayload? SemanticPayload) Scan(byte[] bytes, int startLine, CompilerCompatibilityOptions options, StructuralSemanticEnvironment? semanticEnvironment, bool metadataParsed, out UnsupportedReason reason, out string? detail)
     {
         var list = ImmutableArray.CreateBuilder<PrototypeInstruction>();
         var semanticParts = new List<SemanticPayload>();
@@ -345,6 +373,7 @@ public sealed class FunctionCompiler
             }
             if (trimmed[0] == ';') { line++; continue; }
             if (trimmed.EndsWith('\\')) return Fail(UnsupportedReason.Multiline, "line continuation", out reason, out detail);
+            if (metadataParsed && trimmed[0] == '#') { line++; continue; }
             if (trimmed[0] is '[' or '#' or '$' or '}' or '{' or '@')
                 return Fail(trimmed[0] == '$' ? UnsupportedReason.LocalLabelOrGoto : UnsupportedReason.UnknownSyntax, "unsupported structural line", out reason, out detail);
             var tokenLength = scan.StopPosition - scan.StartPosition;
