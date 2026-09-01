@@ -408,6 +408,8 @@ internal class FunctionLabelLine : ErrorCapableLogicalLine, IComparable<Function
         privateVar.TryGetValue(key, out UserDefinedVariableToken var);
         return var;
     }
+    // Diagnostic authority only; execution keeps private variables encapsulated.
+    internal IEnumerable<KeyValuePair<string, UserDefinedVariableToken>> GetNextRuntimePrivateVariables() => privateVar ?? [];
 
     /// <summary>
     /// 引数の値の確定後、引数の代入より前に呼ぶこと

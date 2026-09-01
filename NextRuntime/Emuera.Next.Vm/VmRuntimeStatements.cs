@@ -4,7 +4,7 @@ namespace MinorShift.Emuera.Next.Vm;
 
 // Phase 3C keeps statement operands out of the structural semantic arena. The
 // linker copies their UTF-8 value once; the VM never consults source text again.
-public enum VmRuntimeStatementKind : byte { Print, PrintLine, PrintWait, Wait, ForceWait, Quit, Set, Times, Host }
+public enum VmRuntimeStatementKind : byte { Print, PrintLine, PrintWait, Wait, ForceWait, Quit, Set, Times, ReturnValue, Host }
 public enum VmAssignmentOperator : byte { Assign, AssignString, Add, Subtract, Multiply, Divide, Modulo, BitOr, BitAnd, BitXor }
 
 public readonly record struct VmRuntimeStatementRecord(VmRuntimeStatementKind Kind, int TextOffset, int TextLength, int OperandRecord = -1, int SecondaryOperandRecord = -1, VmAssignmentOperator Assignment = VmAssignmentOperator.Assign, double NumericValue = 0, ushort HostOpcode = 0);
@@ -67,6 +67,14 @@ internal sealed class VmRuntimeStatementArenaBuilder
         var destinationBase = operandParts.Sum(static part => part.Records.Length);
         operandParts.Add(destination);
         records.Add(new(VmRuntimeStatementKind.Times, 0, 0, destinationBase, NumericValue: multiplier));
+        return index;
+    }
+    public int AddReturn(MinorShift.Emuera.Next.Compiler.SemanticPayload? value)
+    {
+        var index = records.Count;
+        var recordBase = operandParts.Sum(static part => part.Records.Length);
+        if (value is not null) operandParts.Add(value);
+        records.Add(new(VmRuntimeStatementKind.ReturnValue, 0, 0, value is null ? -1 : recordBase));
         return index;
     }
     public int AddHost(MinorShift.Emuera.Next.Compiler.PrototypeOpcode opcode, string text)

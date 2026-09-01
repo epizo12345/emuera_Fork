@@ -66,6 +66,11 @@ static partial class Program
         var debugModeOption = new Option<bool>("-Debug", "-debug", "-DEBUG");
         rootCommand.Options.Add(debugModeOption);
 
+        // Phase3D-R4R2-R1: production NextRuntime is an explicit opt-in.
+        // Diagnostic probe switches remain independent of this flag.
+        var nextRuntimeOption = new Option<bool>(name: "--NextRuntime");
+        rootCommand.Options.Add(nextRuntimeOption);
+
         // [Emuera改修:TOOLS-01]
         // 自動テスト用の入口。ゲーム操作用の通常オプションではない。
         // --StartupTest は操作可能になった時点でログを保存して自動終了する。
@@ -81,6 +86,18 @@ static partial class Program
             Description = "起動・マクロ性能計測のJSON Lines出力先"
         };
         rootCommand.Options.Add(benchmarkLogOption);
+
+        // Phase3D-R1 diagnostic: opt-in only, runs after a normal Process initialization.
+        var nextRuntimeHostProbeOption = new Option<string>(name: "--NextRuntimeHostProbe");
+        rootCommand.Options.Add(nextRuntimeHostProbeOption);
+        var nextRuntimeProductionOnlyOption = new Option<bool>(name: "--NextRuntimeProductionOnly");
+        rootCommand.Options.Add(nextRuntimeProductionOnlyOption);
+        var nextRuntimeProductionLimitOption = new Option<int>(name: "--NextRuntimeProductionLimit") { DefaultValueFactory = _ => 5 };
+        rootCommand.Options.Add(nextRuntimeProductionLimitOption);
+        var nextRuntimeLegacyManifestOption = new Option<string>(name: "--NextRuntimeLegacyManifest");
+        rootCommand.Options.Add(nextRuntimeLegacyManifestOption);
+        var nextRuntimeReadinessEvidenceOption = new Option<string>(name: "--NextRuntimeReadinessEvidence");
+        rootCommand.Options.Add(nextRuntimeReadinessEvidenceOption);
 #if LEGACY_ORACLE
         var legacyOracleOption = new Option<string>(name: "--LegacyOracle")
         {
@@ -110,6 +127,12 @@ static partial class Program
 
         var result = rootCommand.Parse(args);
         PerformanceMetrics.Configure(result.GetValue(benchmarkLogOption));
+        NextRuntimeHostProbePath = result.GetValue(nextRuntimeHostProbeOption);
+        NextRuntimeProductionOnly = result.GetValue(nextRuntimeProductionOnlyOption);
+        NextRuntimeProductionLimit = Math.Clamp(result.GetValue(nextRuntimeProductionLimitOption), 1, 5);
+        NextRuntimeLegacyManifestPath = result.GetValue(nextRuntimeLegacyManifestOption);
+        NextRuntimeReadinessEvidencePath = result.GetValue(nextRuntimeReadinessEvidenceOption);
+        ProbeNextRuntimeHost("ProbeStart");
 #if LEGACY_ORACLE
         LegacyOraclePath = result.GetValue(legacyOracleOption);
 #endif
@@ -126,6 +149,7 @@ static partial class Program
 
         var debugMode = result.GetValue(debugModeOption);
         DebugMode = debugMode;
+        NextRuntimeMode = result.GetValue(nextRuntimeOption);
         StartupTestMode = result.GetValue(startupTestOption);
 
         var fileArgs = result.GetValue(filesArg) ?? [];
@@ -158,26 +182,32 @@ static partial class Program
 
         ConfigData.Instance.LoadConfig();
         JSONConfig.Load();
+        ProbeNextRuntimeHost("SettingsLoaded");
         // [Emuera改修:MEASURE-01] 設定読込区間の終点。通常版では空処理。
         PerformanceMetrics.MarkStartup("SettingsLoaded");
 
 
         //二重起動の禁止かつ二重起動
+        ProbeNextRuntimeHost("InstanceGate");
         if ((!Config.AllowMultipleInstances) && AssemblyData.PrevInstance())
         {
+            ProbeNextRuntimeHost("ExistingInstance");
             Dialog.Show(LocalizationManager.MsgBox.InstanceExists, LocalizationManager.MsgBox.MultiInstanceInfo);
             return;
         }
         if (!Directory.Exists(CsvDir))
         {
+            ProbeNextRuntimeHost("CsvDirMissing");
             Dialog.Show(LocalizationManager.MsgBox.NoCsvFolder, CsvDir);
             return;
         }
         if (!Directory.Exists(ErbDir))
         {
+            ProbeNextRuntimeHost("ErbDirMissing");
             Dialog.Show(LocalizationManager.MsgBox.NoErbFolder, ErbDir);
             return;
         }
+        ProbeNextRuntimeHost("PreUiCompleted");
 
 
 
@@ -226,6 +256,7 @@ static partial class Program
         }
 
         ApplicationConfiguration.Initialize();
+        ProbeNextRuntimeHost("ApplicationInitialized");
         Application.SetColorMode(SystemColorMode.Dark);
 
         using var win = new Forms.MainWindow(args);
@@ -266,8 +297,20 @@ static partial class Program
     public static List<string> AnalysisFiles = [];
 
     public static bool DebugMode { get; private set; }
+    internal static bool NextRuntimeMode { get; private set; }
 
     public static bool StartupTestMode { get; private set; }
+    internal static string? NextRuntimeHostProbePath { get; private set; }
+    internal static bool NextRuntimeProductionOnly { get; private set; }
+    internal static int NextRuntimeProductionLimit { get; private set; } = 5;
+    internal static string? NextRuntimeLegacyManifestPath { get; private set; }
+    internal static string? NextRuntimeReadinessEvidencePath { get; private set; }
+    internal static void ProbeNextRuntimeHost(string checkpoint)
+    {
+        if (string.IsNullOrWhiteSpace(NextRuntimeHostProbePath)) return;
+        try { File.AppendAllText(NextRuntimeHostProbePath + ".checkpoints.txt", checkpoint + Environment.NewLine); }
+        catch { }
+    }
 
 #if LEGACY_ORACLE
     public static string LegacyOraclePath { get; private set; }

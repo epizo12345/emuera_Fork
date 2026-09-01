@@ -21,6 +21,14 @@ internal sealed partial class Process
         while (true)
         {
             //bool sequential = state.Sequential;
+            // The Legacy CALL/JUMP setup has already evaluated arguments and
+            // entered the frame.  Dispatch before ShiftNextLine so the Next
+            // VM owns exactly this callee, with Legacy remaining the fallback.
+            var nextResult = TryDispatchCurrentLegacyEntryToNextRuntime();
+            if (nextResult == NextRuntimeSessionResult.Waiting)
+                return;
+            if (nextResult == NextRuntimeSessionResult.Completed)
+                continue;
             state.ShiftNextLine();
             //WinmmTimerから時間を取得するのはそれ自体結構なコストがかかるので10000行に一回くらいで。
             if (Config.InfiniteLoopAlertTime > 0 && (state.lineCount % 10000 == 0))

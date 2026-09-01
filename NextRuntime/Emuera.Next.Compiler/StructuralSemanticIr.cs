@@ -15,6 +15,9 @@ public enum SemanticOperandKind : byte { Expression, Format, Case, CountedLoop }
 [StructLayout(LayoutKind.Sequential, Pack = 4)] public readonly record struct SemanticEdge(int To);
 [StructLayout(LayoutKind.Sequential, Pack = 4)] public readonly record struct SemanticCaseArm(int ValueNode, int ToNode);
 [StructLayout(LayoutKind.Sequential, Pack = 4)] public readonly record struct SemanticRecord(int InstructionIndex, int RootNodeIndex, int NodeCount);
+public enum SemanticHostIdentityKind : byte { Variable, Call }
+// Stable IDs are compiler output. Names remain diagnostic/binding input only and are never parsed on the VM hot path.
+public readonly record struct SemanticHostIdentity(SemanticHostIdentityKind Kind, int NodeIndex, ulong StableId, int NameSymbolIndex, int SubkeySymbolIndex, int IndexArity);
 
 public sealed class SemanticPayload
 {
@@ -23,13 +26,23 @@ public sealed class SemanticPayload
     public ImmutableArray<SemanticSlice> Symbols { get; }
     public ImmutableArray<SemanticCaseArm> CaseArms { get; }
     public ImmutableArray<SemanticRecord> Records { get; }
+    public ImmutableArray<SemanticHostIdentity> HostIdentities { get; }
     public byte[] Utf8 { get; }
     public bool HasSemanticOperands => !Records.IsDefaultOrEmpty;
     public int SemanticNodeCount => Nodes.Length;
     public int SemanticRecordCount => Records.Length;
     public SemanticPayload(IEnumerable<SemanticNode> nodes, IEnumerable<SemanticEdge> edges, IEnumerable<SemanticSlice> symbols, IEnumerable<SemanticCaseArm> caseArms, IEnumerable<SemanticRecord> records, byte[]? utf8 = null)
-        => (Nodes, Edges, Symbols, CaseArms, Records, Utf8) = (nodes.ToImmutableArray(), edges.ToImmutableArray(), symbols.ToImmutableArray(), caseArms.ToImmutableArray(), records.ToImmutableArray(), utf8 ?? []);
+    {
+        (Nodes, Edges, Symbols, CaseArms, Records, Utf8) = (nodes.ToImmutableArray(), edges.ToImmutableArray(), symbols.ToImmutableArray(), caseArms.ToImmutableArray(), records.ToImmutableArray(), utf8 ?? []);
+        HostIdentities = CreateHostIdentities();
+    }
     public string ReadSymbol(SemanticSlice slice) => Encoding.UTF8.GetString(Utf8, slice.Offset, slice.Length);
+    public bool TryGetHostIdentity(int nodeIndex, SemanticHostIdentityKind kind, out SemanticHostIdentity identity)
+    {
+        foreach (var candidate in HostIdentities)
+            if (candidate.NodeIndex == nodeIndex && candidate.Kind == kind) { identity = candidate; return true; }
+        identity = default; return false;
+    }
     public static SemanticPayload Empty { get; } = new([], [], [], [], []);
     public static SemanticPayload Merge(IEnumerable<SemanticPayload> payloads)
     {
@@ -62,6 +75,32 @@ public sealed class SemanticPayload
         }
         return new(nodes, edges, symbols, arms, records, bytes.ToArray());
         static int Rebase(int value, int @base) => value < 0 ? value : value + @base;
+    }
+
+    private ImmutableArray<SemanticHostIdentity> CreateHostIdentities()
+    {
+        var identities = ImmutableArray.CreateBuilder<SemanticHostIdentity>();
+        for (var index = 0; index < Nodes.Length; index++)
+        {
+            var node = Nodes[index];
+            var kind = node.Kind == SemanticNodeKind.Call ? SemanticHostIdentityKind.Call : SemanticHostIdentityKind.Variable;
+            var isHost = node.Kind is SemanticNodeKind.Symbol or SemanticNodeKind.Variable or SemanticNodeKind.VariableSubkey or SemanticNodeKind.Call;
+            if (!isHost || (uint)node.A >= (uint)Symbols.Length) continue;
+            var subkey = node.Kind == SemanticNodeKind.VariableSubkey ? node.B : -1;
+            if (subkey >= Symbols.Length) continue;
+            var arity = node.Kind switch { SemanticNodeKind.Variable => node.C, SemanticNodeKind.VariableSubkey => node.D, SemanticNodeKind.Call => node.C, _ => 0 };
+            var name = ReadSymbol(Symbols[node.A]);
+            var subkeyText = subkey < 0 ? string.Empty : ReadSymbol(Symbols[subkey]);
+            identities.Add(new(kind, index, StableId(kind, name, subkeyText, arity), node.A, subkey, arity));
+        }
+        return identities.ToImmutable();
+    }
+
+    private static ulong StableId(SemanticHostIdentityKind kind, string name, string subkey, int arity)
+    {
+        var hash = 14695981039346656037UL;
+        foreach (var b in Encoding.UTF8.GetBytes($"{(byte)kind}\0{name.ToUpperInvariant()}\0{subkey.ToUpperInvariant()}\0{arity}")) { hash ^= b; hash *= 1099511628211UL; }
+        return hash;
     }
 }
 

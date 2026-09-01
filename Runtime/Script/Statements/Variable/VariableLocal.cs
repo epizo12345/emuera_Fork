@@ -14,6 +14,7 @@ internal sealed class VariableLocal
         this.creater = creater;
     }
     readonly int size;
+    internal VariableCode Code => varCode;
     public bool IsForbid { get { return size == 0; } }
     VariableCode varCode;
     //VariableData varData;

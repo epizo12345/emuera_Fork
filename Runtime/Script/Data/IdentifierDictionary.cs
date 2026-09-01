@@ -511,6 +511,18 @@ internal sealed partial class IdentifierDictionary
         return null;
     }
 
+    // Diagnostic authority only.  The Next Runtime audit asks the owning Legacy
+    // process for metadata; normal parsing and execution do not call this path.
+    internal IEnumerable<KeyValuePair<string, VariableToken>> GetNextRuntimeVariableTokens() => varTokenDic;
+    internal IEnumerable<KeyValuePair<string, VariableLocal>> GetNextRuntimeLocalVariableFamilies() => localvarTokenDic;
+    // The Next VM binds this once at its Legacy entry boundary; execution uses
+    // the resulting typed token and never resolves a LOCAL/LOCALS name.
+    internal LocalVariableToken GetNextRuntimeLocalVariableToken(string key, FunctionLabelLine label)
+    {
+        if (!localvarTokenDic.TryGetValue(key, out var family) || family.IsForbid) return null;
+        return family.GetExistLocalVariableToken(label.LabelName) ?? family.GetNewLocalVariableToken(label.LabelName, label);
+    }
+
     public FunctionIdentifier GetFunctionIdentifier(string str)
     {
         string key = str;

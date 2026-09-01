@@ -450,6 +450,7 @@ internal sealed partial class EmueraConsole : IDisposable
 
     public async Task Initialize()
     {
+        Program.ProbeNextRuntimeHost("ConsoleInitialize");
         var boottimeDebugStopwatch = Stopwatch.StartNew();
 #if LEGACY_ORACLE
         using FileStream? fs = string.IsNullOrWhiteSpace(Program.LegacyOraclePath)
@@ -468,6 +469,7 @@ internal sealed partial class EmueraConsole : IDisposable
         Preload.Clear();
         await Preload.Load(Program.ErbDir);
         await Preload.Load(Program.CsvDir);
+        Program.ProbeNextRuntimeHost("FixturePreloaded");
 #if PERFORMANCE_METRICS
         logWriter.WriteLine($"File:Preload:Cached={Preload.CachedFileCount} LazySkipped={Preload.LazySkippedFileCount}");
 #endif
@@ -482,6 +484,7 @@ internal sealed partial class EmueraConsole : IDisposable
         // GlobalStatic.MainWindow = window;
         process = new GameProc.Process(this);
         GlobalStatic.Process = process;
+        Program.ProbeNextRuntimeHost("LegacyProcessCreated");
         if (Program.DebugMode && Config.DebugShowWindow)
         {
             OpenDebugDialog();
@@ -489,8 +492,10 @@ internal sealed partial class EmueraConsole : IDisposable
         }
         ClearDisplay();
         logWriter.WriteLine("Process:Initialize:Start " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
+        Program.ProbeNextRuntimeHost("LegacyProcessInitialize");
         if (!await process.Initialize(logWriter))
         {
+            Program.ProbeNextRuntimeHost("LegacyProcessInitializeFailed");
 #if LEGACY_ORACLE
             if (!string.IsNullOrWhiteSpace(Program.LegacyOraclePath))
             {
@@ -505,6 +510,28 @@ internal sealed partial class EmueraConsole : IDisposable
             RefreshStrings(true);
             if (Program.StartupTestMode)
                 window.BeginInvoke(window.Close);
+            return;
+        }
+        if (!string.IsNullOrWhiteSpace(Program.NextRuntimeHostProbePath))
+        {
+            Program.ProbeNextRuntimeHost("FixtureLoaded");
+            var probe = Program.NextRuntimeProductionOnly
+                ? process.RunNextRuntimeProductionProbe(Program.ProbeNextRuntimeHost)
+                : process.RunNextRuntimeHostProbe(Program.ProbeNextRuntimeHost) + process.RunNextRuntimeBuiltinProbe(Program.ProbeNextRuntimeHost) + process.RunNextRuntimeExpressionMethodProbe(Program.ProbeNextRuntimeHost) + process.RunNextRuntimeFrameBridgeProbe(Program.ProbeNextRuntimeHost) + process.RunNextRuntimeBoundaryProbe(Program.ProbeNextRuntimeHost) + process.RunNextRuntimeProductionProbe(Program.ProbeNextRuntimeHost) + process.RunNextRuntimeWaitSessionProbe(Program.ProbeNextRuntimeHost);
+            File.WriteAllText(Program.NextRuntimeHostProbePath, probe);
+            if (Program.NextRuntimeProductionOnly)
+            {
+                File.WriteAllText(Program.NextRuntimeHostProbePath + ".memory-stages.tsv", process.ExportNextRuntimeProductionMemoryStages());
+                File.WriteAllText(Program.NextRuntimeHostProbePath + ".readiness.txt", process.ExportNextRuntimeProductionReadiness());
+            }
+            Program.ProbeNextRuntimeHost("ProbeComplete");
+            window.BeginInvoke(new Action(() => { window.Close(); Application.ExitThread(); }));
+            return;
+        }
+        if (!string.IsNullOrWhiteSpace(Program.NextRuntimeLegacyManifestPath))
+        {
+            File.WriteAllText(Program.NextRuntimeLegacyManifestPath, process.ExportNextRuntimeLegacyManifest());
+            window.BeginInvoke(window.Close);
             return;
         }
 #if LEGACY_ORACLE

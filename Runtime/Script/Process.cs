@@ -254,6 +254,9 @@ internal sealed partial class Process(EmueraConsole view)
             logWriter.WriteLine($"Proc:Init:ERB:End {stopWatch.ElapsedMilliseconds}ms");
             PerformanceMetrics.MarkStartup("ErbParsed"); // ERB解析完了の目印
 
+            if (Program.NextRuntimeMode)
+                PrepareNextRuntimeProductionProgram(logWriter);
+
             SQL.SetUpTempDB();
 
             initSystemProcess();
@@ -285,17 +288,20 @@ internal sealed partial class Process(EmueraConsole view)
 
     public async Task ReloadErbAll()
     {
+        InvalidateNextRuntimeProductionProgram();
         await Preload.Load(Program.ErbDir);
         await Preload.Load(Program.CsvDir);
         saveCurrentState(false);
         state.SystemState = SystemStateCode.System_Reloaderb;
         erbLoader = new(console, exm, this);
         await erbLoader.LoadErbDir(Program.ErbDir, false, labelDic);
+        if (Program.NextRuntimeMode) PrepareNextRuntimeProductionProgram();
         console.ReadAnyKey();
     }
 
     public async Task ReloadPartialErb(List<string> paths)
     {
+        InvalidateNextRuntimeProductionProgram();
         // [Emuera改修:MEM-13R39.1 2026-08-23]
         // active erbLoaderは通常モードで起動時の未hydrate stubとLazy対応表を所有するため、
         // active Lazy対象を含む再読込ではpartial loaderに置換せず、全体を一体で再構築する。
@@ -315,11 +321,13 @@ internal sealed partial class Process(EmueraConsole view)
         // Lazy対象外のpartial reloadだけはlocal loaderに限定し、active Lazy managerを保持する。
         ErbLoader partialLoader = new(console, exm, this);
         await partialLoader.LoadErbList(paths, labelDic);
+        if (Program.NextRuntimeMode) PrepareNextRuntimeProductionProgram();
         console.ReadAnyKey();
     }
 
     public async Task ReloadErbFolder(string dirPath)
     {
+        InvalidateNextRuntimeProductionProgram();
         // [Emuera改修:MEM-13R41F 2026-08-24]
         // ファイルが削除されて列挙結果から消えていても、configured Lazy directoryとのscope交差で
         // full reloadへ昇格し、古いstubをLabelDictionaryへ残さない。親folderの扱いはSearchSubdirectoryに従う。
@@ -347,6 +355,7 @@ internal sealed partial class Process(EmueraConsole view)
         // active Lazy対象外のfolderだけは従来どおりlocal loaderで部分再読込する。
         ErbLoader partialLoader = new(console, exm, this);
         await partialLoader.LoadErbList(erbFiles, labelDic);
+        if (Program.NextRuntimeMode) PrepareNextRuntimeProductionProgram();
         console.ReadAnyKey();
     }
 
@@ -454,6 +463,10 @@ internal sealed partial class Process(EmueraConsole view)
         bool systemProcRunning = true;
         try
         {
+            // A suspended opt-in Next session owns the current Legacy frame
+            // until it completes.  Normal Legacy execution never reaches here.
+            if (TryResumeNextRuntimeSession())
+                return;
             while (true)
             {
                 methodStack = 0;
