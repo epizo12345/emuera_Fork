@@ -174,7 +174,7 @@ internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparation
             if (identity.Kind == SemanticHostIdentityKind.Variable && !variables.ContainsKey(identity.StableId))
             {
                 BindResolutionCount++;
-                if (process.TryBindNextRuntimeHostVariable(payload, identity, out var variable)) variables.Add(identity.StableId, new(variable, variable.Code is VariableCode.RESULT or VariableCode.RESULTS));
+                if (process.TryBindNextRuntimeHostVariable(payload, identity, out var variable)) variables.Add(identity.StableId, new(variable, variable.Dimension == 1 && !variable.IsCharacterData && identity.IndexArity == 0));
             }
             else if (identity.Kind == SemanticHostIdentityKind.Call && !builtins.ContainsKey(identity.StableId) && process.TryBindNextRuntimeHostBuiltin(payload, identity, out var builtin))
                 builtins.Add(identity.StableId, builtin);
@@ -533,15 +533,29 @@ internal sealed partial class Process
 
     private static string DispatchTraceValue(string value) => value.Replace('\t', ' ').Replace('\r', ' ').Replace('\n', ' ');
 
+    private bool IsProductionDispatchEligible(RuntimeFunctionId entryFunctionId)
+    {
+        if (productionProgram is null || productionFunctionKinds is null) return false;
+        if ((uint)entryFunctionId.Value >= (uint)productionFunctionKinds.Length ||
+            (uint)entryFunctionId.Value >= (uint)productionProgram.Descriptors.Length)
+            return false;
+        return VmRuntimeProductionDispatch.IsEligible(
+            Program.NextRuntimeMode,
+            Program.AnalysisMode,
+            Program.DebugMode,
+            entryFunctionId.Value,
+            productionProgram.Descriptors.Length,
+            productionFunctionKinds[entryFunctionId.Value],
+            productionProgram.Descriptors[entryFunctionId.Value].State,
+            productionDispatchEntryReadyIds.Contains(entryFunctionId.Value));
+    }
+
     internal NextRuntimeSessionResult TryStartNextRuntimeProductionSession(RuntimeFunctionId entryFunctionId)
     {
         productionLastRejectReason = NextRuntimeDispatchRejectReason.None;
         if (productionProgram is null || productionSemanticHost is null || productionFrameCatalog is null ||
             productionFunctionKinds is null || productionLabelIds is null || nextRuntimeSession is not null ||
-            (uint)entryFunctionId.Value >= (uint)productionProgram.Descriptors.Length ||
-            productionFunctionKinds[entryFunctionId.Value] != FunctionKind.Normal ||
-            productionProgram.Descriptors[entryFunctionId.Value].State != VmFunctionState.ExecutableReady ||
-            !productionDispatchEntryReadyIds.Contains(entryFunctionId.Value))
+            !IsProductionDispatchEligible(entryFunctionId))
         {
             var kind = (uint)entryFunctionId.Value < (uint)(productionFunctionKinds?.Length ?? 0) ? productionFunctionKinds[entryFunctionId.Value].ToString() : "out-of-range";
             var descriptorState = (uint)entryFunctionId.Value < (uint)(productionProgram?.Descriptors.Length ?? 0) ? productionProgram.Descriptors[entryFunctionId.Value].State.ToString() : "out-of-range";

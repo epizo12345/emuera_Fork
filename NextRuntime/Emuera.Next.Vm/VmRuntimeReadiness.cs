@@ -763,3 +763,24 @@ public static class VmRuntimeActivator
         return new(candidates, eligible, promoted, blocked);
     }
 }
+
+// Production dispatch consumes the already-promoted descriptor and the
+// production-owned dispatch-entry set.  It never derives eligibility from a
+// function name or a diagnostic artifact.
+public static class VmRuntimeProductionDispatch
+{
+    public static bool IsEligible(
+        bool nextRuntimeEnabled,
+        bool analysisMode,
+        bool debugMode,
+        int runtimeFunctionId,
+        int descriptorCount,
+        FunctionKind kind,
+        VmFunctionState descriptorState,
+        bool productionDispatchEntryReady) =>
+        nextRuntimeEnabled && !analysisMode && !debugMode &&
+        (uint)runtimeFunctionId < (uint)descriptorCount &&
+        kind == FunctionKind.Normal &&
+        descriptorState == VmFunctionState.ExecutableReady &&
+        productionDispatchEntryReady;
+}

@@ -918,7 +918,15 @@ public sealed class VmMachine : IVmFrameVariables, IVmExpressionFunctionInvoker
                 return SemanticResultReason(runtimeSemantics.LastStatus);
             return null;
         }
-        if (!runtimeSemantics.TryResolveRuntimeLValue(arena, record.OperandRecord, out var lvalue) || !runtimeSemantics.TryReadRuntimeLValue(lvalue, out var current) || !current.TryGetInteger(out var left))
+        if (!runtimeSemantics.TryResolveRuntimeLValue(arena, record.OperandRecord, out var lvalue) || !runtimeSemantics.TryReadRuntimeLValue(lvalue, out var current))
+            return SemanticResultReason(runtimeSemantics.LastStatus);
+        if (record.Assignment == VmAssignmentOperator.Add && current.TryGetString(out var leftText))
+        {
+            if (!runtimeSemantics.TryEvaluateRuntimeRecord(arena, record.SecondaryOperandRecord, out var rightTextValue) || !rightTextValue.TryGetString(out var rightText))
+                return SemanticResultReason(runtimeSemantics.LastStatus);
+            return runtimeSemantics.TryWriteRuntimeLValue(lvalue, VmSemanticValue.From(leftText + rightText)) ? null : SemanticResultReason(runtimeSemantics.LastStatus);
+        }
+        if (!current.TryGetInteger(out var left))
             return SemanticResultReason(runtimeSemantics.LastStatus);
         if (!runtimeSemantics.TryEvaluateRuntimeRecord(arena, record.SecondaryOperandRecord, out var rightValue) || !rightValue.TryGetInteger(out var right))
             return SemanticResultReason(runtimeSemantics.LastStatus);
