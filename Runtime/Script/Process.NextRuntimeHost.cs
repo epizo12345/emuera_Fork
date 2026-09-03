@@ -614,10 +614,16 @@ internal sealed partial class Process
 #if PERFORMANCE_METRICS
             if (productionLastRejectReason == NextRuntimeDispatchRejectReason.SessionStartRejected)
             {
+                // [Emuera改修:NEXT-3D-R1.5A 2026-09-04]
+                // production reject経路とdiagnostic classificationの時間を分離する。
+                // 判定直後をproduction側の終了authorityとし、classificationを
+                // CandidateAで削減可能なreject costへ混在させない。
+                var rejectPathEnd = PerformanceMetrics.StartNextDispatchTiming();
                 var classificationStart = PerformanceMetrics.StartNextDispatchTiming();
                 var classification = ClassifySessionStartReject(entryFunctionId);
+                var classificationEnd = PerformanceMetrics.StartNextDispatchTiming();
                 PerformanceMetrics.AddNextDispatchStage("SessionStartRejectClassification", classificationStart);
-                PerformanceMetrics.RecordSessionStartRejectSubreason(entryFunctionId.Value, functionName, classification.Name, classification.Mutable, classificationStart);
+                PerformanceMetrics.RecordSessionStartRejectSubreason(entryFunctionId.Value, functionName, classification.Name, classification.Mutable, readinessStart, rejectPathEnd, classificationStart, classificationEnd);
             }
 #endif
             return NextRuntimeSessionResult.LegacyFallback;
@@ -697,7 +703,13 @@ internal sealed partial class Process
             result = NextRuntimeSessionResult.LegacyFallback;
         }
         else if (label is not null && productionLabelIds is not null && productionLabelIds.TryGetValue(label, out var id))
+        {
+#if PERFORMANCE_METRICS
             result = TryStartNextRuntimeProductionSession(id, label.LabelName);
+#else
+            result = TryStartNextRuntimeProductionSession(id);
+#endif
+        }
         else
         {
             productionLastRejectReason = NextRuntimeDispatchRejectReason.TopLabelNotMapped;

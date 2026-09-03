@@ -80,8 +80,8 @@ internal static class PerformanceMetrics
     private static readonly long[] nextDispatchStageTicks = new long[NextDispatchStageNames.Length];
     private static readonly int[] nextDispatchStageCounts = new int[NextDispatchStageNames.Length];
     private static readonly Dictionary<(int FunctionId, MinorShift.Emuera.GameProc.NextRuntimeDispatchRejectReason Reason), (string Name, int Count, long Ticks)> nextDispatchBuckets = new();
-    private static readonly Dictionary<string, (int Count, long Ticks, bool Mutable)> nextSessionStartRejectSubreasons = new(StringComparer.Ordinal);
-    private static readonly Dictionary<(int FunctionId, string Subreason), (string Name, int Count, long Ticks)> nextSessionStartRejectFunctionBuckets = new();
+    private static readonly Dictionary<string, (int Count, long RejectPathTicks, long ClassificationTicks, bool Mutable)> nextSessionStartRejectSubreasons = new(StringComparer.Ordinal);
+    private static readonly Dictionary<(int FunctionId, string Subreason), (string Name, int Count, long RejectPathTicks)> nextSessionStartRejectFunctionBuckets = new();
 #endif
 
     internal static bool Enabled => Volatile.Read(ref logPath) != null;
@@ -145,32 +145,34 @@ internal static class PerformanceMetrics
                 AverageMicroseconds = pair.Value.Count == 0 ? 0 : TicksToMilliseconds(pair.Value.Ticks) * 1000 / pair.Value.Count
             }).ToArray();
         var subreasons = nextSessionStartRejectSubreasons
-            .OrderByDescending(pair => pair.Value.Ticks)
+            .OrderByDescending(pair => pair.Value.RejectPathTicks)
             .Select(pair => new
             {
                 Subreason = pair.Key,
                 Scope = pair.Value.Mutable ? "MutableCallState" : "ImmutableGenerationScoped",
                 Count = pair.Value.Count,
-                TotalMilliseconds = TicksToMilliseconds(pair.Value.Ticks),
-                AverageMicroseconds = pair.Value.Count == 0 ? 0 : TicksToMilliseconds(pair.Value.Ticks) * 1000 / pair.Value.Count
+                RejectPathTotalMilliseconds = TicksToMilliseconds(pair.Value.RejectPathTicks),
+                RejectPathAverageMicroseconds = pair.Value.Count == 0 ? 0 : TicksToMilliseconds(pair.Value.RejectPathTicks) * 1000 / pair.Value.Count,
+                ClassificationTotalMilliseconds = TicksToMilliseconds(pair.Value.ClassificationTicks),
+                ClassificationAverageMicroseconds = pair.Value.Count == 0 ? 0 : TicksToMilliseconds(pair.Value.ClassificationTicks) * 1000 / pair.Value.Count
             }).ToArray();
         var subreasonFunctions = nextSessionStartRejectFunctionBuckets
-            .OrderByDescending(pair => pair.Value.Ticks)
+            .OrderByDescending(pair => pair.Value.RejectPathTicks)
             .Select(pair => new
             {
                 RuntimeFunctionId = pair.Key.FunctionId,
                 FunctionName = pair.Value.Name,
                 Subreason = pair.Key.Subreason,
                 Count = pair.Value.Count,
-                TotalMilliseconds = TicksToMilliseconds(pair.Value.Ticks),
-                AverageMicroseconds = pair.Value.Count == 0 ? 0 : TicksToMilliseconds(pair.Value.Ticks) * 1000 / pair.Value.Count
+                RejectPathTotalMilliseconds = TicksToMilliseconds(pair.Value.RejectPathTicks),
+                RejectPathAverageMicroseconds = pair.Value.Count == 0 ? 0 : TicksToMilliseconds(pair.Value.RejectPathTicks) * 1000 / pair.Value.Count
             }).ToArray();
         var sessionStartRejectedCount = nextDispatchRejections.TryGetValue(nameof(MinorShift.Emuera.GameProc.NextRuntimeDispatchRejectReason.SessionStartRejected), out var rejectedCount) ? rejectedCount : 0;
         var subreasonCountSum = nextSessionStartRejectSubreasons.Values.Sum(value => value.Count);
         var immutableCount = nextSessionStartRejectSubreasons.Where(pair => !pair.Value.Mutable).Sum(pair => pair.Value.Count);
-        var immutableTicks = nextSessionStartRejectSubreasons.Where(pair => !pair.Value.Mutable).Sum(pair => pair.Value.Ticks);
+        var immutableTicks = nextSessionStartRejectSubreasons.Where(pair => !pair.Value.Mutable).Sum(pair => pair.Value.RejectPathTicks);
         var mutableCount = nextSessionStartRejectSubreasons.Where(pair => pair.Value.Mutable).Sum(pair => pair.Value.Count);
-        var mutableTicks = nextSessionStartRejectSubreasons.Where(pair => pair.Value.Mutable).Sum(pair => pair.Value.Ticks);
+        var mutableTicks = nextSessionStartRejectSubreasons.Where(pair => pair.Value.Mutable).Sum(pair => pair.Value.RejectPathTicks);
         var report = new
         {
             Profiler = "NextRuntimePerformanceProfile",
@@ -426,15 +428,16 @@ internal static class PerformanceMetrics
     }
 
     [Conditional("PERFORMANCE_METRICS")]
-    internal static void RecordSessionStartRejectSubreason(int functionId, string functionName, string subreason, bool mutable, long classificationStart)
+    internal static void RecordSessionStartRejectSubreason(int functionId, string functionName, string subreason, bool mutable, long rejectPathStart, long rejectPathEnd, long classificationStart, long classificationEnd)
     {
 #if PERFORMANCE_METRICS
-        var elapsed = classificationStart == 0 ? 0 : Stopwatch.GetTimestamp() - classificationStart;
+        var rejectPathTicks = rejectPathStart == 0 || rejectPathEnd == 0 ? 0 : Math.Max(0, rejectPathEnd - rejectPathStart);
+        var classificationTicks = classificationStart == 0 || classificationEnd == 0 ? 0 : Math.Max(0, classificationEnd - classificationStart);
         nextSessionStartRejectSubreasons.TryGetValue(subreason, out var aggregate);
-        nextSessionStartRejectSubreasons[subreason] = (aggregate.Count + 1, aggregate.Ticks + elapsed, mutable);
+        nextSessionStartRejectSubreasons[subreason] = (aggregate.Count + 1, aggregate.RejectPathTicks + rejectPathTicks, aggregate.ClassificationTicks + classificationTicks, mutable);
         var key = (functionId, subreason);
         nextSessionStartRejectFunctionBuckets.TryGetValue(key, out var bucket);
-        nextSessionStartRejectFunctionBuckets[key] = (bucket.Name ?? functionName, bucket.Count + 1, bucket.Ticks + elapsed);
+        nextSessionStartRejectFunctionBuckets[key] = (bucket.Name ?? functionName, bucket.Count + 1, bucket.RejectPathTicks + rejectPathTicks);
 #endif
     }
 
