@@ -1,5 +1,10 @@
 using System.Text;
 
+// [Emuera改修:NEXT-3D-R1.4I 2026-09-04]
+// cross-runの主たるalignment authorityはNormalizedSourcePath、physical StartLine、FunctionName。
+// CallDepth/InvocationOrdinal/ParentIdentityは追加の曖昧性解消に使い、RuntimeFunctionIdは診断値に限る。
+// sidecarはroot-change deltaを復元してexact variable/index/value localizationに使うが、
+// Next-only write trackingをalignment authorityにはしない。
 internal static class IntegrationCheckpointComparer
 {
     private const char DetailEntry = '\u001e';

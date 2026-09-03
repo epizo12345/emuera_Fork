@@ -34,6 +34,9 @@ internal sealed class VmRuntimeStatementArenaBuilder
 {
     private readonly List<VmRuntimeStatementRecord> records = [];
     private readonly List<byte> utf8 = [];
+    // [Emuera改修:NEXT-3D-R1.4C2 2026-09-04]
+    // 各payloadのrecord数を単調に積み上げ、旧来のoperandParts.Sum(...)によるprefix scanを避ける。
+    // これはoperand offsetの意味論を変えず、large fixtureでのリンク時計算量だけを削減する。
     private readonly List<MinorShift.Emuera.Next.Compiler.SemanticPayload> operandParts = [];
     private int operandRecordCount;
     private int AddOperandPart(MinorShift.Emuera.Next.Compiler.SemanticPayload payload)

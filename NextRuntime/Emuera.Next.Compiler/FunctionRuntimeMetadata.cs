@@ -71,6 +71,10 @@ public static class FunctionRuntimeMetadataParser
         return true;
     }
 
+    // [Emuera改修:NEXT-3D-R1.4F 2026-09-04]
+    // 特定function名の例外ではなく、Legacy-valid header grammarを共通に受ける互換修復。
+    // comma/parenthesized form、top-level inline default、quoted comma/equals、nested delimiterを
+    // lexical contextを保ったまま分解するため、後段がARG/ARGSを取り違えずfallback境界も維持できる。
     private static bool TryParseHeader(string line, CompilerCompatibilityOptions options, out ImmutableArray<FunctionRuntimeParameter> parameters, out string detail)
     {
         parameters = [];

@@ -24,8 +24,10 @@ public enum VmInvocationKind : byte { Call, Jump }
 public enum VmStructuralKind : int { None, Sif, If, ElseIf, Else, EndIf, SelectCase, Case, CaseElse, EndSelect, Repeat, Rend, For, Next, While, Wend, Do, Loop, Break, Continue }
 [Flags] public enum LoopDescriptorFlags : int { None = 0, BreakAdvancesCounter = 1 }
 
-// One token is created with each Legacy CalledFunction. The Legacy host
-// consumes it at the entry seam; VM execution never owns or recreates it.
+// [Emuera改修:NEXT-3D-R1.4B 2026-09-04]
+// LegacyのCalledFunction invocationごとに1個だけ生成し、entry seamで一度だけconsumeする。
+// VMはtokenを再生成せず、WAIT resumeでも同じinvocationを再dispatchしない。ここを緩めると
+// Next Completed後にLegacy bodyが重複実行され、returnや状態遷移の順序が壊れる。
 public sealed class VmRuntimeEntryDispatchToken
 {
     private bool pending = true;

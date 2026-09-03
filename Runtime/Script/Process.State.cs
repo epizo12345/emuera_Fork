@@ -350,6 +350,9 @@ internal sealed class ProcessState
         }
     }
 
+    // [Emuera改修:NEXT-3D-R1.4I 2026-09-04]
+    // Returnは現在のLegacy invocationを閉じ、Next completionから渡されたRESULTを親へ伝播する
+    // ownership境界でもある。ここでframeを先に破棄すると親の継続位置・引数・return値が壊れる。
     public void Return(long ret)
     {
         if (IsFunctionMethod)

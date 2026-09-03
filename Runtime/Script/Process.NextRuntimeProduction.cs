@@ -62,6 +62,9 @@ internal sealed partial class Process
     internal int ProductionActivationCount => productionActivationCount;
     internal LinkedProgram? NextRuntimeProductionProgram => productionProgram;
 
+    // [Emuera改修:NEXT-3D-R1.4C2 2026-09-04]
+    // production preparationはLegacy hostが所有する一時的なactivation境界。失敗時にLegacyへ戻せる
+    // よう、readiness/metadata/frame bindingを確定してからNext sessionを公開する。
     internal bool PrepareNextRuntimeProductionProgram(TextWriter? log = null)
     {
         productionMemoryStages.Clear();

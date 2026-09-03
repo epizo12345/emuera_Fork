@@ -627,6 +627,9 @@ internal sealed partial class Process
         return NextRuntimeSessionResult.Completed;
     }
 
+    // [Emuera改修:NEXT-3D-R1.4I 2026-09-04]
+    // Legacy invocationがentry seamのownerであり、dispatch結果をLegacy fallback/Next completionへ
+    // 戻す。token消費とreturn handoffの順序を変えると、同一invocationの二重実行やRESULT伝播破壊になる。
     internal NextRuntimeSessionResult TryDispatchCurrentLegacyEntryToNextRuntime()
     {
         var dispatchStart = PerformanceMetrics.StartTiming();

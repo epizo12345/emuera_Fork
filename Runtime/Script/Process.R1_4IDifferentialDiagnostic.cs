@@ -11,8 +11,10 @@ using MinorShift.Emuera.Runtime.Script.Statements.Variable;
 
 namespace MinorShift.Emuera.GameProc;
 
-// Opt-in only.  This is a streaming diagnostic boundary; it neither selects
-// Next functions nor changes Legacy execution when no capture path is given.
+// [Emuera改修:NEXT-3D-R1.4I 2026-09-04]
+// capture pathを指定した時だけ有効なopt-in診断であり、指定なしでは完全OFF。
+// engine selectionとLegacy/Next semanticsを変更せず、diagnostic file IOも行わない。
+// この出力はproduction authorityではなく、比較・localizationのための観測結果である。
 internal sealed partial class Process
 {
     private StreamWriter? r1_4iWriter;
@@ -55,9 +57,10 @@ internal sealed partial class Process
     {
         if (!R1_4IDifferentialEnabled || called is null || !IsR1_4IBridgeFunction(called)) return;
         r1_4iDispatchResultBefore = vEvaluator.RESULT;
-        // Title bridge localization only needs return/engine fields now that the
-        // return-value defect is isolated. Keep state-delta checks in synthetic
-        // regressions; avoid a full variable/character scan per title call.
+        // [Emuera改修:NEXT-3D-R1.4I 2026-09-04]
+        // title bridgeに必要なreturn/engine境界だけをfocusedに記録する。毎callのfull state scanを
+        // 行わないのは診断コストを抑えるためで、タイトル固有の挙動を通常のproduction semanticsとして
+        // 定義するためではない。state-deltaの契約はsynthetic regressionで検証する。
         r1_4iBridgeBefore = [];
         r1_4iLastVmReturn = "<not-run>";
     }
