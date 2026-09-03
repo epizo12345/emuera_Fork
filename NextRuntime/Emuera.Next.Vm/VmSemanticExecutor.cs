@@ -31,10 +31,6 @@ public interface IVmSemanticHost
     bool TryCall(string name, ReadOnlySpan<VmSemanticValue> arguments, out VmSemanticValue value);
     int CompareStrings(string left, string right);
 }
-// [Emuera改修:NEXT-3D-R1.4H1 2026-09-04]
-// Legacyはplain string '='をtarget declared typeに応じてFORMとして扱い、string-expression '='とは
-// 意味が異なる。binding済みの型をここで使い、destination indicesを先に評価して副作用を起こさない。
-// VM実行中の再名前解決を避けても、この境界を変えるとLegacy互換の文字列代入順序が壊れる。
 // Opt-in typed path. Legacy resolves diagnostic names once while binding; VM execution then passes stable IDs only.
 public interface IVmTypedSemanticHost
 {
@@ -43,6 +39,10 @@ public interface IVmTypedSemanticHost
     bool TryWrite(SemanticHostIdentity identity, ReadOnlySpan<VmSemanticValue> indices, VmSemanticValue value);
     bool TryCall(SemanticHostIdentity identity, ReadOnlySpan<VmSemanticValue> arguments, out VmSemanticValue value);
 }
+// [Emuera改修:NEXT-3D-R1.4H1 2026-09-04]
+// Legacyはplain string '='をtarget declared typeに応じてFORMとして扱い、string-expression '='とは
+// 意味が異なる。binding済みの型をここで使い、destination indicesを先に評価して副作用を起こさない。
+// VM実行中の再名前解決を避けても、この境界を変えるとLegacy互換の文字列代入順序が壊れる。
 // Optional assignment grammar authority. The linker keeps both Legacy FORM and
 // expression IR for plain '='; the live host selects the target's declared type
 // without evaluating destination indices.
