@@ -22,7 +22,7 @@ namespace MinorShift.Emuera.GameProc;
 #nullable enable
 
 // The host stays in the Legacy assembly so no Legacy object crosses the VM boundary.
-internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparationCounters? preparationCounters = null) : IVmSemanticHost, IVmTypedSemanticHost
+internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparationCounters? preparationCounters = null) : IVmSemanticHost, IVmTypedSemanticHost, IVmAssignmentTargetTypeHost
 {
     private readonly Dictionary<ulong, BoundVariable> variables = [];
     private readonly Dictionary<ulong, BuiltinCallKind> builtins = [];
@@ -56,6 +56,16 @@ internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparation
     {
         return contextIndexes.TryGetValue(payload, out var index) &&
             (uint)recordIndex < (uint)index.StringAssignmentTargets.Length && index.StringAssignmentTargets[recordIndex];
+    }
+    public bool TryGetAssignmentTargetKind(SemanticHostIdentity identity, SemanticPayload arena, out VmSemanticValueKind kind)
+    {
+        if (variables.TryGetValue(identity.StableId, out var variable))
+        {
+            kind = variable.Token.IsString ? VmSemanticValueKind.String : variable.Token.IsInteger ? VmSemanticValueKind.Integer : VmSemanticValueKind.Unavailable;
+            return kind != VmSemanticValueKind.Unavailable;
+        }
+        kind = VmSemanticValueKind.Unavailable;
+        return false;
     }
     internal VmRuntimeVariableObservation DescribeVariable(int functionId, SemanticPayload payload, SemanticHostIdentity identity, VmRuntimeVariableUse use)
     {
@@ -223,6 +233,7 @@ internal enum NextRuntimeDispatchRejectReason
     ProductionGenerationInvalid,
     ProductionActivationMissing,
     ActiveNextSession,
+    EntryDispatchAlreadyConsumed,
     NoLegacyFrame,
     TopLabelMissing,
     TopLabelNotMapped,
@@ -361,7 +372,7 @@ internal sealed partial class Process
     {
         public void WriteText(string text) => process.console.Print(text, lineEnd: false);
         public void NewLine() => process.console.NewLine();
-        public void RequestWait(bool force) => process.console.ReadAnyKey(force);
+        public void RequestWait(bool force) { process.console.ReadAnyKey(force); }
         public void Quit() => process.console.Quit();
     }
 
@@ -436,6 +447,7 @@ internal sealed partial class Process
         nextRuntimeSessionImports++;
         var machine = new VmMachine(program, new VmSemanticExecutor(program, new LegacyVmSemanticHost(this)), new LegacyVmRuntimeEffects(this), frameState);
         nextRuntimeSession = new(this, machine);
+        TraceR1_4E("NextSessionStart", stopReason: "Start");
         stop = machine.Run(entryFunctionId, actuals);
         return FinishNextRuntimeSession(stop);
     }
@@ -495,6 +507,7 @@ internal sealed partial class Process
         else if (row.GenerationValid != "YES") row.RejectReason = NextRuntimeDispatchRejectReason.ProductionGenerationInvalid;
         else if (row.ActivationPresent != "YES") row.RejectReason = NextRuntimeDispatchRejectReason.ProductionActivationMissing;
         else if (nextRuntimeSession is not null) row.RejectReason = NextRuntimeDispatchRejectReason.ActiveNextSession;
+        else if (state.functionCount != 0 && !state.CurrentCalled.HasNextRuntimeEntryDispatchOpportunity) row.RejectReason = NextRuntimeDispatchRejectReason.EntryDispatchAlreadyConsumed;
         else if (state.functionCount == 0) row.RejectReason = NextRuntimeDispatchRejectReason.NoLegacyFrame;
         else if (label is null) row.RejectReason = NextRuntimeDispatchRejectReason.TopLabelMissing;
         else if (productionLabelIds is null || !productionLabelIds.TryGetValue(label, out var id)) row.RejectReason = NextRuntimeDispatchRejectReason.TopLabelNotMapped;
@@ -553,9 +566,12 @@ internal sealed partial class Process
     internal NextRuntimeSessionResult TryStartNextRuntimeProductionSession(RuntimeFunctionId entryFunctionId)
     {
         productionLastRejectReason = NextRuntimeDispatchRejectReason.None;
+        var readinessStart = PerformanceMetrics.StartNextDispatchTiming();
+        var dispatchEligible = IsProductionDispatchEligible(entryFunctionId);
+        PerformanceMetrics.AddNextDispatchStage("ReadinessLookup", readinessStart);
         if (productionProgram is null || productionSemanticHost is null || productionFrameCatalog is null ||
             productionFunctionKinds is null || productionLabelIds is null || nextRuntimeSession is not null ||
-            !IsProductionDispatchEligible(entryFunctionId))
+            !dispatchEligible)
         {
             var kind = (uint)entryFunctionId.Value < (uint)(productionFunctionKinds?.Length ?? 0) ? productionFunctionKinds[entryFunctionId.Value].ToString() : "out-of-range";
             var descriptorState = (uint)entryFunctionId.Value < (uint)(productionProgram?.Descriptors.Length ?? 0) ? productionProgram.Descriptors[entryFunctionId.Value].State.ToString() : "out-of-range";
@@ -563,23 +579,35 @@ internal sealed partial class Process
             productionProbeLastDecision = $"entry-not-ready:id={entryFunctionId.Value};kind={kind};state={descriptorState};session={(nextRuntimeSession is null ? "none" : "active")}";
             return NextRuntimeSessionResult.LegacyFallback;
         }
-        if (!TryImportNextRuntimeEntryArguments(productionProgram, entryFunctionId, out var actuals))
+        var importStart = PerformanceMetrics.StartNextDispatchTiming();
+        var imported = TryImportNextRuntimeEntryArguments(productionProgram, entryFunctionId, out var actuals);
+        PerformanceMetrics.AddNextDispatchStage("FrameImportPreparation", importStart);
+        if (!imported)
         {
             productionLastRejectReason = NextRuntimeDispatchRejectReason.ArgumentImportFailed;
             productionProbeLastDecision = "argument-import-failed";
             return NextRuntimeSessionResult.LegacyFallback;
         }
-        if (!LegacyVmFrameState.TryCreateWithCatalog(this, entryFunctionId, productionFrameCatalog, out var frameState))
+        var frameStart = PerformanceMetrics.StartNextDispatchTiming();
+        var frameCreated = LegacyVmFrameState.TryCreateWithCatalog(this, entryFunctionId, productionFrameCatalog, out var frameState);
+        PerformanceMetrics.AddNextDispatchStage("FrameBindingPreparation", frameStart);
+        if (!frameCreated)
         {
             productionLastRejectReason = NextRuntimeDispatchRejectReason.FrameBindingMissing;
             productionProbeLastDecision = "frame-catalog-failed";
             return NextRuntimeSessionResult.LegacyFallback;
         }
         nextRuntimeSessionImports++;
+        var sessionStart = PerformanceMetrics.StartNextDispatchTiming();
         var executor = new VmSemanticExecutor(productionProgram, productionSemanticHost);
         var machine = new VmMachine(productionProgram, executor, new LegacyVmRuntimeEffects(this), frameState);
         nextRuntimeSession = new(this, machine, productionNormal: true);
+        PerformanceMetrics.AddNextDispatchStage("SessionConstruction", sessionStart);
+        TraceR1_4E("NextSessionStart", stopReason: "ProductionStart");
+        var executionStart = PerformanceMetrics.StartNextDispatchTiming();
         var stop = machine.Run(entryFunctionId, actuals);
+        PerformanceMetrics.AddNextDispatchStage("VmExecution", executionStart);
+        TraceR1_4E(stop == VmStopReason.Returned ? "NextSessionComplete" : "NextSessionStop", stopReason: stop.ToString());
         var current = machine.CurrentFrame;
         productionSessionStartTrace.Add($"EntryRuntimeFunctionId={entryFunctionId.Value}\tFrameImportResult=PASS\tFrameBindingResult=PASS\tVmMachineStartResult=Returned\tVmStopReason={stop}\tVmStopFunctionId={(machine.FrameDepth == 0 ? -1 : current.FunctionId)}\tVmStopPc={(machine.FrameDepth == 0 ? -1 : current.Pc)}\tSemanticStatus={executor.LastStatus}\tSemanticFault={executor.LastFault}\tSessionStartOutcome={(stop == VmStopReason.Returned ? "Completed" : stop == VmStopReason.WaitingForInput ? "Waiting" : "LegacyFallback")}\tExceptionType=\tExceptionMessage=\tSemanticExecutorPresent=YES\tRuntimeEffectsPresent=YES\tVmMachineStructuralSemanticsType={executor.GetType().Name}\tVmMachineRuntimeEffectsType={nameof(LegacyVmRuntimeEffects)}\tArenaKind={executor.LastEvaluationArena}\tRecordIndex={executor.LastRecordIndex}\tRootNodeIndex={executor.LastNodeIndex}\tSemanticNodeKind={executor.LastNodeKind}\tSemanticOperator={executor.LastSemanticOperator}\tCanonicalHostIdentityId={executor.LastCanonicalHostIdentityId}\tHostBindingPresent={(executor.LastHostBindingPresent ? "YES" : "NO")}\tHostOperation={executor.LastHostOperation}\tHostSymbol={DispatchTraceValue(executor.LastHostSymbol)}\tHostResult={(executor.LastHostResult ? "PASS" : "FAIL")}");
         if (stop == VmStopReason.WaitingForInput) return NextRuntimeSessionResult.Waiting;
@@ -591,7 +619,9 @@ internal sealed partial class Process
             return NextRuntimeSessionResult.LegacyFallback;
         }
         productionProbeLastDecision = "completed";
+        MarkR1_4INextReturn(machine.LastReturnValue);
         vEvaluator.RESULT = machine.LastReturnValue.TryGetInteger(out var value) ? value : 0;
+        MarkR1_4INextCompletion(state.functionCount == 0 ? null : state.CurrentCalled, stop.ToString(), entryFunctionId.Value.ToString());
         state.Return(vEvaluator.RESULT);
         MarkProductionProbeCompletion();
         return NextRuntimeSessionResult.Completed;
@@ -599,10 +629,23 @@ internal sealed partial class Process
 
     internal NextRuntimeSessionResult TryDispatchCurrentLegacyEntryToNextRuntime()
     {
-        var label = state.functionCount == 0 ? null : state.CurrentCalled.TopLabel;
+        var dispatchStart = PerformanceMetrics.StartTiming();
+        var calledAtAttempt = state.functionCount == 0 ? null : state.CurrentCalled;
+        BeginR1_4IBridgeTrace(calledAtAttempt);
+        var tokenBefore = calledAtAttempt?.HasNextRuntimeEntryDispatchOpportunity == true;
+        var label = calledAtAttempt?.TopLabel;
         var trace = productionProbeRemaining > 0 ? CreateProductionDispatchTrace(label) : null;
+        TraceR1_4E("EntryDispatchAttempt", entryToken: state.functionCount != 0 && state.CurrentCalled.HasNextRuntimeEntryDispatchOpportunity ? "Pending" : "Consumed");
+        var entryOpportunity = state.functionCount != 0 && state.CurrentCalled.TryConsumeNextRuntimeEntryDispatchOpportunity();
+        if (entryOpportunity)
+            TraceR1_4E("EntryDispatchTokenConsumed", entryToken: "Consumed");
         NextRuntimeSessionResult result;
-        if (trace is not null && trace.RejectReason != NextRuntimeDispatchRejectReason.None)
+        if (state.functionCount != 0 && !entryOpportunity)
+        {
+            productionLastRejectReason = NextRuntimeDispatchRejectReason.EntryDispatchAlreadyConsumed;
+            result = NextRuntimeSessionResult.LegacyFallback;
+        }
+        else if (trace is not null && trace.RejectReason != NextRuntimeDispatchRejectReason.None)
         {
             productionLastRejectReason = trace.RejectReason;
             result = NextRuntimeSessionResult.LegacyFallback;
@@ -627,8 +670,20 @@ internal sealed partial class Process
             if (result == NextRuntimeSessionResult.LegacyFallback)
                 productionProbeFallbacks++;
         }
+        TraceR1_4EFirstDispatch(calledAtAttempt, tokenBefore, calledAtAttempt?.HasNextRuntimeEntryDispatchOpportunity == true,
+            calledAtAttempt is not null && IsR1_4ENextEligible(calledAtAttempt), result, productionLastRejectReason.ToString());
+        TraceR1_4GTitleDispatch(calledAtAttempt, entryOpportunity,
+            calledAtAttempt is not null && IsProductionDispatchEligibleForTrace(calledAtAttempt), result, productionLastRejectReason.ToString());
+        TraceR1_4G2ExtraTitleDispatch(calledAtAttempt, result, productionLastRejectReason.ToString());
+        TraceR1_4IDifferentialDispatch(calledAtAttempt, result, productionLastRejectReason.ToString());
+        PerformanceMetrics.AddNextDispatchStage("DispatchTotal", dispatchStart);
+        var functionId = label is not null && productionLabelIds is not null && productionLabelIds.TryGetValue(label, out var mappedId) ? mappedId.Value : -1;
+        PerformanceMetrics.RecordNextDispatch(functionId, label?.LabelName ?? "<none>", productionLastRejectReason, result == NextRuntimeSessionResult.LegacyFallback, dispatchStart);
         return result;
     }
+
+    private bool IsProductionDispatchEligibleForTrace(CalledFunction called) =>
+        productionLabelIds is not null && productionLabelIds.TryGetValue(called.TopLabel, out var id) && IsProductionDispatchEligible(id);
 
     // Opt-in production seam probe. The frames are created by the real
     // ProcessState path and consumed by DoScript; no diagnostic VM program is
@@ -717,18 +772,25 @@ internal sealed partial class Process
         {
             var session = nextRuntimeSession;
             var stop = session.Machine.Continue();
+            TraceR1_4E("NextSessionResume", stopReason: stop.ToString());
+            if (stop != VmStopReason.WaitingForInput)
+                TraceR1_4E(stop == VmStopReason.Returned ? "NextSessionComplete" : "NextSessionStop", stopReason: stop.ToString());
             if (stop == VmStopReason.WaitingForInput) return true;
             nextRuntimeSession = null;
             if (stop == VmStopReason.Returned)
             {
                 vEvaluator.RESULT = session.Machine.LastReturnValue.TryGetInteger(out var value) ? value : 0;
+                var resumedCalled = state.functionCount == 0 ? null : state.CurrentCalled;
+                MarkR1_4INextCompletion(resumedCalled, stop.ToString(), resumedCalled is null ? "-1" : RuntimeId(resumedCalled));
                 state.Return(vEvaluator.RESULT);
                 MarkProductionProbeCompletion();
                 return true;
             }
             return false;
         }
-        return FinishNextRuntimeSession(nextRuntimeSession.Machine.Continue());
+        var resumedStop = nextRuntimeSession.Machine.Continue();
+        TraceR1_4E("NextSessionResume", stopReason: resumedStop.ToString());
+        return FinishNextRuntimeSession(resumedStop);
     }
 
     private void MarkProductionProbeCompletion()
@@ -742,6 +804,7 @@ internal sealed partial class Process
 
     private bool FinishNextRuntimeSession(VmStopReason stop)
     {
+        TraceR1_4E(stop == VmStopReason.Returned ? "NextSessionComplete" : "NextSessionStop", stopReason: stop.ToString());
         if (stop == VmStopReason.WaitingForInput) return true;
         var session = nextRuntimeSession;
         nextRuntimeSession = null;
@@ -752,6 +815,7 @@ internal sealed partial class Process
             // runner, so it must close the same scope before ReturnF unwinds.
             if (state.functionCount != 0 && state.CurrentCalled.TopLabel.hasPrivDynamicVar)
                 state.CurrentCalled.TopLabel.ScopeOut();
+            MarkR1_4INextCompletion(state.functionCount == 0 ? null : state.CurrentCalled, stop.ToString(), state.functionCount == 0 ? "-1" : RuntimeId(state.CurrentCalled));
             if (TryWriteNextRuntimeReturn(session.Machine.LastReturnValue))
                 return false;
         }

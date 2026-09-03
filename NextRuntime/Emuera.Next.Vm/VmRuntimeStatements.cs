@@ -4,10 +4,10 @@ namespace MinorShift.Emuera.Next.Vm;
 
 // Phase 3C keeps statement operands out of the structural semantic arena. The
 // linker copies their UTF-8 value once; the VM never consults source text again.
-public enum VmRuntimeStatementKind : byte { Print, PrintLine, PrintWait, Wait, ForceWait, Quit, Set, Times, ReturnValue, Host }
+public enum VmRuntimeStatementKind : byte { Print, PrintLine, PrintWait, Wait, ForceWait, Quit, Set, Times, ReturnValue, LegacyReturnInteger, Host }
 public enum VmAssignmentOperator : byte { Assign, AssignString, Add, Subtract, Multiply, Divide, Modulo, BitOr, BitAnd, BitXor }
 
-public readonly record struct VmRuntimeStatementRecord(VmRuntimeStatementKind Kind, int TextOffset, int TextLength, int OperandRecord = -1, int SecondaryOperandRecord = -1, VmAssignmentOperator Assignment = VmAssignmentOperator.Assign, double NumericValue = 0, ushort HostOpcode = 0);
+public readonly record struct VmRuntimeStatementRecord(VmRuntimeStatementKind Kind, int TextOffset, int TextLength, int OperandRecord = -1, int SecondaryOperandRecord = -1, VmAssignmentOperator Assignment = VmAssignmentOperator.Assign, double NumericValue = 0, ushort HostOpcode = 0, int FormatOperandRecord = -1);
 
 public sealed class VmRuntimeStatementArena
 {
@@ -35,6 +35,14 @@ internal sealed class VmRuntimeStatementArenaBuilder
     private readonly List<VmRuntimeStatementRecord> records = [];
     private readonly List<byte> utf8 = [];
     private readonly List<MinorShift.Emuera.Next.Compiler.SemanticPayload> operandParts = [];
+    private int operandRecordCount;
+    private int AddOperandPart(MinorShift.Emuera.Next.Compiler.SemanticPayload payload)
+    {
+        var result = operandRecordCount;
+        operandParts.Add(payload);
+        operandRecordCount += payload.Records.Length;
+        return result;
+    }
     public int Add(VmRuntimeStatementKind kind, string text = "")
     {
         var bytes = Encoding.UTF8.GetBytes(text);
@@ -46,35 +54,37 @@ internal sealed class VmRuntimeStatementArenaBuilder
     public int AddOperand(VmRuntimeStatementKind kind, MinorShift.Emuera.Next.Compiler.SemanticPayload payload)
     {
         var index = records.Count;
-        var recordBase = operandParts.Sum(static part => part.Records.Length);
+        var recordBase = AddOperandPart(payload);
         records.Add(new(kind, 0, 0, recordBase));
-        operandParts.Add(payload);
         return index;
     }
-    public int AddAssignment(MinorShift.Emuera.Next.Compiler.SemanticPayload destination, MinorShift.Emuera.Next.Compiler.SemanticPayload source, VmAssignmentOperator assignment)
+    public int AddAssignment(MinorShift.Emuera.Next.Compiler.SemanticPayload destination, MinorShift.Emuera.Next.Compiler.SemanticPayload source, VmAssignmentOperator assignment, MinorShift.Emuera.Next.Compiler.SemanticPayload? formatSource = null)
     {
         var index = records.Count;
-        var destinationBase = operandParts.Sum(static part => part.Records.Length);
-        operandParts.Add(destination);
-        var sourceBase = destinationBase + destination.Records.Length;
-        operandParts.Add(source);
-        records.Add(new(VmRuntimeStatementKind.Set, 0, 0, destinationBase, sourceBase, assignment));
+        var destinationBase = AddOperandPart(destination);
+        var sourceBase = AddOperandPart(source);
+        var formatBase = formatSource is null ? -1 : AddOperandPart(formatSource);
+        records.Add(new(VmRuntimeStatementKind.Set, 0, 0, destinationBase, sourceBase, assignment, FormatOperandRecord: formatBase));
         return index;
     }
     public int AddTimes(MinorShift.Emuera.Next.Compiler.SemanticPayload destination, double multiplier)
     {
         var index = records.Count;
-        var destinationBase = operandParts.Sum(static part => part.Records.Length);
-        operandParts.Add(destination);
+        var destinationBase = AddOperandPart(destination);
         records.Add(new(VmRuntimeStatementKind.Times, 0, 0, destinationBase, NumericValue: multiplier));
         return index;
     }
     public int AddReturn(MinorShift.Emuera.Next.Compiler.SemanticPayload? value)
     {
         var index = records.Count;
-        var recordBase = operandParts.Sum(static part => part.Records.Length);
-        if (value is not null) operandParts.Add(value);
-        records.Add(new(VmRuntimeStatementKind.ReturnValue, 0, 0, value is null ? -1 : recordBase));
+        var recordBase = value is null ? -1 : AddOperandPart(value);
+        records.Add(new(VmRuntimeStatementKind.ReturnValue, 0, 0, recordBase));
+        return index;
+    }
+    public int AddLegacyReturn(MinorShift.Emuera.Next.Compiler.SemanticPayload value)
+    {
+        var index = records.Count;
+        records.Add(new(VmRuntimeStatementKind.LegacyReturnInteger, 0, 0, AddOperandPart(value)));
         return index;
     }
     public int AddHost(MinorShift.Emuera.Next.Compiler.PrototypeOpcode opcode, string text)

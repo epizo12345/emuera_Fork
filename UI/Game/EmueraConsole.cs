@@ -522,6 +522,7 @@ internal sealed partial class EmueraConsole : IDisposable
             if (Program.NextRuntimeProductionOnly)
             {
                 File.WriteAllText(Program.NextRuntimeHostProbePath + ".memory-stages.tsv", process.ExportNextRuntimeProductionMemoryStages());
+                File.WriteAllText(Program.NextRuntimeHostProbePath + ".preparation-timing.tsv", process.ExportNextRuntimeProductionTimingStages());
                 File.WriteAllText(Program.NextRuntimeHostProbePath + ".readiness.txt", process.ExportNextRuntimeProductionReadiness());
             }
             Program.ProbeNextRuntimeHost("ProbeComplete");
@@ -712,6 +713,7 @@ internal sealed partial class EmueraConsole : IDisposable
 
         state = ConsoleState.WaitInput;
         inputReq = req;
+        process.TraceR1_4IDifferentialInputBoundary();
         if (req.Timelimit > 0)
         {
             if (req.OneInput)
@@ -743,6 +745,7 @@ internal sealed partial class EmueraConsole : IDisposable
         req.StopMesskip = stopMesskip;
         inputReq = req;
         state = ConsoleState.WaitInput;
+        process.TraceR1_4IDifferentialInputBoundary();
         process.NeedWaitToEventComEnd = false;
     }
 

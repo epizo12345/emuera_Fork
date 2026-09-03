@@ -81,15 +81,31 @@ public static class FunctionRuntimeMetadataParser
         if (scan.Identifier.Length == 0) { detail = "function name missing"; return false; }
         var rest = header[(scan.StopPosition + 1)..].Trim();
         if (rest.Length == 0) return true;
-        if (rest[0] != '(' || rest[^1] != ')') { detail = "unsupported function header suffix"; return false; }
-        var parts = SemanticLexicalTokenStream.SplitTopLevel(rest[1..^1], ',', options);
+        string parameterText;
+        if (rest[0] == '(' && rest[^1] == ')') parameterText = rest[1..^1];
+        else if (rest[0] == ',') parameterText = rest[1..];
+        else { detail = "unsupported function header suffix"; return false; }
+        var parts = SemanticLexicalTokenStream.SplitTopLevel(parameterText, ',', options);
         if (parts.Count == 0) return true;
         var result = ImmutableArray.CreateBuilder<FunctionRuntimeParameter>();
         for (var i = 0; i < parts.Count;)
         {
-            var name = parts[i++].Trim();
+            var item = parts[i++].Trim();
+            var equals = FindTopLevelEquals(item);
+            var inlineDefault = equals < 0 ? string.Empty : item[(equals + 1)..].Trim();
+            var inlineDefaultPresent = equals >= 0;
+            var name = equals < 0 ? item : item[..equals].Trim();
             if (!TryParseParameter(name, result.Count, out var parameter)) { detail = "unsupported function parameter: " + name; return false; }
-            var fallback = i < parts.Count && !TryParseParameter(parts[i].Trim(), result.Count, out _) ? parts[i++].Trim() : string.Empty;
+            var fallback = inlineDefault;
+            var next = i < parts.Count ? parts[i].Trim() : string.Empty;
+            var nextEquals = FindTopLevelEquals(next);
+            var nextName = nextEquals < 0 ? next : next[..nextEquals].Trim();
+            if (i < parts.Count && !TryParseParameter(nextName, result.Count, out _))
+            {
+                if (inlineDefaultPresent) { detail = "duplicate parameter default"; return false; }
+                fallback = parts[i++].Trim();
+            }
+            if (inlineDefaultPresent && fallback.Length == 0) { detail = "empty parameter default"; return false; }
             long integer = 0;
             string? text = null;
             if (fallback.Length != 0 && !TryParseConstant(fallback, parameter.Type, out integer, out text)) { detail = "non-constant parameter default"; return false; }
@@ -129,6 +145,17 @@ public static class FunctionRuntimeMetadataParser
     }
 
     private static bool TryParsePositiveInt(string value, out int result) => int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out result) && result is > 0 and < int.MaxValue;
+    private static int FindTopLevelEquals(string value)
+    {
+        var quote = '\0';
+        for (var i = 0; i < value.Length; i++)
+        {
+            if (quote != '\0') { if (value[i] == '\\') i++; else if (value[i] == quote) quote = '\0'; }
+            else if (value[i] is '"' or '\'') quote = value[i];
+            else if (value[i] == '=') return i;
+        }
+        return -1;
+    }
     private static bool TryParseConstant(string value, RuntimeMetadataValueType type, out long integer, out string? text)
     {
         integer = 0; text = null;

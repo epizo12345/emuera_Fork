@@ -1,6 +1,7 @@
 ﻿using MinorShift.Emuera.GameData.Function;
 using MinorShift.Emuera.GameData.Variable;
 using MinorShift.Emuera.GameProc;
+using MinorShift.Emuera.Next.Vm;
 using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Script.Statements;
 using MinorShift.Emuera.Runtime.Script.Statements.Expression;
@@ -119,6 +120,7 @@ internal sealed class CalledFunction
         called.TopLabel = called.CurrentLabel;
         called.returnAddress = retAddress;
         called.IsEvent = true;
+        parent.TraceR1_4ECalledFunctionCreated(called);
         return called;
     }
 
@@ -147,6 +149,7 @@ internal sealed class CalledFunction
         called.CurrentLabel = labelline;
         called.returnAddress = retAddress;
         called.IsEvent = false;
+        parent.TraceR1_4ECalledFunctionCreated(called);
         return called;
     }
 
@@ -269,7 +272,8 @@ internal sealed class CalledFunction
             IsEvent = IsEvent,
 
             counter = counter,
-            returnAddress = returnAddress
+            returnAddress = returnAddress,
+            nextRuntimeEntryDispatch = nextRuntimeEntryDispatch.Clone()
         };
         return called;
     }
@@ -283,6 +287,9 @@ internal sealed class CalledFunction
     public readonly string FunctionName = "";
     public bool IsJump { get; set; }
     public bool Finished { get; private set; }
+    private VmRuntimeEntryDispatchToken nextRuntimeEntryDispatch = new();
+    internal bool HasNextRuntimeEntryDispatchOpportunity => nextRuntimeEntryDispatch.Pending;
+    internal bool TryConsumeNextRuntimeEntryDispatchOpportunity() => nextRuntimeEntryDispatch.TryConsume();
     public LogicalLine ReturnAddress
     {
         get { return returnAddress; }

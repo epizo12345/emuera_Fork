@@ -6,6 +6,7 @@ using MinorShift.Emuera.Runtime.Script.Data;
 using MinorShift.Emuera.Runtime.Script.Statements;
 using MinorShift.Emuera.Runtime.Script.Statements.Expression;
 using MinorShift.Emuera.Runtime.Utils;
+using MinorShift.Emuera.Runtime.Diagnostics;
 using Runtime.SQL;
 using System;
 using System.Collections.Generic;
@@ -17,6 +18,9 @@ using System.Text.RegularExpressions;
 using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.Runtime.Script.Statements.Variable;
+
+internal readonly record struct DifferentialStateHashes(string VariablesHash, string CharacterHash, string RngHash);
+internal readonly record struct DifferentialStateDetail(string Domain, string Name, string Type, string Indices, string Value);
 
 internal sealed class VariableEvaluator : IDisposable
 {
@@ -41,6 +45,12 @@ internal sealed class VariableEvaluator : IDisposable
     public void Randomize(long seed)
     {
         rand = new(seed);
+    }
+
+    internal void ConfigureDifferentialSeed(int seed)
+    {
+        rand = new(seed);
+        _newRand = new(seed);
     }
 
     public void InitRanddata()
@@ -2357,6 +2367,96 @@ internal sealed class VariableEvaluator : IDisposable
         using (EraBinaryDataWriter writer = new(stream))
             SaveToStreamBinary(writer, "");
         return Convert.ToHexString(SHA256.HashData(stream.ToArray()));
+    }
+
+    // R1.4I diagnostic-only split hashes.  The normal engine never calls this;
+    // each domain preserves the existing binary save ordering rather than object identity.
+    internal DifferentialStateHashes GetDifferentialStateHashes()
+    {
+        string hash(Action<EraBinaryDataWriter> write)
+        {
+            using MemoryStream stream = new();
+            using (EraBinaryDataWriter writer = new(stream)) write(writer);
+            return Convert.ToHexString(SHA256.HashData(stream.ToArray()));
+        }
+        return new(
+            hash(writer => varData.SaveToStreamBinary(writer)),
+            hash(writer =>
+            {
+                writer.WriteInt64(varData.CharacterList.Count);
+                foreach (var character in varData.CharacterList) character.SaveToStreamBinary(writer, varData);
+            }),
+            "UNAVAILABLE");
+    }
+
+    // R1.4I opt-in leaf inventory.  It is intentionally built only after a
+    // checkpoint root change; the caller writes a delta rather than a full
+    // text dump at every checkpoint.
+    internal IReadOnlyDictionary<string, DifferentialStateDetail> GetDifferentialStateDetails()
+    {
+        var result = new Dictionary<string, DifferentialStateDetail>(StringComparer.Ordinal);
+        var names = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var token in varData.GetVarTokenDic().Values)
+        {
+            var key = $"{(token.IsCharacterData ? "C" : "V")}:{(token.IsString ? "S" : "I")}:{token.Dimension}:{token.VarCodeInt}";
+            names.TryAdd(key, token.Name);
+        }
+        string Name(bool character, bool strings, int dimension, int slot) => names.GetValueOrDefault($"{(character ? "C" : "V")}:{(strings ? "S" : "I")}:{dimension}:{slot}", $"{(character ? "CHARACTER" : "VARIABLE")}_{(strings ? "STRING" : "INTEGER")}_{slot}");
+        void Add(string domain, string name, string type, string indices, string value)
+        {
+            var isStringFamily = type.Contains("String", StringComparison.OrdinalIgnoreCase);
+            if (isStringFamily ? value.Length == 0 : value == "0") return;
+            result[$"{domain}\u001f{name}\u001f{type}\u001f{indices}"] = new(domain, name, type, indices, value);
+        }
+        void AddIntegers(string domain, bool character, long[] values, int slot, string prefix)
+        {
+            var name = Name(character, false, 1, slot);
+            for (var index = 0; index < values.Length; index++) Add(domain, name, character ? "CharacterInteger" : "Integer", prefix + index, values[index].ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
+        void AddStrings(string domain, bool character, string[] values, int slot, string prefix)
+        {
+            var name = Name(character, true, 1, slot);
+            for (var index = 0; index < values.Length; index++) Add(domain, name, character ? "CharacterString" : "String", prefix + index, values[index] ?? string.Empty);
+        }
+        void AddIntegers2D(string domain, bool character, long[,] values, int slot, string prefix)
+        {
+            var name = Name(character, false, 2, slot);
+            for (var first = 0; first < values.GetLength(0); first++) for (var second = 0; second < values.GetLength(1); second++) Add(domain, name, character ? "CharacterInteger" : "Integer", $"{prefix}{first}:{second}", values[first, second].ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
+        void AddStrings2D(string domain, bool character, string[,] values, int slot, string prefix)
+        {
+            var name = Name(character, true, 2, slot);
+            for (var first = 0; first < values.GetLength(0); first++) for (var second = 0; second < values.GetLength(1); second++) Add(domain, name, character ? "CharacterString" : "String", $"{prefix}{first}:{second}", values[first, second] ?? string.Empty);
+        }
+        void AddIntegers3D(long[,,] values, int slot)
+        {
+            var name = Name(false, false, 3, slot);
+            for (var first = 0; first < values.GetLength(0); first++) for (var second = 0; second < values.GetLength(1); second++) for (var third = 0; third < values.GetLength(2); third++) Add("Variables", name, "Integer", $"{first}:{second}:{third}", values[first, second, third].ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
+        void AddStrings3D(string[,,] values, int slot)
+        {
+            var name = Name(false, true, 3, slot);
+            for (var first = 0; first < values.GetLength(0); first++) for (var second = 0; second < values.GetLength(1); second++) for (var third = 0; third < values.GetLength(2); third++) Add("Variables", name, "String", $"{first}:{second}:{third}", values[first, second, third] ?? string.Empty);
+        }
+        for (var slot = 0; slot < varData.DataInteger.Length; slot++) Add("Variables", Name(false, false, 0, slot), "Integer", string.Empty, varData.DataInteger[slot].ToString(System.Globalization.CultureInfo.InvariantCulture));
+        for (var slot = 0; slot < varData.DataString.Length; slot++) Add("Variables", Name(false, true, 0, slot), "String", string.Empty, varData.DataString[slot] ?? string.Empty);
+        for (var slot = 0; slot < varData.DataIntegerArray.Length; slot++) AddIntegers("Variables", false, varData.DataIntegerArray[slot], slot, string.Empty);
+        for (var slot = 0; slot < varData.DataStringArray.Length; slot++) AddStrings("Variables", false, varData.DataStringArray[slot], slot, string.Empty);
+        for (var slot = 0; slot < varData.DataIntegerArray2D.Length; slot++) AddIntegers2D("Variables", false, varData.DataIntegerArray2D[slot], slot, string.Empty);
+        for (var slot = 0; slot < varData.DataStringArray2D.Length; slot++) AddStrings2D("Variables", false, varData.DataStringArray2D[slot], slot, string.Empty);
+        for (var slot = 0; slot < varData.DataIntegerArray3D.Length; slot++) AddIntegers3D(varData.DataIntegerArray3D[slot], slot);
+        for (var slot = 0; slot < varData.DataStringArray3D.Length; slot++) AddStrings3D(varData.DataStringArray3D[slot], slot);
+        for (var character = 0; character < varData.CharacterList.Count; character++)
+        {
+            var data = varData.CharacterList[character];
+            for (var slot = 0; slot < data.DataInteger.Length; slot++) Add("Character", Name(true, false, 0, slot), "CharacterInteger", character.ToString(), data.DataInteger[slot].ToString(System.Globalization.CultureInfo.InvariantCulture));
+            for (var slot = 0; slot < data.DataString.Length; slot++) Add("Character", Name(true, true, 0, slot), "CharacterString", character.ToString(), data.DataString[slot] ?? string.Empty);
+            for (var slot = 0; slot < data.DataIntegerArray.Length; slot++) AddIntegers("Character", true, data.DataIntegerArray[slot], slot, character + ":");
+            for (var slot = 0; slot < data.DataStringArray.Length; slot++) AddStrings("Character", true, data.DataStringArray[slot], slot, character + ":");
+            for (var slot = 0; slot < data.DataIntegerArray2D.Length; slot++) AddIntegers2D("Character", true, data.DataIntegerArray2D[slot], slot, character + ":");
+            for (var slot = 0; slot < data.DataStringArray2D.Length; slot++) AddStrings2D("Character", true, data.DataStringArray2D[slot], slot, character + ":");
+        }
+        return result;
     }
 
     public void LoadFromStreamBinary(EraBinaryDataReader bReader)

@@ -6,6 +6,7 @@ using MinorShift.Emuera.Runtime.Script.Statements.Expression;
 using MinorShift.Emuera.Runtime.Script.Statements.Function;
 using MinorShift.Emuera.Runtime.Script.Statements.Variable;
 using MinorShift.Emuera.Runtime.Utils;
+using MinorShift.Emuera.Runtime.Diagnostics;
 using MinorShift.Emuera.UI;
 using MinorShift.Emuera.UI.Game;
 using MinorShift.Emuera.UI.Game.Image;
@@ -867,13 +868,14 @@ internal static partial class FunctionMethodCreator
         }
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
-            long date = DateTime.Now.Year;
-            date = date * 100 + DateTime.Now.Month;
-            date = date * 100 + DateTime.Now.Day;
-            date = date * 100 + DateTime.Now.Hour;
-            date = date * 100 + DateTime.Now.Minute;
-            date = date * 100 + DateTime.Now.Second;
-            date = date * 1000 + DateTime.Now.Millisecond;
+            var now = DifferentialDeterminism.Now();
+            long date = now.Year;
+            date = date * 100 + now.Month;
+            date = date * 100 + now.Day;
+            date = date * 100 + now.Hour;
+            date = date * 100 + now.Minute;
+            date = date * 100 + now.Second;
+            date = date * 1000 + now.Millisecond;
             return date;//17桁。2京くらい。
         }
     }
@@ -888,7 +890,7 @@ internal static partial class FunctionMethodCreator
         }
         public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
         {
-            return DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss");
+            return DifferentialDeterminism.Now().ToString("yyyy/MM/dd HH:mm:ss");
         }
     }
 
@@ -903,7 +905,7 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             //西暦0001年1月1日からの経過時間をミリ秒で。
-            return DateTime.Now.Ticks / 10000;
+            return DifferentialDeterminism.Now().Ticks / 10000;
         }
     }
 
@@ -919,7 +921,7 @@ internal static partial class FunctionMethodCreator
         {
             //西暦0001年1月1日からの経過時間を秒で。
             //Ticksは100ナノ秒単位であるが実際にはそんな精度はないので無駄。
-            return DateTime.Now.Ticks / 10000000;
+            return DifferentialDeterminism.Now().Ticks / 10000000;
         }
     }
     #endregion
@@ -1836,20 +1838,29 @@ internal static partial class FunctionMethodCreator
             if (arguments[0].GetOperandType() == typeof(Int64))
             {
                 Int64 targetValue = arguments[1].GetIntValue(exm);
-                return VariableEvaluator.FindElement(p, targetValue, start, end, isExact, isLast);
+                GlobalStatic.Process.TraceR1_4G2ExtraTitleSearchStart("Integer", targetValue.ToString(), start, end, isExact);
+                var result = VariableEvaluator.FindElement(p, targetValue, start, end, isExact, isLast);
+                GlobalStatic.Process.TraceR1_4GTitleFindElement(varTerm.Identifier.Name, "Integer", targetValue.ToString(), start, end, isExact, result);
+                GlobalStatic.Process.TraceR1_4G2ExtraTitleSearchResult("Integer", targetValue.ToString(), start, end, isExact, result);
+                return result;
             }
             else
             {
                 Regex targetString;
+                var targetText = arguments[1].GetStrValue(exm);
                 try
                 {
-                    targetString = RegexFactory.GetRegex(arguments[1].GetStrValue(exm));
+                    targetString = RegexFactory.GetRegex(targetText);
                 }
                 catch (ArgumentException)
                 {
                     throw new CodeEE("第2引数が正規表現として不正です");
                 }
-                return VariableEvaluator.FindElement(p, targetString, start, end, isExact, isLast);
+                GlobalStatic.Process.TraceR1_4G2ExtraTitleSearchStart("String", targetText, start, end, isExact);
+                var result = VariableEvaluator.FindElement(p, targetString, start, end, isExact, isLast);
+                GlobalStatic.Process.TraceR1_4GTitleFindElement(varTerm.Identifier.Name, "String", targetText, start, end, isExact, result);
+                GlobalStatic.Process.TraceR1_4G2ExtraTitleSearchResult("String", targetText, start, end, isExact, result);
+                return result;
             }
         }
 

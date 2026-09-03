@@ -6,6 +6,7 @@ using MinorShift.Emuera.Runtime.Script.Statements;
 using MinorShift.Emuera.Runtime.Script.Statements.Expression;
 using MinorShift.Emuera.Runtime.Script.Statements.Variable;
 using MinorShift.Emuera.Runtime.Utils;
+using MinorShift.Emuera.Runtime.Diagnostics;
 using MinorShift.Emuera.UI.Game;
 using System;
 using System.Collections.Generic;
@@ -24,11 +25,13 @@ internal sealed partial class Process
             // The Legacy CALL/JUMP setup has already evaluated arguments and
             // entered the frame.  Dispatch before ShiftNextLine so the Next
             // VM owns exactly this callee, with Legacy remaining the fallback.
+            var calledBeforeDispatch = state.functionCount == 0 ? null : state.CurrentCalled;
             var nextResult = TryDispatchCurrentLegacyEntryToNextRuntime();
             if (nextResult == NextRuntimeSessionResult.Waiting)
                 return;
             if (nextResult == NextRuntimeSessionResult.Completed)
                 continue;
+            TraceR1_4E("LegacyContinuation", calledBeforeDispatch, entryToken: nextResult.ToString());
             state.ShiftNextLine();
             //WinmmTimerから時間を取得するのはそれ自体結構なコストがかかるので10000行に一回くらいで。
             if (Config.InfiniteLoopAlertTime > 0 && (state.lineCount % 10000 == 0))
@@ -41,6 +44,13 @@ internal sealed partial class Process
                 throw new CodeEE(line.ErrMes);
             else if (line is InstructionLine func)
             {//1753 InstructionLineを先に持ってきてみる。わずかに速くなった気がしないでもない
+                var executingCalled = state.functionCount == 0 ? null : state.CurrentCalled;
+                var lineBeforeInstruction = line;
+                if (executingCalled is not null)
+                {
+                    TraceR1_4EInstructionIfRelevant(func, executingCalled);
+                    TraceR1_4GTitleInstruction(func, executingCalled);
+                }
                 FunctionIdentifier function = func.Function;
                 if (!Program.DebugMode && function.IsDebug())
                 {//非DebugモードでのDebug系命令。何もしない。（SIF文のためにコメント行扱いにはできない）
@@ -68,6 +78,8 @@ internal sealed partial class Process
                     doFlowControlFunction(func);
                 else
                     doNormalFunction(func);
+                if (executingCalled is not null)
+                    TraceR1_4EInstructionAfter(func, executingCalled, lineBeforeInstruction, state.CurrentLine);
             }
             else if ((line is NullLine) || (line is FunctionLabelLine))
             {//（関数終端） or ファイル終端
@@ -375,15 +387,16 @@ internal sealed partial class Process
                 }
             case FunctionCode.GETTIME:
                 {
-                    long date = DateTime.Now.Year;
-                    date = date * 100 + DateTime.Now.Month;
-                    date = date * 100 + DateTime.Now.Day;
-                    date = date * 100 + DateTime.Now.Hour;
-                    date = date * 100 + DateTime.Now.Minute;
-                    date = date * 100 + DateTime.Now.Second;
-                    date = date * 1000 + DateTime.Now.Millisecond;
+                    var now = DifferentialDeterminism.Now();
+                    long date = now.Year;
+                    date = date * 100 + now.Month;
+                    date = date * 100 + now.Day;
+                    date = date * 100 + now.Hour;
+                    date = date * 100 + now.Minute;
+                    date = date * 100 + now.Second;
+                    date = date * 1000 + now.Millisecond;
                     vEvaluator.RESULT = date;//17桁。2京くらい。
-                    vEvaluator.RESULTS = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss");
+                    vEvaluator.RESULTS = now.ToString("yyyy/MM/dd HH:mm:ss");
                 }
                 break;
             case FunctionCode.SETCOLOR:

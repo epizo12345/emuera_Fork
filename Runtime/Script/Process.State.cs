@@ -364,11 +364,16 @@ internal sealed class ProcessState
         //    throw new ExeEE("実行中の関数が存在しません");
         //}
         CalledFunction called = functionList[^1];
+        GlobalStatic.Process.TraceR1_4IDifferentialLegacyCompletion(called, ret);
+        GlobalStatic.Process.TraceR1_4IDifferentialExit(called);
+        GlobalStatic.Process.TraceR1_4G2ExtraTitleExit(called, null);
+        GlobalStatic.Process.TraceR1_4E("CalledFunctionReturn", called, stopReason: called.IsJump ? "JumpReturn" : "Return");
         if (called.IsJump)
         {//JUMPした場合。即座にRETURN RESULTする。
             if (called.TopLabel.hasPrivDynamicVar)
                 called.TopLabel.ScopeOut();
             functionList.Remove(called);
+            GlobalStatic.Process.TraceR1_4E("CalledFunctionPop", called, stopReason: "JumpReturn");
             if (Program.DebugMode)
                 console.DebugRemoveTraceLog();
             Return(ret);
@@ -408,6 +413,8 @@ internal sealed class ProcessState
         {
             currentLine = called.ReturnAddress;
             functionList.RemoveAt(functionList.Count - 1);
+            GlobalStatic.Process.TraceR1_4E("CalledFunctionPop", called, stopReason: "ReturnAddress");
+            GlobalStatic.Process.TraceR1_4ECallReturned(called);
             if (currentLine == null)
             {
                 //この時点でfunctionListは空のはず
@@ -488,7 +495,11 @@ internal sealed class ProcessState
             if (call.TopLabel.hasPrivDynamicVar)
                 call.TopLabel.ScopeIn();
         }
+        var traceCaller = functionList.Count == 0 ? null : functionList[^1];
         functionList.Add(call);
+        GlobalStatic.Process.TraceR1_4IDifferentialEntry(call, traceCaller);
+        GlobalStatic.Process.TraceR1_4E("CalledFunctionEntered", call, entryToken: "Pending");
+        GlobalStatic.Process.TraceR1_4G2ExtraTitleEntry(traceCaller, call);
         //sequential = false;
         currentLine = call.CurrentLabel;
         lineCount++;
@@ -524,8 +535,14 @@ internal sealed class ProcessState
         }
         //OutはGetValue側で行う
         //functionList[0].TopLabel.Out();
-        currentLine = functionList[^1].ReturnAddress;
+        var called = functionList[^1];
+        GlobalStatic.Process.TraceR1_4IDifferentialExit(called);
+        GlobalStatic.Process.TraceR1_4G2ExtraTitleExit(called, ret);
+        GlobalStatic.Process.TraceR1_4E("CalledFunctionReturn", called, stopReason: "ReturnF");
+        currentLine = called.ReturnAddress;
         functionList.RemoveAt(functionList.Count - 1);
+        GlobalStatic.Process.TraceR1_4E("CalledFunctionPop", called, stopReason: "ReturnF");
+        GlobalStatic.Process.TraceR1_4ECallReturned(called);
         //nextLine = null;
         MethodReturnValue = ret;
         return;

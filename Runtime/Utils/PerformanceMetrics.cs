@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
@@ -66,6 +67,20 @@ internal static class PerformanceMetrics
     private static int measureTextCount;
     private static int randomCallCount;
     private static int awaitCount;
+    private static int nextDispatchAttempts;
+    private static int nextDispatchFallbacks;
+    private static readonly Dictionary<string, (int Count, long Ticks)> nextDispatchStages = new(StringComparer.Ordinal);
+    private static readonly Dictionary<string, int> nextDispatchRejections = new(StringComparer.Ordinal);
+    private static readonly Dictionary<string, int> nextDispatchFunctions = new(StringComparer.Ordinal);
+#if PERFORMANCE_METRICS
+    private static string nextDispatchProfilePath;
+    private static long nextDispatchProfileStart;
+    private static long nextDispatchProfileAllocated;
+    private static readonly string[] NextDispatchStageNames = ["DispatchTotal", "ReadinessLookup", "FrameImportPreparation", "FrameBindingPreparation", "SessionConstruction", "VmExecution"];
+    private static readonly long[] nextDispatchStageTicks = new long[NextDispatchStageNames.Length];
+    private static readonly int[] nextDispatchStageCounts = new int[NextDispatchStageNames.Length];
+    private static readonly Dictionary<(int FunctionId, MinorShift.Emuera.GameProc.NextRuntimeDispatchRejectReason Reason), (string Name, int Count, long Ticks)> nextDispatchBuckets = new();
+#endif
 
     internal static bool Enabled => Volatile.Read(ref logPath) != null;
     internal static bool MacroActive => Volatile.Read(ref macroActive) != 0;
@@ -90,6 +105,60 @@ internal static class PerformanceMetrics
             StartupMarks["ProcessStart"] = 0;
         }
     }
+
+    internal static void ConfigureNextDispatchProfile(string path)
+    {
+#if PERFORMANCE_METRICS
+        if (string.IsNullOrWhiteSpace(path)) return;
+        nextDispatchProfilePath = Path.GetFullPath(path);
+        var directory = Path.GetDirectoryName(nextDispatchProfilePath);
+        if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+        nextDispatchProfileStart = Stopwatch.GetTimestamp();
+        nextDispatchProfileAllocated = GC.GetTotalAllocatedBytes(false);
+        AppDomain.CurrentDomain.ProcessExit += (_, _) => WriteNextDispatchProfile();
+#endif
+    }
+
+#if PERFORMANCE_METRICS
+    private static void WriteNextDispatchProfile()
+    {
+        if (string.IsNullOrWhiteSpace(nextDispatchProfilePath)) return;
+        var now = Stopwatch.GetTimestamp();
+        var stages = new Dictionary<string, object>(StringComparer.Ordinal);
+        for (var i = 0; i < NextDispatchStageNames.Length; i++)
+        {
+            var count = nextDispatchStageCounts[i];
+            var milliseconds = TicksToMilliseconds(nextDispatchStageTicks[i]);
+            stages[NextDispatchStageNames[i]] = new { Count = count, TotalMilliseconds = milliseconds, AverageMicroseconds = count == 0 ? 0 : milliseconds * 1000 / count };
+        }
+        var buckets = nextDispatchBuckets
+            .OrderByDescending(pair => pair.Value.Ticks)
+            .Select(pair => new
+            {
+                RuntimeFunctionId = pair.Key.FunctionId,
+                FunctionName = pair.Value.Name,
+                Reason = pair.Key.Reason.ToString(),
+                Count = pair.Value.Count,
+                TotalMilliseconds = TicksToMilliseconds(pair.Value.Ticks),
+                AverageMicroseconds = pair.Value.Count == 0 ? 0 : TicksToMilliseconds(pair.Value.Ticks) * 1000 / pair.Value.Count
+            }).ToArray();
+        var report = new
+        {
+            Profiler = "NextRuntimePerformanceProfile",
+            ThreadingAssumption = "Process dispatch is single-threaded; profiler state is updated on that execution thread.",
+            TotalSessionWallClockMilliseconds = TicksToMilliseconds(now - nextDispatchProfileStart),
+            AllocatedBytes = GC.GetTotalAllocatedBytes(false) - nextDispatchProfileAllocated,
+            TotalDispatchAttempts = nextDispatchAttempts,
+            Completed = nextDispatchAttempts - nextDispatchFallbacks,
+            Fallbacks = nextDispatchFallbacks,
+            Rejections = nextDispatchRejections,
+            Stages = stages,
+            TopFunctionReasonBuckets = buckets
+        };
+        try { File.WriteAllText(nextDispatchProfilePath, JsonSerializer.Serialize(report, JsonOptions) + Environment.NewLine); }
+        catch { }
+    }
+#endif
 
     internal static void MarkStartup(string name)
     {
@@ -154,6 +223,11 @@ internal static class PerformanceMetrics
         measureTextCount = 0;
         randomCallCount = 0;
         awaitCount = 0;
+        nextDispatchAttempts = 0;
+        nextDispatchFallbacks = 0;
+        nextDispatchStages.Clear();
+        nextDispatchRejections.Clear();
+        nextDispatchFunctions.Clear();
         allocatedBytesBefore = GC.GetTotalAllocatedBytes(false);
         managedBytesBefore = GC.GetTotalMemory(false);
         workingSetBefore = Environment.WorkingSet;
@@ -224,6 +298,14 @@ internal static class PerformanceMetrics
         result.StateSha256 = stateHash;
         result.DisplaySha256 = displayHash;
         result.DisplayLineCount = displayLineCount;
+        lock (Sync)
+        {
+            result.NextRuntimeDispatchAttempts = nextDispatchAttempts;
+            result.NextRuntimeDispatchFallbacks = nextDispatchFallbacks;
+            result.NextRuntimeDispatchStages = nextDispatchStages.ToDictionary(pair => pair.Key, pair => new PerformanceStageResult(pair.Value.Count, TicksToMilliseconds(pair.Value.Ticks)), StringComparer.Ordinal);
+            result.NextRuntimeDispatchRejections = new Dictionary<string, int>(nextDispatchRejections, StringComparer.Ordinal);
+            result.NextRuntimeDispatchFunctions = new Dictionary<string, int>(nextDispatchFunctions, StringComparer.Ordinal);
+        }
         WriteRecord(result);
     }
 
@@ -234,6 +316,71 @@ internal static class PerformanceMetrics
         return MacroActive ? Stopwatch.GetTimestamp() : 0;
 #else
         return 0;
+#endif
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static long StartNextDispatchTiming()
+    {
+#if PERFORMANCE_METRICS
+        return string.IsNullOrWhiteSpace(nextDispatchProfilePath) ? 0 : Stopwatch.GetTimestamp();
+#else
+        return 0;
+#endif
+    }
+
+    [Conditional("PERFORMANCE_METRICS")]
+    internal static void AddNextDispatchStage(string stage, long start)
+    {
+        if (start == 0)
+            return;
+        var elapsed = Stopwatch.GetTimestamp() - start;
+#if PERFORMANCE_METRICS
+        var index = Array.IndexOf(NextDispatchStageNames, stage);
+        if ((uint)index < (uint)nextDispatchStageCounts.Length)
+        {
+            nextDispatchStageCounts[index]++;
+            nextDispatchStageTicks[index] += elapsed;
+        }
+#endif
+        lock (Sync)
+        {
+            nextDispatchStages.TryGetValue(stage, out var current);
+            nextDispatchStages[stage] = (current.Count + 1, current.Ticks + elapsed);
+        }
+    }
+
+    [Conditional("PERFORMANCE_METRICS")]
+    internal static void RecordNextDispatch(string function, string reason, bool fallback)
+    {
+        lock (Sync)
+        {
+            nextDispatchAttempts++;
+            if (fallback)
+                nextDispatchFallbacks++;
+            if (!string.IsNullOrEmpty(reason))
+                nextDispatchRejections[reason] = nextDispatchRejections.TryGetValue(reason, out var count) ? count + 1 : 1;
+            var key = $"{function}|{reason}";
+            nextDispatchFunctions[key] = nextDispatchFunctions.TryGetValue(key, out var functionCount) ? functionCount + 1 : 1;
+        }
+    }
+
+    [Conditional("PERFORMANCE_METRICS")]
+    internal static void RecordNextDispatch(int functionId, string functionName, MinorShift.Emuera.GameProc.NextRuntimeDispatchRejectReason reason, bool fallback, long dispatchStart)
+    {
+#if PERFORMANCE_METRICS
+        var elapsed = dispatchStart == 0 ? 0 : Stopwatch.GetTimestamp() - dispatchStart;
+        nextDispatchAttempts++;
+        if (fallback) nextDispatchFallbacks++;
+        if (reason != MinorShift.Emuera.GameProc.NextRuntimeDispatchRejectReason.None)
+        {
+            var text = reason.ToString();
+            nextDispatchRejections[text] = nextDispatchRejections.TryGetValue(text, out var count) ? count + 1 : 1;
+        }
+        var key = (functionId, reason);
+        nextDispatchBuckets.TryGetValue(key, out var bucket);
+        nextDispatchBuckets[key] = (bucket.Name ?? functionName, bucket.Count + 1, bucket.Ticks + elapsed);
+        nextDispatchFunctions[$"{functionName}|{reason}"] = nextDispatchFunctions.TryGetValue($"{functionName}|{reason}", out var functionCount) ? functionCount + 1 : 1;
 #endif
     }
 
@@ -409,7 +556,14 @@ internal sealed class MacroResult
     public int Gen0Collections { get; set; }
     public int Gen1Collections { get; set; }
     public int Gen2Collections { get; set; }
+    public int NextRuntimeDispatchAttempts { get; set; }
+    public int NextRuntimeDispatchFallbacks { get; set; }
+    public Dictionary<string, PerformanceStageResult> NextRuntimeDispatchStages { get; set; }
+    public Dictionary<string, int> NextRuntimeDispatchRejections { get; set; }
+    public Dictionary<string, int> NextRuntimeDispatchFunctions { get; set; }
     public string StateSha256 { get; set; }
     public string DisplaySha256 { get; set; }
     public int DisplayLineCount { get; set; }
 }
+
+internal sealed record PerformanceStageResult(int Count, double Milliseconds);

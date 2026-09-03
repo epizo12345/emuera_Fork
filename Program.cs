@@ -98,6 +98,41 @@ static partial class Program
         rootCommand.Options.Add(nextRuntimeLegacyManifestOption);
         var nextRuntimeReadinessEvidenceOption = new Option<string>(name: "--NextRuntimeReadinessEvidence");
         rootCommand.Options.Add(nextRuntimeReadinessEvidenceOption);
+        var nextRuntimeR1_4ETraceOption = new Option<bool>(name: "--NextRuntimeR1_4ETrace")
+        {
+            Description = "R1.4E bounded SET_EQUIP_VAR lifecycle trace"
+        };
+        rootCommand.Options.Add(nextRuntimeR1_4ETraceOption);
+        var nextRuntimeR1_4ETraceFunctionIdOption = new Option<int>(name: "--NextRuntimeR1_4ETraceFunctionId") { DefaultValueFactory = _ => 4188 };
+        rootCommand.Options.Add(nextRuntimeR1_4ETraceFunctionIdOption);
+        var nextRuntimeR1_4GTitleTraceOption = new Option<bool>(name: "--NextRuntimeR1_4GTitleTrace")
+        {
+            Description = "R1.4G focused title-flow runtime trace"
+        };
+        rootCommand.Options.Add(nextRuntimeR1_4GTitleTraceOption);
+        var nextRuntimeR1_4G2ExtraTitleTraceOption = new Option<bool>(name: "--NextRuntimeR1_4G2ExtraTitleTrace")
+        {
+            Description = "R1.4G2 focused EXTRA_TITLE initialization trace"
+        };
+        rootCommand.Options.Add(nextRuntimeR1_4G2ExtraTitleTraceOption);
+        var nextRuntimeDifferentialCaptureOption = new Option<string>(name: "--NextRuntimeDifferentialCapture")
+        {
+            Description = "R1.4I opt-in Legacy/Next state checkpoint TSV output path"
+        };
+        rootCommand.Options.Add(nextRuntimeDifferentialCaptureOption);
+        var nextRuntimeDifferentialCaptureFunctionOption = new Option<string>(name: "--NextRuntimeDifferentialCaptureFunction")
+        {
+            Description = "optional R1.4I function-name capture filter"
+        };
+        rootCommand.Options.Add(nextRuntimeDifferentialCaptureFunctionOption);
+        var nextRuntimeDifferentialSelfTestOption = new Option<bool>(name: "--NextRuntimeDifferentialSelfTest");
+        rootCommand.Options.Add(nextRuntimeDifferentialSelfTestOption);
+        var nextRuntimeDifferentialSeedOption = new Option<int?>(name: "--NextRuntimeDifferentialSeed") { Description = "opt-in shared Legacy/Next diagnostic RNG seed (Int32)" };
+        rootCommand.Options.Add(nextRuntimeDifferentialSeedOption);
+        var nextRuntimeDifferentialClockBaseOption = new Option<string>(name: "--NextRuntimeDifferentialClockBase") { Description = "opt-in local diagnostic clock base instant" };
+        rootCommand.Options.Add(nextRuntimeDifferentialClockBaseOption);
+        var nextRuntimeDifferentialClockStepOption = new Option<long>(name: "--NextRuntimeDifferentialClockStepMs") { Description = "opt-in diagnostic clock increment in milliseconds", DefaultValueFactory = _ => 1 };
+        rootCommand.Options.Add(nextRuntimeDifferentialClockStepOption);
 #if LEGACY_ORACLE
         var legacyOracleOption = new Option<string>(name: "--LegacyOracle")
         {
@@ -107,6 +142,11 @@ static partial class Program
 #endif
 
 #if PERFORMANCE_METRICS
+        var nextRuntimePerformanceProfileOption = new Option<string>(name: "--NextRuntimePerformanceProfile")
+        {
+            Description = "通常プレイ中のNext dispatch性能JSON出力（計測ビルド専用）"
+        };
+        rootCommand.Options.Add(nextRuntimePerformanceProfileOption);
         var erbStartupProfileOption = new Option<string>(name: "--ErbStartupProfile")
         {
             Description = "ERB詳細計測の出力フォルダ（計測ビルド専用）"
@@ -132,11 +172,27 @@ static partial class Program
         NextRuntimeProductionLimit = Math.Clamp(result.GetValue(nextRuntimeProductionLimitOption), 1, 5);
         NextRuntimeLegacyManifestPath = result.GetValue(nextRuntimeLegacyManifestOption);
         NextRuntimeReadinessEvidencePath = result.GetValue(nextRuntimeReadinessEvidenceOption);
+        NextRuntimeR1_4ETraceEnabled = result.GetValue(nextRuntimeR1_4ETraceOption);
+        NextRuntimeR1_4ETraceFunctionId = result.GetValue(nextRuntimeR1_4ETraceFunctionIdOption);
+        NextRuntimeR1_4GTitleTraceEnabled = result.GetValue(nextRuntimeR1_4GTitleTraceOption);
+        NextRuntimeR1_4G2ExtraTitleTraceEnabled = result.GetValue(nextRuntimeR1_4G2ExtraTitleTraceOption);
+        NextRuntimeDifferentialCapturePath = result.GetValue(nextRuntimeDifferentialCaptureOption);
+        NextRuntimeDifferentialCaptureFunction = result.GetValue(nextRuntimeDifferentialCaptureFunctionOption);
+        NextRuntimeDifferentialSeed = result.GetValue(nextRuntimeDifferentialSeedOption);
+        NextRuntimeDifferentialClockBase = result.GetValue(nextRuntimeDifferentialClockBaseOption);
+        NextRuntimeDifferentialClockStepMs = result.GetValue(nextRuntimeDifferentialClockStepOption);
+        Runtime.Diagnostics.DifferentialDeterminism.Configure(!string.IsNullOrWhiteSpace(NextRuntimeDifferentialCapturePath), NextRuntimeDifferentialSeed, NextRuntimeDifferentialClockBase, NextRuntimeDifferentialClockStepMs);
+        if (result.GetValue(nextRuntimeDifferentialSelfTestOption))
+        {
+            Environment.ExitCode = Runtime.Diagnostics.DifferentialDeterminism.SelfTest();
+            return;
+        }
         ProbeNextRuntimeHost("ProbeStart");
 #if LEGACY_ORACLE
         LegacyOraclePath = result.GetValue(legacyOracleOption);
 #endif
 #if PERFORMANCE_METRICS
+        PerformanceMetrics.ConfigureNextDispatchProfile(result.GetValue(nextRuntimePerformanceProfileOption));
         ErbStartupProfiler.Configure(result.GetValue(erbStartupProfileOption), result.GetValue(erbStartupProfileModeOption));
 #endif
 
@@ -305,6 +361,15 @@ static partial class Program
     internal static int NextRuntimeProductionLimit { get; private set; } = 5;
     internal static string? NextRuntimeLegacyManifestPath { get; private set; }
     internal static string? NextRuntimeReadinessEvidencePath { get; private set; }
+    internal static bool NextRuntimeR1_4ETraceEnabled { get; private set; }
+    internal static int NextRuntimeR1_4ETraceFunctionId { get; private set; } = 4188;
+    internal static bool NextRuntimeR1_4GTitleTraceEnabled { get; private set; }
+    internal static bool NextRuntimeR1_4G2ExtraTitleTraceEnabled { get; private set; }
+    internal static string? NextRuntimeDifferentialCapturePath { get; private set; }
+    internal static string? NextRuntimeDifferentialCaptureFunction { get; private set; }
+    internal static int? NextRuntimeDifferentialSeed { get; private set; }
+    internal static string? NextRuntimeDifferentialClockBase { get; private set; }
+    internal static long NextRuntimeDifferentialClockStepMs { get; private set; } = 1;
     internal static void ProbeNextRuntimeHost(string checkpoint)
     {
         if (string.IsNullOrWhiteSpace(NextRuntimeHostProbePath)) return;

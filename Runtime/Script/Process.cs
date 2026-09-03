@@ -190,6 +190,8 @@ internal sealed partial class Process(EmueraConsole view)
 
 
             vEvaluator = new VariableEvaluator(gamebase, constant);
+            if (Runtime.Diagnostics.DifferentialDeterminism.Enabled && Program.NextRuntimeDifferentialSeed is int seed)
+                vEvaluator.ConfigureDifferentialSeed(seed);
             GlobalStatic.VEvaluator = vEvaluator;
 
             idDic = new IdentifierDictionary(vEvaluator.VariableData);
@@ -528,6 +530,7 @@ internal sealed partial class Process(EmueraConsole view)
         var text = string.Format(
             LocalizationManager.MsgBox.TooLongLoop,
             currentLine.Position.Value.Filename, currentLine.Position.Value.LineNo, state.lineCount, elapsedTime);
+        FlushR1_4EBeforeInfiniteLoopDialog();
         if (Dialog.ShowPrompt(LocalizationManager.MsgBox.InfiniteLoop, text))
         {
             throw new CodeEE(LocalizationManager.Error.SelectExitInfiniteLoopMB);

@@ -732,7 +732,14 @@ internal sealed partial class FunctionIdentifier
             else
             {
                 string src = spsetarg.IsConst ? spsetarg.ConstStr : spsetarg.Term.GetStrValue(exm);
+                var traceExtraTitle = spsetarg.VariableDest.Identifier.Name.Equals("EXTRA_TITLE", StringComparison.OrdinalIgnoreCase)
+                    && spsetarg.VariableDest.isAllConst && spsetarg.VariableDest.Identifier.IsArray1D;
+                var traceIndex = traceExtraTitle ? spsetarg.VariableDest.getEl1forArg : -1;
+                var traceOld = traceExtraTitle ? spsetarg.VariableDest.Identifier.GetStrValue(exm, [traceIndex]) ?? string.Empty : string.Empty;
                 spsetarg.VariableDest.SetValue(src, exm);
+                if (traceExtraTitle)
+                    GlobalStatic.Process.TraceR1_4G2ExtraTitleWrite(func, spsetarg.VariableDest, traceIndex, traceOld,
+                        spsetarg.VariableDest.Identifier.GetStrValue(exm, [traceIndex]) ?? string.Empty, "SET");
             }
         }
     }
@@ -2138,6 +2145,8 @@ internal sealed partial class FunctionIdentifier
             loop.LoopCounter.SetValue(forArg.Start.GetIntValue(exm), exm);
             loop.LoopEnd = forArg.End.GetIntValue(exm);
             loop.LoopStep = forArg.Step.GetIntValue(exm);
+            if (func.FunctionCode == FunctionCode.FOR)
+                GlobalStatic.Process.TraceR1_4EForInit(loop, exm);
             if ((loop.LoopStep > 0) && (loop.LoopEnd > loop.LoopCounter.GetIntValue(exm)))//まだ回数が残っているなら、
                 return;//そのまま次の行へ
             else if ((loop.LoopStep < 0) && (loop.LoopEnd < loop.LoopCounter.GetIntValue(exm)))//まだ回数が残っているなら、
@@ -2199,7 +2208,9 @@ internal sealed partial class FunctionIdentifier
         public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
         {
             ExpressionArgument expArg = (ExpressionArgument)func.Argument;
-            if (expArg.Term.GetIntValue(exm) == 0)//評価式が真ならそのまま流れ落ちる
+            var value = expArg.Term.GetIntValue(exm);
+            GlobalStatic.Process.TraceR1_4GTitleSif(func, state, value);
+            if (value == 0)//評価式が真ならそのまま流れ落ちる
                 state.ShiftNextLine();//偽なら一行とばす。順に来たときと同じ扱いにする
         }
     }
@@ -2555,14 +2566,18 @@ internal sealed partial class FunctionIdentifier
                 state.JumpTo(jumpTo.JumpTo);
                 return;
             }
+            var counterBefore = GlobalStatic.Process.ReadR1_4ELoopCounter(jumpTo, exm);
             unchecked
             {
                 jumpTo.LoopCounter.ChangeValue(jumpTo.LoopStep, exm);
             }
             Int64 counter = jumpTo.LoopCounter.GetIntValue(exm);
+            var continueDecision = ((jumpTo.LoopStep > 0) && (jumpTo.LoopEnd > counter))
+                || ((jumpTo.LoopStep < 0) && (jumpTo.LoopEnd < counter));
+            if (func.FunctionCode == FunctionCode.NEXT)
+                GlobalStatic.Process.TraceR1_4EForNext(jumpTo, exm, counterBefore, continueDecision);
             //まだ回数が残っているなら、
-            if (((jumpTo.LoopStep > 0) && (jumpTo.LoopEnd > counter))
-                || ((jumpTo.LoopStep < 0) && (jumpTo.LoopEnd < counter)))
+            if (continueDecision)
                 state.JumpTo(func.JumpTo);
         }
     }
@@ -2637,6 +2652,7 @@ internal sealed partial class FunctionIdentifier
             {
                 ret = term.GetValue(exm);
             }
+            GlobalStatic.Process.TraceR1_4GTitleReturn(func, ret, exm);
             state.ReturnF(ret);
         }
     }
@@ -2701,6 +2717,7 @@ internal sealed partial class FunctionIdentifier
         public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
         {
             SpCallArgment spCallArg = (SpCallArgment)func.Argument;
+            CalledFunction caller = state.functionCount == 0 ? null : state.CurrentCalled;
             CalledFunction call;
             string labelName;
             UserDefinedFunctionArgument arg = null;
@@ -2731,6 +2748,8 @@ internal sealed partial class FunctionIdentifier
                     throw new CodeEE(errMes);
             }
             state.IntoFunction(call, arg, exm);
+            if (caller is not null)
+                GlobalStatic.Process.TraceR1_4ECallEntered(caller, func, call);
         }
     }
 

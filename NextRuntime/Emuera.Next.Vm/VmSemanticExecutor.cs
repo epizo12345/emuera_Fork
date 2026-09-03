@@ -39,11 +39,22 @@ public interface IVmTypedSemanticHost
     bool TryWrite(SemanticHostIdentity identity, ReadOnlySpan<VmSemanticValue> indices, VmSemanticValue value);
     bool TryCall(SemanticHostIdentity identity, ReadOnlySpan<VmSemanticValue> arguments, out VmSemanticValue value);
 }
+// Optional assignment grammar authority. The linker keeps both Legacy FORM and
+// expression IR for plain '='; the live host selects the target's declared type
+// without evaluating destination indices.
+public interface IVmAssignmentTargetTypeHost
+{
+    bool TryGetAssignmentTargetKind(SemanticHostIdentity identity, SemanticPayload arena, out VmSemanticValueKind kind);
+}
 public interface IVmFrameVariables
 {
     bool OwnsFrameVariable(string name);
     bool TryReadFrame(string name, string? subkey, ReadOnlySpan<VmSemanticValue> indices, out VmSemanticValue value);
     bool TryWriteFrame(string name, string? subkey, ReadOnlySpan<VmSemanticValue> indices, VmSemanticValue value);
+}
+public interface IVmFrameVariableTypes
+{
+    bool TryGetFrameVariableKind(string name, out VmSemanticValueKind kind);
 }
 
 // The embedding runtime owns Legacy invocation storage.  The VM addresses it
@@ -144,6 +155,27 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
 
     public bool TryReadRuntimeLValue(in VmResolvedLValue lvalue, out VmSemanticValue value) => TryRead(lvalue.Name, lvalue.Subkey, lvalue.Indices, lvalue.Identity, lvalue.IdentityArena, out value);
     public bool TryWriteRuntimeLValue(in VmResolvedLValue lvalue, VmSemanticValue value) => TryWrite(lvalue.Name, lvalue.Subkey, lvalue.Indices, lvalue.Identity, lvalue.IdentityArena, value);
+
+    public bool TryGetRuntimeAssignmentTargetKind(SemanticPayload arena, int recordIndex, out VmSemanticValueKind kind)
+    {
+        ArgumentNullException.ThrowIfNull(arena);
+        var prior = activeArena;
+        activeArena = arena;
+        try
+        {
+            kind = VmSemanticValueKind.Unavailable;
+            if ((uint)recordIndex >= (uint)Arena.Records.Length) return false;
+            var root = Arena.Records[recordIndex].RootNodeIndex;
+            if ((uint)root >= (uint)Arena.Nodes.Length) return false;
+            var node = Arena.Nodes[root];
+            if (!TryReadSymbol(node.A, out var name)) return false;
+            if (FrameVariables is IVmFrameVariableTypes frame && frame.TryGetFrameVariableKind(name, out kind)) return true;
+            if (!Arena.TryGetHostIdentity(root, SemanticHostIdentityKind.Variable, out var identity) || host is not IVmAssignmentTargetTypeHost typeHost) return false;
+            if (typedHost is not null && !TryBindIdentities(Arena)) return false;
+            return typeHost.TryGetAssignmentTargetKind(identity, Arena, out kind);
+        }
+        finally { activeArena = prior; }
+    }
 
     public VmSemanticIntResult EvaluateInt(RuntimeFunctionId functionId, int pc, VmStructuralKind kind)
     {

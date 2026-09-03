@@ -82,7 +82,8 @@
     <!-- Phase3D-R1: the Legacy-owned host seam implements the public NextRuntime
          contract; NextRuntime itself remains independent of Legacy. -->
     <ProjectReference Include="NextRuntime\Emuera.Next.Core\Emuera.Next.Core.csproj" />
-    <ProjectReference Include="NextRuntime\Emuera.Next.Compiler\Emuera.Next.Compiler.csproj" />
+    <ProjectReference Include="NextRuntime\Emuera.Next.Compiler\Emuera.Next.Compiler.csproj"
+                      GlobalPropertiesToRemove="RuntimeIdentifier" />
     <ProjectReference Include="NextRuntime\Emuera.Next.Vm\Emuera.Next.Vm.csproj" />
     <PackageReference Include="AngleSharp" Version="1.6.0" />
     <PackageReference Include="Enums.NET" Version="5.0.0" />

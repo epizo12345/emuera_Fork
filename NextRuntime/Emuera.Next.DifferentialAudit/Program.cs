@@ -1,9 +1,14 @@
 using System.Text.Json;
 using MinorShift.Emuera.Next.Core;
 
+if (args.Length == 1 && args[0] == "--integration-self-test")
+    return IntegrationCheckpointComparer.SelfTest();
+if (args.Length == 4 && args[0] == "--integration-compare")
+    return IntegrationCheckpointComparer.Run(args[1], args[2], args[3]);
 if (args.Any(static a => a is "-h" or "--help"))
 {
     Console.WriteLine("Usage: Emuera.Next.DifferentialAudit <legacy.jsonl> <next.jsonl> <report-directory> [--self-test]");
+    Console.WriteLine("       Emuera.Next.DifferentialAudit --integration-compare <legacy.tsv> <next.tsv> <report-directory>");
     return 0;
 }
 

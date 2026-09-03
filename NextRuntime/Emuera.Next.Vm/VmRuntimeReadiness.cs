@@ -376,14 +376,20 @@ public static class VmRuntimeRequirementAnalyzer
         IReadOnlyList<FunctionKind> kinds,
         VmRuntimeCapabilitySnapshot sharedCapabilities,
         VmRuntimeCapabilitySnapshot productionCapabilities,
-        VmRuntimePreparationCounters? counters = null)
+        VmRuntimePreparationCounters? counters = null,
+        Action<string>? phaseBoundary = null)
     {
+        phaseBoundary?.Invoke("Readiness.Start");
         var state = BuildStagedRequirements(program, kinds, sharedCapabilities, productionCapabilities, counters);
+        phaseBoundary?.Invoke("Readiness.AfterRequirements");
         var graph = VmRuntimeReadinessGraph.Build(program.Descriptors.Length, state.Edges, counters);
+        phaseBoundary?.Invoke("Readiness.AfterGraph");
         if (counters is not null) counters.SharedReadinessEvaluationCount++;
         var shared = VmRuntimeReadinessEvaluator.Evaluate(graph, state.SharedNodes, sharedCapabilities, counters);
+        phaseBoundary?.Invoke("Readiness.AfterSharedEvaluation");
         if (counters is not null) counters.ProductionReadinessEvaluationCount++;
         var production = VmRuntimeReadinessEvaluator.Evaluate(graph, state.ProductionNodes, productionCapabilities, counters);
+        phaseBoundary?.Invoke("Readiness.AfterProductionEvaluation");
         var diagnostics = new VmRuntimeReadinessDiagnostics(
             state.SharedNodes,
             state.RawEdges.ToArray(),
@@ -391,6 +397,7 @@ public static class VmRuntimeRequirementAnalyzer
             state.Origins,
             state.OccurrenceDiagnostics.ToArray(),
             state.NonVariableBlockingDiagnostics.ToArray());
+        phaseBoundary?.Invoke("Readiness.AfterDiagnostics");
         return new(shared, production, diagnostics);
     }
 

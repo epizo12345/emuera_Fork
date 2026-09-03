@@ -36,11 +36,15 @@ internal sealed partial class Process
     private VmRuntimeActivationResult? productionActivationResult;
     private VmRuntimePreparationCounters? productionPreparationCounters;
     private readonly List<string> productionMemoryStages = [];
+    private readonly List<string> productionTimingStages = [];
     private long productionPeakWorkingSet64;
     private long productionPeakPrivateMemorySize64;
 
     internal string ExportNextRuntimeProductionMemoryStages() =>
         "Stage\tManagedMemoryBytes\tWorkingSet64\tPrivateMemorySize64\tPeakWorkingSet64\tPeakPrivateMemorySize64\n" + string.Join('\n', productionMemoryStages);
+
+    internal string ExportNextRuntimeProductionTimingStages() =>
+        "Stage\tElapsedMilliseconds\n" + string.Join('\n', productionTimingStages);
 
     internal string ExportNextRuntimeProductionReadiness() =>
         $"SharedReadinessStagePresent={(productionSharedReadiness is null ? "NO" : "YES")}\nProductionReadinessStagePresent={(productionReadiness is null ? "NO" : "YES")}\nSharedAnalyzerR5Candidate={productionSharedReadiness?.EligibleCount ?? 0}\nSharedAnalyzerR5Parity={(productionSharedReadiness?.EligibleCount == 101097 ? "PASS" : "FAIL")}\nSharedExecutableReadyCount={sharedExecutableReadyIds.Count}\nProductionExecutableReadyReal={productionExecutableReadyIds.Count}\nProductionDispatchEntryReadyReal={productionDispatchEntryReadyIds.Count}\nProductionExecutableSubsetOfShared={(productionExecutableReadyIds.IsSubsetOf(sharedExecutableReadyIds) ? "PASS" : "FAIL")}\nProductionDispatchEntrySubsetOfExecutable={(productionDispatchEntryReadyIds.IsSubsetOf(productionExecutableReadyIds) ? "PASS" : "FAIL")}\nProductionReadinessRows={(productionReadiness?.Rows.Length ?? 0)}\nProductionReadinessEligible={(productionReadiness?.EligibleCount ?? 0)}\nProductionReadinessBlocked={(productionReadiness?.BlockedCount ?? 0)}\nProductionReadinessTransitiveRequirementCounts={(productionReadiness is null ? string.Empty : string.Join(',', Enum.GetValues<VmRuntimeRequirement>().Where(requirement => requirement != VmRuntimeRequirement.None).Select(requirement => $"{requirement}:{productionReadiness.Rows.Count(row => (row.TransitiveRequirements & requirement) != 0)}")))}\nSemanticContextIndexBuildCount={productionPreparationCounters?.SemanticContextIndexBuildCount ?? 0}\nSemanticContextFullPayloadScanCount={productionPreparationCounters?.SemanticContextFullPayloadScanCount ?? 0}\nSemanticNodeVisitCount={productionPreparationCounters?.SemanticNodeVisitCount ?? 0}\nCsvContextLookupCount={productionPreparationCounters?.CsvContextLookupCount ?? 0}\nCharacterContextLookupCount={productionPreparationCounters?.CharacterContextLookupCount ?? 0}\nVariableClassifierCallCount={productionPreparationCounters?.VariableClassifierCallCount ?? 0}\nVariableClassifierCacheHitCount={productionPreparationCounters?.VariableClassifierCacheHitCount ?? 0}\nCallGraphBuildCount={productionPreparationCounters?.CallGraphBuildCount ?? 0}\nCallEdgeVisitCount={productionPreparationCounters?.CallEdgeVisitCount ?? 0}\nSccBuildCount={productionPreparationCounters?.SccBuildCount ?? 0}\nSharedReadinessEvaluationCount={productionPreparationCounters?.SharedReadinessEvaluationCount ?? 0}\nProductionReadinessEvaluationCount={productionPreparationCounters?.ProductionReadinessEvaluationCount ?? 0}\nReadinessEvaluationPasses={productionPreparationCounters?.ReadinessEvaluationPasses ?? 0}\nSharedExecutableReadyIdSet={string.Join(',', sharedExecutableReadyIds.OrderBy(id => id))}\nProductionExecutableReadyIdSet={string.Join(',', productionExecutableReadyIds.OrderBy(id => id))}\n";
@@ -61,6 +65,7 @@ internal sealed partial class Process
     internal bool PrepareNextRuntimeProductionProgram(TextWriter? log = null)
     {
         productionMemoryStages.Clear();
+        productionTimingStages.Clear();
         productionPeakWorkingSet64 = 0;
         productionPeakPrivateMemorySize64 = 0;
         RecordProductionMemoryStage("BeforePreparation");
@@ -83,6 +88,12 @@ internal sealed partial class Process
         productionPreparationFailureReason = "InProgress";
         try
         {
+            Stopwatch? preparationStopwatch = Program.NextRuntimeProductionOnly && !string.IsNullOrWhiteSpace(Program.NextRuntimeHostProbePath) ? Stopwatch.StartNew() : null;
+            void RecordProductionTimingStage(string stage)
+            {
+                if (preparationStopwatch is not null) productionTimingStages.Add($"{stage}\t{preparationStopwatch.Elapsed.TotalMilliseconds:F3}");
+            }
+            RecordProductionTimingStage("ProductionPreparation.Start");
             var selectedFiles = Config.GetFiles(Program.ErbDir, "*.ERB");
             var files = selectedFiles.Select(pair => ErbSourceIndexer.IndexFile(pair.Value)).ToArray();
             var sourcePositions = new Dictionary<string, (int FileOrdinal, int FunctionOrdinal, SourceIndexFlags Flags)>(StringComparer.OrdinalIgnoreCase);
@@ -126,14 +137,17 @@ internal sealed partial class Process
             productionMisbind = ordered.Count(label => !sourcePositions.ContainsKey(PositionKey(label.Position!.Value.Filename, label.Position.Value.LineNo)));
             productionExactBound = runtimeByPosition.Count == ordered.Length && labelIds.Count == ordered.Length && productionMisbind == 0;
             RecordProductionMemoryStage("AfterSourceIndex");
+            RecordProductionTimingStage("ProductionPreparation.AfterSourceIndex");
 
             var catalog = FunctionCatalog.FromRuntimeBindings(files, bindings);
+            RecordProductionTimingStage("ProductionPreparation.AfterCatalog");
             var options = new CompilerCompatibilityOptions(Config.IgnoreCase, JSONConfig.Game.UseScopedVariableInstruction, Config.SystemAllowFullSpace, false);
             var renameResolver = Config.UseRenameFile && ParserMediator.RenameDic is not null ? new SemanticRenameResolver(ParserMediator.RenameDic) : null;
             var headers = Config.GetFiles(Program.ErbDir, "*.ERH").Select(pair => File.ReadAllText(pair.Value, Config.Encode));
             var macros = MacroCatalog.FromHeaderSources(headers, options, renameResolver);
             var environment = new StructuralSemanticEnvironment(options, macros, Config.SystemIgnoreTripleSymbol, renameResolver);
             var compiler = new FunctionCompiler(environment);
+            RecordProductionTimingStage("ProductionPreparation.AfterCompilerSetup");
             var sourceToRuntime = new Dictionary<SourceFunctionId, RuntimeFunctionId>();
             var sourcePrototypes = new List<SourceFunctionPrototype>();
             var sourceId = 0;
@@ -157,13 +171,16 @@ internal sealed partial class Process
             }
             if (sourcePrototypes.Count == 0) throw new InvalidOperationException("production runtime compilation produced no functions");
             RecordProductionMemoryStage("AfterCompile");
+            RecordProductionTimingStage("ProductionPreparation.AfterPrototypeCompile");
             var prototypes = RuntimeFunctionBinder.Remap(sourcePrototypes, sourceToRuntime);
             catalog.MarkCodeAvailable(prototypes.Select(prototype => prototype.RuntimeId));
-            var link = ControlLinker.Link(catalog, prototypes, runtimeEnvironment: environment, runtimeStatements: true);
+            RecordProductionTimingStage("ProductionPreparation.AfterRemap");
+            var link = ControlLinker.Link(catalog, prototypes, runtimeEnvironment: environment, runtimeStatements: true, phaseBoundary: RecordProductionTimingStage);
             productionFunctionKinds = kinds;
             productionLabelIds = labelIds;
             productionProgram = link.Program;
             RecordProductionMemoryStage("AfterLink");
+            RecordProductionTimingStage("ProductionPreparation.AfterLink");
             productionPreparationCounters = new();
             productionSemanticHost = new LegacyVmSemanticHost(this, productionPreparationCounters);
             var semanticArenas = new[] { link.Program.SemanticArena, link.Program.RuntimeStatements.OperandArena, link.Program.CallArgumentArena };
@@ -171,10 +188,12 @@ internal sealed partial class Process
                 productionSemanticHost.BindVariableIdentities(arena);
             productionSemanticHost.BuildSemanticContextIndex(semanticArenas);
             RecordProductionMemoryStage("AfterSemanticPrebind");
+            RecordProductionTimingStage("ProductionPreparation.AfterSemanticPrebind");
             if (!LegacyVmFrameBindingCatalog.TryCreate(this, link.Program, labelIds.ToDictionary(pair => pair.Value.Value, pair => pair.Key), out var frameCatalog))
                 throw new InvalidOperationException("production frame binding catalog failed");
             productionFrameCatalog = frameCatalog;
             RecordProductionMemoryStage("AfterFrameCatalog");
+            RecordProductionTimingStage("ProductionPreparation.AfterFrameCatalog");
             var sharedCapabilities = new VmRuntimeCapabilitySnapshot(
                 VmRuntimeRequirement.VariableRead | VmRuntimeRequirement.VariableWrite | VmRuntimeRequirement.Builtin,
                 productionSemanticHost.IsVariableBound,
@@ -197,7 +216,7 @@ internal sealed partial class Process
                 productionSemanticHost.IsVariableAvailableInContext,
                 productionSemanticHost.IsCharacterVariableInContext,
                 productionSemanticHost.IsStringAssignmentTarget);
-            var stagedReadiness = VmRuntimeRequirementAnalyzer.AnalyzeStaged(link.Program, kinds, sharedCapabilities, productionCapabilities, productionPreparationCounters);
+            var stagedReadiness = VmRuntimeRequirementAnalyzer.AnalyzeStaged(link.Program, kinds, sharedCapabilities, productionCapabilities, productionPreparationCounters, RecordProductionTimingStage);
             var sharedReadiness = stagedReadiness.Shared;
             var productionStage = stagedReadiness.Production;
             sharedExecutableReadyIds = sharedReadiness.Rows
@@ -216,14 +235,17 @@ internal sealed partial class Process
                 .Where(id => kinds[id] == FunctionKind.Normal)
                 .ToHashSet();
             RecordProductionMemoryStage("AfterReadiness");
+            RecordProductionTimingStage("ProductionPreparation.AfterActivation");
             if (!activation.AccountingPassed) throw new InvalidOperationException("production readiness accounting failed");
             if (!string.IsNullOrWhiteSpace(Program.NextRuntimeReadinessEvidencePath))
                 WriteNextRuntimeReadinessEvidence(Program.NextRuntimeReadinessEvidencePath!, link.Program, catalog, kinds, stagedReadiness, productionReadinessGated, sharedCapabilities, productionPreparationCounters);
+            RecordProductionTimingStage("ProductionPreparation.AfterReadinessEvidence");
             productionActivationResult = activation;
             productionDispatchEntryReadyCount = productionDispatchEntryReadyIds.Count;
             productionPreparationCount++;
             productionActivationCount++;
             productionPreparationFailureReason = "None";
+            RecordProductionTimingStage("ProductionPreparation.Complete");
             log?.WriteLine($"NextRuntimePreparation=PASS Functions={link.Program.Descriptors.Length} Compiled={prototypes.Count} Promoted={activation.Promoted}");
             return true;
         }
