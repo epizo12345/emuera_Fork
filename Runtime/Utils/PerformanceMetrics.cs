@@ -76,10 +76,12 @@ internal static class PerformanceMetrics
     private static string nextDispatchProfilePath;
     private static long nextDispatchProfileStart;
     private static long nextDispatchProfileAllocated;
-    private static readonly string[] NextDispatchStageNames = ["DispatchTotal", "ReadinessLookup", "FrameImportPreparation", "FrameBindingPreparation", "SessionConstruction", "VmExecution"];
+    private static readonly string[] NextDispatchStageNames = ["DispatchTotal", "ReadinessLookup", "SessionStartRejectClassification", "FrameImportPreparation", "FrameBindingPreparation", "SessionConstruction", "VmExecution"];
     private static readonly long[] nextDispatchStageTicks = new long[NextDispatchStageNames.Length];
     private static readonly int[] nextDispatchStageCounts = new int[NextDispatchStageNames.Length];
     private static readonly Dictionary<(int FunctionId, MinorShift.Emuera.GameProc.NextRuntimeDispatchRejectReason Reason), (string Name, int Count, long Ticks)> nextDispatchBuckets = new();
+    private static readonly Dictionary<string, (int Count, long Ticks, bool Mutable)> nextSessionStartRejectSubreasons = new(StringComparer.Ordinal);
+    private static readonly Dictionary<(int FunctionId, string Subreason), (string Name, int Count, long Ticks)> nextSessionStartRejectFunctionBuckets = new();
 #endif
 
     internal static bool Enabled => Volatile.Read(ref logPath) != null;
@@ -142,6 +144,33 @@ internal static class PerformanceMetrics
                 TotalMilliseconds = TicksToMilliseconds(pair.Value.Ticks),
                 AverageMicroseconds = pair.Value.Count == 0 ? 0 : TicksToMilliseconds(pair.Value.Ticks) * 1000 / pair.Value.Count
             }).ToArray();
+        var subreasons = nextSessionStartRejectSubreasons
+            .OrderByDescending(pair => pair.Value.Ticks)
+            .Select(pair => new
+            {
+                Subreason = pair.Key,
+                Scope = pair.Value.Mutable ? "MutableCallState" : "ImmutableGenerationScoped",
+                Count = pair.Value.Count,
+                TotalMilliseconds = TicksToMilliseconds(pair.Value.Ticks),
+                AverageMicroseconds = pair.Value.Count == 0 ? 0 : TicksToMilliseconds(pair.Value.Ticks) * 1000 / pair.Value.Count
+            }).ToArray();
+        var subreasonFunctions = nextSessionStartRejectFunctionBuckets
+            .OrderByDescending(pair => pair.Value.Ticks)
+            .Select(pair => new
+            {
+                RuntimeFunctionId = pair.Key.FunctionId,
+                FunctionName = pair.Value.Name,
+                Subreason = pair.Key.Subreason,
+                Count = pair.Value.Count,
+                TotalMilliseconds = TicksToMilliseconds(pair.Value.Ticks),
+                AverageMicroseconds = pair.Value.Count == 0 ? 0 : TicksToMilliseconds(pair.Value.Ticks) * 1000 / pair.Value.Count
+            }).ToArray();
+        var sessionStartRejectedCount = nextDispatchRejections.TryGetValue(nameof(MinorShift.Emuera.GameProc.NextRuntimeDispatchRejectReason.SessionStartRejected), out var rejectedCount) ? rejectedCount : 0;
+        var subreasonCountSum = nextSessionStartRejectSubreasons.Values.Sum(value => value.Count);
+        var immutableCount = nextSessionStartRejectSubreasons.Where(pair => !pair.Value.Mutable).Sum(pair => pair.Value.Count);
+        var immutableTicks = nextSessionStartRejectSubreasons.Where(pair => !pair.Value.Mutable).Sum(pair => pair.Value.Ticks);
+        var mutableCount = nextSessionStartRejectSubreasons.Where(pair => pair.Value.Mutable).Sum(pair => pair.Value.Count);
+        var mutableTicks = nextSessionStartRejectSubreasons.Where(pair => pair.Value.Mutable).Sum(pair => pair.Value.Ticks);
         var report = new
         {
             Profiler = "NextRuntimePerformanceProfile",
@@ -153,7 +182,15 @@ internal static class PerformanceMetrics
             Fallbacks = nextDispatchFallbacks,
             Rejections = nextDispatchRejections,
             Stages = stages,
-            TopFunctionReasonBuckets = buckets
+            TopFunctionReasonBuckets = buckets,
+            SessionStartRejectSubreasons = subreasons,
+            SessionStartRejectSubreasonCountSum = subreasonCountSum,
+            SessionStartRejectUnclassified = Math.Max(0, sessionStartRejectedCount - subreasonCountSum),
+            ImmutableGenerationScopedRejectCount = immutableCount,
+            ImmutableGenerationScopedRejectMilliseconds = TicksToMilliseconds(immutableTicks),
+            MutableRejectCount = mutableCount,
+            MutableRejectMilliseconds = TicksToMilliseconds(mutableTicks),
+            TopSessionStartRejectFunctionSubreasonBuckets = subreasonFunctions
         };
         try { File.WriteAllText(nextDispatchProfilePath, JsonSerializer.Serialize(report, JsonOptions) + Environment.NewLine); }
         catch { }
@@ -228,6 +265,10 @@ internal static class PerformanceMetrics
         nextDispatchStages.Clear();
         nextDispatchRejections.Clear();
         nextDispatchFunctions.Clear();
+#if PERFORMANCE_METRICS
+        nextSessionStartRejectSubreasons.Clear();
+        nextSessionStartRejectFunctionBuckets.Clear();
+#endif
         allocatedBytesBefore = GC.GetTotalAllocatedBytes(false);
         managedBytesBefore = GC.GetTotalMemory(false);
         workingSetBefore = Environment.WorkingSet;
@@ -381,6 +422,19 @@ internal static class PerformanceMetrics
         nextDispatchBuckets.TryGetValue(key, out var bucket);
         nextDispatchBuckets[key] = (bucket.Name ?? functionName, bucket.Count + 1, bucket.Ticks + elapsed);
         nextDispatchFunctions[$"{functionName}|{reason}"] = nextDispatchFunctions.TryGetValue($"{functionName}|{reason}", out var functionCount) ? functionCount + 1 : 1;
+#endif
+    }
+
+    [Conditional("PERFORMANCE_METRICS")]
+    internal static void RecordSessionStartRejectSubreason(int functionId, string functionName, string subreason, bool mutable, long classificationStart)
+    {
+#if PERFORMANCE_METRICS
+        var elapsed = classificationStart == 0 ? 0 : Stopwatch.GetTimestamp() - classificationStart;
+        nextSessionStartRejectSubreasons.TryGetValue(subreason, out var aggregate);
+        nextSessionStartRejectSubreasons[subreason] = (aggregate.Count + 1, aggregate.Ticks + elapsed, mutable);
+        var key = (functionId, subreason);
+        nextSessionStartRejectFunctionBuckets.TryGetValue(key, out var bucket);
+        nextSessionStartRejectFunctionBuckets[key] = (bucket.Name ?? functionName, bucket.Count + 1, bucket.Ticks + elapsed);
 #endif
     }
 

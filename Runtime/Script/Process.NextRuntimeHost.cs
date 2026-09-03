@@ -563,7 +563,41 @@ internal sealed partial class Process
             productionDispatchEntryReadyIds.Contains(entryFunctionId.Value));
     }
 
-    internal NextRuntimeSessionResult TryStartNextRuntimeProductionSession(RuntimeFunctionId entryFunctionId)
+#if PERFORMANCE_METRICS
+    // [Emuera改修:NEXT-3D-R1.5A 2026-09-04]
+    // SessionStartRejectedの外部互換理由は維持したまま、metrics buildだけで
+    // generation由来の固定条件と呼出時点の可変条件を識別する。判定は既存状態の
+    // 読み取りだけに限定し、frame/host/VM/RESULTへ副作用を発生させない。
+    private (string Name, bool Mutable) ClassifySessionStartReject(RuntimeFunctionId entryFunctionId)
+    {
+        if (!Program.NextRuntimeMode) return ("ModeDisabled", true);
+        if (Program.AnalysisMode) return ("AnalysisMode", true);
+        if (Program.DebugMode) return ("DebugMode", true);
+        if (nextRuntimeSession is not null) return ("ActiveNextSession", true);
+        if (productionProgram is null) return ("ProductionProgramMissing", false);
+        if (productionSemanticHost is null) return ("SemanticHostMissing", false);
+        if (productionFrameCatalog is null) return ("FrameCatalogMissing", false);
+        if (productionFunctionKinds is null) return ("FunctionKindsMissing", false);
+        if (productionLabelIds is null) return ("LabelIdsMissing", false);
+        if ((uint)entryFunctionId.Value >= (uint)productionProgram.Descriptors.Length ||
+            (uint)entryFunctionId.Value >= (uint)productionFunctionKinds.Length)
+            return ("RuntimeFunctionIdOutOfRange", false);
+        if (productionFunctionKinds[entryFunctionId.Value] != FunctionKind.Normal)
+            return ("FunctionKindNotNormal", false);
+        var descriptor = productionProgram.Descriptors[entryFunctionId.Value];
+        if (descriptor.FunctionId != entryFunctionId.Value)
+            return ("DescriptorMissing", false);
+        if (descriptor.State == VmFunctionState.CodeNotAvailable)
+            return ("CodeNotAvailable", false);
+        if (descriptor.State != VmFunctionState.ExecutableReady)
+            return ("DescriptorNotExecutableReady", false);
+        if (!productionDispatchEntryReadyIds.Contains(entryFunctionId.Value))
+            return ("NotDispatchEntryReady", false);
+        return ("OtherDispatchIneligible", false);
+    }
+#endif
+
+    internal NextRuntimeSessionResult TryStartNextRuntimeProductionSession(RuntimeFunctionId entryFunctionId, string functionName = "<none>")
     {
         productionLastRejectReason = NextRuntimeDispatchRejectReason.None;
         var readinessStart = PerformanceMetrics.StartNextDispatchTiming();
@@ -577,6 +611,15 @@ internal sealed partial class Process
             var descriptorState = (uint)entryFunctionId.Value < (uint)(productionProgram?.Descriptors.Length ?? 0) ? productionProgram.Descriptors[entryFunctionId.Value].State.ToString() : "out-of-range";
             productionLastRejectReason = nextRuntimeSession is not null ? NextRuntimeDispatchRejectReason.ActiveNextSession : NextRuntimeDispatchRejectReason.SessionStartRejected;
             productionProbeLastDecision = $"entry-not-ready:id={entryFunctionId.Value};kind={kind};state={descriptorState};session={(nextRuntimeSession is null ? "none" : "active")}";
+#if PERFORMANCE_METRICS
+            if (productionLastRejectReason == NextRuntimeDispatchRejectReason.SessionStartRejected)
+            {
+                var classificationStart = PerformanceMetrics.StartNextDispatchTiming();
+                var classification = ClassifySessionStartReject(entryFunctionId);
+                PerformanceMetrics.AddNextDispatchStage("SessionStartRejectClassification", classificationStart);
+                PerformanceMetrics.RecordSessionStartRejectSubreason(entryFunctionId.Value, functionName, classification.Name, classification.Mutable, classificationStart);
+            }
+#endif
             return NextRuntimeSessionResult.LegacyFallback;
         }
         var importStart = PerformanceMetrics.StartNextDispatchTiming();
@@ -654,7 +697,7 @@ internal sealed partial class Process
             result = NextRuntimeSessionResult.LegacyFallback;
         }
         else if (label is not null && productionLabelIds is not null && productionLabelIds.TryGetValue(label, out var id))
-            result = TryStartNextRuntimeProductionSession(id);
+            result = TryStartNextRuntimeProductionSession(id, label.LabelName);
         else
         {
             productionLastRejectReason = NextRuntimeDispatchRejectReason.TopLabelNotMapped;
