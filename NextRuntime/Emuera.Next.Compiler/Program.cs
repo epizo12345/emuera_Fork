@@ -332,6 +332,49 @@ static int SelfTest()
             var reset = SourceReaderMetrics.Snapshot();
             Assert(reset.FileStreamOpenCount == 0 && reset.ReadFunctionCount == 0 && reset.TotalBytesRead == 0);
         })));
+        tests.Add(("P3P CompileRuntime decomposition compiled path", (Action)(() =>
+        {
+            CompileRuntimeMetrics.Reset();
+            var p = Path.Combine(root, "p3p-compiled.ERB");
+            WriteBom(p, "@P3P_COMPILED\r\nPRINT 1\r\n");
+            var f = ErbSourceIndexer.IndexFile(p);
+            var result = new FunctionCompiler(semanticEnvironment).TryCompileRuntime(f, f.Functions.Single());
+            var metrics = CompileRuntimeMetrics.Snapshot();
+            Assert(result.Status == CompileStatus.Compiled && metrics.RuntimeGateMetadataCount == 1 && metrics.ScanInclusiveCount == 1 && metrics.CompiledFinalizeCount == 1 && metrics.RejectFinalizeCount == 0);
+        })));
+        tests.Add(("P3P CompileRuntime decomposition rejected path", (Action)(() =>
+        {
+            CompileRuntimeMetrics.Reset();
+            var p = Path.Combine(root, "p3p-rejected.ERB");
+            WriteBom(p, "@P3P_REJECTED\r\nUNKNOWN X\r\n");
+            var f = ErbSourceIndexer.IndexFile(p);
+            var result = new FunctionCompiler(semanticEnvironment).TryCompileRuntime(f, f.Functions.Single());
+            var metrics = CompileRuntimeMetrics.Snapshot();
+            Assert(result.Status == CompileStatus.Unsupported && metrics.RuntimeGateMetadataCount == 1 && metrics.ScanInclusiveCount == 1 && metrics.CompiledFinalizeCount == 0 && metrics.RejectFinalizeCount == 1);
+        })));
+        tests.Add(("P3P CompileRuntime decomposition reset", (Action)(() =>
+        {
+            CompileRuntimeMetrics.Reset();
+            var p = Path.Combine(root, "p3p-reset.ERB");
+            WriteBom(p, "@P3P_RESET\r\nPRINT 1\r\n");
+            var f = ErbSourceIndexer.IndexFile(p);
+            _ = new FunctionCompiler(semanticEnvironment).TryCompileRuntime(f, f.Functions.Single());
+            CompileRuntimeMetrics.Reset();
+            var metrics = CompileRuntimeMetrics.Snapshot();
+            Assert(metrics.RuntimeGateMetadataCount == 0 && metrics.ScanInclusiveCount == 0 && metrics.CompiledFinalizeCount == 0 && metrics.RejectFinalizeCount == 0 && metrics.RuntimeGateMetadataTicks == 0 && metrics.ScanInclusiveTicks == 0 && metrics.CompiledFinalizeTicks == 0 && metrics.RejectFinalizeTicks == 0);
+        })));
+        tests.Add(("P3P CompileRuntime decomposition aggregation", (Action)(() =>
+        {
+            CompileRuntimeMetrics.Reset();
+            var p = Path.Combine(root, "p3p-aggregate.ERB");
+            WriteBom(p, "@P3P_AGGREGATE\r\nPRINT 1\r\n");
+            var f = ErbSourceIndexer.IndexFile(p);
+            var compiler = new FunctionCompiler(semanticEnvironment);
+            Assert(compiler.TryCompileRuntime(f, f.Functions.Single()).Status == CompileStatus.Compiled);
+            Assert(compiler.TryCompileRuntime(f, f.Functions.Single()).Status == CompileStatus.Compiled);
+            var metrics = CompileRuntimeMetrics.Snapshot();
+            Assert(metrics.RuntimeGateMetadataCount == 2 && metrics.ScanInclusiveCount == 2 && metrics.CompiledFinalizeCount == 2 && metrics.RejectFinalizeCount == 0);
+        })));
 #endif
         tests.Add(("R1_4FHeaderRegression", () => { var path = Path.Combine(root, "r1-4f-header.ERB"); WriteBom(path, "@G, ARG = 98\r\n#FUNCTION\r\nPRINT 1\r\n"); var indexedHeader = ErbSourceIndexer.IndexFile(path); var result = new FunctionCompiler(semanticEnvironment).TryCompileRuntime(indexedHeader, indexedHeader.Functions.Single()); Assert(result.Status == CompileStatus.Compiled && result.Function!.RuntimeMetadata!.Parameters.Length == 1 && result.Function.RuntimeMetadata.Parameters[0].HasDefault && result.Function.RuntimeMetadata.Parameters[0].DefaultInteger == 98 && result.Function.RuntimeMetadata.ReturnType == RuntimeMetadataValueType.Integer); }));
          tests.Add(("semantic target is exactly nine structural opcodes", () => { var p = Path.Combine(root, "semantic-targets.ERB"); WriteBom(p, "@TARGETS\r\nSIF A\r\nIF A\r\nELSEIF A\r\nSELECTCASE A\r\nCASE 1\r\nREPEAT 2\r\nFOR I,0,2\r\nWHILE A\r\nLOOP A\r\nPRINTFORM %A%\r\n"); var f = ErbSourceIndexer.IndexFile(p); var result = new FunctionCompiler(semanticEnvironment).TryCompile(f, f.Functions.Single()); Assert(result.Status == CompileStatus.Compiled && result.Function!.SemanticPayload!.Records.Length == 9); }));

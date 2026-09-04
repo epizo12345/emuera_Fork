@@ -270,6 +270,7 @@ internal static class PerformanceMetrics
         nextPrototypeCompileAppendAndMappingTicks = 0;
         nextPrototypeCompilePositionKeyCount = 0;
         nextPrototypeCompilePathNormalizationExecutionCount = 0;
+        CompileRuntimeMetrics.Reset();
         SourceReaderMetrics.Reset();
         entryDispatchAlreadyConsumedCount = 0;
         entryDispatchAlreadyConsumedTicks = 0;
@@ -342,6 +343,10 @@ internal static class PerformanceMetrics
         var prototypeCompileFunctionLoopMilliseconds = nextConstructionStages.TryGetValue("ProductionPreparation.PrototypeCompile.FunctionLoop", out var prototypeCompileFunctionLoop) ? TicksToMilliseconds(prototypeCompileFunctionLoop.Ticks) : 0;
         var prototypeCompileInnerUnaccountedMilliseconds = Math.Max(0, prototypeCompileFunctionLoopMilliseconds - TicksToMilliseconds(prototypeCompileMeasuredInnerTicks));
         sourceReaderMetrics = SourceReaderMetrics.Snapshot();
+        var compileRuntimeMetrics = CompileRuntimeMetrics.Snapshot();
+        var compileRuntimeInnerTicks = compileRuntimeMetrics.RuntimeGateMetadataTicks + compileRuntimeMetrics.ScanInclusiveTicks + compileRuntimeMetrics.CompiledFinalizeTicks + compileRuntimeMetrics.RejectFinalizeTicks;
+        var compileRuntimeInnerMilliseconds = TicksToMilliseconds(compileRuntimeInnerTicks);
+        var compileRuntimeOuterMilliseconds = TicksToMilliseconds(nextPrototypeCompileCompileRuntimeTicks);
         var sourceReaderFileOpenInnerTicks = sourceReaderMetrics.FileStreamOpenTicks + sourceReaderMetrics.InitialSnapshotCheckTicks;
         var sourceReaderReadInnerTicks = sourceReaderMetrics.SpanValidationTicks + sourceReaderMetrics.ReadSnapshotCheckTicks + sourceReaderMetrics.BufferAllocationTicks + sourceReaderMetrics.SeekTicks + sourceReaderMetrics.StreamReadTicks + sourceReaderMetrics.Utf8ValidationTicks + sourceReaderMetrics.ResultConstructionTicks;
         var report = new
@@ -529,6 +534,44 @@ internal static class PerformanceMetrics
                     }
                 },
                 AllocationAttribution = "NOT_MEASURED_TO_AVOID_PER_FUNCTION_GC_SAMPLING"
+            },
+            CompileRuntimeInner = new
+            {
+                RuntimeGateMetadata = new
+                {
+                    Count = compileRuntimeMetrics.RuntimeGateMetadataCount,
+                    TotalMilliseconds = TicksToMilliseconds(compileRuntimeMetrics.RuntimeGateMetadataTicks),
+                    AverageMicroseconds = compileRuntimeMetrics.RuntimeGateMetadataCount == 0 ? 0 : TicksToMilliseconds(compileRuntimeMetrics.RuntimeGateMetadataTicks) * 1000 / compileRuntimeMetrics.RuntimeGateMetadataCount
+                },
+                ScanInclusive = new
+                {
+                    Count = compileRuntimeMetrics.ScanInclusiveCount,
+                    TotalMilliseconds = TicksToMilliseconds(compileRuntimeMetrics.ScanInclusiveTicks),
+                    AverageMicroseconds = compileRuntimeMetrics.ScanInclusiveCount == 0 ? 0 : TicksToMilliseconds(compileRuntimeMetrics.ScanInclusiveTicks) * 1000 / compileRuntimeMetrics.ScanInclusiveCount
+                },
+                CompiledFinalize = new
+                {
+                    Count = compileRuntimeMetrics.CompiledFinalizeCount,
+                    TotalMilliseconds = TicksToMilliseconds(compileRuntimeMetrics.CompiledFinalizeTicks),
+                    AverageMicroseconds = compileRuntimeMetrics.CompiledFinalizeCount == 0 ? 0 : TicksToMilliseconds(compileRuntimeMetrics.CompiledFinalizeTicks) * 1000 / compileRuntimeMetrics.CompiledFinalizeCount
+                },
+                RejectFinalize = new
+                {
+                    Count = compileRuntimeMetrics.RejectFinalizeCount,
+                    TotalMilliseconds = TicksToMilliseconds(compileRuntimeMetrics.RejectFinalizeTicks),
+                    AverageMicroseconds = compileRuntimeMetrics.RejectFinalizeCount == 0 ? 0 : TicksToMilliseconds(compileRuntimeMetrics.RejectFinalizeTicks) * 1000 / compileRuntimeMetrics.RejectFinalizeCount
+                },
+                MeasuredInnerSumMilliseconds = compileRuntimeInnerMilliseconds,
+                OuterCompileRuntimeMilliseconds = compileRuntimeOuterMilliseconds,
+                UnaccountedMilliseconds = Math.Max(0, compileRuntimeOuterMilliseconds - compileRuntimeInnerMilliseconds),
+                CoveragePercent = compileRuntimeOuterMilliseconds == 0 ? 0 : compileRuntimeInnerMilliseconds * 100 / compileRuntimeOuterMilliseconds,
+                TimerCallsPerFunction = new
+                {
+                    CompiledPath = 5,
+                    ScanRejectPath = 5,
+                    RuntimeGateRejectPath = 4,
+                    Note = "Stopwatch.GetTimestamp at coarse stage boundaries; no per-line/per-node timers"
+                }
             },
             SourceReaderMetrics = new
             {

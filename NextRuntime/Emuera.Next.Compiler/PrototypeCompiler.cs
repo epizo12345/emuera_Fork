@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using MinorShift.Emuera.Next.Core;
@@ -303,13 +304,44 @@ public sealed class FunctionCompiler
 
     public CompileResult TryCompileRuntime(FunctionSource source)
     {
+#if PERFORMANCE_METRICS
+        var runtimeGateMetadataStart = Stopwatch.GetTimestamp();
+#endif
         const SourceIndexFlags metadataFlags = SourceIndexFlags.DeclarationDirective | SourceIndexFlags.FunctionMetadata;
         if ((source.Function.Flags & ~metadataFlags) != SourceIndexFlags.None)
-            return CompileResult.Unsupported(UnsupportedReason.IndexFallback, "unresolved function-local Source Index fallback flags");
+        {
+#if PERFORMANCE_METRICS
+            CompileRuntimeMetrics.RecordRuntimeGateMetadata(Stopwatch.GetTimestamp() - runtimeGateMetadataStart);
+            var rejectStart = Stopwatch.GetTimestamp();
+#endif
+            var result = CompileResult.Unsupported(UnsupportedReason.IndexFallback, "unresolved function-local Source Index fallback flags");
+#if PERFORMANCE_METRICS
+            CompileRuntimeMetrics.RecordRejectFinalize(Stopwatch.GetTimestamp() - rejectStart);
+#endif
+            return result;
+        }
         if ((source.Function.Flags & metadataFlags) == SourceIndexFlags.None)
+        {
+#if PERFORMANCE_METRICS
+            CompileRuntimeMetrics.RecordRuntimeGateMetadata(Stopwatch.GetTimestamp() - runtimeGateMetadataStart);
+#endif
             return TryCompileCore(source, FunctionRuntimeMetadata.Empty);
+        }
         if (!FunctionRuntimeMetadataParser.TryParse(source, options, out var metadata, out var detail))
-            return CompileResult.Unsupported(UnsupportedReason.IndexFallback, detail);
+        {
+#if PERFORMANCE_METRICS
+            CompileRuntimeMetrics.RecordRuntimeGateMetadata(Stopwatch.GetTimestamp() - runtimeGateMetadataStart);
+            var rejectStart = Stopwatch.GetTimestamp();
+#endif
+            var result = CompileResult.Unsupported(UnsupportedReason.IndexFallback, detail);
+#if PERFORMANCE_METRICS
+            CompileRuntimeMetrics.RecordRejectFinalize(Stopwatch.GetTimestamp() - rejectStart);
+#endif
+            return result;
+        }
+#if PERFORMANCE_METRICS
+        CompileRuntimeMetrics.RecordRuntimeGateMetadata(Stopwatch.GetTimestamp() - runtimeGateMetadataStart);
+#endif
         return TryCompileCore(source, metadata);
     }
 
@@ -319,25 +351,77 @@ public sealed class FunctionCompiler
     {
         try
         {
-            var scanned = Scan(source.Bytes, source.Function.Span.StartLine, options, semanticEnvironment, runtimeMetadata is not null, out var reason, out var detail);
+            (ImmutableArray<PrototypeInstruction> Instructions, SemanticPayload? SemanticPayload) scanned;
+            UnsupportedReason reason;
+            string? detail;
+#if PERFORMANCE_METRICS
+            var scanStart = Stopwatch.GetTimestamp();
+            try
+            {
+                scanned = Scan(source.Bytes, source.Function.Span.StartLine, options, semanticEnvironment, runtimeMetadata is not null, out reason, out detail);
+            }
+            finally
+            {
+                CompileRuntimeMetrics.RecordScanInclusive(Stopwatch.GetTimestamp() - scanStart);
+            }
+#else
+            scanned = Scan(source.Bytes, source.Function.Span.StartLine, options, semanticEnvironment, runtimeMetadata is not null, out reason, out detail);
+#endif
             if (reason != UnsupportedReason.None)
-                return CompileResult.Unsupported(reason, detail!);
+            {
+#if PERFORMANCE_METRICS
+                var rejectStart = Stopwatch.GetTimestamp();
+#endif
+                var result = CompileResult.Unsupported(reason, detail!);
+#if PERFORMANCE_METRICS
+                CompileRuntimeMetrics.RecordRejectFinalize(Stopwatch.GetTimestamp() - rejectStart);
+#endif
+                return result;
+            }
+#if PERFORMANCE_METRICS
+            var compiledFinalizeStart = Stopwatch.GetTimestamp();
+#endif
             var fingerprint = SourceFingerprint.FromBytes(source.Bytes);
-            return new(CompileStatus.Compiled,
+            var compiled = new CompileResult(CompileStatus.Compiled,
                 new(source.File.FileIdentity, source.Function.Name, source.Function.Span, scanned.Instructions,
                     MetadataBytesEstimate(source.Function.Name), scanned.SemanticPayload, runtimeMetadata), UnsupportedReason.None, null, fingerprint);
+#if PERFORMANCE_METRICS
+            CompileRuntimeMetrics.RecordCompiledFinalize(Stopwatch.GetTimestamp() - compiledFinalizeStart);
+#endif
+            return compiled;
         }
         catch (DecoderFallbackException ex)
         {
-            return new(CompileStatus.InvalidSource, null, UnsupportedReason.InvalidSource, ex.Message, default);
+#if PERFORMANCE_METRICS
+            var rejectStart = Stopwatch.GetTimestamp();
+#endif
+            var result = new CompileResult(CompileStatus.InvalidSource, null, UnsupportedReason.InvalidSource, ex.Message, default);
+#if PERFORMANCE_METRICS
+            CompileRuntimeMetrics.RecordRejectFinalize(Stopwatch.GetTimestamp() - rejectStart);
+#endif
+            return result;
         }
         catch (SemanticParseException ex)
         {
-            return CompileResult.Unsupported(UnsupportedReason.ExpressionSensitiveSyntax, ex.Message);
+#if PERFORMANCE_METRICS
+            var rejectStart = Stopwatch.GetTimestamp();
+#endif
+            var result = CompileResult.Unsupported(UnsupportedReason.ExpressionSensitiveSyntax, ex.Message);
+#if PERFORMANCE_METRICS
+            CompileRuntimeMetrics.RecordRejectFinalize(Stopwatch.GetTimestamp() - rejectStart);
+#endif
+            return result;
         }
         catch (Exception ex) when (ex is ArgumentException or OverflowException)
         {
-            return new(CompileStatus.CompilerError, null, UnsupportedReason.UnknownSyntax, ex.Message, default);
+#if PERFORMANCE_METRICS
+            var rejectStart = Stopwatch.GetTimestamp();
+#endif
+            var result = new CompileResult(CompileStatus.CompilerError, null, UnsupportedReason.UnknownSyntax, ex.Message, default);
+#if PERFORMANCE_METRICS
+            CompileRuntimeMetrics.RecordRejectFinalize(Stopwatch.GetTimestamp() - rejectStart);
+#endif
+            return result;
         }
     }
 
