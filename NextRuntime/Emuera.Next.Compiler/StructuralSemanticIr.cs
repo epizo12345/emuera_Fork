@@ -28,6 +28,7 @@ public sealed class SemanticPayload
     public ImmutableArray<SemanticRecord> Records { get; }
     public ImmutableArray<SemanticHostIdentity> HostIdentities { get; }
     public byte[] Utf8 { get; }
+    private readonly int[] hostIdentityIndexByNode;
     public bool HasSemanticOperands => !Records.IsDefaultOrEmpty;
     public int SemanticNodeCount => Nodes.Length;
     public int SemanticRecordCount => Records.Length;
@@ -35,6 +36,7 @@ public sealed class SemanticPayload
     {
         (Nodes, Edges, Symbols, CaseArms, Records, Utf8) = (nodes.ToImmutableArray(), edges.ToImmutableArray(), symbols.ToImmutableArray(), caseArms.ToImmutableArray(), records.ToImmutableArray(), utf8 ?? []);
         HostIdentities = CreateHostIdentities();
+        hostIdentityIndexByNode = CreateHostIdentityIndex();
     }
     public string ReadSymbol(SemanticSlice slice) => Encoding.UTF8.GetString(Utf8, slice.Offset, slice.Length);
     public bool TryGetHostIdentity(int nodeIndex, SemanticHostIdentityKind kind, out SemanticHostIdentity identity) =>
@@ -42,10 +44,14 @@ public sealed class SemanticPayload
     public bool TryGetHostIdentity(int nodeIndex, SemanticHostIdentityKind kind, out SemanticHostIdentity identity, out int scannedElements)
     {
         scannedElements = 0;
-        foreach (var candidate in HostIdentities)
+        if ((uint)nodeIndex < (uint)hostIdentityIndexByNode.Length)
         {
-            scannedElements++;
-            if (candidate.NodeIndex == nodeIndex && candidate.Kind == kind) { identity = candidate; return true; }
+            var identityIndex = hostIdentityIndexByNode[nodeIndex];
+            if ((uint)identityIndex < (uint)HostIdentities.Length)
+            {
+                var candidate = HostIdentities[identityIndex];
+                if (candidate.NodeIndex == nodeIndex && candidate.Kind == kind) { identity = candidate; return true; }
+            }
         }
         identity = default; return false;
     }
@@ -100,6 +106,18 @@ public sealed class SemanticPayload
             identities.Add(new(kind, index, StableId(kind, name, subkeyText, arity), node.A, subkey, arity));
         }
         return identities.ToImmutable();
+    }
+
+    private int[] CreateHostIdentityIndex()
+    {
+        var index = new int[Nodes.Length];
+        Array.Fill(index, -1);
+        for (var identityIndex = 0; identityIndex < HostIdentities.Length; identityIndex++)
+        {
+            var nodeIndex = HostIdentities[identityIndex].NodeIndex;
+            if ((uint)nodeIndex < (uint)index.Length && index[nodeIndex] < 0) index[nodeIndex] = identityIndex;
+        }
+        return index;
     }
 
     private static ulong StableId(SemanticHostIdentityKind kind, string name, string subkey, int arity)

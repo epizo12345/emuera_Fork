@@ -261,6 +261,7 @@ internal sealed partial class Process
                 productionPreparationCounters.HostIdentityLookupCount,
                 productionPreparationCounters.HostIdentityLookupHitCount,
                 productionPreparationCounters.HostIdentityLookupMissCount,
+                productionPreparationCounters.HostIdentityDirectIndexLookupCount,
                 productionPreparationCounters.HostIdentityLinearScanElementVisits,
                 productionPreparationCounters.HostIdentityPresentedElementCount,
                 productionPreparationCounters.MaxHostIdentitiesLength,

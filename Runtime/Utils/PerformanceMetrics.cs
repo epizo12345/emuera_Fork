@@ -111,6 +111,7 @@ internal static class PerformanceMetrics
     private static long nextReadinessHostIdentityLookupCount;
     private static long nextReadinessHostIdentityLookupHitCount;
     private static long nextReadinessHostIdentityLookupMissCount;
+    private static long nextReadinessHostIdentityDirectIndexLookupCount;
     private static long nextReadinessHostIdentityLinearScanElementVisits;
     private static long nextReadinessHostIdentityPresentedElementCount;
     private static int nextReadinessMaxHostIdentitiesLength;
@@ -184,6 +185,7 @@ internal static class PerformanceMetrics
         nextReadinessHostIdentityLookupCount = 0;
         nextReadinessHostIdentityLookupHitCount = 0;
         nextReadinessHostIdentityLookupMissCount = 0;
+        nextReadinessHostIdentityDirectIndexLookupCount = 0;
         nextReadinessHostIdentityLinearScanElementVisits = 0;
         nextReadinessHostIdentityPresentedElementCount = 0;
         nextReadinessMaxHostIdentitiesLength = 0;
@@ -341,6 +343,7 @@ internal static class PerformanceMetrics
                 HostIdentityLookupCount = nextReadinessHostIdentityLookupCount,
                 HostIdentityLookupHitCount = nextReadinessHostIdentityLookupHitCount,
                 HostIdentityLookupMissCount = nextReadinessHostIdentityLookupMissCount,
+                HostIdentityDirectIndexLookupCount = nextReadinessHostIdentityDirectIndexLookupCount,
                 HostIdentityLinearScanElementVisits = nextReadinessHostIdentityLinearScanElementVisits,
                 AverageScanElementsPerLookup = nextReadinessHostIdentityLookupCount == 0 ? 0 : (double)nextReadinessHostIdentityLinearScanElementVisits / nextReadinessHostIdentityLookupCount,
                 HostIdentityPresentedElementCount = nextReadinessHostIdentityPresentedElementCount,
@@ -613,11 +616,12 @@ internal static class PerformanceMetrics
     }
 
     [Conditional("PERFORMANCE_METRICS")]
-    internal static void RecordNextRuntimeHostIdentityLookupMetrics(long lookupCount, long hitCount, long missCount, long scanElementVisits, long presentedElementCount, int maxIdentitiesLength, long variableLookupCount, long variableScanElementVisits, long callLookupCount, long callScanElementVisits)
+    internal static void RecordNextRuntimeHostIdentityLookupMetrics(long lookupCount, long hitCount, long missCount, long directIndexLookupCount, long scanElementVisits, long presentedElementCount, int maxIdentitiesLength, long variableLookupCount, long variableScanElementVisits, long callLookupCount, long callScanElementVisits)
     {
         nextReadinessHostIdentityLookupCount = lookupCount;
         nextReadinessHostIdentityLookupHitCount = hitCount;
         nextReadinessHostIdentityLookupMissCount = missCount;
+        nextReadinessHostIdentityDirectIndexLookupCount = directIndexLookupCount;
         nextReadinessHostIdentityLinearScanElementVisits = scanElementVisits;
         nextReadinessHostIdentityPresentedElementCount = presentedElementCount;
         nextReadinessMaxHostIdentitiesLength = maxIdentitiesLength;

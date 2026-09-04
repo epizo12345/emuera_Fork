@@ -61,6 +61,7 @@ public sealed class VmRuntimePreparationCounters
     public long HostIdentityLookupCount { get; set; }
     public long HostIdentityLookupHitCount { get; set; }
     public long HostIdentityLookupMissCount { get; set; }
+    public long HostIdentityDirectIndexLookupCount { get; set; }
     public long HostIdentityLinearScanElementVisits { get; set; }
     public long HostIdentityPresentedElementCount { get; set; }
     public int MaxHostIdentitiesLength { get; set; }
@@ -543,6 +544,7 @@ public static class VmRuntimeRequirementAnalyzer
             if (counters?.DetailedMeasurement != true) return payload.TryGetHostIdentity(nodeIndex, kind, out identity);
             var found = payload.TryGetHostIdentity(nodeIndex, kind, out identity, out var scannedElements);
             counters.HostIdentityLookupCount++;
+            counters.HostIdentityDirectIndexLookupCount++;
             if (found) counters.HostIdentityLookupHitCount++; else counters.HostIdentityLookupMissCount++;
             counters.HostIdentityLinearScanElementVisits += scannedElements;
             counters.HostIdentityPresentedElementCount += payload.HostIdentities.Length;
