@@ -568,10 +568,13 @@ internal sealed partial class Process
     private readonly List<ProductionDispatchTraceRow> productionDispatchTrace = [];
     private readonly List<string> productionSessionStartTrace = [];
     private readonly List<CsvIndexReadTraceRow> productionCsvIndexReadTrace = [];
+    private List<string>? productionArgumentImportTrace;
+    private int productionArgumentImportTraceInvocationOrdinal;
     // [Emuera改修:NEXT-3D-R1.5C3A 2026-09-04]
     // 実invocationの既存session traceだけを、明示targetのSessionStartFault時に保持する。
     private List<string>? productionSessionStartFaultTrace;
     private const string ProductionSessionStartTraceHeader = "EntryRuntimeFunctionId\tFrameImportResult\tFrameBindingResult\tVmMachineStartResult\tVmStopReason\tVmStopFunctionId\tVmStopPc\tSemanticStatus\tSemanticFault\tSessionStartOutcome\tExceptionType\tExceptionMessage\tSemanticExecutorPresent\tRuntimeEffectsPresent\tVmMachineStructuralSemanticsType\tVmMachineRuntimeEffectsType\tArenaKind\tRecordIndex\tRootNodeIndex\tSemanticNodeKind\tSemanticOperator\tCanonicalHostIdentityId\tHostBindingPresent\tHostOperation\tHostSymbol\tHostResult";
+    private const string ArgumentImportTraceHeader = "RuntimeFunctionId\tFunctionName\tSourcePath\tStartLine\tLegacyArgumentDefinitionCount\tRuntimeMetadataParameterCount\tParameterOrdinal\tParameterName\tParameterType\tIsReference\tLegacyFramePresent\tLegacyARGAvailable\tLegacyARGSAvailable\tExpectedRuntimeType\tObservedLegacyValueKind\tImportAttempted\tImportSucceeded\tFailureStage\tExceptionType\tExceptionMessage\tCallDepth\tInvocationOrdinal";
     private Dictionary<FunctionLabelLine, string> productionProbeCaseIds = [];
     private LegacyVmSemanticHost? productionSemanticHost;
     private LegacyVmFrameBindingCatalog? productionFrameCatalog;
@@ -600,20 +603,74 @@ internal sealed partial class Process
     internal bool TryImportNextRuntimeEntryArguments(LinkedProgram program, RuntimeFunctionId functionId, out VmSemanticValue[] actuals)
     {
         actuals = [];
-        if ((uint)functionId.Value >= (uint)program.RuntimeMetadata.Length || state.functionCount == 0) return false;
+        if ((uint)functionId.Value >= (uint)program.RuntimeMetadata.Length)
+        {
+            RecordArgumentImportFailure(program, functionId, null, null, -1, "RUNTIME_FUNCTION_ID_OUT_OF_RANGE");
+            return false;
+        }
+        if (state.functionCount == 0)
+        {
+            RecordArgumentImportFailure(program, functionId, null, null, -1, "NO_LEGACY_FRAME");
+            return false;
+        }
         var label = state.CurrentCalled.TopLabel;
         var metadata = program.RuntimeMetadata[functionId.Value];
-        if (label.Arg.Length != metadata.Parameters.Length) return false;
+        if (label.Arg.Length != metadata.Parameters.Length)
+        {
+            RecordArgumentImportFailure(program, functionId, label, metadata, -1, "PARAMETER_COUNT_MISMATCH");
+            return false;
+        }
         actuals = new VmSemanticValue[metadata.Parameters.Length];
         for (var index = 0; index < metadata.Parameters.Length; index++)
         {
             var argument = label.Arg[index];
-            if (argument.Identifier.IsReference) { actuals = []; return false; }
+            if (argument.Identifier.IsReference)
+            {
+                actuals = [];
+                RecordArgumentImportFailure(program, functionId, label, metadata, index, "REFERENCE_PARAMETER_UNSUPPORTED");
+                return false;
+            }
             actuals[index] = metadata.Parameters[index].Type == RuntimeMetadataValueType.Integer
                 ? VmSemanticValue.From(argument.GetIntValue(exm))
                 : VmSemanticValue.From(argument.GetStrValue(exm));
         }
         return true;
+    }
+
+    private void RecordArgumentImportFailure(LinkedProgram program, RuntimeFunctionId functionId, FunctionLabelLine? label, FunctionRuntimeMetadata? metadata, int parameterOrdinal, string failureStage, Exception? exception = null)
+    {
+        if (!ReferenceEquals(program, productionProgram) || string.IsNullOrWhiteSpace(Program.NextRuntimeSessionStartFaultTracePath) ||
+            Program.NextRuntimeSessionStartFaultTraceFunctionIds?.Contains(functionId.Value) != true)
+            return;
+        var parameter = metadata is not null && (uint)parameterOrdinal < (uint)metadata.Parameters.Length ? metadata.Parameters[parameterOrdinal] : default;
+        var argument = label is not null && (uint)parameterOrdinal < (uint)label.Arg.Length ? label.Arg[parameterOrdinal] : null;
+        var observedKind = argument is null ? "" : argument.Identifier.IsReference ? "Reference" : argument.GetOperandType() == typeof(long) ? "Integer" : argument.GetOperandType() == typeof(string) ? "String" : argument.GetOperandType().Name;
+        var rows = productionArgumentImportTrace ??= [];
+        var invocationOrdinal = ++productionArgumentImportTraceInvocationOrdinal;
+        rows.Add(string.Join('\t', [
+            functionId.Value.ToString(CultureInfo.InvariantCulture),
+            DispatchTraceValue(label?.LabelName ?? ""),
+            DispatchTraceValue(label?.Position?.Filename ?? ""),
+            (label?.Position?.LineNo ?? 0).ToString(CultureInfo.InvariantCulture),
+            (label?.Arg.Length ?? 0).ToString(CultureInfo.InvariantCulture),
+            (metadata?.Parameters.Length ?? 0).ToString(CultureInfo.InvariantCulture),
+            parameterOrdinal.ToString(CultureInfo.InvariantCulture),
+            DispatchTraceValue(parameter.Name ?? ""),
+            parameter.Type.ToString(),
+            argument?.Identifier.IsReference == true ? "YES" : "NO",
+            state.functionCount != 0 ? "YES" : "NO",
+            label?.ArgLength > 0 ? "YES" : "NO",
+            label?.ArgsLength > 0 ? "YES" : "NO",
+            metadata is null || parameterOrdinal < 0 ? "" : parameter.Type.ToString(),
+            observedKind,
+            "YES",
+            "NO",
+            failureStage,
+            DispatchTraceValue(exception?.GetType().Name ?? ""),
+            DispatchTraceValue(exception?.Message ?? ""),
+            state.functionCount.ToString(CultureInfo.InvariantCulture),
+            invocationOrdinal.ToString(CultureInfo.InvariantCulture)
+        ]));
     }
 
     internal bool TryWriteNextRuntimeReturn(VmSemanticValue value)
@@ -1025,6 +1082,8 @@ internal sealed partial class Process
         if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
         var rows = productionSessionStartFaultTrace ?? [];
         File.WriteAllText(fullPath, ProductionSessionStartTraceHeader + Environment.NewLine + string.Join(Environment.NewLine, rows) + Environment.NewLine, Encoding.UTF8);
+        if (productionArgumentImportTrace is not null)
+            File.WriteAllText(fullPath + ".argument-import.tsv", ArgumentImportTraceHeader + Environment.NewLine + string.Join(Environment.NewLine, productionArgumentImportTrace) + Environment.NewLine, Encoding.UTF8);
         if (productionCsvIndexReadTrace.Count != 0)
         {
             var csvPath = fullPath + ".csv-index.tsv";
