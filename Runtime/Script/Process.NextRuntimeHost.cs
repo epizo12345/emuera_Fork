@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -21,6 +22,54 @@ using MinorShift.Emuera.Runtime.Script.Statements.Variable;
 namespace MinorShift.Emuera.GameProc;
 #nullable enable
 
+internal sealed record CsvIndexReadTraceRow(
+    int RuntimeFunctionId,
+    string FunctionName,
+    string ArenaKind,
+    int RecordIndex,
+    int NodeIndex,
+    ulong IdentityStableId,
+    string IdentityKind,
+    int IdentityIndexArity,
+    string HostSymbol,
+    string SemanticUse,
+    bool NormalVariableBindAttempted,
+    bool NormalVariableBindSucceeded,
+    bool CsvContextIndexPresent,
+    bool CsvIndexTokenPresent,
+    string CsvOwnerTokenName,
+    string CsvOwnerTokenCode,
+    int CsvOwnerTokenDimension,
+    bool KeywordDictionaryPresent,
+    bool KeywordLabelFound,
+    int? ResolvedCsvNumericIndex,
+    int RuntimeReadIndexCount,
+    string RuntimeReadIndexKinds,
+    string RuntimeReadIndexValues,
+    bool FinalBoundTokenPresent,
+    bool FinalReadAttempted,
+    bool FinalReadResult,
+    string FailureStage,
+    string ExceptionType,
+    string ExceptionMessage)
+{
+    internal static string Header => "RuntimeFunctionId\tFunctionName\tArenaKind\tRecordIndex\tNodeIndex\tIdentityStableId\tIdentityKind\tIdentityIndexArity\tHostSymbol\tSemanticUse\tNormalVariableBindAttempted\tNormalVariableBindSucceeded\tCsvContextIndexPresent\tCsvIndexTokenPresent\tCsvOwnerTokenName\tCsvOwnerTokenCode\tCsvOwnerTokenDimension\tKeywordDictionaryPresent\tKeywordLabelFound\tResolvedCsvNumericIndex\tRuntimeReadIndexCount\tRuntimeReadIndexKinds\tRuntimeReadIndexValues\tFinalBoundTokenPresent\tFinalReadAttempted\tFinalReadResult\tFailureStage\tExceptionType\tExceptionMessage";
+    internal string ToTsv() => string.Join('\t', [
+        RuntimeFunctionId.ToString(CultureInfo.InvariantCulture), Clean(FunctionName), Clean(ArenaKind),
+        RecordIndex.ToString(CultureInfo.InvariantCulture), NodeIndex.ToString(CultureInfo.InvariantCulture),
+        IdentityStableId.ToString("X16", CultureInfo.InvariantCulture), Clean(IdentityKind),
+        IdentityIndexArity.ToString(CultureInfo.InvariantCulture), Clean(HostSymbol), Clean(SemanticUse),
+        NormalVariableBindAttempted ? "YES" : "NO", NormalVariableBindSucceeded ? "YES" : "NO",
+        CsvContextIndexPresent ? "YES" : "NO", CsvIndexTokenPresent ? "YES" : "NO", Clean(CsvOwnerTokenName),
+        Clean(CsvOwnerTokenCode), CsvOwnerTokenDimension.ToString(CultureInfo.InvariantCulture),
+        KeywordDictionaryPresent ? "YES" : "NO", KeywordLabelFound ? "YES" : "NO",
+        ResolvedCsvNumericIndex?.ToString(CultureInfo.InvariantCulture) ?? "", RuntimeReadIndexCount.ToString(CultureInfo.InvariantCulture),
+        Clean(RuntimeReadIndexKinds), Clean(RuntimeReadIndexValues), FinalBoundTokenPresent ? "YES" : "NO",
+        FinalReadAttempted ? "YES" : "NO", FinalReadResult ? "PASS" : "FAIL", Clean(FailureStage),
+        Clean(ExceptionType), Clean(ExceptionMessage)]);
+    private static string Clean(string value) => value.Replace("\t", " ", StringComparison.Ordinal).Replace("\r", " ", StringComparison.Ordinal).Replace("\n", " ", StringComparison.Ordinal);
+}
+
 // The host stays in the Legacy assembly so no Legacy object crosses the VM boundary.
 internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparationCounters? preparationCounters = null) : IVmSemanticHost, IVmTypedSemanticHost, IVmAssignmentTargetTypeHost
 {
@@ -29,7 +78,14 @@ internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparation
     private readonly VmRuntimePreparationCounters counters = preparationCounters ?? new();
     private readonly Dictionary<SemanticPayload, SemanticUseContextIndex> contextIndexes = [];
     private sealed record BoundVariable(VariableToken Token, bool ImplicitZeroIndex);
-    private sealed record SemanticUseContextIndex(Dictionary<int, VariableToken> CsvIndexTokens, bool[] StringAssignmentTargets);
+    private sealed record CsvIndexLookup(VariableToken? OwnerToken, string HostSymbol, bool KeywordDictionaryPresent, bool KeywordLabelFound, int? ResolvedNumericIndex, string ExceptionType = "", string ExceptionMessage = "");
+    private sealed record CsvIndexDiagnosticBinding(SemanticPayload Payload, SemanticHostIdentity Identity, CsvIndexLookup Lookup, bool NormalVariableBindAttempted, bool NormalVariableBindSucceeded);
+    private sealed record SemanticUseContextIndex(Dictionary<int, VariableToken> CsvIndexTokens, Dictionary<int, CsvIndexLookup>? CsvIndexLookups, bool[] StringAssignmentTargets);
+    private readonly Dictionary<ulong, CsvIndexDiagnosticBinding> csvIndexDiagnosticBindings = [];
+    private readonly List<CsvIndexReadTraceRow> csvIndexReadTrace = [];
+    private bool csvIndexDiagnosticActive;
+    private int csvIndexDiagnosticFunctionId;
+    private string csvIndexDiagnosticFunctionName = "";
     internal enum BuiltinCallKind { Minimum, Maximum }
     internal VmRuntimePreparationCounters PreparationCounters => counters;
     internal int BindResolutionCount { get; private set; }
@@ -103,6 +159,36 @@ internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparation
         }
         return false;
     }
+    private bool TryGetCsvIndexLookup(SemanticPayload payload, SemanticHostIdentity identity, out CsvIndexLookup lookup)
+    {
+        if (contextIndexes.TryGetValue(payload, out var index) && index.CsvIndexLookups is { } lookups && lookups.TryGetValue(identity.NodeIndex, out var found))
+        {
+            lookup = found;
+            return true;
+        }
+        lookup = null!;
+        return false;
+    }
+    internal void BeginCsvIndexDiagnostic(int functionId, string functionName)
+    {
+        csvIndexDiagnosticActive = Program.NextRuntimeSessionStartFaultTraceFunctionIds?.Contains(functionId) == true;
+        if (!csvIndexDiagnosticActive) return;
+        csvIndexDiagnosticFunctionId = functionId;
+        csvIndexDiagnosticFunctionName = functionName;
+        csvIndexDiagnosticBindings.Clear();
+        csvIndexReadTrace.Clear();
+    }
+    internal IReadOnlyList<CsvIndexReadTraceRow> EndCsvIndexDiagnostic()
+    {
+        if (!csvIndexDiagnosticActive) return [];
+        csvIndexDiagnosticActive = false;
+        if (csvIndexReadTrace.Count == 0)
+            csvIndexReadTrace.Add(new(csvIndexDiagnosticFunctionId, csvIndexDiagnosticFunctionName, "None", -1, -1, 0, "", 0, "", "UNPROVEN", false, false, false, false, "", "", 0, false, false, null, 0, "", "", false, false, false, "UNPROVEN", "", ""));
+        var rows = csvIndexReadTrace.ToArray();
+        csvIndexDiagnosticBindings.Clear();
+        csvIndexReadTrace.Clear();
+        return rows;
+    }
     internal void BuildSemanticContextIndex(IEnumerable<SemanticPayload> payloads)
     {
         counters.SemanticContextIndexBuildCount++;
@@ -110,6 +196,7 @@ internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparation
         {
             if (contextIndexes.ContainsKey(payload)) continue;
             var csvIndexTokens = new Dictionary<int, VariableToken>();
+            var csvIndexLookups = DiagnosticCsvIndexEnabled ? new Dictionary<int, CsvIndexLookup>() : null;
             var stringAssignmentTargets = new bool[payload.Records.Length];
             var variableIdentities = payload.HostIdentities
                 .Where(identity => identity.Kind == SemanticHostIdentityKind.Variable)
@@ -124,7 +211,7 @@ internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparation
                 var subkey = node.Kind == SemanticNodeKind.VariableSubkey && (uint)node.B < (uint)payload.Symbols.Length ? payload.ReadSymbol(payload.Symbols[node.B]) : null;
                 VariableToken? ownerToken;
                 try { ownerToken = process.GetNextRuntimeVariableToken(name, subkey); } catch (Exception) { ownerToken = null; }
-                if (ownerToken is null) continue;
+                if (ownerToken is null && !DiagnosticCsvIndexEnabled) continue;
                 for (var offset = 0; offset < count; offset++)
                 {
                     var childIndex = start + offset;
@@ -132,13 +219,37 @@ internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparation
                     var child = payload.Edges[childIndex].To;
                     if (!variableIdentities.TryGetValue(child, out var childIdentity) || (uint)childIdentity.NameSymbolIndex >= (uint)payload.Symbols.Length) continue;
                     var label = payload.ReadSymbol(payload.Symbols[childIdentity.NameSymbolIndex]);
+                    var keywordDictionaryPresent = false;
+                    var keywordLabelFound = false;
+                    int? resolvedNumericIndex = null;
+                    string exceptionType = "";
+                    string exceptionMessage = "";
                     try
                     {
-                        if (GlobalStatic.ConstantData.GetKeywordDictionary(out _, ownerToken.Code, -1)?.ContainsKey(label) == true ||
-                            (offset < 3 && GlobalStatic.ConstantData.GetKeywordDictionary(out _, ownerToken.Code, offset)?.ContainsKey(label) == true))
-                            csvIndexTokens.TryAdd(child, ownerToken);
+                        if (ownerToken is not null)
+                        {
+                            var dictionary = GlobalStatic.ConstantData.GetKeywordDictionary(out _, ownerToken.Code, -1);
+                            keywordDictionaryPresent |= dictionary is not null;
+                            if (dictionary is not null && dictionary.TryGetValue(label, out var numericIndex))
+                            {
+                                keywordLabelFound = true;
+                                resolvedNumericIndex = numericIndex;
+                            }
+                            if (!keywordLabelFound && offset < 3)
+                            {
+                                dictionary = GlobalStatic.ConstantData.GetKeywordDictionary(out _, ownerToken.Code, offset);
+                                keywordDictionaryPresent |= dictionary is not null;
+                                if (dictionary is not null && dictionary.TryGetValue(label, out numericIndex))
+                                {
+                                    keywordLabelFound = true;
+                                    resolvedNumericIndex = numericIndex;
+                                }
+                            }
+                            if (keywordLabelFound) csvIndexTokens.TryAdd(child, ownerToken);
+                        }
                     }
-                    catch (CodeEE) { }
+                    catch (Exception ex) { exceptionType = ex.GetType().FullName ?? ex.GetType().Name; exceptionMessage = ex.Message; }
+                    csvIndexLookups?.TryAdd(child, new(ownerToken, label, keywordDictionaryPresent, keywordLabelFound, resolvedNumericIndex, exceptionType, exceptionMessage));
                 }
             }
             for (var recordIndex = 0; recordIndex < payload.Records.Length; recordIndex++)
@@ -152,7 +263,7 @@ internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparation
                         break;
                     }
             }
-            contextIndexes.Add(payload, new(csvIndexTokens, stringAssignmentTargets));
+            contextIndexes.Add(payload, new(csvIndexTokens, csvIndexLookups, stringAssignmentTargets));
         }
     }
     internal bool IsFrameVariableBound(int functionId, SemanticPayload payload, SemanticHostIdentity identity)
@@ -181,13 +292,18 @@ internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparation
     {
         foreach (var identity in payload.HostIdentities)
         {
+            var normalVariableBindAttempted = false;
+            var normalVariableBindSucceeded = false;
             if (identity.Kind == SemanticHostIdentityKind.Variable && !variables.ContainsKey(identity.StableId))
             {
+                normalVariableBindAttempted = true;
                 BindResolutionCount++;
-                if (process.TryBindNextRuntimeHostVariable(payload, identity, out var variable)) variables.Add(identity.StableId, new(variable, variable.Dimension == 1 && !variable.IsCharacterData && identity.IndexArity == 0));
+                if (process.TryBindNextRuntimeHostVariable(payload, identity, out var variable)) { variables.Add(identity.StableId, new(variable, variable.Dimension == 1 && !variable.IsCharacterData && identity.IndexArity == 0)); normalVariableBindSucceeded = true; }
             }
             else if (identity.Kind == SemanticHostIdentityKind.Call && !builtins.ContainsKey(identity.StableId) && process.TryBindNextRuntimeHostBuiltin(payload, identity, out var builtin))
                 builtins.Add(identity.StableId, builtin);
+            if (csvIndexDiagnosticActive && identity.Kind == SemanticHostIdentityKind.Variable && TryGetCsvIndexLookup(payload, identity, out var lookup))
+                csvIndexDiagnosticBindings[identity.StableId] = new(payload, identity, lookup, normalVariableBindAttempted, normalVariableBindSucceeded);
         }
         return true;
     }
@@ -195,9 +311,47 @@ internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparation
     public bool TryRead(SemanticHostIdentity identity, ReadOnlySpan<VmSemanticValue> indices, out VmSemanticValue value)
     {
         RuntimeTypedReadCount++;
-        if (variables.TryGetValue(identity.StableId, out var variable)) return process.TryReadNextRuntimeHostValue(variable.Token, variable.ImplicitZeroIndex && indices.IsEmpty ? [VmSemanticValue.From(0)] : indices, out value);
-        value = VmSemanticValue.Unavailable; return false;
+        var finalBound = variables.TryGetValue(identity.StableId, out var variable);
+        value = VmSemanticValue.Unavailable;
+        var readAttempted = false;
+        var readResult = false;
+        if (finalBound)
+        {
+            readAttempted = true;
+            readResult = process.TryReadNextRuntimeHostValue(variable!.Token, variable.ImplicitZeroIndex && indices.IsEmpty ? [VmSemanticValue.From(0)] : indices, out value);
+        }
+        if (csvIndexDiagnosticActive && csvIndexDiagnosticBindings.TryGetValue(identity.StableId, out var binding))
+        {
+            var lookup = binding.Lookup;
+            var stage = !binding.NormalVariableBindSucceeded
+                ? !contextIndexes.ContainsKey(binding.Payload) ? "CSV_CONTEXT_INDEX_MISSING"
+                : lookup.OwnerToken is null ? "CSV_OWNER_TOKEN_MISSING"
+                : !lookup.KeywordDictionaryPresent ? "KEYWORD_DICTIONARY_MISSING"
+                : !lookup.KeywordLabelFound ? "CSV_LABEL_NOT_FOUND"
+                : !finalBound ? "CSV_NUMERIC_INDEX_RESOLVED_BUT_NOT_PROPAGATED" : "OTHER"
+                : !readResult ? "LEGACY_TOKEN_READ_FAILED" : "OTHER";
+            csvIndexReadTrace.Add(new(csvIndexDiagnosticFunctionId, csvIndexDiagnosticFunctionName, process.DescribeNextRuntimeSemanticArena(binding.Payload),
+                FindRecordIndex(binding.Payload, identity.NodeIndex), identity.NodeIndex, identity.StableId, identity.Kind.ToString(), identity.IndexArity,
+                lookup.HostSymbol, "CsvIndexLabel", binding.NormalVariableBindAttempted, binding.NormalVariableBindSucceeded,
+                contextIndexes.ContainsKey(binding.Payload), lookup.KeywordLabelFound, lookup.OwnerToken?.Name ?? "",
+                lookup.OwnerToken is null ? "" : ((int)lookup.OwnerToken.Code).ToString(CultureInfo.InvariantCulture), lookup.OwnerToken?.Dimension ?? 0,
+                lookup.KeywordDictionaryPresent, lookup.KeywordLabelFound, lookup.ResolvedNumericIndex, indices.Length,
+                string.Join(',', indices.ToArray().Select(index => index.Kind.ToString())), string.Join(',', indices.ToArray().Select(index => index.ToString())),
+                finalBound, readAttempted, readResult, stage, lookup.ExceptionType, lookup.ExceptionMessage));
+        }
+        return readResult;
     }
+
+    private static int FindRecordIndex(SemanticPayload payload, int nodeIndex)
+    {
+        for (var index = 0; index < payload.Records.Length; index++)
+        {
+            var record = payload.Records[index];
+            if (nodeIndex >= record.RootNodeIndex && nodeIndex < record.RootNodeIndex + record.NodeCount) return index;
+        }
+        return -1;
+    }
+    private static bool DiagnosticCsvIndexEnabled => !string.IsNullOrWhiteSpace(Program.NextRuntimeSessionStartFaultTracePath) && Program.NextRuntimeSessionStartFaultTraceFunctionIds is not null;
 
     public bool TryWrite(SemanticHostIdentity identity, ReadOnlySpan<VmSemanticValue> indices, VmSemanticValue value)
     {
@@ -387,6 +541,7 @@ internal sealed partial class Process
     private NextRuntimeDispatchRejectReason productionLastRejectReason;
     private readonly List<ProductionDispatchTraceRow> productionDispatchTrace = [];
     private readonly List<string> productionSessionStartTrace = [];
+    private readonly List<CsvIndexReadTraceRow> productionCsvIndexReadTrace = [];
     // [Emuera改修:NEXT-3D-R1.5C3A 2026-09-04]
     // 実invocationの既存session traceだけを、明示targetのSessionStartFault時に保持する。
     private List<string>? productionSessionStartFaultTrace;
@@ -404,6 +559,10 @@ internal sealed partial class Process
     private VmRuntimeReadinessResult? productionReadiness;
 
     internal IVmSemanticHost CreateNextRuntimeSemanticHost() => new LegacyVmSemanticHost(this);
+
+    internal string DescribeNextRuntimeSemanticArena(SemanticPayload payload) =>
+        productionProgram is not null && ReferenceEquals(payload, productionProgram.RuntimeStatements.OperandArena) ? "RuntimeStatementOperand" :
+        productionProgram is not null && ReferenceEquals(payload, productionProgram.CallArgumentArena) ? "CallArgument" : "Semantic";
 
     internal LocalVariableToken GetNextRuntimeLocalVariableToken(string key, FunctionLabelLine label) => idDic.GetNextRuntimeLocalVariableToken(key, label);
 
@@ -658,7 +817,9 @@ internal sealed partial class Process
         PerformanceMetrics.AddNextDispatchStage("SessionConstruction", sessionStart);
         TraceR1_4E("NextSessionStart", stopReason: "ProductionStart");
         var executionStart = PerformanceMetrics.StartNextDispatchTiming();
+        productionSemanticHost.BeginCsvIndexDiagnostic(entryFunctionId.Value, functionName);
         var stop = machine.Run(entryFunctionId, actuals);
+        productionCsvIndexReadTrace.AddRange(productionSemanticHost.EndCsvIndexDiagnostic());
         PerformanceMetrics.AddNextDispatchStage("VmExecution", executionStart);
         TraceR1_4E(stop == VmStopReason.Returned ? "NextSessionComplete" : "NextSessionStop", stopReason: stop.ToString());
         var current = machine.CurrentFrame;
@@ -838,6 +999,11 @@ internal sealed partial class Process
         if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
         var rows = productionSessionStartFaultTrace ?? [];
         File.WriteAllText(fullPath, ProductionSessionStartTraceHeader + Environment.NewLine + string.Join(Environment.NewLine, rows) + Environment.NewLine, Encoding.UTF8);
+        if (productionCsvIndexReadTrace.Count != 0)
+        {
+            var csvPath = fullPath + ".csv-index.tsv";
+            File.WriteAllText(csvPath, CsvIndexReadTraceRow.Header + Environment.NewLine + string.Join(Environment.NewLine, productionCsvIndexReadTrace.Select(row => row.ToTsv())) + Environment.NewLine, Encoding.UTF8);
+        }
     }
 
     // DoScript reaches this only after console input resumes.  It never calls
