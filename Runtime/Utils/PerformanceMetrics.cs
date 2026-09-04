@@ -122,6 +122,20 @@ internal static class PerformanceMetrics
     private static long nextReadinessRequirementCandidateCount;
     private static long nextReadinessRequirementDedupLookupCount;
     private static long nextReadinessRequirementOutputCount;
+    private static int nextSourceIndexSelectedFileCount;
+    private static int nextSourceIndexIndexedFileCount;
+    private static long nextSourceIndexSourceBytes;
+    private static long nextSourceIndexLineCount;
+    private static long nextSourceIndexFunctionDefinitionCount;
+    private static int nextSourceIndexPositionEntryCount;
+    private static int nextSourceIndexDistinctPositionCount;
+    private static int nextSourceIndexPositionCollisionCount;
+    private static int nextSourceIndexLabelCount;
+    private static int nextSourceIndexRuntimeBindingCount;
+    private static int nextSourceIndexPositionLookupHitCount;
+    private static int nextSourceIndexRuntimePositionCount;
+    private static int nextSourceIndexLabelIdCount;
+    private static int nextSourceIndexMisbindingCheckCount;
 #endif
 
     internal static bool Enabled => Volatile.Read(ref logPath) != null;
@@ -196,6 +210,20 @@ internal static class PerformanceMetrics
         nextReadinessRequirementCandidateCount = 0;
         nextReadinessRequirementDedupLookupCount = 0;
         nextReadinessRequirementOutputCount = 0;
+        nextSourceIndexSelectedFileCount = 0;
+        nextSourceIndexIndexedFileCount = 0;
+        nextSourceIndexSourceBytes = 0;
+        nextSourceIndexLineCount = 0;
+        nextSourceIndexFunctionDefinitionCount = 0;
+        nextSourceIndexPositionEntryCount = 0;
+        nextSourceIndexDistinctPositionCount = 0;
+        nextSourceIndexPositionCollisionCount = 0;
+        nextSourceIndexLabelCount = 0;
+        nextSourceIndexRuntimeBindingCount = 0;
+        nextSourceIndexPositionLookupHitCount = 0;
+        nextSourceIndexRuntimePositionCount = 0;
+        nextSourceIndexLabelIdCount = 0;
+        nextSourceIndexMisbindingCheckCount = 0;
         entryDispatchAlreadyConsumedCount = 0;
         entryDispatchAlreadyConsumedTicks = 0;
         actionableDispatchTicks = 0;
@@ -353,6 +381,23 @@ internal static class PerformanceMetrics
                 VariableLinearScanElementVisits = nextReadinessVariableLinearScanElementVisits,
                 CallLookupCount = nextReadinessCallLookupCount,
                 CallLinearScanElementVisits = nextReadinessCallLinearScanElementVisits
+            },
+            SourceIndexMetrics = new
+            {
+                SelectedFileCount = nextSourceIndexSelectedFileCount,
+                IndexedFileCount = nextSourceIndexIndexedFileCount,
+                SourceBytes = nextSourceIndexSourceBytes,
+                LineCount = nextSourceIndexLineCount,
+                FunctionDefinitionCount = nextSourceIndexFunctionDefinitionCount,
+                SourcePositionEntryCount = nextSourceIndexPositionEntryCount,
+                DistinctSourcePositionCount = nextSourceIndexDistinctPositionCount,
+                SourcePositionCollisionCount = nextSourceIndexPositionCollisionCount,
+                LabelCount = nextSourceIndexLabelCount,
+                RuntimeBindingCount = nextSourceIndexRuntimeBindingCount,
+                SourcePositionLookupHitCount = nextSourceIndexPositionLookupHitCount,
+                RuntimePositionCount = nextSourceIndexRuntimePositionCount,
+                LabelIdCount = nextSourceIndexLabelIdCount,
+                MisbindingCheckCount = nextSourceIndexMisbindingCheckCount
             },
             TopFunctionReasonBuckets = buckets,
             SessionStartRejectSubreasons = subreasons,
@@ -629,6 +674,25 @@ internal static class PerformanceMetrics
         nextReadinessVariableLinearScanElementVisits = variableScanElementVisits;
         nextReadinessCallLookupCount = callLookupCount;
         nextReadinessCallLinearScanElementVisits = callScanElementVisits;
+    }
+
+    [Conditional("PERFORMANCE_METRICS")]
+    internal static void RecordNextRuntimeSourceIndexMetrics(int selectedFileCount, int indexedFileCount, long sourceBytes, long lineCount, long functionDefinitionCount, int sourcePositionEntryCount, int distinctSourcePositionCount, int positionCollisionCount, int labelCount, int runtimeBindingCount, int sourcePositionLookupHitCount, int runtimePositionCount, int labelIdCount, int misbindingCheckCount)
+    {
+        nextSourceIndexSelectedFileCount = selectedFileCount;
+        nextSourceIndexIndexedFileCount = indexedFileCount;
+        nextSourceIndexSourceBytes = sourceBytes;
+        nextSourceIndexLineCount = lineCount;
+        nextSourceIndexFunctionDefinitionCount = functionDefinitionCount;
+        nextSourceIndexPositionEntryCount = sourcePositionEntryCount;
+        nextSourceIndexDistinctPositionCount = distinctSourcePositionCount;
+        nextSourceIndexPositionCollisionCount = positionCollisionCount;
+        nextSourceIndexLabelCount = labelCount;
+        nextSourceIndexRuntimeBindingCount = runtimeBindingCount;
+        nextSourceIndexPositionLookupHitCount = sourcePositionLookupHitCount;
+        nextSourceIndexRuntimePositionCount = runtimePositionCount;
+        nextSourceIndexLabelIdCount = labelIdCount;
+        nextSourceIndexMisbindingCheckCount = misbindingCheckCount;
     }
 #endif
 

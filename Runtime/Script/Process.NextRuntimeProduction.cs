@@ -105,8 +105,12 @@ internal sealed partial class Process
 #endif
             }
             RecordProductionTimingStage("ProductionPreparation.Start");
+#if PERFORMANCE_METRICS
+            var sourceIndexTotalStart = PerformanceMetrics.StartNextRuntimeMeasurement();
+#endif
             var selectedFiles = Config.GetFiles(Program.ErbDir, "*.ERB");
             var files = selectedFiles.Select(pair => ErbSourceIndexer.IndexFile(pair.Value)).ToArray();
+            RecordProductionTimingStage("ProductionPreparation.SourceIndex.EnumerateAndIndexFiles");
             var sourcePositions = new Dictionary<string, (int FileOrdinal, int FunctionOrdinal, SourceIndexFlags Flags)>(StringComparer.OrdinalIgnoreCase);
             for (var fileOrdinal = 0; fileOrdinal < files.Length; fileOrdinal++)
                 for (var functionOrdinal = 0; functionOrdinal < files[fileOrdinal].Functions.Count; functionOrdinal++)
@@ -114,6 +118,7 @@ internal sealed partial class Process
                     var function = files[fileOrdinal].Functions[functionOrdinal];
                     sourcePositions[PositionKey(files[fileOrdinal].FileIdentity, function.Span.StartLine)] = (fileOrdinal, functionOrdinal, function.Flags);
                 }
+            RecordProductionTimingStage("ProductionPreparation.SourceIndex.BuildSourcePositions");
 
             var labels = labelDic.GetAllLabels(false).Where(label => label.Position is not null).ToArray();
             var ordered = labels
@@ -121,10 +126,12 @@ internal sealed partial class Process
                 .ThenBy(label => label.Position!.Value.Filename, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(label => label.Position!.Value.LineNo)
                 .ToArray();
+            RecordProductionTimingStage("ProductionPreparation.SourceIndex.EnumerateAndOrderLabels");
             var runtimeByPosition = new Dictionary<string, RuntimeFunctionId>(StringComparer.OrdinalIgnoreCase);
             var labelIds = new Dictionary<FunctionLabelLine, RuntimeFunctionId>();
             var bindings = new RuntimeFunctionBinding[ordered.Length];
             var kinds = new FunctionKind[ordered.Length];
+            var sourcePositionLookupHitCount = 0;
             for (var id = 0; id < ordered.Length; id++)
             {
                 var label = ordered[id];
@@ -139,14 +146,36 @@ internal sealed partial class Process
                 var kind = label.IsMethod ? FunctionKind.Method : label.IsEvent ? FunctionKind.Event : FunctionKind.Normal;
                 kinds[id] = kind;
                 if (sourcePositions.TryGetValue(key, out var source))
+                {
+                    sourcePositionLookupHitCount++;
                     bindings[id] = new(runtimeId, label.LabelName, kind, source.Flags, true, new(source.FileOrdinal, source.FunctionOrdinal));
+                }
                 else
                     bindings[id] = new(runtimeId, label.LabelName, kind, SourceIndexFlags.LineContinuation, true, CatalogSourceRef.None);
             }
+            RecordProductionTimingStage("ProductionPreparation.SourceIndex.BuildRuntimeBindings");
 
             productionRuntimeUniverse = ordered.Length;
             productionMisbind = ordered.Count(label => !sourcePositions.ContainsKey(PositionKey(label.Position!.Value.Filename, label.Position.Value.LineNo)));
             productionExactBound = runtimeByPosition.Count == ordered.Length && labelIds.Count == ordered.Length && productionMisbind == 0;
+#if PERFORMANCE_METRICS
+            PerformanceMetrics.RecordNextRuntimeSourceIndexMetrics(
+                selectedFiles.Count,
+                files.Length,
+                files.Sum(file => file.SourceBytes),
+                files.Sum(file => (long)file.LineCount),
+                files.Sum(file => file.Functions.Count),
+                sourcePositions.Count,
+                files.Sum(file => file.Functions.Count) - sourcePositions.Count,
+                files.Sum(file => file.Functions.Count) - sourcePositions.Count,
+                labels.Length,
+                ordered.Length,
+                sourcePositionLookupHitCount,
+                runtimeByPosition.Count,
+                labelIds.Count,
+                productionMisbind);
+            PerformanceMetrics.RecordNextRuntimeStartupStage("ProductionPreparation.SourceIndex.Total", sourceIndexTotalStart);
+#endif
             RecordProductionMemoryStage("AfterSourceIndex");
             RecordProductionTimingStage("ProductionPreparation.AfterSourceIndex");
 
