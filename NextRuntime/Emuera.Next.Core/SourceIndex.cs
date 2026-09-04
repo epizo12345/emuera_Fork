@@ -174,12 +174,18 @@ public static class ErbSourceIndexer
                     fileFlags |= SourceIndexFlags.OtherSemanticFallback;
                     current?.AddFlags(SourceIndexFlags.OtherSemanticFallback);
                 }
-                else if (TryReadFunctionHeader(trimmed, out var nameBytes, out var parenthesized, out var quoted))
+                else if (TryReadFunctionHeader(trimmed, out var nameBytes, out var parenthesized, out var metadataHeader, out var quoted))
                 {
                     if (current is not null)
                         current.End(lineStart, lineCount - 1);
                     if (parenthesized) parenthesizedHeaders++;
                     current = new FunctionDraft(StrictUtf8.GetString(nameBytes), lineStart, lineCount);
+                    // [Emuera改修:NEXT-3D-R1.5C6.1 2026-09-04]
+                    // LegacyのARG/ARGS headerはSourceIndexのdirective-only判定では見落とすため、
+                    // header suffixの存在だけをfunction-local flagへ反映する。文法解釈のauthorityは
+                    // 引き続きFunctionRuntimeMetadataParserに置き、SourceIndexではmetadataを解析しない。
+                    if (metadataHeader)
+                        current.AddFlags(SourceIndexFlags.FunctionMetadata);
                     functions.Add(current);
                 }
                 else if (trimmed.Length > 0 && trimmed[0] == (byte)'@')
@@ -240,10 +246,11 @@ public static class ErbSourceIndexer
     }
 
     private static bool TryReadFunctionHeader(ReadOnlySpan<byte> trimmed, out ReadOnlySpan<byte> name,
-        out bool parenthesized, out bool quoted)
+        out bool parenthesized, out bool metadataHeader, out bool quoted)
     {
         name = default;
         parenthesized = false;
+        metadataHeader = false;
         quoted = trimmed.Length > 1 && trimmed[0] == (byte)'@' &&
             (trimmed[1] == (byte)'"' || trimmed[1] == (byte)'\'');
         if (trimmed.Length < 2 || trimmed[0] != (byte)'@' || IsIdentifierDelimiter(trimmed[1]))
@@ -254,6 +261,7 @@ public static class ErbSourceIndexer
         var after = trimmed[end..];
         while (after.Length > 0 && (after[0] == (byte)' ' || after[0] == (byte)'\t')) after = after[1..];
         parenthesized = after.Length > 0 && after[0] == (byte)'(';
+        metadataHeader = after.Length > 0 && (after[0] == (byte)'(' || after[0] == (byte)',');
         return name.Length > 0;
     }
 
