@@ -136,6 +136,18 @@ internal static class PerformanceMetrics
     private static int nextSourceIndexRuntimePositionCount;
     private static int nextSourceIndexLabelIdCount;
     private static int nextSourceIndexMisbindingCheckCount;
+    private static int nextPrototypeCompileFileCount;
+    private static long nextPrototypeCompileCandidateCount;
+    private static long nextPrototypeCompileMappedCount;
+    private static long nextPrototypeCompileReadCount;
+    private static long nextPrototypeCompileReadFailureCount;
+    private static long nextPrototypeCompileCompiledCount;
+    private static long nextPrototypeCompileUnsupportedCount;
+    private static long nextPrototypeCompileSourceBytes;
+    private static long nextPrototypeCompileInstructionCount;
+    private static long nextPrototypeCompileSemanticNodeCount;
+    private static long nextPrototypeCompileSemanticRecordCount;
+    private static long nextPrototypeCompileMetadataCount;
 #endif
 
     internal static bool Enabled => Volatile.Read(ref logPath) != null;
@@ -224,6 +236,18 @@ internal static class PerformanceMetrics
         nextSourceIndexRuntimePositionCount = 0;
         nextSourceIndexLabelIdCount = 0;
         nextSourceIndexMisbindingCheckCount = 0;
+        nextPrototypeCompileFileCount = 0;
+        nextPrototypeCompileCandidateCount = 0;
+        nextPrototypeCompileMappedCount = 0;
+        nextPrototypeCompileReadCount = 0;
+        nextPrototypeCompileReadFailureCount = 0;
+        nextPrototypeCompileCompiledCount = 0;
+        nextPrototypeCompileUnsupportedCount = 0;
+        nextPrototypeCompileSourceBytes = 0;
+        nextPrototypeCompileInstructionCount = 0;
+        nextPrototypeCompileSemanticNodeCount = 0;
+        nextPrototypeCompileSemanticRecordCount = 0;
+        nextPrototypeCompileMetadataCount = 0;
         entryDispatchAlreadyConsumedCount = 0;
         entryDispatchAlreadyConsumedTicks = 0;
         actionableDispatchTicks = 0;
@@ -288,6 +312,9 @@ internal static class PerformanceMetrics
         var consumedMilliseconds = TicksToMilliseconds(entryDispatchAlreadyConsumedTicks);
         var actionableMilliseconds = TicksToMilliseconds(actionableDispatchTicks);
         var wholeDispatchMilliseconds = TicksToMilliseconds(wholeDispatchSeamTicks);
+        var prototypeCompileInternalMilliseconds = nextStartupStages.TryGetValue("ProductionPreparation.PrototypeCompile.Total", out var prototypeCompileTotal) ? TicksToMilliseconds(prototypeCompileTotal.Ticks) : 0;
+        var prototypeCompileOuterMilliseconds = nextStartupStages.TryGetValue("ProductionPreparation.AfterPrototypeCompile", out var prototypeCompileOuter) ? TicksToMilliseconds(prototypeCompileOuter.Ticks) : 0;
+        var prototypeCompileUnaccountedMilliseconds = Math.Max(0, prototypeCompileOuterMilliseconds - prototypeCompileInternalMilliseconds);
         var report = new
         {
             Profiler = "NextRuntimePerformanceProfile",
@@ -399,6 +426,24 @@ internal static class PerformanceMetrics
                 LabelIdCount = nextSourceIndexLabelIdCount,
                 MisbindingCheckCount = nextSourceIndexMisbindingCheckCount
             },
+            PrototypeCompileMetrics = new
+            {
+                FileCount = nextPrototypeCompileFileCount,
+                FunctionCandidateCount = nextPrototypeCompileCandidateCount,
+                RuntimeMappedFunctionCount = nextPrototypeCompileMappedCount,
+                SourceReadCount = nextPrototypeCompileReadCount,
+                SourceReadFailureCount = nextPrototypeCompileReadFailureCount,
+                CompiledFunctionCount = nextPrototypeCompileCompiledCount,
+                UnsupportedFunctionCount = nextPrototypeCompileUnsupportedCount,
+                FunctionSourceBytes = nextPrototypeCompileSourceBytes,
+                InstructionCount = nextPrototypeCompileInstructionCount,
+                SemanticNodeCount = nextPrototypeCompileSemanticNodeCount,
+                SemanticRecordCount = nextPrototypeCompileSemanticRecordCount,
+                RuntimeMetadataFunctionCount = nextPrototypeCompileMetadataCount
+            },
+            PrototypeCompileInternalTotalMilliseconds = prototypeCompileInternalMilliseconds,
+            PrototypeCompileOuterTotalMilliseconds = prototypeCompileOuterMilliseconds,
+            PrototypeCompileUnaccountedMilliseconds = prototypeCompileUnaccountedMilliseconds,
             TopFunctionReasonBuckets = buckets,
             SessionStartRejectSubreasons = subreasons,
             SessionStartRejectSubreasonCountSum = subreasonCountSum,
@@ -693,6 +738,23 @@ internal static class PerformanceMetrics
         nextSourceIndexRuntimePositionCount = runtimePositionCount;
         nextSourceIndexLabelIdCount = labelIdCount;
         nextSourceIndexMisbindingCheckCount = misbindingCheckCount;
+    }
+
+    [Conditional("PERFORMANCE_METRICS")]
+    internal static void RecordNextRuntimePrototypeCompileMetrics(int fileCount, long functionCandidateCount, long runtimeMappedFunctionCount, long sourceReadCount, long sourceReadFailureCount, long compiledFunctionCount, long unsupportedFunctionCount, long functionSourceBytes, long instructionCount, long semanticNodeCount, long semanticRecordCount, long runtimeMetadataFunctionCount)
+    {
+        nextPrototypeCompileFileCount = fileCount;
+        nextPrototypeCompileCandidateCount = functionCandidateCount;
+        nextPrototypeCompileMappedCount = runtimeMappedFunctionCount;
+        nextPrototypeCompileReadCount = sourceReadCount;
+        nextPrototypeCompileReadFailureCount = sourceReadFailureCount;
+        nextPrototypeCompileCompiledCount = compiledFunctionCount;
+        nextPrototypeCompileUnsupportedCount = unsupportedFunctionCount;
+        nextPrototypeCompileSourceBytes = functionSourceBytes;
+        nextPrototypeCompileInstructionCount = instructionCount;
+        nextPrototypeCompileSemanticNodeCount = semanticNodeCount;
+        nextPrototypeCompileSemanticRecordCount = semanticRecordCount;
+        nextPrototypeCompileMetadataCount = runtimeMetadataFunctionCount;
     }
 #endif
 

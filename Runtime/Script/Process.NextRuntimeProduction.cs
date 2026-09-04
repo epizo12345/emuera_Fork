@@ -191,24 +191,96 @@ internal sealed partial class Process
             var sourceToRuntime = new Dictionary<SourceFunctionId, RuntimeFunctionId>();
             var sourcePrototypes = new List<SourceFunctionPrototype>();
             var sourceId = 0;
+#if PERFORMANCE_METRICS
+            // [Emuera改修:NEXT-3D-R1.5P3H 2026-09-04]
+            // PrototypeCompileの内部costを測るだけで、compile順序・失敗処理・runtime意味論は変更しない。
+            var prototypeCompileTotalStart = PerformanceMetrics.StartNextRuntimeMeasurement();
+            var prototypeCompileFileCount = 0;
+            long prototypeCompileFunctionCandidateCount = 0;
+            long prototypeCompileRuntimeMappedCount = 0;
+            long prototypeCompileSourceReadCount = 0;
+            long prototypeCompileSourceReadFailureCount = 0;
+            long prototypeCompileCompiledCount = 0;
+            long prototypeCompileUnsupportedCount = 0;
+            long prototypeCompileSourceBytes = 0;
+            long prototypeCompileInstructionCount = 0;
+            long prototypeCompileSemanticNodeCount = 0;
+            long prototypeCompileSemanticRecordCount = 0;
+            long prototypeCompileRuntimeMetadataCount = 0;
+#endif
             foreach (var file in files)
             {
+#if PERFORMANCE_METRICS
+                prototypeCompileFileCount++;
+                prototypeCompileFunctionCandidateCount += file.Functions.Count;
+                var prototypeCompileFileStart = PerformanceMetrics.StartNextRuntimeMeasurement();
+#endif
                 using var session = FunctionSourceReader.OpenFile(file);
                 foreach (var function in file.Functions)
                 {
                     var currentSourceId = new SourceFunctionId(sourceId++);
                     if (!runtimeByPosition.TryGetValue(PositionKey(file.FileIdentity, function.Span.StartLine), out var runtimeId)) continue;
+#if PERFORMANCE_METRICS
+                    prototypeCompileRuntimeMappedCount++;
+#endif
                     sourceToRuntime[currentSourceId] = runtimeId;
                     var read = session.Read(function);
-                    if (read.Status != SourceReadStatus.Read || read.Source is not { } functionSource) continue;
+                    if (read.Status != SourceReadStatus.Read || read.Source is not { } functionSource)
+                    {
+#if PERFORMANCE_METRICS
+                        prototypeCompileSourceReadFailureCount++;
+#endif
+                        continue;
+                    }
+#if PERFORMANCE_METRICS
+                    prototypeCompileSourceReadCount++;
+                    prototypeCompileSourceBytes += functionSource.Length;
+#endif
                     var compiled = compiler.TryCompileRuntime(functionSource);
-                    if (compiled.Status != CompileStatus.Compiled) continue;
+                    if (compiled.Status != CompileStatus.Compiled)
+                    {
+#if PERFORMANCE_METRICS
+                        prototypeCompileUnsupportedCount++;
+#endif
+                        continue;
+                    }
                     var source = compiled.Function!;
+#if PERFORMANCE_METRICS
+                    prototypeCompileCompiledCount++;
+                    prototypeCompileInstructionCount += source.Instructions.Length;
+                    if (source.SemanticPayload is { } semanticPayload)
+                    {
+                        prototypeCompileSemanticNodeCount += semanticPayload.SemanticNodeCount;
+                        prototypeCompileSemanticRecordCount += semanticPayload.SemanticRecordCount;
+                    }
+                    if (source.RuntimeMetadata is not null)
+                        prototypeCompileRuntimeMetadataCount++;
+#endif
                     var bytes = functionSource.Bytes;
                     var operands = source.Instructions.Select(instruction => instruction.OperandLength == 0 ? string.Empty : Encoding.UTF8.GetString(bytes, instruction.OperandOffset, instruction.OperandLength)).ToImmutableArray();
                     sourcePrototypes.Add(new(currentSourceId, source.Instructions, operands, source.SemanticPayload, source.RuntimeMetadata));
                 }
+#if PERFORMANCE_METRICS
+                PerformanceMetrics.RecordNextRuntimeConstructionStage("ProductionPreparation.PrototypeCompile.File", prototypeCompileFileStart);
+#endif
             }
+#if PERFORMANCE_METRICS
+            PerformanceMetrics.RecordNextRuntimePrototypeCompileMetrics(
+                prototypeCompileFileCount,
+                prototypeCompileFunctionCandidateCount,
+                prototypeCompileRuntimeMappedCount,
+                prototypeCompileSourceReadCount,
+                prototypeCompileSourceReadFailureCount,
+                prototypeCompileCompiledCount,
+                prototypeCompileUnsupportedCount,
+                prototypeCompileSourceBytes,
+                prototypeCompileInstructionCount,
+                prototypeCompileSemanticNodeCount,
+                prototypeCompileSemanticRecordCount,
+                prototypeCompileRuntimeMetadataCount);
+            PerformanceMetrics.RecordNextRuntimeConstructionStage("ProductionPreparation.PrototypeCompile.FunctionLoop", prototypeCompileTotalStart);
+            PerformanceMetrics.RecordNextRuntimeStartupStage("ProductionPreparation.PrototypeCompile.Total", prototypeCompileTotalStart);
+#endif
             if (sourcePrototypes.Count == 0) throw new InvalidOperationException("production runtime compilation produced no functions");
             RecordProductionMemoryStage("AfterCompile");
             RecordProductionTimingStage("ProductionPreparation.AfterPrototypeCompile");
