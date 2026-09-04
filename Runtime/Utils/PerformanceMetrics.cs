@@ -104,6 +104,13 @@ internal static class PerformanceMetrics
     private static long entryDispatchAlreadyConsumedTicks;
     private static long actionableDispatchTicks;
     private static long wholeDispatchSeamTicks;
+    private static int nextReadinessRuntimeFunctionCount;
+    private static long nextReadinessCodeInstructionVisits;
+    private static long nextReadinessSemanticRecordVisits;
+    private static long nextReadinessHostIdentityVisits;
+    private static long nextReadinessRequirementCandidateCount;
+    private static long nextReadinessRequirementDedupLookupCount;
+    private static long nextReadinessRequirementOutputCount;
 #endif
 
     internal static bool Enabled => Volatile.Read(ref logPath) != null;
@@ -160,6 +167,13 @@ internal static class PerformanceMetrics
         nextCallArgumentPayloadAdditionCount = 0;
         nextCallArgumentPrefixScanElementVisits = 0;
         nextCallArgumentPrefixScanTicks = 0;
+        nextReadinessRuntimeFunctionCount = 0;
+        nextReadinessCodeInstructionVisits = 0;
+        nextReadinessSemanticRecordVisits = 0;
+        nextReadinessHostIdentityVisits = 0;
+        nextReadinessRequirementCandidateCount = 0;
+        nextReadinessRequirementDedupLookupCount = 0;
+        nextReadinessRequirementOutputCount = 0;
         entryDispatchAlreadyConsumedCount = 0;
         entryDispatchAlreadyConsumedTicks = 0;
         actionableDispatchTicks = 0;
@@ -260,6 +274,15 @@ internal static class PerformanceMetrics
                 MaxMilliseconds = TicksToMilliseconds(pair.Value.MaxTicks),
                 AllocatedBytes = pair.Value.AllocatedBytes
             }, StringComparer.Ordinal),
+            ReadinessRequirementStages = nextStartupStages
+                .Where(pair => pair.Key.StartsWith("Readiness.Requirements.", StringComparison.Ordinal))
+                .ToDictionary(pair => pair.Key, pair => new
+                {
+                    Count = pair.Value.Count,
+                    TotalMilliseconds = TicksToMilliseconds(pair.Value.Ticks),
+                    AverageMilliseconds = pair.Value.Count == 0 ? 0 : TicksToMilliseconds(pair.Value.Ticks) / pair.Value.Count,
+                    AllocatedBytes = pair.Value.AllocatedBytes
+                }, StringComparer.Ordinal),
             PostErbStartupEnvelopeMilliseconds = TicksToMilliseconds(nextStartupEnvelopeTicks),
             PostErbStartupEnvelopeAllocatedBytes = nextStartupEnvelopeAllocatedBytes,
             PostErbStartupOtherMilliseconds = TicksToMilliseconds(Math.Max(0, nextStartupEnvelopeTicks - nextStartupChildTicks)),
@@ -282,6 +305,16 @@ internal static class PerformanceMetrics
                 CallArgumentPrefixScanExecution = "REMOVED",
                 CallArgumentPrefixScanElementVisits = nextCallArgumentPrefixScanElementVisits,
                 CallArgumentPrefixScanTotalMilliseconds = TicksToMilliseconds(nextCallArgumentPrefixScanTicks)
+            },
+            ReadinessRequirementMetrics = new
+            {
+                RuntimeFunctionCount = nextReadinessRuntimeFunctionCount,
+                CodeInstructionVisits = nextReadinessCodeInstructionVisits,
+                SemanticRecordVisits = nextReadinessSemanticRecordVisits,
+                HostIdentityVisits = nextReadinessHostIdentityVisits,
+                RequirementCandidateCount = nextReadinessRequirementCandidateCount,
+                RequirementDedupLookupCount = nextReadinessRequirementDedupLookupCount,
+                RequirementOutputCount = nextReadinessRequirementOutputCount
             },
             TopFunctionReasonBuckets = buckets,
             SessionStartRejectSubreasons = subreasons,
@@ -530,6 +563,18 @@ internal static class PerformanceMetrics
         nextCallArgumentPayloadAdditionCount = additions;
         nextCallArgumentPrefixScanElementVisits = visits;
         nextCallArgumentPrefixScanTicks = ticks;
+    }
+
+    [Conditional("PERFORMANCE_METRICS")]
+    internal static void RecordNextRuntimeReadinessCounters(int runtimeFunctionCount, long codeInstructionVisits, long semanticRecordVisits, long hostIdentityVisits, long requirementCandidateCount, long requirementDedupLookupCount, long requirementOutputCount)
+    {
+        nextReadinessRuntimeFunctionCount = runtimeFunctionCount;
+        nextReadinessCodeInstructionVisits = codeInstructionVisits;
+        nextReadinessSemanticRecordVisits = semanticRecordVisits;
+        nextReadinessHostIdentityVisits = hostIdentityVisits;
+        nextReadinessRequirementCandidateCount = requirementCandidateCount;
+        nextReadinessRequirementDedupLookupCount = requirementDedupLookupCount;
+        nextReadinessRequirementOutputCount = requirementOutputCount;
     }
 #endif
 

@@ -52,6 +52,15 @@ public sealed record VmRuntimeCapabilitySnapshot(
 
 public sealed class VmRuntimePreparationCounters
 {
+    public VmRuntimePreparationCounters(bool detailedMeasurement = false) => DetailedMeasurement = detailedMeasurement;
+    public bool DetailedMeasurement { get; }
+    public int RuntimeFunctionCount { get; set; }
+    public long CodeInstructionVisits { get; set; }
+    public long SemanticRecordVisits { get; set; }
+    public long HostIdentityVisits { get; set; }
+    public long RequirementCandidateCount { get; set; }
+    public long RequirementDedupLookupCount { get; set; }
+    public long RequirementOutputCount { get; set; }
     public int SemanticNodeVisitCount { get; set; }
     public int SemanticContextIndexBuildCount { get; set; }
     public int SemanticContextFullPayloadScanCount { get; set; }
@@ -346,8 +355,11 @@ public static class VmRuntimeRequirementAnalyzer
     private sealed class OriginAccumulator
     {
         private readonly Dictionary<(int FunctionId, VmRuntimeRequirement Requirement), VmRuntimeRequirementOriginRecord> rows = [];
+        private readonly VmRuntimePreparationCounters? counters;
+        public OriginAccumulator(VmRuntimePreparationCounters? counters = null) => this.counters = counters;
         public void Add(int functionId, VmRuntimeRequirement requirement, string arena, int record, int node, string category)
         {
+            if (counters?.DetailedMeasurement == true) counters.RequirementDedupLookupCount++;
             if (rows.TryGetValue((functionId, requirement), out var existing))
             {
                 rows[(functionId, requirement)] = existing with { OriginCount = existing.OriginCount + 1 };
@@ -380,7 +392,13 @@ public static class VmRuntimeRequirementAnalyzer
         Action<string>? phaseBoundary = null)
     {
         phaseBoundary?.Invoke("Readiness.Start");
-        var state = BuildStagedRequirements(program, kinds, sharedCapabilities, productionCapabilities, counters);
+        if (counters?.DetailedMeasurement == true) counters.RuntimeFunctionCount = program.Descriptors.Length;
+        var state = BuildStagedRequirements(program, kinds, sharedCapabilities, productionCapabilities, counters, phaseBoundary);
+        // [Emuera改修:NEXT-3D-R1.5P3B 2026-09-04]
+        // P3A後のReadiness.Requirementsは約33.5秒でNext準備の約75%を占めるため、
+        // 最適化前に内部のtime/allocation/visit countを分離して実測する。readiness判定結果は変更しない。
+        if (counters?.DetailedMeasurement == true) counters.RequirementOutputCount = state.RawEdges.Count + state.ExpressionUserMethods.Count + state.OccurrenceDiagnostics.Count + state.NonVariableBlockingDiagnostics.Count + state.Origins.Length;
+        phaseBoundary?.Invoke("Readiness.Requirements.Materialization");
         phaseBoundary?.Invoke("Readiness.AfterRequirements");
         var graph = VmRuntimeReadinessGraph.Build(program.Descriptors.Length, state.Edges, counters);
         phaseBoundary?.Invoke("Readiness.AfterGraph");
@@ -413,7 +431,7 @@ public static class VmRuntimeRequirementAnalyzer
         ArgumentNullException.ThrowIfNull(kinds);
         if (kinds.Count != program.Descriptors.Length) throw new ArgumentException("function kind count mismatch", nameof(kinds));
         var nodes = new VmRuntimeReadinessNode[program.Descriptors.Length];
-        for (var id = 0; id < nodes.Length; id++) nodes[id] = new(LocalRequirements(program, id, kinds[id], includeFrame, includeEventGate));
+        for (var id = 0; id < nodes.Length; id++) nodes[id] = new(LocalRequirements(program, id, kinds[id], includeFrame, includeEventGate, counters: counters));
         var edges = new List<(RuntimeFunctionId Caller, RuntimeFunctionId Callee)>(program.CallSites.Length + program.ExpressionFunctionTargets.Length);
         edges.AddRange(program.CallSites.Select(site => (new RuntimeFunctionId(site.FunctionId), site.Target)));
         var expressionTargets = program.ExpressionFunctionTargets.ToDictionary(target => target.StableId);
@@ -432,28 +450,31 @@ public static class VmRuntimeRequirementAnalyzer
         IReadOnlyList<FunctionKind> kinds,
         VmRuntimeCapabilitySnapshot sharedCapabilities,
         VmRuntimeCapabilitySnapshot productionCapabilities,
-        VmRuntimePreparationCounters? counters)
+        VmRuntimePreparationCounters? counters,
+        Action<string>? phaseBoundary = null)
     {
         ArgumentNullException.ThrowIfNull(program);
         ArgumentNullException.ThrowIfNull(kinds);
         if (kinds.Count != program.Descriptors.Length) throw new ArgumentException("function kind count mismatch", nameof(kinds));
         var nodes = new VmRuntimeReadinessNode[program.Descriptors.Length];
         var productionNodes = new VmRuntimeReadinessNode[program.Descriptors.Length];
-        var origins = new OriginAccumulator();
+        var origins = new OriginAccumulator(counters);
         var occurrences = new List<VmRuntimeOccurrenceDiagnostic>();
         var nonVariable = new List<VmRuntimeNonVariableBlockingDiagnostic>();
         for (var id = 0; id < nodes.Length; id++)
         {
-            nodes[id] = new(LocalRequirements(program, id, kinds[id], includeFrame: false, includeEventGate: false, (requirement, arena, record, node, category) => origins.Add(id, requirement, arena, record, node, category)));
-            productionNodes[id] = new(LocalRequirements(program, id, kinds[id], includeFrame: true, includeEventGate: true));
+            nodes[id] = new(LocalRequirements(program, id, kinds[id], includeFrame: false, includeEventGate: false, (requirement, arena, record, node, category) => origins.Add(id, requirement, arena, record, node, category), counters));
+            productionNodes[id] = new(LocalRequirements(program, id, kinds[id], includeFrame: true, includeEventGate: true, counters: counters));
             for (var pc = 0; pc < program.Descriptors[id].CodeLength; pc++)
             {
+                if (counters?.DetailedMeasurement == true) counters.CodeInstructionVisits++;
                 var instruction = program.Code[program.Descriptors[id].CodeStart + pc];
                 if ((VmOpcode)instruction.Opcode == VmOpcode.Statement && (uint)instruction.Aux < (uint)program.RuntimeStatements.Records.Length &&
                     program.RuntimeStatements.Records[instruction.Aux].Kind == VmRuntimeStatementKind.Host)
                     nonVariable.Add(new(id, pc, -1, "Host", "RuntimeStatementArena", instruction.Aux, -1, -1, "Root", "HostStatement", "HostStatement", 0, -1, "HostStatement", false, false, false, false, false, "HostStatement", "", "Host statement requirement"));
             }
         }
+        phaseBoundary?.Invoke("Readiness.Requirements.Enumeration");
         var edges = new List<(RuntimeFunctionId Caller, RuntimeFunctionId Callee)>(program.CallSites.Length + program.ExpressionFunctionTargets.Length);
         var rawEdges = new List<VmRuntimeReadinessEdgeRecord>(program.CallSites.Length + program.ExpressionFunctionTargets.Length);
         var expressionUserMethods = new List<VmRuntimeExpressionUserMethodRecord>();
@@ -474,8 +495,10 @@ public static class VmRuntimeRequirementAnalyzer
                 productionNodes[site.FunctionId] = new(productionNodes[site.FunctionId].Requirements | VmRuntimeRequirement.Code);
                 origins.Add(site.FunctionId, VmRuntimeRequirement.Code, "CallSite", site.Pc, -1, "CallTargetAvailability");
             }
+        phaseBoundary?.Invoke("Readiness.Requirements.CallGraphPreparation");
         for (var id = 0; id < nodes.Length; id++)
             CollectSemanticRequirements(program, id, nodes, edges, sharedCapabilities, expressionTargets, callSites, counters, productionNodes, productionCapabilities, rawEdges, expressionUserMethods, origins, occurrences, nonVariable);
+        phaseBoundary?.Invoke("Readiness.Requirements.SemanticRequirementCollection");
         return new(nodes, productionNodes, edges, rawEdges, expressionUserMethods, occurrences, nonVariable, origins.ToArray());
     }
 
@@ -553,8 +576,11 @@ public static class VmRuntimeRequirementAnalyzer
             var node = payload.Nodes[nodeIndex];
             if (!visited.Add((payload, nodeIndex))) return;
             if (counters is not null) counters.SemanticNodeVisitCount++;
+            if (counters?.DetailedMeasurement == true && node.Kind is SemanticNodeKind.Symbol or SemanticNodeKind.Variable or SemanticNodeKind.VariableSubkey or SemanticNodeKind.Call)
+                counters.RequirementCandidateCount++;
             if (node.Kind is SemanticNodeKind.Symbol or SemanticNodeKind.Variable or SemanticNodeKind.VariableSubkey)
             {
+                if (counters?.DetailedMeasurement == true) counters.HostIdentityVisits++;
                 if (payload.TryGetHostIdentity(nodeIndex, SemanticHostIdentityKind.Variable, out var identity))
                 {
                     ApplyVariable(nodes, capabilities, payload, identity, use, write, activeRecordIndex, nodeIndex, isIndexChild, node.Kind, parentNodeIndex, parentNodeKind);
@@ -562,9 +588,12 @@ public static class VmRuntimeRequirementAnalyzer
                         ApplyVariable(secondaryNodes, secondary, payload, identity, use, write, activeRecordIndex, nodeIndex, isIndexChild, node.Kind, parentNodeIndex, parentNodeKind);
                 }
             }
-            if (node.Kind == SemanticNodeKind.Call && payload.TryGetHostIdentity(nodeIndex, SemanticHostIdentityKind.Call, out var call))
+            if (node.Kind == SemanticNodeKind.Call)
             {
-                var callObservation = capabilities.CallObservation?.Invoke(call) ?? new(false, false, "", "NoObserver");
+                if (counters?.DetailedMeasurement == true) counters.HostIdentityVisits++;
+                if (payload.TryGetHostIdentity(nodeIndex, SemanticHostIdentityKind.Call, out var call))
+                {
+                    var callObservation = capabilities.CallObservation?.Invoke(call) ?? new(false, false, "", "NoObserver");
                 if (expressionTargets.TryGetValue(call.StableId, out var target))
                 {
                     var resolved = target.Target.Value >= 0;
@@ -599,6 +628,7 @@ public static class VmRuntimeRequirementAnalyzer
                         secondaryNodes[functionId] = new(secondaryNodes[functionId].Requirements | VmRuntimeRequirement.UnsupportedBuiltin);
                     nonVariable?.Add(new(functionId, activePc, activeOperandIndex, activeStatementKind, ArenaKind(payload), activeRecordIndex, nodeIndex, parentNodeIndex, parentNodeKind, node.Kind.ToString(), activeRole,
                         call.StableId, -1, "Builtin", false, false, builtinAvailableResult, false, !builtinAvailableResult, !builtinAvailableResult ? "UnsupportedBuiltin" : "", callObservation.BuiltinIdentity, builtinAvailableResult ? "ResolvedBuiltin" : "UnresolvedBuiltin"));
+                    }
                 }
             }
             foreach (var (child, childIsIndexLabel) in Children(payload, node))
@@ -608,6 +638,7 @@ public static class VmRuntimeRequirementAnalyzer
         void VisitRecord(SemanticPayload payload, int recordIndex, bool write = false, VmRuntimeVariableUse use = VmRuntimeVariableUse.Ordinary, int pc = -1, int operandIndex = -1, string statementKind = "Structural", string role = "StructuralOperand", bool assignmentDestination = false, bool timesDestination = false, bool statementTargetIsString = false)
         {
             if ((uint)recordIndex >= (uint)payload.Records.Length) return;
+            if (counters?.DetailedMeasurement == true) counters.SemanticRecordVisits++;
             var previousRecordIndex = activeRecordIndex;
             var previousPc = activePc; var previousOperandIndex = activeOperandIndex; var previousStatementKind = activeStatementKind; var previousRole = activeRole;
             var previousAssignmentDestination = activeAssignmentDestination; var previousTimesDestination = activeTimesDestination; var previousStatementTargetIsString = activeStatementTargetIsString;
@@ -623,6 +654,7 @@ public static class VmRuntimeRequirementAnalyzer
         var descriptor = program.Descriptors[functionId];
         for (var pc = 0; pc < descriptor.CodeLength; pc++)
         {
+            if (counters?.DetailedMeasurement == true) counters.CodeInstructionVisits++;
             var instruction = program.Code[descriptor.CodeStart + pc];
             switch ((VmOpcode)instruction.Opcode)
             {
@@ -705,7 +737,7 @@ public static class VmRuntimeRequirementAnalyzer
         }
     }
 
-    private static VmRuntimeRequirement LocalRequirements(LinkedProgram program, int id, FunctionKind kind, bool includeFrame, bool includeEventGate, Action<VmRuntimeRequirement, string, int, int, string>? origin = null)
+    private static VmRuntimeRequirement LocalRequirements(LinkedProgram program, int id, FunctionKind kind, bool includeFrame, bool includeEventGate, Action<VmRuntimeRequirement, string, int, int, string>? origin = null, VmRuntimePreparationCounters? counters = null)
     {
         var descriptor = program.Descriptors[id];
         var result = VmRuntimeRequirement.None;
@@ -716,6 +748,7 @@ public static class VmRuntimeRequirementAnalyzer
         }
         for (var pc = 0; pc < descriptor.CodeLength; pc++)
         {
+            if (counters?.DetailedMeasurement == true) counters.CodeInstructionVisits++;
             var instruction = program.Code[descriptor.CodeStart + pc];
             if ((VmOpcode)instruction.Opcode is VmOpcode.SemanticBarrier or VmOpcode.UnsupportedControl)
             {

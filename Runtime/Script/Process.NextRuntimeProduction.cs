@@ -208,7 +208,7 @@ internal sealed partial class Process
 #endif
             RecordProductionMemoryStage("AfterLink");
             RecordProductionTimingStage("ProductionPreparation.AfterLink");
-            productionPreparationCounters = new();
+            productionPreparationCounters = new(PerformanceMetrics.NextDispatchProfileEnabled);
             productionSemanticHost = new LegacyVmSemanticHost(this, productionPreparationCounters);
             var semanticArenas = new[] { link.Program.SemanticArena, link.Program.RuntimeStatements.OperandArena, link.Program.CallArgumentArena };
             foreach (var arena in semanticArenas)
@@ -244,6 +244,16 @@ internal sealed partial class Process
                 productionSemanticHost.IsCharacterVariableInContext,
                 productionSemanticHost.IsStringAssignmentTarget);
             var stagedReadiness = VmRuntimeRequirementAnalyzer.AnalyzeStaged(link.Program, kinds, sharedCapabilities, productionCapabilities, productionPreparationCounters, RecordProductionTimingStage);
+#if PERFORMANCE_METRICS
+            PerformanceMetrics.RecordNextRuntimeReadinessCounters(
+                productionPreparationCounters.RuntimeFunctionCount,
+                productionPreparationCounters.CodeInstructionVisits,
+                productionPreparationCounters.SemanticRecordVisits,
+                productionPreparationCounters.HostIdentityVisits,
+                productionPreparationCounters.RequirementCandidateCount,
+                productionPreparationCounters.RequirementDedupLookupCount,
+                productionPreparationCounters.RequirementOutputCount);
+#endif
             var sharedReadiness = stagedReadiness.Shared;
             var productionStage = stagedReadiness.Production;
             sharedExecutableReadyIds = sharedReadiness.Rows
