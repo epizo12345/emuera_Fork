@@ -894,9 +894,31 @@ internal sealed partial class Process
         }
         nextRuntimeSessionImports++;
         var sessionStart = PerformanceMetrics.StartNextDispatchTiming();
+#if PERFORMANCE_METRICS
+        // [Emuera改修:NEXT-3D-R1.5P2 2026-09-04]
+        // sessionごとの全program構造のmaterializeについて、削減可能部分を決める前に
+        // executor/machineのtimeとallocationを分離して測る。runtime semanticsは変更しない。
+        var executorConstruction = PerformanceMetrics.StartNextRuntimeMeasurement();
+#endif
         var executor = new VmSemanticExecutor(productionProgram, productionSemanticHost);
-        var machine = new VmMachine(productionProgram, executor, new LegacyVmRuntimeEffects(this), frameState);
+#if PERFORMANCE_METRICS
+        PerformanceMetrics.RecordNextRuntimeConstructionStage("SemanticExecutorConstruction", executorConstruction);
+        var effectsConstruction = PerformanceMetrics.StartNextRuntimeMeasurement();
+#endif
+        var runtimeEffects = new LegacyVmRuntimeEffects(this);
+#if PERFORMANCE_METRICS
+        PerformanceMetrics.RecordNextRuntimeConstructionStage("RuntimeEffectsConstruction", effectsConstruction);
+        var machineConstruction = PerformanceMetrics.StartNextRuntimeMeasurement();
+#endif
+        var machine = new VmMachine(productionProgram, executor, runtimeEffects, frameState);
+#if PERFORMANCE_METRICS
+        PerformanceMetrics.RecordNextRuntimeConstructionStage("VmMachineConstruction", machineConstruction);
+        var wrapperConstruction = PerformanceMetrics.StartNextRuntimeMeasurement();
+#endif
         nextRuntimeSession = new(this, machine, productionNormal: true);
+#if PERFORMANCE_METRICS
+        PerformanceMetrics.RecordNextRuntimeConstructionStage("ExecutionSessionWrapperConstruction", wrapperConstruction);
+#endif
         PerformanceMetrics.AddNextDispatchStage("SessionConstruction", sessionStart);
         TraceR1_4E("NextSessionStart", stopReason: "ProductionStart");
         var executionStart = PerformanceMetrics.StartNextDispatchTiming();

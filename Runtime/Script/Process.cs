@@ -256,12 +256,37 @@ internal sealed partial class Process(EmueraConsole view)
             logWriter.WriteLine($"Proc:Init:ERB:End {stopWatch.ElapsedMilliseconds}ms");
             PerformanceMetrics.MarkStartup("ErbParsed"); // ERB解析完了の目印
 
+#if PERFORMANCE_METRICS
+            // [Emuera改修:NEXT-3D-R1.5P2 2026-09-04]
+            // ERB後の約85秒startup envelopeの内訳は未測定で、sessionごとの全program構造materializeも
+            // 削減可能部分が未確定である。最適化前にtime/allocationを分離計測する診断であり、意味論は変更しない。
+            var postErbStartup = PerformanceMetrics.StartNextRuntimeMeasurement();
+#endif
             if (Program.NextRuntimeMode)
+            {
+#if PERFORMANCE_METRICS
+                var nextPreparation = PerformanceMetrics.StartNextRuntimeMeasurement();
+#endif
                 PrepareNextRuntimeProductionProgram(logWriter);
+#if PERFORMANCE_METRICS
+                PerformanceMetrics.RecordNextRuntimeStartupStage("NextRuntimePreparation", nextPreparation, contributesToEnvelope: true);
+#endif
+            }
 
+#if PERFORMANCE_METRICS
+            var sqlTempDb = PerformanceMetrics.StartNextRuntimeMeasurement();
+#endif
             SQL.SetUpTempDB();
+#if PERFORMANCE_METRICS
+            PerformanceMetrics.RecordNextRuntimeStartupStage("SqlTempDbSetup", sqlTempDb, contributesToEnvelope: true);
+            var systemProcess = PerformanceMetrics.StartNextRuntimeMeasurement();
+#endif
 
             initSystemProcess();
+#if PERFORMANCE_METRICS
+            PerformanceMetrics.RecordNextRuntimeStartupStage("SystemProcessInitialization", systemProcess, contributesToEnvelope: true);
+            PerformanceMetrics.RecordNextRuntimeStartupEnvelope(postErbStartup);
+#endif
             initialiing = false;
 
             logWriter.WriteLine($"Proc:Init:End {stopWatch.ElapsedMilliseconds}ms");

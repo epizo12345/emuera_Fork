@@ -73,6 +73,24 @@ internal static class PerformanceMetrics
     private static readonly Dictionary<string, int> nextDispatchRejections = new(StringComparer.Ordinal);
     private static readonly Dictionary<string, int> nextDispatchFunctions = new(StringComparer.Ordinal);
 #if PERFORMANCE_METRICS
+    internal readonly record struct MeasurementToken(long Ticks, long AllocatedBytes);
+    private static readonly Dictionary<string, (int Count, long Ticks, long AllocatedBytes, long MaxTicks)> nextStartupStages = new(StringComparer.Ordinal);
+    private static readonly Dictionary<string, (int Count, long Ticks, long AllocatedBytes, long MaxTicks)> nextConstructionStages = new(StringComparer.Ordinal);
+    private static long nextStartupEnvelopeTicks;
+    private static long nextStartupEnvelopeAllocatedBytes;
+    private static long nextStartupChildTicks;
+    private static long nextStartupChildAllocatedBytes;
+    private static int nextProgramCardinalityCount;
+    private static int nextRuntimeFunctionCount;
+    private static int nextDescriptorCount;
+    private static int nextTotalCodeLength;
+    private static int nextStructuralLinkCount;
+    private static int nextLoopCount;
+    private static int nextCallSiteCount;
+    private static int nextExpressionTargetCount;
+    private static int nextCallArgumentPayloadAdditionCount;
+    private static long nextCallArgumentPrefixScanElementVisits;
+    private static long nextCallArgumentPrefixScanTicks;
     private static string nextDispatchProfilePath;
     private static long nextDispatchProfileStart;
     private static long nextDispatchProfileAllocated;
@@ -89,6 +107,17 @@ internal static class PerformanceMetrics
 #endif
 
     internal static bool Enabled => Volatile.Read(ref logPath) != null;
+    internal static bool NextDispatchProfileEnabled
+    {
+        get
+        {
+#if PERFORMANCE_METRICS
+            return !string.IsNullOrWhiteSpace(nextDispatchProfilePath);
+#else
+            return false;
+#endif
+        }
+    }
     internal static bool MacroActive => Volatile.Read(ref macroActive) != 0;
 
     internal static void MarkProcessStart()
@@ -121,6 +150,16 @@ internal static class PerformanceMetrics
         if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
         nextDispatchProfileStart = Stopwatch.GetTimestamp();
         nextDispatchProfileAllocated = GC.GetTotalAllocatedBytes(false);
+        nextStartupStages.Clear();
+        nextConstructionStages.Clear();
+        nextStartupEnvelopeTicks = 0;
+        nextStartupEnvelopeAllocatedBytes = 0;
+        nextStartupChildTicks = 0;
+        nextStartupChildAllocatedBytes = 0;
+        nextProgramCardinalityCount = 0;
+        nextCallArgumentPayloadAdditionCount = 0;
+        nextCallArgumentPrefixScanElementVisits = 0;
+        nextCallArgumentPrefixScanTicks = 0;
         entryDispatchAlreadyConsumedCount = 0;
         entryDispatchAlreadyConsumedTicks = 0;
         actionableDispatchTicks = 0;
@@ -206,6 +245,42 @@ internal static class PerformanceMetrics
             ConsumedSeamShareOfDispatchSeamPercent = wholeDispatchMilliseconds == 0 ? 0 : consumedMilliseconds * 100 / wholeDispatchMilliseconds,
             Rejections = nextDispatchRejections,
             Stages = stages,
+            StartupStages = nextStartupStages.ToDictionary(pair => pair.Key, pair => new
+            {
+                Count = pair.Value.Count,
+                TotalMilliseconds = TicksToMilliseconds(pair.Value.Ticks),
+                AverageMilliseconds = pair.Value.Count == 0 ? 0 : TicksToMilliseconds(pair.Value.Ticks) / pair.Value.Count,
+                AllocatedBytes = pair.Value.AllocatedBytes
+            }, StringComparer.Ordinal),
+            ConstructionStages = nextConstructionStages.ToDictionary(pair => pair.Key, pair => new
+            {
+                Count = pair.Value.Count,
+                TotalMilliseconds = TicksToMilliseconds(pair.Value.Ticks),
+                AverageMilliseconds = pair.Value.Count == 0 ? 0 : TicksToMilliseconds(pair.Value.Ticks) / pair.Value.Count,
+                MaxMilliseconds = TicksToMilliseconds(pair.Value.MaxTicks),
+                AllocatedBytes = pair.Value.AllocatedBytes
+            }, StringComparer.Ordinal),
+            PostErbStartupEnvelopeMilliseconds = TicksToMilliseconds(nextStartupEnvelopeTicks),
+            PostErbStartupEnvelopeAllocatedBytes = nextStartupEnvelopeAllocatedBytes,
+            PostErbStartupOtherMilliseconds = TicksToMilliseconds(Math.Max(0, nextStartupEnvelopeTicks - nextStartupChildTicks)),
+            PostErbStartupOtherAllocatedBytes = Math.Max(0, nextStartupEnvelopeAllocatedBytes - nextStartupChildAllocatedBytes),
+            ProgramCardinalities = new
+            {
+                Count = nextProgramCardinalityCount,
+                RuntimeFunctionCount = nextRuntimeFunctionCount,
+                DescriptorCount = nextDescriptorCount,
+                TotalCodeLength = nextTotalCodeLength,
+                StructuralLinkCount = nextStructuralLinkCount,
+                LoopCount = nextLoopCount,
+                CallSiteCount = nextCallSiteCount,
+                ExpressionTargetCount = nextExpressionTargetCount
+            },
+            CallArgumentLinkMetrics = new
+            {
+                CallArgumentPayloadAdditionCount = nextCallArgumentPayloadAdditionCount,
+                CallArgumentPrefixScanElementVisits = nextCallArgumentPrefixScanElementVisits,
+                CallArgumentPrefixScanTotalMilliseconds = TicksToMilliseconds(nextCallArgumentPrefixScanTicks)
+            },
             TopFunctionReasonBuckets = buckets,
             SessionStartRejectSubreasons = subreasons,
             SessionStartRejectSubreasonCountSum = subreasonCountSum,
@@ -393,6 +468,68 @@ internal static class PerformanceMetrics
         return 0;
 #endif
     }
+
+#if PERFORMANCE_METRICS
+    internal static MeasurementToken StartNextRuntimeMeasurement() =>
+        string.IsNullOrWhiteSpace(nextDispatchProfilePath)
+            ? default
+            : new(Stopwatch.GetTimestamp(), GC.GetTotalAllocatedBytes(false));
+
+    [Conditional("PERFORMANCE_METRICS")]
+    internal static void RecordNextRuntimeStartupStage(string stage, MeasurementToken start, bool contributesToEnvelope = false)
+    {
+        if (start.Ticks == 0) return;
+        var ticks = Math.Max(0, Stopwatch.GetTimestamp() - start.Ticks);
+        var allocated = Math.Max(0, GC.GetTotalAllocatedBytes(false) - start.AllocatedBytes);
+        nextStartupStages.TryGetValue(stage, out var value);
+        nextStartupStages[stage] = (value.Count + 1, value.Ticks + ticks, value.AllocatedBytes + allocated, Math.Max(value.MaxTicks, ticks));
+        if (contributesToEnvelope)
+        {
+            nextStartupChildTicks += ticks;
+            nextStartupChildAllocatedBytes += allocated;
+        }
+    }
+
+    [Conditional("PERFORMANCE_METRICS")]
+    internal static void RecordNextRuntimeStartupEnvelope(MeasurementToken start)
+    {
+        if (start.Ticks == 0) return;
+        nextStartupEnvelopeTicks = Math.Max(0, Stopwatch.GetTimestamp() - start.Ticks);
+        nextStartupEnvelopeAllocatedBytes = Math.Max(0, GC.GetTotalAllocatedBytes(false) - start.AllocatedBytes);
+    }
+
+    [Conditional("PERFORMANCE_METRICS")]
+    internal static void RecordNextRuntimeConstructionStage(string stage, MeasurementToken start)
+    {
+        if (start.Ticks == 0) return;
+        var ticks = Math.Max(0, Stopwatch.GetTimestamp() - start.Ticks);
+        var allocated = Math.Max(0, GC.GetTotalAllocatedBytes(false) - start.AllocatedBytes);
+        nextConstructionStages.TryGetValue(stage, out var value);
+        nextConstructionStages[stage] = (value.Count + 1, value.Ticks + ticks, value.AllocatedBytes + allocated, Math.Max(value.MaxTicks, ticks));
+    }
+
+    [Conditional("PERFORMANCE_METRICS")]
+    internal static void RecordNextRuntimeProgramCardinalities(int runtimeFunctionCount, int descriptorCount, int totalCodeLength, int structuralLinkCount, int loopCount, int callSiteCount, int expressionTargetCount)
+    {
+        if (nextProgramCardinalityCount != 0) return;
+        nextProgramCardinalityCount = 1;
+        nextRuntimeFunctionCount = runtimeFunctionCount;
+        nextDescriptorCount = descriptorCount;
+        nextTotalCodeLength = totalCodeLength;
+        nextStructuralLinkCount = structuralLinkCount;
+        nextLoopCount = loopCount;
+        nextCallSiteCount = callSiteCount;
+        nextExpressionTargetCount = expressionTargetCount;
+    }
+
+    [Conditional("PERFORMANCE_METRICS")]
+    internal static void RecordNextRuntimeCallArgumentLinkMetrics(int additions, long visits, long ticks)
+    {
+        nextCallArgumentPayloadAdditionCount = additions;
+        nextCallArgumentPrefixScanElementVisits = visits;
+        nextCallArgumentPrefixScanTicks = ticks;
+    }
+#endif
 
     [Conditional("PERFORMANCE_METRICS")]
     internal static void RecordEntryDispatchAlreadyConsumed(long start)

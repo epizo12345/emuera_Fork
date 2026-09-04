@@ -13,6 +13,7 @@ using MinorShift.Emuera.Runtime.Config.JSON;
 using MinorShift.Emuera.Runtime.Script.Data;
 using MinorShift.Emuera.Runtime.Script.Parser;
 using MinorShift.Emuera.Runtime.Script.Statements;
+using MinorShift.Emuera.Runtime.Utils;
 
 namespace MinorShift.Emuera.GameProc;
 
@@ -92,9 +93,16 @@ internal sealed partial class Process
         try
         {
             Stopwatch? preparationStopwatch = Program.NextRuntimeProductionOnly && !string.IsNullOrWhiteSpace(Program.NextRuntimeHostProbePath) ? Stopwatch.StartNew() : null;
+#if PERFORMANCE_METRICS
+            var preparationStageStart = PerformanceMetrics.StartNextRuntimeMeasurement();
+#endif
             void RecordProductionTimingStage(string stage)
             {
                 if (preparationStopwatch is not null) productionTimingStages.Add($"{stage}\t{preparationStopwatch.Elapsed.TotalMilliseconds:F3}");
+#if PERFORMANCE_METRICS
+                PerformanceMetrics.RecordNextRuntimeStartupStage(stage, preparationStageStart);
+                preparationStageStart = PerformanceMetrics.StartNextRuntimeMeasurement();
+#endif
             }
             RecordProductionTimingStage("ProductionPreparation.Start");
             var selectedFiles = Config.GetFiles(Program.ErbDir, "*.ERB");
@@ -178,10 +186,26 @@ internal sealed partial class Process
             var prototypes = RuntimeFunctionBinder.Remap(sourcePrototypes, sourceToRuntime);
             catalog.MarkCodeAvailable(prototypes.Select(prototype => prototype.RuntimeId));
             RecordProductionTimingStage("ProductionPreparation.AfterRemap");
-            var link = ControlLinker.Link(catalog, prototypes, runtimeEnvironment: environment, runtimeStatements: true, phaseBoundary: RecordProductionTimingStage);
+            var link = ControlLinker.Link(catalog, prototypes, runtimeEnvironment: environment, runtimeStatements: true, phaseBoundary: RecordProductionTimingStage, measureCallArgumentPrefixScan: PerformanceMetrics.NextDispatchProfileEnabled);
+#if PERFORMANCE_METRICS
+            PerformanceMetrics.RecordNextRuntimeCallArgumentLinkMetrics(
+                link.CallArgumentPayloadAdditionCount,
+                link.CallArgumentPrefixScanElementVisits,
+                link.CallArgumentPrefixScanTicks);
+#endif
             productionFunctionKinds = kinds;
             productionLabelIds = labelIds;
             productionProgram = link.Program;
+#if PERFORMANCE_METRICS
+            PerformanceMetrics.RecordNextRuntimeProgramCardinalities(
+                link.Program.Descriptors.Length,
+                link.Program.Descriptors.Length,
+                link.Program.Descriptors.Sum(descriptor => descriptor.CodeLength),
+                link.Program.StructuralLinks.Length,
+                link.Program.Loops.Length,
+                link.Program.CallSites.Length,
+                link.Program.ExpressionFunctionTargets.Length);
+#endif
             RecordProductionMemoryStage("AfterLink");
             RecordProductionTimingStage("ProductionPreparation.AfterLink");
             productionPreparationCounters = new();

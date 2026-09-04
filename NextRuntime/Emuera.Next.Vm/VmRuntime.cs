@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using MinorShift.Emuera.Next.Compiler;
@@ -336,6 +337,9 @@ public readonly record struct StructuralDiagnostic(RuntimeFunctionId RuntimeId, 
 public sealed record ControlLinkResult(LinkedProgram Program, IReadOnlyList<string> Diagnostics, int Calls, int Jumps, int CallScanFailures, int ResolvedCalls, int MissingTargets, int WrongKinds, int CodeAvailableTargets, int CodeUnavailableTargets, int SemanticBarriers, int LinkReadyFunctions = 0, int SemanticPendingFunctions = 0)
 {
     public IReadOnlyList<StructuralDiagnostic> StructuralDiagnostics { get; init; } = [];
+    public int CallArgumentPayloadAdditionCount { get; init; }
+    public long CallArgumentPrefixScanElementVisits { get; init; }
+    public long CallArgumentPrefixScanTicks { get; init; }
 }
 
 public static class ControlLinker
@@ -349,12 +353,15 @@ public static class ControlLinker
     // Source oracle: Runtime/Script/Statements/FunctionIdentifier.cs IsPartial and Instraction.Child.cs SIF parser.
     private static readonly HashSet<PrototypeOpcode> LegacyPartialOpcodes = [PrototypeOpcode.SIF, PrototypeOpcode.IF, PrototypeOpcode.ELSE, PrototypeOpcode.ELSEIF, PrototypeOpcode.ENDIF, PrototypeOpcode.SELECTCASE, PrototypeOpcode.CASE, PrototypeOpcode.CASEELSE, PrototypeOpcode.ENDSELECT, PrototypeOpcode.REPEAT, PrototypeOpcode.REND, PrototypeOpcode.CONTINUE, PrototypeOpcode.BREAK, PrototypeOpcode.FOR, PrototypeOpcode.NEXT, PrototypeOpcode.WHILE, PrototypeOpcode.WEND, PrototypeOpcode.DO, PrototypeOpcode.LOOP, PrototypeOpcode.PRINTDATA, PrototypeOpcode.PRINTDATAL, PrototypeOpcode.PRINTDATAW, PrototypeOpcode.DATA, PrototypeOpcode.DATAFORM];
     public static bool IsLegacyPartialOpcode(PrototypeOpcode opcode) => LegacyPartialOpcodes.Contains(opcode);
-    public static ControlLinkResult Link(FunctionCatalog catalog, IReadOnlyList<RuntimeFunctionPrototype> prototypes, bool ignoreCase = true, bool compatiCallEvent = false, StructuralSemanticEnvironment? runtimeEnvironment = null, bool runtimeStatements = false, Action<string>? phaseBoundary = null)
+    public static ControlLinkResult Link(FunctionCatalog catalog, IReadOnlyList<RuntimeFunctionPrototype> prototypes, bool ignoreCase = true, bool compatiCallEvent = false, StructuralSemanticEnvironment? runtimeEnvironment = null, bool runtimeStatements = false, Action<string>? phaseBoundary = null, bool measureCallArgumentPrefixScan = false)
     {
         phaseBoundary?.Invoke("ControlLinker.Start");
         var code = new List<VmInstruction>(); var descriptors = Enumerable.Range(0, catalog.Count).Select(id => new VmFunctionDescriptor(id, 0, 0, VmFunctionState.CodeNotAvailable)).ToArray(); var metadata = Enumerable.Repeat(FunctionRuntimeMetadata.Empty, catalog.Count).ToArray(); var records = new List<StructuralLinkRecord>(); var callSites = new List<VmCallSiteRecord>(); var callArgumentParts = new List<SemanticPayload>(); var callArgumentRecords = new List<int>(); var structuralSemanticIndices = new List<int>(); var semanticParts = new List<SemanticPayload>(); var statements = new VmRuntimeStatementArenaBuilder(); var sifs = new List<SifLinkRecord>(); var ifGroups = new List<IfGroupDescriptor>(); var ifClauses = new List<IfClauseRecord>(); var selectGroups = new List<SelectGroupDescriptor>(); var selectCases = new List<SelectCaseRecord>(); var loops = new List<LoopDescriptor>(); var diagnostics = new List<string>(); var structuralDiagnostics = new List<StructuralDiagnostic>();
         var calls = 0; var jumps = 0; var scans = 0; var resolved = 0; var missing = 0; var wrong = 0; var yes = 0; var no = 0; var barriers = 0;
         var semanticRecordCount = 0;
+        var callArgumentPayloadAdditionCount = 0;
+        long callArgumentPrefixScanElementVisits = 0;
+        long callArgumentPrefixScanTicks = 0;
         foreach (var prototype in prototypes.OrderBy(x => x.RuntimeId.Value))
         {
             var runtimeId = prototype.RuntimeId.Value;
@@ -371,7 +378,7 @@ public static class ControlLinker
                     if (p.Opcode == PrototypeOpcode.CALL) calls++; else jumps++; if (!FixedCallTargetScanner.TryScan(operand, out var scan)) { scans++; state = VmFunctionState.UnsupportedControl; diagnostics.Add($"function={runtimeId} pc={pc} scan-fail"); code.Add(Linked(p, VmOpcode.UnsupportedControl)); continue; }
                     var resolution = FixedCallResolver.Resolve(catalog, scan.Target, ignoreCase, compatiCallEvent); if (!resolution.FunctionResolved) { if (resolution.Reason?.StartsWith("WrongKind", StringComparison.Ordinal) == true) wrong++; else missing++; state = VmFunctionState.UnsupportedControl; code.Add(Linked(p, VmOpcode.UnsupportedControl)); continue; }
                     resolved++; if (resolution.CodeAvailable) yes++; else no++; var argumentStart = scan.End; var argumentLength = Math.Max(0, operand.Length - argumentStart); var argumentRecordStart = callArgumentRecords.Count;
-                    if (!TryLinkCallArguments(operand[argumentStart..], runtimeEnvironment, callArgumentParts, callArgumentRecords)) { state = VmFunctionState.UnsupportedControl; diagnostics.Add($"function={runtimeId} pc={pc} unsupported-call-arguments"); code.Add(Linked(p, VmOpcode.UnsupportedControl)); continue; }
+                    if (!TryLinkCallArguments(operand[argumentStart..], runtimeEnvironment, callArgumentParts, callArgumentRecords, measureCallArgumentPrefixScan, ref callArgumentPayloadAdditionCount, ref callArgumentPrefixScanElementVisits, ref callArgumentPrefixScanTicks)) { state = VmFunctionState.UnsupportedControl; diagnostics.Add($"function={runtimeId} pc={pc} unsupported-call-arguments"); code.Add(Linked(p, VmOpcode.UnsupportedControl)); continue; }
                     callSites.Add(new(runtimeId, pc, resolution.RuntimeId, p.Opcode == PrototypeOpcode.CALL ? VmInvocationKind.Call : VmInvocationKind.Jump, argumentStart, argumentLength, argumentRecordStart, callArgumentRecords.Count - argumentRecordStart)); code.Add(Linked(p, p.Opcode == PrototypeOpcode.CALL ? VmOpcode.Call : VmOpcode.Jump, resolution.RuntimeId.Value)); continue;
                 }
                 if (p.Opcode == PrototypeOpcode.RETURN && operand.Length != 0)
@@ -430,7 +437,13 @@ public static class ControlLinker
         phaseBoundary?.Invoke("ControlLinker.AfterSkeletonBuild");
         var program = new LinkedProgram(skeleton.Code, skeleton.Descriptors, skeleton.StructuralLinks, skeleton.SifLinks, skeleton.IfGroups, skeleton.IfClauses, skeleton.SelectGroups, skeleton.SelectCases, skeleton.Loops, skeleton.SemanticArena, skeleton.StructuralSemanticRecordIndices, skeleton.RuntimeStatements, skeleton.RuntimeMetadata, skeleton.CallSites, skeleton.CallArgumentArena, skeleton.CallArgumentRecords, BindExpressionFunctionTargets(skeleton, catalog, ignoreCase));
         phaseBoundary?.Invoke("ControlLinker.AfterExpressionTargetBinding");
-        return new ControlLinkResult(program, diagnostics, calls, jumps, scans, resolved, missing, wrong, yes, no, barriers, 0, prototypes.Count) { StructuralDiagnostics = structuralDiagnostics.ToArray() };
+        return new ControlLinkResult(program, diagnostics, calls, jumps, scans, resolved, missing, wrong, yes, no, barriers, 0, prototypes.Count)
+        {
+            StructuralDiagnostics = structuralDiagnostics.ToArray(),
+            CallArgumentPayloadAdditionCount = callArgumentPayloadAdditionCount,
+            CallArgumentPrefixScanElementVisits = callArgumentPrefixScanElementVisits,
+            CallArgumentPrefixScanTicks = callArgumentPrefixScanTicks
+        };
     }
     private static bool TryLinkRuntimeStatement(PrototypeOpcode opcode, string operand, VmRuntimeStatementArenaBuilder statements, StructuralSemanticEnvironment? environment, out int index)
     {
@@ -530,7 +543,7 @@ public static class ControlLinker
         }
         return false;
     }
-    private static bool TryLinkCallArguments(string suffix, StructuralSemanticEnvironment? environment, List<SemanticPayload> parts, List<int> records)
+    private static bool TryLinkCallArguments(string suffix, StructuralSemanticEnvironment? environment, List<SemanticPayload> parts, List<int> records, bool measurePrefixScan, ref int additionCount, ref long prefixScanElementVisits, ref long prefixScanTicks)
     {
         var text = StripCallComment(suffix).Trim();
         if (text.Length == 0 || text[0] == ';') return true;
@@ -547,7 +560,23 @@ public static class ControlLinker
         {
             var value = raw.Trim();
             if (value.Length == 0) { records.Add(-1); continue; }
-            try { var payload = SemanticIrCompiler.CompileExpression(value, environment); records.Add(parts.Sum(static part => part.Records.Length)); parts.Add(payload); }
+            try
+            {
+                var payload = SemanticIrCompiler.CompileExpression(value, environment);
+                // [Emuera改修:NEXT-3D-R1.5P2 2026-09-04]
+                // CALL引数payloadのprefix scan実コストを最適化前に集計する診断。
+                // partsの順序・link結果・runtime semanticsは変更しない。
+                var scanStart = measurePrefixScan ? Stopwatch.GetTimestamp() : 0;
+                var prefixRecords = parts.Sum(static part => part.Records.Length);
+                if (scanStart != 0)
+                {
+                    prefixScanElementVisits += prefixRecords;
+                    prefixScanTicks += Stopwatch.GetTimestamp() - scanStart;
+                }
+                records.Add(prefixRecords);
+                parts.Add(payload);
+                if (measurePrefixScan) additionCount++;
+            }
             catch (SemanticParseException) { return false; }
         }
         return true;
