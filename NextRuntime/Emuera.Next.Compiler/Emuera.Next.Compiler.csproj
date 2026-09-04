@@ -6,6 +6,8 @@
     <Nullable>enable</Nullable>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisMode>Minimum</AnalysisMode>
+    <EnablePerformanceMetrics Condition="'$(EnablePerformanceMetrics)' == ''">false</EnablePerformanceMetrics>
+    <DefineConstants Condition="'$(EnablePerformanceMetrics)' == 'true'">$(DefineConstants);PERFORMANCE_METRICS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Emuera.Next.Core\Emuera.Next.Core.csproj" />

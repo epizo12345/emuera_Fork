@@ -223,6 +223,28 @@ static int SelfTest()
             var reset = SourceReaderMetrics.Snapshot();
             Assert(reset.FileStreamOpenCount == 0 && reset.ReadFunctionCount == 0 && reset.SeekCount == 0 && reset.TotalBytesRead == 0);
         })));
+#if PERFORMANCE_METRICS
+        tests.Add(("P3L FunctionSourceSession metrics integration", (Action)(() =>
+        {
+            SourceReaderMetrics.Reset();
+            var metricsPath = Path.Combine(root, "p3l-metrics-integration.ERB");
+            WriteBom(metricsPath, "@METRICS\r\nPRINT 1\r\n");
+            var metricsIndex = ErbSourceIndexer.IndexFile(metricsPath);
+            using (var session = FunctionSourceReader.OpenFile(metricsIndex))
+            {
+                var read = session.Read(metricsIndex.Functions.Single());
+                Assert(read.Status == SourceReadStatus.Read, $"{read.Status}:{read.Reason}");
+            }
+            var metrics = SourceReaderMetrics.Snapshot();
+            Assert(metrics.FileStreamOpenCount == 1 && metrics.InitialSnapshotCheckCount == 1 && metrics.ReadFunctionCount == 1 &&
+                   metrics.SpanValidationCount == 1 && metrics.ReadSnapshotCheckCount == 1 && metrics.BufferAllocationCount == 1 &&
+                   metrics.SeekCount == 1 && metrics.StreamReadCallCount >= 1 && metrics.Utf8ValidationCount == 1 &&
+                   metrics.ResultConstructionCount == 1 && metrics.TotalBytesRead > 0);
+            SourceReaderMetrics.Reset();
+            var reset = SourceReaderMetrics.Snapshot();
+            Assert(reset.FileStreamOpenCount == 0 && reset.ReadFunctionCount == 0 && reset.TotalBytesRead == 0);
+        })));
+#endif
         tests.Add(("R1_4FHeaderRegression", () => { var path = Path.Combine(root, "r1-4f-header.ERB"); WriteBom(path, "@G, ARG = 98\r\n#FUNCTION\r\nPRINT 1\r\n"); var indexedHeader = ErbSourceIndexer.IndexFile(path); var result = new FunctionCompiler(semanticEnvironment).TryCompileRuntime(indexedHeader, indexedHeader.Functions.Single()); Assert(result.Status == CompileStatus.Compiled && result.Function!.RuntimeMetadata!.Parameters.Length == 1 && result.Function.RuntimeMetadata.Parameters[0].HasDefault && result.Function.RuntimeMetadata.Parameters[0].DefaultInteger == 98 && result.Function.RuntimeMetadata.ReturnType == RuntimeMetadataValueType.Integer); }));
          tests.Add(("semantic target is exactly nine structural opcodes", () => { var p = Path.Combine(root, "semantic-targets.ERB"); WriteBom(p, "@TARGETS\r\nSIF A\r\nIF A\r\nELSEIF A\r\nSELECTCASE A\r\nCASE 1\r\nREPEAT 2\r\nFOR I,0,2\r\nWHILE A\r\nLOOP A\r\nPRINTFORM %A%\r\n"); var f = ErbSourceIndexer.IndexFile(p); var result = new FunctionCompiler(semanticEnvironment).TryCompile(f, f.Functions.Single()); Assert(result.Status == CompileStatus.Compiled && result.Function!.SemanticPayload!.Records.Length == 9); }));
         var assignmentPath = Path.Combine(root, "assignment.ERB");
