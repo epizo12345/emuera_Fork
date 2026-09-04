@@ -82,6 +82,10 @@ internal static class PerformanceMetrics
     private static readonly Dictionary<(int FunctionId, MinorShift.Emuera.GameProc.NextRuntimeDispatchRejectReason Reason), (string Name, int Count, long Ticks)> nextDispatchBuckets = new();
     private static readonly Dictionary<string, (int Count, long RejectPathTicks, long ClassificationTicks, bool Mutable)> nextSessionStartRejectSubreasons = new(StringComparer.Ordinal);
     private static readonly Dictionary<(int FunctionId, string Subreason), (string Name, int Count, long RejectPathTicks)> nextSessionStartRejectFunctionBuckets = new();
+    private static long entryDispatchAlreadyConsumedCount;
+    private static long entryDispatchAlreadyConsumedTicks;
+    private static long actionableDispatchTicks;
+    private static long wholeDispatchSeamTicks;
 #endif
 
     internal static bool Enabled => Volatile.Read(ref logPath) != null;
@@ -117,6 +121,10 @@ internal static class PerformanceMetrics
         if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
         nextDispatchProfileStart = Stopwatch.GetTimestamp();
         nextDispatchProfileAllocated = GC.GetTotalAllocatedBytes(false);
+        entryDispatchAlreadyConsumedCount = 0;
+        entryDispatchAlreadyConsumedTicks = 0;
+        actionableDispatchTicks = 0;
+        wholeDispatchSeamTicks = 0;
         AppDomain.CurrentDomain.ProcessExit += (_, _) => WriteNextDispatchProfile();
 #endif
     }
@@ -173,15 +181,29 @@ internal static class PerformanceMetrics
         var immutableTicks = nextSessionStartRejectSubreasons.Where(pair => !pair.Value.Mutable).Sum(pair => pair.Value.RejectPathTicks);
         var mutableCount = nextSessionStartRejectSubreasons.Where(pair => pair.Value.Mutable).Sum(pair => pair.Value.Count);
         var mutableTicks = nextSessionStartRejectSubreasons.Where(pair => pair.Value.Mutable).Sum(pair => pair.Value.RejectPathTicks);
+        var wallClockTicks = now - nextDispatchProfileStart;
+        var consumedMilliseconds = TicksToMilliseconds(entryDispatchAlreadyConsumedTicks);
+        var actionableMilliseconds = TicksToMilliseconds(actionableDispatchTicks);
+        var wholeDispatchMilliseconds = TicksToMilliseconds(wholeDispatchSeamTicks);
         var report = new
         {
             Profiler = "NextRuntimePerformanceProfile",
             ThreadingAssumption = "Process dispatch is single-threaded; profiler state is updated on that execution thread.",
-            TotalSessionWallClockMilliseconds = TicksToMilliseconds(now - nextDispatchProfileStart),
+            TotalSessionWallClockMilliseconds = TicksToMilliseconds(wallClockTicks),
+            WallClockMilliseconds = TicksToMilliseconds(wallClockTicks),
             AllocatedBytes = GC.GetTotalAllocatedBytes(false) - nextDispatchProfileAllocated,
             TotalDispatchAttempts = nextDispatchAttempts,
             Completed = nextDispatchAttempts - nextDispatchFallbacks,
             Fallbacks = nextDispatchFallbacks,
+            EntryDispatchAlreadyConsumedCount = entryDispatchAlreadyConsumedCount,
+            EntryDispatchAlreadyConsumedTotalTicks = entryDispatchAlreadyConsumedTicks,
+            EntryDispatchAlreadyConsumedTotalMilliseconds = consumedMilliseconds,
+            EntryDispatchAlreadyConsumedAverageNanoseconds = entryDispatchAlreadyConsumedCount == 0 ? 0 : entryDispatchAlreadyConsumedTicks * 1_000_000_000.0 / Stopwatch.Frequency / entryDispatchAlreadyConsumedCount,
+            ActionableDispatchCount = Math.Max(0, (long)nextDispatchAttempts - entryDispatchAlreadyConsumedCount),
+            ActionableDispatchTotalMilliseconds = actionableMilliseconds,
+            WholeDispatchSeamTotalMilliseconds = wholeDispatchMilliseconds,
+            ConsumedSeamShareOfWallClockPercent = wallClockTicks == 0 ? 0 : consumedMilliseconds * 100 / TicksToMilliseconds(wallClockTicks),
+            ConsumedSeamShareOfDispatchSeamPercent = wholeDispatchMilliseconds == 0 ? 0 : consumedMilliseconds * 100 / wholeDispatchMilliseconds,
             Rejections = nextDispatchRejections,
             Stages = stages,
             TopFunctionReasonBuckets = buckets,
@@ -369,6 +391,30 @@ internal static class PerformanceMetrics
         return string.IsNullOrWhiteSpace(nextDispatchProfilePath) ? 0 : Stopwatch.GetTimestamp();
 #else
         return 0;
+#endif
+    }
+
+    [Conditional("PERFORMANCE_METRICS")]
+    internal static void RecordEntryDispatchAlreadyConsumed(long start)
+    {
+#if PERFORMANCE_METRICS
+        if (start == 0)
+            return;
+        entryDispatchAlreadyConsumedCount++;
+        entryDispatchAlreadyConsumedTicks += Stopwatch.GetTimestamp() - start;
+#endif
+    }
+
+    [Conditional("PERFORMANCE_METRICS")]
+    internal static void RecordEntryDispatchSeam(long start, bool consumed)
+    {
+#if PERFORMANCE_METRICS
+        if (start == 0)
+            return;
+        var elapsed = Stopwatch.GetTimestamp() - start;
+        wholeDispatchSeamTicks += elapsed;
+        if (!consumed)
+            actionableDispatchTicks += elapsed;
 #endif
     }
 

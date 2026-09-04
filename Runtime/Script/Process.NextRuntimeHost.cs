@@ -932,6 +932,12 @@ internal sealed partial class Process
     // 戻す。token消費とreturn handoffの順序を変えると、同一invocationの二重実行やRESULT伝播破壊になる。
     internal NextRuntimeSessionResult TryDispatchCurrentLegacyEntryToNextRuntime()
     {
+#if PERFORMANCE_METRICS
+        // [Emuera改修:NEXT-3D-R1.5B.1 2026-09-04]
+        // 30万回超のAlreadyConsumed early pathは性能候補だが未計測のため、最適化前に実costだけを測る。
+        // この計測はdispatch/token semanticsを変更せず、通常Releaseには組み込まれない。
+        var profileDispatchStart = PerformanceMetrics.StartNextDispatchTiming();
+#endif
         var dispatchStart = PerformanceMetrics.StartTiming();
         var calledAtAttempt = state.functionCount == 0 ? null : state.CurrentCalled;
         BeginR1_4IBridgeTrace(calledAtAttempt);
@@ -947,6 +953,9 @@ internal sealed partial class Process
         {
             productionLastRejectReason = NextRuntimeDispatchRejectReason.EntryDispatchAlreadyConsumed;
             result = NextRuntimeSessionResult.LegacyFallback;
+#if PERFORMANCE_METRICS
+            PerformanceMetrics.RecordEntryDispatchAlreadyConsumed(profileDispatchStart);
+#endif
         }
         else if (trace is not null && trace.RejectReason != NextRuntimeDispatchRejectReason.None)
         {
@@ -985,6 +994,10 @@ internal sealed partial class Process
             calledAtAttempt is not null && IsProductionDispatchEligibleForTrace(calledAtAttempt), result, productionLastRejectReason.ToString());
         TraceR1_4G2ExtraTitleDispatch(calledAtAttempt, result, productionLastRejectReason.ToString());
         TraceR1_4IDifferentialDispatch(calledAtAttempt, result, productionLastRejectReason.ToString());
+#if PERFORMANCE_METRICS
+        PerformanceMetrics.RecordEntryDispatchSeam(profileDispatchStart,
+            productionLastRejectReason == NextRuntimeDispatchRejectReason.EntryDispatchAlreadyConsumed);
+#endif
         PerformanceMetrics.AddNextDispatchStage("DispatchTotal", dispatchStart);
         var functionId = label is not null && productionLabelIds is not null && productionLabelIds.TryGetValue(label, out var mappedId) ? mappedId.Value : -1;
         PerformanceMetrics.RecordNextDispatch(functionId, label?.LabelName ?? "<none>", productionLastRejectReason, result == NextRuntimeSessionResult.LegacyFallback, dispatchStart);
