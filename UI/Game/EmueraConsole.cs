@@ -2326,6 +2326,7 @@ internal sealed partial class EmueraConsole : IDisposable
 
     public void Dispose()
     {
+        process?.FlushNextRuntimeSessionStartFaultTrace();
         if (genericTimer != null)
             genericTimer.Dispose();
         //timer = null;

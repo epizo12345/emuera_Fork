@@ -94,6 +94,16 @@ static partial class Program
         rootCommand.Options.Add(nextRuntimeProductionOnlyOption);
         var nextRuntimeProductionLimitOption = new Option<int>(name: "--NextRuntimeProductionLimit") { DefaultValueFactory = _ => 5 };
         rootCommand.Options.Add(nextRuntimeProductionLimitOption);
+        var nextRuntimeSessionStartFaultTraceOption = new Option<string>(name: "--NextRuntimeSessionStartFaultTrace")
+        {
+            Description = "実ゲーム中の対象RuntimeFunctionIdのSessionStartFault trace出力先"
+        };
+        rootCommand.Options.Add(nextRuntimeSessionStartFaultTraceOption);
+        var nextRuntimeSessionStartFaultTraceFunctionsOption = new Option<string>(name: "--NextRuntimeSessionStartFaultTraceFunctions")
+        {
+            Description = "SessionStartFault trace対象RuntimeFunctionIdのカンマ区切りリスト"
+        };
+        rootCommand.Options.Add(nextRuntimeSessionStartFaultTraceFunctionsOption);
         var nextRuntimeLegacyManifestOption = new Option<string>(name: "--NextRuntimeLegacyManifest");
         rootCommand.Options.Add(nextRuntimeLegacyManifestOption);
         var nextRuntimeReadinessEvidenceOption = new Option<string>(name: "--NextRuntimeReadinessEvidence");
@@ -170,6 +180,13 @@ static partial class Program
         NextRuntimeHostProbePath = result.GetValue(nextRuntimeHostProbeOption);
         NextRuntimeProductionOnly = result.GetValue(nextRuntimeProductionOnlyOption);
         NextRuntimeProductionLimit = Math.Clamp(result.GetValue(nextRuntimeProductionLimitOption), 1, 5);
+        NextRuntimeSessionStartFaultTracePath = result.GetValue(nextRuntimeSessionStartFaultTraceOption);
+        var sessionStartFaultTraceFunctions = result.GetValue(nextRuntimeSessionStartFaultTraceFunctionsOption);
+        if (string.IsNullOrWhiteSpace(NextRuntimeSessionStartFaultTracePath) && !string.IsNullOrWhiteSpace(sessionStartFaultTraceFunctions))
+            throw new ArgumentException("--NextRuntimeSessionStartFaultTraceFunctions requires --NextRuntimeSessionStartFaultTrace.");
+        NextRuntimeSessionStartFaultTraceFunctionIds = string.IsNullOrWhiteSpace(NextRuntimeSessionStartFaultTracePath)
+            ? null
+            : ParseSessionStartFaultTraceFunctionIds(sessionStartFaultTraceFunctions);
         NextRuntimeLegacyManifestPath = result.GetValue(nextRuntimeLegacyManifestOption);
         NextRuntimeReadinessEvidencePath = result.GetValue(nextRuntimeReadinessEvidenceOption);
         NextRuntimeR1_4ETraceEnabled = result.GetValue(nextRuntimeR1_4ETraceOption);
@@ -359,6 +376,8 @@ static partial class Program
     internal static string? NextRuntimeHostProbePath { get; private set; }
     internal static bool NextRuntimeProductionOnly { get; private set; }
     internal static int NextRuntimeProductionLimit { get; private set; } = 5;
+    internal static string? NextRuntimeSessionStartFaultTracePath { get; private set; }
+    internal static HashSet<int>? NextRuntimeSessionStartFaultTraceFunctionIds { get; private set; }
     internal static string? NextRuntimeLegacyManifestPath { get; private set; }
     internal static string? NextRuntimeReadinessEvidencePath { get; private set; }
     internal static bool NextRuntimeR1_4ETraceEnabled { get; private set; }
@@ -370,6 +389,21 @@ static partial class Program
     internal static int? NextRuntimeDifferentialSeed { get; private set; }
     internal static string? NextRuntimeDifferentialClockBase { get; private set; }
     internal static long NextRuntimeDifferentialClockStepMs { get; private set; } = 1;
+    private static HashSet<int> ParseSessionStartFaultTraceFunctionIds(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            throw new ArgumentException("--NextRuntimeSessionStartFaultTrace requires at least one RuntimeFunctionId.");
+        var ids = new HashSet<int>();
+        foreach (var token in value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (!int.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id) || id < 0)
+                throw new ArgumentException($"Invalid RuntimeFunctionId in --NextRuntimeSessionStartFaultTraceFunctions: {token}");
+            ids.Add(id);
+        }
+        if (ids.Count == 0)
+            throw new ArgumentException("--NextRuntimeSessionStartFaultTrace requires at least one RuntimeFunctionId.");
+        return ids;
+    }
     internal static void ProbeNextRuntimeHost(string checkpoint)
     {
         if (string.IsNullOrWhiteSpace(NextRuntimeHostProbePath)) return;
