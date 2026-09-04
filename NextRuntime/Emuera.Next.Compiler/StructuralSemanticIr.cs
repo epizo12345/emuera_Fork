@@ -37,10 +37,16 @@ public sealed class SemanticPayload
         HostIdentities = CreateHostIdentities();
     }
     public string ReadSymbol(SemanticSlice slice) => Encoding.UTF8.GetString(Utf8, slice.Offset, slice.Length);
-    public bool TryGetHostIdentity(int nodeIndex, SemanticHostIdentityKind kind, out SemanticHostIdentity identity)
+    public bool TryGetHostIdentity(int nodeIndex, SemanticHostIdentityKind kind, out SemanticHostIdentity identity) =>
+        TryGetHostIdentity(nodeIndex, kind, out identity, out _);
+    public bool TryGetHostIdentity(int nodeIndex, SemanticHostIdentityKind kind, out SemanticHostIdentity identity, out int scannedElements)
     {
+        scannedElements = 0;
         foreach (var candidate in HostIdentities)
+        {
+            scannedElements++;
             if (candidate.NodeIndex == nodeIndex && candidate.Kind == kind) { identity = candidate; return true; }
+        }
         identity = default; return false;
     }
     public static SemanticPayload Empty { get; } = new([], [], [], [], []);

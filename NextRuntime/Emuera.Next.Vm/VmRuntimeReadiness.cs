@@ -58,6 +58,16 @@ public sealed class VmRuntimePreparationCounters
     public long CodeInstructionVisits { get; set; }
     public long SemanticRecordVisits { get; set; }
     public long HostIdentityVisits { get; set; }
+    public long HostIdentityLookupCount { get; set; }
+    public long HostIdentityLookupHitCount { get; set; }
+    public long HostIdentityLookupMissCount { get; set; }
+    public long HostIdentityLinearScanElementVisits { get; set; }
+    public long HostIdentityPresentedElementCount { get; set; }
+    public int MaxHostIdentitiesLength { get; set; }
+    public long VariableLookupCount { get; set; }
+    public long VariableLinearScanElementVisits { get; set; }
+    public long CallLookupCount { get; set; }
+    public long CallLinearScanElementVisits { get; set; }
     public long RequirementCandidateCount { get; set; }
     public long RequirementDedupLookupCount { get; set; }
     public long RequirementOutputCount { get; set; }
@@ -528,6 +538,27 @@ public static class VmRuntimeRequirementAnalyzer
         var activeAssignmentDestination = false;
         var activeTimesDestination = false;
         var activeStatementTargetIsString = false;
+        bool TryGetHostIdentity(SemanticPayload payload, int nodeIndex, SemanticHostIdentityKind kind, out SemanticHostIdentity identity)
+        {
+            if (counters?.DetailedMeasurement != true) return payload.TryGetHostIdentity(nodeIndex, kind, out identity);
+            var found = payload.TryGetHostIdentity(nodeIndex, kind, out identity, out var scannedElements);
+            counters.HostIdentityLookupCount++;
+            if (found) counters.HostIdentityLookupHitCount++; else counters.HostIdentityLookupMissCount++;
+            counters.HostIdentityLinearScanElementVisits += scannedElements;
+            counters.HostIdentityPresentedElementCount += payload.HostIdentities.Length;
+            counters.MaxHostIdentitiesLength = Math.Max(counters.MaxHostIdentitiesLength, payload.HostIdentities.Length);
+            if (kind == SemanticHostIdentityKind.Variable)
+            {
+                counters.VariableLookupCount++;
+                counters.VariableLinearScanElementVisits += scannedElements;
+            }
+            else
+            {
+                counters.CallLookupCount++;
+                counters.CallLinearScanElementVisits += scannedElements;
+            }
+            return found;
+        }
         string ArenaKind(SemanticPayload payload) => ReferenceEquals(payload, program.SemanticArena) ? "SemanticArena" : ReferenceEquals(payload, program.RuntimeStatements.OperandArena) ? "RuntimeStatementOperandArena" : ReferenceEquals(payload, program.CallArgumentArena) ? "CallArgumentArena" : "SemanticPayload";
         void ApplyVariable(VmRuntimeReadinessNode[] targetNodes, VmRuntimeCapabilitySnapshot targetCapabilities, SemanticPayload payload, SemanticHostIdentity identity, VmRuntimeVariableUse use, bool write, int recordIndex, int nodeIndex, bool isIndexChild, SemanticNodeKind nodeKind, int parentNodeIndex, string parentNodeKind)
         {
@@ -581,7 +612,7 @@ public static class VmRuntimeRequirementAnalyzer
             if (node.Kind is SemanticNodeKind.Symbol or SemanticNodeKind.Variable or SemanticNodeKind.VariableSubkey)
             {
                 if (counters?.DetailedMeasurement == true) counters.HostIdentityVisits++;
-                if (payload.TryGetHostIdentity(nodeIndex, SemanticHostIdentityKind.Variable, out var identity))
+                if (TryGetHostIdentity(payload, nodeIndex, SemanticHostIdentityKind.Variable, out var identity))
                 {
                     ApplyVariable(nodes, capabilities, payload, identity, use, write, activeRecordIndex, nodeIndex, isIndexChild, node.Kind, parentNodeIndex, parentNodeKind);
                     if (secondaryNodes is not null && secondaryCapabilities is { } secondary)
@@ -591,7 +622,7 @@ public static class VmRuntimeRequirementAnalyzer
             if (node.Kind == SemanticNodeKind.Call)
             {
                 if (counters?.DetailedMeasurement == true) counters.HostIdentityVisits++;
-                if (payload.TryGetHostIdentity(nodeIndex, SemanticHostIdentityKind.Call, out var call))
+                if (TryGetHostIdentity(payload, nodeIndex, SemanticHostIdentityKind.Call, out var call))
                 {
                     var callObservation = capabilities.CallObservation?.Invoke(call) ?? new(false, false, "", "NoObserver");
                 if (expressionTargets.TryGetValue(call.StableId, out var target))

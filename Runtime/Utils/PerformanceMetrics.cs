@@ -108,6 +108,16 @@ internal static class PerformanceMetrics
     private static long nextReadinessCodeInstructionVisits;
     private static long nextReadinessSemanticRecordVisits;
     private static long nextReadinessHostIdentityVisits;
+    private static long nextReadinessHostIdentityLookupCount;
+    private static long nextReadinessHostIdentityLookupHitCount;
+    private static long nextReadinessHostIdentityLookupMissCount;
+    private static long nextReadinessHostIdentityLinearScanElementVisits;
+    private static long nextReadinessHostIdentityPresentedElementCount;
+    private static int nextReadinessMaxHostIdentitiesLength;
+    private static long nextReadinessVariableLookupCount;
+    private static long nextReadinessVariableLinearScanElementVisits;
+    private static long nextReadinessCallLookupCount;
+    private static long nextReadinessCallLinearScanElementVisits;
     private static long nextReadinessRequirementCandidateCount;
     private static long nextReadinessRequirementDedupLookupCount;
     private static long nextReadinessRequirementOutputCount;
@@ -171,6 +181,16 @@ internal static class PerformanceMetrics
         nextReadinessCodeInstructionVisits = 0;
         nextReadinessSemanticRecordVisits = 0;
         nextReadinessHostIdentityVisits = 0;
+        nextReadinessHostIdentityLookupCount = 0;
+        nextReadinessHostIdentityLookupHitCount = 0;
+        nextReadinessHostIdentityLookupMissCount = 0;
+        nextReadinessHostIdentityLinearScanElementVisits = 0;
+        nextReadinessHostIdentityPresentedElementCount = 0;
+        nextReadinessMaxHostIdentitiesLength = 0;
+        nextReadinessVariableLookupCount = 0;
+        nextReadinessVariableLinearScanElementVisits = 0;
+        nextReadinessCallLookupCount = 0;
+        nextReadinessCallLinearScanElementVisits = 0;
         nextReadinessRequirementCandidateCount = 0;
         nextReadinessRequirementDedupLookupCount = 0;
         nextReadinessRequirementOutputCount = 0;
@@ -315,6 +335,21 @@ internal static class PerformanceMetrics
                 RequirementCandidateCount = nextReadinessRequirementCandidateCount,
                 RequirementDedupLookupCount = nextReadinessRequirementDedupLookupCount,
                 RequirementOutputCount = nextReadinessRequirementOutputCount
+            },
+            HostIdentityLookupMetrics = new
+            {
+                HostIdentityLookupCount = nextReadinessHostIdentityLookupCount,
+                HostIdentityLookupHitCount = nextReadinessHostIdentityLookupHitCount,
+                HostIdentityLookupMissCount = nextReadinessHostIdentityLookupMissCount,
+                HostIdentityLinearScanElementVisits = nextReadinessHostIdentityLinearScanElementVisits,
+                AverageScanElementsPerLookup = nextReadinessHostIdentityLookupCount == 0 ? 0 : (double)nextReadinessHostIdentityLinearScanElementVisits / nextReadinessHostIdentityLookupCount,
+                HostIdentityPresentedElementCount = nextReadinessHostIdentityPresentedElementCount,
+                AverageHostIdentitiesPresentedPerLookup = nextReadinessHostIdentityLookupCount == 0 ? 0 : (double)nextReadinessHostIdentityPresentedElementCount / nextReadinessHostIdentityLookupCount,
+                MaxHostIdentitiesLength = nextReadinessMaxHostIdentitiesLength,
+                VariableLookupCount = nextReadinessVariableLookupCount,
+                VariableLinearScanElementVisits = nextReadinessVariableLinearScanElementVisits,
+                CallLookupCount = nextReadinessCallLookupCount,
+                CallLinearScanElementVisits = nextReadinessCallLinearScanElementVisits
             },
             TopFunctionReasonBuckets = buckets,
             SessionStartRejectSubreasons = subreasons,
@@ -575,6 +610,21 @@ internal static class PerformanceMetrics
         nextReadinessRequirementCandidateCount = requirementCandidateCount;
         nextReadinessRequirementDedupLookupCount = requirementDedupLookupCount;
         nextReadinessRequirementOutputCount = requirementOutputCount;
+    }
+
+    [Conditional("PERFORMANCE_METRICS")]
+    internal static void RecordNextRuntimeHostIdentityLookupMetrics(long lookupCount, long hitCount, long missCount, long scanElementVisits, long presentedElementCount, int maxIdentitiesLength, long variableLookupCount, long variableScanElementVisits, long callLookupCount, long callScanElementVisits)
+    {
+        nextReadinessHostIdentityLookupCount = lookupCount;
+        nextReadinessHostIdentityLookupHitCount = hitCount;
+        nextReadinessHostIdentityLookupMissCount = missCount;
+        nextReadinessHostIdentityLinearScanElementVisits = scanElementVisits;
+        nextReadinessHostIdentityPresentedElementCount = presentedElementCount;
+        nextReadinessMaxHostIdentitiesLength = maxIdentitiesLength;
+        nextReadinessVariableLookupCount = variableLookupCount;
+        nextReadinessVariableLinearScanElementVisits = variableScanElementVisits;
+        nextReadinessCallLookupCount = callLookupCount;
+        nextReadinessCallLinearScanElementVisits = callScanElementVisits;
     }
 #endif
 

@@ -243,8 +243,12 @@ internal sealed partial class Process
                 productionSemanticHost.IsVariableAvailableInContext,
                 productionSemanticHost.IsCharacterVariableInContext,
                 productionSemanticHost.IsStringAssignmentTarget);
+#if PERFORMANCE_METRICS
+            var readinessRequirementsTotalStart = PerformanceMetrics.StartNextRuntimeMeasurement();
+#endif
             var stagedReadiness = VmRuntimeRequirementAnalyzer.AnalyzeStaged(link.Program, kinds, sharedCapabilities, productionCapabilities, productionPreparationCounters, RecordProductionTimingStage);
 #if PERFORMANCE_METRICS
+            PerformanceMetrics.RecordNextRuntimeStartupStage("Readiness.Requirements.Total", readinessRequirementsTotalStart);
             PerformanceMetrics.RecordNextRuntimeReadinessCounters(
                 productionPreparationCounters.RuntimeFunctionCount,
                 productionPreparationCounters.CodeInstructionVisits,
@@ -253,6 +257,17 @@ internal sealed partial class Process
                 productionPreparationCounters.RequirementCandidateCount,
                 productionPreparationCounters.RequirementDedupLookupCount,
                 productionPreparationCounters.RequirementOutputCount);
+            PerformanceMetrics.RecordNextRuntimeHostIdentityLookupMetrics(
+                productionPreparationCounters.HostIdentityLookupCount,
+                productionPreparationCounters.HostIdentityLookupHitCount,
+                productionPreparationCounters.HostIdentityLookupMissCount,
+                productionPreparationCounters.HostIdentityLinearScanElementVisits,
+                productionPreparationCounters.HostIdentityPresentedElementCount,
+                productionPreparationCounters.MaxHostIdentitiesLength,
+                productionPreparationCounters.VariableLookupCount,
+                productionPreparationCounters.VariableLinearScanElementVisits,
+                productionPreparationCounters.CallLookupCount,
+                productionPreparationCounters.CallLinearScanElementVisits);
 #endif
             var sharedReadiness = stagedReadiness.Shared;
             var productionStage = stagedReadiness.Production;
