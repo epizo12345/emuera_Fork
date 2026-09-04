@@ -533,6 +533,8 @@ internal static class PerformanceMetrics
             SourceReaderMetrics = new
             {
                 SessionOpenCount = sourceReaderMetrics.FileStreamOpenCount,
+                FileInfoObjectConstructionCount = sourceReaderMetrics.FileInfoObjectConstructionCount,
+                FileInfoRefreshCount = sourceReaderMetrics.FileInfoRefreshCount,
                 FileStreamOpen = new
                 {
                     Count = sourceReaderMetrics.FileStreamOpenCount,
@@ -550,6 +552,12 @@ internal static class PerformanceMetrics
                         Count = sourceReaderMetrics.InitialFileInfoConstructionCount,
                         TotalMilliseconds = TicksToMilliseconds(sourceReaderMetrics.InitialFileInfoConstructionTicks),
                         AverageMicroseconds = sourceReaderMetrics.InitialFileInfoConstructionCount == 0 ? 0 : TicksToMilliseconds(sourceReaderMetrics.InitialFileInfoConstructionTicks) * 1000 / sourceReaderMetrics.InitialFileInfoConstructionCount
+                    },
+                    FileInfoRefresh = new
+                    {
+                        Count = sourceReaderMetrics.InitialFileInfoRefreshCount,
+                        TotalMilliseconds = TicksToMilliseconds(sourceReaderMetrics.InitialFileInfoRefreshTicks),
+                        AverageMicroseconds = sourceReaderMetrics.InitialFileInfoRefreshCount == 0 ? 0 : TicksToMilliseconds(sourceReaderMetrics.InitialFileInfoRefreshTicks) * 1000 / sourceReaderMetrics.InitialFileInfoRefreshCount
                     },
                     LengthAccess = new
                     {
@@ -591,6 +599,12 @@ internal static class PerformanceMetrics
                             Count = sourceReaderMetrics.ReadFileInfoConstructionCount,
                             TotalMilliseconds = TicksToMilliseconds(sourceReaderMetrics.ReadFileInfoConstructionTicks),
                             AverageMicroseconds = sourceReaderMetrics.ReadFileInfoConstructionCount == 0 ? 0 : TicksToMilliseconds(sourceReaderMetrics.ReadFileInfoConstructionTicks) * 1000 / sourceReaderMetrics.ReadFileInfoConstructionCount
+                        },
+                        FileInfoRefresh = new
+                        {
+                            Count = sourceReaderMetrics.ReadFileInfoRefreshCount,
+                            TotalMilliseconds = TicksToMilliseconds(sourceReaderMetrics.ReadFileInfoRefreshTicks),
+                            AverageMicroseconds = sourceReaderMetrics.ReadFileInfoRefreshCount == 0 ? 0 : TicksToMilliseconds(sourceReaderMetrics.ReadFileInfoRefreshTicks) * 1000 / sourceReaderMetrics.ReadFileInfoRefreshCount
                         },
                         LengthAccess = new
                         {

@@ -50,6 +50,50 @@ static int SelfTest()
             Assert(result.Status == CompileStatus.Compiled, $"{header}:{result.Status}:{result.Reason}");
             return result.Function!.RuntimeMetadata!;
         }
+        FileInfoObservation ObserveOldSnapshot(string snapshotPath, long sourceBytes, long sourceTicks)
+        {
+            try
+            {
+                var info = new FileInfo(snapshotPath);
+                var length = info.Length;
+                var changed = length != sourceBytes;
+                var lastWriteTimeUtcAccessed = false;
+                var lastWriteTimeUtcTicks = 0L;
+                if (!changed && sourceTicks != 0)
+                {
+                    lastWriteTimeUtcAccessed = true;
+                    lastWriteTimeUtcTicks = info.LastWriteTimeUtc.Ticks;
+                    changed = lastWriteTimeUtcTicks != sourceTicks;
+                }
+                return new(changed, length, lastWriteTimeUtcTicks, lastWriteTimeUtcAccessed, null);
+            }
+            catch (Exception ex) { return new(false, null, null, false, ex.GetType()); }
+        }
+        FileInfoObservation ObserveRefreshedSnapshot(FileInfo info, long sourceBytes, long sourceTicks)
+        {
+            try
+            {
+                info.Refresh();
+                var length = info.Length;
+                var changed = length != sourceBytes;
+                var lastWriteTimeUtcAccessed = false;
+                var lastWriteTimeUtcTicks = 0L;
+                if (!changed && sourceTicks != 0)
+                {
+                    lastWriteTimeUtcAccessed = true;
+                    lastWriteTimeUtcTicks = info.LastWriteTimeUtc.Ticks;
+                    changed = lastWriteTimeUtcTicks != sourceTicks;
+                }
+                return new(changed, length, lastWriteTimeUtcTicks, lastWriteTimeUtcAccessed, null);
+            }
+            catch (Exception ex) { return new(false, null, null, false, ex.GetType()); }
+        }
+        void AssertSnapshotEquivalent(string label, string snapshotPath, FileInfo reused, long sourceBytes, long sourceTicks)
+        {
+            var oldObservation = ObserveOldSnapshot(snapshotPath, sourceBytes, sourceTicks);
+            var refreshedObservation = ObserveRefreshedSnapshot(reused, sourceBytes, sourceTicks);
+            Assert(oldObservation == refreshedObservation, $"{label}: old={oldObservation} refreshed={refreshedObservation}");
+        }
         tests.Add(("reader reads one function", () => { var read = FunctionSourceReader.Read(indexed, function); Assert(read.Status == SourceReadStatus.Read, $"{read.Status}:{read.Reason}"); }));
         tests.Add(("start offset", () => Assert(function.Span.StartOffset == 3)));
         tests.Add(("end offset", () => Assert(function.Span.EndOffset == new FileInfo(path).Length, $"{function.Span.EndOffset}!={new FileInfo(path).Length}")));
@@ -201,6 +245,43 @@ static int SelfTest()
             Assert(runtime.TryGetValue(SourcePositionKey.Create("same.ERB", 3, root), out var runtimeId) && runtimeId == 20);
             Assert(!runtime.TryGetValue(SourcePositionKey.Create("missing.ERB", 3, root), out _));
         }));
+        tests.Add(("P3N FileInfo Refresh matches construction across mutations", () =>
+        {
+            var snapshotPath = Path.Combine(root, "p3n-refresh.txt");
+            File.WriteAllText(snapshotPath, "abc");
+            var reused = new FileInfo(snapshotPath);
+            var originalTime = File.GetLastWriteTimeUtc(snapshotPath).Ticks;
+            AssertSnapshotEquivalent("unchanged", snapshotPath, reused, 3, originalTime);
+            File.AppendAllText(snapshotPath, "d");
+            AssertSnapshotEquivalent("length changed", snapshotPath, reused, 3, originalTime);
+            File.WriteAllText(snapshotPath, "wxyz");
+            var changedTime = DateTime.UtcNow.AddMinutes(1);
+            File.SetLastWriteTimeUtc(snapshotPath, changedTime);
+            AssertSnapshotEquivalent("same length and timestamp changed", snapshotPath, reused, 4, originalTime);
+            File.Move(snapshotPath, snapshotPath + ".old");
+            File.WriteAllText(snapshotPath, "replaced");
+            AssertSnapshotEquivalent("replaced", snapshotPath, reused, 4, originalTime);
+            File.Delete(snapshotPath);
+            AssertSnapshotEquivalent("deleted", snapshotPath, reused, 4, originalTime);
+            var missingPath = Path.Combine(root, "p3n-missing", "missing.txt");
+            AssertSnapshotEquivalent("missing", missingPath, new FileInfo(missingPath), 1, originalTime);
+            AssertSnapshotEquivalent("length short circuit", snapshotPath, reused, 4, originalTime);
+        }));
+        tests.Add(("P3N FileInfo refresh preserves session isolation and read semantics", () =>
+        {
+            var sessionPath = Path.Combine(root, "p3n-session.ERB");
+            WriteBom(sessionPath, "@A\r\nPRINT 1\r\n@B\r\nPRINT 2\r\n");
+            var sessionIndex = ErbSourceIndexer.IndexFile(sessionPath);
+            var fileInfoField = typeof(FunctionSourceSession).GetField("fileInfo", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            Assert(fileInfoField is not null && !fileInfoField.IsStatic);
+            using var firstSession = FunctionSourceReader.OpenFile(sessionIndex);
+            var firstInfo = fileInfoField!.GetValue(firstSession);
+            Assert(firstInfo is FileInfo);
+            Assert(firstSession.Read(sessionIndex.Functions[0]).Status == SourceReadStatus.Read);
+            Assert(firstSession.Read(sessionIndex.Functions[1]).Status == SourceReadStatus.Read);
+            using var secondSession = FunctionSourceReader.OpenFile(sessionIndex);
+            Assert(!ReferenceEquals(firstInfo, fileInfoField.GetValue(secondSession)));
+        }));
         tests.Add(("P3L SourceReaderMetrics aggregate and reset", (Action)(() =>
         {
             SourceReaderMetrics.Reset();
@@ -234,16 +315,19 @@ static int SelfTest()
             {
                 var read = session.Read(metricsIndex.Functions.Single());
                 Assert(read.Status == SourceReadStatus.Read, $"{read.Status}:{read.Reason}");
+                var repeated = session.Read(metricsIndex.Functions.Single());
+                Assert(repeated.Status == SourceReadStatus.Read, $"{repeated.Status}:{repeated.Reason}");
             }
             var metrics = SourceReaderMetrics.Snapshot();
-            Assert(metrics.FileStreamOpenCount == 1 && metrics.InitialSnapshotCheckCount == 1 && metrics.ReadFunctionCount == 1 &&
-                   metrics.SpanValidationCount == 1 && metrics.ReadSnapshotCheckCount == 1 && metrics.BufferAllocationCount == 1 &&
-                   metrics.SeekCount == 1 && metrics.StreamReadCallCount >= 1 && metrics.Utf8ValidationCount == 1 &&
-                   metrics.ResultConstructionCount == 1 && metrics.TotalBytesRead > 0 &&
+            Assert(metrics.FileStreamOpenCount == 1 && metrics.InitialSnapshotCheckCount == 1 && metrics.ReadFunctionCount == 2 &&
+                   metrics.SpanValidationCount == 2 && metrics.ReadSnapshotCheckCount == 2 && metrics.BufferAllocationCount == 2 &&
+                   metrics.SeekCount == 2 && metrics.StreamReadCallCount >= 2 && metrics.Utf8ValidationCount == 2 &&
+                   metrics.ResultConstructionCount == 2 && metrics.TotalBytesRead > 0 &&
                    metrics.InitialFileInfoConstructionCount == 1 && metrics.InitialLengthAccessCount == 1 &&
                    metrics.InitialLastWriteTimeUtcAccessCount == 1 && metrics.InitialSnapshotComparisonCount == 1 &&
-                   metrics.ReadFileInfoConstructionCount == 1 && metrics.ReadLengthAccessCount == 1 &&
-                   metrics.ReadLastWriteTimeUtcAccessCount == 1 && metrics.ReadSnapshotComparisonCount == 1);
+                   metrics.InitialFileInfoRefreshCount == 1 && metrics.ReadFileInfoConstructionCount == 0 && metrics.ReadLengthAccessCount == 2 &&
+                   metrics.ReadLastWriteTimeUtcAccessCount == 2 && metrics.ReadSnapshotComparisonCount == 2 &&
+                   metrics.ReadFileInfoRefreshCount == 2 && metrics.FileInfoObjectConstructionCount == 1 && metrics.FileInfoRefreshCount == 3);
             SourceReaderMetrics.Reset();
             var reset = SourceReaderMetrics.Snapshot();
             Assert(reset.FileStreamOpenCount == 0 && reset.ReadFunctionCount == 0 && reset.TotalBytesRead == 0);
@@ -628,3 +712,4 @@ readonly record struct SetDiff(string[] Missing, string[] Extra);
 readonly record struct LexicalOracle(string Name, string Input, string Identifier, int StopPosition);
 readonly record struct SeparatorOracle(string Name, string Input, string Kind, bool IsError, string? FunctionCode);
 readonly record struct DebugOracle(string Name, string Input, bool DebugMode, string? Kind, bool IsError, string FirstIdentifier, int InstructionCount, string? FunctionCode, int SourceLine, int OperandOffset, int OperandLength);
+readonly record struct FileInfoObservation(bool Changed, long? Length, long? LastWriteTimeUtcTicks, bool LastWriteTimeUtcAccessed, Type? ExceptionType);

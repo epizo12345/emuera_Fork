@@ -79,6 +79,7 @@ public sealed class FunctionSourceSession : IDisposable
     private static readonly UTF8Encoding StrictUtf8 = new(false, true);
     private readonly SourceFileIndex file;
     private readonly FileStream stream;
+    private readonly FileInfo fileInfo;
     private bool disposed;
 
     internal FunctionSourceSession(SourceFileIndex file)
@@ -88,6 +89,13 @@ public sealed class FunctionSourceSession : IDisposable
         var openStart = Stopwatch.GetTimestamp();
 #endif
         stream = new(file.FileIdentity, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 1, FileOptions.RandomAccess);
+#if PERFORMANCE_METRICS
+        var fileInfoConstructionStart = Stopwatch.GetTimestamp();
+#endif
+        fileInfo = new(file.FileIdentity);
+#if PERFORMANCE_METRICS
+        SourceReaderMetrics.RecordFileInfoObjectConstruction(true, Stopwatch.GetTimestamp() - fileInfoConstructionStart);
+#endif
 #if PERFORMANCE_METRICS
         var openTicks = Stopwatch.GetTimestamp() - openStart;
         var initialSnapshotStart = Stopwatch.GetTimestamp();
@@ -183,14 +191,14 @@ public sealed class FunctionSourceSession : IDisposable
     private bool IsSnapshotChanged(bool initial)
     {
 #if PERFORMANCE_METRICS
-        var fileInfoConstructionStart = Stopwatch.GetTimestamp();
+        var fileInfoRefreshStart = Stopwatch.GetTimestamp();
 #endif
-        var info = new FileInfo(file.FileIdentity);
+        fileInfo.Refresh();
 #if PERFORMANCE_METRICS
-        var fileInfoConstructionTicks = Stopwatch.GetTimestamp() - fileInfoConstructionStart;
+        var fileInfoRefreshTicks = Stopwatch.GetTimestamp() - fileInfoRefreshStart;
         var lengthAccessStart = Stopwatch.GetTimestamp();
 #endif
-        var length = info.Length;
+        var length = fileInfo.Length;
 #if PERFORMANCE_METRICS
         var lengthAccessTicks = Stopwatch.GetTimestamp() - lengthAccessStart;
         var comparisonStart = Stopwatch.GetTimestamp();
@@ -206,13 +214,13 @@ public sealed class FunctionSourceSession : IDisposable
             var lastWriteTimeUtcAccessStart = Stopwatch.GetTimestamp();
             lastWriteTimeUtcAccessed = true;
 #endif
-            changed = info.LastWriteTimeUtc.Ticks != file.LastWriteTimeUtcTicks;
+            changed = fileInfo.LastWriteTimeUtc.Ticks != file.LastWriteTimeUtcTicks;
 #if PERFORMANCE_METRICS
             lastWriteTimeUtcAccessTicks = Stopwatch.GetTimestamp() - lastWriteTimeUtcAccessStart;
 #endif
         }
 #if PERFORMANCE_METRICS
-        SourceReaderMetrics.RecordSnapshotCheckParts(initial, fileInfoConstructionTicks, lengthAccessTicks,
+        SourceReaderMetrics.RecordSnapshotCheckParts(initial, fileInfoRefreshTicks, lengthAccessTicks,
             lastWriteTimeUtcAccessTicks, Stopwatch.GetTimestamp() - comparisonStart, lastWriteTimeUtcAccessed);
 #endif
         return changed;
