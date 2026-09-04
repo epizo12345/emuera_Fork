@@ -278,6 +278,8 @@ internal static class PerformanceMetrics
             CallArgumentLinkMetrics = new
             {
                 CallArgumentPayloadAdditionCount = nextCallArgumentPayloadAdditionCount,
+                AccumulatedRecordBaseLookupCount = nextCallArgumentPayloadAdditionCount,
+                CallArgumentPrefixScanExecution = "REMOVED",
                 CallArgumentPrefixScanElementVisits = nextCallArgumentPrefixScanElementVisits,
                 CallArgumentPrefixScanTotalMilliseconds = TicksToMilliseconds(nextCallArgumentPrefixScanTicks)
             },
