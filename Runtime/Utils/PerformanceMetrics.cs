@@ -544,7 +544,31 @@ internal static class PerformanceMetrics
                     Count = sourceReaderMetrics.InitialSnapshotCheckCount,
                     ChangedCount = sourceReaderMetrics.InitialSnapshotChangedCount,
                     TotalMilliseconds = TicksToMilliseconds(sourceReaderMetrics.InitialSnapshotCheckTicks),
-                    AverageMicroseconds = sourceReaderMetrics.InitialSnapshotCheckCount == 0 ? 0 : TicksToMilliseconds(sourceReaderMetrics.InitialSnapshotCheckTicks) * 1000 / sourceReaderMetrics.InitialSnapshotCheckCount
+                    AverageMicroseconds = sourceReaderMetrics.InitialSnapshotCheckCount == 0 ? 0 : TicksToMilliseconds(sourceReaderMetrics.InitialSnapshotCheckTicks) * 1000 / sourceReaderMetrics.InitialSnapshotCheckCount,
+                    FileInfoConstruction = new
+                    {
+                        Count = sourceReaderMetrics.InitialFileInfoConstructionCount,
+                        TotalMilliseconds = TicksToMilliseconds(sourceReaderMetrics.InitialFileInfoConstructionTicks),
+                        AverageMicroseconds = sourceReaderMetrics.InitialFileInfoConstructionCount == 0 ? 0 : TicksToMilliseconds(sourceReaderMetrics.InitialFileInfoConstructionTicks) * 1000 / sourceReaderMetrics.InitialFileInfoConstructionCount
+                    },
+                    LengthAccess = new
+                    {
+                        Count = sourceReaderMetrics.InitialLengthAccessCount,
+                        TotalMilliseconds = TicksToMilliseconds(sourceReaderMetrics.InitialLengthAccessTicks),
+                        AverageMicroseconds = sourceReaderMetrics.InitialLengthAccessCount == 0 ? 0 : TicksToMilliseconds(sourceReaderMetrics.InitialLengthAccessTicks) * 1000 / sourceReaderMetrics.InitialLengthAccessCount
+                    },
+                    LastWriteTimeUtcAccess = new
+                    {
+                        Count = sourceReaderMetrics.InitialLastWriteTimeUtcAccessCount,
+                        TotalMilliseconds = TicksToMilliseconds(sourceReaderMetrics.InitialLastWriteTimeUtcAccessTicks),
+                        AverageMicroseconds = sourceReaderMetrics.InitialLastWriteTimeUtcAccessCount == 0 ? 0 : TicksToMilliseconds(sourceReaderMetrics.InitialLastWriteTimeUtcAccessTicks) * 1000 / sourceReaderMetrics.InitialLastWriteTimeUtcAccessCount
+                    },
+                    Comparison = new
+                    {
+                        Count = sourceReaderMetrics.InitialSnapshotComparisonCount,
+                        TotalMilliseconds = TicksToMilliseconds(sourceReaderMetrics.InitialSnapshotComparisonTicks),
+                        AverageMicroseconds = sourceReaderMetrics.InitialSnapshotComparisonCount == 0 ? 0 : TicksToMilliseconds(sourceReaderMetrics.InitialSnapshotComparisonTicks) * 1000 / sourceReaderMetrics.InitialSnapshotComparisonCount
+                    }
                 },
                 SourceRead = new
                 {
@@ -561,7 +585,31 @@ internal static class PerformanceMetrics
                         Count = sourceReaderMetrics.ReadSnapshotCheckCount,
                         ChangedCount = sourceReaderMetrics.ReadSnapshotChangedCount,
                         TotalMilliseconds = TicksToMilliseconds(sourceReaderMetrics.ReadSnapshotCheckTicks),
-                        AverageMicroseconds = sourceReaderMetrics.ReadSnapshotCheckCount == 0 ? 0 : TicksToMilliseconds(sourceReaderMetrics.ReadSnapshotCheckTicks) * 1000 / sourceReaderMetrics.ReadSnapshotCheckCount
+                        AverageMicroseconds = sourceReaderMetrics.ReadSnapshotCheckCount == 0 ? 0 : TicksToMilliseconds(sourceReaderMetrics.ReadSnapshotCheckTicks) * 1000 / sourceReaderMetrics.ReadSnapshotCheckCount,
+                        FileInfoConstruction = new
+                        {
+                            Count = sourceReaderMetrics.ReadFileInfoConstructionCount,
+                            TotalMilliseconds = TicksToMilliseconds(sourceReaderMetrics.ReadFileInfoConstructionTicks),
+                            AverageMicroseconds = sourceReaderMetrics.ReadFileInfoConstructionCount == 0 ? 0 : TicksToMilliseconds(sourceReaderMetrics.ReadFileInfoConstructionTicks) * 1000 / sourceReaderMetrics.ReadFileInfoConstructionCount
+                        },
+                        LengthAccess = new
+                        {
+                            Count = sourceReaderMetrics.ReadLengthAccessCount,
+                            TotalMilliseconds = TicksToMilliseconds(sourceReaderMetrics.ReadLengthAccessTicks),
+                            AverageMicroseconds = sourceReaderMetrics.ReadLengthAccessCount == 0 ? 0 : TicksToMilliseconds(sourceReaderMetrics.ReadLengthAccessTicks) * 1000 / sourceReaderMetrics.ReadLengthAccessCount
+                        },
+                        LastWriteTimeUtcAccess = new
+                        {
+                            Count = sourceReaderMetrics.ReadLastWriteTimeUtcAccessCount,
+                            TotalMilliseconds = TicksToMilliseconds(sourceReaderMetrics.ReadLastWriteTimeUtcAccessTicks),
+                            AverageMicroseconds = sourceReaderMetrics.ReadLastWriteTimeUtcAccessCount == 0 ? 0 : TicksToMilliseconds(sourceReaderMetrics.ReadLastWriteTimeUtcAccessTicks) * 1000 / sourceReaderMetrics.ReadLastWriteTimeUtcAccessCount
+                        },
+                        Comparison = new
+                        {
+                            Count = sourceReaderMetrics.ReadSnapshotComparisonCount,
+                            TotalMilliseconds = TicksToMilliseconds(sourceReaderMetrics.ReadSnapshotComparisonTicks),
+                            AverageMicroseconds = sourceReaderMetrics.ReadSnapshotComparisonCount == 0 ? 0 : TicksToMilliseconds(sourceReaderMetrics.ReadSnapshotComparisonTicks) * 1000 / sourceReaderMetrics.ReadSnapshotComparisonCount
+                        }
                     },
                     BufferAllocation = new
                     {

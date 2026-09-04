@@ -6,12 +6,28 @@ public readonly record struct SourceReaderMetricsSnapshot(
     long InitialSnapshotCheckCount,
     long InitialSnapshotChangedCount,
     long InitialSnapshotCheckTicks,
+    long InitialFileInfoConstructionCount,
+    long InitialFileInfoConstructionTicks,
+    long InitialLengthAccessCount,
+    long InitialLengthAccessTicks,
+    long InitialLastWriteTimeUtcAccessCount,
+    long InitialLastWriteTimeUtcAccessTicks,
+    long InitialSnapshotComparisonCount,
+    long InitialSnapshotComparisonTicks,
     long SpanValidationCount,
     long SpanValidationInvalidCount,
     long SpanValidationTicks,
     long ReadSnapshotCheckCount,
     long ReadSnapshotChangedCount,
     long ReadSnapshotCheckTicks,
+    long ReadFileInfoConstructionCount,
+    long ReadFileInfoConstructionTicks,
+    long ReadLengthAccessCount,
+    long ReadLengthAccessTicks,
+    long ReadLastWriteTimeUtcAccessCount,
+    long ReadLastWriteTimeUtcAccessTicks,
+    long ReadSnapshotComparisonCount,
+    long ReadSnapshotComparisonTicks,
     long BufferAllocationCount,
     long BufferAllocationTicks,
     long BufferAllocatedBytes,
@@ -43,12 +59,28 @@ public static class SourceReaderMetrics
     private static long initialSnapshotCheckCount;
     private static long initialSnapshotChangedCount;
     private static long initialSnapshotCheckTicks;
+    private static long initialFileInfoConstructionCount;
+    private static long initialFileInfoConstructionTicks;
+    private static long initialLengthAccessCount;
+    private static long initialLengthAccessTicks;
+    private static long initialLastWriteTimeUtcAccessCount;
+    private static long initialLastWriteTimeUtcAccessTicks;
+    private static long initialSnapshotComparisonCount;
+    private static long initialSnapshotComparisonTicks;
     private static long spanValidationCount;
     private static long spanValidationInvalidCount;
     private static long spanValidationTicks;
     private static long readSnapshotCheckCount;
     private static long readSnapshotChangedCount;
     private static long readSnapshotCheckTicks;
+    private static long readFileInfoConstructionCount;
+    private static long readFileInfoConstructionTicks;
+    private static long readLengthAccessCount;
+    private static long readLengthAccessTicks;
+    private static long readLastWriteTimeUtcAccessCount;
+    private static long readLastWriteTimeUtcAccessTicks;
+    private static long readSnapshotComparisonCount;
+    private static long readSnapshotComparisonTicks;
     private static long bufferAllocationCount;
     private static long bufferAllocationTicks;
     private static long bufferAllocatedBytes;
@@ -80,12 +112,28 @@ public static class SourceReaderMetrics
         initialSnapshotCheckCount = 0;
         initialSnapshotChangedCount = 0;
         initialSnapshotCheckTicks = 0;
+        initialFileInfoConstructionCount = 0;
+        initialFileInfoConstructionTicks = 0;
+        initialLengthAccessCount = 0;
+        initialLengthAccessTicks = 0;
+        initialLastWriteTimeUtcAccessCount = 0;
+        initialLastWriteTimeUtcAccessTicks = 0;
+        initialSnapshotComparisonCount = 0;
+        initialSnapshotComparisonTicks = 0;
         spanValidationCount = 0;
         spanValidationInvalidCount = 0;
         spanValidationTicks = 0;
         readSnapshotCheckCount = 0;
         readSnapshotChangedCount = 0;
         readSnapshotCheckTicks = 0;
+        readFileInfoConstructionCount = 0;
+        readFileInfoConstructionTicks = 0;
+        readLengthAccessCount = 0;
+        readLengthAccessTicks = 0;
+        readLastWriteTimeUtcAccessCount = 0;
+        readLastWriteTimeUtcAccessTicks = 0;
+        readSnapshotComparisonCount = 0;
+        readSnapshotComparisonTicks = 0;
         bufferAllocationCount = 0;
         bufferAllocationTicks = 0;
         bufferAllocatedBytes = 0;
@@ -134,6 +182,39 @@ public static class SourceReaderMetrics
         if (changed) readSnapshotChangedCount++;
     }
 
+    public static void RecordSnapshotCheckParts(bool initial, long fileInfoConstructionTicks, long lengthAccessTicks,
+        long lastWriteTimeUtcAccessTicks, long comparisonTicks, bool lastWriteTimeUtcAccessed)
+    {
+        if (initial)
+        {
+            initialFileInfoConstructionCount++;
+            initialFileInfoConstructionTicks += fileInfoConstructionTicks;
+            initialLengthAccessCount++;
+            initialLengthAccessTicks += lengthAccessTicks;
+            if (lastWriteTimeUtcAccessed)
+            {
+                initialLastWriteTimeUtcAccessCount++;
+                initialLastWriteTimeUtcAccessTicks += lastWriteTimeUtcAccessTicks;
+            }
+            initialSnapshotComparisonCount++;
+            initialSnapshotComparisonTicks += comparisonTicks;
+        }
+        else
+        {
+            readFileInfoConstructionCount++;
+            readFileInfoConstructionTicks += fileInfoConstructionTicks;
+            readLengthAccessCount++;
+            readLengthAccessTicks += lengthAccessTicks;
+            if (lastWriteTimeUtcAccessed)
+            {
+                readLastWriteTimeUtcAccessCount++;
+                readLastWriteTimeUtcAccessTicks += lastWriteTimeUtcAccessTicks;
+            }
+            readSnapshotComparisonCount++;
+            readSnapshotComparisonTicks += comparisonTicks;
+        }
+    }
+
     public static void RecordBufferAllocation(long ticks, long bytes)
     {
         bufferAllocationCount++;
@@ -178,7 +259,11 @@ public static class SourceReaderMetrics
 
     public static SourceReaderMetricsSnapshot Snapshot() => new(
         fileStreamOpenCount, fileStreamOpenTicks, initialSnapshotCheckCount, initialSnapshotChangedCount, initialSnapshotCheckTicks,
+        initialFileInfoConstructionCount, initialFileInfoConstructionTicks, initialLengthAccessCount, initialLengthAccessTicks,
+        initialLastWriteTimeUtcAccessCount, initialLastWriteTimeUtcAccessTicks, initialSnapshotComparisonCount, initialSnapshotComparisonTicks,
         spanValidationCount, spanValidationInvalidCount, spanValidationTicks, readSnapshotCheckCount, readSnapshotChangedCount, readSnapshotCheckTicks,
+        readFileInfoConstructionCount, readFileInfoConstructionTicks, readLengthAccessCount, readLengthAccessTicks,
+        readLastWriteTimeUtcAccessCount, readLastWriteTimeUtcAccessTicks, readSnapshotComparisonCount, readSnapshotComparisonTicks,
         bufferAllocationCount, bufferAllocationTicks, bufferAllocatedBytes, seekCount, seekAlreadyAtTargetCount, seekForwardCount, seekBackwardCount,
         seekTicks, seekAbsoluteDistance, seekForwardBytes, seekBackwardBytes, readFunctionCount, streamReadCallCount, multiReadFunctionCount,
         zeroReadCount, totalBytesRequested, totalBytesRead, streamReadTicks, utf8ValidationCount, utf8ValidationTicks, utf8ValidatedBytes,

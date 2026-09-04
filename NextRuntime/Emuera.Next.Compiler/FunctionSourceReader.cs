@@ -92,7 +92,7 @@ public sealed class FunctionSourceSession : IDisposable
         var openTicks = Stopwatch.GetTimestamp() - openStart;
         var initialSnapshotStart = Stopwatch.GetTimestamp();
 #endif
-        var snapshotChanged = IsSnapshotChanged();
+        var snapshotChanged = IsSnapshotChanged(initial: true);
 #if PERFORMANCE_METRICS
         SourceReaderMetrics.RecordSessionOpen(openTicks, Stopwatch.GetTimestamp() - initialSnapshotStart, snapshotChanged);
 #endif
@@ -117,7 +117,7 @@ public sealed class FunctionSourceSession : IDisposable
 #if PERFORMANCE_METRICS
             var snapshotCheckStart = Stopwatch.GetTimestamp();
 #endif
-            var snapshotChanged = IsSnapshotChanged();
+            var snapshotChanged = IsSnapshotChanged(initial: false);
 #if PERFORMANCE_METRICS
             SourceReaderMetrics.RecordReadSnapshotCheck(Stopwatch.GetTimestamp() - snapshotCheckStart, snapshotChanged);
 #endif
@@ -180,10 +180,42 @@ public sealed class FunctionSourceSession : IDisposable
         catch (UnauthorizedAccessException ex) { return new(SourceReadStatus.ReadError, null, ex.Message); }
     }
 
-    private bool IsSnapshotChanged()
+    private bool IsSnapshotChanged(bool initial)
     {
+#if PERFORMANCE_METRICS
+        var fileInfoConstructionStart = Stopwatch.GetTimestamp();
+#endif
         var info = new FileInfo(file.FileIdentity);
-        return info.Length != file.SourceBytes || (file.LastWriteTimeUtcTicks != 0 && info.LastWriteTimeUtc.Ticks != file.LastWriteTimeUtcTicks);
+#if PERFORMANCE_METRICS
+        var fileInfoConstructionTicks = Stopwatch.GetTimestamp() - fileInfoConstructionStart;
+        var lengthAccessStart = Stopwatch.GetTimestamp();
+#endif
+        var length = info.Length;
+#if PERFORMANCE_METRICS
+        var lengthAccessTicks = Stopwatch.GetTimestamp() - lengthAccessStart;
+        var comparisonStart = Stopwatch.GetTimestamp();
+#endif
+        var changed = length != file.SourceBytes;
+#if PERFORMANCE_METRICS
+        var lastWriteTimeUtcAccessed = false;
+        var lastWriteTimeUtcAccessTicks = 0L;
+#endif
+        if (!changed && file.LastWriteTimeUtcTicks != 0)
+        {
+#if PERFORMANCE_METRICS
+            var lastWriteTimeUtcAccessStart = Stopwatch.GetTimestamp();
+            lastWriteTimeUtcAccessed = true;
+#endif
+            changed = info.LastWriteTimeUtc.Ticks != file.LastWriteTimeUtcTicks;
+#if PERFORMANCE_METRICS
+            lastWriteTimeUtcAccessTicks = Stopwatch.GetTimestamp() - lastWriteTimeUtcAccessStart;
+#endif
+        }
+#if PERFORMANCE_METRICS
+        SourceReaderMetrics.RecordSnapshotCheckParts(initial, fileInfoConstructionTicks, lengthAccessTicks,
+            lastWriteTimeUtcAccessTicks, Stopwatch.GetTimestamp() - comparisonStart, lastWriteTimeUtcAccessed);
+#endif
+        return changed;
     }
 
     public void Dispose()

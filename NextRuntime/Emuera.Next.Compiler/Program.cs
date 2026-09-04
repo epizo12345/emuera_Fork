@@ -239,7 +239,11 @@ static int SelfTest()
             Assert(metrics.FileStreamOpenCount == 1 && metrics.InitialSnapshotCheckCount == 1 && metrics.ReadFunctionCount == 1 &&
                    metrics.SpanValidationCount == 1 && metrics.ReadSnapshotCheckCount == 1 && metrics.BufferAllocationCount == 1 &&
                    metrics.SeekCount == 1 && metrics.StreamReadCallCount >= 1 && metrics.Utf8ValidationCount == 1 &&
-                   metrics.ResultConstructionCount == 1 && metrics.TotalBytesRead > 0);
+                   metrics.ResultConstructionCount == 1 && metrics.TotalBytesRead > 0 &&
+                   metrics.InitialFileInfoConstructionCount == 1 && metrics.InitialLengthAccessCount == 1 &&
+                   metrics.InitialLastWriteTimeUtcAccessCount == 1 && metrics.InitialSnapshotComparisonCount == 1 &&
+                   metrics.ReadFileInfoConstructionCount == 1 && metrics.ReadLengthAccessCount == 1 &&
+                   metrics.ReadLastWriteTimeUtcAccessCount == 1 && metrics.ReadSnapshotComparisonCount == 1);
             SourceReaderMetrics.Reset();
             var reset = SourceReaderMetrics.Snapshot();
             Assert(reset.FileStreamOpenCount == 0 && reset.ReadFunctionCount == 0 && reset.TotalBytesRead == 0);
