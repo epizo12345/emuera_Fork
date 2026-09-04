@@ -166,6 +166,20 @@ var tests = new List<(string Name, Action Run)>
         Check(typeof(VmMachine).GetMethod("Run", publicInstance, null, [typeof(int), typeof(int)], null) is null);
         Check(typeof(FunctionCatalog).GetMethod("From" + "SourceIndex", publicStatic) is null);
     }),
+    ("source misbinding count reuses binding hits", () => {
+        static void Verify(string[] ordered, HashSet<string> sourcePositions)
+        {
+            var oldCount = ordered.Count(label => !sourcePositions.Contains(label));
+            var hitCount = ordered.Count(sourcePositions.Contains);
+            Check(oldCount == ordered.Length - hitCount);
+        }
+        Verify([], []);
+        Verify(["A", "B"], ["A", "B"]);
+        Verify(["A", "B"], ["A"]);
+        Verify(["A", "B", "C", "D"], ["A", "D"]);
+        Verify(["RUNTIME_ONLY"], []);
+        Check(134652 - 134649 == 3);
+    }),
     ("semantic payload transports through source/runtime binder", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var payload = SemanticIrCompiler.CompileExpression("A+B", env, 0); var source = new SourceFunctionPrototype(new SourceFunctionId(7), ImmutableArray.Create(P(PrototypeOpcode.SIF)), ImmutableArray.Create("A+B"), payload); var runtime = RuntimeFunctionBinder.Remap([source], new Dictionary<SourceFunctionId, RuntimeFunctionId> { [new(7)] = new(3) }).Single(); Check(ReferenceEquals(runtime.SemanticPayload, payload) && runtime.RuntimeId.Value == 3 && payload.Records[0].InstructionIndex == 0); }),
     ("semantic records merge to program-global arena", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var payload = SemanticIrCompiler.CompileExpression("A+B", env, 0); var p = ControlLinker.Link(Catalog("X"), [new RuntimeFunctionPrototype(new(0), ImmutableArray.Create(P(PrototypeOpcode.SIF), P(PrototypeOpcode.RETURN)), ImmutableArray.Create("A+B", ""), payload)]).Program; Check(p.StructuralSemanticRecordIndices.Length == p.StructuralLinks.Length && p.StructuralSemanticRecordIndices[0] >= 0 && p.SemanticArena.Records.Length == 1); }),
     ("structural command without semantic payload maps to minus one", () => { var p = ControlLinker.Link(Catalog("X"), [RP(0, [PrototypeOpcode.SIF, PrototypeOpcode.RETURN])]).Program; Check(p.StructuralSemanticRecordIndices.SequenceEqual([-1]) && p.SemanticArena.Records.Length == 0); }),

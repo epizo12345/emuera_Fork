@@ -156,7 +156,7 @@ internal sealed partial class Process
             RecordProductionTimingStage("ProductionPreparation.SourceIndex.BuildRuntimeBindings");
 
             productionRuntimeUniverse = ordered.Length;
-            productionMisbind = ordered.Count(label => !sourcePositions.ContainsKey(PositionKey(label.Position!.Value.Filename, label.Position.Value.LineNo)));
+            productionMisbind = ordered.Length - sourcePositionLookupHitCount;
             productionExactBound = runtimeByPosition.Count == ordered.Length && labelIds.Count == ordered.Length && productionMisbind == 0;
 #if PERFORMANCE_METRICS
             PerformanceMetrics.RecordNextRuntimeSourceIndexMetrics(
