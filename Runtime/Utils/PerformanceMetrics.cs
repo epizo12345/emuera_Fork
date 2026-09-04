@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
+using MinorShift.Emuera.Next.Core;
 
 namespace MinorShift.Emuera.Runtime.Utils;
 
@@ -158,6 +159,7 @@ internal static class PerformanceMetrics
     private static long nextPrototypeCompileAppendAndMappingTicks;
     private static long nextPrototypeCompilePositionKeyCount;
     private static long nextPrototypeCompilePathNormalizationExecutionCount;
+    private static SourceReaderMetricsSnapshot sourceReaderMetrics;
 #endif
 
     internal static bool Enabled => Volatile.Read(ref logPath) != null;
@@ -268,6 +270,7 @@ internal static class PerformanceMetrics
         nextPrototypeCompileAppendAndMappingTicks = 0;
         nextPrototypeCompilePositionKeyCount = 0;
         nextPrototypeCompilePathNormalizationExecutionCount = 0;
+        SourceReaderMetrics.Reset();
         entryDispatchAlreadyConsumedCount = 0;
         entryDispatchAlreadyConsumedTicks = 0;
         actionableDispatchTicks = 0;
@@ -338,6 +341,9 @@ internal static class PerformanceMetrics
         var prototypeCompileMeasuredInnerTicks = nextPrototypeCompileFileOpenTicks + nextPrototypeCompileRuntimePositionLookupTicks + nextPrototypeCompileSourceReadTicks + nextPrototypeCompileCompileRuntimeTicks + nextPrototypeCompileOperandMaterializationTicks + nextPrototypeCompileAppendAndMappingTicks;
         var prototypeCompileFunctionLoopMilliseconds = nextConstructionStages.TryGetValue("ProductionPreparation.PrototypeCompile.FunctionLoop", out var prototypeCompileFunctionLoop) ? TicksToMilliseconds(prototypeCompileFunctionLoop.Ticks) : 0;
         var prototypeCompileInnerUnaccountedMilliseconds = Math.Max(0, prototypeCompileFunctionLoopMilliseconds - TicksToMilliseconds(prototypeCompileMeasuredInnerTicks));
+        sourceReaderMetrics = SourceReaderMetrics.Snapshot();
+        var sourceReaderFileOpenInnerTicks = sourceReaderMetrics.FileStreamOpenTicks + sourceReaderMetrics.InitialSnapshotCheckTicks;
+        var sourceReaderReadInnerTicks = sourceReaderMetrics.SpanValidationTicks + sourceReaderMetrics.ReadSnapshotCheckTicks + sourceReaderMetrics.BufferAllocationTicks + sourceReaderMetrics.SeekTicks + sourceReaderMetrics.StreamReadTicks + sourceReaderMetrics.Utf8ValidationTicks + sourceReaderMetrics.ResultConstructionTicks;
         var report = new
         {
             Profiler = "NextRuntimePerformanceProfile",
@@ -523,6 +529,90 @@ internal static class PerformanceMetrics
                     }
                 },
                 AllocationAttribution = "NOT_MEASURED_TO_AVOID_PER_FUNCTION_GC_SAMPLING"
+            },
+            SourceReaderMetrics = new
+            {
+                SessionOpenCount = sourceReaderMetrics.FileStreamOpenCount,
+                FileStreamOpen = new
+                {
+                    Count = sourceReaderMetrics.FileStreamOpenCount,
+                    TotalMilliseconds = TicksToMilliseconds(sourceReaderMetrics.FileStreamOpenTicks),
+                    AverageMicroseconds = sourceReaderMetrics.FileStreamOpenCount == 0 ? 0 : TicksToMilliseconds(sourceReaderMetrics.FileStreamOpenTicks) * 1000 / sourceReaderMetrics.FileStreamOpenCount
+                },
+                InitialSnapshotCheck = new
+                {
+                    Count = sourceReaderMetrics.InitialSnapshotCheckCount,
+                    ChangedCount = sourceReaderMetrics.InitialSnapshotChangedCount,
+                    TotalMilliseconds = TicksToMilliseconds(sourceReaderMetrics.InitialSnapshotCheckTicks),
+                    AverageMicroseconds = sourceReaderMetrics.InitialSnapshotCheckCount == 0 ? 0 : TicksToMilliseconds(sourceReaderMetrics.InitialSnapshotCheckTicks) * 1000 / sourceReaderMetrics.InitialSnapshotCheckCount
+                },
+                SourceRead = new
+                {
+                    ReadFunctionCount = sourceReaderMetrics.ReadFunctionCount,
+                    SpanValidation = new
+                    {
+                        Count = sourceReaderMetrics.SpanValidationCount,
+                        InvalidCount = sourceReaderMetrics.SpanValidationInvalidCount,
+                        TotalMilliseconds = TicksToMilliseconds(sourceReaderMetrics.SpanValidationTicks),
+                        AverageMicroseconds = sourceReaderMetrics.SpanValidationCount == 0 ? 0 : TicksToMilliseconds(sourceReaderMetrics.SpanValidationTicks) * 1000 / sourceReaderMetrics.SpanValidationCount
+                    },
+                    SnapshotCheck = new
+                    {
+                        Count = sourceReaderMetrics.ReadSnapshotCheckCount,
+                        ChangedCount = sourceReaderMetrics.ReadSnapshotChangedCount,
+                        TotalMilliseconds = TicksToMilliseconds(sourceReaderMetrics.ReadSnapshotCheckTicks),
+                        AverageMicroseconds = sourceReaderMetrics.ReadSnapshotCheckCount == 0 ? 0 : TicksToMilliseconds(sourceReaderMetrics.ReadSnapshotCheckTicks) * 1000 / sourceReaderMetrics.ReadSnapshotCheckCount
+                    },
+                    BufferAllocation = new
+                    {
+                        Count = sourceReaderMetrics.BufferAllocationCount,
+                        TotalMilliseconds = TicksToMilliseconds(sourceReaderMetrics.BufferAllocationTicks),
+                        AverageMicroseconds = sourceReaderMetrics.BufferAllocationCount == 0 ? 0 : TicksToMilliseconds(sourceReaderMetrics.BufferAllocationTicks) * 1000 / sourceReaderMetrics.BufferAllocationCount,
+                        TotalAllocatedSourceBytes = sourceReaderMetrics.BufferAllocatedBytes
+                    },
+                    Seek = new
+                    {
+                        Count = sourceReaderMetrics.SeekCount,
+                        AlreadyAtTargetCount = sourceReaderMetrics.SeekAlreadyAtTargetCount,
+                        ForwardCount = sourceReaderMetrics.SeekForwardCount,
+                        BackwardCount = sourceReaderMetrics.SeekBackwardCount,
+                        TotalMilliseconds = TicksToMilliseconds(sourceReaderMetrics.SeekTicks),
+                        AverageMicroseconds = sourceReaderMetrics.SeekCount == 0 ? 0 : TicksToMilliseconds(sourceReaderMetrics.SeekTicks) * 1000 / sourceReaderMetrics.SeekCount,
+                        TotalAbsoluteDistance = sourceReaderMetrics.SeekAbsoluteDistance,
+                        ForwardBytes = sourceReaderMetrics.SeekForwardBytes,
+                        BackwardBytes = sourceReaderMetrics.SeekBackwardBytes
+                    },
+                    StreamRead = new
+                    {
+                        ReadFunctionCount = sourceReaderMetrics.ReadFunctionCount,
+                        StreamReadCallCount = sourceReaderMetrics.StreamReadCallCount,
+                        MultiReadFunctionCount = sourceReaderMetrics.MultiReadFunctionCount,
+                        ZeroReadCount = sourceReaderMetrics.ZeroReadCount,
+                        TotalBytesRequested = sourceReaderMetrics.TotalBytesRequested,
+                        TotalBytesRead = sourceReaderMetrics.TotalBytesRead,
+                        TotalMilliseconds = TicksToMilliseconds(sourceReaderMetrics.StreamReadTicks),
+                        AverageMicroseconds = sourceReaderMetrics.ReadFunctionCount == 0 ? 0 : TicksToMilliseconds(sourceReaderMetrics.StreamReadTicks) * 1000 / sourceReaderMetrics.ReadFunctionCount
+                    },
+                    Utf8Validation = new
+                    {
+                        Count = sourceReaderMetrics.Utf8ValidationCount,
+                        TotalMilliseconds = TicksToMilliseconds(sourceReaderMetrics.Utf8ValidationTicks),
+                        AverageMicroseconds = sourceReaderMetrics.Utf8ValidationCount == 0 ? 0 : TicksToMilliseconds(sourceReaderMetrics.Utf8ValidationTicks) * 1000 / sourceReaderMetrics.Utf8ValidationCount,
+                        ValidatedBytes = sourceReaderMetrics.Utf8ValidatedBytes
+                    },
+                    ResultConstruction = new
+                    {
+                        Count = sourceReaderMetrics.ResultConstructionCount,
+                        TotalMilliseconds = TicksToMilliseconds(sourceReaderMetrics.ResultConstructionTicks),
+                        AverageMicroseconds = sourceReaderMetrics.ResultConstructionCount == 0 ? 0 : TicksToMilliseconds(sourceReaderMetrics.ResultConstructionTicks) * 1000 / sourceReaderMetrics.ResultConstructionCount
+                    }
+                },
+                FileOpenMeasuredInnerMilliseconds = TicksToMilliseconds(sourceReaderFileOpenInnerTicks),
+                FileOpenOuterMeasuredMilliseconds = TicksToMilliseconds(nextPrototypeCompileFileOpenTicks),
+                FileOpenUnaccountedMilliseconds = Math.Max(0, TicksToMilliseconds(nextPrototypeCompileFileOpenTicks - sourceReaderFileOpenInnerTicks)),
+                SourceReadMeasuredInnerMilliseconds = TicksToMilliseconds(sourceReaderReadInnerTicks),
+                SourceReadOuterMeasuredMilliseconds = TicksToMilliseconds(nextPrototypeCompileSourceReadTicks),
+                SourceReadUnaccountedMilliseconds = Math.Max(0, TicksToMilliseconds(nextPrototypeCompileSourceReadTicks - sourceReaderReadInnerTicks))
             },
             PrototypeCompileInternalTotalMilliseconds = prototypeCompileInternalMilliseconds,
             PrototypeCompileOuterTotalMilliseconds = prototypeCompileOuterMilliseconds,
