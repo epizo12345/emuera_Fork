@@ -215,6 +215,8 @@ internal sealed partial class Process
             long prototypeCompileUnsupportedTicks = 0;
             long prototypeCompileOperandMaterializationTicks = 0;
             long prototypeCompileAppendAndMappingTicks = 0;
+            long prototypeCompilePositionKeyCount = 0;
+            long prototypeCompilePathNormalizationExecutionCount = 0;
 #endif
             foreach (var file in files)
             {
@@ -227,6 +229,7 @@ internal sealed partial class Process
                 var prototypeCompileFileOpenStart = PerformanceMetrics.StartNextRuntimeTimestamp();
 #endif
                 using var session = FunctionSourceReader.OpenFile(file);
+                string? normalizedPositionPath = null;
 #if PERFORMANCE_METRICS
                 prototypeCompileFileOpenTicks += PerformanceMetrics.ElapsedNextRuntimeTimestamp(prototypeCompileFileOpenStart);
 #endif
@@ -234,9 +237,15 @@ internal sealed partial class Process
                 {
                     var currentSourceId = new SourceFunctionId(sourceId++);
 #if PERFORMANCE_METRICS
+                    prototypeCompilePositionKeyCount++;
                     var prototypeCompilePositionLookupStart = PerformanceMetrics.StartNextRuntimeTimestamp();
+                    var positionPath = SourcePositionKey.GetOrNormalize(ref normalizedPositionPath, file.FileIdentity, Program.ErbDir, out var pathNormalizationRequired);
+                    if (pathNormalizationRequired)
+                        prototypeCompilePathNormalizationExecutionCount++;
+#else
+                    var positionPath = normalizedPositionPath ??= NormalizePositionPath(file.FileIdentity);
 #endif
-                    var positionLookupSucceeded = runtimeByPosition.TryGetValue(PositionKey(file.FileIdentity, function.Span.StartLine), out var runtimeId);
+                    var positionLookupSucceeded = runtimeByPosition.TryGetValue(PositionKeyFromNormalizedPath(positionPath, function.Span.StartLine), out var runtimeId);
 #if PERFORMANCE_METRICS
                     prototypeCompileRuntimePositionLookupTicks += PerformanceMetrics.ElapsedNextRuntimeTimestamp(prototypeCompilePositionLookupStart);
 #endif
@@ -336,7 +345,9 @@ internal sealed partial class Process
                 prototypeCompileCompiledTicks,
                 prototypeCompileUnsupportedTicks,
                 prototypeCompileOperandMaterializationTicks,
-                prototypeCompileAppendAndMappingTicks);
+                prototypeCompileAppendAndMappingTicks,
+                prototypeCompilePositionKeyCount,
+                prototypeCompilePathNormalizationExecutionCount);
             PerformanceMetrics.RecordNextRuntimeConstructionStage("ProductionPreparation.PrototypeCompile.FunctionLoop", prototypeCompileTotalStart);
             PerformanceMetrics.RecordNextRuntimeStartupStage("ProductionPreparation.PrototypeCompile.Total", prototypeCompileTotalStart);
 #endif
@@ -486,11 +497,14 @@ internal sealed partial class Process
         productionReadiness = null;
     }
 
-    private static string PositionKey(string path, int line)
+    private static string NormalizePositionPath(string path)
     {
-        var full = Path.IsPathRooted(path) ? Path.GetFullPath(path) : Path.GetFullPath(Path.Combine(Program.ErbDir, path));
-        return $"{full.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)}:{line}";
+        return SourcePositionKey.NormalizePath(path, Program.ErbDir);
     }
+
+    private static string PositionKeyFromNormalizedPath(string normalizedPath, int line) => SourcePositionKey.FromNormalizedPath(normalizedPath, line);
+
+    private static string PositionKey(string path, int line) => SourcePositionKey.Create(path, line, Program.ErbDir);
 
     private static void WriteNextRuntimeReadinessEvidence(
         string root,

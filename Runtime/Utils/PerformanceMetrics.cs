@@ -156,6 +156,8 @@ internal static class PerformanceMetrics
     private static long nextPrototypeCompileUnsupportedTicks;
     private static long nextPrototypeCompileOperandMaterializationTicks;
     private static long nextPrototypeCompileAppendAndMappingTicks;
+    private static long nextPrototypeCompilePositionKeyCount;
+    private static long nextPrototypeCompilePathNormalizationExecutionCount;
 #endif
 
     internal static bool Enabled => Volatile.Read(ref logPath) != null;
@@ -264,6 +266,8 @@ internal static class PerformanceMetrics
         nextPrototypeCompileUnsupportedTicks = 0;
         nextPrototypeCompileOperandMaterializationTicks = 0;
         nextPrototypeCompileAppendAndMappingTicks = 0;
+        nextPrototypeCompilePositionKeyCount = 0;
+        nextPrototypeCompilePathNormalizationExecutionCount = 0;
         entryDispatchAlreadyConsumedCount = 0;
         entryDispatchAlreadyConsumedTicks = 0;
         actionableDispatchTicks = 0;
@@ -526,6 +530,9 @@ internal static class PerformanceMetrics
             PrototypeCompileMeasuredInnerSumMilliseconds = TicksToMilliseconds(prototypeCompileMeasuredInnerTicks),
             PrototypeCompileFunctionLoopMilliseconds = prototypeCompileFunctionLoopMilliseconds,
             PrototypeCompileInnerUnaccountedMilliseconds = prototypeCompileInnerUnaccountedMilliseconds,
+            PrototypeCompilePositionKeyCount = nextPrototypeCompilePositionKeyCount,
+            PrototypeCompilePathNormalizationExecutionCount = nextPrototypeCompilePathNormalizationExecutionCount,
+            PrototypeCompilePathNormalizationReuseCount = Math.Max(0, nextPrototypeCompilePositionKeyCount - nextPrototypeCompilePathNormalizationExecutionCount),
             TopFunctionReasonBuckets = buckets,
             SessionStartRejectSubreasons = subreasons,
             SessionStartRejectSubreasonCountSum = subreasonCountSum,
@@ -829,7 +836,7 @@ internal static class PerformanceMetrics
     }
 
     [Conditional("PERFORMANCE_METRICS")]
-    internal static void RecordNextRuntimePrototypeCompileMetrics(int fileCount, long functionCandidateCount, long runtimeMappedFunctionCount, long sourceReadCount, long sourceReadFailureCount, long compiledFunctionCount, long unsupportedFunctionCount, long functionSourceBytes, long instructionCount, long semanticNodeCount, long semanticRecordCount, long runtimeMetadataFunctionCount, long fileOpenTicks, long runtimePositionLookupTicks, long sourceReadTicks, long compileRuntimeTicks, long compiledTicks, long unsupportedTicks, long operandMaterializationTicks, long appendAndMappingTicks)
+    internal static void RecordNextRuntimePrototypeCompileMetrics(int fileCount, long functionCandidateCount, long runtimeMappedFunctionCount, long sourceReadCount, long sourceReadFailureCount, long compiledFunctionCount, long unsupportedFunctionCount, long functionSourceBytes, long instructionCount, long semanticNodeCount, long semanticRecordCount, long runtimeMetadataFunctionCount, long fileOpenTicks, long runtimePositionLookupTicks, long sourceReadTicks, long compileRuntimeTicks, long compiledTicks, long unsupportedTicks, long operandMaterializationTicks, long appendAndMappingTicks, long positionKeyCount, long pathNormalizationExecutionCount)
     {
         nextPrototypeCompileFileCount = fileCount;
         nextPrototypeCompileCandidateCount = functionCandidateCount;
@@ -851,6 +858,8 @@ internal static class PerformanceMetrics
         nextPrototypeCompileUnsupportedTicks = unsupportedTicks;
         nextPrototypeCompileOperandMaterializationTicks = operandMaterializationTicks;
         nextPrototypeCompileAppendAndMappingTicks = appendAndMappingTicks;
+        nextPrototypeCompilePositionKeyCount = positionKeyCount;
+        nextPrototypeCompilePathNormalizationExecutionCount = pathNormalizationExecutionCount;
     }
 #endif
 

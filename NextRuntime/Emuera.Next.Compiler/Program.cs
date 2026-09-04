@@ -160,6 +160,47 @@ static int SelfTest()
         tests.Add(("CommaHeaderMetadataTest", () => { var metadata = CompileRuntimeHeader("@C, ARG"); Assert(metadata.Parameters.Length == 1 && metadata.Parameters[0].Name == "ARG" && metadata.Parameters[0].Type == RuntimeMetadataValueType.Integer); }));
         tests.Add(("StringArgumentHeaderMetadataTest", () => { var parenthesized = CompileRuntimeHeader("@D(ARGS)"); var comma = CompileRuntimeHeader("@E, ARGS"); Assert(parenthesized.Parameters.Length == 1 && parenthesized.Parameters[0].Type == RuntimeMetadataValueType.String && comma.Parameters.Length == 1 && comma.Parameters[0].Type == RuntimeMetadataValueType.String); }));
         tests.Add(("MixedHeaderFunctionLocalFlagTest", () => { var indexedMixed = IndexHeader("@F(ARG, ARGS)"); var metadata = CompileRuntimeHeader("@F(ARG, ARGS)"); Assert((indexedMixed.Functions.Single().Flags & SourceIndexFlags.FunctionMetadata) != 0 && metadata.Parameters.Length == 2 && metadata.Parameters[0].Type == RuntimeMetadataValueType.Integer && metadata.Parameters[1].Type == RuntimeMetadataValueType.String); var sameFile = IndexHeader("@A\r\n@B(ARG)"); Assert(sameFile.Functions.Count == 2 && sameFile.Functions[0].Flags == SourceIndexFlags.None && (sameFile.Functions[1].Flags & SourceIndexFlags.FunctionMetadata) != 0); }));
+        tests.Add(("P3K PositionKey equivalence covers path forms", () =>
+        {
+            var baseDirectory = Path.Combine(root, "位置", "日本語");
+            var absolute = Path.Combine(baseDirectory, "sub", "file.ERB");
+            var paths = new[] { "sub\\..\\sub\\file.ERB", "./sub/../sub/file.ERB", absolute, "日本語\\..\\日本語\\file.ERB", "SUB\\FILE.ERB", absolute + "\\" };
+            foreach (var candidate in paths)
+                Assert(SourcePositionKey.Create(candidate, 17, baseDirectory) == LegacyPositionKey(candidate, 17, baseDirectory), candidate);
+        }));
+        tests.Add(("P3K lazy path normalization is per-file", () =>
+        {
+            string? cached = null;
+            var normalizationCount = 0;
+            var first = SourcePositionKey.GetOrNormalize(ref cached, "file.ERB", root, out var normalized);
+            if (normalized) normalizationCount++;
+            var second = SourcePositionKey.GetOrNormalize(ref cached, "file.ERB", root, out normalized);
+            if (normalized) normalizationCount++;
+            Assert(first == second && normalizationCount == 1);
+            string? nextFile = null;
+            SourcePositionKey.GetOrNormalize(ref nextFile, "other.ERB", root, out normalized);
+            if (normalized) normalizationCount++;
+            Assert(normalizationCount == 2 && nextFile is not null && cached is not null);
+        }));
+        tests.Add(("P3K path failure and ordering semantics remain stable", () =>
+        {
+            var legacyFailure = CaptureException(() => LegacyPositionKey(null!, 1, root));
+            var normalizedFailure = CaptureException(() => SourcePositionKey.Create(null!, 1, root));
+            Assert(legacyFailure == normalizedFailure && legacyFailure == typeof(ArgumentNullException));
+            Assert(SourcePositionKey.Create("open-before-normalize.ERB", 1, root).EndsWith(":1", StringComparison.Ordinal));
+        }));
+        tests.Add(("P3K mapping hit miss and collision invariants", () =>
+        {
+            var source = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            source[SourcePositionKey.Create("same.ERB", 3, root)] = 10;
+            source[SourcePositionKey.Create("same.ERB", 3, root)] = 11;
+            Assert(source.Count == 1 && source.Values.Single() == 11);
+            var runtime = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            Assert(runtime.TryAdd(SourcePositionKey.Create("same.ERB", 3, root), 20));
+            Assert(!runtime.TryAdd(SourcePositionKey.Create("same.ERB", 3, root), 21));
+            Assert(runtime.TryGetValue(SourcePositionKey.Create("same.ERB", 3, root), out var runtimeId) && runtimeId == 20);
+            Assert(!runtime.TryGetValue(SourcePositionKey.Create("missing.ERB", 3, root), out _));
+        }));
         tests.Add(("R1_4FHeaderRegression", () => { var path = Path.Combine(root, "r1-4f-header.ERB"); WriteBom(path, "@G, ARG = 98\r\n#FUNCTION\r\nPRINT 1\r\n"); var indexedHeader = ErbSourceIndexer.IndexFile(path); var result = new FunctionCompiler(semanticEnvironment).TryCompileRuntime(indexedHeader, indexedHeader.Functions.Single()); Assert(result.Status == CompileStatus.Compiled && result.Function!.RuntimeMetadata!.Parameters.Length == 1 && result.Function.RuntimeMetadata.Parameters[0].HasDefault && result.Function.RuntimeMetadata.Parameters[0].DefaultInteger == 98 && result.Function.RuntimeMetadata.ReturnType == RuntimeMetadataValueType.Integer); }));
          tests.Add(("semantic target is exactly nine structural opcodes", () => { var p = Path.Combine(root, "semantic-targets.ERB"); WriteBom(p, "@TARGETS\r\nSIF A\r\nIF A\r\nELSEIF A\r\nSELECTCASE A\r\nCASE 1\r\nREPEAT 2\r\nFOR I,0,2\r\nWHILE A\r\nLOOP A\r\nPRINTFORM %A%\r\n"); var f = ErbSourceIndexer.IndexFile(p); var result = new FunctionCompiler(semanticEnvironment).TryCompile(f, f.Functions.Single()); Assert(result.Status == CompileStatus.Compiled && result.Function!.SemanticPayload!.Records.Length == 9); }));
         var assignmentPath = Path.Combine(root, "assignment.ERB");
@@ -523,6 +564,12 @@ static int SelfTest()
         if (string.IsNullOrWhiteSpace(path)) return;
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllLines(path, lines, new UTF8Encoding(false));
+    }
+    static Type? CaptureException(Action action) { try { action(); return null; } catch (Exception ex) { return ex.GetType(); } }
+    static string LegacyPositionKey(string path, int line, string baseDirectory)
+    {
+        var full = Path.IsPathRooted(path) ? Path.GetFullPath(path) : Path.GetFullPath(Path.Combine(baseDirectory, path));
+        return $"{full.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)}:{line}";
     }
     static void Expect<T>(Action action) where T : Exception { try { action(); } catch (T) { return; } throw new InvalidOperationException($"expected {typeof(T).Name}"); }
     static void ExpectDelimiter(Action action) { try { action(); } catch (SemanticParseException ex) { Assert(ex.Message.Contains("conditional", StringComparison.Ordinal) || ex.Message.Contains("unterminated formatted", StringComparison.Ordinal), ex.Message); return; } throw new InvalidOperationException("expected formatted delimiter failure"); }
