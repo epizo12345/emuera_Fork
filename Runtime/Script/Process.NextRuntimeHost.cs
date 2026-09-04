@@ -71,13 +71,12 @@ internal sealed record CsvIndexReadTraceRow(
 }
 
 // The host stays in the Legacy assembly so no Legacy object crosses the VM boundary.
-internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparationCounters? preparationCounters = null) : IVmSemanticHost, IVmTypedSemanticHost, IVmAssignmentTargetTypeHost
+internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparationCounters? preparationCounters = null) : IVmSemanticHost, IVmTypedSemanticHost, IVmAssignmentTargetTypeHost, IVmContextualTypedSemanticHost
 {
     private readonly Dictionary<ulong, BoundVariable> variables = [];
     private readonly Dictionary<ulong, BuiltinCallKind> builtins = [];
     private readonly VmRuntimePreparationCounters counters = preparationCounters ?? new();
     private readonly Dictionary<SemanticPayload, SemanticUseContextIndex> contextIndexes = [];
-    private readonly Dictionary<ulong, int> resolvedCsvIndexValues = [];
     private sealed record BoundVariable(VariableToken Token, bool ImplicitZeroIndex);
     private sealed record CsvIndexLookup(VariableToken? OwnerToken, string HostSymbol, bool KeywordDictionaryPresent, bool KeywordLabelFound, int? ResolvedNumericIndex, string ExceptionType = "", string ExceptionMessage = "");
     private sealed record CsvIndexDiagnosticBinding(SemanticPayload Payload, SemanticHostIdentity Identity, CsvIndexLookup Lookup, bool NormalVariableBindAttempted, bool NormalVariableBindSucceeded);
@@ -270,9 +269,6 @@ internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparation
                     }
             }
             contextIndexes.Add(payload, new(csvIndexTokens, csvIndexValues, csvIndexLookups, stringAssignmentTargets));
-            foreach (var identity in payload.HostIdentities)
-                if (identity.Kind == SemanticHostIdentityKind.Variable && csvIndexValues.TryGetValue(identity.NodeIndex, out var resolved) && !variables.ContainsKey(identity.StableId))
-                    resolvedCsvIndexValues.TryAdd(identity.StableId, resolved);
         }
     }
     internal bool IsFrameVariableBound(int functionId, SemanticPayload payload, SemanticHostIdentity identity)
@@ -318,6 +314,17 @@ internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparation
     }
 
     public bool TryRead(SemanticHostIdentity identity, ReadOnlySpan<VmSemanticValue> indices, out VmSemanticValue value)
+        => TryReadContext(null, identity, indices, out value);
+
+    // [Emuera改修:NEXT-3D-R1.5C5.3 2026-09-04]
+    // C5のStableId-only CSV mappingでは異なるownerの同名labelが衝突し得る。
+    // StableIdはreadiness/call/diagnosticで共有するcanonical契約のため変更せず、
+    // executorが渡す正確なSemanticPayloadとNodeIndexでgeneration-scoped値を選ぶ。
+    // mutable current-payload stateやruntime文字列解決を使わず、read時に文脈を明示する。
+    public bool TryRead(SemanticPayload payload, SemanticHostIdentity identity, ReadOnlySpan<VmSemanticValue> indices, out VmSemanticValue value)
+        => TryReadContext(payload, identity, indices, out value);
+
+    private bool TryReadContext(SemanticPayload? payload, SemanticHostIdentity identity, ReadOnlySpan<VmSemanticValue> indices, out VmSemanticValue value)
     {
         RuntimeTypedReadCount++;
         var finalBound = variables.TryGetValue(identity.StableId, out var variable);
@@ -330,11 +337,9 @@ internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparation
             readAttempted = true;
             readResult = process.TryReadNextRuntimeHostValue(variable!.Token, variable.ImplicitZeroIndex && indices.IsEmpty ? [VmSemanticValue.From(0)] : indices, out value);
         }
-        // [Emuera改修:NEXT-3D-R1.5C5 2026-09-04]
-        // LegacyではVAR:<CSV名>のlabelをConstantDataのkeyword dictionaryで数値indexへ解決する。
-        // readiness側では既に認識していたが、Nextのruntime評価へ値が渡っていなかったため、
-        // function/variable名に依存しないgeneration-scoped mappingとして接続する。
-        else if (identity.IndexArity == 0 && indices.IsEmpty && resolvedCsvIndexValues.TryGetValue(identity.StableId, out var csvIndex))
+        else if (payload is not null && identity.IndexArity == 0 && indices.IsEmpty &&
+            contextIndexes.TryGetValue(payload, out var context) &&
+            context.CsvIndexValues.TryGetValue(identity.NodeIndex, out var csvIndex))
         {
             value = VmSemanticValue.From((long)csvIndex);
             readAttempted = true;

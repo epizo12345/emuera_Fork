@@ -39,6 +39,12 @@ public interface IVmTypedSemanticHost
     bool TryWrite(SemanticHostIdentity identity, ReadOnlySpan<VmSemanticValue> indices, VmSemanticValue value);
     bool TryCall(SemanticHostIdentity identity, ReadOnlySpan<VmSemanticValue> arguments, out VmSemanticValue value);
 }
+// Optional context-aware read path. Existing typed hosts remain valid; hosts that need
+// occurrence-scoped data receive the exact final semantic payload for this read.
+public interface IVmContextualTypedSemanticHost
+{
+    bool TryRead(SemanticPayload payload, SemanticHostIdentity identity, ReadOnlySpan<VmSemanticValue> indices, out VmSemanticValue value);
+}
 // [Emuera改修:NEXT-3D-R1.4H1 2026-09-04]
 // Legacyはplain string '='をtarget declared typeに応じてFORMとして扱い、string-expression '='とは
 // 意味が異なる。binding済みの型をここで使い、destination indicesを先に評価して副作用を起こさない。
@@ -85,6 +91,7 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
     private readonly LinkedProgram program;
     private readonly IVmSemanticHost host;
     private readonly IVmTypedSemanticHost? typedHost;
+    private readonly IVmContextualTypedSemanticHost? contextualTypedHost;
     private readonly HashSet<SemanticPayload> boundIdentityArenas = [];
     private SemanticPayload? activeArena;
     private readonly int[][] structuralByFunctionPc;
@@ -111,6 +118,7 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
         this.program = program ?? throw new ArgumentNullException(nameof(program));
         this.host = host ?? throw new ArgumentNullException(nameof(host));
         typedHost = host as IVmTypedSemanticHost;
+        contextualTypedHost = host as IVmContextualTypedSemanticHost;
         structuralByFunctionPc = program.Descriptors.Select(d => Enumerable.Repeat(-1, d.CodeLength).ToArray()).ToArray();
         for (var index = 0; index < program.StructuralLinks.Length; index++)
         {
@@ -505,9 +513,12 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
         if (FrameVariables is not null && FrameVariables.OwnsFrameVariable(name)) { LastHostBindingPresent = true; LastHostResult = FrameVariables.TryReadFrame(name, subkey, indices, out value); return LastHostResult; }
         if (identity is { } typed && typedHost is not null)
         {
-            LastHostBindingPresent = TryBindIdentities(identityArena ?? Arena);
+            var arena = identityArena ?? Arena;
+            LastHostBindingPresent = TryBindIdentities(arena);
             value = VmSemanticValue.Unavailable;
-            LastHostResult = LastHostBindingPresent && typedHost.TryRead(typed, indices, out value);
+            LastHostResult = LastHostBindingPresent && (contextualTypedHost is not null
+                ? contextualTypedHost.TryRead(arena, typed, indices, out value)
+                : typedHost.TryRead(typed, indices, out value));
             return LastHostResult;
         }
         LastHostResult = host.TryRead(name, subkey, indices, out value);
