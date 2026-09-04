@@ -148,6 +148,14 @@ internal static class PerformanceMetrics
     private static long nextPrototypeCompileSemanticNodeCount;
     private static long nextPrototypeCompileSemanticRecordCount;
     private static long nextPrototypeCompileMetadataCount;
+    private static long nextPrototypeCompileFileOpenTicks;
+    private static long nextPrototypeCompileRuntimePositionLookupTicks;
+    private static long nextPrototypeCompileSourceReadTicks;
+    private static long nextPrototypeCompileCompileRuntimeTicks;
+    private static long nextPrototypeCompileCompiledTicks;
+    private static long nextPrototypeCompileUnsupportedTicks;
+    private static long nextPrototypeCompileOperandMaterializationTicks;
+    private static long nextPrototypeCompileAppendAndMappingTicks;
 #endif
 
     internal static bool Enabled => Volatile.Read(ref logPath) != null;
@@ -248,6 +256,14 @@ internal static class PerformanceMetrics
         nextPrototypeCompileSemanticNodeCount = 0;
         nextPrototypeCompileSemanticRecordCount = 0;
         nextPrototypeCompileMetadataCount = 0;
+        nextPrototypeCompileFileOpenTicks = 0;
+        nextPrototypeCompileRuntimePositionLookupTicks = 0;
+        nextPrototypeCompileSourceReadTicks = 0;
+        nextPrototypeCompileCompileRuntimeTicks = 0;
+        nextPrototypeCompileCompiledTicks = 0;
+        nextPrototypeCompileUnsupportedTicks = 0;
+        nextPrototypeCompileOperandMaterializationTicks = 0;
+        nextPrototypeCompileAppendAndMappingTicks = 0;
         entryDispatchAlreadyConsumedCount = 0;
         entryDispatchAlreadyConsumedTicks = 0;
         actionableDispatchTicks = 0;
@@ -315,6 +331,9 @@ internal static class PerformanceMetrics
         var prototypeCompileInternalMilliseconds = nextStartupStages.TryGetValue("ProductionPreparation.PrototypeCompile.Total", out var prototypeCompileTotal) ? TicksToMilliseconds(prototypeCompileTotal.Ticks) : 0;
         var prototypeCompileOuterMilliseconds = nextStartupStages.TryGetValue("ProductionPreparation.AfterPrototypeCompile", out var prototypeCompileOuter) ? TicksToMilliseconds(prototypeCompileOuter.Ticks) : 0;
         var prototypeCompileUnaccountedMilliseconds = Math.Max(0, prototypeCompileOuterMilliseconds - prototypeCompileInternalMilliseconds);
+        var prototypeCompileMeasuredInnerTicks = nextPrototypeCompileFileOpenTicks + nextPrototypeCompileRuntimePositionLookupTicks + nextPrototypeCompileSourceReadTicks + nextPrototypeCompileCompileRuntimeTicks + nextPrototypeCompileOperandMaterializationTicks + nextPrototypeCompileAppendAndMappingTicks;
+        var prototypeCompileFunctionLoopMilliseconds = nextConstructionStages.TryGetValue("ProductionPreparation.PrototypeCompile.FunctionLoop", out var prototypeCompileFunctionLoop) ? TicksToMilliseconds(prototypeCompileFunctionLoop.Ticks) : 0;
+        var prototypeCompileInnerUnaccountedMilliseconds = Math.Max(0, prototypeCompileFunctionLoopMilliseconds - TicksToMilliseconds(prototypeCompileMeasuredInnerTicks));
         var report = new
         {
             Profiler = "NextRuntimePerformanceProfile",
@@ -439,11 +458,74 @@ internal static class PerformanceMetrics
                 InstructionCount = nextPrototypeCompileInstructionCount,
                 SemanticNodeCount = nextPrototypeCompileSemanticNodeCount,
                 SemanticRecordCount = nextPrototypeCompileSemanticRecordCount,
-                RuntimeMetadataFunctionCount = nextPrototypeCompileMetadataCount
+                RuntimeMetadataFunctionCount = nextPrototypeCompileMetadataCount,
+                OperandMetrics = new
+                {
+                    InstructionCount = nextPrototypeCompileInstructionCount,
+                    NonEmptyOperandCount = (long?)null,
+                    OperandDecodedBytes = (long?)null,
+                    OperandStringCount = (long?)null,
+                    Attribution = "NOT_MEASURED_TO_PRESERVE_EXISTING_OPERAND_MATERIALIZATION_SHAPE"
+                },
+                InnerStages = new
+                {
+                    FileOpen = new
+                    {
+                        TotalMilliseconds = TicksToMilliseconds(nextPrototypeCompileFileOpenTicks),
+                        AverageMilliseconds = nextPrototypeCompileFileCount == 0 ? 0 : TicksToMilliseconds(nextPrototypeCompileFileOpenTicks) / nextPrototypeCompileFileCount,
+                        AllocatedBytes = (long?)null
+                    },
+                    RuntimePositionLookup = new
+                    {
+                        TotalMilliseconds = TicksToMilliseconds(nextPrototypeCompileRuntimePositionLookupTicks),
+                        AverageMicroseconds = nextPrototypeCompileCandidateCount == 0 ? 0 : TicksToMilliseconds(nextPrototypeCompileRuntimePositionLookupTicks) * 1000 / nextPrototypeCompileCandidateCount,
+                        AllocatedBytes = (long?)null
+                    },
+                    SourceRead = new
+                    {
+                        TotalMilliseconds = TicksToMilliseconds(nextPrototypeCompileSourceReadTicks),
+                        AverageMicroseconds = nextPrototypeCompileMappedCount == 0 ? 0 : TicksToMilliseconds(nextPrototypeCompileSourceReadTicks) * 1000 / nextPrototypeCompileMappedCount,
+                        AllocatedBytes = (long?)null
+                    },
+                    CompileRuntime = new
+                    {
+                        TotalMilliseconds = TicksToMilliseconds(nextPrototypeCompileCompileRuntimeTicks),
+                        AverageMicroseconds = nextPrototypeCompileMappedCount == 0 ? 0 : TicksToMilliseconds(nextPrototypeCompileCompileRuntimeTicks) * 1000 / nextPrototypeCompileMappedCount,
+                        AllocatedBytes = (long?)null,
+                        Compiled = new
+                        {
+                            Count = nextPrototypeCompileCompiledCount,
+                            TotalMilliseconds = TicksToMilliseconds(nextPrototypeCompileCompiledTicks),
+                            AverageMicroseconds = nextPrototypeCompileCompiledCount == 0 ? 0 : TicksToMilliseconds(nextPrototypeCompileCompiledTicks) * 1000 / nextPrototypeCompileCompiledCount
+                        },
+                        Unsupported = new
+                        {
+                            Count = nextPrototypeCompileUnsupportedCount,
+                            TotalMilliseconds = TicksToMilliseconds(nextPrototypeCompileUnsupportedTicks),
+                            AverageMicroseconds = nextPrototypeCompileUnsupportedCount == 0 ? 0 : TicksToMilliseconds(nextPrototypeCompileUnsupportedTicks) * 1000 / nextPrototypeCompileUnsupportedCount
+                        }
+                    },
+                    OperandMaterialization = new
+                    {
+                        TotalMilliseconds = TicksToMilliseconds(nextPrototypeCompileOperandMaterializationTicks),
+                        AverageMicroseconds = nextPrototypeCompileCompiledCount == 0 ? 0 : TicksToMilliseconds(nextPrototypeCompileOperandMaterializationTicks) * 1000 / nextPrototypeCompileCompiledCount,
+                        AllocatedBytes = (long?)null
+                    },
+                    PrototypeAppendAndMapping = new
+                    {
+                        TotalMilliseconds = TicksToMilliseconds(nextPrototypeCompileAppendAndMappingTicks),
+                        AverageMicroseconds = nextPrototypeCompileMappedCount == 0 ? 0 : TicksToMilliseconds(nextPrototypeCompileAppendAndMappingTicks) * 1000 / nextPrototypeCompileMappedCount,
+                        AllocatedBytes = (long?)null
+                    }
+                },
+                AllocationAttribution = "NOT_MEASURED_TO_AVOID_PER_FUNCTION_GC_SAMPLING"
             },
             PrototypeCompileInternalTotalMilliseconds = prototypeCompileInternalMilliseconds,
             PrototypeCompileOuterTotalMilliseconds = prototypeCompileOuterMilliseconds,
             PrototypeCompileUnaccountedMilliseconds = prototypeCompileUnaccountedMilliseconds,
+            PrototypeCompileMeasuredInnerSumMilliseconds = TicksToMilliseconds(prototypeCompileMeasuredInnerTicks),
+            PrototypeCompileFunctionLoopMilliseconds = prototypeCompileFunctionLoopMilliseconds,
+            PrototypeCompileInnerUnaccountedMilliseconds = prototypeCompileInnerUnaccountedMilliseconds,
             TopFunctionReasonBuckets = buckets,
             SessionStartRejectSubreasons = subreasons,
             SessionStartRejectSubreasonCountSum = subreasonCountSum,
@@ -638,6 +720,12 @@ internal static class PerformanceMetrics
             ? default
             : new(Stopwatch.GetTimestamp(), GC.GetTotalAllocatedBytes(false));
 
+    internal static long StartNextRuntimeTimestamp() =>
+        string.IsNullOrWhiteSpace(nextDispatchProfilePath) ? 0 : Stopwatch.GetTimestamp();
+
+    internal static long ElapsedNextRuntimeTimestamp(long start) =>
+        start == 0 ? 0 : Math.Max(0, Stopwatch.GetTimestamp() - start);
+
     [Conditional("PERFORMANCE_METRICS")]
     internal static void RecordNextRuntimeStartupStage(string stage, MeasurementToken start, bool contributesToEnvelope = false)
     {
@@ -741,7 +829,7 @@ internal static class PerformanceMetrics
     }
 
     [Conditional("PERFORMANCE_METRICS")]
-    internal static void RecordNextRuntimePrototypeCompileMetrics(int fileCount, long functionCandidateCount, long runtimeMappedFunctionCount, long sourceReadCount, long sourceReadFailureCount, long compiledFunctionCount, long unsupportedFunctionCount, long functionSourceBytes, long instructionCount, long semanticNodeCount, long semanticRecordCount, long runtimeMetadataFunctionCount)
+    internal static void RecordNextRuntimePrototypeCompileMetrics(int fileCount, long functionCandidateCount, long runtimeMappedFunctionCount, long sourceReadCount, long sourceReadFailureCount, long compiledFunctionCount, long unsupportedFunctionCount, long functionSourceBytes, long instructionCount, long semanticNodeCount, long semanticRecordCount, long runtimeMetadataFunctionCount, long fileOpenTicks, long runtimePositionLookupTicks, long sourceReadTicks, long compileRuntimeTicks, long compiledTicks, long unsupportedTicks, long operandMaterializationTicks, long appendAndMappingTicks)
     {
         nextPrototypeCompileFileCount = fileCount;
         nextPrototypeCompileCandidateCount = functionCandidateCount;
@@ -755,6 +843,14 @@ internal static class PerformanceMetrics
         nextPrototypeCompileSemanticNodeCount = semanticNodeCount;
         nextPrototypeCompileSemanticRecordCount = semanticRecordCount;
         nextPrototypeCompileMetadataCount = runtimeMetadataFunctionCount;
+        nextPrototypeCompileFileOpenTicks = fileOpenTicks;
+        nextPrototypeCompileRuntimePositionLookupTicks = runtimePositionLookupTicks;
+        nextPrototypeCompileSourceReadTicks = sourceReadTicks;
+        nextPrototypeCompileCompileRuntimeTicks = compileRuntimeTicks;
+        nextPrototypeCompileCompiledTicks = compiledTicks;
+        nextPrototypeCompileUnsupportedTicks = unsupportedTicks;
+        nextPrototypeCompileOperandMaterializationTicks = operandMaterializationTicks;
+        nextPrototypeCompileAppendAndMappingTicks = appendAndMappingTicks;
     }
 #endif
 

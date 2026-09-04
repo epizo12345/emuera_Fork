@@ -207,6 +207,14 @@ internal sealed partial class Process
             long prototypeCompileSemanticNodeCount = 0;
             long prototypeCompileSemanticRecordCount = 0;
             long prototypeCompileRuntimeMetadataCount = 0;
+            long prototypeCompileFileOpenTicks = 0;
+            long prototypeCompileRuntimePositionLookupTicks = 0;
+            long prototypeCompileSourceReadTicks = 0;
+            long prototypeCompileCompileRuntimeTicks = 0;
+            long prototypeCompileCompiledTicks = 0;
+            long prototypeCompileUnsupportedTicks = 0;
+            long prototypeCompileOperandMaterializationTicks = 0;
+            long prototypeCompileAppendAndMappingTicks = 0;
 #endif
             foreach (var file in files)
             {
@@ -215,16 +223,39 @@ internal sealed partial class Process
                 prototypeCompileFunctionCandidateCount += file.Functions.Count;
                 var prototypeCompileFileStart = PerformanceMetrics.StartNextRuntimeMeasurement();
 #endif
+#if PERFORMANCE_METRICS
+                var prototypeCompileFileOpenStart = PerformanceMetrics.StartNextRuntimeTimestamp();
+#endif
                 using var session = FunctionSourceReader.OpenFile(file);
+#if PERFORMANCE_METRICS
+                prototypeCompileFileOpenTicks += PerformanceMetrics.ElapsedNextRuntimeTimestamp(prototypeCompileFileOpenStart);
+#endif
                 foreach (var function in file.Functions)
                 {
                     var currentSourceId = new SourceFunctionId(sourceId++);
-                    if (!runtimeByPosition.TryGetValue(PositionKey(file.FileIdentity, function.Span.StartLine), out var runtimeId)) continue;
+#if PERFORMANCE_METRICS
+                    var prototypeCompilePositionLookupStart = PerformanceMetrics.StartNextRuntimeTimestamp();
+#endif
+                    var positionLookupSucceeded = runtimeByPosition.TryGetValue(PositionKey(file.FileIdentity, function.Span.StartLine), out var runtimeId);
+#if PERFORMANCE_METRICS
+                    prototypeCompileRuntimePositionLookupTicks += PerformanceMetrics.ElapsedNextRuntimeTimestamp(prototypeCompilePositionLookupStart);
+#endif
+                    if (!positionLookupSucceeded) continue;
 #if PERFORMANCE_METRICS
                     prototypeCompileRuntimeMappedCount++;
 #endif
+#if PERFORMANCE_METRICS
+                    var prototypeCompileAppendStart = PerformanceMetrics.StartNextRuntimeTimestamp();
+#endif
                     sourceToRuntime[currentSourceId] = runtimeId;
+#if PERFORMANCE_METRICS
+                    prototypeCompileAppendAndMappingTicks += PerformanceMetrics.ElapsedNextRuntimeTimestamp(prototypeCompileAppendStart);
+                    var prototypeCompileSourceReadStart = PerformanceMetrics.StartNextRuntimeTimestamp();
+#endif
                     var read = session.Read(function);
+#if PERFORMANCE_METRICS
+                    prototypeCompileSourceReadTicks += PerformanceMetrics.ElapsedNextRuntimeTimestamp(prototypeCompileSourceReadStart);
+#endif
                     if (read.Status != SourceReadStatus.Read || read.Source is not { } functionSource)
                     {
 #if PERFORMANCE_METRICS
@@ -236,14 +267,24 @@ internal sealed partial class Process
                     prototypeCompileSourceReadCount++;
                     prototypeCompileSourceBytes += functionSource.Length;
 #endif
+#if PERFORMANCE_METRICS
+                    var prototypeCompileCompileStart = PerformanceMetrics.StartNextRuntimeTimestamp();
+#endif
                     var compiled = compiler.TryCompileRuntime(functionSource);
+#if PERFORMANCE_METRICS
+                    var prototypeCompileCompileTicks = PerformanceMetrics.ElapsedNextRuntimeTimestamp(prototypeCompileCompileStart);
+                    prototypeCompileCompileRuntimeTicks += prototypeCompileCompileTicks;
                     if (compiled.Status != CompileStatus.Compiled)
                     {
-#if PERFORMANCE_METRICS
+                        prototypeCompileUnsupportedTicks += prototypeCompileCompileTicks;
                         prototypeCompileUnsupportedCount++;
-#endif
-                        continue;
                     }
+                    else
+                    {
+                        prototypeCompileCompiledTicks += prototypeCompileCompileTicks;
+                    }
+#endif
+                    if (compiled.Status != CompileStatus.Compiled) continue;
                     var source = compiled.Function!;
 #if PERFORMANCE_METRICS
                     prototypeCompileCompiledCount++;
@@ -257,8 +298,18 @@ internal sealed partial class Process
                         prototypeCompileRuntimeMetadataCount++;
 #endif
                     var bytes = functionSource.Bytes;
+#if PERFORMANCE_METRICS
+                    var prototypeCompileOperandStart = PerformanceMetrics.StartNextRuntimeTimestamp();
+#endif
                     var operands = source.Instructions.Select(instruction => instruction.OperandLength == 0 ? string.Empty : Encoding.UTF8.GetString(bytes, instruction.OperandOffset, instruction.OperandLength)).ToImmutableArray();
+#if PERFORMANCE_METRICS
+                    prototypeCompileOperandMaterializationTicks += PerformanceMetrics.ElapsedNextRuntimeTimestamp(prototypeCompileOperandStart);
+                    var prototypeCompileAppendResultStart = PerformanceMetrics.StartNextRuntimeTimestamp();
+#endif
                     sourcePrototypes.Add(new(currentSourceId, source.Instructions, operands, source.SemanticPayload, source.RuntimeMetadata));
+#if PERFORMANCE_METRICS
+                    prototypeCompileAppendAndMappingTicks += PerformanceMetrics.ElapsedNextRuntimeTimestamp(prototypeCompileAppendResultStart);
+#endif
                 }
 #if PERFORMANCE_METRICS
                 PerformanceMetrics.RecordNextRuntimeConstructionStage("ProductionPreparation.PrototypeCompile.File", prototypeCompileFileStart);
@@ -277,7 +328,15 @@ internal sealed partial class Process
                 prototypeCompileInstructionCount,
                 prototypeCompileSemanticNodeCount,
                 prototypeCompileSemanticRecordCount,
-                prototypeCompileRuntimeMetadataCount);
+                prototypeCompileRuntimeMetadataCount,
+                prototypeCompileFileOpenTicks,
+                prototypeCompileRuntimePositionLookupTicks,
+                prototypeCompileSourceReadTicks,
+                prototypeCompileCompileRuntimeTicks,
+                prototypeCompileCompiledTicks,
+                prototypeCompileUnsupportedTicks,
+                prototypeCompileOperandMaterializationTicks,
+                prototypeCompileAppendAndMappingTicks);
             PerformanceMetrics.RecordNextRuntimeConstructionStage("ProductionPreparation.PrototypeCompile.FunctionLoop", prototypeCompileTotalStart);
             PerformanceMetrics.RecordNextRuntimeStartupStage("ProductionPreparation.PrototypeCompile.Total", prototypeCompileTotalStart);
 #endif
