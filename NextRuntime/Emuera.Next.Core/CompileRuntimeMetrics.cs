@@ -2,7 +2,7 @@ using System.Diagnostics;
 
 namespace MinorShift.Emuera.Next.Core;
 
-public readonly record struct SemanticCompileObservation(bool PreparedEmpty, int MacroSubstitutionCount, int MacroDefinitionCount, bool RenameResolverPresent, long RenameEndTimestamp, long PreprocessEndTimestamp, bool RenameMarkerPresent);
+public readonly record struct SemanticCompileObservation(bool PreparedEmpty, int MacroSubstitutionCount, int MacroDefinitionCount, bool RenameResolverPresent, long RenameEndTimestamp, long PreprocessEndTimestamp, bool RenameMarkerPresent, long PayloadBuildStartTimestamp);
 public readonly record struct CompileCohortSnapshot(long Count, long Ticks);
 public readonly record struct OptionalIntExpressionCohortSnapshot(
     CompileCohortSnapshot PreparedEmpty,
@@ -33,7 +33,10 @@ public readonly record struct OptionalIntExpressionCohortSnapshot(
     CompileCohortSnapshot MacroExpandSegment,
     long RenameBoundaryTimestampCount,
     long RenameMarkerPresentCount,
-    long RenameMarkerAbsentCount);
+    long RenameMarkerAbsentCount,
+    CompileCohortSnapshot ParseArenaThroughRecord,
+    CompileCohortSnapshot PayloadBuildThroughSemanticEnd,
+    long PayloadBuildBoundaryTimestampCount);
 
 public readonly record struct CompileRuntimeMetricsSnapshot(
     long RuntimeGateMetadataCount,
@@ -156,6 +159,11 @@ public static class CompileRuntimeMetrics
     private static long optionalRenameBoundaryTimestampCount;
     private static long optionalRenameMarkerPresentCount;
     private static long optionalRenameMarkerAbsentCount;
+    private static long optionalParseArenaThroughRecordCount;
+    private static long optionalParseArenaThroughRecordTicks;
+    private static long optionalPayloadBuildThroughSemanticEndCount;
+    private static long optionalPayloadBuildThroughSemanticEndTicks;
+    private static long optionalPayloadBuildBoundaryTimestampCount;
 
     public static void Reset()
     {
@@ -216,6 +224,9 @@ public static class CompileRuntimeMetrics
         optionalMacroExpandSegmentCount = optionalMacroExpandSegmentTicks = 0;
         optionalRenameBoundaryTimestampCount = 0;
         optionalRenameMarkerPresentCount = optionalRenameMarkerAbsentCount = 0;
+        optionalParseArenaThroughRecordCount = optionalParseArenaThroughRecordTicks = 0;
+        optionalPayloadBuildThroughSemanticEndCount = optionalPayloadBuildThroughSemanticEndTicks = 0;
+        optionalPayloadBuildBoundaryTimestampCount = 0;
     }
 
     [Conditional("PERFORMANCE_METRICS")]
@@ -283,6 +294,8 @@ public static class CompileRuntimeMetrics
         {
             optionalPreprocessBoundaryTimestampCount++;
         }
+        if (observation.PayloadBuildStartTimestamp != 0)
+            optionalPayloadBuildBoundaryTimestampCount++;
         if (!completed) return;
         if (observation.PreprocessEndTimestamp != 0)
         {
@@ -296,6 +309,13 @@ public static class CompileRuntimeMetrics
             optionalMacroExpandSegmentTicks += macroExpandSegmentTicks;
             if (observation.RenameMarkerPresent) optionalRenameMarkerPresentCount++;
             else optionalRenameMarkerAbsentCount++;
+        }
+        if (observation.PayloadBuildStartTimestamp != 0 && observation.PreprocessEndTimestamp != 0)
+        {
+            optionalParseArenaThroughRecordCount++;
+            optionalParseArenaThroughRecordTicks += observation.PayloadBuildStartTimestamp - observation.PreprocessEndTimestamp;
+            optionalPayloadBuildThroughSemanticEndCount++;
+            optionalPayloadBuildThroughSemanticEndTicks += ticks - prefixThroughPreprocessTicks - (observation.PayloadBuildStartTimestamp - observation.PreprocessEndTimestamp);
         }
         if (!optionalContextObserved)
         {
@@ -384,5 +404,8 @@ public static class CompileRuntimeMetrics
             new(optionalPrefixThroughRenameCount, optionalPrefixThroughRenameTicks),
             new(optionalMacroExpandSegmentCount, optionalMacroExpandSegmentTicks),
             optionalRenameBoundaryTimestampCount,
-            optionalRenameMarkerPresentCount, optionalRenameMarkerAbsentCount));
+            optionalRenameMarkerPresentCount, optionalRenameMarkerAbsentCount,
+            new(optionalParseArenaThroughRecordCount, optionalParseArenaThroughRecordTicks),
+            new(optionalPayloadBuildThroughSemanticEndCount, optionalPayloadBuildThroughSemanticEndTicks),
+            optionalPayloadBuildBoundaryTimestampCount));
 }

@@ -736,6 +736,26 @@ internal static class PerformanceMetrics
                         CountReconciliationExact = optionalCohorts.RenameMarkerPresentCount + optionalCohorts.RenameMarkerAbsentCount == optionalCompletedCount
                     }
                 },
+                OptionalIntExpressionPostPreprocessBreakdown = new
+                {
+                    Scope = "COMPLETED_CALLS_ONLY",
+                    ExistingPreprocessBoundaryReused = true,
+                    ExistingSemanticEndReused = true,
+                    NewPayloadBuildBoundaryTimestampCallsPerCall = 1,
+                    OptionalCompletedCount = optionalCompletedCount,
+                    OptionalCompletedTicks = optionalCompletedTicks,
+                    ParseArenaThroughRecord = Split(optionalCohorts.ParseArenaThroughRecord),
+                    PayloadBuildThroughSemanticEnd = Split(optionalCohorts.PayloadBuildThroughSemanticEnd),
+                    PayloadBuildBoundaryTimestampCount = optionalCohorts.PayloadBuildBoundaryTimestampCount,
+                    CountReconciliationExact = optionalCohorts.ParseArenaThroughRecord.Count == optionalCompletedCount && optionalCohorts.PayloadBuildThroughSemanticEnd.Count == optionalCompletedCount,
+                    PostPreprocessCountReconciliationExact = optionalCohorts.ParseArenaThroughRecord.Count + optionalCohorts.PayloadBuildThroughSemanticEnd.Count == optionalCohorts.PostPreprocessRemainder.Count,
+                    TicksReconciliationExact = optionalCohorts.PrefixThroughPreprocess.Ticks + optionalCohorts.ParseArenaThroughRecord.Ticks + optionalCohorts.PayloadBuildThroughSemanticEnd.Ticks == optionalCompletedTicks,
+                    PostPreprocessTicksReconciliationExact = optionalCohorts.ParseArenaThroughRecord.Ticks + optionalCohorts.PayloadBuildThroughSemanticEnd.Ticks == optionalCohorts.PostPreprocessRemainder.Ticks,
+                    ParseArenaThroughRecordShareOfOptionalPercent = optionalCompletedTicks == 0 ? 0 : (double)optionalCohorts.ParseArenaThroughRecord.Ticks * 100 / optionalCompletedTicks,
+                    PayloadBuildThroughSemanticEndShareOfOptionalPercent = optionalCompletedTicks == 0 ? 0 : (double)optionalCohorts.PayloadBuildThroughSemanticEnd.Ticks * 100 / optionalCompletedTicks,
+                    ParseArenaThroughRecordShareOfPostPreprocessPercent = optionalCohorts.PostPreprocessRemainder.Ticks == 0 ? 0 : (double)optionalCohorts.ParseArenaThroughRecord.Ticks * 100 / optionalCohorts.PostPreprocessRemainder.Ticks,
+                    PayloadBuildThroughSemanticEndShareOfPostPreprocessPercent = optionalCohorts.PostPreprocessRemainder.Ticks == 0 ? 0 : (double)optionalCohorts.PayloadBuildThroughSemanticEnd.Ticks * 100 / optionalCohorts.PostPreprocessRemainder.Ticks
+                },
                 AssignmentSearchInclusive = new
                 {
                     Mode = "COUNT_ONLY",
@@ -776,6 +796,7 @@ internal static class PerformanceMetrics
                     AdditionalPerSemanticInvocationTimestampCalls = compileRuntimeMetrics.SemanticCompileInclusiveCount * 2,
                     P3VPreprocessBoundaryTimestampCount = optionalCohorts.PreprocessBoundaryTimestampCount,
                     P3WRenameBoundaryTimestampCount = optionalCohorts.RenameBoundaryTimestampCount,
+                    P3YPayloadBuildBoundaryTimestampCount = optionalCohorts.PayloadBuildBoundaryTimestampCount,
                     Note = "Each value counts Stopwatch.GetTimestamp calls; semantic start/end and P3V/P3W boundaries are reported separately; no per-line/per-token/per-node timers"
                 }
             },

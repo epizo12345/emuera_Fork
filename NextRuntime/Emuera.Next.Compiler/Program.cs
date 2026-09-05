@@ -532,6 +532,36 @@ static int SelfTest()
             var reset = CompileRuntimeMetrics.Snapshot();
             Assert(reset.OptionalIntExpressionCohorts.RenameBoundaryTimestampCount == 0 && reset.OptionalIntExpressionCohorts.PreprocessBoundaryTimestampCount == 0 && reset.OptionalIntExpressionCohorts.RenameMarkerPresentCount == 0 && reset.OptionalIntExpressionCohorts.RenameMarkerAbsentCount == 0);
         })));
+        tests.Add(("P3Y OptionalIntExpression post-preprocess split attribution", (Action)(() =>
+        {
+            CompileRuntimeMetrics.Reset();
+            var options = new CompilerCompatibilityOptions(true, true, true, false);
+            var macros = MacroCatalog.FromHeaderText("#DEFINE ONE 1", options);
+            var environment = new StructuralSemanticEnvironment(options, macros);
+            var p = Path.Combine(root, "p3y-payload-build.ERB");
+            WriteBom(p, "@P3Y_PAYLOAD_BUILD\r\nSIF\r\nSIF 1+2\r\nSIF ONE\r\n");
+            var f = ErbSourceIndexer.IndexFile(p);
+            var result = new FunctionCompiler(environment).TryCompileRuntime(f, f.Functions.Single());
+            var metrics = CompileRuntimeMetrics.Snapshot();
+            var cohorts = metrics.OptionalIntExpressionCohorts;
+            var post = cohorts.PostPreprocessRemainder;
+            var split = cohorts.ParseArenaThroughRecord;
+            var build = cohorts.PayloadBuildThroughSemanticEnd;
+            Assert(result.Status == CompileStatus.Compiled && metrics.SemanticOptionalIntExpressionCompletedCount == 3 && cohorts.PayloadBuildBoundaryTimestampCount == 3 && split.Count == 3 && build.Count == 3 && split.Ticks + build.Ticks == post.Ticks && cohorts.PrefixThroughPreprocess.Ticks + split.Ticks + build.Ticks == metrics.SemanticOptionalIntExpressionCompletedTicks, $"status={result.Status} completed={metrics.SemanticOptionalIntExpressionCompletedCount} boundary={cohorts.PayloadBuildBoundaryTimestampCount} split={split.Count}/{split.Ticks} build={build.Count}/{build.Ticks} post={post.Count}/{post.Ticks}");
+        })));
+        tests.Add(("P3Y OptionalIntExpression exception before payload boundary", (Action)(() =>
+        {
+            CompileRuntimeMetrics.Reset();
+            var p = Path.Combine(root, "p3y-payload-exception.ERB");
+            WriteBom(p, "@P3Y_PAYLOAD_EXCEPTION\r\nSIF (\r\n");
+            var f = ErbSourceIndexer.IndexFile(p);
+            var result = new FunctionCompiler(semanticEnvironment).TryCompileRuntime(f, f.Functions.Single());
+            var cohorts = CompileRuntimeMetrics.Snapshot().OptionalIntExpressionCohorts;
+            Assert(result.Status == CompileStatus.Unsupported && cohorts.PreprocessBoundaryTimestampCount == 1 && cohorts.PayloadBuildBoundaryTimestampCount == 0 && cohorts.ParseArenaThroughRecord.Count == 0 && cohorts.PayloadBuildThroughSemanticEnd.Count == 0);
+            CompileRuntimeMetrics.Reset();
+            var reset = CompileRuntimeMetrics.Snapshot().OptionalIntExpressionCohorts;
+            Assert(reset.PreprocessBoundaryTimestampCount == 0 && reset.PayloadBuildBoundaryTimestampCount == 0 && reset.ParseArenaThroughRecord.Count == 0 && reset.PayloadBuildThroughSemanticEnd.Count == 0);
+        })));
 #endif
         tests.Add(("R1_4FHeaderRegression", () => { var path = Path.Combine(root, "r1-4f-header.ERB"); WriteBom(path, "@G, ARG = 98\r\n#FUNCTION\r\nPRINT 1\r\n"); var indexedHeader = ErbSourceIndexer.IndexFile(path); var result = new FunctionCompiler(semanticEnvironment).TryCompileRuntime(indexedHeader, indexedHeader.Functions.Single()); Assert(result.Status == CompileStatus.Compiled && result.Function!.RuntimeMetadata!.Parameters.Length == 1 && result.Function.RuntimeMetadata.Parameters[0].HasDefault && result.Function.RuntimeMetadata.Parameters[0].DefaultInteger == 98 && result.Function.RuntimeMetadata.ReturnType == RuntimeMetadataValueType.Integer); }));
          tests.Add(("semantic target is exactly nine structural opcodes", () => { var p = Path.Combine(root, "semantic-targets.ERB"); WriteBom(p, "@TARGETS\r\nSIF A\r\nIF A\r\nELSEIF A\r\nSELECTCASE A\r\nCASE 1\r\nREPEAT 2\r\nFOR I,0,2\r\nWHILE A\r\nLOOP A\r\nPRINTFORM %A%\r\n"); var f = ErbSourceIndexer.IndexFile(p); var result = new FunctionCompiler(semanticEnvironment).TryCompile(f, f.Functions.Single()); Assert(result.Status == CompileStatus.Compiled && result.Function!.SemanticPayload!.Records.Length == 9); }));

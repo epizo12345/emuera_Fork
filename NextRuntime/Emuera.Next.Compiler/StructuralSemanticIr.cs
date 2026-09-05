@@ -400,9 +400,9 @@ public static class SemanticIrCompiler
         var renameEndTimestamp = Stopwatch.GetTimestamp();
         var prepared = environment.Macros.Expand(renamed, environment.Compatibility, out var substitutions);
         var preprocessEndTimestamp = Stopwatch.GetTimestamp();
-        observation = new SemanticCompileObservation(false, substitutions, environment.Macros.Count, environment.RenameResolver is not null, renameEndTimestamp, preprocessEndTimestamp, renameMarkerPresent);
-        var payload = CompilePrepared(prepared, environment, instructionIndex, SemanticOperandKind.Expression, false, true, out var preparedEmpty);
-        observation = new SemanticCompileObservation(preparedEmpty, substitutions, environment.Macros.Count, environment.RenameResolver is not null, renameEndTimestamp, preprocessEndTimestamp, renameMarkerPresent);
+        observation = new SemanticCompileObservation(false, substitutions, environment.Macros.Count, environment.RenameResolver is not null, renameEndTimestamp, preprocessEndTimestamp, renameMarkerPresent, 0);
+        var payload = CompilePreparedWithBoundary(prepared, environment, instructionIndex, ref observation, out var preparedEmpty);
+        observation = observation with { PreparedEmpty = preparedEmpty };
         return payload;
     }
 #endif
@@ -428,6 +428,17 @@ public static class SemanticIrCompiler
         };
         parser.ExpectEnd(); builder.Records.Add(new(instructionIndex, root, builder.Nodes.Count)); return builder.Build();
     }
+#if PERFORMANCE_METRICS
+    private static SemanticPayload CompilePreparedWithBoundary(string prepared, StructuralSemanticEnvironment environment, int instructionIndex, ref SemanticCompileObservation observation, out bool preparedEmpty)
+    {
+        preparedEmpty = false;
+        var builder = new ArenaBuilder(); var parser = new Parser(prepared, environment, builder);
+        var root = parser.ParseOptionalIntExpression(out preparedEmpty);
+        parser.ExpectEnd(); builder.Records.Add(new(instructionIndex, root, builder.Nodes.Count));
+        observation = observation with { PayloadBuildStartTimestamp = Stopwatch.GetTimestamp() };
+        return builder.Build();
+    }
+#endif
     private static string Preprocess(string source, StructuralSemanticEnvironment environment) => Preprocess(source, environment, out _);
     private static string Preprocess(string source, StructuralSemanticEnvironment environment, out int substitutions) => environment.Macros.Expand(SemanticLexicalTokenStream.ApplyRename(source, environment.RenameResolver), environment.Compatibility, out substitutions);
     private static string ApplyRename(string source, SemanticRenameResolver? resolver) => SemanticLexicalTokenStream.ApplyRename(source, resolver);
