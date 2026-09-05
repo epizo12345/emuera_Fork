@@ -608,12 +608,14 @@ internal static class PerformanceMetrics
                     SemanticPayloadMergeFunctionCount = compileRuntimeMetrics.SemanticPayloadMergeFunctionCount,
                     SemanticPartCount = compileRuntimeMetrics.SemanticPartCount
                 },
-                TimerCallsPerFunction = new
+                TimerCallSchema = new
                 {
-                    CompiledPath = 5,
-                    ScanRejectPath = 5,
-                    RuntimeGateRejectPath = 4,
-                    Note = "Stopwatch.GetTimestamp at coarse stage boundaries; no per-line/per-node timers"
+                    BaseCompiledPathTimestampCalls = 6,
+                    BaseScanRejectPathTimestampCalls = 6,
+                    RuntimeGateRejectPathTimestampCalls = 4,
+                    AdditionalSuccessfulScanFinalizeTimestampCalls = compileRuntimeMetrics.ScanFinalizeCount * 2,
+                    AdditionalPerSemanticInvocationTimestampCalls = compileRuntimeMetrics.SemanticCompileInclusiveCount * 2,
+                    Note = "Each value counts Stopwatch.GetTimestamp calls; semantic invocations are variable; no per-line/per-token/per-node timers"
                 }
             },
             SourceReaderMetrics = new

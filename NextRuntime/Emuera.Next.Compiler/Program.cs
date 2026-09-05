@@ -352,6 +352,19 @@ static int SelfTest()
             var metrics = CompileRuntimeMetrics.Snapshot();
             Assert(result.Status == CompileStatus.Compiled && metrics.ScanInclusiveCount == 1 && metrics.SemanticCompileInclusiveCount == 1 && metrics.ScanFinalizeCount == 1 && metrics.SemanticPayloadMergeFunctionCount == 1 && metrics.SemanticPartCount == 1 && metrics.CompiledFinalizeCount == 1 && metrics.RejectFinalizeCount == 0);
         })));
+        tests.Add(("P3Q semantic exceptional path is measured", (Action)(() =>
+        {
+            CompileRuntimeMetrics.Reset();
+            var p = Path.Combine(root, "p3q-semantic-rejected.ERB");
+            WriteBom(p, "@P3Q_SEMANTIC_REJECTED\r\nSELECTCASE\r\n");
+            var f = ErbSourceIndexer.IndexFile(p);
+            var result = new FunctionCompiler(semanticEnvironment).TryCompileRuntime(f, f.Functions.Single());
+            var metrics = CompileRuntimeMetrics.Snapshot();
+            Assert(result.Status == CompileStatus.Unsupported && result.Reason == UnsupportedReason.ExpressionSensitiveSyntax && metrics.ScanInclusiveCount == 1 && metrics.SemanticCompileInclusiveCount == 1 && metrics.ScanFinalizeCount == 0 && metrics.CompiledFinalizeCount == 0 && metrics.RejectFinalizeCount == 1);
+            CompileRuntimeMetrics.Reset();
+            var reset = CompileRuntimeMetrics.Snapshot();
+            Assert(reset.SemanticCompileInclusiveCount == 0 && reset.SemanticCompileInclusiveTicks == 0);
+        })));
         tests.Add(("P3P CompileRuntime decomposition rejected path", (Action)(() =>
         {
             CompileRuntimeMetrics.Reset();

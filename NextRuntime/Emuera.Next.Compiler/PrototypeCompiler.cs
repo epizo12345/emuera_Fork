@@ -524,20 +524,28 @@ public sealed class FunctionCompiler
             if (semanticEnvironment is not null && IsSemanticOperand(opcode))
             {
                 var semanticKind = opcode == PrototypeOpcode.CASE ? SemanticOperandKind.Case : opcode is PrototypeOpcode.FOR or PrototypeOpcode.REPEAT ? SemanticOperandKind.CountedLoop : SemanticOperandKind.Expression;
+                SemanticPayload semanticPart;
 #if PERFORMANCE_METRICS
                 var semanticCompileStart = Stopwatch.GetTimestamp();
-#endif
-                semanticParts.Add(opcode == PrototypeOpcode.REPEAT
-                    ? SemanticIrCompiler.CompileCountedLoop(rawOperand, semanticEnvironment, instructionIndex, true)
-                    : opcode == PrototypeOpcode.FOR
-                        ? SemanticIrCompiler.CompileCountedLoop(rawOperand, semanticEnvironment, instructionIndex, false)
-                        : opcode is PrototypeOpcode.SIF or PrototypeOpcode.IF or PrototypeOpcode.ELSEIF or PrototypeOpcode.WHILE or PrototypeOpcode.LOOP
-                            ? SemanticIrCompiler.CompileOptionalIntExpression(rawOperand, semanticEnvironment, instructionIndex)
-                            : SemanticIrCompiler.Compile(rawOperand, semanticEnvironment, instructionIndex, semanticKind));
-#if PERFORMANCE_METRICS
                 var semanticCategory = opcode is PrototypeOpcode.FOR or PrototypeOpcode.REPEAT ? 1 : opcode is PrototypeOpcode.SIF or PrototypeOpcode.IF or PrototypeOpcode.ELSEIF or PrototypeOpcode.WHILE or PrototypeOpcode.LOOP ? 2 : 3;
-                CompileRuntimeMetrics.RecordSemanticCompileInclusive(Stopwatch.GetTimestamp() - semanticCompileStart, semanticCategory);
+                try
+                {
 #endif
+                    semanticPart = opcode == PrototypeOpcode.REPEAT
+                        ? SemanticIrCompiler.CompileCountedLoop(rawOperand, semanticEnvironment, instructionIndex, true)
+                        : opcode == PrototypeOpcode.FOR
+                            ? SemanticIrCompiler.CompileCountedLoop(rawOperand, semanticEnvironment, instructionIndex, false)
+                            : opcode is PrototypeOpcode.SIF or PrototypeOpcode.IF or PrototypeOpcode.ELSEIF or PrototypeOpcode.WHILE or PrototypeOpcode.LOOP
+                                ? SemanticIrCompiler.CompileOptionalIntExpression(rawOperand, semanticEnvironment, instructionIndex)
+                                : SemanticIrCompiler.Compile(rawOperand, semanticEnvironment, instructionIndex, semanticKind);
+#if PERFORMANCE_METRICS
+                }
+                finally
+                {
+                    CompileRuntimeMetrics.RecordSemanticCompileInclusive(Stopwatch.GetTimestamp() - semanticCompileStart, semanticCategory);
+                }
+#endif
+                semanticParts.Add(semanticPart);
             }
             line++;
         }
