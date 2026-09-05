@@ -160,6 +160,56 @@ internal static class PerformanceMetrics
     private static long nextPrototypeCompilePositionKeyCount;
     private static long nextPrototypeCompilePathNormalizationExecutionCount;
     private static SourceReaderMetricsSnapshot sourceReaderMetrics;
+    private const int LoadWarningSnapshotCapacity = 8;
+    private static bool loadToShopMeasurementActive;
+    private static long loadToShopStartTicks;
+    private static long loadToShopRestoreTicks;
+    private static long loadToShopEndTicks;
+    private static long loadToShopWarningDialogTicks;
+    private static int loadToShopWarningCount;
+    private static int loadToShopDroppedWarningSnapshotCount;
+    private static int loadToShopPendingWarningIndex = -1;
+    private static long loadToShopPendingWarningStartTicks;
+    private static readonly LoadWarningSnapshot[] loadToShopWarningSnapshots = new LoadWarningSnapshot[LoadWarningSnapshotCapacity];
+    private static LoadCounterSnapshot loadToShopBaseline;
+    private static int loadToShopProductionContinueCount;
+    private static long loadToShopProductionContinueTicks;
+
+    private sealed class LoadWarningSnapshot
+    {
+        internal long BeforeTicks;
+        internal long AfterTicks;
+        internal long WatchdogElapsedMilliseconds;
+        internal int AlertThresholdMilliseconds;
+        internal int LineCount;
+        internal string SystemState = "";
+        internal string SourceFile = "";
+        internal int SourceLine;
+        internal string FunctionName = "";
+        internal string RuntimeFunctionId = "";
+        internal int CallDepth;
+        internal bool NextRuntimeSessionActive;
+        internal string DialogResult = "";
+    }
+
+    private readonly record struct LoadCounterSnapshot(
+        int DispatchAttempts,
+        int Fallbacks,
+        long EntryDispatchAlreadyConsumedCount,
+        long WholeDispatchSeamTicks,
+        long ActionableDispatchTicks,
+        int SessionConstructionCount,
+        long SessionConstructionTicks,
+        int SemanticExecutorConstructionCount,
+        long SemanticExecutorConstructionTicks,
+        int VmMachineConstructionCount,
+        long VmMachineConstructionTicks,
+        int RuntimeEffectsConstructionCount,
+        long RuntimeEffectsConstructionTicks,
+        int ExecutionSessionWrapperConstructionCount,
+        long ExecutionSessionWrapperConstructionTicks,
+        int InitialVmExecutionCount,
+        long InitialVmExecutionTicks);
 #endif
 
     internal static bool Enabled => Volatile.Read(ref logPath) != null;
@@ -276,6 +326,7 @@ internal static class PerformanceMetrics
         entryDispatchAlreadyConsumedTicks = 0;
         actionableDispatchTicks = 0;
         wholeDispatchSeamTicks = 0;
+        ResetLoadToShopMeasurement();
         AppDomain.CurrentDomain.ProcessExit += (_, _) => WriteNextDispatchProfile();
 #endif
     }
@@ -368,6 +419,7 @@ internal static class PerformanceMetrics
         var optionalCohorts = compileRuntimeMetrics.OptionalIntExpressionCohorts;
         var optionalCompletedCount = compileRuntimeMetrics.SemanticOptionalIntExpressionCompletedCount;
         var optionalCompletedTicks = compileRuntimeMetrics.SemanticOptionalIntExpressionCompletedTicks;
+        var loadToShopMeasurement = CreateLoadToShopMeasurementReport();
         var report = new
         {
             Profiler = "NextRuntimePerformanceProfile",
@@ -955,6 +1007,7 @@ internal static class PerformanceMetrics
             PrototypeCompilePositionKeyCount = nextPrototypeCompilePositionKeyCount,
             PrototypeCompilePathNormalizationExecutionCount = nextPrototypeCompilePathNormalizationExecutionCount,
             PrototypeCompilePathNormalizationReuseCount = Math.Max(0, nextPrototypeCompilePositionKeyCount - nextPrototypeCompilePathNormalizationExecutionCount),
+            LoadToShopMeasurement = loadToShopMeasurement,
             TopFunctionReasonBuckets = buckets,
             SessionStartRejectSubreasons = subreasons,
             SessionStartRejectSubreasonCountSum = subreasonCountSum,
@@ -968,6 +1021,329 @@ internal static class PerformanceMetrics
         try { File.WriteAllText(nextDispatchProfilePath, JsonSerializer.Serialize(report, JsonOptions) + Environment.NewLine); }
         catch { }
     }
+
+    [Conditional("PERFORMANCE_METRICS")]
+    internal static void BeginLoadToShopMeasurement()
+    {
+        if (string.IsNullOrWhiteSpace(nextDispatchProfilePath))
+            return;
+        ResetLoadToShopMeasurement();
+        loadToShopMeasurementActive = true;
+        loadToShopStartTicks = Stopwatch.GetTimestamp();
+        loadToShopBaseline = CaptureLoadCounterSnapshot();
+    }
+
+    [Conditional("PERFORMANCE_METRICS")]
+    internal static void AbortLoadToShopMeasurement()
+    {
+        if (loadToShopMeasurementActive)
+            ResetLoadToShopMeasurement();
+    }
+
+    [Conditional("PERFORMANCE_METRICS")]
+    internal static void MarkLoadToShopRestoreCompleted()
+    {
+        if (loadToShopMeasurementActive)
+            loadToShopRestoreTicks = Stopwatch.GetTimestamp();
+    }
+
+    [Conditional("PERFORMANCE_METRICS")]
+    internal static void MarkLoadToShopWaitInputCompleted()
+    {
+        if (loadToShopMeasurementActive && loadToShopRestoreTicks != 0 && loadToShopEndTicks == 0)
+            loadToShopEndTicks = Stopwatch.GetTimestamp();
+    }
+
+    [Conditional("PERFORMANCE_METRICS")]
+    internal static void BeginLoadToShopWarningSnapshot(long watchdogElapsedMilliseconds, int alertThresholdMilliseconds, int lineCount, string systemState, string sourceFile, int sourceLine, string functionName, string runtimeFunctionId, int callDepth, bool nextRuntimeSessionActive)
+    {
+        if (!loadToShopMeasurementActive)
+            return;
+        loadToShopWarningCount++;
+        var now = Stopwatch.GetTimestamp();
+        loadToShopPendingWarningStartTicks = now;
+        loadToShopPendingWarningIndex = loadToShopWarningCount <= LoadWarningSnapshotCapacity ? loadToShopWarningCount - 1 : -1;
+        if (loadToShopPendingWarningIndex < 0)
+        {
+            loadToShopDroppedWarningSnapshotCount++;
+            return;
+        }
+        loadToShopWarningSnapshots[loadToShopPendingWarningIndex] = new LoadWarningSnapshot
+        {
+            BeforeTicks = now,
+            WatchdogElapsedMilliseconds = watchdogElapsedMilliseconds,
+            AlertThresholdMilliseconds = alertThresholdMilliseconds,
+            LineCount = lineCount,
+            SystemState = systemState,
+            SourceFile = sourceFile,
+            SourceLine = sourceLine,
+            FunctionName = functionName,
+            RuntimeFunctionId = runtimeFunctionId,
+            CallDepth = callDepth,
+            NextRuntimeSessionActive = nextRuntimeSessionActive
+        };
+    }
+
+    [Conditional("PERFORMANCE_METRICS")]
+    internal static void EndLoadToShopWarningSnapshot(string dialogResult)
+    {
+        if (!loadToShopMeasurementActive || loadToShopPendingWarningStartTicks == 0)
+            return;
+        var now = Stopwatch.GetTimestamp();
+        var elapsed = Math.Max(0, now - loadToShopPendingWarningStartTicks);
+        loadToShopWarningDialogTicks += elapsed;
+        if (loadToShopPendingWarningIndex >= 0)
+        {
+            var snapshot = loadToShopWarningSnapshots[loadToShopPendingWarningIndex];
+            snapshot.AfterTicks = now;
+            snapshot.DialogResult = dialogResult;
+        }
+        loadToShopPendingWarningStartTicks = 0;
+        loadToShopPendingWarningIndex = -1;
+    }
+
+    internal static long StartLoadToShopProductionContinue()
+    {
+#if PERFORMANCE_METRICS
+        return loadToShopMeasurementActive && !string.IsNullOrWhiteSpace(nextDispatchProfilePath) ? Stopwatch.GetTimestamp() : 0;
+#else
+        return 0;
+#endif
+    }
+
+    [Conditional("PERFORMANCE_METRICS")]
+    internal static void EndLoadToShopProductionContinue(long start)
+    {
+#if PERFORMANCE_METRICS
+        if (start != 0)
+        {
+            loadToShopProductionContinueCount++;
+            loadToShopProductionContinueTicks += Math.Max(0, Stopwatch.GetTimestamp() - start);
+        }
+#endif
+    }
+
+    private static LoadCounterSnapshot CaptureLoadCounterSnapshot()
+    {
+        static (int Count, long Ticks) Stage(string name)
+            => nextConstructionStages.TryGetValue(name, out var value) ? (value.Count, value.Ticks) : default;
+        var session = Stage("SessionConstruction");
+        var executor = Stage("SemanticExecutorConstruction");
+        var machine = Stage("VmMachineConstruction");
+        var effects = Stage("RuntimeEffectsConstruction");
+        var wrapper = Stage("ExecutionSessionWrapperConstruction");
+        var vm = Stage("VmExecution");
+        return new(
+            nextDispatchAttempts,
+            nextDispatchFallbacks,
+            entryDispatchAlreadyConsumedCount,
+            wholeDispatchSeamTicks,
+            actionableDispatchTicks,
+            session.Count,
+            session.Ticks,
+            executor.Count,
+            executor.Ticks,
+            machine.Count,
+            machine.Ticks,
+            effects.Count,
+            effects.Ticks,
+            wrapper.Count,
+            wrapper.Ticks,
+            vm.Count,
+            vm.Ticks);
+    }
+
+    private static object CreateLoadToShopMeasurementReport()
+    {
+        if (!loadToShopMeasurementActive)
+            return null;
+        var endTicks = loadToShopEndTicks == 0 ? Stopwatch.GetTimestamp() : loadToShopEndTicks;
+        var restoreTicks = loadToShopRestoreTicks == 0 ? 0 : loadToShopRestoreTicks;
+        var current = CaptureLoadCounterSnapshot();
+        var loadToShopTicks = loadToShopStartTicks == 0 ? 0 : Math.Max(0, endTicks - loadToShopStartTicks);
+        var restoreDuration = restoreTicks == 0 ? 0 : Math.Max(0, restoreTicks - loadToShopStartTicks);
+        var postRestoreDuration = restoreTicks == 0 ? 0 : Math.Max(0, endTicks - restoreTicks);
+        var warningMilliseconds = TicksToMilliseconds(loadToShopWarningDialogTicks);
+        var firstWarning = loadToShopWarningCount == 0 ? null : loadToShopWarningSnapshots[0];
+        var warnings = loadToShopWarningSnapshots.Take(Math.Min(loadToShopWarningCount, LoadWarningSnapshotCapacity)).Where(static x => x is not null).Select(snapshot => new
+        {
+            TimeFromLoadStartMilliseconds = TicksToMilliseconds(Math.Max(0, snapshot.BeforeTicks - loadToShopStartTicks)),
+            WatchdogElapsedMilliseconds = snapshot.WatchdogElapsedMilliseconds,
+            AlertThresholdMilliseconds = snapshot.AlertThresholdMilliseconds,
+            LineCount = snapshot.LineCount,
+            SystemState = snapshot.SystemState,
+            SourceFile = snapshot.SourceFile,
+            SourceLine = snapshot.SourceLine,
+            FunctionName = snapshot.FunctionName,
+            RuntimeFunctionId = snapshot.RuntimeFunctionId,
+            CallDepth = snapshot.CallDepth,
+            NextRuntimeSessionActive = snapshot.NextRuntimeSessionActive,
+            WarningDialogMilliseconds = snapshot.AfterTicks == 0 ? (double?)null : TicksToMilliseconds(snapshot.AfterTicks - snapshot.BeforeTicks),
+            DialogResult = snapshot.DialogResult
+        }).ToArray();
+        var dispatchAttempts = current.DispatchAttempts - loadToShopBaseline.DispatchAttempts;
+        var fallbacks = current.Fallbacks - loadToShopBaseline.Fallbacks;
+        var knownNextTicks = Math.Max(0,
+            current.SessionConstructionTicks - loadToShopBaseline.SessionConstructionTicks +
+            current.InitialVmExecutionTicks - loadToShopBaseline.InitialVmExecutionTicks +
+            loadToShopProductionContinueTicks);
+        return new
+        {
+            Scope = "ONE_SUCCESSFUL_LOAD_TO_FIRST_SHOP_WAIT_INPUT",
+            MeasurementSemantics = "T0 before successful LoadFrom; T1 after LoadFrom; TEND after Shop_WaitInput state assignment; warning dialog dwell is separate wall-clock time.",
+            TimestampSchema = "T0,T1,TEND plus warning pre/post and production Continue pre/post while active",
+            Completed = loadToShopEndTicks != 0 && restoreTicks != 0,
+            LoadRestore = restoreTicks == 0 ? (double?)null : TicksToMilliseconds(restoreDuration),
+            PostRestoreToShop = restoreTicks == 0 ? (double?)null : TicksToMilliseconds(postRestoreDuration),
+            TotalWallClock = loadToShopEndTicks == 0 ? (double?)null : TicksToMilliseconds(loadToShopTicks),
+            WarningDialogTotal = warningMilliseconds,
+            WallClockExcludingWarningDialogs = loadToShopEndTicks == 0 ? (double?)null : Math.Max(0, TicksToMilliseconds(loadToShopTicks) - warningMilliseconds),
+            WarningCount = loadToShopWarningCount,
+            DroppedWarningSnapshotCount = loadToShopDroppedWarningSnapshotCount,
+            Warnings = warnings,
+            NextRuntimeDelta = new
+            {
+                TotalDispatchAttempts = dispatchAttempts,
+                ActionableDispatch = Math.Max(0L, dispatchAttempts - (current.EntryDispatchAlreadyConsumedCount - loadToShopBaseline.EntryDispatchAlreadyConsumedCount)),
+                Fallbacks = fallbacks,
+                EntryDispatchAlreadyConsumed = current.EntryDispatchAlreadyConsumedCount - loadToShopBaseline.EntryDispatchAlreadyConsumedCount,
+                SessionStartRejected = Math.Max(0, fallbacks - (dispatchAttempts - (current.EntryDispatchAlreadyConsumedCount - loadToShopBaseline.EntryDispatchAlreadyConsumedCount))),
+                WholeDispatchSeamMilliseconds = TicksToMilliseconds(current.WholeDispatchSeamTicks - loadToShopBaseline.WholeDispatchSeamTicks),
+                ActionableDispatchTimeMilliseconds = TicksToMilliseconds(current.ActionableDispatchTicks - loadToShopBaseline.ActionableDispatchTicks),
+                SessionConstruction = StageDelta(current, loadToShopBaseline, "SessionConstruction"),
+                SemanticExecutorConstruction = StageDelta(current, loadToShopBaseline, "SemanticExecutorConstruction"),
+                VmMachineConstruction = StageDelta(current, loadToShopBaseline, "VmMachineConstruction"),
+                RuntimeEffectsConstruction = StageDelta(current, loadToShopBaseline, "RuntimeEffectsConstruction"),
+                ExecutionSessionWrapperConstruction = StageDelta(current, loadToShopBaseline, "ExecutionSessionWrapperConstruction"),
+                InitialVmExecution = StageDelta(current, loadToShopBaseline, "VmExecution"),
+                ProductionContinueExecution = new
+                {
+                    Count = loadToShopProductionContinueCount,
+                    TotalMilliseconds = TicksToMilliseconds(loadToShopProductionContinueTicks),
+                    AverageMicroseconds = loadToShopProductionContinueCount == 0 ? 0 : TicksToMilliseconds(loadToShopProductionContinueTicks) * 1000 / loadToShopProductionContinueCount
+                }
+            },
+            MeasuredNextKnownTimeMilliseconds = TicksToMilliseconds(knownNextTicks),
+            ResidualAttribution = "NOT_COMPUTED_DUE_TO_OVERLAPPING_METRICS",
+            CountReconciliation = new { DispatchAttempts = dispatchAttempts, Fallbacks = fallbacks, ActionableDispatch = dispatchAttempts - (current.EntryDispatchAlreadyConsumedCount - loadToShopBaseline.EntryDispatchAlreadyConsumedCount) }
+        };
+    }
+
+    private static object StageDelta(LoadCounterSnapshot current, LoadCounterSnapshot baseline, string name)
+    {
+        var (count, ticks) = name switch
+        {
+            "SessionConstruction" => (current.SessionConstructionCount - baseline.SessionConstructionCount, current.SessionConstructionTicks - baseline.SessionConstructionTicks),
+            "SemanticExecutorConstruction" => (current.SemanticExecutorConstructionCount - baseline.SemanticExecutorConstructionCount, current.SemanticExecutorConstructionTicks - baseline.SemanticExecutorConstructionTicks),
+            "VmMachineConstruction" => (current.VmMachineConstructionCount - baseline.VmMachineConstructionCount, current.VmMachineConstructionTicks - baseline.VmMachineConstructionTicks),
+            "RuntimeEffectsConstruction" => (current.RuntimeEffectsConstructionCount - baseline.RuntimeEffectsConstructionCount, current.RuntimeEffectsConstructionTicks - baseline.RuntimeEffectsConstructionTicks),
+            "ExecutionSessionWrapperConstruction" => (current.ExecutionSessionWrapperConstructionCount - baseline.ExecutionSessionWrapperConstructionCount, current.ExecutionSessionWrapperConstructionTicks - baseline.ExecutionSessionWrapperConstructionTicks),
+            _ => (current.InitialVmExecutionCount - baseline.InitialVmExecutionCount, current.InitialVmExecutionTicks - baseline.InitialVmExecutionTicks)
+        };
+        return new { Count = count, TotalMilliseconds = TicksToMilliseconds(ticks), AverageMicroseconds = count == 0 ? 0 : TicksToMilliseconds(ticks) * 1000 / count };
+    }
+
+    private static void ResetLoadToShopMeasurement()
+    {
+        loadToShopMeasurementActive = false;
+        loadToShopStartTicks = 0;
+        loadToShopRestoreTicks = 0;
+        loadToShopEndTicks = 0;
+        loadToShopWarningDialogTicks = 0;
+        loadToShopWarningCount = 0;
+        loadToShopDroppedWarningSnapshotCount = 0;
+        loadToShopPendingWarningIndex = -1;
+        loadToShopPendingWarningStartTicks = 0;
+        loadToShopBaseline = default;
+        loadToShopProductionContinueCount = 0;
+        loadToShopProductionContinueTicks = 0;
+        Array.Clear(loadToShopWarningSnapshots);
+    }
+
+    internal static int LoadToShopMeasurementSelfTest()
+    {
+        var previousPath = nextDispatchProfilePath;
+        try
+        {
+            nextDispatchProfilePath = "m1-self-test.json";
+            nextDispatchAttempts = 0;
+            nextDispatchFallbacks = 0;
+            entryDispatchAlreadyConsumedCount = 0;
+            nextConstructionStages.Clear();
+            ResetLoadToShopMeasurement();
+            BeginLoadToShopMeasurement();
+            var incompleteText = JsonSerializer.Serialize(CreateLoadToShopMeasurementReport());
+            var incompletePass = incompleteText.Contains("\"Completed\":false", StringComparison.Ordinal);
+            var zeroWarningPass = incompleteText.Contains("\"WarningCount\":0", StringComparison.Ordinal) && incompleteText.Contains("\"Warnings\":[]", StringComparison.Ordinal);
+            BeginLoadToShopWarningSnapshot(5000, 5000, 10000, "LoadData", "test.ERB", 12, "TEST", "1", 1, false);
+            EndLoadToShopWarningSnapshot("Continue");
+            BeginLoadToShopWarningSnapshot(5000, 5000, 20000, "LoadData", "test.ERB", 13, "TEST", "1", 1, false);
+            EndLoadToShopWarningSnapshot("Continue");
+            var continueStart = StartLoadToShopProductionContinue();
+            EndLoadToShopProductionContinue(continueStart);
+            MarkLoadToShopRestoreCompleted();
+            MarkLoadToShopWaitInputCompleted();
+            var firstPass = loadToShopMeasurementActive && loadToShopWarningCount == 2 && loadToShopDroppedWarningSnapshotCount == 0 && loadToShopProductionContinueCount == 1 && loadToShopEndTicks != 0;
+            var replacementPass = BeginLoadToShopMeasurementAndCheckReplacement();
+            var continuePass = loadToShopProductionContinueCount == 0;
+            BeginLoadToShopWarningSnapshot(5000, 5000, 10000, "LoadData", "test.ERB", 12, "TEST", "1", 1, false);
+            EndLoadToShopWarningSnapshot("Continue");
+            BeginLoadToShopWarningSnapshot(5000, 5000, 20000, "LoadData", "test.ERB", 13, "TEST", "1", 1, false);
+            EndLoadToShopWarningSnapshot("Continue");
+            nextDispatchAttempts = 3;
+            nextDispatchFallbacks = 2;
+            entryDispatchAlreadyConsumedCount = 1;
+            nextConstructionStages["SessionConstruction"] = (1, 11, 0, 11);
+            nextConstructionStages["VmExecution"] = (1, 13, 0, 13);
+            var counterText = JsonSerializer.Serialize(CreateLoadToShopMeasurementReport());
+            var counterPass = counterText.Contains("\"TotalDispatchAttempts\":3", StringComparison.Ordinal) && counterText.Contains("\"SessionConstruction\":{\"Count\":1", StringComparison.Ordinal);
+            for (var i = 0; i < LoadWarningSnapshotCapacity + 2; i++)
+            {
+                BeginLoadToShopWarningSnapshot(5000, 5000, i, "LoadData", "test.ERB", 20 + i, "TEST", "1", 1, false);
+                EndLoadToShopWarningSnapshot("Continue");
+            }
+            var capPass = loadToShopWarningCount == LoadWarningSnapshotCapacity + 4 && loadToShopDroppedWarningSnapshotCount == 4;
+            AbortLoadToShopMeasurement();
+            var abortPass = !loadToShopMeasurementActive && loadToShopWarningCount == 0;
+            ResetLoadToShopMeasurement();
+            var resetPass = !loadToShopMeasurementActive && loadToShopWarningCount == 0 && loadToShopProductionContinueCount == 0;
+            Console.WriteLine($"P3ZM1LoadEnvelopeState=PASS");
+            Console.WriteLine($"P3ZM1IncompleteMeasurementState={(incompletePass ? "PASS" : "FAIL")}");
+            Console.WriteLine($"P3ZM1ZeroWarningState={(zeroWarningPass ? "PASS" : "FAIL")}");
+            Console.WriteLine($"P3ZM1WarningSnapshotState={(firstPass ? "PASS" : "FAIL")}");
+            Console.WriteLine($"P3ZM1ProductionContinueState={(continuePass ? "PASS" : "FAIL")}");
+            Console.WriteLine($"P3ZM1ReplacementState={(replacementPass ? "PASS" : "FAIL")}");
+            Console.WriteLine($"P3ZM1CounterDeltaState={(counterPass ? "PASS" : "FAIL")}");
+            Console.WriteLine($"P3ZM1WarningSnapshotCap={(capPass ? "PASS" : "FAIL")}");
+            Console.WriteLine($"P3ZM1AbortState={(abortPass ? "PASS" : "FAIL")}");
+            Console.WriteLine($"P3ZM1ResetState={(resetPass ? "PASS" : "FAIL")}");
+            var pass = incompletePass && zeroWarningPass && firstPass && continuePass && replacementPass && counterPass && capPass && abortPass && resetPass;
+            Console.WriteLine($"P3ZM1FocusedSelfTest={(pass ? "PASS" : "FAIL")}");
+            return pass ? 0 : 1;
+        }
+        finally
+        {
+            nextDispatchProfilePath = previousPath;
+            ResetLoadToShopMeasurement();
+        }
+    }
+
+    private static bool BeginLoadToShopMeasurementAndCheckReplacement()
+    {
+        BeginLoadToShopMeasurement();
+        return loadToShopMeasurementActive && loadToShopWarningCount == 0 && loadToShopDroppedWarningSnapshotCount == 0 && loadToShopProductionContinueCount == 0;
+    }
+#endif
+
+#if !PERFORMANCE_METRICS
+    internal static void BeginLoadToShopMeasurement() { }
+    internal static void AbortLoadToShopMeasurement() { }
+    internal static void MarkLoadToShopRestoreCompleted() { }
+    internal static void MarkLoadToShopWaitInputCompleted() { }
+    internal static void BeginLoadToShopWarningSnapshot(long _, int __, int ___, string ____, string _____, int ______, string _______, string ________, int _________, bool __________) { }
+    internal static void EndLoadToShopWarningSnapshot(string _) { }
+    internal static long StartLoadToShopProductionContinue() => 0;
+    internal static void EndLoadToShopProductionContinue(long _) { }
 #endif
 
     internal static void MarkStartup(string name)

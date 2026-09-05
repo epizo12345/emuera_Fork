@@ -167,6 +167,8 @@ static partial class Program
             Description = "ERB詳細計測モード: timing または counters"
         };
         rootCommand.Options.Add(erbStartupProfileModeOption);
+        var loadToShopMeasurementSelfTestOption = new Option<bool>(name: "--NextRuntimeLoadToShopMeasurementSelfTest");
+        rootCommand.Options.Add(loadToShopMeasurementSelfTestOption);
 #endif
 
         var filesArg = new Argument<string[]>(
@@ -211,6 +213,11 @@ static partial class Program
 #if PERFORMANCE_METRICS
         PerformanceMetrics.ConfigureNextDispatchProfile(result.GetValue(nextRuntimePerformanceProfileOption));
         ErbStartupProfiler.Configure(result.GetValue(erbStartupProfileOption), result.GetValue(erbStartupProfileModeOption));
+        if (result.GetValue(loadToShopMeasurementSelfTestOption))
+        {
+            Environment.ExitCode = PerformanceMetrics.LoadToShopMeasurementSelfTest();
+            return;
+        }
 #endif
 
         //実行ディレクトリが引数で与えられた場合

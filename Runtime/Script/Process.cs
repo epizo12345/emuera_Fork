@@ -556,7 +556,20 @@ internal sealed partial class Process(EmueraConsole view)
             LocalizationManager.MsgBox.TooLongLoop,
             currentLine.Position.Value.Filename, currentLine.Position.Value.LineNo, state.lineCount, elapsedTime);
         FlushR1_4EBeforeInfiniteLoopDialog();
-        if (Dialog.ShowPrompt(LocalizationManager.MsgBox.InfiniteLoop, text))
+        PerformanceMetrics.BeginLoadToShopWarningSnapshot(
+            elapsedTime,
+            Config.InfiniteLoopAlertTime,
+            state.lineCount,
+            state.SystemState.ToString(),
+            currentLine.Position?.Filename ?? "",
+            currentLine.Position?.LineNo ?? 0,
+            state.functionCount == 0 ? "" : state.CurrentCalled.TopLabel.LabelName,
+            state.functionCount == 0 ? "" : RuntimeId(state.CurrentCalled),
+            state.functionCount,
+            nextRuntimeSession is not null);
+        var interrupt = Dialog.ShowPrompt(LocalizationManager.MsgBox.InfiniteLoop, text);
+        PerformanceMetrics.EndLoadToShopWarningSnapshot(interrupt ? "Interrupt" : "Continue");
+        if (interrupt)
         {
             throw new CodeEE(LocalizationManager.Error.SelectExitInfiniteLoopMB);
         }

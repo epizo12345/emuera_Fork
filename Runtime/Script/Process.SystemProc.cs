@@ -689,6 +689,7 @@ internal sealed partial class Process
         //数値入力待ち状態にしてShop_WaitInputへ移行。
         setWaitInput();
         state.SystemState = SystemStateCode.Shop_WaitInput;
+        PerformanceMetrics.MarkLoadToShopWaitInputCompleted();
     }
 
     //PRINT_SHOPITEMとは独立している。
@@ -988,8 +989,18 @@ internal sealed partial class Process
             return;
         }
 
-        if (!vEvaluator.LoadFrom((int)systemResult))
-            throw new ExeEE(LocalizationManager.Error.UnexpectedErrorInLoaddata);
+        PerformanceMetrics.BeginLoadToShopMeasurement();
+        try
+        {
+            if (!vEvaluator.LoadFrom((int)systemResult))
+                throw new ExeEE(LocalizationManager.Error.UnexpectedErrorInLoaddata);
+        }
+        catch
+        {
+            PerformanceMetrics.AbortLoadToShopMeasurement();
+            throw;
+        }
+        PerformanceMetrics.MarkLoadToShopRestoreCompleted();
         deletePrevState();
         beginDataLoaded();
     }
