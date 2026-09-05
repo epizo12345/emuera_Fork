@@ -296,6 +296,11 @@ var tests = new List<(string Name, Action Run)>
     ("FailedNextDispatchLeavesLegacyStateUnchanged", () => Check(BridgeRejectedDispatchIsPure())),
     ("BridgeLegacyFallbackFinalizesAtCompletion", () => Check(BridgePendingFallbackFinalizes())),
     ("BridgeDispatchAndCompletionChangesSeparated", () => Check(BridgeSeparatedChanges())),
+    ("semantic structural lookup preserves map shape and duplicate order", RunSemanticStructuralLookupMapTest),
+    ("semantic structural lookup ignores out of range links", RunSemanticStructuralLookupOutOfRangeTest),
+    ("semantic structural lookup rejects another generation", RunSemanticStructuralLookupGenerationMismatchTest),
+    ("semantic executors share lookup and isolate mutable state", RunSemanticStructuralLookupIsolationTest),
+    ("semantic lookup excludes save state", () => Check(typeof(VmSemanticStructuralLookup).GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public).All(field => !field.Name.Contains("Save", StringComparison.OrdinalIgnoreCase)))),
 };
 var passed = 0;
 var readinessDrivenNormalDispatchTestsPassed = true;
@@ -396,6 +401,41 @@ static string RunStringAssignment(string operand, Action<SemanticHost>? seed = n
 
 static void Check(bool value) { if (!value) throw new InvalidOperationException("assertion failed"); }
 static void Expect<T>(Action action) where T : Exception { try { action(); } catch (T) { return; } throw new InvalidOperationException($"expected {typeof(T).Name}"); }
+static void RunSemanticStructuralLookupMapTest()
+{
+    var program = new LinkedProgram(
+        [VmInstruction.Halt, VmInstruction.Halt, VmInstruction.Halt],
+        [new VmFunctionDescriptor(0, 0, 2, VmFunctionState.ExecutableReady), new VmFunctionDescriptor(1, 2, 1, VmFunctionState.ExecutableReady)],
+        [new StructuralLinkRecord(0, 0, 0, 0, VmStructuralKind.Sif, 0), new StructuralLinkRecord(0, 0, 0, 0, VmStructuralKind.If, 0), new StructuralLinkRecord(1, 0, 0, 0, VmStructuralKind.Else, 0)]);
+    var lookup = VmSemanticStructuralLookup.Build(program);
+    Check(lookup.Program == program && lookup.GetStructuralLinkIndex(new(0), 0) == 1 && lookup.GetStructuralLinkIndex(new(0), 1) == -1 && lookup.GetStructuralLinkIndex(new(1), 0) == 2);
+}
+static void RunSemanticStructuralLookupOutOfRangeTest()
+{
+    var program = new LinkedProgram([VmInstruction.Halt], [new VmFunctionDescriptor(0, 0, 1, VmFunctionState.ExecutableReady)], [new StructuralLinkRecord(9, 0, 0, 0, VmStructuralKind.Sif, 0), new StructuralLinkRecord(0, 9, 0, 0, VmStructuralKind.If, 0)]);
+    var lookup = VmSemanticStructuralLookup.Build(program);
+    Check(lookup.GetStructuralLinkIndex(new(-1), 0) == -1 && lookup.GetStructuralLinkIndex(new(0), -1) == -1 && lookup.GetStructuralLinkIndex(new(0), 1) == -1);
+}
+static void RunSemanticStructuralLookupGenerationMismatchTest()
+{
+    var first = SemanticStructural((PrototypeOpcode.SIF, "1"));
+    var second = SemanticStructural((PrototypeOpcode.SIF, "1"));
+    var lookup = VmSemanticStructuralLookup.Build(first);
+    Check(ReferenceEquals(lookup.Program, first) && !ReferenceEquals(lookup.Program, second));
+    Expect<ArgumentException>(() => new VmSemanticExecutor(second, new SemanticHost(), lookup));
+}
+static void RunSemanticStructuralLookupIsolationTest()
+{
+    var program = SemanticStructural((PrototypeOpcode.SIF, "1"), (PrototypeOpcode.RETURN, ""));
+    var lookup = VmSemanticStructuralLookup.Build(program);
+    var first = new VmSemanticExecutor(program, new SemanticHost(), lookup);
+    var second = new VmSemanticExecutor(program, new SemanticHost(), lookup);
+    var lookupField = typeof(VmSemanticExecutor).GetField("structuralLookup", BindingFlags.Instance | BindingFlags.NonPublic)!;
+    var repeatField = typeof(VmSemanticExecutor).GetField("repeatCounters", BindingFlags.Instance | BindingFlags.NonPublic)!;
+    Check(ReferenceEquals(lookupField.GetValue(first), lookup) && ReferenceEquals(lookupField.GetValue(second), lookup) &&
+        !ReferenceEquals(repeatField.GetValue(first), repeatField.GetValue(second)) &&
+        first.TryEvaluateRecord(0, out _) && first.LastRecordIndex == 0 && second.LastRecordIndex == -1);
+}
 static bool DispatchEligible(int id, FunctionKind kind, bool ready, bool nextRuntime = true, bool analysis = false, bool debug = false) =>
     VmRuntimeProductionDispatch.IsEligible(nextRuntime, analysis, debug, id, 2000, kind, VmFunctionState.ExecutableReady, ready);
 static SourceSpan Span(int line) => new(0, 1, line, line);

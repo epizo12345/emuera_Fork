@@ -849,7 +849,7 @@ internal sealed partial class Process
         var readinessStart = PerformanceMetrics.StartNextDispatchTiming();
         var dispatchEligible = IsProductionDispatchEligible(entryFunctionId);
         PerformanceMetrics.AddNextDispatchStage("ReadinessLookup", readinessStart);
-        if (productionProgram is null || productionSemanticHost is null || productionFrameCatalog is null ||
+        if (productionProgram is null || productionSemanticStructuralLookup is null || productionSemanticHost is null || productionFrameCatalog is null ||
             productionFunctionKinds is null || productionLabelIds is null || nextRuntimeSession is not null ||
             !dispatchEligible)
         {
@@ -900,7 +900,7 @@ internal sealed partial class Process
         // executor/machineのtimeとallocationを分離して測る。runtime semanticsは変更しない。
         var executorConstruction = PerformanceMetrics.StartNextRuntimeMeasurement();
 #endif
-        var executor = new VmSemanticExecutor(productionProgram, productionSemanticHost);
+        var executor = new VmSemanticExecutor(productionProgram, productionSemanticHost, productionSemanticStructuralLookup);
 #if PERFORMANCE_METRICS
         PerformanceMetrics.RecordNextRuntimeConstructionStage("SemanticExecutorConstruction", executorConstruction);
         var effectsConstruction = PerformanceMetrics.StartNextRuntimeMeasurement();

@@ -94,7 +94,7 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
     private readonly IVmContextualTypedSemanticHost? contextualTypedHost;
     private readonly HashSet<SemanticPayload> boundIdentityArenas = [];
     private SemanticPayload? activeArena;
-    private readonly int[][] structuralByFunctionPc;
+    private readonly VmSemanticStructuralLookup structuralLookup;
     private readonly long[] repeatCounters;
     public IVmFrameVariables? FrameVariables { get; set; }
     public IVmExpressionFunctionInvoker? ExpressionFunctionInvoker { get; set; }
@@ -114,18 +114,18 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
     private SemanticPayload Arena => activeArena ?? program.SemanticArena;
 
     public VmSemanticExecutor(LinkedProgram program, IVmSemanticHost host)
+        : this(program, host, VmSemanticStructuralLookup.Build(program))
+    {
+    }
+
+    public VmSemanticExecutor(LinkedProgram program, IVmSemanticHost host, VmSemanticStructuralLookup structuralLookup)
     {
         this.program = program ?? throw new ArgumentNullException(nameof(program));
         this.host = host ?? throw new ArgumentNullException(nameof(host));
+        this.structuralLookup = structuralLookup ?? throw new ArgumentNullException(nameof(structuralLookup));
+        this.structuralLookup.EnsureFor(program);
         typedHost = host as IVmTypedSemanticHost;
         contextualTypedHost = host as IVmContextualTypedSemanticHost;
-        structuralByFunctionPc = program.Descriptors.Select(d => Enumerable.Repeat(-1, d.CodeLength).ToArray()).ToArray();
-        for (var index = 0; index < program.StructuralLinks.Length; index++)
-        {
-            var link = program.StructuralLinks[index];
-            if ((uint)link.FunctionId < (uint)structuralByFunctionPc.Length && (uint)link.Pc < (uint)structuralByFunctionPc[link.FunctionId].Length)
-                structuralByFunctionPc[link.FunctionId][link.Pc] = index;
-        }
         repeatCounters = new long[program.Loops.Length];
     }
 
@@ -259,8 +259,7 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
     private bool TryGetRecord(RuntimeFunctionId functionId, int pc, out int record)
     {
         record = -1;
-        if ((uint)functionId.Value >= (uint)structuralByFunctionPc.Length || (uint)pc >= (uint)structuralByFunctionPc[functionId.Value].Length) return false;
-        var structural = structuralByFunctionPc[functionId.Value][pc];
+        var structural = structuralLookup.GetStructuralLinkIndex(functionId, pc);
         if (structural < 0 || (uint)structural >= (uint)program.StructuralSemanticRecordIndices.Length) return false;
         record = program.StructuralSemanticRecordIndices[structural];
         return record >= 0;

@@ -36,6 +36,7 @@ internal sealed partial class Process
     private int productionDispatchEntryReadyCount;
     private VmRuntimeActivationResult? productionActivationResult;
     private VmRuntimePreparationCounters? productionPreparationCounters;
+    private VmSemanticStructuralLookup? productionSemanticStructuralLookup;
     private readonly List<string> productionMemoryStages = [];
     private readonly List<string> productionTimingStages = [];
     private long productionPeakWorkingSet64;
@@ -379,6 +380,8 @@ internal sealed partial class Process
 #endif
             RecordProductionMemoryStage("AfterLink");
             RecordProductionTimingStage("ProductionPreparation.AfterLink");
+            productionSemanticStructuralLookup = VmSemanticStructuralLookup.Build(link.Program);
+            RecordProductionTimingStage("ProductionPreparation.SemanticStructuralLookup");
             productionPreparationCounters = new(PerformanceMetrics.NextDispatchProfileEnabled);
             productionSemanticHost = new LegacyVmSemanticHost(this, productionPreparationCounters);
             var semanticArenas = new[] { link.Program.SemanticArena, link.Program.RuntimeStatements.OperandArena, link.Program.CallArgumentArena };
@@ -486,6 +489,7 @@ internal sealed partial class Process
     {
         nextRuntimeSession = null;
         productionProgram = null;
+        productionSemanticStructuralLookup = null;
         productionSemanticHost = null;
         productionFrameCatalog = null;
         productionLabelIds = null;
