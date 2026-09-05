@@ -556,6 +556,7 @@ internal sealed partial class Process(EmueraConsole view)
             LocalizationManager.MsgBox.TooLongLoop,
             currentLine.Position.Value.Filename, currentLine.Position.Value.LineNo, state.lineCount, elapsedTime);
         FlushR1_4EBeforeInfiniteLoopDialog();
+#if PERFORMANCE_METRICS
         PerformanceMetrics.BeginLoadToShopWarningSnapshot(
             elapsedTime,
             Config.InfiniteLoopAlertTime,
@@ -567,8 +568,11 @@ internal sealed partial class Process(EmueraConsole view)
             state.functionCount == 0 ? "" : RuntimeId(state.CurrentCalled),
             state.functionCount,
             nextRuntimeSession is not null);
+#endif
         var interrupt = Dialog.ShowPrompt(LocalizationManager.MsgBox.InfiniteLoop, text);
+#if PERFORMANCE_METRICS
         PerformanceMetrics.EndLoadToShopWarningSnapshot(interrupt ? "Interrupt" : "Continue");
+#endif
         if (interrupt)
         {
             throw new CodeEE(LocalizationManager.Error.SelectExitInfiniteLoopMB);

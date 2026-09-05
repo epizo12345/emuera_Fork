@@ -1135,9 +1135,13 @@ internal sealed partial class Process
         if (nextRuntimeSession.ProductionNormal)
         {
             var session = nextRuntimeSession;
+#if PERFORMANCE_METRICS
             var continueStart = PerformanceMetrics.StartLoadToShopProductionContinue();
+#endif
             var stop = session.Machine.Continue();
+#if PERFORMANCE_METRICS
             PerformanceMetrics.EndLoadToShopProductionContinue(continueStart);
+#endif
             TraceR1_4E("NextSessionResume", stopReason: stop.ToString());
             if (stop != VmStopReason.WaitingForInput)
                 TraceR1_4E(stop == VmStopReason.Returned ? "NextSessionComplete" : "NextSessionStop", stopReason: stop.ToString());
@@ -1154,9 +1158,7 @@ internal sealed partial class Process
             }
             return false;
         }
-        var resumedContinueStart = PerformanceMetrics.StartLoadToShopProductionContinue();
         var resumedStop = nextRuntimeSession.Machine.Continue();
-        PerformanceMetrics.EndLoadToShopProductionContinue(resumedContinueStart);
         TraceR1_4E("NextSessionResume", stopReason: resumedStop.ToString());
         return FinishNextRuntimeSession(resumedStop);
     }

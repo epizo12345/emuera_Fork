@@ -161,7 +161,9 @@ internal static class PerformanceMetrics
     private static long nextPrototypeCompilePathNormalizationExecutionCount;
     private static SourceReaderMetricsSnapshot sourceReaderMetrics;
     private const int LoadWarningSnapshotCapacity = 8;
+    private static bool loadToShopMeasurementExists;
     private static bool loadToShopMeasurementActive;
+    private static bool loadToShopMeasurementCompleted;
     private static long loadToShopStartTicks;
     private static long loadToShopRestoreTicks;
     private static long loadToShopEndTicks;
@@ -172,6 +174,7 @@ internal static class PerformanceMetrics
     private static long loadToShopPendingWarningStartTicks;
     private static readonly LoadWarningSnapshot[] loadToShopWarningSnapshots = new LoadWarningSnapshot[LoadWarningSnapshotCapacity];
     private static LoadCounterSnapshot loadToShopBaseline;
+    private static LoadCounterSnapshot loadToShopEndSnapshot;
     private static int loadToShopProductionContinueCount;
     private static long loadToShopProductionContinueTicks;
 
@@ -195,6 +198,7 @@ internal static class PerformanceMetrics
     private readonly record struct LoadCounterSnapshot(
         int DispatchAttempts,
         int Fallbacks,
+        int SessionStartRejectedCount,
         long EntryDispatchAlreadyConsumedCount,
         long WholeDispatchSeamTicks,
         long ActionableDispatchTicks,
@@ -1028,6 +1032,7 @@ internal static class PerformanceMetrics
         if (string.IsNullOrWhiteSpace(nextDispatchProfilePath))
             return;
         ResetLoadToShopMeasurement();
+        loadToShopMeasurementExists = true;
         loadToShopMeasurementActive = true;
         loadToShopStartTicks = Stopwatch.GetTimestamp();
         loadToShopBaseline = CaptureLoadCounterSnapshot();
@@ -1051,7 +1056,12 @@ internal static class PerformanceMetrics
     internal static void MarkLoadToShopWaitInputCompleted()
     {
         if (loadToShopMeasurementActive && loadToShopRestoreTicks != 0 && loadToShopEndTicks == 0)
+        {
             loadToShopEndTicks = Stopwatch.GetTimestamp();
+            loadToShopEndSnapshot = CaptureLoadCounterSnapshot();
+            loadToShopMeasurementCompleted = true;
+            loadToShopMeasurementActive = false;
+        }
     }
 
     [Conditional("PERFORMANCE_METRICS")]
@@ -1133,9 +1143,11 @@ internal static class PerformanceMetrics
         var effects = Stage("RuntimeEffectsConstruction");
         var wrapper = Stage("ExecutionSessionWrapperConstruction");
         var vm = Stage("VmExecution");
+        var sessionStartRejectedCount = nextDispatchRejections.TryGetValue(nameof(MinorShift.Emuera.GameProc.NextRuntimeDispatchRejectReason.SessionStartRejected), out var rejectedCount) ? rejectedCount : 0;
         return new(
             nextDispatchAttempts,
             nextDispatchFallbacks,
+            sessionStartRejectedCount,
             entryDispatchAlreadyConsumedCount,
             wholeDispatchSeamTicks,
             actionableDispatchTicks,
@@ -1155,11 +1167,11 @@ internal static class PerformanceMetrics
 
     private static object CreateLoadToShopMeasurementReport()
     {
-        if (!loadToShopMeasurementActive)
+        if (!loadToShopMeasurementExists)
             return null;
         var endTicks = loadToShopEndTicks == 0 ? Stopwatch.GetTimestamp() : loadToShopEndTicks;
         var restoreTicks = loadToShopRestoreTicks == 0 ? 0 : loadToShopRestoreTicks;
-        var current = CaptureLoadCounterSnapshot();
+        var current = loadToShopMeasurementCompleted ? loadToShopEndSnapshot : CaptureLoadCounterSnapshot();
         var loadToShopTicks = loadToShopStartTicks == 0 ? 0 : Math.Max(0, endTicks - loadToShopStartTicks);
         var restoreDuration = restoreTicks == 0 ? 0 : Math.Max(0, restoreTicks - loadToShopStartTicks);
         var postRestoreDuration = restoreTicks == 0 ? 0 : Math.Max(0, endTicks - restoreTicks);
@@ -1196,6 +1208,8 @@ internal static class PerformanceMetrics
             LoadRestore = restoreTicks == 0 ? (double?)null : TicksToMilliseconds(restoreDuration),
             PostRestoreToShop = restoreTicks == 0 ? (double?)null : TicksToMilliseconds(postRestoreDuration),
             TotalWallClock = loadToShopEndTicks == 0 ? (double?)null : TicksToMilliseconds(loadToShopTicks),
+            TimeFromLoadStartToFirstWarningMilliseconds = firstWarning is null ? (double?)null : TicksToMilliseconds(Math.Max(0, firstWarning.BeforeTicks - loadToShopStartTicks)),
+            ProcessingBetweenWarning1AndWarning2ExcludingDialogsMilliseconds = warnings.Length < 2 || firstWarning is null || firstWarning.AfterTicks == 0 ? (double?)null : TicksToMilliseconds(Math.Max(0, loadToShopWarningSnapshots[1].BeforeTicks - firstWarning.AfterTicks)),
             WarningDialogTotal = warningMilliseconds,
             WallClockExcludingWarningDialogs = loadToShopEndTicks == 0 ? (double?)null : Math.Max(0, TicksToMilliseconds(loadToShopTicks) - warningMilliseconds),
             WarningCount = loadToShopWarningCount,
@@ -1207,7 +1221,7 @@ internal static class PerformanceMetrics
                 ActionableDispatch = Math.Max(0L, dispatchAttempts - (current.EntryDispatchAlreadyConsumedCount - loadToShopBaseline.EntryDispatchAlreadyConsumedCount)),
                 Fallbacks = fallbacks,
                 EntryDispatchAlreadyConsumed = current.EntryDispatchAlreadyConsumedCount - loadToShopBaseline.EntryDispatchAlreadyConsumedCount,
-                SessionStartRejected = Math.Max(0, fallbacks - (dispatchAttempts - (current.EntryDispatchAlreadyConsumedCount - loadToShopBaseline.EntryDispatchAlreadyConsumedCount))),
+                SessionStartRejected = current.SessionStartRejectedCount - loadToShopBaseline.SessionStartRejectedCount,
                 WholeDispatchSeamMilliseconds = TicksToMilliseconds(current.WholeDispatchSeamTicks - loadToShopBaseline.WholeDispatchSeamTicks),
                 ActionableDispatchTimeMilliseconds = TicksToMilliseconds(current.ActionableDispatchTicks - loadToShopBaseline.ActionableDispatchTicks),
                 SessionConstruction = StageDelta(current, loadToShopBaseline, "SessionConstruction"),
@@ -1225,7 +1239,7 @@ internal static class PerformanceMetrics
             },
             MeasuredNextKnownTimeMilliseconds = TicksToMilliseconds(knownNextTicks),
             ResidualAttribution = "NOT_COMPUTED_DUE_TO_OVERLAPPING_METRICS",
-            CountReconciliation = new { DispatchAttempts = dispatchAttempts, Fallbacks = fallbacks, ActionableDispatch = dispatchAttempts - (current.EntryDispatchAlreadyConsumedCount - loadToShopBaseline.EntryDispatchAlreadyConsumedCount) }
+            CountReconciliation = new { DispatchAttempts = dispatchAttempts, Fallbacks = fallbacks, ActionableDispatch = dispatchAttempts - (current.EntryDispatchAlreadyConsumedCount - loadToShopBaseline.EntryDispatchAlreadyConsumedCount), SessionStartRejected = current.SessionStartRejectedCount - loadToShopBaseline.SessionStartRejectedCount }
         };
     }
 
@@ -1245,7 +1259,9 @@ internal static class PerformanceMetrics
 
     private static void ResetLoadToShopMeasurement()
     {
+        loadToShopMeasurementExists = false;
         loadToShopMeasurementActive = false;
+        loadToShopMeasurementCompleted = false;
         loadToShopStartTicks = 0;
         loadToShopRestoreTicks = 0;
         loadToShopEndTicks = 0;
@@ -1255,6 +1271,7 @@ internal static class PerformanceMetrics
         loadToShopPendingWarningIndex = -1;
         loadToShopPendingWarningStartTicks = 0;
         loadToShopBaseline = default;
+        loadToShopEndSnapshot = default;
         loadToShopProductionContinueCount = 0;
         loadToShopProductionContinueTicks = 0;
         Array.Clear(loadToShopWarningSnapshots);
@@ -1268,6 +1285,7 @@ internal static class PerformanceMetrics
             nextDispatchProfilePath = "m1-self-test.json";
             nextDispatchAttempts = 0;
             nextDispatchFallbacks = 0;
+            nextDispatchRejections.Clear();
             entryDispatchAlreadyConsumedCount = 0;
             nextConstructionStages.Clear();
             ResetLoadToShopMeasurement();
@@ -1283,20 +1301,41 @@ internal static class PerformanceMetrics
             EndLoadToShopProductionContinue(continueStart);
             MarkLoadToShopRestoreCompleted();
             MarkLoadToShopWaitInputCompleted();
-            var firstPass = loadToShopMeasurementActive && loadToShopWarningCount == 2 && loadToShopDroppedWarningSnapshotCount == 0 && loadToShopProductionContinueCount == 1 && loadToShopEndTicks != 0;
+            var firstPass = !loadToShopMeasurementActive && loadToShopMeasurementCompleted && loadToShopWarningCount == 2 && loadToShopDroppedWarningSnapshotCount == 0 && loadToShopProductionContinueCount == 1 && loadToShopEndTicks != 0;
+            var frozenText = JsonSerializer.Serialize(CreateLoadToShopMeasurementReport());
+            nextDispatchAttempts += 7;
+            nextDispatchFallbacks += 7;
+            nextDispatchRejections[nameof(MinorShift.Emuera.GameProc.NextRuntimeDispatchRejectReason.SessionStartRejected)] = 9;
+            nextConstructionStages["SessionConstruction"] = (9, 99, 0, 99);
+            var postTendContinueStart = StartLoadToShopProductionContinue();
+            EndLoadToShopProductionContinue(postTendContinueStart);
+            BeginLoadToShopWarningSnapshot(5000, 5000, 30000, "LoadData", "test.ERB", 14, "TEST", "1", 1, false);
+            EndLoadToShopWarningSnapshot("Continue");
+            var afterFrozenText = JsonSerializer.Serialize(CreateLoadToShopMeasurementReport());
+            var freezePass = !loadToShopMeasurementActive && loadToShopMeasurementCompleted && frozenText == afterFrozenText;
+            nextDispatchAttempts = 0;
+            nextDispatchFallbacks = 0;
+            nextDispatchRejections.Clear();
+            entryDispatchAlreadyConsumedCount = 0;
+            nextConstructionStages.Clear();
             var replacementPass = BeginLoadToShopMeasurementAndCheckReplacement();
+            var nonProductionContinueStart = 0L;
+            EndLoadToShopProductionContinue(nonProductionContinueStart);
             var continuePass = loadToShopProductionContinueCount == 0;
+            var nonProductionContinuePass = loadToShopProductionContinueCount == 0;
             BeginLoadToShopWarningSnapshot(5000, 5000, 10000, "LoadData", "test.ERB", 12, "TEST", "1", 1, false);
             EndLoadToShopWarningSnapshot("Continue");
             BeginLoadToShopWarningSnapshot(5000, 5000, 20000, "LoadData", "test.ERB", 13, "TEST", "1", 1, false);
             EndLoadToShopWarningSnapshot("Continue");
             nextDispatchAttempts = 3;
             nextDispatchFallbacks = 2;
+            nextDispatchRejections[nameof(MinorShift.Emuera.GameProc.NextRuntimeDispatchRejectReason.SessionStartRejected)] = 1;
             entryDispatchAlreadyConsumedCount = 1;
             nextConstructionStages["SessionConstruction"] = (1, 11, 0, 11);
             nextConstructionStages["VmExecution"] = (1, 13, 0, 13);
             var counterText = JsonSerializer.Serialize(CreateLoadToShopMeasurementReport());
-            var counterPass = counterText.Contains("\"TotalDispatchAttempts\":3", StringComparison.Ordinal) && counterText.Contains("\"SessionConstruction\":{\"Count\":1", StringComparison.Ordinal);
+            var counterPass = counterText.Contains("\"TotalDispatchAttempts\":3", StringComparison.Ordinal) && counterText.Contains("\"SessionStartRejected\":1", StringComparison.Ordinal) && counterText.Contains("\"SessionConstruction\":{\"Count\":1", StringComparison.Ordinal);
+            var derivedPass = counterText.Contains("TimeFromLoadStartToFirstWarningMilliseconds", StringComparison.Ordinal) && counterText.Contains("ProcessingBetweenWarning1AndWarning2ExcludingDialogsMilliseconds", StringComparison.Ordinal);
             for (var i = 0; i < LoadWarningSnapshotCapacity + 2; i++)
             {
                 BeginLoadToShopWarningSnapshot(5000, 5000, i, "LoadData", "test.ERB", 20 + i, "TEST", "1", 1, false);
@@ -1312,12 +1351,15 @@ internal static class PerformanceMetrics
             Console.WriteLine($"P3ZM1ZeroWarningState={(zeroWarningPass ? "PASS" : "FAIL")}");
             Console.WriteLine($"P3ZM1WarningSnapshotState={(firstPass ? "PASS" : "FAIL")}");
             Console.WriteLine($"P3ZM1ProductionContinueState={(continuePass ? "PASS" : "FAIL")}");
+            Console.WriteLine($"P3ZM1NonProductionContinueExcluded={(nonProductionContinuePass ? "PASS" : "FAIL")}");
             Console.WriteLine($"P3ZM1ReplacementState={(replacementPass ? "PASS" : "FAIL")}");
             Console.WriteLine($"P3ZM1CounterDeltaState={(counterPass ? "PASS" : "FAIL")}");
+            Console.WriteLine($"P3ZM1TendFreezeState={(freezePass ? "PASS" : "FAIL")}");
+            Console.WriteLine($"P3ZM1DerivedWarningFields={(derivedPass ? "PASS" : "FAIL")}");
             Console.WriteLine($"P3ZM1WarningSnapshotCap={(capPass ? "PASS" : "FAIL")}");
             Console.WriteLine($"P3ZM1AbortState={(abortPass ? "PASS" : "FAIL")}");
             Console.WriteLine($"P3ZM1ResetState={(resetPass ? "PASS" : "FAIL")}");
-            var pass = incompletePass && zeroWarningPass && firstPass && continuePass && replacementPass && counterPass && capPass && abortPass && resetPass;
+            var pass = incompletePass && zeroWarningPass && firstPass && continuePass && nonProductionContinuePass && replacementPass && counterPass && derivedPass && freezePass && capPass && abortPass && resetPass;
             Console.WriteLine($"P3ZM1FocusedSelfTest={(pass ? "PASS" : "FAIL")}");
             return pass ? 0 : 1;
         }
@@ -1333,17 +1375,6 @@ internal static class PerformanceMetrics
         BeginLoadToShopMeasurement();
         return loadToShopMeasurementActive && loadToShopWarningCount == 0 && loadToShopDroppedWarningSnapshotCount == 0 && loadToShopProductionContinueCount == 0;
     }
-#endif
-
-#if !PERFORMANCE_METRICS
-    internal static void BeginLoadToShopMeasurement() { }
-    internal static void AbortLoadToShopMeasurement() { }
-    internal static void MarkLoadToShopRestoreCompleted() { }
-    internal static void MarkLoadToShopWaitInputCompleted() { }
-    internal static void BeginLoadToShopWarningSnapshot(long _, int __, int ___, string ____, string _____, int ______, string _______, string ________, int _________, bool __________) { }
-    internal static void EndLoadToShopWarningSnapshot(string _) { }
-    internal static long StartLoadToShopProductionContinue() => 0;
-    internal static void EndLoadToShopProductionContinue(long _) { }
 #endif
 
     internal static void MarkStartup(string name)
