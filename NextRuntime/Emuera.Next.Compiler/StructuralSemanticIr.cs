@@ -184,7 +184,19 @@ public sealed class MacroCatalog
     public string Expand(string source, CompilerCompatibilityOptions options, out int substitutions)
     {
         if (canonicalOptions is { } canonical && canonical != options) throw new SemanticParseException("macro catalog compatibility mismatch");
-        substitutions = 0; var output = new List<SemanticToken>(); ExpandTokens(SemanticLexicalTokenStream.Tokenize(source, options), options, ref substitutions, output); return SemanticLexicalTokenStream.Serialize(output);
+        substitutions = 0;
+        var tokens = SemanticLexicalTokenStream.Tokenize(source, options);
+        var hasRootMacroMatch = false;
+        foreach (var token in tokens)
+        {
+            if (token.Kind == SemanticTokenKind.Identifier && TryGet(token.Raw, out _))
+            {
+                hasRootMacroMatch = true;
+                break;
+            }
+        }
+        if (!hasRootMacroMatch) return SemanticLexicalTokenStream.Serialize(tokens);
+        var output = new List<SemanticToken>(); ExpandTokens(tokens, options, ref substitutions, output); return SemanticLexicalTokenStream.Serialize(output);
     }
     private void ExpandTokens(IEnumerable<SemanticToken> tokens, CompilerCompatibilityOptions options, ref int substitutions, List<SemanticToken> output)
     {

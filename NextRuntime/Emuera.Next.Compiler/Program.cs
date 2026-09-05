@@ -846,6 +846,23 @@ static int SelfTest()
         tests.Add(("source changed result", () => { File.AppendAllText(path, " "); Assert(compiler.TryCompile(indexed, function).Status == CompileStatus.SourceChanged); }));
         tests.Add(("batch session source changed detection", () => { using var session = FunctionSourceReader.OpenFile(batchIndex); File.AppendAllText(batchPath, " "); Assert(session.Read(batchIndex.Functions[0]).Status == SourceReadStatus.SourceChanged); }));
 
+        tests.Add(("P3X MacroCatalog zero-root-match serialization and positive-path regression", () =>
+        {
+            var options = semanticEnvironment.Compatibility;
+            var catalog = new MacroCatalog(options); catalog.Add(new("M", "1"));
+            Assert(catalog.Expand("A+B", options, out var plainSubstitutions) == "A+B" && plainSubstitutions == 0);
+            Assert(catalog.Expand("A B", options, out var whitespaceSubstitutions) == "A B" && whitespaceSubstitutions == 0);
+            Assert(catalog.Expand("A;comment", options, out var commentSubstitutions) == "A" && commentSubstitutions == 0);
+            Assert(catalog.Expand("A;!;B", options, out var continuedSubstitutions) == "A B" && continuedSubstitutions == 0);
+            var debugOptions = options with { DebugMode = true }; var debugCatalog = new MacroCatalog(debugOptions);
+            Assert(debugCatalog.Expand("A;#;B", debugOptions, out var debugSubstitutions) == "A B" && debugSubstitutions == 0);
+            Assert(catalog.Expand("\"M\"", options, out var quotedSubstitutions) == "\"M\"" && quotedSubstitutions == 0);
+            Assert(catalog.Expand("M+B", options, out var positiveSubstitutions) == "1+B" && positiveSubstitutions == 1);
+            var recursive = new MacroCatalog(options); recursive.Add(new("A", "B")); recursive.Add(new("B", "1"));
+            Assert(recursive.Expand("A", options, out var recursiveSubstitutions) == "1" && recursiveSubstitutions == 2);
+            var empty = new MacroCatalog(options); empty.Add(new("EMPTY", string.Empty, MacroReplacementKind.Empty));
+            Assert(empty.Expand("+EMPTY+B", options, out var emptySubstitutions) == "+ +B" && emptySubstitutions == 1);
+        }));
         var passed = 0;
         foreach (var (name, test) in tests)
         {
