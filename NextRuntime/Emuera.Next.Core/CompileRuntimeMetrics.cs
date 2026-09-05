@@ -16,6 +16,18 @@ public readonly record struct CompileRuntimeMetricsSnapshot(
     long SemanticCountedLoopCount,
     long SemanticOptionalIntExpressionCount,
     long SemanticExpressionCount,
+    long SemanticCountedLoopCompletedCount,
+    long SemanticCountedLoopCompletedTicks,
+    long SemanticCountedLoopExceptionCount,
+    long SemanticCountedLoopExceptionTicks,
+    long SemanticOptionalIntExpressionCompletedCount,
+    long SemanticOptionalIntExpressionCompletedTicks,
+    long SemanticOptionalIntExpressionExceptionCount,
+    long SemanticOptionalIntExpressionExceptionTicks,
+    long SemanticExpressionCompletedCount,
+    long SemanticExpressionCompletedTicks,
+    long SemanticExpressionExceptionCount,
+    long SemanticExpressionExceptionTicks,
     long ScanFinalizeCount,
     long ScanFinalizeTicks,
     long SemanticPayloadMergeFunctionCount,
@@ -43,6 +55,18 @@ public static class CompileRuntimeMetrics
     private static long semanticCountedLoopCount;
     private static long semanticOptionalIntExpressionCount;
     private static long semanticExpressionCount;
+    private static long semanticCountedLoopCompletedCount;
+    private static long semanticCountedLoopCompletedTicks;
+    private static long semanticCountedLoopExceptionCount;
+    private static long semanticCountedLoopExceptionTicks;
+    private static long semanticOptionalIntExpressionCompletedCount;
+    private static long semanticOptionalIntExpressionCompletedTicks;
+    private static long semanticOptionalIntExpressionExceptionCount;
+    private static long semanticOptionalIntExpressionExceptionTicks;
+    private static long semanticExpressionCompletedCount;
+    private static long semanticExpressionCompletedTicks;
+    private static long semanticExpressionExceptionCount;
+    private static long semanticExpressionExceptionTicks;
     private static long scanFinalizeCount;
     private static long scanFinalizeTicks;
     private static long semanticPayloadMergeFunctionCount;
@@ -70,6 +94,18 @@ public static class CompileRuntimeMetrics
         semanticCountedLoopCount = 0;
         semanticOptionalIntExpressionCount = 0;
         semanticExpressionCount = 0;
+        semanticCountedLoopCompletedCount = 0;
+        semanticCountedLoopCompletedTicks = 0;
+        semanticCountedLoopExceptionCount = 0;
+        semanticCountedLoopExceptionTicks = 0;
+        semanticOptionalIntExpressionCompletedCount = 0;
+        semanticOptionalIntExpressionCompletedTicks = 0;
+        semanticOptionalIntExpressionExceptionCount = 0;
+        semanticOptionalIntExpressionExceptionTicks = 0;
+        semanticExpressionCompletedCount = 0;
+        semanticExpressionCompletedTicks = 0;
+        semanticExpressionExceptionCount = 0;
+        semanticExpressionExceptionTicks = 0;
         scanFinalizeCount = 0;
         scanFinalizeTicks = 0;
         semanticPayloadMergeFunctionCount = 0;
@@ -112,13 +148,26 @@ public static class CompileRuntimeMetrics
     }
 
     [Conditional("PERFORMANCE_METRICS")]
-    public static void RecordSemanticCompileInclusive(long ticks, int category)
+    public static void RecordSemanticCompileInclusive(long ticks, int category, bool completed)
     {
         semanticCompileInclusiveCount++;
         semanticCompileInclusiveTicks += ticks;
         if (category == 1) semanticCountedLoopCount++;
         else if (category == 2) semanticOptionalIntExpressionCount++;
         else semanticExpressionCount++;
+
+        if (category == 1)
+        {
+            if (completed) { semanticCountedLoopCompletedCount++; semanticCountedLoopCompletedTicks += ticks; }
+            else { semanticCountedLoopExceptionCount++; semanticCountedLoopExceptionTicks += ticks; }
+        }
+        else if (category == 2)
+        {
+            if (completed) { semanticOptionalIntExpressionCompletedCount++; semanticOptionalIntExpressionCompletedTicks += ticks; }
+            else { semanticOptionalIntExpressionExceptionCount++; semanticOptionalIntExpressionExceptionTicks += ticks; }
+        }
+        else if (completed) { semanticExpressionCompletedCount++; semanticExpressionCompletedTicks += ticks; }
+        else { semanticExpressionExceptionCount++; semanticExpressionExceptionTicks += ticks; }
     }
 
     [Conditional("PERFORMANCE_METRICS")]
@@ -160,6 +209,12 @@ public static class CompileRuntimeMetrics
         rejectFinalizeCount, rejectFinalizeTicks,
         semanticCompileInclusiveCount, semanticCompileInclusiveTicks,
         semanticCountedLoopCount, semanticOptionalIntExpressionCount, semanticExpressionCount,
+        semanticCountedLoopCompletedCount, semanticCountedLoopCompletedTicks,
+        semanticCountedLoopExceptionCount, semanticCountedLoopExceptionTicks,
+        semanticOptionalIntExpressionCompletedCount, semanticOptionalIntExpressionCompletedTicks,
+        semanticOptionalIntExpressionExceptionCount, semanticOptionalIntExpressionExceptionTicks,
+        semanticExpressionCompletedCount, semanticExpressionCompletedTicks,
+        semanticExpressionExceptionCount, semanticExpressionExceptionTicks,
         scanFinalizeCount, scanFinalizeTicks,
         semanticPayloadMergeFunctionCount, semanticPartCount,
         assignmentSearchCount, assignmentAcceptedCount,

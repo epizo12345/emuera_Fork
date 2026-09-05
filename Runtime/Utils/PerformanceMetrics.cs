@@ -577,6 +577,60 @@ internal static class PerformanceMetrics
                     OptionalIntExpressionCount = compileRuntimeMetrics.SemanticOptionalIntExpressionCount,
                     ExpressionCount = compileRuntimeMetrics.SemanticExpressionCount
                 },
+                SemanticCompileCategoryOutcome = new
+                {
+                    CountedLoop = new
+                    {
+                        Completed = new
+                        {
+                            Count = compileRuntimeMetrics.SemanticCountedLoopCompletedCount,
+                            TotalMilliseconds = TicksToMilliseconds(compileRuntimeMetrics.SemanticCountedLoopCompletedTicks),
+                            AverageMicroseconds = compileRuntimeMetrics.SemanticCountedLoopCompletedCount == 0 ? 0 : TicksToMilliseconds(compileRuntimeMetrics.SemanticCountedLoopCompletedTicks) * 1000 / compileRuntimeMetrics.SemanticCountedLoopCompletedCount
+                        },
+                        Exception = new
+                        {
+                            Count = compileRuntimeMetrics.SemanticCountedLoopExceptionCount,
+                            TotalMilliseconds = TicksToMilliseconds(compileRuntimeMetrics.SemanticCountedLoopExceptionTicks),
+                            AverageMicroseconds = compileRuntimeMetrics.SemanticCountedLoopExceptionCount == 0 ? 0 : TicksToMilliseconds(compileRuntimeMetrics.SemanticCountedLoopExceptionTicks) * 1000 / compileRuntimeMetrics.SemanticCountedLoopExceptionCount
+                        }
+                    },
+                    OptionalIntExpression = new
+                    {
+                        Completed = new
+                        {
+                            Count = compileRuntimeMetrics.SemanticOptionalIntExpressionCompletedCount,
+                            TotalMilliseconds = TicksToMilliseconds(compileRuntimeMetrics.SemanticOptionalIntExpressionCompletedTicks),
+                            AverageMicroseconds = compileRuntimeMetrics.SemanticOptionalIntExpressionCompletedCount == 0 ? 0 : TicksToMilliseconds(compileRuntimeMetrics.SemanticOptionalIntExpressionCompletedTicks) * 1000 / compileRuntimeMetrics.SemanticOptionalIntExpressionCompletedCount
+                        },
+                        Exception = new
+                        {
+                            Count = compileRuntimeMetrics.SemanticOptionalIntExpressionExceptionCount,
+                            TotalMilliseconds = TicksToMilliseconds(compileRuntimeMetrics.SemanticOptionalIntExpressionExceptionTicks),
+                            AverageMicroseconds = compileRuntimeMetrics.SemanticOptionalIntExpressionExceptionCount == 0 ? 0 : TicksToMilliseconds(compileRuntimeMetrics.SemanticOptionalIntExpressionExceptionTicks) * 1000 / compileRuntimeMetrics.SemanticOptionalIntExpressionExceptionCount
+                        }
+                    },
+                    Expression = new
+                    {
+                        Completed = new
+                        {
+                            Count = compileRuntimeMetrics.SemanticExpressionCompletedCount,
+                            TotalMilliseconds = TicksToMilliseconds(compileRuntimeMetrics.SemanticExpressionCompletedTicks),
+                            AverageMicroseconds = compileRuntimeMetrics.SemanticExpressionCompletedCount == 0 ? 0 : TicksToMilliseconds(compileRuntimeMetrics.SemanticExpressionCompletedTicks) * 1000 / compileRuntimeMetrics.SemanticExpressionCompletedCount
+                        },
+                        Exception = new
+                        {
+                            Count = compileRuntimeMetrics.SemanticExpressionExceptionCount,
+                            TotalMilliseconds = TicksToMilliseconds(compileRuntimeMetrics.SemanticExpressionExceptionTicks),
+                            AverageMicroseconds = compileRuntimeMetrics.SemanticExpressionExceptionCount == 0 ? 0 : TicksToMilliseconds(compileRuntimeMetrics.SemanticExpressionExceptionTicks) * 1000 / compileRuntimeMetrics.SemanticExpressionExceptionCount
+                        }
+                    },
+                    CategoryOutcomeCountSum = compileRuntimeMetrics.SemanticCountedLoopCompletedCount + compileRuntimeMetrics.SemanticCountedLoopExceptionCount + compileRuntimeMetrics.SemanticOptionalIntExpressionCompletedCount + compileRuntimeMetrics.SemanticOptionalIntExpressionExceptionCount + compileRuntimeMetrics.SemanticExpressionCompletedCount + compileRuntimeMetrics.SemanticExpressionExceptionCount,
+                    CategoryOutcomeTicksSum = compileRuntimeMetrics.SemanticCountedLoopCompletedTicks + compileRuntimeMetrics.SemanticCountedLoopExceptionTicks + compileRuntimeMetrics.SemanticOptionalIntExpressionCompletedTicks + compileRuntimeMetrics.SemanticOptionalIntExpressionExceptionTicks + compileRuntimeMetrics.SemanticExpressionCompletedTicks + compileRuntimeMetrics.SemanticExpressionExceptionTicks,
+                    AggregateSemanticCount = compileRuntimeMetrics.SemanticCompileInclusiveCount,
+                    AggregateSemanticTicks = compileRuntimeMetrics.SemanticCompileInclusiveTicks,
+                    CountReconciliationExact = compileRuntimeMetrics.SemanticCountedLoopCompletedCount + compileRuntimeMetrics.SemanticCountedLoopExceptionCount + compileRuntimeMetrics.SemanticOptionalIntExpressionCompletedCount + compileRuntimeMetrics.SemanticOptionalIntExpressionExceptionCount + compileRuntimeMetrics.SemanticExpressionCompletedCount + compileRuntimeMetrics.SemanticExpressionExceptionCount == compileRuntimeMetrics.SemanticCompileInclusiveCount,
+                    TicksReconciliationExact = compileRuntimeMetrics.SemanticCountedLoopCompletedTicks + compileRuntimeMetrics.SemanticCountedLoopExceptionTicks + compileRuntimeMetrics.SemanticOptionalIntExpressionCompletedTicks + compileRuntimeMetrics.SemanticOptionalIntExpressionExceptionTicks + compileRuntimeMetrics.SemanticExpressionCompletedTicks + compileRuntimeMetrics.SemanticExpressionExceptionTicks == compileRuntimeMetrics.SemanticCompileInclusiveTicks
+                },
                 AssignmentSearchInclusive = new
                 {
                     Mode = "COUNT_ONLY",

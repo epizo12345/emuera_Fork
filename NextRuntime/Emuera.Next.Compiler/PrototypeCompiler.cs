@@ -528,6 +528,7 @@ public sealed class FunctionCompiler
 #if PERFORMANCE_METRICS
                 var semanticCompileStart = Stopwatch.GetTimestamp();
                 var semanticCategory = opcode is PrototypeOpcode.FOR or PrototypeOpcode.REPEAT ? 1 : opcode is PrototypeOpcode.SIF or PrototypeOpcode.IF or PrototypeOpcode.ELSEIF or PrototypeOpcode.WHILE or PrototypeOpcode.LOOP ? 2 : 3;
+                var semanticCallCompleted = false;
                 try
                 {
 #endif
@@ -539,10 +540,11 @@ public sealed class FunctionCompiler
                                 ? SemanticIrCompiler.CompileOptionalIntExpression(rawOperand, semanticEnvironment, instructionIndex)
                                 : SemanticIrCompiler.Compile(rawOperand, semanticEnvironment, instructionIndex, semanticKind);
 #if PERFORMANCE_METRICS
+                    semanticCallCompleted = true;
                 }
                 finally
                 {
-                    CompileRuntimeMetrics.RecordSemanticCompileInclusive(Stopwatch.GetTimestamp() - semanticCompileStart, semanticCategory);
+                    CompileRuntimeMetrics.RecordSemanticCompileInclusive(Stopwatch.GetTimestamp() - semanticCompileStart, semanticCategory, semanticCallCompleted);
                 }
 #endif
                 semanticParts.Add(semanticPart);

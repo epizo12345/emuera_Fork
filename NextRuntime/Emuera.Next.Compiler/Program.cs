@@ -350,7 +350,7 @@ static int SelfTest()
             var f = ErbSourceIndexer.IndexFile(p);
             var result = new FunctionCompiler(semanticEnvironment).TryCompileRuntime(f, f.Functions.Single());
             var metrics = CompileRuntimeMetrics.Snapshot();
-            Assert(result.Status == CompileStatus.Compiled && metrics.ScanInclusiveCount == 1 && metrics.SemanticCompileInclusiveCount == 1 && metrics.ScanFinalizeCount == 1 && metrics.SemanticPayloadMergeFunctionCount == 1 && metrics.SemanticPartCount == 1 && metrics.CompiledFinalizeCount == 1 && metrics.RejectFinalizeCount == 0);
+            Assert(result.Status == CompileStatus.Compiled && metrics.ScanInclusiveCount == 1 && metrics.SemanticCompileInclusiveCount == 1 && metrics.SemanticOptionalIntExpressionCount == 1 && metrics.SemanticOptionalIntExpressionCompletedCount == 1 && metrics.SemanticOptionalIntExpressionExceptionCount == 0 && metrics.ScanFinalizeCount == 1 && metrics.SemanticPayloadMergeFunctionCount == 1 && metrics.SemanticPartCount == 1 && metrics.CompiledFinalizeCount == 1 && metrics.RejectFinalizeCount == 0);
         })));
         tests.Add(("P3Q semantic exceptional path is measured", (Action)(() =>
         {
@@ -360,10 +360,38 @@ static int SelfTest()
             var f = ErbSourceIndexer.IndexFile(p);
             var result = new FunctionCompiler(semanticEnvironment).TryCompileRuntime(f, f.Functions.Single());
             var metrics = CompileRuntimeMetrics.Snapshot();
-            Assert(result.Status == CompileStatus.Unsupported && result.Reason == UnsupportedReason.ExpressionSensitiveSyntax && metrics.ScanInclusiveCount == 1 && metrics.SemanticCompileInclusiveCount == 1 && metrics.ScanFinalizeCount == 0 && metrics.CompiledFinalizeCount == 0 && metrics.RejectFinalizeCount == 1);
+            Assert(result.Status == CompileStatus.Unsupported && result.Reason == UnsupportedReason.ExpressionSensitiveSyntax && metrics.ScanInclusiveCount == 1 && metrics.SemanticCompileInclusiveCount == 1 && metrics.SemanticExpressionCount == 1 && metrics.SemanticExpressionCompletedCount == 0 && metrics.SemanticExpressionExceptionCount == 1 && metrics.ScanFinalizeCount == 0 && metrics.CompiledFinalizeCount == 0 && metrics.RejectFinalizeCount == 1);
             CompileRuntimeMetrics.Reset();
             var reset = CompileRuntimeMetrics.Snapshot();
             Assert(reset.SemanticCompileInclusiveCount == 0 && reset.SemanticCompileInclusiveTicks == 0);
+        })));
+        tests.Add(("P3S semantic category outcome attribution", (Action)(() =>
+        {
+            CompileRuntimeMetrics.Reset();
+            var p = Path.Combine(root, "p3s-semantic-categories.ERB");
+            WriteBom(p, "@P3S_CATEGORIES\r\nREPEAT 2\r\nFOR I,0,2\r\nSIF 1\r\nCASE 1\r\n");
+            var f = ErbSourceIndexer.IndexFile(p);
+            var result = new FunctionCompiler(semanticEnvironment).TryCompileRuntime(f, f.Functions.Single());
+            var metrics = CompileRuntimeMetrics.Snapshot();
+            var countSum = metrics.SemanticCountedLoopCompletedCount + metrics.SemanticCountedLoopExceptionCount + metrics.SemanticOptionalIntExpressionCompletedCount + metrics.SemanticOptionalIntExpressionExceptionCount + metrics.SemanticExpressionCompletedCount + metrics.SemanticExpressionExceptionCount;
+            var ticksSum = metrics.SemanticCountedLoopCompletedTicks + metrics.SemanticCountedLoopExceptionTicks + metrics.SemanticOptionalIntExpressionCompletedTicks + metrics.SemanticOptionalIntExpressionExceptionTicks + metrics.SemanticExpressionCompletedTicks + metrics.SemanticExpressionExceptionTicks;
+            Assert(result.Status == CompileStatus.Compiled && metrics.SemanticCountedLoopCount == 2 && metrics.SemanticCountedLoopCompletedCount == 2 && metrics.SemanticCountedLoopExceptionCount == 0 && metrics.SemanticOptionalIntExpressionCount == 1 && metrics.SemanticOptionalIntExpressionCompletedCount == 1 && metrics.SemanticOptionalIntExpressionExceptionCount == 0 && metrics.SemanticExpressionCount == 1 && metrics.SemanticExpressionCompletedCount == 1 && metrics.SemanticExpressionExceptionCount == 0 && countSum == metrics.SemanticCompileInclusiveCount && ticksSum == metrics.SemanticCompileInclusiveTicks);
+        })));
+        tests.Add(("P3S completed semantic call can precede later function rejection", (Action)(() =>
+        {
+            CompileRuntimeMetrics.Reset();
+            var p = Path.Combine(root, "p3s-later-reject.ERB");
+            WriteBom(p, "@P3S_LATER_REJECT\r\nCASE 1\r\nUNKNOWN\r\n");
+            var f = ErbSourceIndexer.IndexFile(p);
+            var result = new FunctionCompiler(semanticEnvironment).TryCompileRuntime(f, f.Functions.Single());
+            var metrics = CompileRuntimeMetrics.Snapshot();
+            Assert(result.Status == CompileStatus.Unsupported && metrics.SemanticCompileInclusiveCount == 1 && metrics.SemanticExpressionCompletedCount == 1 && metrics.SemanticExpressionExceptionCount == 0 && metrics.ScanFinalizeCount == 0 && metrics.RejectFinalizeCount == 1);
+        })));
+        tests.Add(("P3S semantic category outcome reset", (Action)(() =>
+        {
+            CompileRuntimeMetrics.Reset();
+            var reset = CompileRuntimeMetrics.Snapshot();
+            Assert(reset.SemanticCountedLoopCompletedCount == 0 && reset.SemanticCountedLoopCompletedTicks == 0 && reset.SemanticCountedLoopExceptionCount == 0 && reset.SemanticCountedLoopExceptionTicks == 0 && reset.SemanticOptionalIntExpressionCompletedCount == 0 && reset.SemanticOptionalIntExpressionExceptionCount == 0 && reset.SemanticExpressionCompletedCount == 0 && reset.SemanticExpressionExceptionCount == 0);
         })));
         tests.Add(("P3P CompileRuntime decomposition rejected path", (Action)(() =>
         {
