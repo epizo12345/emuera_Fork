@@ -708,6 +708,34 @@ internal static class PerformanceMetrics
                     PrefixShareOfOptionalPercent = optionalCompletedTicks == 0 ? 0 : (double)optionalCohorts.PrefixThroughPreprocess.Ticks * 100 / optionalCompletedTicks,
                     RemainderShareOfOptionalPercent = optionalCompletedTicks == 0 ? 0 : (double)optionalCohorts.PostPreprocessRemainder.Ticks * 100 / optionalCompletedTicks
                 },
+                OptionalIntExpressionPreprocessBreakdown = new
+                {
+                    Scope = "COMPLETED_CALLS_ONLY",
+                    ExistingSemanticStartReused = true,
+                    ExistingPreprocessBoundaryReused = true,
+                    ExistingSemanticEndReused = true,
+                    NewRenameBoundaryTimestampCallsPerCall = 1,
+                    OptionalCompletedCount = optionalCompletedCount,
+                    OptionalCompletedTicks = optionalCompletedTicks,
+                    PrefixThroughRename = Split(optionalCohorts.PrefixThroughRename),
+                    MacroExpandSegment = Split(optionalCohorts.MacroExpandSegment),
+                    PostPreprocessRemainder = Split(optionalCohorts.PostPreprocessRemainder),
+                    RenameBoundaryTimestampCount = optionalCohorts.RenameBoundaryTimestampCount,
+                    PreprocessBoundaryTimestampCount = optionalCohorts.PreprocessBoundaryTimestampCount,
+                    PrefixCountReconciliationExact = optionalCohorts.PrefixThroughRename.Count == optionalCohorts.MacroExpandSegment.Count && optionalCohorts.MacroExpandSegment.Count == optionalCohorts.PrefixThroughPreprocess.Count,
+                    PrefixTicksReconciliationExact = optionalCohorts.PrefixThroughRename.Ticks + optionalCohorts.MacroExpandSegment.Ticks == optionalCohorts.PrefixThroughPreprocess.Ticks,
+                    FullCountReconciliationExact = optionalCohorts.PrefixThroughRename.Count == optionalCompletedCount && optionalCohorts.MacroExpandSegment.Count == optionalCompletedCount && optionalCohorts.PostPreprocessRemainder.Count == optionalCompletedCount,
+                    FullTicksReconciliationExact = optionalCohorts.PrefixThroughRename.Ticks + optionalCohorts.MacroExpandSegment.Ticks + optionalCohorts.PostPreprocessRemainder.Ticks == optionalCompletedTicks,
+                    PrefixThroughRenameShareOfOptionalPercent = optionalCompletedTicks == 0 ? 0 : (double)optionalCohorts.PrefixThroughRename.Ticks * 100 / optionalCompletedTicks,
+                    MacroExpandSegmentShareOfOptionalPercent = optionalCompletedTicks == 0 ? 0 : (double)optionalCohorts.MacroExpandSegment.Ticks * 100 / optionalCompletedTicks,
+                    PostPreprocessRemainderShareOfOptionalPercent = optionalCompletedTicks == 0 ? 0 : (double)optionalCohorts.PostPreprocessRemainder.Ticks * 100 / optionalCompletedTicks,
+                    RenameMarker = new
+                    {
+                        PresentCount = optionalCohorts.RenameMarkerPresentCount,
+                        AbsentCount = optionalCohorts.RenameMarkerAbsentCount,
+                        CountReconciliationExact = optionalCohorts.RenameMarkerPresentCount + optionalCohorts.RenameMarkerAbsentCount == optionalCompletedCount
+                    }
+                },
                 AssignmentSearchInclusive = new
                 {
                     Mode = "COUNT_ONLY",
@@ -746,7 +774,9 @@ internal static class PerformanceMetrics
                     RuntimeGateRejectPathTimestampCalls = 4,
                     AdditionalSuccessfulScanFinalizeTimestampCalls = compileRuntimeMetrics.ScanFinalizeCount * 2,
                     AdditionalPerSemanticInvocationTimestampCalls = compileRuntimeMetrics.SemanticCompileInclusiveCount * 2,
-                    Note = "Each value counts Stopwatch.GetTimestamp calls; semantic invocations are variable; no per-line/per-token/per-node timers"
+                    P3VPreprocessBoundaryTimestampCount = optionalCohorts.PreprocessBoundaryTimestampCount,
+                    P3WRenameBoundaryTimestampCount = optionalCohorts.RenameBoundaryTimestampCount,
+                    Note = "Each value counts Stopwatch.GetTimestamp calls; semantic start/end and P3V/P3W boundaries are reported separately; no per-line/per-token/per-node timers"
                 }
             },
             SourceReaderMetrics = new

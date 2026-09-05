@@ -554,9 +554,11 @@ public sealed class FunctionCompiler
                     var semanticElapsed = Stopwatch.GetTimestamp() - semanticCompileStart;
                     if (semanticCategory == 2 && semanticObservationAvailable)
                     {
-                        var prefixTicks = semanticCallCompleted && semanticObservation.PreprocessEndTimestamp != 0 ? semanticObservation.PreprocessEndTimestamp - semanticCompileStart : 0;
-                        var remainderTicks = semanticCallCompleted ? semanticElapsed - prefixTicks : 0;
-                        CompileRuntimeMetrics.RecordSemanticCompileInclusive(semanticElapsed, semanticCategory, semanticCallCompleted, semanticObservation, prefixTicks, remainderTicks, semanticPart?.Nodes.Length ?? 0, semanticPart?.Edges.Length ?? 0, semanticPart?.Symbols.Length ?? 0, semanticPart?.CaseArms.Length ?? 0, semanticPart?.Records.Length ?? 0, semanticPart?.HostIdentities.Length ?? 0, semanticPart?.Utf8.Length ?? 0);
+                        var prefixThroughRenameTicks = semanticCallCompleted && semanticObservation.RenameEndTimestamp != 0 ? semanticObservation.RenameEndTimestamp - semanticCompileStart : 0;
+                        var macroExpandSegmentTicks = semanticCallCompleted && semanticObservation.PreprocessEndTimestamp != 0 ? semanticObservation.PreprocessEndTimestamp - semanticObservation.RenameEndTimestamp : 0;
+                        var prefixThroughPreprocessTicks = semanticCallCompleted && semanticObservation.PreprocessEndTimestamp != 0 ? semanticObservation.PreprocessEndTimestamp - semanticCompileStart : 0;
+                        var remainderTicks = semanticCallCompleted ? semanticElapsed - prefixThroughPreprocessTicks : 0;
+                        CompileRuntimeMetrics.RecordSemanticCompileInclusive(semanticElapsed, semanticCategory, semanticCallCompleted, semanticObservation, prefixThroughRenameTicks, macroExpandSegmentTicks, prefixThroughPreprocessTicks, remainderTicks, semanticPart?.Nodes.Length ?? 0, semanticPart?.Edges.Length ?? 0, semanticPart?.Symbols.Length ?? 0, semanticPart?.CaseArms.Length ?? 0, semanticPart?.Records.Length ?? 0, semanticPart?.HostIdentities.Length ?? 0, semanticPart?.Utf8.Length ?? 0);
                     }
                     else CompileRuntimeMetrics.RecordSemanticCompileInclusive(semanticElapsed, semanticCategory, semanticCallCompleted);
                 }

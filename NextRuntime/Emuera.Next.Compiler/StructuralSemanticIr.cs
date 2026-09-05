@@ -315,12 +315,20 @@ public static class SemanticLexicalTokenStream
         return output.ToString();
     }
     public static string ApplyRename(string source, SemanticRenameResolver? resolver)
+        => ApplyRenameCore(source, resolver, out _);
+#if PERFORMANCE_METRICS
+    public static string ApplyRename(string source, SemanticRenameResolver? resolver, out bool markerPresent)
+        => ApplyRenameCore(source, resolver, out markerPresent);
+#endif
+    private static string ApplyRenameCore(string source, SemanticRenameResolver? resolver, out bool markerPresent)
     {
+        markerPresent = false;
         if (resolver is null) return source;
         var result = new StringBuilder(source.Length); var index = 0;
         while (index < source.Length)
         {
             var start = source.IndexOf("[[", index, StringComparison.Ordinal); if (start < 0) { result.Append(source[index..]); break; }
+            markerPresent = true;
             result.Append(source[index..start]); var end = source.IndexOf("]]", start + 2, StringComparison.Ordinal); if (end < 0) { result.Append(source[start..]); break; }
             var key = source[start..(end + 2)]; result.Append(resolver.TryResolve(key, out var value) ? value : key); index = end + 2;
         }
@@ -376,11 +384,13 @@ public static class SemanticIrCompiler
 #if PERFORMANCE_METRICS
     public static SemanticPayload CompileOptionalIntExpression(string text, StructuralSemanticEnvironment environment, int instructionIndex, ref SemanticCompileObservation observation)
     {
-        var prepared = Preprocess(text, environment, out var substitutions);
+        var renamed = SemanticLexicalTokenStream.ApplyRename(text, environment.RenameResolver, out var renameMarkerPresent);
+        var renameEndTimestamp = Stopwatch.GetTimestamp();
+        var prepared = environment.Macros.Expand(renamed, environment.Compatibility, out var substitutions);
         var preprocessEndTimestamp = Stopwatch.GetTimestamp();
-        observation = new SemanticCompileObservation(false, substitutions, environment.Macros.Count, environment.RenameResolver is not null, preprocessEndTimestamp);
+        observation = new SemanticCompileObservation(false, substitutions, environment.Macros.Count, environment.RenameResolver is not null, renameEndTimestamp, preprocessEndTimestamp, renameMarkerPresent);
         var payload = CompilePrepared(prepared, environment, instructionIndex, SemanticOperandKind.Expression, false, true, out var preparedEmpty);
-        observation = new SemanticCompileObservation(preparedEmpty, substitutions, environment.Macros.Count, environment.RenameResolver is not null, preprocessEndTimestamp);
+        observation = new SemanticCompileObservation(preparedEmpty, substitutions, environment.Macros.Count, environment.RenameResolver is not null, renameEndTimestamp, preprocessEndTimestamp, renameMarkerPresent);
         return payload;
     }
 #endif

@@ -2,7 +2,7 @@ using System.Diagnostics;
 
 namespace MinorShift.Emuera.Next.Core;
 
-public readonly record struct SemanticCompileObservation(bool PreparedEmpty, int MacroSubstitutionCount, int MacroDefinitionCount, bool RenameResolverPresent, long PreprocessEndTimestamp);
+public readonly record struct SemanticCompileObservation(bool PreparedEmpty, int MacroSubstitutionCount, int MacroDefinitionCount, bool RenameResolverPresent, long RenameEndTimestamp, long PreprocessEndTimestamp, bool RenameMarkerPresent);
 public readonly record struct CompileCohortSnapshot(long Count, long Ticks);
 public readonly record struct OptionalIntExpressionCohortSnapshot(
     CompileCohortSnapshot PreparedEmpty,
@@ -28,7 +28,12 @@ public readonly record struct OptionalIntExpressionCohortSnapshot(
     bool RenameResolverPresent,
     CompileCohortSnapshot PrefixThroughPreprocess,
     CompileCohortSnapshot PostPreprocessRemainder,
-    long PreprocessBoundaryTimestampCount);
+    long PreprocessBoundaryTimestampCount,
+    CompileCohortSnapshot PrefixThroughRename,
+    CompileCohortSnapshot MacroExpandSegment,
+    long RenameBoundaryTimestampCount,
+    long RenameMarkerPresentCount,
+    long RenameMarkerAbsentCount);
 
 public readonly record struct CompileRuntimeMetricsSnapshot(
     long RuntimeGateMetadataCount,
@@ -144,6 +149,13 @@ public static class CompileRuntimeMetrics
     private static long optionalPostPreprocessRemainderCount;
     private static long optionalPostPreprocessRemainderTicks;
     private static long optionalPreprocessBoundaryTimestampCount;
+    private static long optionalPrefixThroughRenameCount;
+    private static long optionalPrefixThroughRenameTicks;
+    private static long optionalMacroExpandSegmentCount;
+    private static long optionalMacroExpandSegmentTicks;
+    private static long optionalRenameBoundaryTimestampCount;
+    private static long optionalRenameMarkerPresentCount;
+    private static long optionalRenameMarkerAbsentCount;
 
     public static void Reset()
     {
@@ -200,6 +212,10 @@ public static class CompileRuntimeMetrics
         optionalPrefixThroughPreprocessCount = optionalPrefixThroughPreprocessTicks = 0;
         optionalPostPreprocessRemainderCount = optionalPostPreprocessRemainderTicks = 0;
         optionalPreprocessBoundaryTimestampCount = 0;
+        optionalPrefixThroughRenameCount = optionalPrefixThroughRenameTicks = 0;
+        optionalMacroExpandSegmentCount = optionalMacroExpandSegmentTicks = 0;
+        optionalRenameBoundaryTimestampCount = 0;
+        optionalRenameMarkerPresentCount = optionalRenameMarkerAbsentCount = 0;
     }
 
     [Conditional("PERFORMANCE_METRICS")]
@@ -257,10 +273,12 @@ public static class CompileRuntimeMetrics
     }
 
     [Conditional("PERFORMANCE_METRICS")]
-    public static void RecordSemanticCompileInclusive(long ticks, int category, bool completed, SemanticCompileObservation observation, long prefixThroughPreprocessTicks, long postPreprocessRemainderTicks, int nodes, int edges, int symbols, int caseArms, int records, int hostIdentities, int utf8Bytes)
+    public static void RecordSemanticCompileInclusive(long ticks, int category, bool completed, SemanticCompileObservation observation, long prefixThroughRenameTicks, long macroExpandSegmentTicks, long prefixThroughPreprocessTicks, long postPreprocessRemainderTicks, int nodes, int edges, int symbols, int caseArms, int records, int hostIdentities, int utf8Bytes)
     {
         RecordSemanticCompileInclusiveCore(ticks, category, completed);
         if (category != 2) return;
+        if (observation.RenameEndTimestamp != 0)
+            optionalRenameBoundaryTimestampCount++;
         if (observation.PreprocessEndTimestamp != 0)
         {
             optionalPreprocessBoundaryTimestampCount++;
@@ -272,6 +290,12 @@ public static class CompileRuntimeMetrics
             optionalPrefixThroughPreprocessTicks += prefixThroughPreprocessTicks;
             optionalPostPreprocessRemainderCount++;
             optionalPostPreprocessRemainderTicks += postPreprocessRemainderTicks;
+            optionalPrefixThroughRenameCount++;
+            optionalPrefixThroughRenameTicks += prefixThroughRenameTicks;
+            optionalMacroExpandSegmentCount++;
+            optionalMacroExpandSegmentTicks += macroExpandSegmentTicks;
+            if (observation.RenameMarkerPresent) optionalRenameMarkerPresentCount++;
+            else optionalRenameMarkerAbsentCount++;
         }
         if (!optionalContextObserved)
         {
@@ -356,5 +380,9 @@ public static class CompileRuntimeMetrics
             optionalMacroDefinitionCount, optionalRenameResolverPresent,
             new(optionalPrefixThroughPreprocessCount, optionalPrefixThroughPreprocessTicks),
             new(optionalPostPreprocessRemainderCount, optionalPostPreprocessRemainderTicks),
-            optionalPreprocessBoundaryTimestampCount));
+            optionalPreprocessBoundaryTimestampCount,
+            new(optionalPrefixThroughRenameCount, optionalPrefixThroughRenameTicks),
+            new(optionalMacroExpandSegmentCount, optionalMacroExpandSegmentTicks),
+            optionalRenameBoundaryTimestampCount,
+            optionalRenameMarkerPresentCount, optionalRenameMarkerAbsentCount));
 }
