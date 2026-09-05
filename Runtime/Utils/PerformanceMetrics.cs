@@ -748,7 +748,7 @@ internal static class PerformanceMetrics
                     PayloadBuildThroughSemanticEnd = Split(optionalCohorts.PayloadBuildThroughSemanticEnd),
                     PayloadBuildBoundaryTimestampCount = optionalCohorts.PayloadBuildBoundaryTimestampCount,
                     CountReconciliationExact = optionalCohorts.ParseArenaThroughRecord.Count == optionalCompletedCount && optionalCohorts.PayloadBuildThroughSemanticEnd.Count == optionalCompletedCount,
-                    PostPreprocessCountReconciliationExact = optionalCohorts.ParseArenaThroughRecord.Count + optionalCohorts.PayloadBuildThroughSemanticEnd.Count == optionalCohorts.PostPreprocessRemainder.Count,
+                    PostPreprocessCountReconciliationExact = optionalCohorts.ParseArenaThroughRecord.Count == optionalCohorts.PostPreprocessRemainder.Count && optionalCohorts.PayloadBuildThroughSemanticEnd.Count == optionalCohorts.PostPreprocessRemainder.Count,
                     TicksReconciliationExact = optionalCohorts.PrefixThroughPreprocess.Ticks + optionalCohorts.ParseArenaThroughRecord.Ticks + optionalCohorts.PayloadBuildThroughSemanticEnd.Ticks == optionalCompletedTicks,
                     PostPreprocessTicksReconciliationExact = optionalCohorts.ParseArenaThroughRecord.Ticks + optionalCohorts.PayloadBuildThroughSemanticEnd.Ticks == optionalCohorts.PostPreprocessRemainder.Ticks,
                     ParseArenaThroughRecordShareOfOptionalPercent = optionalCompletedTicks == 0 ? 0 : (double)optionalCohorts.ParseArenaThroughRecord.Ticks * 100 / optionalCompletedTicks,

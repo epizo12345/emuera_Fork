@@ -547,7 +547,7 @@ static int SelfTest()
             var post = cohorts.PostPreprocessRemainder;
             var split = cohorts.ParseArenaThroughRecord;
             var build = cohorts.PayloadBuildThroughSemanticEnd;
-            Assert(result.Status == CompileStatus.Compiled && metrics.SemanticOptionalIntExpressionCompletedCount == 3 && cohorts.PayloadBuildBoundaryTimestampCount == 3 && split.Count == 3 && build.Count == 3 && split.Ticks + build.Ticks == post.Ticks && cohorts.PrefixThroughPreprocess.Ticks + split.Ticks + build.Ticks == metrics.SemanticOptionalIntExpressionCompletedTicks, $"status={result.Status} completed={metrics.SemanticOptionalIntExpressionCompletedCount} boundary={cohorts.PayloadBuildBoundaryTimestampCount} split={split.Count}/{split.Ticks} build={build.Count}/{build.Ticks} post={post.Count}/{post.Ticks}");
+            Assert(result.Status == CompileStatus.Compiled && metrics.SemanticOptionalIntExpressionCompletedCount == 3 && cohorts.PayloadBuildBoundaryTimestampCount == 3 && split.Count == post.Count && build.Count == post.Count && split.Ticks + build.Ticks == post.Ticks && cohorts.PrefixThroughPreprocess.Ticks + split.Ticks + build.Ticks == metrics.SemanticOptionalIntExpressionCompletedTicks, $"status={result.Status} completed={metrics.SemanticOptionalIntExpressionCompletedCount} boundary={cohorts.PayloadBuildBoundaryTimestampCount} split={split.Count}/{split.Ticks} build={build.Count}/{build.Ticks} post={post.Count}/{post.Ticks}");
         })));
         tests.Add(("P3Y OptionalIntExpression exception before payload boundary", (Action)(() =>
         {
