@@ -352,6 +352,15 @@ internal static class PerformanceMetrics
         var scanInnerMilliseconds = TicksToMilliseconds(scanInnerTicks);
         var sourceReaderFileOpenInnerTicks = sourceReaderMetrics.FileStreamOpenTicks + sourceReaderMetrics.InitialSnapshotCheckTicks;
         var sourceReaderReadInnerTicks = sourceReaderMetrics.SpanValidationTicks + sourceReaderMetrics.ReadSnapshotCheckTicks + sourceReaderMetrics.BufferAllocationTicks + sourceReaderMetrics.SeekTicks + sourceReaderMetrics.StreamReadTicks + sourceReaderMetrics.Utf8ValidationTicks + sourceReaderMetrics.ResultConstructionTicks;
+        static object Cohort(CompileCohortSnapshot cohort) => new
+        {
+            cohort.Count,
+            TotalMilliseconds = TicksToMilliseconds(cohort.Ticks),
+            AverageMicroseconds = cohort.Count == 0 ? 0 : TicksToMilliseconds(cohort.Ticks) * 1000 / cohort.Count
+        };
+        var optionalCohorts = compileRuntimeMetrics.OptionalIntExpressionCohorts;
+        var optionalCompletedCount = compileRuntimeMetrics.SemanticOptionalIntExpressionCompletedCount;
+        var optionalCompletedTicks = compileRuntimeMetrics.SemanticOptionalIntExpressionCompletedTicks;
         var report = new
         {
             Profiler = "NextRuntimePerformanceProfile",
@@ -630,6 +639,51 @@ internal static class PerformanceMetrics
                     AggregateSemanticTicks = compileRuntimeMetrics.SemanticCompileInclusiveTicks,
                     CountReconciliationExact = compileRuntimeMetrics.SemanticCountedLoopCompletedCount + compileRuntimeMetrics.SemanticCountedLoopExceptionCount + compileRuntimeMetrics.SemanticOptionalIntExpressionCompletedCount + compileRuntimeMetrics.SemanticOptionalIntExpressionExceptionCount + compileRuntimeMetrics.SemanticExpressionCompletedCount + compileRuntimeMetrics.SemanticExpressionExceptionCount == compileRuntimeMetrics.SemanticCompileInclusiveCount,
                     TicksReconciliationExact = compileRuntimeMetrics.SemanticCountedLoopCompletedTicks + compileRuntimeMetrics.SemanticCountedLoopExceptionTicks + compileRuntimeMetrics.SemanticOptionalIntExpressionCompletedTicks + compileRuntimeMetrics.SemanticOptionalIntExpressionExceptionTicks + compileRuntimeMetrics.SemanticExpressionCompletedTicks + compileRuntimeMetrics.SemanticExpressionExceptionTicks == compileRuntimeMetrics.SemanticCompileInclusiveTicks
+                },
+                OptionalIntExpressionCohorts = new
+                {
+                    Scope = "COMPLETED_CALLS_ONLY",
+                    Attribution = "EXISTING_SEMANTIC_COMPILE_ELAPSED",
+                    NewTimestampCalls = 0,
+                    Interpretation = "COHORT_INCLUSIVE_NOT_INTERNAL_STAGE_TIME",
+                    OptionalCompletedCount = optionalCompletedCount,
+                    OptionalCompletedTicks = optionalCompletedTicks,
+                    PreparedEmpty = Cohort(optionalCohorts.PreparedEmpty),
+                    PreparedNonEmpty = Cohort(optionalCohorts.PreparedNonEmpty),
+                    PreparedCountReconciliationExact = optionalCohorts.PreparedEmpty.Count + optionalCohorts.PreparedNonEmpty.Count == optionalCompletedCount,
+                    PreparedTicksReconciliationExact = optionalCohorts.PreparedEmpty.Ticks + optionalCohorts.PreparedNonEmpty.Ticks == optionalCompletedTicks,
+                    MacroSubstitutionZero = Cohort(optionalCohorts.MacroSubstitutionZero),
+                    MacroSubstitutionPositive = Cohort(optionalCohorts.MacroSubstitutionPositive),
+                    TotalMacroSubstitutionCount = optionalCohorts.TotalMacroSubstitutionCount,
+                    MaxMacroSubstitutionCountPerCompletedCall = optionalCohorts.MaxMacroSubstitutionCountPerCompletedCall,
+                    MacroCountReconciliationExact = optionalCohorts.MacroSubstitutionZero.Count + optionalCohorts.MacroSubstitutionPositive.Count == optionalCompletedCount,
+                    MacroTicksReconciliationExact = optionalCohorts.MacroSubstitutionZero.Ticks + optionalCohorts.MacroSubstitutionPositive.Ticks == optionalCompletedTicks,
+                    Payload = new
+                    {
+                        TotalNodes = optionalCohorts.TotalPayloadNodes,
+                        TotalEdges = optionalCohorts.TotalPayloadEdges,
+                        TotalSymbols = optionalCohorts.TotalPayloadSymbols,
+                        TotalCaseArms = optionalCohorts.TotalPayloadCaseArms,
+                        TotalRecords = optionalCohorts.TotalPayloadRecords,
+                        TotalHostIdentities = optionalCohorts.TotalPayloadHostIdentities,
+                        TotalUtf8Bytes = optionalCohorts.TotalPayloadUtf8Bytes
+                    },
+                    NodeCountBuckets = new
+                    {
+                        Zero = Cohort(optionalCohorts.NodeCount0),
+                        One = Cohort(optionalCohorts.NodeCount1),
+                        TwoToFour = Cohort(optionalCohorts.NodeCount2To4),
+                        FiveToEight = Cohort(optionalCohorts.NodeCount5To8),
+                        NineToSixteen = Cohort(optionalCohorts.NodeCount9To16),
+                        SeventeenPlus = Cohort(optionalCohorts.NodeCount17Plus)
+                    },
+                    NodeBucketCountReconciliationExact = optionalCohorts.NodeCount0.Count + optionalCohorts.NodeCount1.Count + optionalCohorts.NodeCount2To4.Count + optionalCohorts.NodeCount5To8.Count + optionalCohorts.NodeCount9To16.Count + optionalCohorts.NodeCount17Plus.Count == optionalCompletedCount,
+                    NodeBucketTicksReconciliationExact = optionalCohorts.NodeCount0.Ticks + optionalCohorts.NodeCount1.Ticks + optionalCohorts.NodeCount2To4.Ticks + optionalCohorts.NodeCount5To8.Ticks + optionalCohorts.NodeCount9To16.Ticks + optionalCohorts.NodeCount17Plus.Ticks == optionalCompletedTicks,
+                    Context = new
+                    {
+                        MacroDefinitionCount = optionalCohorts.MacroDefinitionCount,
+                        RenameResolverPresent = optionalCohorts.RenameResolverPresent
+                    }
                 },
                 AssignmentSearchInclusive = new
                 {

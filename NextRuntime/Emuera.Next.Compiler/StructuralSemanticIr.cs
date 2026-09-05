@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 using System.Text;
+using MinorShift.Emuera.Next.Core;
 
 namespace MinorShift.Emuera.Next.Compiler;
 
@@ -371,14 +372,39 @@ public static class SemanticIrCompiler
     private static readonly (string Text, SemanticOperator Operator, int Priority)[] Operators = [("||", SemanticOperator.LogicalOr, 40), ("&&", SemanticOperator.LogicalAnd, 40), ("^^", SemanticOperator.LogicalXor, 40), ("!&", SemanticOperator.Nand, 40), ("!|", SemanticOperator.Nor, 40), ("&", SemanticOperator.BitAnd, 50), ("|", SemanticOperator.BitOr, 50), ("^", SemanticOperator.BitXor, 50), ("==", SemanticOperator.Equal, 60), ("!=", SemanticOperator.NotEqual, 60), (">=", SemanticOperator.GreaterEqual, 65), ("<=", SemanticOperator.LessEqual, 65), (">", SemanticOperator.Greater, 65), ("<", SemanticOperator.Less, 65), (">>", SemanticOperator.ShiftRight, 70), ("<<", SemanticOperator.ShiftLeft, 70), ("+", SemanticOperator.Plus, 80), ("-", SemanticOperator.Minus, 80), ("*", SemanticOperator.Multiply, 90), ("/", SemanticOperator.Divide, 90), ("%", SemanticOperator.Modulo, 90)];
     public static SemanticPayload CompileExpression(string text, StructuralSemanticEnvironment environment, int instructionIndex = 0) => Compile(text, environment, instructionIndex, SemanticOperandKind.Expression);
     public static SemanticPayload CompileOptionalIntExpression(string text, StructuralSemanticEnvironment environment, int instructionIndex = 0) => Compile(text, environment, instructionIndex, SemanticOperandKind.Expression, defaultEmptyInt: true);
+#if PERFORMANCE_METRICS
+    public static SemanticPayload CompileOptionalIntExpression(string text, StructuralSemanticEnvironment environment, int instructionIndex, out SemanticCompileObservation observation)
+    {
+        var prepared = Preprocess(text, environment, out var substitutions);
+        var payload = CompilePrepared(prepared, environment, instructionIndex, SemanticOperandKind.Expression, false, true, out var preparedEmpty);
+        observation = new SemanticCompileObservation(preparedEmpty, substitutions, environment.Macros.Count, environment.RenameResolver is not null);
+        return payload;
+    }
+#endif
     public static SemanticPayload CompileFormat(string text, StructuralSemanticEnvironment environment, int instructionIndex = 0) => Compile(text, environment, instructionIndex, SemanticOperandKind.Format);
     public static SemanticPayload CompileCase(string text, StructuralSemanticEnvironment environment, int instructionIndex = 0) => Compile(text, environment, instructionIndex, SemanticOperandKind.Case);
     public static SemanticPayload CompileCountedLoop(string text, StructuralSemanticEnvironment environment, int instructionIndex, bool repeat) => Compile(text, environment, instructionIndex, SemanticOperandKind.CountedLoop, repeat);
     public static SemanticPayload Compile(string text, StructuralSemanticEnvironment environment, int instructionIndex, SemanticOperandKind kind, bool repeat = false, bool defaultEmptyInt = false)
     {
-        var prepared = kind == SemanticOperandKind.Format ? ApplyRename(text, environment.RenameResolver) : Preprocess(text, environment); var builder = new ArenaBuilder(); var parser = new Parser(prepared, environment, builder); var root = kind switch { SemanticOperandKind.Format => parser.ParseFormatSequence(), SemanticOperandKind.Case => parser.ParseCase(), SemanticOperandKind.CountedLoop => parser.ParseCountedLoop(repeat), _ when defaultEmptyInt => parser.ParseOptionalIntExpression(), _ => parser.ParseExpression() }; parser.ExpectEnd(); builder.Records.Add(new(instructionIndex, root, builder.Nodes.Count)); return builder.Build();
+        var prepared = kind == SemanticOperandKind.Format ? ApplyRename(text, environment.RenameResolver) : Preprocess(text, environment);
+        return CompilePrepared(prepared, environment, instructionIndex, kind, repeat, defaultEmptyInt, out _);
     }
-    private static string Preprocess(string source, StructuralSemanticEnvironment environment) => environment.Macros.Expand(SemanticLexicalTokenStream.ApplyRename(source, environment.RenameResolver), environment.Compatibility, out _);
+    private static SemanticPayload CompilePrepared(string prepared, StructuralSemanticEnvironment environment, int instructionIndex, SemanticOperandKind kind, bool repeat, bool defaultEmptyInt, out bool preparedEmpty)
+    {
+        preparedEmpty = false;
+        var builder = new ArenaBuilder(); var parser = new Parser(prepared, environment, builder);
+        var root = kind switch
+        {
+            SemanticOperandKind.Format => parser.ParseFormatSequence(),
+            SemanticOperandKind.Case => parser.ParseCase(),
+            SemanticOperandKind.CountedLoop => parser.ParseCountedLoop(repeat),
+            _ when defaultEmptyInt => parser.ParseOptionalIntExpression(out preparedEmpty),
+            _ => parser.ParseExpression()
+        };
+        parser.ExpectEnd(); builder.Records.Add(new(instructionIndex, root, builder.Nodes.Count)); return builder.Build();
+    }
+    private static string Preprocess(string source, StructuralSemanticEnvironment environment) => Preprocess(source, environment, out _);
+    private static string Preprocess(string source, StructuralSemanticEnvironment environment, out int substitutions) => environment.Macros.Expand(SemanticLexicalTokenStream.ApplyRename(source, environment.RenameResolver), environment.Compatibility, out substitutions);
     private static string ApplyRename(string source, SemanticRenameResolver? resolver) => SemanticLexicalTokenStream.ApplyRename(source, resolver);
     private sealed class ArenaBuilder { internal readonly List<SemanticNode> Nodes = []; internal readonly List<SemanticEdge> Edges = []; internal readonly List<SemanticSlice> Symbols = []; internal readonly List<SemanticCaseArm> CaseArms = []; internal readonly List<SemanticRecord> Records = []; internal readonly List<byte> Bytes = []; internal int Symbol(string value) { var bytes = Encoding.UTF8.GetBytes(value); var offset = Bytes.Count; Bytes.AddRange(bytes); Symbols.Add(new(offset, bytes.Length)); return Symbols.Count - 1; } internal int Node(SemanticNodeKind kind, SemanticOperator op = SemanticOperator.None, int a = -1, int b = -1, int c = -1, int d = -1) { Nodes.Add(new(kind, op, a, b, c, d)); return Nodes.Count - 1; } internal void SetNode(int index, SemanticNode node) => Nodes[index] = node; internal SemanticPayload Build() => new(Nodes, Edges, Symbols, CaseArms, Records, Bytes.ToArray()); }
     private sealed class Parser
@@ -389,7 +415,12 @@ public static class SemanticIrCompiler
         {
             SkipSpace(); if (position >= text.Length) throw new SemanticParseException("expression term missing"); var left = ParsePrefix(); while (true) { SkipSpace(); if (Peek("?")) { if (!allowTernary || minimumPriority > 0) break; position++; var whenTrue = ParseExpression(0, false); SkipSpace(); if (!Peek("#")) throw new SemanticParseException("ternary true branch requires #"); position++; var whenFalse = ParseExpression(1); left = arena.Node(SemanticNodeKind.Ternary, SemanticOperator.None, left, whenTrue, whenFalse, (int)SemanticNodeFlags.SelectedBranchOnly); continue; } if (!TryOperator(out var op, out var priority) || priority < minimumPriority) break; position += op.Text.Length; var right = ParseExpression(priority + 1); var flags = op.Operator is SemanticOperator.Divide or SemanticOperator.Modulo ? (int)SemanticNodeFlags.RightFirstZeroCheck : op.Operator is SemanticOperator.LogicalAnd or SemanticOperator.LogicalOr or SemanticOperator.Nand or SemanticOperator.Nor ? (int)SemanticNodeFlags.ShortCircuit : 0; left = arena.Node(SemanticNodeKind.Binary, op.Operator, left, right, d: flags); } return left;
         }
-        internal int ParseOptionalIntExpression() => IsExpressionEmpty(text) ? Integer("0") : ParseExpression();
+        internal int ParseOptionalIntExpression() => ParseOptionalIntExpression(out _);
+        internal int ParseOptionalIntExpression(out bool preparedEmpty)
+        {
+            preparedEmpty = IsExpressionEmpty(text);
+            return preparedEmpty ? Integer("0") : ParseExpression();
+        }
         internal int ParseCountedLoop(bool repeat)
         {
             if (repeat) { var count = IsExpressionEmpty(text) ? Integer("0") : ParseExpression(); position = text.Length; var dest = arena.Node(SemanticNodeKind.Symbol, SemanticOperator.None, arena.Symbol("COUNT")); return arena.Node(SemanticNodeKind.CountedLoop, SemanticOperator.CountedRepeat, dest, Integer("0"), count, Integer("1")); }

@@ -350,7 +350,7 @@ static int SelfTest()
             var f = ErbSourceIndexer.IndexFile(p);
             var result = new FunctionCompiler(semanticEnvironment).TryCompileRuntime(f, f.Functions.Single());
             var metrics = CompileRuntimeMetrics.Snapshot();
-            Assert(result.Status == CompileStatus.Compiled && metrics.ScanInclusiveCount == 1 && metrics.SemanticCompileInclusiveCount == 1 && metrics.SemanticOptionalIntExpressionCount == 1 && metrics.SemanticOptionalIntExpressionCompletedCount == 1 && metrics.SemanticOptionalIntExpressionExceptionCount == 0 && metrics.ScanFinalizeCount == 1 && metrics.SemanticPayloadMergeFunctionCount == 1 && metrics.SemanticPartCount == 1 && metrics.CompiledFinalizeCount == 1 && metrics.RejectFinalizeCount == 0);
+            Assert(result.Status == CompileStatus.Compiled && metrics.ScanInclusiveCount == 1 && metrics.SemanticCompileInclusiveCount == 1 && metrics.SemanticOptionalIntExpressionCount == 1 && metrics.SemanticOptionalIntExpressionCompletedCount == 1 && metrics.SemanticOptionalIntExpressionExceptionCount == 0 && metrics.ScanFinalizeCount == 1 && metrics.SemanticPayloadMergeFunctionCount == 1 && metrics.SemanticPartCount == 1 && metrics.CompiledFinalizeCount == 1 && metrics.RejectFinalizeCount == 0, $"status={result.Status} scan={metrics.ScanInclusiveCount} semantic={metrics.SemanticCompileInclusiveCount} optional={metrics.SemanticOptionalIntExpressionCount}/{metrics.SemanticOptionalIntExpressionCompletedCount}/{metrics.SemanticOptionalIntExpressionExceptionCount} finalize={metrics.ScanFinalizeCount}/{metrics.SemanticPayloadMergeFunctionCount}/{metrics.SemanticPartCount} compiled={metrics.CompiledFinalizeCount} reject={metrics.RejectFinalizeCount}");
         })));
         tests.Add(("P3Q semantic exceptional path is measured", (Action)(() =>
         {
@@ -375,7 +375,7 @@ static int SelfTest()
             var metrics = CompileRuntimeMetrics.Snapshot();
             var countSum = metrics.SemanticCountedLoopCompletedCount + metrics.SemanticCountedLoopExceptionCount + metrics.SemanticOptionalIntExpressionCompletedCount + metrics.SemanticOptionalIntExpressionExceptionCount + metrics.SemanticExpressionCompletedCount + metrics.SemanticExpressionExceptionCount;
             var ticksSum = metrics.SemanticCountedLoopCompletedTicks + metrics.SemanticCountedLoopExceptionTicks + metrics.SemanticOptionalIntExpressionCompletedTicks + metrics.SemanticOptionalIntExpressionExceptionTicks + metrics.SemanticExpressionCompletedTicks + metrics.SemanticExpressionExceptionTicks;
-            Assert(result.Status == CompileStatus.Compiled && metrics.SemanticCountedLoopCount == 2 && metrics.SemanticCountedLoopCompletedCount == 2 && metrics.SemanticCountedLoopExceptionCount == 0 && metrics.SemanticOptionalIntExpressionCount == 1 && metrics.SemanticOptionalIntExpressionCompletedCount == 1 && metrics.SemanticOptionalIntExpressionExceptionCount == 0 && metrics.SemanticExpressionCount == 1 && metrics.SemanticExpressionCompletedCount == 1 && metrics.SemanticExpressionExceptionCount == 0 && countSum == metrics.SemanticCompileInclusiveCount && ticksSum == metrics.SemanticCompileInclusiveTicks);
+            Assert(result.Status == CompileStatus.Compiled && metrics.SemanticCountedLoopCount == 2 && metrics.SemanticCountedLoopCompletedCount == 2 && metrics.SemanticCountedLoopExceptionCount == 0 && metrics.SemanticOptionalIntExpressionCount == 1 && metrics.SemanticOptionalIntExpressionCompletedCount == 1 && metrics.SemanticOptionalIntExpressionExceptionCount == 0 && metrics.SemanticExpressionCount == 1 && metrics.SemanticExpressionCompletedCount == 1 && metrics.SemanticExpressionExceptionCount == 0 && countSum == metrics.SemanticCompileInclusiveCount && ticksSum == metrics.SemanticCompileInclusiveTicks, $"status={result.Status} loops={metrics.SemanticCountedLoopCount}/{metrics.SemanticCountedLoopCompletedCount}/{metrics.SemanticCountedLoopExceptionCount} optional={metrics.SemanticOptionalIntExpressionCount}/{metrics.SemanticOptionalIntExpressionCompletedCount}/{metrics.SemanticOptionalIntExpressionExceptionCount} expression={metrics.SemanticExpressionCount}/{metrics.SemanticExpressionCompletedCount}/{metrics.SemanticExpressionExceptionCount} sums={countSum}/{metrics.SemanticCompileInclusiveCount},{ticksSum}/{metrics.SemanticCompileInclusiveTicks}");
         })));
         tests.Add(("P3S completed semantic call can precede later function rejection", (Action)(() =>
         {
@@ -425,6 +425,46 @@ static int SelfTest()
             Assert(compiler.TryCompileRuntime(f, f.Functions.Single()).Status == CompileStatus.Compiled);
             var metrics = CompileRuntimeMetrics.Snapshot();
             Assert(metrics.RuntimeGateMetadataCount == 2 && metrics.ScanInclusiveCount == 2 && metrics.ScanFinalizeCount == 2 && metrics.CompiledFinalizeCount == 2 && metrics.RejectFinalizeCount == 0 && metrics.SemanticCompileInclusiveCount == 0);
+        })));
+        tests.Add(("P3U OptionalIntExpression cohort attribution", (Action)(() =>
+        {
+            CompileRuntimeMetrics.Reset();
+            var p = Path.Combine(root, "p3u-cohorts.ERB");
+            WriteBom(p, "@P3U_COHORTS\r\nSIF\r\nSIF 1\r\nSIF 1+2\r\n");
+            var f = ErbSourceIndexer.IndexFile(p);
+            var result = new FunctionCompiler(semanticEnvironment).TryCompileRuntime(f, f.Functions.Single());
+            var metrics = CompileRuntimeMetrics.Snapshot();
+            var cohorts = metrics.OptionalIntExpressionCohorts;
+            var nodeCount = cohorts.NodeCount0.Count + cohorts.NodeCount1.Count + cohorts.NodeCount2To4.Count + cohorts.NodeCount5To8.Count + cohorts.NodeCount9To16.Count + cohorts.NodeCount17Plus.Count;
+            var nodeTicks = cohorts.NodeCount0.Ticks + cohorts.NodeCount1.Ticks + cohorts.NodeCount2To4.Ticks + cohorts.NodeCount5To8.Ticks + cohorts.NodeCount9To16.Ticks + cohorts.NodeCount17Plus.Ticks;
+            Assert(result.Status == CompileStatus.Compiled && metrics.SemanticOptionalIntExpressionCompletedCount == 3 && cohorts.PreparedEmpty.Count == 1 && cohorts.PreparedNonEmpty.Count == 2 && cohorts.MacroSubstitutionZero.Count == 3 && nodeCount == 3 && cohorts.PreparedEmpty.Ticks + cohorts.PreparedNonEmpty.Ticks == metrics.SemanticOptionalIntExpressionCompletedTicks && cohorts.MacroSubstitutionZero.Ticks + cohorts.MacroSubstitutionPositive.Ticks == metrics.SemanticOptionalIntExpressionCompletedTicks && nodeTicks == metrics.SemanticOptionalIntExpressionCompletedTicks && cohorts.TotalPayloadNodes >= 3, $"status={result.Status} optional={metrics.SemanticOptionalIntExpressionCompletedCount} empty={cohorts.PreparedEmpty.Count} nonempty={cohorts.PreparedNonEmpty.Count} macro={cohorts.MacroSubstitutionZero.Count}/{cohorts.MacroSubstitutionPositive.Count} nodes={nodeCount} payload={cohorts.TotalPayloadNodes}");
+        })));
+        tests.Add(("P3U OptionalIntExpression macro substitution attribution", (Action)(() =>
+        {
+            CompileRuntimeMetrics.Reset();
+            var options = new CompilerCompatibilityOptions(true, true, true, false);
+            var macros = MacroCatalog.FromHeaderText("#DEFINE ONE 1", options);
+            var environment = new StructuralSemanticEnvironment(options, macros);
+            var p = Path.Combine(root, "p3u-macro.ERB");
+            WriteBom(p, "@P3U_MACRO\r\nSIF ONE\r\n");
+            var f = ErbSourceIndexer.IndexFile(p);
+            var result = new FunctionCompiler(environment).TryCompileRuntime(f, f.Functions.Single());
+            var metrics = CompileRuntimeMetrics.Snapshot();
+            var cohorts = metrics.OptionalIntExpressionCohorts;
+            Assert(result.Status == CompileStatus.Compiled && cohorts.MacroSubstitutionPositive.Count == 1 && cohorts.TotalMacroSubstitutionCount > 0 && cohorts.MaxMacroSubstitutionCountPerCompletedCall > 0 && cohorts.MacroDefinitionCount == 1);
+        })));
+        tests.Add(("P3U OptionalIntExpression exception stays out of completed cohorts", (Action)(() =>
+        {
+            CompileRuntimeMetrics.Reset();
+            var p = Path.Combine(root, "p3u-exception.ERB");
+            WriteBom(p, "@P3U_EXCEPTION\r\nSIF (\r\n");
+            var f = ErbSourceIndexer.IndexFile(p);
+            var result = new FunctionCompiler(semanticEnvironment).TryCompileRuntime(f, f.Functions.Single());
+            var metrics = CompileRuntimeMetrics.Snapshot();
+            Assert(result.Status == CompileStatus.Unsupported && metrics.SemanticOptionalIntExpressionExceptionCount == 1 && metrics.OptionalIntExpressionCohorts.PreparedEmpty.Count == 0 && metrics.OptionalIntExpressionCohorts.MacroSubstitutionZero.Count == 0);
+            CompileRuntimeMetrics.Reset();
+            var reset = CompileRuntimeMetrics.Snapshot();
+            Assert(reset.SemanticOptionalIntExpressionCompletedCount == 0 && reset.OptionalIntExpressionCohorts.PreparedEmpty.Count == 0 && reset.OptionalIntExpressionCohorts.TotalPayloadNodes == 0);
         })));
 #endif
         tests.Add(("R1_4FHeaderRegression", () => { var path = Path.Combine(root, "r1-4f-header.ERB"); WriteBom(path, "@G, ARG = 98\r\n#FUNCTION\r\nPRINT 1\r\n"); var indexedHeader = ErbSourceIndexer.IndexFile(path); var result = new FunctionCompiler(semanticEnvironment).TryCompileRuntime(indexedHeader, indexedHeader.Functions.Single()); Assert(result.Status == CompileStatus.Compiled && result.Function!.RuntimeMetadata!.Parameters.Length == 1 && result.Function.RuntimeMetadata.Parameters[0].HasDefault && result.Function.RuntimeMetadata.Parameters[0].DefaultInteger == 98 && result.Function.RuntimeMetadata.ReturnType == RuntimeMetadataValueType.Integer); }));

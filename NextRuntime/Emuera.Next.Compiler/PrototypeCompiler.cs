@@ -524,30 +524,40 @@ public sealed class FunctionCompiler
             if (semanticEnvironment is not null && IsSemanticOperand(opcode))
             {
                 var semanticKind = opcode == PrototypeOpcode.CASE ? SemanticOperandKind.Case : opcode is PrototypeOpcode.FOR or PrototypeOpcode.REPEAT ? SemanticOperandKind.CountedLoop : SemanticOperandKind.Expression;
-                SemanticPayload semanticPart;
+                SemanticPayload? semanticPart = null;
 #if PERFORMANCE_METRICS
                 var semanticCompileStart = Stopwatch.GetTimestamp();
                 var semanticCategory = opcode is PrototypeOpcode.FOR or PrototypeOpcode.REPEAT ? 1 : opcode is PrototypeOpcode.SIF or PrototypeOpcode.IF or PrototypeOpcode.ELSEIF or PrototypeOpcode.WHILE or PrototypeOpcode.LOOP ? 2 : 3;
                 var semanticCallCompleted = false;
+                var semanticObservation = default(SemanticCompileObservation);
+                var semanticObservationAvailable = false;
                 try
                 {
 #endif
-                    semanticPart = opcode == PrototypeOpcode.REPEAT
-                        ? SemanticIrCompiler.CompileCountedLoop(rawOperand, semanticEnvironment, instructionIndex, true)
-                        : opcode == PrototypeOpcode.FOR
-                            ? SemanticIrCompiler.CompileCountedLoop(rawOperand, semanticEnvironment, instructionIndex, false)
-                            : opcode is PrototypeOpcode.SIF or PrototypeOpcode.IF or PrototypeOpcode.ELSEIF or PrototypeOpcode.WHILE or PrototypeOpcode.LOOP
-                                ? SemanticIrCompiler.CompileOptionalIntExpression(rawOperand, semanticEnvironment, instructionIndex)
-                                : SemanticIrCompiler.Compile(rawOperand, semanticEnvironment, instructionIndex, semanticKind);
+                    if (opcode == PrototypeOpcode.REPEAT) semanticPart = SemanticIrCompiler.CompileCountedLoop(rawOperand, semanticEnvironment, instructionIndex, true);
+                    else if (opcode == PrototypeOpcode.FOR) semanticPart = SemanticIrCompiler.CompileCountedLoop(rawOperand, semanticEnvironment, instructionIndex, false);
+                    else if (opcode is PrototypeOpcode.SIF or PrototypeOpcode.IF or PrototypeOpcode.ELSEIF or PrototypeOpcode.WHILE or PrototypeOpcode.LOOP)
+                    {
+#if PERFORMANCE_METRICS
+                        semanticPart = SemanticIrCompiler.CompileOptionalIntExpression(rawOperand, semanticEnvironment, instructionIndex, out semanticObservation);
+                        semanticObservationAvailable = true;
+#else
+                        semanticPart = SemanticIrCompiler.CompileOptionalIntExpression(rawOperand, semanticEnvironment, instructionIndex);
+#endif
+                    }
+                    else semanticPart = SemanticIrCompiler.Compile(rawOperand, semanticEnvironment, instructionIndex, semanticKind);
 #if PERFORMANCE_METRICS
                     semanticCallCompleted = true;
                 }
                 finally
                 {
-                    CompileRuntimeMetrics.RecordSemanticCompileInclusive(Stopwatch.GetTimestamp() - semanticCompileStart, semanticCategory, semanticCallCompleted);
+                    var semanticElapsed = Stopwatch.GetTimestamp() - semanticCompileStart;
+                    if (semanticCategory == 2 && semanticCallCompleted && semanticObservationAvailable && semanticPart is not null)
+                        CompileRuntimeMetrics.RecordSemanticCompileInclusive(semanticElapsed, semanticCategory, true, semanticObservation, semanticPart.Nodes.Length, semanticPart.Edges.Length, semanticPart.Symbols.Length, semanticPart.CaseArms.Length, semanticPart.Records.Length, semanticPart.HostIdentities.Length, semanticPart.Utf8.Length);
+                    else CompileRuntimeMetrics.RecordSemanticCompileInclusive(semanticElapsed, semanticCategory, semanticCallCompleted);
                 }
 #endif
-                semanticParts.Add(semanticPart);
+                semanticParts.Add(semanticPart!);
             }
             line++;
         }
