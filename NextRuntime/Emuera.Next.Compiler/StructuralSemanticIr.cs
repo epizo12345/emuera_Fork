@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using MinorShift.Emuera.Next.Core;
@@ -373,11 +374,13 @@ public static class SemanticIrCompiler
     public static SemanticPayload CompileExpression(string text, StructuralSemanticEnvironment environment, int instructionIndex = 0) => Compile(text, environment, instructionIndex, SemanticOperandKind.Expression);
     public static SemanticPayload CompileOptionalIntExpression(string text, StructuralSemanticEnvironment environment, int instructionIndex = 0) => Compile(text, environment, instructionIndex, SemanticOperandKind.Expression, defaultEmptyInt: true);
 #if PERFORMANCE_METRICS
-    public static SemanticPayload CompileOptionalIntExpression(string text, StructuralSemanticEnvironment environment, int instructionIndex, out SemanticCompileObservation observation)
+    public static SemanticPayload CompileOptionalIntExpression(string text, StructuralSemanticEnvironment environment, int instructionIndex, ref SemanticCompileObservation observation)
     {
         var prepared = Preprocess(text, environment, out var substitutions);
+        var preprocessEndTimestamp = Stopwatch.GetTimestamp();
+        observation = new SemanticCompileObservation(false, substitutions, environment.Macros.Count, environment.RenameResolver is not null, preprocessEndTimestamp);
         var payload = CompilePrepared(prepared, environment, instructionIndex, SemanticOperandKind.Expression, false, true, out var preparedEmpty);
-        observation = new SemanticCompileObservation(preparedEmpty, substitutions, environment.Macros.Count, environment.RenameResolver is not null);
+        observation = new SemanticCompileObservation(preparedEmpty, substitutions, environment.Macros.Count, environment.RenameResolver is not null, preprocessEndTimestamp);
         return payload;
     }
 #endif

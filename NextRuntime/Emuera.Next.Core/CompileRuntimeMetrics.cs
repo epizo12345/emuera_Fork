@@ -2,7 +2,7 @@ using System.Diagnostics;
 
 namespace MinorShift.Emuera.Next.Core;
 
-public readonly record struct SemanticCompileObservation(bool PreparedEmpty, int MacroSubstitutionCount, int MacroDefinitionCount, bool RenameResolverPresent);
+public readonly record struct SemanticCompileObservation(bool PreparedEmpty, int MacroSubstitutionCount, int MacroDefinitionCount, bool RenameResolverPresent, long PreprocessEndTimestamp);
 public readonly record struct CompileCohortSnapshot(long Count, long Ticks);
 public readonly record struct OptionalIntExpressionCohortSnapshot(
     CompileCohortSnapshot PreparedEmpty,
@@ -25,7 +25,10 @@ public readonly record struct OptionalIntExpressionCohortSnapshot(
     CompileCohortSnapshot NodeCount9To16,
     CompileCohortSnapshot NodeCount17Plus,
     int MacroDefinitionCount,
-    bool RenameResolverPresent);
+    bool RenameResolverPresent,
+    CompileCohortSnapshot PrefixThroughPreprocess,
+    CompileCohortSnapshot PostPreprocessRemainder,
+    long PreprocessBoundaryTimestampCount);
 
 public readonly record struct CompileRuntimeMetricsSnapshot(
     long RuntimeGateMetadataCount,
@@ -136,6 +139,11 @@ public static class CompileRuntimeMetrics
     private static int optionalMacroDefinitionCount;
     private static bool optionalRenameResolverPresent;
     private static bool optionalContextObserved;
+    private static long optionalPrefixThroughPreprocessCount;
+    private static long optionalPrefixThroughPreprocessTicks;
+    private static long optionalPostPreprocessRemainderCount;
+    private static long optionalPostPreprocessRemainderTicks;
+    private static long optionalPreprocessBoundaryTimestampCount;
 
     public static void Reset()
     {
@@ -189,6 +197,9 @@ public static class CompileRuntimeMetrics
         optionalMacroDefinitionCount = 0;
         optionalRenameResolverPresent = false;
         optionalContextObserved = false;
+        optionalPrefixThroughPreprocessCount = optionalPrefixThroughPreprocessTicks = 0;
+        optionalPostPreprocessRemainderCount = optionalPostPreprocessRemainderTicks = 0;
+        optionalPreprocessBoundaryTimestampCount = 0;
     }
 
     [Conditional("PERFORMANCE_METRICS")]
@@ -246,10 +257,22 @@ public static class CompileRuntimeMetrics
     }
 
     [Conditional("PERFORMANCE_METRICS")]
-    public static void RecordSemanticCompileInclusive(long ticks, int category, bool completed, SemanticCompileObservation observation, int nodes, int edges, int symbols, int caseArms, int records, int hostIdentities, int utf8Bytes)
+    public static void RecordSemanticCompileInclusive(long ticks, int category, bool completed, SemanticCompileObservation observation, long prefixThroughPreprocessTicks, long postPreprocessRemainderTicks, int nodes, int edges, int symbols, int caseArms, int records, int hostIdentities, int utf8Bytes)
     {
         RecordSemanticCompileInclusiveCore(ticks, category, completed);
-        if (category != 2 || !completed) return;
+        if (category != 2) return;
+        if (observation.PreprocessEndTimestamp != 0)
+        {
+            optionalPreprocessBoundaryTimestampCount++;
+        }
+        if (!completed) return;
+        if (observation.PreprocessEndTimestamp != 0)
+        {
+            optionalPrefixThroughPreprocessCount++;
+            optionalPrefixThroughPreprocessTicks += prefixThroughPreprocessTicks;
+            optionalPostPreprocessRemainderCount++;
+            optionalPostPreprocessRemainderTicks += postPreprocessRemainderTicks;
+        }
         if (!optionalContextObserved)
         {
             optionalMacroDefinitionCount = observation.MacroDefinitionCount;
@@ -330,5 +353,8 @@ public static class CompileRuntimeMetrics
             optionalPayloadNodes, optionalPayloadEdges, optionalPayloadSymbols, optionalPayloadCaseArms, optionalPayloadRecords, optionalPayloadHostIdentities, optionalPayloadUtf8Bytes,
             new(optionalNode0Count, optionalNode0Ticks), new(optionalNode1Count, optionalNode1Ticks), new(optionalNode2To4Count, optionalNode2To4Ticks),
             new(optionalNode5To8Count, optionalNode5To8Ticks), new(optionalNode9To16Count, optionalNode9To16Ticks), new(optionalNode17PlusCount, optionalNode17PlusTicks),
-            optionalMacroDefinitionCount, optionalRenameResolverPresent));
+            optionalMacroDefinitionCount, optionalRenameResolverPresent,
+            new(optionalPrefixThroughPreprocessCount, optionalPrefixThroughPreprocessTicks),
+            new(optionalPostPreprocessRemainderCount, optionalPostPreprocessRemainderTicks),
+            optionalPreprocessBoundaryTimestampCount));
 }

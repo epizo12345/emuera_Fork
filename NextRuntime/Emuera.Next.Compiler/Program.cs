@@ -466,6 +466,34 @@ static int SelfTest()
             var reset = CompileRuntimeMetrics.Snapshot();
             Assert(reset.SemanticOptionalIntExpressionCompletedCount == 0 && reset.OptionalIntExpressionCohorts.PreparedEmpty.Count == 0 && reset.OptionalIntExpressionCohorts.TotalPayloadNodes == 0);
         })));
+        tests.Add(("P3V OptionalIntExpression prefix/remainder attribution", (Action)(() =>
+        {
+            CompileRuntimeMetrics.Reset();
+            var p = Path.Combine(root, "p3v-prefix.ERB");
+            WriteBom(p, "@P3V_PREFIX\r\nSIF\r\nSIF 1\r\nSIF 1+2\r\n");
+            var f = ErbSourceIndexer.IndexFile(p);
+            var result = new FunctionCompiler(semanticEnvironment).TryCompileRuntime(f, f.Functions.Single());
+            var metrics = CompileRuntimeMetrics.Snapshot();
+            var cohorts = metrics.OptionalIntExpressionCohorts;
+            var prefix = cohorts.PrefixThroughPreprocess;
+            var remainder = cohorts.PostPreprocessRemainder;
+            Assert(result.Status == CompileStatus.Compiled && metrics.SemanticOptionalIntExpressionCompletedCount == 3 && prefix.Count == 3 && remainder.Count == 3 && cohorts.PreprocessBoundaryTimestampCount == 3 && prefix.Ticks >= 0 && remainder.Ticks >= 0 && prefix.Ticks + remainder.Ticks == metrics.SemanticOptionalIntExpressionCompletedTicks, $"status={result.Status} completed={metrics.SemanticOptionalIntExpressionCompletedCount} prefix={prefix.Count}/{prefix.Ticks} remainder={remainder.Count}/{remainder.Ticks} boundary={cohorts.PreprocessBoundaryTimestampCount}");
+            CompileRuntimeMetrics.Reset();
+            var reset = CompileRuntimeMetrics.Snapshot();
+            Assert(reset.OptionalIntExpressionCohorts.PrefixThroughPreprocess.Count == 0 && reset.OptionalIntExpressionCohorts.PostPreprocessRemainder.Count == 0 && reset.OptionalIntExpressionCohorts.PreprocessBoundaryTimestampCount == 0);
+        })));
+        tests.Add(("P3V OptionalIntExpression exception preserves completed split accounting", (Action)(() =>
+        {
+            CompileRuntimeMetrics.Reset();
+            var p = Path.Combine(root, "p3v-exception.ERB");
+            WriteBom(p, "@P3V_EXCEPTION\r\nSIF (\r\n");
+            var f = ErbSourceIndexer.IndexFile(p);
+            var result = new FunctionCompiler(semanticEnvironment).TryCompileRuntime(f, f.Functions.Single());
+            var metrics = CompileRuntimeMetrics.Snapshot();
+            var cohorts = metrics.OptionalIntExpressionCohorts;
+            Assert(result.Status == CompileStatus.Unsupported && metrics.SemanticOptionalIntExpressionExceptionCount == 1 && cohorts.PrefixThroughPreprocess.Count == 0 && cohorts.PostPreprocessRemainder.Count == 0 && cohorts.PreprocessBoundaryTimestampCount == 1);
+            CompileRuntimeMetrics.Reset();
+        })));
 #endif
         tests.Add(("R1_4FHeaderRegression", () => { var path = Path.Combine(root, "r1-4f-header.ERB"); WriteBom(path, "@G, ARG = 98\r\n#FUNCTION\r\nPRINT 1\r\n"); var indexedHeader = ErbSourceIndexer.IndexFile(path); var result = new FunctionCompiler(semanticEnvironment).TryCompileRuntime(indexedHeader, indexedHeader.Functions.Single()); Assert(result.Status == CompileStatus.Compiled && result.Function!.RuntimeMetadata!.Parameters.Length == 1 && result.Function.RuntimeMetadata.Parameters[0].HasDefault && result.Function.RuntimeMetadata.Parameters[0].DefaultInteger == 98 && result.Function.RuntimeMetadata.ReturnType == RuntimeMetadataValueType.Integer); }));
          tests.Add(("semantic target is exactly nine structural opcodes", () => { var p = Path.Combine(root, "semantic-targets.ERB"); WriteBom(p, "@TARGETS\r\nSIF A\r\nIF A\r\nELSEIF A\r\nSELECTCASE A\r\nCASE 1\r\nREPEAT 2\r\nFOR I,0,2\r\nWHILE A\r\nLOOP A\r\nPRINTFORM %A%\r\n"); var f = ErbSourceIndexer.IndexFile(p); var result = new FunctionCompiler(semanticEnvironment).TryCompile(f, f.Functions.Single()); Assert(result.Status == CompileStatus.Compiled && result.Function!.SemanticPayload!.Records.Length == 9); }));

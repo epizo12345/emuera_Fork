@@ -358,6 +358,13 @@ internal static class PerformanceMetrics
             TotalMilliseconds = TicksToMilliseconds(cohort.Ticks),
             AverageMicroseconds = cohort.Count == 0 ? 0 : TicksToMilliseconds(cohort.Ticks) * 1000 / cohort.Count
         };
+        static object Split(CompileCohortSnapshot cohort) => new
+        {
+            cohort.Count,
+            cohort.Ticks,
+            TotalMilliseconds = TicksToMilliseconds(cohort.Ticks),
+            AverageMicroseconds = cohort.Count == 0 ? 0 : TicksToMilliseconds(cohort.Ticks) * 1000 / cohort.Count
+        };
         var optionalCohorts = compileRuntimeMetrics.OptionalIntExpressionCohorts;
         var optionalCompletedCount = compileRuntimeMetrics.SemanticOptionalIntExpressionCompletedCount;
         var optionalCompletedTicks = compileRuntimeMetrics.SemanticOptionalIntExpressionCompletedTicks;
@@ -684,6 +691,22 @@ internal static class PerformanceMetrics
                         MacroDefinitionCount = optionalCohorts.MacroDefinitionCount,
                         RenameResolverPresent = optionalCohorts.RenameResolverPresent
                     }
+                },
+                OptionalIntExpressionPrefixSplit = new
+                {
+                    Scope = "COMPLETED_CALLS_ONLY",
+                    ExistingSemanticTimerReused = true,
+                    NewTimestampCallsPerCall = 1,
+                    Interpretation = "PREFIX_THROUGH_PREPROCESS_VS_POST_PREPROCESS_REMAINDER",
+                    OptionalCompletedCount = optionalCompletedCount,
+                    OptionalCompletedTicks = optionalCompletedTicks,
+                    PrefixThroughPreprocess = Split(optionalCohorts.PrefixThroughPreprocess),
+                    PostPreprocessRemainder = Split(optionalCohorts.PostPreprocessRemainder),
+                    PreprocessBoundaryTimestampCount = optionalCohorts.PreprocessBoundaryTimestampCount,
+                    CountReconciliationExact = optionalCohorts.PrefixThroughPreprocess.Count == optionalCompletedCount && optionalCohorts.PostPreprocessRemainder.Count == optionalCompletedCount,
+                    TicksReconciliationExact = optionalCohorts.PrefixThroughPreprocess.Ticks + optionalCohorts.PostPreprocessRemainder.Ticks == optionalCompletedTicks,
+                    PrefixShareOfOptionalPercent = optionalCompletedTicks == 0 ? 0 : (double)optionalCohorts.PrefixThroughPreprocess.Ticks * 100 / optionalCompletedTicks,
+                    RemainderShareOfOptionalPercent = optionalCompletedTicks == 0 ? 0 : (double)optionalCohorts.PostPreprocessRemainder.Ticks * 100 / optionalCompletedTicks
                 },
                 AssignmentSearchInclusive = new
                 {

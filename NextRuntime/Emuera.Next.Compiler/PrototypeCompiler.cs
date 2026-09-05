@@ -539,8 +539,8 @@ public sealed class FunctionCompiler
                     else if (opcode is PrototypeOpcode.SIF or PrototypeOpcode.IF or PrototypeOpcode.ELSEIF or PrototypeOpcode.WHILE or PrototypeOpcode.LOOP)
                     {
 #if PERFORMANCE_METRICS
-                        semanticPart = SemanticIrCompiler.CompileOptionalIntExpression(rawOperand, semanticEnvironment, instructionIndex, out semanticObservation);
                         semanticObservationAvailable = true;
+                        semanticPart = SemanticIrCompiler.CompileOptionalIntExpression(rawOperand, semanticEnvironment, instructionIndex, ref semanticObservation);
 #else
                         semanticPart = SemanticIrCompiler.CompileOptionalIntExpression(rawOperand, semanticEnvironment, instructionIndex);
 #endif
@@ -552,8 +552,12 @@ public sealed class FunctionCompiler
                 finally
                 {
                     var semanticElapsed = Stopwatch.GetTimestamp() - semanticCompileStart;
-                    if (semanticCategory == 2 && semanticCallCompleted && semanticObservationAvailable && semanticPart is not null)
-                        CompileRuntimeMetrics.RecordSemanticCompileInclusive(semanticElapsed, semanticCategory, true, semanticObservation, semanticPart.Nodes.Length, semanticPart.Edges.Length, semanticPart.Symbols.Length, semanticPart.CaseArms.Length, semanticPart.Records.Length, semanticPart.HostIdentities.Length, semanticPart.Utf8.Length);
+                    if (semanticCategory == 2 && semanticObservationAvailable)
+                    {
+                        var prefixTicks = semanticCallCompleted && semanticObservation.PreprocessEndTimestamp != 0 ? semanticObservation.PreprocessEndTimestamp - semanticCompileStart : 0;
+                        var remainderTicks = semanticCallCompleted ? semanticElapsed - prefixTicks : 0;
+                        CompileRuntimeMetrics.RecordSemanticCompileInclusive(semanticElapsed, semanticCategory, semanticCallCompleted, semanticObservation, prefixTicks, remainderTicks, semanticPart?.Nodes.Length ?? 0, semanticPart?.Edges.Length ?? 0, semanticPart?.Symbols.Length ?? 0, semanticPart?.CaseArms.Length ?? 0, semanticPart?.Records.Length ?? 0, semanticPart?.HostIdentities.Length ?? 0, semanticPart?.Utf8.Length ?? 0);
+                    }
                     else CompileRuntimeMetrics.RecordSemanticCompileInclusive(semanticElapsed, semanticCategory, semanticCallCompleted);
                 }
 #endif
