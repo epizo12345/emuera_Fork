@@ -440,6 +440,9 @@ public sealed class FunctionCompiler
             while (offset < bytes.Length && bytes[offset] != (byte)'\n') offset++;
             var lineEnd = offset;
             if (lineEnd > lineStart && bytes[lineEnd - 1] == (byte)'\r') lineEnd--;
+#if PERFORMANCE_METRICS
+            CompileRuntimeMetrics.RecordPhysicalLine(lineEnd - lineStart);
+#endif
             var lineBytes = bytes.AsSpan(lineStart, lineEnd - lineStart);
             offset = offset < bytes.Length ? offset + 1 : offset;
             var text = StrictUtf8.GetString(lineBytes);
@@ -447,7 +450,13 @@ public sealed class FunctionCompiler
             var scan = LegacyIdentifierScanner.ReadFirstIdentifier(text, options);
             var trimStart = scan.StartPosition;
             var trimmed = text[trimStart..];
-            if (trimmed.Length == 0) { line++; continue; }
+            if (trimmed.Length == 0)
+            {
+#if PERFORMANCE_METRICS
+                CompileRuntimeMetrics.RecordEmptyOrCommentSkippedLine();
+#endif
+                line++; continue;
+            }
             // [Emuera改修:NEXT-1B-R6 2026-08-27]
             // DebugModeの;#;は命令を消してCompiled扱いにせず、未実装の最小fallbackへ送る。
             if (trimmed.StartsWith(";#;", StringComparison.Ordinal))
@@ -455,9 +464,21 @@ public sealed class FunctionCompiler
                 if (options.DebugMode) return Fail(UnsupportedReason.UnknownSyntax, "DebugMode ;#; prefix requires Legacy fallback", out reason, out detail);
                 line++; continue;
             }
-            if (trimmed[0] == ';') { line++; continue; }
+            if (trimmed[0] == ';')
+            {
+#if PERFORMANCE_METRICS
+                CompileRuntimeMetrics.RecordEmptyOrCommentSkippedLine();
+#endif
+                line++; continue;
+            }
             if (trimmed.EndsWith('\\')) return Fail(UnsupportedReason.Multiline, "line continuation", out reason, out detail);
-            if (metadataParsed && trimmed[0] == '#') { line++; continue; }
+            if (metadataParsed && trimmed[0] == '#')
+            {
+#if PERFORMANCE_METRICS
+                CompileRuntimeMetrics.RecordMetadataSkippedLine();
+#endif
+                line++; continue;
+            }
             if (trimmed[0] is '[' or '#' or '$' or '}' or '{' or '@')
                 return Fail(trimmed[0] == '$' ? UnsupportedReason.LocalLabelOrGoto : UnsupportedReason.UnknownSyntax, "unsupported structural line", out reason, out detail);
             var tokenLength = scan.StopPosition - scan.StartPosition;
@@ -473,7 +494,15 @@ public sealed class FunctionCompiler
                 if (!isMappedCommand)
                     return Fail(UnsupportedReason.UnsupportedInstruction, $"unsupported instruction: {token}", out reason, out detail);
             }
-            else if (!TryFindAssignment(trimmed, out _))
+            var assignmentFound = false;
+            if (!isKnownLineHead)
+            {
+                assignmentFound = TryFindAssignment(trimmed, out _);
+#if PERFORMANCE_METRICS
+                CompileRuntimeMetrics.RecordAssignmentSearch(assignmentFound);
+#endif
+            }
+            if (!isKnownLineHead && !assignmentFound)
             {
                 return Fail(UnsupportedReason.UnsupportedInstruction, $"unsupported instruction: {token}", out reason, out detail);
             }
@@ -489,9 +518,15 @@ public sealed class FunctionCompiler
             if (LegacyOpcodeMap.IsCall(opcode)) flags |= PrototypeInstructionFlags.Call;
             var instructionIndex = list.Count;
             list.Add(new(opcode, flags, line, operandOffset, operandLength));
+#if PERFORMANCE_METRICS
+            CompileRuntimeMetrics.RecordInstructionEmitted();
+#endif
             if (semanticEnvironment is not null && IsSemanticOperand(opcode))
             {
                 var semanticKind = opcode == PrototypeOpcode.CASE ? SemanticOperandKind.Case : opcode is PrototypeOpcode.FOR or PrototypeOpcode.REPEAT ? SemanticOperandKind.CountedLoop : SemanticOperandKind.Expression;
+#if PERFORMANCE_METRICS
+                var semanticCompileStart = Stopwatch.GetTimestamp();
+#endif
                 semanticParts.Add(opcode == PrototypeOpcode.REPEAT
                     ? SemanticIrCompiler.CompileCountedLoop(rawOperand, semanticEnvironment, instructionIndex, true)
                     : opcode == PrototypeOpcode.FOR
@@ -499,10 +534,22 @@ public sealed class FunctionCompiler
                         : opcode is PrototypeOpcode.SIF or PrototypeOpcode.IF or PrototypeOpcode.ELSEIF or PrototypeOpcode.WHILE or PrototypeOpcode.LOOP
                             ? SemanticIrCompiler.CompileOptionalIntExpression(rawOperand, semanticEnvironment, instructionIndex)
                             : SemanticIrCompiler.Compile(rawOperand, semanticEnvironment, instructionIndex, semanticKind));
+#if PERFORMANCE_METRICS
+                var semanticCategory = opcode is PrototypeOpcode.FOR or PrototypeOpcode.REPEAT ? 1 : opcode is PrototypeOpcode.SIF or PrototypeOpcode.IF or PrototypeOpcode.ELSEIF or PrototypeOpcode.WHILE or PrototypeOpcode.LOOP ? 2 : 3;
+                CompileRuntimeMetrics.RecordSemanticCompileInclusive(Stopwatch.GetTimestamp() - semanticCompileStart, semanticCategory);
+#endif
             }
             line++;
         }
-        return (list.ToImmutable(), semanticParts.Count == 0 ? null : SemanticPayload.Merge(semanticParts));
+#if PERFORMANCE_METRICS
+        var scanFinalizeStart = Stopwatch.GetTimestamp();
+#endif
+        var instructions = list.ToImmutable();
+        var semanticPayload = semanticParts.Count == 0 ? null : SemanticPayload.Merge(semanticParts);
+#if PERFORMANCE_METRICS
+        CompileRuntimeMetrics.RecordScanFinalize(Stopwatch.GetTimestamp() - scanFinalizeStart, semanticParts.Count);
+#endif
+        return (instructions, semanticPayload);
 
         static bool IsSemanticOperand(PrototypeOpcode opcode) => opcode is PrototypeOpcode.SIF or PrototypeOpcode.IF or PrototypeOpcode.ELSEIF or PrototypeOpcode.SELECTCASE or PrototypeOpcode.CASE or PrototypeOpcode.REPEAT or PrototypeOpcode.FOR or PrototypeOpcode.WHILE or PrototypeOpcode.LOOP;
 

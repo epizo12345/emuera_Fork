@@ -347,6 +347,9 @@ internal static class PerformanceMetrics
         var compileRuntimeInnerTicks = compileRuntimeMetrics.RuntimeGateMetadataTicks + compileRuntimeMetrics.ScanInclusiveTicks + compileRuntimeMetrics.CompiledFinalizeTicks + compileRuntimeMetrics.RejectFinalizeTicks;
         var compileRuntimeInnerMilliseconds = TicksToMilliseconds(compileRuntimeInnerTicks);
         var compileRuntimeOuterMilliseconds = TicksToMilliseconds(nextPrototypeCompileCompileRuntimeTicks);
+        var scanInnerTicks = compileRuntimeMetrics.SemanticCompileInclusiveTicks + compileRuntimeMetrics.ScanFinalizeTicks;
+        var scanInclusiveMilliseconds = TicksToMilliseconds(compileRuntimeMetrics.ScanInclusiveTicks);
+        var scanInnerMilliseconds = TicksToMilliseconds(scanInnerTicks);
         var sourceReaderFileOpenInnerTicks = sourceReaderMetrics.FileStreamOpenTicks + sourceReaderMetrics.InitialSnapshotCheckTicks;
         var sourceReaderReadInnerTicks = sourceReaderMetrics.SpanValidationTicks + sourceReaderMetrics.ReadSnapshotCheckTicks + sourceReaderMetrics.BufferAllocationTicks + sourceReaderMetrics.SeekTicks + sourceReaderMetrics.StreamReadTicks + sourceReaderMetrics.Utf8ValidationTicks + sourceReaderMetrics.ResultConstructionTicks;
         var report = new
@@ -565,6 +568,46 @@ internal static class PerformanceMetrics
                 OuterCompileRuntimeMilliseconds = compileRuntimeOuterMilliseconds,
                 UnaccountedMilliseconds = Math.Max(0, compileRuntimeOuterMilliseconds - compileRuntimeInnerMilliseconds),
                 CoveragePercent = compileRuntimeOuterMilliseconds == 0 ? 0 : compileRuntimeInnerMilliseconds * 100 / compileRuntimeOuterMilliseconds,
+                SemanticCompileInclusive = new
+                {
+                    Count = compileRuntimeMetrics.SemanticCompileInclusiveCount,
+                    TotalMilliseconds = TicksToMilliseconds(compileRuntimeMetrics.SemanticCompileInclusiveTicks),
+                    AverageMicroseconds = compileRuntimeMetrics.SemanticCompileInclusiveCount == 0 ? 0 : TicksToMilliseconds(compileRuntimeMetrics.SemanticCompileInclusiveTicks) * 1000 / compileRuntimeMetrics.SemanticCompileInclusiveCount,
+                    CountedLoopCount = compileRuntimeMetrics.SemanticCountedLoopCount,
+                    OptionalIntExpressionCount = compileRuntimeMetrics.SemanticOptionalIntExpressionCount,
+                    ExpressionCount = compileRuntimeMetrics.SemanticExpressionCount
+                },
+                AssignmentSearchInclusive = new
+                {
+                    Mode = "COUNT_ONLY",
+                    Count = compileRuntimeMetrics.AssignmentSearchCount,
+                    AcceptedCount = compileRuntimeMetrics.AssignmentAcceptedCount,
+                    TotalMilliseconds = (double?)null,
+                    AverageMicroseconds = (double?)null
+                },
+                ScanFinalize = new
+                {
+                    Count = compileRuntimeMetrics.ScanFinalizeCount,
+                    TotalMilliseconds = TicksToMilliseconds(compileRuntimeMetrics.ScanFinalizeTicks),
+                    AverageMicroseconds = compileRuntimeMetrics.ScanFinalizeCount == 0 ? 0 : TicksToMilliseconds(compileRuntimeMetrics.ScanFinalizeTicks) * 1000 / compileRuntimeMetrics.ScanFinalizeCount,
+                    SemanticPayloadMergeFunctionCount = compileRuntimeMetrics.SemanticPayloadMergeFunctionCount,
+                    SemanticPartCount = compileRuntimeMetrics.SemanticPartCount
+                },
+                ScanCoreResidualMilliseconds = Math.Max(0, scanInclusiveMilliseconds - scanInnerMilliseconds),
+                ScanInnerCoveragePercent = scanInclusiveMilliseconds == 0 ? 0 : scanInnerMilliseconds * 100 / scanInclusiveMilliseconds,
+                LowOverheadCounters = new
+                {
+                    PhysicalLineCountScanned = compileRuntimeMetrics.PhysicalLineCountScanned,
+                    PhysicalLineBytesScanned = compileRuntimeMetrics.PhysicalLineBytesScanned,
+                    EmptyOrCommentSkippedLineCount = compileRuntimeMetrics.EmptyOrCommentSkippedLineCount,
+                    MetadataSkippedLineCount = compileRuntimeMetrics.MetadataSkippedLineCount,
+                    InstructionEmittedCount = compileRuntimeMetrics.InstructionEmittedCount,
+                    AssignmentCandidateCount = compileRuntimeMetrics.AssignmentSearchCount,
+                    AssignmentAcceptedCount = compileRuntimeMetrics.AssignmentAcceptedCount,
+                    SemanticCompileInvocationCount = compileRuntimeMetrics.SemanticCompileInclusiveCount,
+                    SemanticPayloadMergeFunctionCount = compileRuntimeMetrics.SemanticPayloadMergeFunctionCount,
+                    SemanticPartCount = compileRuntimeMetrics.SemanticPartCount
+                },
                 TimerCallsPerFunction = new
                 {
                     CompiledPath = 5,

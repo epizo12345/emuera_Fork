@@ -340,7 +340,17 @@ static int SelfTest()
             var f = ErbSourceIndexer.IndexFile(p);
             var result = new FunctionCompiler(semanticEnvironment).TryCompileRuntime(f, f.Functions.Single());
             var metrics = CompileRuntimeMetrics.Snapshot();
-            Assert(result.Status == CompileStatus.Compiled && metrics.RuntimeGateMetadataCount == 1 && metrics.ScanInclusiveCount == 1 && metrics.CompiledFinalizeCount == 1 && metrics.RejectFinalizeCount == 0);
+            Assert(result.Status == CompileStatus.Compiled && metrics.RuntimeGateMetadataCount == 1 && metrics.ScanInclusiveCount == 1 && metrics.SemanticCompileInclusiveCount == 0 && metrics.ScanFinalizeCount == 1 && metrics.CompiledFinalizeCount == 1 && metrics.RejectFinalizeCount == 0);
+        })));
+        tests.Add(("P3Q CompileRuntime decomposition semantic path", (Action)(() =>
+        {
+            CompileRuntimeMetrics.Reset();
+            var p = Path.Combine(root, "p3q-semantic.ERB");
+            WriteBom(p, "@P3Q_SEMANTIC\r\nSIF 1\r\n");
+            var f = ErbSourceIndexer.IndexFile(p);
+            var result = new FunctionCompiler(semanticEnvironment).TryCompileRuntime(f, f.Functions.Single());
+            var metrics = CompileRuntimeMetrics.Snapshot();
+            Assert(result.Status == CompileStatus.Compiled && metrics.ScanInclusiveCount == 1 && metrics.SemanticCompileInclusiveCount == 1 && metrics.ScanFinalizeCount == 1 && metrics.SemanticPayloadMergeFunctionCount == 1 && metrics.SemanticPartCount == 1 && metrics.CompiledFinalizeCount == 1 && metrics.RejectFinalizeCount == 0);
         })));
         tests.Add(("P3P CompileRuntime decomposition rejected path", (Action)(() =>
         {
@@ -350,7 +360,7 @@ static int SelfTest()
             var f = ErbSourceIndexer.IndexFile(p);
             var result = new FunctionCompiler(semanticEnvironment).TryCompileRuntime(f, f.Functions.Single());
             var metrics = CompileRuntimeMetrics.Snapshot();
-            Assert(result.Status == CompileStatus.Unsupported && metrics.RuntimeGateMetadataCount == 1 && metrics.ScanInclusiveCount == 1 && metrics.CompiledFinalizeCount == 0 && metrics.RejectFinalizeCount == 1);
+            Assert(result.Status == CompileStatus.Unsupported && metrics.RuntimeGateMetadataCount == 1 && metrics.ScanInclusiveCount == 1 && metrics.ScanFinalizeCount == 0 && metrics.CompiledFinalizeCount == 0 && metrics.RejectFinalizeCount == 1);
         })));
         tests.Add(("P3P CompileRuntime decomposition reset", (Action)(() =>
         {
@@ -361,7 +371,7 @@ static int SelfTest()
             _ = new FunctionCompiler(semanticEnvironment).TryCompileRuntime(f, f.Functions.Single());
             CompileRuntimeMetrics.Reset();
             var metrics = CompileRuntimeMetrics.Snapshot();
-            Assert(metrics.RuntimeGateMetadataCount == 0 && metrics.ScanInclusiveCount == 0 && metrics.CompiledFinalizeCount == 0 && metrics.RejectFinalizeCount == 0 && metrics.RuntimeGateMetadataTicks == 0 && metrics.ScanInclusiveTicks == 0 && metrics.CompiledFinalizeTicks == 0 && metrics.RejectFinalizeTicks == 0);
+            Assert(metrics.RuntimeGateMetadataCount == 0 && metrics.ScanInclusiveCount == 0 && metrics.SemanticCompileInclusiveCount == 0 && metrics.ScanFinalizeCount == 0 && metrics.CompiledFinalizeCount == 0 && metrics.RejectFinalizeCount == 0 && metrics.RuntimeGateMetadataTicks == 0 && metrics.ScanInclusiveTicks == 0 && metrics.SemanticCompileInclusiveTicks == 0 && metrics.ScanFinalizeTicks == 0 && metrics.CompiledFinalizeTicks == 0 && metrics.RejectFinalizeTicks == 0);
         })));
         tests.Add(("P3P CompileRuntime decomposition aggregation", (Action)(() =>
         {
@@ -373,7 +383,7 @@ static int SelfTest()
             Assert(compiler.TryCompileRuntime(f, f.Functions.Single()).Status == CompileStatus.Compiled);
             Assert(compiler.TryCompileRuntime(f, f.Functions.Single()).Status == CompileStatus.Compiled);
             var metrics = CompileRuntimeMetrics.Snapshot();
-            Assert(metrics.RuntimeGateMetadataCount == 2 && metrics.ScanInclusiveCount == 2 && metrics.CompiledFinalizeCount == 2 && metrics.RejectFinalizeCount == 0);
+            Assert(metrics.RuntimeGateMetadataCount == 2 && metrics.ScanInclusiveCount == 2 && metrics.ScanFinalizeCount == 2 && metrics.CompiledFinalizeCount == 2 && metrics.RejectFinalizeCount == 0 && metrics.SemanticCompileInclusiveCount == 0);
         })));
 #endif
         tests.Add(("R1_4FHeaderRegression", () => { var path = Path.Combine(root, "r1-4f-header.ERB"); WriteBom(path, "@G, ARG = 98\r\n#FUNCTION\r\nPRINT 1\r\n"); var indexedHeader = ErbSourceIndexer.IndexFile(path); var result = new FunctionCompiler(semanticEnvironment).TryCompileRuntime(indexedHeader, indexedHeader.Functions.Single()); Assert(result.Status == CompileStatus.Compiled && result.Function!.RuntimeMetadata!.Parameters.Length == 1 && result.Function.RuntimeMetadata.Parameters[0].HasDefault && result.Function.RuntimeMetadata.Parameters[0].DefaultInteger == 98 && result.Function.RuntimeMetadata.ReturnType == RuntimeMetadataValueType.Integer); }));
