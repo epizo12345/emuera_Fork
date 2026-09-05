@@ -171,6 +171,8 @@ static partial class Program
         rootCommand.Options.Add(loadToShopMeasurementSelfTestOption);
         var vmExecutionAttributionSelfTestOption = new Option<bool>(name: "--NextRuntimeVmExecutionAttributionSelfTest");
         rootCommand.Options.Add(vmExecutionAttributionSelfTestOption);
+        var m7PrebindFastPathSelfTestOption = new Option<bool>(name: "--NextRuntimeM7PrebindFastPathSelfTest");
+        rootCommand.Options.Add(m7PrebindFastPathSelfTestOption);
 #endif
 
         var filesArg = new Argument<string[]>(
@@ -223,6 +225,11 @@ static partial class Program
         if (result.GetValue(vmExecutionAttributionSelfTestOption))
         {
             Environment.ExitCode = PerformanceMetrics.VmExecutionAttributionSelfTest();
+            return;
+        }
+        if (result.GetValue(m7PrebindFastPathSelfTestOption))
+        {
+            Environment.ExitCode = MinorShift.Emuera.GameProc.LegacyVmSemanticHost.M7ProductionPrebindFastPathSelfTest();
             return;
         }
 #endif

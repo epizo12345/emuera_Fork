@@ -76,6 +76,15 @@ internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparation
     private readonly Dictionary<ulong, BoundVariable> variables = [];
     private readonly Dictionary<ulong, BuiltinCallKind> builtins = [];
     private readonly VmRuntimePreparationCounters counters = preparationCounters ?? new();
+    // [Emuera改修:NEXT-3D-R1.5P3Z-M7]
+    // generation-scoped production prebind済みの同一payloadだけを短絡する。
+    // 値や未解決identityはcacheせず、diagnostic時は旧full scanへ戻す。
+    private readonly HashSet<SemanticPayload> productionPreboundArenas = new(ReferenceEqualityComparer.Instance);
+#if PERFORMANCE_METRICS
+    private int m7FastPathHitCount;
+    private int m7FullScanCallCount;
+    private int m7HostIdentityVisitCount;
+#endif
     private readonly Dictionary<SemanticPayload, SemanticUseContextIndex> contextIndexes = [];
     private sealed record BoundVariable(VariableToken Token, bool ImplicitZeroIndex);
     private sealed record CsvIndexLookup(VariableToken? OwnerToken, string HostSymbol, bool KeywordDictionaryPresent, bool KeywordLabelFound, int? ResolvedNumericIndex, string ExceptionType = "", string ExceptionMessage = "");
@@ -293,10 +302,34 @@ internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparation
     public bool TryCall(string name, ReadOnlySpan<VmSemanticValue> arguments, out VmSemanticValue value) { value = VmSemanticValue.Unavailable; return false; }
     public int CompareStrings(string left, string right) => string.Compare(left, right, Config.SCExpression);
 
+    internal bool PrebindProductionVariableIdentities(SemanticPayload payload)
+    {
+        var result = BindVariableIdentitiesCore(payload, 0);
+        if (result) productionPreboundArenas.Add(payload);
+        return result;
+    }
+
     public bool BindVariableIdentities(SemanticPayload payload)
     {
 #if PERFORMANCE_METRICS
         var identityBindingStart = PerformanceMetrics.StartLoadToShopIdentityBinding();
+        if (productionPreboundArenas.Contains(payload) && !csvIndexDiagnosticActive)
+        {
+            m7FastPathHitCount++;
+            PerformanceMetrics.RecordLoadToShopIdentityBinding(identityBindingStart, 0, 0, 0, 0, 0, 0, 0, 0, 0, true);
+            return true;
+        }
+        return BindVariableIdentitiesCore(payload, identityBindingStart);
+#else
+        if (productionPreboundArenas.Contains(payload) && !csvIndexDiagnosticActive) return true;
+        return BindVariableIdentitiesCore(payload, 0);
+#endif
+    }
+
+    private bool BindVariableIdentitiesCore(SemanticPayload payload, long identityBindingStart)
+    {
+#if PERFORMANCE_METRICS
+        m7FullScanCallCount++;
         var hostIdentityVisits = 0;
         var variableIdentityVisits = 0;
         var callIdentityVisits = 0;
@@ -311,6 +344,7 @@ internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparation
         {
 #if PERFORMANCE_METRICS
             hostIdentityVisits++;
+            m7HostIdentityVisitCount++;
 #endif
             var normalVariableBindAttempted = false;
             var normalVariableBindSucceeded = false;
@@ -370,10 +404,69 @@ internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparation
 #if PERFORMANCE_METRICS
         PerformanceMetrics.RecordLoadToShopIdentityBinding(identityBindingStart, hostIdentityVisits, variableIdentityVisits, callIdentityVisits,
             variableAlreadyBoundVisits, builtinAlreadyBoundVisits, variableResolutionAttempts, variableResolutionSuccesses,
-            builtinResolutionAttempts, builtinResolutionSuccesses);
+            builtinResolutionAttempts, builtinResolutionSuccesses, false);
 #endif
         return true;
     }
+
+#if PERFORMANCE_METRICS
+    internal static int M7ProductionPrebindFastPathSelfTest()
+    {
+        try
+        {
+            var process = (Process)RuntimeHelpers.GetUninitializedObject(typeof(Process));
+            var payload = M7TestPayload("A");
+            var equivalentPayload = M7TestPayload("A");
+            var host = new LegacyVmSemanticHost(process);
+            var prebind = host.PrebindProductionVariableIdentities(payload);
+            var fast = host.BindVariableIdentities(payload);
+            var exactIdentity = host.m7FastPathHitCount == 1 && host.m7FullScanCallCount == 1 && host.m7HostIdentityVisitCount == 1;
+            var distinctPayload = host.BindVariableIdentities(equivalentPayload);
+            var exactPayload = distinctPayload && host.m7FullScanCallCount == 2 && host.m7HostIdentityVisitCount == 2;
+            var unresolvedSafe = host.BoundIdentityCount == 0;
+
+            var unsealed = new LegacyVmSemanticHost(process);
+            unsealed.BindVariableIdentities(equivalentPayload);
+            unsealed.BindVariableIdentities(equivalentPayload);
+            var unsealedRetry = unsealed.m7FullScanCallCount == 2 && unsealed.m7HostIdentityVisitCount == 2;
+
+            var diagnostic = new LegacyVmSemanticHost(process);
+            diagnostic.PrebindProductionVariableIdentities(payload);
+            diagnostic.csvIndexDiagnosticActive = true;
+            diagnostic.BindVariableIdentities(payload);
+            var diagnosticScan = diagnostic.m7FastPathHitCount == 0 && diagnostic.m7FullScanCallCount == 2 && diagnostic.m7HostIdentityVisitCount == 2;
+
+            var replacement = new LegacyVmSemanticHost(process);
+            replacement.BindVariableIdentities(payload);
+            var generationReplacement = replacement.m7FullScanCallCount == 1 && replacement.m7FastPathHitCount == 0;
+            var currentValueContract = host.productionPreboundArenas.Count == 1 && host.variables.Count == 0;
+            var framePath = host.IsFrameVariableBound(0, M7TestPayload("ARG"), new(SemanticHostIdentityKind.Variable, 0, 0, 0, -1, 0));
+
+            Console.WriteLine($"M7ProductionPrebindFastPath={(prebind && fast ? "PASS" : "FAIL")}");
+            Console.WriteLine($"M7ExactPayloadIdentity={(exactPayload ? "PASS" : "FAIL")}");
+            Console.WriteLine($"M7UnsealedRetryBehavior={(unsealedRetry ? "PASS" : "FAIL")}");
+            Console.WriteLine($"M7CurrentVariableValueContract={(currentValueContract ? "PASS" : "FAIL")}");
+            Console.WriteLine($"M7UnresolvedIdentity={(unresolvedSafe ? "PASS" : "FAIL")}");
+            Console.WriteLine($"M7FrameVariablePath={(framePath ? "PASS" : "FAIL")}");
+            Console.WriteLine($"M7DiagnosticFullScan={(diagnosticScan ? "PASS" : "FAIL")}");
+            Console.WriteLine($"M7GenerationReplacement={(generationReplacement ? "PASS" : "FAIL")}");
+            var pass = prebind && fast && exactIdentity && exactPayload && unsealedRetry && currentValueContract && unresolvedSafe && framePath && diagnosticScan && generationReplacement;
+            Console.WriteLine($"M7PrebindProfilerSelfTest={(pass ? "PASS" : "FAIL")}");
+            return pass ? 0 : 1;
+        }
+        catch (Exception exception)
+        {
+            Console.WriteLine($"M7PrebindProfilerSelfTest=FAIL:{exception.GetType().Name}:{exception.Message}");
+            return 1;
+        }
+
+        static SemanticPayload M7TestPayload(string name)
+        {
+            var bytes = Encoding.UTF8.GetBytes(name);
+            return new([new(SemanticNodeKind.Variable, SemanticOperator.None, 0, 0, 0, -1)], [], [new(0, bytes.Length)], [], [], bytes);
+        }
+    }
+#endif
 
     public bool TryRead(SemanticHostIdentity identity, ReadOnlySpan<VmSemanticValue> indices, out VmSemanticValue value)
         => TryReadContext(null, identity, indices, out value);

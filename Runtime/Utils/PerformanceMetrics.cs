@@ -203,6 +203,8 @@ internal static class PerformanceMetrics
     private static long loadToShopVariableResolutionSuccesses;
     private static long loadToShopBuiltinResolutionAttempts;
     private static long loadToShopBuiltinResolutionSuccesses;
+    private static long loadToShopIdentityBindingFastPathHitCount;
+    private static long loadToShopIdentityBindingFullScanCallCount;
 
     private sealed class LoadWarningSnapshot
     {
@@ -1326,6 +1328,10 @@ internal static class PerformanceMetrics
     private static object CreateLoadToShopIdentityBindingReport() => new
     {
         CallCount = loadToShopIdentityBindingCallCount,
+        BindCallCount = loadToShopIdentityBindingCallCount,
+        FastPathHitCount = loadToShopIdentityBindingFastPathHitCount,
+        FullScanCallCount = loadToShopIdentityBindingFullScanCallCount,
+        BindCallReconciliationExact = loadToShopIdentityBindingCallCount == loadToShopIdentityBindingFastPathHitCount + loadToShopIdentityBindingFullScanCallCount,
         TotalMilliseconds = TicksToMilliseconds(loadToShopIdentityBindingTicks),
         AverageMicroseconds = loadToShopIdentityBindingCallCount == 0 ? 0 : TicksToMilliseconds(loadToShopIdentityBindingTicks) * 1000 / loadToShopIdentityBindingCallCount,
         HostIdentityVisits = loadToShopHostIdentityVisits,
@@ -1387,6 +1393,8 @@ internal static class PerformanceMetrics
         loadToShopVariableResolutionSuccesses = 0;
         loadToShopBuiltinResolutionAttempts = 0;
         loadToShopBuiltinResolutionSuccesses = 0;
+        loadToShopIdentityBindingFastPathHitCount = 0;
+        loadToShopIdentityBindingFullScanCallCount = 0;
         Array.Clear(loadToShopWarningSnapshots);
     }
 
@@ -1404,7 +1412,7 @@ internal static class PerformanceMetrics
             loadToShopDirectMachineRunTicks = 50;
             loadToShopDirectMachineRunAllocatedBytes = 90;
             var identityStart = Stopwatch.GetTimestamp();
-            RecordLoadToShopIdentityBinding(identityStart, 5, 3, 2, 2, 1, 1, 1, 1, 1);
+            RecordLoadToShopIdentityBinding(identityStart, 5, 3, 2, 2, 1, 1, 1, 1, 1, false);
             var beforeEnd = JsonDocument.Parse(JsonSerializer.Serialize(CreateLoadToShopMeasurementReport())).RootElement.Clone();
             var directBefore = beforeEnd.GetProperty("NextRuntimeDelta").GetProperty("DirectMachineRun");
             var bindingBefore = beforeEnd.GetProperty("NextRuntimeDelta").GetProperty("IdentityBinding");
@@ -1414,6 +1422,7 @@ internal static class PerformanceMetrics
             var topPass = top.GetArrayLength() == 3 && top[0].GetProperty("RuntimeFunctionId").GetInt32() == 1 && top[1].GetProperty("RuntimeFunctionId").GetInt32() == 2;
             var identityPass = bindingBefore.GetProperty("HostIdentityVisits").GetInt64() == 5 && bindingBefore.GetProperty("VariableIdentityVisits").GetInt64() == 3 && bindingBefore.GetProperty("CallIdentityVisits").GetInt64() == 2 && bindingBefore.GetProperty("VisitPartitionExact").GetBoolean();
             var alreadyBoundPass = bindingBefore.GetProperty("VariableAlreadyBoundVisits").GetInt64() == 2 && bindingBefore.GetProperty("BuiltinAlreadyBoundVisits").GetInt64() == 1;
+            var bindAccountingPass = bindingBefore.GetProperty("BindCallCount").GetInt64() == 1 && bindingBefore.GetProperty("FastPathHitCount").GetInt64() == 0 && bindingBefore.GetProperty("FullScanCallCount").GetInt64() == 1 && bindingBefore.GetProperty("BindCallReconciliationExact").GetBoolean();
             MarkLoadToShopRestoreCompleted();
             MarkLoadToShopWaitInputCompleted();
             RecordLoadToShopDirectMachineRun(99, "after-end", new(Stopwatch.GetTimestamp() - 1, 0));
@@ -1426,7 +1435,8 @@ internal static class PerformanceMetrics
             Console.WriteLine($"M6Reconciliation={(attributionPass && directCountPass ? "PASS" : "FAIL")}");
             Console.WriteLine($"M6IdentityVisits={(identityPass ? "PASS" : "FAIL")}");
             Console.WriteLine($"M6AlreadyBoundAccounting={(alreadyBoundPass ? "PASS" : "FAIL")}");
-            var pass = directCountPass && attributionPass && topPass && loadScopePass && identityPass && alreadyBoundPass;
+            Console.WriteLine($"M6BindCallReconciliation={(bindAccountingPass ? "PASS" : "FAIL")}");
+            var pass = directCountPass && attributionPass && topPass && loadScopePass && identityPass && alreadyBoundPass && bindAccountingPass;
             Console.WriteLine($"M6ProfilerSelfTest={(pass ? "PASS" : "FAIL")}");
             return pass ? 0 : 1;
         }
@@ -1850,10 +1860,12 @@ internal static class PerformanceMetrics
     [Conditional("PERFORMANCE_METRICS")]
     internal static void RecordLoadToShopIdentityBinding(long start, int hostIdentityVisits, int variableIdentityVisits, int callIdentityVisits,
         int variableAlreadyBoundVisits, int builtinAlreadyBoundVisits, int variableResolutionAttempts, int variableResolutionSuccesses,
-        int builtinResolutionAttempts, int builtinResolutionSuccesses)
+        int builtinResolutionAttempts, int builtinResolutionSuccesses, bool fastPath)
     {
         if (start == 0 || !loadToShopMeasurementActive) return;
         loadToShopIdentityBindingCallCount++;
+        if (fastPath) loadToShopIdentityBindingFastPathHitCount++;
+        else loadToShopIdentityBindingFullScanCallCount++;
         loadToShopIdentityBindingTicks += Math.Max(0, Stopwatch.GetTimestamp() - start);
         loadToShopHostIdentityVisits += hostIdentityVisits;
         loadToShopVariableIdentityVisits += variableIdentityVisits;

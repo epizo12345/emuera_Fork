@@ -389,7 +389,8 @@ internal sealed partial class Process
             productionSemanticHost = new LegacyVmSemanticHost(this, productionPreparationCounters);
             var semanticArenas = new[] { link.Program.SemanticArena, link.Program.RuntimeStatements.OperandArena, link.Program.CallArgumentArena };
             foreach (var arena in semanticArenas)
-                productionSemanticHost.BindVariableIdentities(arena);
+                if (!productionSemanticHost.PrebindProductionVariableIdentities(arena))
+                    throw new InvalidOperationException("production semantic prebind failed");
             productionSemanticHost.BuildSemanticContextIndex(semanticArenas);
             RecordProductionMemoryStage("AfterSemanticPrebind");
             RecordProductionTimingStage("ProductionPreparation.AfterSemanticPrebind");
