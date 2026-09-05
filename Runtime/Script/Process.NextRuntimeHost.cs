@@ -849,7 +849,7 @@ internal sealed partial class Process
         var readinessStart = PerformanceMetrics.StartNextDispatchTiming();
         var dispatchEligible = IsProductionDispatchEligible(entryFunctionId);
         PerformanceMetrics.AddNextDispatchStage("ReadinessLookup", readinessStart);
-        if (productionProgram is null || productionSemanticStructuralLookup is null || productionSemanticHost is null || productionFrameCatalog is null ||
+        if (productionProgram is null || productionSemanticStructuralLookup is null || productionVmMachineProgramLookup is null || productionSemanticHost is null || productionFrameCatalog is null ||
             productionFunctionKinds is null || productionLabelIds is null || nextRuntimeSession is not null ||
             !dispatchEligible)
         {
@@ -910,7 +910,7 @@ internal sealed partial class Process
         PerformanceMetrics.RecordNextRuntimeConstructionStage("RuntimeEffectsConstruction", effectsConstruction);
         var machineConstruction = PerformanceMetrics.StartNextRuntimeMeasurement();
 #endif
-        var machine = new VmMachine(productionProgram, executor, runtimeEffects, frameState);
+        var machine = new VmMachine(productionProgram, executor, runtimeEffects, frameState, productionVmMachineProgramLookup);
 #if PERFORMANCE_METRICS
         PerformanceMetrics.RecordNextRuntimeConstructionStage("VmMachineConstruction", machineConstruction);
         var wrapperConstruction = PerformanceMetrics.StartNextRuntimeMeasurement();

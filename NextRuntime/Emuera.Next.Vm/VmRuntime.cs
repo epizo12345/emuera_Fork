@@ -779,8 +779,15 @@ public sealed class VmMachine : IVmFrameVariables, IVmFrameVariableTypes, IVmExp
     public VmFrame CurrentFrame => stackCount == 0 ? default : stack[stackCount - 1];
 
     public VmMachine(LinkedProgram program, IVmStructuralSemantics? structuralSemantics = null, IVmRuntimeEffects? runtimeEffects = null, IVmFrameState? frameState = null)
+        : this(program, structuralSemantics, runtimeEffects, frameState, VmMachineProgramLookup.Build(program))
+    {
+    }
+
+    public VmMachine(LinkedProgram program, IVmStructuralSemantics? structuralSemantics, IVmRuntimeEffects? runtimeEffects, IVmFrameState? frameState, VmMachineProgramLookup programLookup)
     {
         ArgumentNullException.ThrowIfNull(program);
+        ArgumentNullException.ThrowIfNull(programLookup);
+        programLookup.EnsureFor(program);
         this.program = program;
         this.structuralSemantics = structuralSemantics;
         this.runtimeEffects = runtimeEffects;
@@ -789,8 +796,8 @@ public sealed class VmMachine : IVmFrameVariables, IVmFrameVariableTypes, IVmExp
         if (runtimeSemantics is not null) runtimeSemantics.FrameVariables = this;
         if (runtimeSemantics is not null) runtimeSemantics.ExpressionFunctionInvoker = this;
         loopRuntime = new(program);
-        callSites = program.CallSites.ToDictionary(site => (site.FunctionId, site.Pc));
-        expressionFunctionTargets = program.ExpressionFunctionTargets.ToDictionary(target => target.StableId);
+        callSites = programLookup.CallSiteMap;
+        expressionFunctionTargets = programLookup.ExpressionFunctionTargetMap;
     }
 
     public VmStopReason Run(RuntimeFunctionId entryFunctionId, int maxSteps = 100_000)

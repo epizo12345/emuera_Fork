@@ -301,6 +301,10 @@ var tests = new List<(string Name, Action Run)>
     ("semantic structural lookup rejects another generation", RunSemanticStructuralLookupGenerationMismatchTest),
     ("semantic executors share lookup and isolate mutable state", RunSemanticStructuralLookupIsolationTest),
     ("semantic lookup excludes save state", () => Check(typeof(VmSemanticStructuralLookup).GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public).All(field => !field.Name.Contains("Save", StringComparison.OrdinalIgnoreCase)))),
+    ("machine lookup preserves call-site and expression-target maps", RunMachineLookupMapTest),
+    ("machine lookup preserves duplicate-key failures", RunMachineLookupDuplicateKeyTest),
+    ("machine lookup rejects another generation", RunMachineLookupGenerationMismatchTest),
+    ("machines share lookup and isolate mutable state", RunMachineLookupIsolationTest),
 };
 var passed = 0;
 var readinessDrivenNormalDispatchTestsPassed = true;
@@ -435,6 +439,62 @@ static void RunSemanticStructuralLookupIsolationTest()
     Check(ReferenceEquals(lookupField.GetValue(first), lookup) && ReferenceEquals(lookupField.GetValue(second), lookup) &&
         !ReferenceEquals(repeatField.GetValue(first), repeatField.GetValue(second)) &&
         first.TryEvaluateRecord(0, out _) && first.LastRecordIndex == 0 && second.LastRecordIndex == -1);
+}
+static void RunMachineLookupMapTest()
+{
+    var program = MachineLookupProgram();
+    var lookup = VmMachineProgramLookup.Build(program);
+    var selfBuilt = new VmMachine(program);
+    var shared = new VmMachine(program, null, null, null, lookup);
+    var callSites = typeof(VmMachine).GetField("callSites", BindingFlags.Instance | BindingFlags.NonPublic)!;
+    var expressionTargets = typeof(VmMachine).GetField("expressionFunctionTargets", BindingFlags.Instance | BindingFlags.NonPublic)!;
+    Check(ReferenceEquals(lookup.Program, program) &&
+        ((Dictionary<(int FunctionId, int Pc), VmCallSiteRecord>)callSites.GetValue(selfBuilt)!).SequenceEqual((Dictionary<(int FunctionId, int Pc), VmCallSiteRecord>)callSites.GetValue(shared)!) &&
+        ((Dictionary<ulong, VmExpressionFunctionTarget>)expressionTargets.GetValue(selfBuilt)!).SequenceEqual((Dictionary<ulong, VmExpressionFunctionTarget>)expressionTargets.GetValue(shared)!));
+}
+static void RunMachineLookupDuplicateKeyTest()
+{
+    var site = new VmCallSiteRecord(0, 0, new(1), VmInvocationKind.Call, 0, 0, 0, 0);
+    VmFunctionDescriptor[] descriptors = [new VmFunctionDescriptor(0, 0, 1, VmFunctionState.ExecutableReady), new VmFunctionDescriptor(1, 1, 1, VmFunctionState.ExecutableReady)];
+    var duplicateSites = new LinkedProgram([VmInstruction.Halt, VmInstruction.Halt], descriptors, [], callSites: [site, site]);
+    Expect<ArgumentException>(() => VmMachineProgramLookup.Build(duplicateSites));
+    var target = new VmExpressionFunctionTarget(17, new(1), RuntimeMetadataValueType.Integer, true);
+    Expect<ArgumentException>(() => new LinkedProgram([VmInstruction.Halt, VmInstruction.Halt], descriptors, [], expressionFunctionTargets: [target, target]));
+}
+static void RunMachineLookupGenerationMismatchTest()
+{
+    var first = MachineLookupProgram();
+    var second = MachineLookupProgram();
+    var lookup = VmMachineProgramLookup.Build(first);
+    Expect<ArgumentException>(() => new VmMachine(second, null, null, null, lookup));
+}
+static void RunMachineLookupIsolationTest()
+{
+    var environment = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false));
+    var metadata = new FunctionRuntimeMetadata([], 0, 0, [], RuntimeMetadataValueType.Integer);
+    var program = Executable(ControlLinker.Link(Catalog("M"), [new RuntimeFunctionPrototype(new(0), [P(PrototypeOpcode.RETURNF)], ["1"], RuntimeMetadata: metadata)], runtimeEnvironment: environment, runtimeStatements: true).Program);
+    var lookup = VmMachineProgramLookup.Build(program);
+    var first = new VmMachine(program, new VmSemanticExecutor(program, new SemanticHost()), null, null, lookup);
+    var second = new VmMachine(program, new VmSemanticExecutor(program, new SemanticHost()), null, null, lookup);
+    var lookupField = typeof(VmMachine).GetField("callSites", BindingFlags.Instance | BindingFlags.NonPublic)!;
+    var stackField = typeof(VmMachine).GetField("stack", BindingFlags.Instance | BindingFlags.NonPublic)!;
+    var invocationField = typeof(VmMachine).GetField("invocations", BindingFlags.Instance | BindingFlags.NonPublic)!;
+    var loopField = typeof(VmMachine).GetField("loopRuntime", BindingFlags.Instance | BindingFlags.NonPublic)!;
+    Check(ReferenceEquals(lookupField.GetValue(first), lookupField.GetValue(second)) &&
+        !ReferenceEquals(stackField.GetValue(first), stackField.GetValue(second)) &&
+        !ReferenceEquals(invocationField.GetValue(first), invocationField.GetValue(second)) &&
+        !ReferenceEquals(loopField.GetValue(first), loopField.GetValue(second)) &&
+        first.Run(new(0)) == VmStopReason.Returned && first.LastReturnValue.TryGetInteger(out var value) && value == 1 &&
+        second.LastReturnValue.Kind == VmSemanticValueKind.Unavailable && second.FrameDepth == 0);
+}
+static LinkedProgram MachineLookupProgram()
+{
+    var site = new VmCallSiteRecord(0, 0, new(1), VmInvocationKind.Call, 0, 0, 0, 0);
+    var target = new VmExpressionFunctionTarget(17, new(1), RuntimeMetadataValueType.Integer, true);
+    return new LinkedProgram(
+        [VmInstruction.Halt, VmInstruction.Halt],
+        [new VmFunctionDescriptor(0, 0, 1, VmFunctionState.ExecutableReady), new VmFunctionDescriptor(1, 1, 1, VmFunctionState.ExecutableReady)],
+        [], callSites: [site], expressionFunctionTargets: [target]);
 }
 static bool DispatchEligible(int id, FunctionKind kind, bool ready, bool nextRuntime = true, bool analysis = false, bool debug = false) =>
     VmRuntimeProductionDispatch.IsEligible(nextRuntime, analysis, debug, id, 2000, kind, VmFunctionState.ExecutableReady, ready);
