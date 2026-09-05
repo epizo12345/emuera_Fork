@@ -295,21 +295,83 @@ internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparation
 
     public bool BindVariableIdentities(SemanticPayload payload)
     {
+#if PERFORMANCE_METRICS
+        var identityBindingStart = PerformanceMetrics.StartLoadToShopIdentityBinding();
+        var hostIdentityVisits = 0;
+        var variableIdentityVisits = 0;
+        var callIdentityVisits = 0;
+        var variableAlreadyBoundVisits = 0;
+        var builtinAlreadyBoundVisits = 0;
+        var variableResolutionAttempts = 0;
+        var variableResolutionSuccesses = 0;
+        var builtinResolutionAttempts = 0;
+        var builtinResolutionSuccesses = 0;
+#endif
         foreach (var identity in payload.HostIdentities)
         {
+#if PERFORMANCE_METRICS
+            hostIdentityVisits++;
+#endif
             var normalVariableBindAttempted = false;
             var normalVariableBindSucceeded = false;
-            if (identity.Kind == SemanticHostIdentityKind.Variable && !variables.ContainsKey(identity.StableId))
+            if (identity.Kind == SemanticHostIdentityKind.Variable)
             {
+#if PERFORMANCE_METRICS
+                variableIdentityVisits++;
+#endif
+                if (variables.ContainsKey(identity.StableId))
+                {
+#if PERFORMANCE_METRICS
+                    variableAlreadyBoundVisits++;
+#endif
+                }
+                else
+                {
                 normalVariableBindAttempted = true;
+#if PERFORMANCE_METRICS
+                variableResolutionAttempts++;
+#endif
                 BindResolutionCount++;
-                if (process.TryBindNextRuntimeHostVariable(payload, identity, out var variable)) { variables.Add(identity.StableId, new(variable, variable.Dimension == 1 && !variable.IsCharacterData && identity.IndexArity == 0)); normalVariableBindSucceeded = true; }
+                if (process.TryBindNextRuntimeHostVariable(payload, identity, out var variable)) { variables.Add(identity.StableId, new(variable, variable.Dimension == 1 && !variable.IsCharacterData && identity.IndexArity == 0)); normalVariableBindSucceeded = true;
+#if PERFORMANCE_METRICS
+                    variableResolutionSuccesses++;
+#endif
+                }
+                }
             }
-            else if (identity.Kind == SemanticHostIdentityKind.Call && !builtins.ContainsKey(identity.StableId) && process.TryBindNextRuntimeHostBuiltin(payload, identity, out var builtin))
-                builtins.Add(identity.StableId, builtin);
+            else if (identity.Kind == SemanticHostIdentityKind.Call)
+            {
+#if PERFORMANCE_METRICS
+                callIdentityVisits++;
+#endif
+                if (builtins.ContainsKey(identity.StableId))
+                {
+#if PERFORMANCE_METRICS
+                    builtinAlreadyBoundVisits++;
+#endif
+                }
+                else
+                {
+#if PERFORMANCE_METRICS
+                    builtinResolutionAttempts++;
+#endif
+                    if (process.TryBindNextRuntimeHostBuiltin(payload, identity, out var builtin))
+                    {
+                        builtins.Add(identity.StableId, builtin);
+#if PERFORMANCE_METRICS
+                        builtinResolutionSuccesses++;
+#endif
+                    }
+                }
+            }
             if (csvIndexDiagnosticActive && identity.Kind == SemanticHostIdentityKind.Variable && TryGetCsvIndexLookup(payload, identity, out var lookup))
                 csvIndexDiagnosticBindings[identity.StableId] = new(payload, identity, lookup, normalVariableBindAttempted, normalVariableBindSucceeded);
         }
+#if PERFORMANCE_METRICS
+        PerformanceMetrics.RecordLoadToShopIdentityBinding(identityBindingStart, hostIdentityVisits, variableIdentityVisits, callIdentityVisits,
+            variableAlreadyBoundVisits, builtinAlreadyBoundVisits, variableResolutionAttempts, variableResolutionSuccesses,
+            builtinResolutionAttempts, builtinResolutionSuccesses);
+#endif
         return true;
     }
 
@@ -923,7 +985,13 @@ internal sealed partial class Process
         TraceR1_4E("NextSessionStart", stopReason: "ProductionStart");
         var executionStart = PerformanceMetrics.StartNextDispatchTiming();
         productionSemanticHost.BeginCsvIndexDiagnostic(entryFunctionId.Value, functionName);
+#if PERFORMANCE_METRICS
+        var directMachineRunStart = PerformanceMetrics.StartLoadToShopDirectMachineRun();
+#endif
         var stop = machine.Run(entryFunctionId, actuals);
+#if PERFORMANCE_METRICS
+        PerformanceMetrics.RecordLoadToShopDirectMachineRun(entryFunctionId.Value, functionName, directMachineRunStart);
+#endif
         productionCsvIndexReadTrace.AddRange(productionSemanticHost.EndCsvIndexDiagnostic());
         PerformanceMetrics.AddNextDispatchStage("VmExecution", executionStart);
         TraceR1_4E(stop == VmStopReason.Returned ? "NextSessionComplete" : "NextSessionStop", stopReason: stop.ToString());

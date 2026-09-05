@@ -179,6 +179,31 @@ internal static class PerformanceMetrics
     private static int loadToShopProductionContinueCount;
     private static long loadToShopProductionContinueTicks;
 
+    private sealed class DirectMachineRunAggregate
+    {
+        internal string FunctionName = "";
+        internal int Count;
+        internal long Ticks;
+        internal long AllocatedBytes;
+        internal long MaxTicks;
+    }
+
+    private static readonly Dictionary<int, DirectMachineRunAggregate> loadToShopDirectMachineRuns = [];
+    private static int loadToShopDirectMachineRunCount;
+    private static long loadToShopDirectMachineRunTicks;
+    private static long loadToShopDirectMachineRunAllocatedBytes;
+    private static int loadToShopIdentityBindingCallCount;
+    private static long loadToShopIdentityBindingTicks;
+    private static long loadToShopHostIdentityVisits;
+    private static long loadToShopVariableIdentityVisits;
+    private static long loadToShopCallIdentityVisits;
+    private static long loadToShopVariableAlreadyBoundVisits;
+    private static long loadToShopBuiltinAlreadyBoundVisits;
+    private static long loadToShopVariableResolutionAttempts;
+    private static long loadToShopVariableResolutionSuccesses;
+    private static long loadToShopBuiltinResolutionAttempts;
+    private static long loadToShopBuiltinResolutionSuccesses;
+
     private sealed class LoadWarningSnapshot
     {
         internal long BeforeTicks;
@@ -503,6 +528,8 @@ internal static class PerformanceMetrics
                 RequirementDedupLookupCount = nextReadinessRequirementDedupLookupCount,
                 RequirementOutputCount = nextReadinessRequirementOutputCount
             },
+            VmExecutionAttribution = CreateLoadToShopDirectMachineRunReport(),
+            IdentityBindingMetrics = CreateLoadToShopIdentityBindingReport(),
             HostIdentityLookupMetrics = new
             {
                 HostIdentityLookupCount = nextReadinessHostIdentityLookupCount,
@@ -1238,6 +1265,8 @@ internal static class PerformanceMetrics
                 RuntimeEffectsConstruction = StageDelta(current, loadToShopBaseline, "RuntimeEffectsConstruction"),
                 ExecutionSessionWrapperConstruction = StageDelta(current, loadToShopBaseline, "ExecutionSessionWrapperConstruction"),
                 InitialVmExecution = StageDelta(current, loadToShopBaseline, "VmExecution"),
+                DirectMachineRun = CreateLoadToShopDirectMachineRunReport(),
+                IdentityBinding = CreateLoadToShopIdentityBindingReport(),
                 ProductionContinueExecution = new
                 {
                     Count = loadToShopProductionContinueCount,
@@ -1250,6 +1279,66 @@ internal static class PerformanceMetrics
             CountReconciliation = new { DispatchAttempts = dispatchAttempts, Fallbacks = fallbacks, ActionableDispatch = dispatchAttempts - (current.EntryDispatchAlreadyConsumedCount - loadToShopBaseline.EntryDispatchAlreadyConsumedCount), SessionStartRejected = current.SessionStartRejectedCount - loadToShopBaseline.SessionStartRejectedCount }
         };
     }
+
+    private static object CreateLoadToShopDirectMachineRunReport()
+    {
+        var all = loadToShopDirectMachineRuns
+            .OrderByDescending(pair => pair.Value.Ticks)
+            .ThenBy(pair => pair.Key)
+            .Select(pair => (RuntimeFunctionId: pair.Key, Aggregate: pair.Value))
+            .ToArray();
+        var allCount = all.Sum(pair => pair.Aggregate.Count);
+        var allTicks = all.Sum(pair => pair.Aggregate.Ticks);
+        var top = all.Take(50).Select(pair => new
+        {
+            RuntimeFunctionId = pair.RuntimeFunctionId,
+            FunctionName = pair.Aggregate.FunctionName,
+            Count = pair.Aggregate.Count,
+            TotalMilliseconds = TicksToMilliseconds(pair.Aggregate.Ticks),
+            AverageMicroseconds = pair.Aggregate.Count == 0 ? 0 : TicksToMilliseconds(pair.Aggregate.Ticks) * 1000 / pair.Aggregate.Count,
+            MaxMilliseconds = TicksToMilliseconds(pair.Aggregate.MaxTicks),
+            AllocatedBytes = pair.Aggregate.AllocatedBytes
+        }).ToArray();
+        double Coverage(int limit) => allTicks == 0 ? 0 : all.Take(limit).Sum(pair => pair.Aggregate.Ticks) * 100.0 / allTicks;
+        return new
+        {
+            Scope = "LOAD_TO_SHOP_DIRECT_MACHINE_RUN",
+            Count = allCount,
+            TotalTicks = allTicks,
+            TotalMilliseconds = TicksToMilliseconds(allTicks),
+            AllocatedBytes = all.Sum(pair => pair.Aggregate.AllocatedBytes),
+            DistinctEntryFunctionCount = all.Length,
+            AllFunctionCount = allCount,
+            AllFunctionTicks = allTicks,
+            DirectRunCount = loadToShopDirectMachineRunCount,
+            DirectRunTicks = loadToShopDirectMachineRunTicks,
+            DirectRunAllocatedBytes = loadToShopDirectMachineRunAllocatedBytes,
+            AggregateReconciliationExact = allCount == loadToShopDirectMachineRunCount && allTicks == loadToShopDirectMachineRunTicks && all.Sum(pair => pair.Aggregate.AllocatedBytes) == loadToShopDirectMachineRunAllocatedBytes,
+            TopFunctionsByTotalMilliseconds = top,
+            Top10CoveragePercent = Coverage(10),
+            Top25CoveragePercent = Coverage(25),
+            Top50CoveragePercent = Coverage(50),
+            TopFunctionsCoveragePercent = Coverage(50),
+            AllocationSemantics = "Includes all allocations on the execution thread inside machine.Run, including semantic and host work; not VmMachine object allocation."
+        };
+    }
+
+    private static object CreateLoadToShopIdentityBindingReport() => new
+    {
+        CallCount = loadToShopIdentityBindingCallCount,
+        TotalMilliseconds = TicksToMilliseconds(loadToShopIdentityBindingTicks),
+        AverageMicroseconds = loadToShopIdentityBindingCallCount == 0 ? 0 : TicksToMilliseconds(loadToShopIdentityBindingTicks) * 1000 / loadToShopIdentityBindingCallCount,
+        HostIdentityVisits = loadToShopHostIdentityVisits,
+        VariableIdentityVisits = loadToShopVariableIdentityVisits,
+        CallIdentityVisits = loadToShopCallIdentityVisits,
+        VariableAlreadyBoundVisits = loadToShopVariableAlreadyBoundVisits,
+        BuiltinAlreadyBoundVisits = loadToShopBuiltinAlreadyBoundVisits,
+        VariableResolutionAttempts = loadToShopVariableResolutionAttempts,
+        VariableResolutionSuccesses = loadToShopVariableResolutionSuccesses,
+        BuiltinResolutionAttempts = loadToShopBuiltinResolutionAttempts,
+        BuiltinResolutionSuccesses = loadToShopBuiltinResolutionSuccesses,
+        VisitPartitionExact = loadToShopHostIdentityVisits == loadToShopVariableIdentityVisits + loadToShopCallIdentityVisits
+    };
 
     private static object StageDelta(LoadCounterSnapshot current, LoadCounterSnapshot baseline, string name)
     {
@@ -1283,7 +1372,69 @@ internal static class PerformanceMetrics
         loadToShopEndSnapshot = default;
         loadToShopProductionContinueCount = 0;
         loadToShopProductionContinueTicks = 0;
+        loadToShopDirectMachineRuns.Clear();
+        loadToShopDirectMachineRunCount = 0;
+        loadToShopDirectMachineRunTicks = 0;
+        loadToShopDirectMachineRunAllocatedBytes = 0;
+        loadToShopIdentityBindingCallCount = 0;
+        loadToShopIdentityBindingTicks = 0;
+        loadToShopHostIdentityVisits = 0;
+        loadToShopVariableIdentityVisits = 0;
+        loadToShopCallIdentityVisits = 0;
+        loadToShopVariableAlreadyBoundVisits = 0;
+        loadToShopBuiltinAlreadyBoundVisits = 0;
+        loadToShopVariableResolutionAttempts = 0;
+        loadToShopVariableResolutionSuccesses = 0;
+        loadToShopBuiltinResolutionAttempts = 0;
+        loadToShopBuiltinResolutionSuccesses = 0;
         Array.Clear(loadToShopWarningSnapshots);
+    }
+
+    internal static int VmExecutionAttributionSelfTest()
+    {
+        var previousPath = nextDispatchProfilePath;
+        try
+        {
+            nextDispatchProfilePath = "m6-self-test.json";
+            BeginLoadToShopMeasurement("LOADGAME");
+            loadToShopDirectMachineRuns[2] = new() { FunctionName = "B", Count = 1, Ticks = 20, AllocatedBytes = 30, MaxTicks = 20 };
+            loadToShopDirectMachineRuns[1] = new() { FunctionName = "A", Count = 2, Ticks = 20, AllocatedBytes = 40, MaxTicks = 12 };
+            loadToShopDirectMachineRuns[3] = new() { FunctionName = "C", Count = 1, Ticks = 10, AllocatedBytes = 20, MaxTicks = 10 };
+            loadToShopDirectMachineRunCount = 4;
+            loadToShopDirectMachineRunTicks = 50;
+            loadToShopDirectMachineRunAllocatedBytes = 90;
+            var identityStart = Stopwatch.GetTimestamp();
+            RecordLoadToShopIdentityBinding(identityStart, 5, 3, 2, 2, 1, 1, 1, 1, 1);
+            var beforeEnd = JsonDocument.Parse(JsonSerializer.Serialize(CreateLoadToShopMeasurementReport())).RootElement.Clone();
+            var directBefore = beforeEnd.GetProperty("NextRuntimeDelta").GetProperty("DirectMachineRun");
+            var bindingBefore = beforeEnd.GetProperty("NextRuntimeDelta").GetProperty("IdentityBinding");
+            var directCountPass = directBefore.GetProperty("Count").GetInt32() == 4 && directBefore.GetProperty("DirectRunCount").GetInt32() == 4;
+            var attributionPass = directBefore.GetProperty("DistinctEntryFunctionCount").GetInt32() == 3 && directBefore.GetProperty("AggregateReconciliationExact").GetBoolean();
+            var top = directBefore.GetProperty("TopFunctionsByTotalMilliseconds");
+            var topPass = top.GetArrayLength() == 3 && top[0].GetProperty("RuntimeFunctionId").GetInt32() == 1 && top[1].GetProperty("RuntimeFunctionId").GetInt32() == 2;
+            var identityPass = bindingBefore.GetProperty("HostIdentityVisits").GetInt64() == 5 && bindingBefore.GetProperty("VariableIdentityVisits").GetInt64() == 3 && bindingBefore.GetProperty("CallIdentityVisits").GetInt64() == 2 && bindingBefore.GetProperty("VisitPartitionExact").GetBoolean();
+            var alreadyBoundPass = bindingBefore.GetProperty("VariableAlreadyBoundVisits").GetInt64() == 2 && bindingBefore.GetProperty("BuiltinAlreadyBoundVisits").GetInt64() == 1;
+            MarkLoadToShopRestoreCompleted();
+            MarkLoadToShopWaitInputCompleted();
+            RecordLoadToShopDirectMachineRun(99, "after-end", new(Stopwatch.GetTimestamp() - 1, 0));
+            var afterEnd = JsonDocument.Parse(JsonSerializer.Serialize(CreateLoadToShopMeasurementReport())).RootElement;
+            var loadScopePass = afterEnd.GetProperty("NextRuntimeDelta").GetProperty("DirectMachineRun").GetProperty("Count").GetInt32() == 4;
+            Console.WriteLine($"M6DirectRunCount={(directCountPass ? "PASS" : "FAIL")}");
+            Console.WriteLine($"M6EntryAttribution={(attributionPass ? "PASS" : "FAIL")}");
+            Console.WriteLine($"M6TopN={(topPass ? "PASS" : "FAIL")}");
+            Console.WriteLine($"M6LoadScope={(loadScopePass ? "PASS" : "FAIL")}");
+            Console.WriteLine($"M6Reconciliation={(attributionPass && directCountPass ? "PASS" : "FAIL")}");
+            Console.WriteLine($"M6IdentityVisits={(identityPass ? "PASS" : "FAIL")}");
+            Console.WriteLine($"M6AlreadyBoundAccounting={(alreadyBoundPass ? "PASS" : "FAIL")}");
+            var pass = directCountPass && attributionPass && topPass && loadScopePass && identityPass && alreadyBoundPass;
+            Console.WriteLine($"M6ProfilerSelfTest={(pass ? "PASS" : "FAIL")}");
+            return pass ? 0 : 1;
+        }
+        finally
+        {
+            nextDispatchProfilePath = previousPath;
+            ResetLoadToShopMeasurement();
+        }
     }
 
     internal static int LoadToShopMeasurementSelfTest()
@@ -1640,6 +1791,12 @@ internal static class PerformanceMetrics
     internal static long ElapsedNextRuntimeTimestamp(long start) =>
         start == 0 ? 0 : Math.Max(0, Stopwatch.GetTimestamp() - start);
 
+    internal static MeasurementToken StartLoadToShopDirectMachineRun() =>
+        loadToShopMeasurementActive ? StartNextRuntimeMeasurement() : default;
+
+    internal static long StartLoadToShopIdentityBinding() =>
+        loadToShopMeasurementActive ? StartNextRuntimeTimestamp() : 0;
+
     [Conditional("PERFORMANCE_METRICS")]
     internal static void RecordNextRuntimeStartupStage(string stage, MeasurementToken start, bool contributesToEnvelope = false)
     {
@@ -1671,6 +1828,42 @@ internal static class PerformanceMetrics
         var allocated = Math.Max(0, GC.GetTotalAllocatedBytes(false) - start.AllocatedBytes);
         nextConstructionStages.TryGetValue(stage, out var value);
         nextConstructionStages[stage] = (value.Count + 1, value.Ticks + ticks, value.AllocatedBytes + allocated, Math.Max(value.MaxTicks, ticks));
+    }
+
+    [Conditional("PERFORMANCE_METRICS")]
+    internal static void RecordLoadToShopDirectMachineRun(int runtimeFunctionId, string functionName, MeasurementToken start)
+    {
+        if (start.Ticks == 0 || !loadToShopMeasurementActive) return;
+        var ticks = Math.Max(0, Stopwatch.GetTimestamp() - start.Ticks);
+        var allocated = Math.Max(0, GC.GetTotalAllocatedBytes(false) - start.AllocatedBytes);
+        loadToShopDirectMachineRunCount++;
+        loadToShopDirectMachineRunTicks += ticks;
+        loadToShopDirectMachineRunAllocatedBytes += allocated;
+        if (!loadToShopDirectMachineRuns.TryGetValue(runtimeFunctionId, out var aggregate))
+            loadToShopDirectMachineRuns[runtimeFunctionId] = aggregate = new() { FunctionName = functionName };
+        aggregate.Count++;
+        aggregate.Ticks += ticks;
+        aggregate.AllocatedBytes += allocated;
+        aggregate.MaxTicks = Math.Max(aggregate.MaxTicks, ticks);
+    }
+
+    [Conditional("PERFORMANCE_METRICS")]
+    internal static void RecordLoadToShopIdentityBinding(long start, int hostIdentityVisits, int variableIdentityVisits, int callIdentityVisits,
+        int variableAlreadyBoundVisits, int builtinAlreadyBoundVisits, int variableResolutionAttempts, int variableResolutionSuccesses,
+        int builtinResolutionAttempts, int builtinResolutionSuccesses)
+    {
+        if (start == 0 || !loadToShopMeasurementActive) return;
+        loadToShopIdentityBindingCallCount++;
+        loadToShopIdentityBindingTicks += Math.Max(0, Stopwatch.GetTimestamp() - start);
+        loadToShopHostIdentityVisits += hostIdentityVisits;
+        loadToShopVariableIdentityVisits += variableIdentityVisits;
+        loadToShopCallIdentityVisits += callIdentityVisits;
+        loadToShopVariableAlreadyBoundVisits += variableAlreadyBoundVisits;
+        loadToShopBuiltinAlreadyBoundVisits += builtinAlreadyBoundVisits;
+        loadToShopVariableResolutionAttempts += variableResolutionAttempts;
+        loadToShopVariableResolutionSuccesses += variableResolutionSuccesses;
+        loadToShopBuiltinResolutionAttempts += builtinResolutionAttempts;
+        loadToShopBuiltinResolutionSuccesses += builtinResolutionSuccesses;
     }
 
     [Conditional("PERFORMANCE_METRICS")]

@@ -169,6 +169,8 @@ static partial class Program
         rootCommand.Options.Add(erbStartupProfileModeOption);
         var loadToShopMeasurementSelfTestOption = new Option<bool>(name: "--NextRuntimeLoadToShopMeasurementSelfTest");
         rootCommand.Options.Add(loadToShopMeasurementSelfTestOption);
+        var vmExecutionAttributionSelfTestOption = new Option<bool>(name: "--NextRuntimeVmExecutionAttributionSelfTest");
+        rootCommand.Options.Add(vmExecutionAttributionSelfTestOption);
 #endif
 
         var filesArg = new Argument<string[]>(
@@ -216,6 +218,11 @@ static partial class Program
         if (result.GetValue(loadToShopMeasurementSelfTestOption))
         {
             Environment.ExitCode = PerformanceMetrics.LoadToShopMeasurementSelfTest();
+            return;
+        }
+        if (result.GetValue(vmExecutionAttributionSelfTestOption))
+        {
+            Environment.ExitCode = PerformanceMetrics.VmExecutionAttributionSelfTest();
             return;
         }
 #endif
