@@ -1137,14 +1137,19 @@ internal static class PerformanceMetrics
 
     private static LoadCounterSnapshot CaptureLoadCounterSnapshot()
     {
-        static (int Count, long Ticks) Stage(string name)
+        static (int Count, long Ticks) ConstructionStage(string name)
             => nextConstructionStages.TryGetValue(name, out var value) ? (value.Count, value.Ticks) : default;
-        var session = Stage("SessionConstruction");
-        var executor = Stage("SemanticExecutorConstruction");
-        var machine = Stage("VmMachineConstruction");
-        var effects = Stage("RuntimeEffectsConstruction");
-        var wrapper = Stage("ExecutionSessionWrapperConstruction");
-        var vm = Stage("VmExecution");
+        static (int Count, long Ticks) DispatchStage(string name)
+        {
+            var index = Array.IndexOf(NextDispatchStageNames, name);
+            return index < 0 ? default : (nextDispatchStageCounts[index], nextDispatchStageTicks[index]);
+        }
+        var session = DispatchStage("SessionConstruction");
+        var executor = ConstructionStage("SemanticExecutorConstruction");
+        var machine = ConstructionStage("VmMachineConstruction");
+        var effects = ConstructionStage("RuntimeEffectsConstruction");
+        var wrapper = ConstructionStage("ExecutionSessionWrapperConstruction");
+        var vm = DispatchStage("VmExecution");
         var sessionStartRejectedCount = nextDispatchRejections.TryGetValue(nameof(MinorShift.Emuera.GameProc.NextRuntimeDispatchRejectReason.SessionStartRejected), out var rejectedCount) ? rejectedCount : 0;
         return new(
             nextDispatchAttempts,
@@ -1291,6 +1296,8 @@ internal static class PerformanceMetrics
             nextDispatchFallbacks = 0;
             nextDispatchRejections.Clear();
             entryDispatchAlreadyConsumedCount = 0;
+            Array.Clear(nextDispatchStageCounts);
+            Array.Clear(nextDispatchStageTicks);
             nextConstructionStages.Clear();
             ResetLoadToShopMeasurement();
             BeginLoadToShopMeasurement("LOADGAME");
@@ -1329,6 +1336,58 @@ internal static class PerformanceMetrics
             EndLoadToShopProductionContinue(nonProductionContinueStart);
             var continuePass = loadToShopProductionContinueCount == 0;
             var nonProductionContinuePass = loadToShopProductionContinueCount == 0;
+            Array.Clear(nextDispatchStageCounts);
+            Array.Clear(nextDispatchStageTicks);
+            nextConstructionStages.Clear();
+            var sessionDispatchIndex = Array.IndexOf(NextDispatchStageNames, "SessionConstruction");
+            var vmDispatchIndex = Array.IndexOf(NextDispatchStageNames, "VmExecution");
+            var dispatchStageIndexPass = sessionDispatchIndex >= 0 && vmDispatchIndex >= 0;
+            if (dispatchStageIndexPass)
+            {
+                nextDispatchStageCounts[sessionDispatchIndex] = 4;
+                nextDispatchStageTicks[sessionDispatchIndex] = 1000;
+                nextDispatchStageCounts[vmDispatchIndex] = 7;
+                nextDispatchStageTicks[vmDispatchIndex] = 2000;
+            }
+            nextConstructionStages["SessionConstruction"] = (99, 9001, 0, 9001);
+            nextConstructionStages["VmExecution"] = (88, 9002, 0, 9002);
+            BeginLoadToShopMeasurement("LOADDATA");
+            if (dispatchStageIndexPass)
+            {
+                nextDispatchStageCounts[sessionDispatchIndex] += 3;
+                nextDispatchStageTicks[sessionDispatchIndex] += 300;
+                nextDispatchStageCounts[vmDispatchIndex] += 5;
+                nextDispatchStageTicks[vmDispatchIndex] += 500;
+            }
+            nextConstructionStages["SessionConstruction"] = (100, 9002, 0, 9002);
+            nextConstructionStages["VmExecution"] = (89, 9003, 0, 9003);
+            nextConstructionStages["SemanticExecutorConstruction"] = (2, 3000, 0, 3000);
+            nextConstructionStages["VmMachineConstruction"] = (3, 4000, 0, 4000);
+            nextConstructionStages["RuntimeEffectsConstruction"] = (4, 5000, 0, 5000);
+            nextConstructionStages["ExecutionSessionWrapperConstruction"] = (5, 6000, 0, 6000);
+            MarkLoadToShopRestoreCompleted();
+            MarkLoadToShopWaitInputCompleted();
+            using var attributionDocument = JsonDocument.Parse(JsonSerializer.Serialize(CreateLoadToShopMeasurementReport()));
+            var attributionRoot = attributionDocument.RootElement;
+            var attributionDelta = attributionRoot.GetProperty("NextRuntimeDelta");
+            var sessionDelta = attributionDelta.GetProperty("SessionConstruction");
+            var vmDelta = attributionDelta.GetProperty("InitialVmExecution");
+            var expectedKnownMilliseconds = TicksToMilliseconds(800 + loadToShopProductionContinueTicks);
+            var dispatchSnapshotPass = dispatchStageIndexPass
+                && sessionDelta.GetProperty("Count").GetInt32() == 3
+                && vmDelta.GetProperty("Count").GetInt32() == 5
+                && Math.Abs(sessionDelta.GetProperty("TotalMilliseconds").GetDouble() - TicksToMilliseconds(300)) < 0.000001
+                && Math.Abs(vmDelta.GetProperty("TotalMilliseconds").GetDouble() - TicksToMilliseconds(500)) < 0.000001;
+            var knownTimePass = Math.Abs(attributionRoot.GetProperty("MeasuredNextKnownTimeMilliseconds").GetDouble() - expectedKnownMilliseconds) < 0.000001;
+            var nonOverlappingPass = knownTimePass
+                && attributionDelta.GetProperty("SemanticExecutorConstruction").GetProperty("Count").GetInt32() == 2
+                && attributionDelta.GetProperty("VmMachineConstruction").GetProperty("Count").GetInt32() == 3
+                && attributionDelta.GetProperty("RuntimeEffectsConstruction").GetProperty("Count").GetInt32() == 4
+                && attributionDelta.GetProperty("ExecutionSessionWrapperConstruction").GetProperty("Count").GetInt32() == 5;
+            Array.Clear(nextDispatchStageCounts);
+            Array.Clear(nextDispatchStageTicks);
+            nextConstructionStages.Clear();
+            BeginLoadToShopMeasurementAndCheckReplacement();
             BeginLoadToShopWarningSnapshot(5000, 5000, 10000, "LoadData", "test.ERB", 12, "TEST", "1", 1, false);
             EndLoadToShopWarningSnapshot("Continue");
             BeginLoadToShopWarningSnapshot(5000, 5000, 20000, "LoadData", "test.ERB", 13, "TEST", "1", 1, false);
@@ -1336,6 +1395,13 @@ internal static class PerformanceMetrics
             nextDispatchAttempts = 3;
             nextDispatchFallbacks = 2;
             nextDispatchRejections[nameof(MinorShift.Emuera.GameProc.NextRuntimeDispatchRejectReason.SessionStartRejected)] = 1;
+            if (dispatchStageIndexPass)
+            {
+                nextDispatchStageCounts[sessionDispatchIndex] = 1;
+                nextDispatchStageTicks[sessionDispatchIndex] = 11;
+                nextDispatchStageCounts[vmDispatchIndex] = 1;
+                nextDispatchStageTicks[vmDispatchIndex] = 13;
+            }
             entryDispatchAlreadyConsumedCount = 1;
             nextConstructionStages["SessionConstruction"] = (1, 11, 0, 11);
             nextConstructionStages["VmExecution"] = (1, 13, 0, 13);
@@ -1360,6 +1426,10 @@ internal static class PerformanceMetrics
             Console.WriteLine($"P3ZM1WarningSnapshotState={(firstPass ? "PASS" : "FAIL")}");
             Console.WriteLine($"P3ZM1ProductionContinueState={(continuePass ? "PASS" : "FAIL")}");
             Console.WriteLine($"P3ZM1NonProductionContinueExcluded={(nonProductionContinuePass ? "PASS" : "FAIL")}");
+            Console.WriteLine($"P3ZM1DispatchStageSnapshotSource={(dispatchSnapshotPass ? "PASS" : "FAIL")}");
+            Console.WriteLine($"P3ZM1LoadLocalStageAttribution={(knownTimePass ? "PASS" : "FAIL")}");
+            Console.WriteLine($"P3ZM1KnownTimeNonOverlapping={(nonOverlappingPass ? "PASS" : "FAIL")}");
+            Console.WriteLine($"FocusedWrongDictionaryRegressionTest={(dispatchSnapshotPass && knownTimePass && nonOverlappingPass ? "PASS" : "FAIL")}");
             Console.WriteLine($"P3ZM1ReplacementState={(replacementPass ? "PASS" : "FAIL")}");
             Console.WriteLine($"P3ZM1CounterDeltaState={(counterPass ? "PASS" : "FAIL")}");
             Console.WriteLine($"P3ZM1TendFreezeState={(freezePass ? "PASS" : "FAIL")}");
@@ -1367,7 +1437,7 @@ internal static class PerformanceMetrics
             Console.WriteLine($"P3ZM1WarningSnapshotCap={(capPass ? "PASS" : "FAIL")}");
             Console.WriteLine($"P3ZM1AbortState={(abortPass ? "PASS" : "FAIL")}");
             Console.WriteLine($"P3ZM1ResetState={(resetPass ? "PASS" : "FAIL")}");
-            var pass = incompletePass && loadGameOriginPass && loadDataOriginPass && zeroWarningPass && firstPass && continuePass && nonProductionContinuePass && replacementPass && counterPass && derivedPass && freezePass && capPass && abortPass && resetPass;
+            var pass = incompletePass && loadGameOriginPass && loadDataOriginPass && zeroWarningPass && firstPass && continuePass && nonProductionContinuePass && dispatchSnapshotPass && knownTimePass && nonOverlappingPass && replacementPass && counterPass && derivedPass && freezePass && capPass && abortPass && resetPass;
             Console.WriteLine($"P3ZM1FocusedSelfTest={(pass ? "PASS" : "FAIL")}");
             return pass ? 0 : 1;
         }
