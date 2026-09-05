@@ -810,8 +810,28 @@ internal sealed partial class Process
                     if (result.State != EraDataState.OK)
                         throw new CodeEE(LocalizationManager.Error.LoadCorruptedData);
 
+#if PERFORMANCE_METRICS
+                    PerformanceMetrics.BeginLoadToShopMeasurement("LOADDATA");
+                    bool loaded;
+                    try
+                    {
+                        loaded = vEvaluator.LoadFrom((int)target);
+                    }
+                    catch
+                    {
+                        PerformanceMetrics.AbortLoadToShopMeasurement();
+                        throw;
+                    }
+                    if (!loaded)
+                    {
+                        PerformanceMetrics.AbortLoadToShopMeasurement();
+                        throw new ExeEE(LocalizationManager.Error.UnexpectedErrorInLoaddata);
+                    }
+                    PerformanceMetrics.MarkLoadToShopRestoreCompleted();
+#else
                     if (!vEvaluator.LoadFrom((int)target))
                         throw new ExeEE(LocalizationManager.Error.UnexpectedErrorInLoaddata);
+#endif
                     state.ClearFunctionList();
                     state.SystemState = SystemStateCode.LoadData_DataLoaded;
                     return false;

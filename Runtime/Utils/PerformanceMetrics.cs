@@ -164,6 +164,7 @@ internal static class PerformanceMetrics
     private static bool loadToShopMeasurementExists;
     private static bool loadToShopMeasurementActive;
     private static bool loadToShopMeasurementCompleted;
+    private static string loadToShopEntryPoint;
     private static long loadToShopStartTicks;
     private static long loadToShopRestoreTicks;
     private static long loadToShopEndTicks;
@@ -1027,11 +1028,12 @@ internal static class PerformanceMetrics
     }
 
     [Conditional("PERFORMANCE_METRICS")]
-    internal static void BeginLoadToShopMeasurement()
+    internal static void BeginLoadToShopMeasurement(string entryPoint)
     {
         if (string.IsNullOrWhiteSpace(nextDispatchProfilePath))
             return;
         ResetLoadToShopMeasurement();
+        loadToShopEntryPoint = entryPoint;
         loadToShopMeasurementExists = true;
         loadToShopMeasurementActive = true;
         loadToShopStartTicks = Stopwatch.GetTimestamp();
@@ -1202,6 +1204,7 @@ internal static class PerformanceMetrics
         return new
         {
             Scope = "ONE_SUCCESSFUL_LOAD_TO_FIRST_SHOP_WAIT_INPUT",
+            EntryPoint = loadToShopEntryPoint,
             MeasurementSemantics = "T0 before successful LoadFrom; T1 after LoadFrom; TEND after Shop_WaitInput state assignment; warning dialog dwell is separate wall-clock time.",
             TimestampSchema = "T0,T1,TEND plus warning pre/post and production Continue pre/post while active",
             Completed = loadToShopEndTicks != 0 && restoreTicks != 0,
@@ -1262,6 +1265,7 @@ internal static class PerformanceMetrics
         loadToShopMeasurementExists = false;
         loadToShopMeasurementActive = false;
         loadToShopMeasurementCompleted = false;
+        loadToShopEntryPoint = null;
         loadToShopStartTicks = 0;
         loadToShopRestoreTicks = 0;
         loadToShopEndTicks = 0;
@@ -1289,9 +1293,10 @@ internal static class PerformanceMetrics
             entryDispatchAlreadyConsumedCount = 0;
             nextConstructionStages.Clear();
             ResetLoadToShopMeasurement();
-            BeginLoadToShopMeasurement();
+            BeginLoadToShopMeasurement("LOADGAME");
             var incompleteText = JsonSerializer.Serialize(CreateLoadToShopMeasurementReport());
             var incompletePass = incompleteText.Contains("\"Completed\":false", StringComparison.Ordinal);
+            var loadGameOriginPass = incompleteText.Contains("\"EntryPoint\":\"LOADGAME\"", StringComparison.Ordinal);
             var zeroWarningPass = incompleteText.Contains("\"WarningCount\":0", StringComparison.Ordinal) && incompleteText.Contains("\"Warnings\":[]", StringComparison.Ordinal);
             BeginLoadToShopWarningSnapshot(5000, 5000, 10000, "LoadData", "test.ERB", 12, "TEST", "1", 1, false);
             EndLoadToShopWarningSnapshot("Continue");
@@ -1319,6 +1324,7 @@ internal static class PerformanceMetrics
             entryDispatchAlreadyConsumedCount = 0;
             nextConstructionStages.Clear();
             var replacementPass = BeginLoadToShopMeasurementAndCheckReplacement();
+            var loadDataOriginPass = JsonSerializer.Serialize(CreateLoadToShopMeasurementReport()).Contains("\"EntryPoint\":\"LOADDATA\"", StringComparison.Ordinal);
             var nonProductionContinueStart = 0L;
             EndLoadToShopProductionContinue(nonProductionContinueStart);
             var continuePass = loadToShopProductionContinueCount == 0;
@@ -1347,6 +1353,8 @@ internal static class PerformanceMetrics
             ResetLoadToShopMeasurement();
             var resetPass = !loadToShopMeasurementActive && loadToShopWarningCount == 0 && loadToShopProductionContinueCount == 0;
             Console.WriteLine($"P3ZM1LoadEnvelopeState=PASS");
+            Console.WriteLine($"P3ZM1LoadGameOrigin={(loadGameOriginPass ? "PASS" : "FAIL")}");
+            Console.WriteLine($"P3ZM1LoadDataOrigin={(loadDataOriginPass ? "PASS" : "FAIL")}");
             Console.WriteLine($"P3ZM1IncompleteMeasurementState={(incompletePass ? "PASS" : "FAIL")}");
             Console.WriteLine($"P3ZM1ZeroWarningState={(zeroWarningPass ? "PASS" : "FAIL")}");
             Console.WriteLine($"P3ZM1WarningSnapshotState={(firstPass ? "PASS" : "FAIL")}");
@@ -1359,7 +1367,7 @@ internal static class PerformanceMetrics
             Console.WriteLine($"P3ZM1WarningSnapshotCap={(capPass ? "PASS" : "FAIL")}");
             Console.WriteLine($"P3ZM1AbortState={(abortPass ? "PASS" : "FAIL")}");
             Console.WriteLine($"P3ZM1ResetState={(resetPass ? "PASS" : "FAIL")}");
-            var pass = incompletePass && zeroWarningPass && firstPass && continuePass && nonProductionContinuePass && replacementPass && counterPass && derivedPass && freezePass && capPass && abortPass && resetPass;
+            var pass = incompletePass && loadGameOriginPass && loadDataOriginPass && zeroWarningPass && firstPass && continuePass && nonProductionContinuePass && replacementPass && counterPass && derivedPass && freezePass && capPass && abortPass && resetPass;
             Console.WriteLine($"P3ZM1FocusedSelfTest={(pass ? "PASS" : "FAIL")}");
             return pass ? 0 : 1;
         }
@@ -1372,7 +1380,7 @@ internal static class PerformanceMetrics
 
     private static bool BeginLoadToShopMeasurementAndCheckReplacement()
     {
-        BeginLoadToShopMeasurement();
+        BeginLoadToShopMeasurement("LOADDATA");
         return loadToShopMeasurementActive && loadToShopWarningCount == 0 && loadToShopDroppedWarningSnapshotCount == 0 && loadToShopProductionContinueCount == 0;
     }
 #endif

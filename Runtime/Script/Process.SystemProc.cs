@@ -992,7 +992,7 @@ internal sealed partial class Process
         }
 
 #if PERFORMANCE_METRICS
-        PerformanceMetrics.BeginLoadToShopMeasurement();
+        PerformanceMetrics.BeginLoadToShopMeasurement("LOADGAME");
         try
         {
             if (!vEvaluator.LoadFrom((int)systemResult))
