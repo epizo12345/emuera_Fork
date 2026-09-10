@@ -244,6 +244,9 @@ internal sealed class SpriteF : ASpriteSingle
 /// </summary>
 internal sealed class SpriteAnime : ASprite
 {
+#if R0_F4G2
+    internal int R0F4G2FrameCount => FrameList.Count;
+#endif
     public SpriteAnime(string name, Size size)
         : base(name, size)
     {

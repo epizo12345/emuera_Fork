@@ -98,6 +98,9 @@ internal sealed class ErbLoader
     /// <param name="filepath"></param>
     public async Task<bool> LoadErbDir(string erbDir, bool displayReport, LabelDictionary labelDictionary)
     {
+#if R0_E1A
+        MinorShift.Emuera.Runtime.Diagnostics.R0E1AProof.Hit(MinorShift.Emuera.Runtime.Diagnostics.R0E1AGuard.LoadErbDir);
+#endif
         //1.713 labelDicをnewする位置を変更。
         //checkScript();の時点でExpressionPerserがProcess.instance.LabelDicを必要とするから。
         labelDic = labelDictionary;
@@ -224,6 +227,9 @@ internal sealed class ErbLoader
     /// <param name="filename"></param>
     public async Task<bool> LoadErbList(IEnumerable<string> paths, LabelDictionary labelDictionary)
     {
+#if R0_E1A
+        MinorShift.Emuera.Runtime.Diagnostics.R0E1AProof.Hit(MinorShift.Emuera.Runtime.Diagnostics.R0E1AGuard.LoadErbList);
+#endif
         string fname;
         ConcurrentDictionary<string, byte> isOnlyEvent = new(Config.Config.StrComper);
         hasError = 0;
@@ -685,6 +691,9 @@ internal sealed class ErbLoader
 
     private bool HydrateLazyFile(LazyErbFile file)
     {
+#if R0_E1A
+        MinorShift.Emuera.Runtime.Diagnostics.R0E1AProof.Hit(MinorShift.Emuera.Runtime.Diagnostics.R0E1AGuard.HydrateLazyFile);
+#endif
         // [Emuera改修:MEM-13R39 2026-08-22]
         // 初回実行はERB 1ファイル単位で既存stubへ本文chainを接続する。Preload.Clear後も動くよう、
         // 起動時cache(OpenOnCache)を使わず現ファイルを直接開き、index時の長さ・更新時刻と照合する。
@@ -810,6 +819,9 @@ internal sealed class ErbLoader
     /// <param name="filepath"></param>
     private void loadErb(string filepath, string filename, int fileIndex, ConcurrentDictionary<string, byte> isOnlyEvent)
     {
+#if R0_E1A
+        MinorShift.Emuera.Runtime.Diagnostics.R0E1AProof.Hit(MinorShift.Emuera.Runtime.Diagnostics.R0E1AGuard.LegacyErbLoad);
+#endif
         if (TryLoadLazyErb(filepath, filename, fileIndex, isOnlyEvent))
             return;
 #if PERFORMANCE_METRICS
@@ -1222,6 +1234,9 @@ internal sealed class ErbLoader
     /// </summary>
     private void ParseScript()
     {
+#if R0_E1A
+        MinorShift.Emuera.Runtime.Diagnostics.R0E1AProof.Hit(MinorShift.Emuera.Runtime.Diagnostics.R0E1AGuard.LegacyScriptParse);
+#endif
         int usedLabelCount = 0;
         int labelDepth = -1;
         List<FunctionLabelLine> labelList = labelDic.GetAllLabels(true);

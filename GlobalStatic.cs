@@ -24,7 +24,16 @@ internal static class GlobalStatic
     //Config Replace
 
     public static EmueraConsole Console;
+#if R0_D1
+    private static Process process;
+    public static Process Process
+    {
+        get => process;
+        set { if (!ReferenceEquals(process, value)) process?.InvalidateR0D1Host(); process = value; }
+    }
+#else
     public static Process Process;
+#endif
     //Config.RenameDic
     public static GameBase GameBaseData;
     public static ConstantData ConstantData;
@@ -32,9 +41,27 @@ internal static class GlobalStatic
     //StrForm
     public static VariableEvaluator VEvaluator;
     public static IdentifierDictionary IdentifierDictionary;
+#if R0_D1
+    private static ExpressionMediator mediator;
+    public static ExpressionMediator EMediator
+    {
+        get => mediator;
+        set { if (!ReferenceEquals(mediator, value)) Process?.InvalidateR0D1Host(); mediator = value; }
+    }
+#else
     public static ExpressionMediator EMediator;
+#endif
     //
+#if R0_D1
+    private static LabelDictionary labels;
+    public static LabelDictionary LabelDictionary
+    {
+        get => labels;
+        set { if (!ReferenceEquals(labels, value)) Process?.InvalidateR0D1Host(); labels = value; }
+    }
+#else
     public static LabelDictionary LabelDictionary;
+#endif
 
 
     //ERBloaderに引数解析の結果を渡すための橋渡し変数

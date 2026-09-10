@@ -568,6 +568,9 @@ internal sealed partial class IdentifierDictionary
         }
         if ((labelDic != null) && labelDic.Initialized)
         {
+#if R0_E1A
+            MinorShift.Emuera.Runtime.Diagnostics.R0E1AProof.Hit(MinorShift.Emuera.Runtime.Diagnostics.R0E1AGuard.UserFunctionResolution);
+#endif
             if (refmethodDic.TryGetValue(codeStr, out UserDefinedRefMethod value))
                 return new UserDefinedRefMethodTerm(value, arguments);
             FunctionLabelLine func = labelDic.GetNonEventLabel(codeStr);

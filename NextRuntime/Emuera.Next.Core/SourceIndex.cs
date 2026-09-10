@@ -1,6 +1,9 @@
 using System.Buffers;
 using System.Globalization;
 using System.Text;
+#if R0_E2S
+using System.Diagnostics;
+#endif
 
 namespace MinorShift.Emuera.Next.Core;
 
@@ -52,6 +55,17 @@ public sealed record SourceFileIndex(
         SourceIndexFlags.Rename | SourceIndexFlags.LineContinuation | SourceIndexFlags.OtherSemanticFallback;
 }
 
+public readonly record struct R0E2SSourceIndexCensus(long EnumerationTicks, long PhysicalScanTicks,
+    long EnumerationAllocatedBytes, long PhysicalScanAllocatedBytes, int FileCount, long SourceBytes,
+    int FunctionCount, int FilesWithFallbackFlags, int FilesWithPreprocessor, int FilesWithRename,
+    int FilesWithErrors);
+
+public static class R0E2SSourceIndexMetrics
+{
+    public static R0E2SSourceIndexCensus Last { get; private set; }
+    internal static void Set(R0E2SSourceIndexCensus value) => Last = value;
+}
+
 public static class ErbSourceIndexer
 {
     private static readonly UTF8Encoding StrictUtf8 = new(false, true);
@@ -63,7 +77,26 @@ public static class ErbSourceIndexer
         if (!Directory.Exists(directory))
             throw new DirectoryNotFoundException(directory);
 
+#if R0_E2S
+        var allocated = GC.GetTotalAllocatedBytes(true);
+        var start = Stopwatch.GetTimestamp();
+        var paths = EnumerateLegacyErbFiles(directory);
+        var enumerationTicks = Stopwatch.GetTimestamp() - start;
+        var enumerationAllocated = GC.GetTotalAllocatedBytes(true) - allocated;
+        allocated = GC.GetTotalAllocatedBytes(true);
+        start = Stopwatch.GetTimestamp();
+        var result = paths.Select(IndexFile).ToArray();
+        var physicalTicks = Stopwatch.GetTimestamp() - start;
+        R0E2SSourceIndexMetrics.Set(new(enumerationTicks, physicalTicks, enumerationAllocated,
+            GC.GetTotalAllocatedBytes(true) - allocated, result.Length, result.Sum(file => file.SourceBytes),
+            result.Sum(file => file.Functions.Count), result.Count(file => file.HasFallback),
+            result.Count(file => (file.Flags & SourceIndexFlags.Preprocessor) != 0),
+            result.Count(file => (file.Flags & SourceIndexFlags.Rename) != 0),
+            result.Count(file => file.Error is not null)));
+        return result;
+#else
         return EnumerateLegacyErbFiles(directory).Select(IndexFile).ToArray();
+#endif
     }
 
     private static List<string> EnumerateLegacyErbFiles(string root)

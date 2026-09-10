@@ -25,12 +25,18 @@ public enum PrototypeOpcode : ushort
     RETURN, RETURNFORM, RETURNF,
     IF, SIF, ELSE, ELSEIF, ENDIF, SELECTCASE, CASE, CASEELSE, ENDSELECT,
     REPEAT, REND, CONTINUE, BREAK, FOR, NEXT, WHILE, WEND, DO, LOOP,
-    GOTO, JUMP, TRYJUMP, TRYGOTO, TRYGOTOFORM,
+    LABEL, GOTO, JUMP, TRYJUMP, TRYGOTO, TRYGOTOFORM,
     PRINTDATA, PRINTDATAL, PRINTDATAW, DATA, DATAFORM, ENDDATA,
     SETBIT, CLEARBIT, INVERTBIT, SWAP, POWER, TIMES, UPCHECK, CUPCHECK,
     CLEARLINE, REUSELASTLINE, OUTPUTLOG, QUIT, REDRAW,
     // [Emuera改修:NEXT-1C 2026-08-27] Tier-B境界をraw operand span分類だけで閉じる。
     RESET_STAIN, VARSET, ALIGNMENT, ARRAYSHIFT, SPLIT,
+    VARI, VARS, PRINTBUTTON, THROW,
+    CALLFORM, TRYCALLFORM, TRYCCALLFORM, CALLFORMF, CATCH, ENDCATCH,
+    DELDATA, SAVEDATA, RESTART,
+    SETANIMETIMER, GDISPOSE, GCREATEFROMFILE, GCREATE, GDRAWSPRITE,
+    SPRITECREATE, SPRITECREATED, SPRITEDISPOSE, HTML_PRINT, FINDELEMENT,
+    DEBUGPRINT, DEBUGPRINTL, DEBUGPRINTFORM, DEBUGPRINTFORML,
 }
 
 [Flags]
@@ -66,7 +72,8 @@ public sealed record CompileResult(CompileStatus Status, CompiledFunction? Funct
 }
 
 public sealed record CompiledFunction(string FileIdentity, string Name, SourceSpan Span,
-    ImmutableArray<PrototypeInstruction> Instructions, int MetadataBytesEstimate, SemanticPayload? SemanticPayload = null, FunctionRuntimeMetadata? RuntimeMetadata = null)
+    ImmutableArray<PrototypeInstruction> Instructions, int MetadataBytesEstimate, SemanticPayload? SemanticPayload = null,
+    FunctionRuntimeMetadata? RuntimeMetadata = null, ImmutableArray<string> OperandTexts = default)
 {
     public int InstructionStorageBytes => Instructions.Length * FunctionCompiler.InstructionPayloadBytes;
 }
@@ -134,7 +141,15 @@ public static class LegacyOpcodeMap
         ("CALL", PrototypeOpcode.CALL), ("TRYCALL", PrototypeOpcode.TRYCALL), ("CALLEVENT", PrototypeOpcode.CALLEVENT), ("CALLTRAIN", PrototypeOpcode.CALLTRAIN), ("CALLF", PrototypeOpcode.CALLF), ("RETURN", PrototypeOpcode.RETURN), ("RETURNFORM", PrototypeOpcode.RETURNFORM), ("RETURNF", PrototypeOpcode.RETURNF), ("IF", PrototypeOpcode.IF), ("SIF", PrototypeOpcode.SIF), ("ELSE", PrototypeOpcode.ELSE), ("ELSEIF", PrototypeOpcode.ELSEIF), ("ENDIF", PrototypeOpcode.ENDIF), ("SELECTCASE", PrototypeOpcode.SELECTCASE), ("CASE", PrototypeOpcode.CASE), ("CASEELSE", PrototypeOpcode.CASEELSE), ("ENDSELECT", PrototypeOpcode.ENDSELECT),
         ("REPEAT", PrototypeOpcode.REPEAT), ("REND", PrototypeOpcode.REND), ("CONTINUE", PrototypeOpcode.CONTINUE), ("BREAK", PrototypeOpcode.BREAK), ("FOR", PrototypeOpcode.FOR), ("NEXT", PrototypeOpcode.NEXT), ("WHILE", PrototypeOpcode.WHILE), ("WEND", PrototypeOpcode.WEND), ("DO", PrototypeOpcode.DO), ("LOOP", PrototypeOpcode.LOOP), ("GOTO", PrototypeOpcode.GOTO), ("JUMP", PrototypeOpcode.JUMP), ("TRYJUMP", PrototypeOpcode.TRYJUMP), ("TRYGOTO", PrototypeOpcode.TRYGOTO), ("TRYGOTOFORM", PrototypeOpcode.TRYGOTOFORM),
         ("PRINTDATA", PrototypeOpcode.PRINTDATA), ("PRINTDATAL", PrototypeOpcode.PRINTDATAL), ("PRINTDATAW", PrototypeOpcode.PRINTDATAW), ("DATA", PrototypeOpcode.DATA), ("DATAFORM", PrototypeOpcode.DATAFORM), ("ENDDATA", PrototypeOpcode.ENDDATA), ("SETBIT", PrototypeOpcode.SETBIT), ("CLEARBIT", PrototypeOpcode.CLEARBIT), ("INVERTBIT", PrototypeOpcode.INVERTBIT), ("SWAP", PrototypeOpcode.SWAP), ("POWER", PrototypeOpcode.POWER), ("TIMES", PrototypeOpcode.TIMES), ("UPCHECK", PrototypeOpcode.UPCHECK), ("CUPCHECK", PrototypeOpcode.CUPCHECK), ("CLEARLINE", PrototypeOpcode.CLEARLINE), ("REUSELASTLINE", PrototypeOpcode.REUSELASTLINE), ("OUTPUTLOG", PrototypeOpcode.OUTPUTLOG), ("QUIT", PrototypeOpcode.QUIT), ("REDRAW", PrototypeOpcode.REDRAW),
-        ("RESET_STAIN", PrototypeOpcode.RESET_STAIN), ("VARSET", PrototypeOpcode.VARSET), ("ALIGNMENT", PrototypeOpcode.ALIGNMENT), ("ARRAYSHIFT", PrototypeOpcode.ARRAYSHIFT), ("SPLIT", PrototypeOpcode.SPLIT)
+        ("RESET_STAIN", PrototypeOpcode.RESET_STAIN), ("VARSET", PrototypeOpcode.VARSET), ("ALIGNMENT", PrototypeOpcode.ALIGNMENT), ("ARRAYSHIFT", PrototypeOpcode.ARRAYSHIFT), ("SPLIT", PrototypeOpcode.SPLIT),
+        ("VARI", PrototypeOpcode.VARI), ("VARS", PrototypeOpcode.VARS), ("PRINTBUTTON", PrototypeOpcode.PRINTBUTTON), ("THROW", PrototypeOpcode.THROW),
+        ("CALLFORM", PrototypeOpcode.CALLFORM), ("TRYCALLFORM", PrototypeOpcode.TRYCALLFORM), ("TRYCCALLFORM", PrototypeOpcode.TRYCCALLFORM), ("CALLFORMF", PrototypeOpcode.CALLFORMF),
+        ("CATCH", PrototypeOpcode.CATCH), ("ENDCATCH", PrototypeOpcode.ENDCATCH), ("DELDATA", PrototypeOpcode.DELDATA), ("SAVEDATA", PrototypeOpcode.SAVEDATA), ("RESTART", PrototypeOpcode.RESTART),
+        ("SETANIMETIMER", PrototypeOpcode.SETANIMETIMER), ("GDISPOSE", PrototypeOpcode.GDISPOSE), ("GCREATEFROMFILE", PrototypeOpcode.GCREATEFROMFILE),
+        ("GCREATE", PrototypeOpcode.GCREATE), ("GDRAWSPRITE", PrototypeOpcode.GDRAWSPRITE), ("SPRITECREATE", PrototypeOpcode.SPRITECREATE),
+        ("SPRITECREATED", PrototypeOpcode.SPRITECREATED), ("SPRITEDISPOSE", PrototypeOpcode.SPRITEDISPOSE), ("HTML_PRINT", PrototypeOpcode.HTML_PRINT),
+        ("FINDELEMENT", PrototypeOpcode.FINDELEMENT), ("DEBUGPRINT", PrototypeOpcode.DEBUGPRINT), ("DEBUGPRINTL", PrototypeOpcode.DEBUGPRINTL),
+        ("DEBUGPRINTFORM", PrototypeOpcode.DEBUGPRINTFORM), ("DEBUGPRINTFORML", PrototypeOpcode.DEBUGPRINTFORML)
     ];
     private static readonly IReadOnlyDictionary<string, PrototypeOpcode> MapIgnoreCase = BuildMap(StringComparer.OrdinalIgnoreCase);
     private static readonly IReadOnlyDictionary<string, PrototypeOpcode> MapCaseSensitive = BuildMap(StringComparer.Ordinal);
@@ -308,7 +323,9 @@ public sealed class FunctionCompiler
         var runtimeGateMetadataStart = Stopwatch.GetTimestamp();
 #endif
         const SourceIndexFlags metadataFlags = SourceIndexFlags.DeclarationDirective | SourceIndexFlags.FunctionMetadata;
-        if ((source.Function.Flags & ~metadataFlags) != SourceIndexFlags.None)
+        const SourceIndexFlags sourceResolvableFlags = metadataFlags | SourceIndexFlags.Rename | SourceIndexFlags.LineContinuation | SourceIndexFlags.OtherSemanticFallback;
+        if ((source.Function.Flags & ~sourceResolvableFlags) != SourceIndexFlags.None ||
+            (source.Function.Flags & SourceIndexFlags.Rename) != 0 && semanticEnvironment is null)
         {
 #if PERFORMANCE_METRICS
             CompileRuntimeMetrics.RecordRuntimeGateMetadata(Stopwatch.GetTimestamp() - runtimeGateMetadataStart);
@@ -327,7 +344,7 @@ public sealed class FunctionCompiler
 #endif
             return TryCompileCore(source, FunctionRuntimeMetadata.Empty);
         }
-        if (!FunctionRuntimeMetadataParser.TryParse(source, options, out var metadata, out var detail))
+        if (!FunctionRuntimeMetadataParser.TryParse(source, options, out var metadata, out var detail, semanticEnvironment?.Macros))
         {
 #if PERFORMANCE_METRICS
             CompileRuntimeMetrics.RecordRuntimeGateMetadata(Stopwatch.GetTimestamp() - runtimeGateMetadataStart);
@@ -351,7 +368,7 @@ public sealed class FunctionCompiler
     {
         try
         {
-            (ImmutableArray<PrototypeInstruction> Instructions, SemanticPayload? SemanticPayload) scanned;
+            (ImmutableArray<PrototypeInstruction> Instructions, SemanticPayload? SemanticPayload, ImmutableArray<string> Operands) scanned;
             UnsupportedReason reason;
             string? detail;
 #if PERFORMANCE_METRICS
@@ -384,7 +401,7 @@ public sealed class FunctionCompiler
             var fingerprint = SourceFingerprint.FromBytes(source.Bytes);
             var compiled = new CompileResult(CompileStatus.Compiled,
                 new(source.File.FileIdentity, source.Function.Name, source.Function.Span, scanned.Instructions,
-                    MetadataBytesEstimate(source.Function.Name), scanned.SemanticPayload, runtimeMetadata), UnsupportedReason.None, null, fingerprint);
+                    MetadataBytesEstimate(source.Function.Name), scanned.SemanticPayload, runtimeMetadata, scanned.Operands), UnsupportedReason.None, null, fingerprint);
 #if PERFORMANCE_METRICS
             CompileRuntimeMetrics.RecordCompiledFinalize(Stopwatch.GetTimestamp() - compiledFinalizeStart);
 #endif
@@ -425,9 +442,10 @@ public sealed class FunctionCompiler
         }
     }
 
-    private static (ImmutableArray<PrototypeInstruction> Instructions, SemanticPayload? SemanticPayload) Scan(byte[] bytes, int startLine, CompilerCompatibilityOptions options, StructuralSemanticEnvironment? semanticEnvironment, bool metadataParsed, out UnsupportedReason reason, out string? detail)
+    private static (ImmutableArray<PrototypeInstruction> Instructions, SemanticPayload? SemanticPayload, ImmutableArray<string> Operands) Scan(byte[] bytes, int startLine, CompilerCompatibilityOptions options, StructuralSemanticEnvironment? semanticEnvironment, bool metadataParsed, out UnsupportedReason reason, out string? detail)
     {
         var list = ImmutableArray.CreateBuilder<PrototypeInstruction>();
+        var operands = ImmutableArray.CreateBuilder<string>();
         var semanticParts = new List<SemanticPayload>();
         reason = UnsupportedReason.None;
         detail = null;
@@ -446,30 +464,60 @@ public sealed class FunctionCompiler
             var lineBytes = bytes.AsSpan(lineStart, lineEnd - lineStart);
             offset = offset < bytes.Length ? offset + 1 : offset;
             var text = StrictUtf8.GetString(lineBytes);
-            if (first) { first = false; line++; continue; }
+            var physicalLines = 1;
+            var syntheticOperand = false;
+            var instructionLine = line;
+            if (first) { first = false; line += physicalLines; continue; }
             var scan = LegacyIdentifierScanner.ReadFirstIdentifier(text, options);
             var trimStart = scan.StartPosition;
             var trimmed = text[trimStart..];
+            if (trimmed == "{")
+            {
+                var parts = new List<string>();
+                var closed = false;
+                instructionLine = line + 1;
+                while (offset < bytes.Length)
+                {
+                    var continuationStart = offset;
+                    while (offset < bytes.Length && bytes[offset] != (byte)'\n') offset++;
+                    var continuationEnd = offset;
+                    if (continuationEnd > continuationStart && bytes[continuationEnd - 1] == (byte)'\r') continuationEnd--;
+                    offset = offset < bytes.Length ? offset + 1 : offset;
+                    physicalLines++;
+                    var continuationText = StrictUtf8.GetString(bytes.AsSpan(continuationStart, continuationEnd - continuationStart));
+                    var continuationScan = LegacyIdentifierScanner.ReadFirstIdentifier(continuationText, options);
+                    var part = continuationText[continuationScan.StartPosition..].TrimEnd(' ', '\t', '　');
+                    if (part == "}") { closed = true; break; }
+                    if (part == "{" || part.StartsWith('}')) return Fail(UnsupportedReason.Multiline, "malformed continuation block", out reason, out detail);
+                    if (part.Length != 0 && part[0] != ';') parts.Add(part);
+                }
+                if (!closed || parts.Count == 0) return Fail(UnsupportedReason.Multiline, "unclosed or empty continuation block", out reason, out detail);
+                text = string.Join(' ', parts);
+                scan = LegacyIdentifierScanner.ReadFirstIdentifier(text, options);
+                trimStart = scan.StartPosition;
+                trimmed = text[trimStart..];
+                syntheticOperand = true;
+            }
             if (trimmed.Length == 0)
             {
 #if PERFORMANCE_METRICS
                 CompileRuntimeMetrics.RecordEmptyOrCommentSkippedLine();
 #endif
-                line++; continue;
+                line += physicalLines; continue;
             }
             // [Emuera改修:NEXT-1B-R6 2026-08-27]
             // DebugModeの;#;は命令を消してCompiled扱いにせず、未実装の最小fallbackへ送る。
             if (trimmed.StartsWith(";#;", StringComparison.Ordinal))
             {
                 if (options.DebugMode) return Fail(UnsupportedReason.UnknownSyntax, "DebugMode ;#; prefix requires Legacy fallback", out reason, out detail);
-                line++; continue;
+                line += physicalLines; continue;
             }
             if (trimmed[0] == ';')
             {
 #if PERFORMANCE_METRICS
                 CompileRuntimeMetrics.RecordEmptyOrCommentSkippedLine();
 #endif
-                line++; continue;
+                line += physicalLines; continue;
             }
             if (trimmed.EndsWith('\\')) return Fail(UnsupportedReason.Multiline, "line continuation", out reason, out detail);
             if (metadataParsed && trimmed[0] == '#')
@@ -477,14 +525,27 @@ public sealed class FunctionCompiler
 #if PERFORMANCE_METRICS
                 CompileRuntimeMetrics.RecordMetadataSkippedLine();
 #endif
-                line++; continue;
+                line += physicalLines; continue;
             }
-            if (trimmed[0] is '[' or '#' or '$' or '}' or '{' or '@')
-                return Fail(trimmed[0] == '$' ? UnsupportedReason.LocalLabelOrGoto : UnsupportedReason.UnknownSyntax, "unsupported structural line", out reason, out detail);
+            if (trimmed[0] == '$')
+            {
+                var label = trimmed[1..].TrimEnd(' ', '\t', '　');
+                if (label.Length == 0) return Fail(UnsupportedReason.LocalLabelOrGoto, "empty local label", out reason, out detail);
+                var labelOffset = lineStart + Encoding.UTF8.GetByteCount(text[..(trimStart + 1)]);
+                list.Add(new(PrototypeOpcode.LABEL, PrototypeInstructionFlags.ControlFlow | PrototypeInstructionFlags.HasOperand,
+                    instructionLine, labelOffset, Encoding.UTF8.GetByteCount(label)));
+                operands.Add(label);
+                line += physicalLines;
+                continue;
+            }
+            if (trimmed[0] is '[' or '#' or '}' or '{' or '@')
+                return Fail(UnsupportedReason.UnknownSyntax, "unsupported structural line", out reason, out detail);
             var tokenLength = scan.StopPosition - scan.StartPosition;
-            if (tokenLength == 0) return Fail(UnsupportedReason.UnknownSyntax, "empty instruction", out reason, out detail);
+            var prefixIncrement = tokenLength == 0 && TryFindStandaloneIncrement(trimmed);
+            if (tokenLength == 0 && !prefixIncrement) return Fail(UnsupportedReason.UnknownSyntax, "empty instruction", out reason, out detail);
             var token = trimmed[..tokenLength];
-            var isMappedCommand = LegacyOpcodeMap.TryMapStatementIdentifier(token, options, out var opcode);
+            var isMappedCommand = LegacyOpcodeMap.TryMapStatementIdentifier(token, options, out var opcode) ||
+                LegacyOpcodeMap.IsMethodBackedLineHead(token, options) && LegacyOpcodeMap.TryMap(token, options, out opcode);
             var isKnownLineHead = LegacyOpcodeMap.IsLegacyLineHeadIdentifier(token, options);
             var separator = tokenLength < trimmed.Length ? trimmed[tokenLength] : '\0';
             if (isKnownLineHead)
@@ -495,14 +556,16 @@ public sealed class FunctionCompiler
                     return Fail(UnsupportedReason.UnsupportedInstruction, $"unsupported instruction: {token}", out reason, out detail);
             }
             var assignmentFound = false;
+            var incrementFound = false;
             if (!isKnownLineHead)
             {
                 assignmentFound = TryFindAssignment(trimmed, out _);
+                incrementFound = prefixIncrement || !assignmentFound && TryFindStandaloneIncrement(trimmed);
 #if PERFORMANCE_METRICS
                 CompileRuntimeMetrics.RecordAssignmentSearch(assignmentFound);
 #endif
             }
-            if (!isKnownLineHead && !assignmentFound)
+            if (!isKnownLineHead && !assignmentFound && !incrementFound)
             {
                 return Fail(UnsupportedReason.UnsupportedInstruction, $"unsupported instruction: {token}", out reason, out detail);
             }
@@ -511,13 +574,14 @@ public sealed class FunctionCompiler
             var operandStart = isAssignment ? 0 : LegacyIdentifierScanner.SkipCommandSeparators(trimmed, tokenLength, options);
             var rawOperand = operandStart < trimmed.Length && trimmed[operandStart] != ';' ? trimmed[operandStart..] : string.Empty;
             var operand = rawOperand.TrimEnd(' ', '\t', '　');
-            var operandOffset = lineStart + Encoding.UTF8.GetByteCount(text[..(trimStart + operandStart)]);
-            var operandLength = Encoding.UTF8.GetByteCount(operand);
-            var flags = operandLength > 0 ? PrototypeInstructionFlags.HasOperand : PrototypeInstructionFlags.None;
+            var operandOffset = syntheticOperand ? 0 : lineStart + Encoding.UTF8.GetByteCount(text[..(trimStart + operandStart)]);
+            var operandLength = syntheticOperand ? 0 : Encoding.UTF8.GetByteCount(operand);
+            var flags = operand.Length > 0 ? PrototypeInstructionFlags.HasOperand : PrototypeInstructionFlags.None;
             if (LegacyOpcodeMap.IsControlFlow(opcode)) flags |= PrototypeInstructionFlags.ControlFlow;
             if (LegacyOpcodeMap.IsCall(opcode)) flags |= PrototypeInstructionFlags.Call;
             var instructionIndex = list.Count;
-            list.Add(new(opcode, flags, line, operandOffset, operandLength));
+            list.Add(new(opcode, flags, instructionLine, operandOffset, operandLength));
+            operands.Add(operand);
 #if PERFORMANCE_METRICS
             CompileRuntimeMetrics.RecordInstructionEmitted();
 #endif
@@ -565,7 +629,7 @@ public sealed class FunctionCompiler
 #endif
                 semanticParts.Add(semanticPart!);
             }
-            line++;
+            line += physicalLines;
         }
 #if PERFORMANCE_METRICS
         var scanFinalizeStart = Stopwatch.GetTimestamp();
@@ -575,12 +639,12 @@ public sealed class FunctionCompiler
 #if PERFORMANCE_METRICS
         CompileRuntimeMetrics.RecordScanFinalize(Stopwatch.GetTimestamp() - scanFinalizeStart, semanticParts.Count);
 #endif
-        return (instructions, semanticPayload);
+        return (instructions, semanticPayload, operands.ToImmutable());
 
         static bool IsSemanticOperand(PrototypeOpcode opcode) => opcode is PrototypeOpcode.SIF or PrototypeOpcode.IF or PrototypeOpcode.ELSEIF or PrototypeOpcode.SELECTCASE or PrototypeOpcode.CASE or PrototypeOpcode.REPEAT or PrototypeOpcode.FOR or PrototypeOpcode.WHILE or PrototypeOpcode.LOOP;
 
-        static (ImmutableArray<PrototypeInstruction> Instructions, SemanticPayload? SemanticPayload) Fail(UnsupportedReason value, string message, out UnsupportedReason result, out string? detail)
-        { result = value; detail = message; return (ImmutableArray<PrototypeInstruction>.Empty, null); }
+        static (ImmutableArray<PrototypeInstruction> Instructions, SemanticPayload? SemanticPayload, ImmutableArray<string> Operands) Fail(UnsupportedReason value, string message, out UnsupportedReason result, out string? detail)
+        { result = value; detail = message; return (ImmutableArray<PrototypeInstruction>.Empty, null, ImmutableArray<string>.Empty); }
 
         static bool TryFindAssignment(ReadOnlySpan<char> text, out int operatorStart)
         {
@@ -607,6 +671,17 @@ public sealed class FunctionCompiler
                 if (current == '=' && (index + 1 == text.Length || text[index + 1] != '=') && (index == 0 || text[index - 1] is not ('=' or '!' or '<' or '>'))) { operatorStart = index; break; }
             }
             return operatorStart >= 0 && IsStructuralLValue(text[..operatorStart]);
+        }
+
+        static bool TryFindStandaloneIncrement(ReadOnlySpan<char> text)
+        {
+            text = text.Trim(new[] { ' ', '\t', '　' });
+            if (text.Length < 3) return false;
+            if ((text.StartsWith("++", StringComparison.Ordinal) || text.StartsWith("--", StringComparison.Ordinal)) && text[2] is not (' ' or '\t' or '　'))
+                return IsStructuralLValue(text[2..]);
+            if ((text.EndsWith("++", StringComparison.Ordinal) || text.EndsWith("--", StringComparison.Ordinal)) && text[^3] is not (' ' or '\t' or '　'))
+                return IsStructuralLValue(text[..^2]);
+            return false;
         }
 
         static bool IsStructuralLValue(ReadOnlySpan<char> text)

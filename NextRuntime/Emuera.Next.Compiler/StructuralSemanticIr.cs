@@ -155,13 +155,23 @@ public sealed record MacroDefinition(string Name, string Replacement, MacroRepla
 public sealed class MacroCatalog
 {
     private readonly Dictionary<string, MacroDefinition> definitions;
+    private readonly Dictionary<string, (long Integer, string? Text)> constants;
     private readonly CompilerCompatibilityOptions? canonicalOptions;
-    public MacroCatalog(StringComparer? comparer = null) => definitions = new(comparer ?? StringComparer.OrdinalIgnoreCase);
-    public MacroCatalog(CompilerCompatibilityOptions options) => (canonicalOptions, definitions) = (options, new(options.NameComparer));
+    public MacroCatalog(StringComparer? comparer = null)
+    {
+        var effectiveComparer = comparer ?? StringComparer.OrdinalIgnoreCase;
+        definitions = new(effectiveComparer); constants = new(effectiveComparer);
+    }
+    public MacroCatalog(CompilerCompatibilityOptions options) => (canonicalOptions, definitions, constants) = (options, new(options.NameComparer), new(options.NameComparer));
     public int Count => definitions.Count;
     public IReadOnlyCollection<MacroDefinition> Definitions => definitions.Values;
     public void Add(MacroDefinition definition) => definitions[definition.Name] = definition;
     public bool TryGet(string name, out MacroDefinition definition) => definitions.TryGetValue(name, out definition!);
+    public bool TryGetConstant(string name, out long integer, out string? text)
+    {
+        if (constants.TryGetValue(name, out var value)) { (integer, text) = value; return true; }
+        integer = 0; text = null; return false;
+    }
     public static MacroCatalog FromHeaderSources(IEnumerable<string> orderedHeaderSources, CompilerCompatibilityOptions options, SemanticRenameResolver? renameResolver = null)
     {
         var catalog = new MacroCatalog(options);
@@ -172,7 +182,22 @@ public sealed class MacroCatalog
             if (index < 0 || index >= line.Length || line[index] != '#') continue;
             index++; var directiveLength = LegacyIdentifierScanner.ReadIdentifierLength(line.AsSpan(index));
             if (directiveLength == 0) throw new SemanticParseException("# directive requires immediate identifier");
-            var directive = line.Substring(index, directiveLength); if (!directive.Equals("DEFINE", options.NameComparison)) continue;
+            var directive = line.Substring(index, directiveLength);
+            if (directive.Equals("DIM", options.NameComparison) || directive.Equals("DIMS", options.NameComparison))
+            {
+                var declaration = line[(index + directiveLength)..].Split(';')[0].Trim();
+                if (!declaration.StartsWith("CONST ", options.NameComparison)) continue;
+                var equals = declaration.IndexOf('=');
+                if (equals < 0) continue;
+                var constantName = declaration[6..equals].Trim();
+                var value = declaration[(equals + 1)..].Trim();
+                if (directive.Equals("DIM", options.NameComparison) && long.TryParse(value, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var integer))
+                    catalog.constants[constantName] = (integer, null);
+                else if (directive.Equals("DIMS", options.NameComparison) && value.Length >= 2 && value[0] == '"' && value[^1] == '"')
+                    catalog.constants[constantName] = (0, value[1..^1]);
+                continue;
+            }
+            if (!directive.Equals("DEFINE", options.NameComparison)) continue;
             index += directiveLength; index = SkipLegacySpace(line, index, options); var nameLength = LegacyIdentifierScanner.ReadIdentifierLength(line.AsSpan(index)); if (nameLength == 0) throw new SemanticParseException("#DEFINE name missing");
             var name = line.Substring(index, nameLength); index += nameLength; if (index < line.Length && line[index] == '(') throw new SemanticParseException("function-like #DEFINE declaration detected immediately after macro name");
             var replacement = SemanticLexicalTokenStream.ApplyRename(index < line.Length ? line[index..] : string.Empty, renameResolver); var effective = catalog.Expand(replacement, options, out _);
@@ -283,7 +308,7 @@ internal static class FormattedDelimiterScanner
             var c = source[i]; if (quote) { if (c == '\\') i++; else if (c == '"') quote = false; continue; }
             if (c == '"') { quote = true; continue; }
             if (c == ';') { if (SkipCommentMarker(source, ref i, options)) continue; return -1; }
-            if (c is '(' or '[' or '{') depth++; else if (c is ')' or ']') depth--; else if (c == closing && depth == 0) return i;
+            if (c is '(' or '[' or '{') depth++; else if (c == closing && depth == 0) return i; else if (c is ')' or ']' or '}') depth--;
         }
         return -1;
     }

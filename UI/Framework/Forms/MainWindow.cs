@@ -85,6 +85,9 @@ internal sealed partial class MainWindow : Form
     public RichTextBox TextBox { get { return richTextBox1; } }
     public ToolTip ToolTip { get { return toolTipButton; } }
     private EmueraConsole console;
+#if R0_B1
+    internal EmueraConsole R0B1Console => console;
+#endif
 
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
     {

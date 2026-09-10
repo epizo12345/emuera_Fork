@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Drawing;
 using MinorShift.Emuera.Next.Compiler;
 using MinorShift.Emuera.Next.Core;
 using MinorShift.Emuera.Next.Vm;
@@ -18,6 +19,9 @@ using MinorShift.Emuera.Runtime.Script.Statements.Function;
 using MinorShift.Emuera.Runtime.Script.Statements;
 using MinorShift.Emuera.Runtime.Script.Statements.Expression;
 using MinorShift.Emuera.Runtime.Script.Statements.Variable;
+using MinorShift.Emuera.Runtime;
+using MinorShift.Emuera.UI;
+using MinorShift.Emuera.UI.Game;
 
 namespace MinorShift.Emuera.GameProc;
 #nullable enable
@@ -71,10 +75,11 @@ internal sealed record CsvIndexReadTraceRow(
 }
 
 // The host stays in the Legacy assembly so no Legacy object crosses the VM boundary.
-internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparationCounters? preparationCounters = null) : IVmSemanticHost, IVmTypedSemanticHost, IVmAssignmentTargetTypeHost, IVmContextualTypedSemanticHost
+internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparationCounters? preparationCounters = null, bool graphFreeRegistry = false) : IVmSemanticHost, IVmTypedSemanticHost, IVmAssignmentTargetTypeHost, IVmContextualTypedSemanticHost, IVmVariableMetadataHost, IVmHostCallPreflight
 {
     private readonly Dictionary<ulong, BoundVariable> variables = [];
     private readonly Dictionary<ulong, BuiltinCallKind> builtins = [];
+    private readonly Dictionary<ulong, FunctionMethod> graphFreeBuiltins = [];
     private readonly VmRuntimePreparationCounters counters = preparationCounters ?? new();
     // [Emuera改修:NEXT-3D-R1.5P3Z-M7]
     // generation-scoped production prebind済みの同一payloadだけを短絡する。
@@ -95,7 +100,7 @@ internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparation
     private bool csvIndexDiagnosticActive;
     private int csvIndexDiagnosticFunctionId;
     private string csvIndexDiagnosticFunctionName = "";
-    internal enum BuiltinCallKind { Minimum, Maximum }
+    internal enum BuiltinCallKind { Minimum, Maximum, GetChara }
     internal VmRuntimePreparationCounters PreparationCounters => counters;
     internal int BindResolutionCount { get; private set; }
     internal int BoundIdentityCount => variables.Count;
@@ -289,6 +294,9 @@ internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparation
         return process.IsNextRuntimeFrameVariableBound(functionId, name);
     }
     internal bool IsBuiltinBound(SemanticHostIdentity identity) => builtins.ContainsKey(identity.StableId);
+    public VmHostCallAdmission Classify(SemanticHostIdentity identity) =>
+        builtins.ContainsKey(identity.StableId) || graphFreeBuiltins.ContainsKey(identity.StableId)
+            ? VmHostCallAdmission.Ready : VmHostCallAdmission.Blocked;
     internal int RuntimeTypedReadCount { get; private set; }
     internal int RuntimeTypedWriteCount { get; private set; }
     internal int RuntimeTypedBuiltinCallCount { get; private set; }
@@ -301,6 +309,74 @@ internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparation
     // Non-typed callers cannot use a raw builtin name through this adapter.
     public bool TryCall(string name, ReadOnlySpan<VmSemanticValue> arguments, out VmSemanticValue value) { value = VmSemanticValue.Unavailable; return false; }
     public int CompareStrings(string left, string right) => string.Compare(left, right, Config.SCExpression);
+    public bool TryGetVariableIndex(string variableName, string label, out long index)
+    {
+        index = 0;
+        var variable = process.GetNextRuntimeVariableToken(variableName, null);
+        var dictionary = variable is null ? null : GlobalStatic.ConstantData.GetKeywordDictionary(out _, variable.Code, -1);
+        if (dictionary is null || !dictionary.TryGetValue(label, out var found)) return false;
+        index = found;
+        return true;
+    }
+    public bool TryInvokeVariableFunction(string functionName, string variableName, ReadOnlySpan<VmSemanticValue> arguments, out VmSemanticValue value)
+    {
+        value = VmSemanticValue.Unavailable;
+        var variable = process.GetNextRuntimeVariableToken(variableName, null);
+        if (variable is null || variable.Dimension != 1) return false;
+        if (functionName.Equals("MAXARRAY", Config.SCExpression) || functionName.Equals("MINARRAY", Config.SCExpression))
+        {
+            var start = arguments.Length > 0 && arguments[0].TryGetInteger(out var startValue) ? startValue : 0;
+            var end = arguments.Length > 1 && arguments[1].TryGetInteger(out var endValue) ? endValue : variable.GetLength(0);
+            if (start < 0 || end < start || end > variable.GetLength(0)) return false;
+            if (!variable.IsInteger || start == end) return false;
+            var aggregate = variable.GetIntValue(process.NextRuntimeExpressionMediator, [start]);
+            for (var i = start + 1; i < end; i++)
+            {
+                var item = variable.GetIntValue(process.NextRuntimeExpressionMediator, [i]);
+                aggregate = functionName.Equals("MAXARRAY", Config.SCExpression) ? Math.Max(aggregate, item) : Math.Min(aggregate, item);
+            }
+            value = VmSemanticValue.From(aggregate);
+            return true;
+        }
+        if (functionName.Equals("MATCH", Config.SCExpression) && arguments.Length >= 1)
+        {
+            var target = arguments[0];
+            var start = arguments.Length > 1 && arguments[1].TryGetInteger(out var startValue) ? startValue : 0;
+            var end = arguments.Length > 2 && arguments[2].TryGetInteger(out var endValue) ? endValue : variable.GetLength(0);
+            if (start < 0 || end < start || end > variable.GetLength(0)) return false;
+            long count = 0;
+            for (var i = start; i < end; i++)
+                if (variable.IsInteger && target.TryGetInteger(out var integer) && variable.GetIntValue(process.NextRuntimeExpressionMediator, [i]) == integer ||
+                    variable.IsString && target.TryGetString(out var text) && variable.GetStrValue(process.NextRuntimeExpressionMediator, [i]) == text) count++;
+            value = VmSemanticValue.From(count);
+            return true;
+        }
+        if ((functionName.Equals("FINDELEMENT", Config.SCExpression) || functionName.Equals("FINDLASTELEMENT", Config.SCExpression)) && arguments.Length >= 1)
+        {
+            var target = arguments[0];
+            var start = arguments.Length > 1 && arguments[1].TryGetInteger(out var startValue) ? startValue : 0;
+            var end = arguments.Length > 2 && arguments[2].TryGetInteger(out var endValue) ? endValue : variable.GetLength(0);
+            var exact = arguments.Length > 3 && arguments[3].TryGetInteger(out var exactValue) && exactValue != 0;
+            if (start < 0 || end < start || end > variable.GetLength(0)) return false;
+            var last = functionName.Equals("FINDLASTELEMENT", Config.SCExpression);
+            var step = last ? -1 : 1;
+            for (var i = last ? end - 1 : start; last ? i >= start : i < end; i += step)
+            {
+                if (variable.IsInteger && target.TryGetInteger(out var integer) && variable.GetIntValue(process.NextRuntimeExpressionMediator, [i]) == integer)
+                { value = VmSemanticValue.From(i); return true; }
+                if (variable.IsString && target.TryGetString(out var text))
+                {
+                    var regex = RegexFactory.GetRegex(text);
+                    var candidate = variable.GetStrValue(process.NextRuntimeExpressionMediator, [i]) ?? string.Empty;
+                    var match = regex.Match(candidate);
+                    if (match.Success && (!exact || match.Length == candidate.Length)) { value = VmSemanticValue.From(i); return true; }
+                }
+            }
+            value = VmSemanticValue.From(-1L);
+            return true;
+        }
+        return false;
+    }
 
     internal bool PrebindProductionVariableIdentities(SemanticPayload payload)
     {
@@ -378,7 +454,7 @@ internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparation
 #if PERFORMANCE_METRICS
                 callIdentityVisits++;
 #endif
-                if (builtins.ContainsKey(identity.StableId))
+                if (builtins.ContainsKey(identity.StableId) || graphFreeBuiltins.ContainsKey(identity.StableId))
                 {
 #if PERFORMANCE_METRICS
                     builtinAlreadyBoundVisits++;
@@ -389,7 +465,14 @@ internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparation
 #if PERFORMANCE_METRICS
                     builtinResolutionAttempts++;
 #endif
-                    if (process.TryBindNextRuntimeHostBuiltin(payload, identity, out var builtin))
+                    if (graphFreeRegistry && process.TryBindGraphFreeRuntimeBuiltin(payload, identity, out var graphFreeBuiltin))
+                    {
+                        graphFreeBuiltins.Add(identity.StableId, graphFreeBuiltin);
+#if PERFORMANCE_METRICS
+                        builtinResolutionSuccesses++;
+#endif
+                    }
+                    else if (!graphFreeRegistry && process.TryBindNextRuntimeHostBuiltin(payload, identity, out var builtin))
                     {
                         builtins.Add(identity.StableId, builtin);
 #if PERFORMANCE_METRICS
@@ -544,7 +627,26 @@ internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparation
     {
         RuntimeTypedBuiltinCallCount++;
         value = VmSemanticValue.Unavailable;
-        if (!builtins.TryGetValue(identity.StableId, out var builtin) || arguments.Length == 0 || !arguments[0].TryGetInteger(out var result)) return false;
+        if (graphFreeBuiltins.TryGetValue(identity.StableId, out var method))
+        {
+            var actuals = new List<AExpression>(arguments.Length);
+            foreach (var argument in arguments)
+            {
+                if (argument.Kind == VmSemanticValueKind.Missing) { actuals.Add(null!); continue; }
+                if (argument.TryGetInteger(out var integer)) actuals.Add(SingleLongTerm.FromValue(integer));
+                else if (argument.TryGetString(out var text)) actuals.Add(SingleStrTerm.FromValue(text));
+                else return false;
+            }
+            var error = method.CheckArgumentType("Compact", actuals);
+            if (!string.IsNullOrEmpty(error)) return false;
+            value = method.ReturnType == typeof(long)
+                ? VmSemanticValue.From(method.GetIntValue(process.NextRuntimeExpressionMediator, actuals))
+                : VmSemanticValue.From(method.GetStrValue(process.NextRuntimeExpressionMediator, actuals));
+            return true;
+        }
+        if (!builtins.TryGetValue(identity.StableId, out var builtin) || arguments.Length == 0) return false;
+        if (builtin == BuiltinCallKind.GetChara) return process.TryEvaluateNextRuntimeGetChara(arguments, out value);
+        if (!arguments[0].TryGetInteger(out var result)) return false;
         for (var index = 1; index < arguments.Length; index++)
         {
             if (!arguments[index].TryGetInteger(out var next)) return false;
@@ -694,6 +796,7 @@ internal sealed class LegacyVmFrameBindingCatalog
 
 internal sealed partial class Process
 {
+    internal ExpressionMediator NextRuntimeExpressionMediator => exm;
     // This is deliberately an opt-in dispatch seam.  Normal Legacy execution
     // never constructs one, so DoScript keeps its established interpreter path.
     private sealed class NextRuntimeExecutionSession(Process process, VmMachine machine, bool productionNormal = false)
@@ -703,12 +806,122 @@ internal sealed partial class Process
         internal bool ProductionNormal { get; } = productionNormal;
     }
 
-    private sealed class LegacyVmRuntimeEffects(Process process) : IVmRuntimeEffects
+    internal sealed class LegacyVmRuntimeEffects(Process process, bool graphFree = false) : IVmRuntimeEffects, IVmOwnedInputRuntimeEffects
     {
+        internal int TypedOperations { get; private set; }
+        internal int InputRequests { get; private set; }
+        internal List<string> TypedTrace { get; } = [];
+        internal List<string> Buttons { get; } = [];
         public void WriteText(string text) => process.console.Print(text, lineEnd: false);
         public void NewLine() => process.console.NewLine();
         public void RequestWait(bool force) { process.console.ReadAnyKey(force); }
         public void Quit() => process.console.Quit();
+        public bool PrintButton(string label, VmSemanticValue value)
+        {
+            process.console.UseUserStyle = true;
+            process.console.UseSetColorStyle = true;
+            if (value.TryGetInteger(out var number)) process.console.PrintButton(label, number);
+            else if (value.TryGetString(out var text)) process.console.PrintButton(label, text);
+            else return false;
+            Buttons.Add(label + "|" + value);
+            return true;
+        }
+        public bool SetLegacyReturnValues(ReadOnlySpan<VmSemanticValue> values)
+        {
+            if (values.Length == 0) { process.vEvaluator.RESULT = 0; return true; }
+            if (values[0].TryGetInteger(out var first)) process.vEvaluator.RESULT = first;
+            else if (values[0].TryGetString(out var firstText)) process.vEvaluator.RESULTS = firstText;
+            else return false;
+            return true;
+        }
+        public VmHostEffectResult ExecuteTypedHostStatement(PrototypeOpcode opcode, ReadOnlySpan<VmSemanticValue> arguments)
+        {
+            if (!graphFree) return VmHostEffectResult.Unavailable;
+            TypedOperations++;
+            TypedTrace.Add(opcode.ToString());
+            static bool Int(VmSemanticValue value, out long number) => value.TryGetInteger(out number);
+            static bool Str(VmSemanticValue value, out string text) => value.TryGetString(out text!);
+            switch (opcode)
+            {
+                case PrototypeOpcode.PRINTS:
+                case PrototypeOpcode.PRINTSL:
+                    if (arguments.Length != 1) return VmHostEffectResult.Fault;
+                    process.console.Print(arguments[0].ToString(), lineEnd: false);
+                    if (opcode == PrototypeOpcode.PRINTSL) process.console.NewLine();
+                    return VmHostEffectResult.Applied;
+                case PrototypeOpcode.HTML_PRINT:
+                    if (arguments.Length != 2 || !Str(arguments[0], out var html) || !Int(arguments[1], out var lineEnd)) return VmHostEffectResult.Fault;
+                    process.console.PrintHtml(html, lineEnd == 0);
+                    return VmHostEffectResult.Applied;
+                case PrototypeOpcode.SETCOLOR:
+                    if (arguments.Length == 1 && Int(arguments[0], out var rgb))
+                        process.console.SetStringStyle(Color.FromArgb((int)((rgb >> 16) & 255), (int)((rgb >> 8) & 255), (int)(rgb & 255)));
+                    else if (arguments.Length == 3 && Int(arguments[0], out var r) && Int(arguments[1], out var g) && Int(arguments[2], out var b) && r is >= 0 and <= 255 && g is >= 0 and <= 255 && b is >= 0 and <= 255)
+                        process.console.SetStringStyle(Color.FromArgb((int)r, (int)g, (int)b));
+                    else return VmHostEffectResult.Fault;
+                    return VmHostEffectResult.Applied;
+                case PrototypeOpcode.RESETCOLOR:
+                    process.console.ResetStyle();
+                    return VmHostEffectResult.Applied;
+                case PrototypeOpcode.ALIGNMENT:
+                    if (arguments.Length != 1 || !Str(arguments[0], out var alignment) || !Enum.TryParse<DisplayLineAlignment>(alignment, true, out var parsedAlignment)) return VmHostEffectResult.Fault;
+                    process.console.Alignment = parsedAlignment;
+                    return VmHostEffectResult.Applied;
+                case PrototypeOpcode.REDRAW:
+                    if (arguments.Length != 1 || !Int(arguments[0], out var redraw)) return VmHostEffectResult.Fault;
+                    process.console.SetRedraw(redraw);
+                    return VmHostEffectResult.Applied;
+                case PrototypeOpcode.CLEARLINE:
+                    if (arguments.Length != 1 || !Int(arguments[0], out var lines)) return VmHostEffectResult.Fault;
+                    process.console.deleteLine((int)lines);
+                    process.console.RefreshStrings(false);
+                    return VmHostEffectResult.Applied;
+                case PrototypeOpcode.ONEINPUTS:
+                    if (!arguments.IsEmpty) return VmHostEffectResult.Fault;
+                    InputRequests++;
+                    process.console.WaitInput(new InputRequest { InputType = InputType.StrValue, OneInput = true });
+                    return VmHostEffectResult.WaitingForInput;
+                default:
+                    return process.TryExecuteGraphFreeRuntimeMethod(opcode.ToString(), arguments) ? VmHostEffectResult.Applied : VmHostEffectResult.Unavailable;
+            }
+        }
+        public bool TryPrepareInput(PrototypeOpcode opcode, ReadOnlySpan<VmSemanticValue> arguments, out VmInputValueKind expectedKind)
+        {
+            expectedKind = VmInputValueKind.String;
+            return graphFree && opcode == PrototypeOpcode.ONEINPUTS && arguments.IsEmpty;
+        }
+        public void PublishInput(VmInputContinuation continuation, Action<VmSemanticValue> respond)
+        {
+            InputRequests++;
+#if R0_F6G7R2
+            // The R2 authority stops at the committed D9 suspension; it never opens GUI input.
+            if (Program.R0F6G7R2Mode) return;
+#endif
+            process.console.WaitInput(new InputRequest { InputType = InputType.StrValue, OneInput = true });
+        }
+        public bool TryWriteInputResult(VmSemanticValue value)
+        {
+            if (!value.TryGetString(out var text)) return false;
+            process.vEvaluator.RESULTS = text;
+            return true;
+        }
+    }
+
+    private bool TryExecuteGraphFreeRuntimeMethod(string name, ReadOnlySpan<VmSemanticValue> arguments)
+    {
+        if (!FunctionMethodCreator.GetMethodList().TryGetValue(name, out var method)) return false;
+        var actuals = new List<AExpression>(arguments.Length);
+        foreach (var argument in arguments)
+        {
+            if (argument.Kind == VmSemanticValueKind.Missing) { actuals.Add(null!); continue; }
+            if (argument.TryGetInteger(out var integer)) actuals.Add(SingleLongTerm.FromValue(integer));
+            else if (argument.TryGetString(out var text)) actuals.Add(SingleStrTerm.FromValue(text));
+            else return false;
+        }
+        if (!string.IsNullOrEmpty(method.CheckArgumentType(name, actuals))) return false;
+        if (method.ReturnType == typeof(long)) vEvaluator.RESULT = method.GetIntValue(exm, actuals);
+        else vEvaluator.RESULTS = method.GetStrValue(exm, actuals);
+        return true;
     }
 
     private NextRuntimeExecutionSession? nextRuntimeSession;
@@ -743,12 +956,22 @@ internal sealed partial class Process
     private VmRuntimeReadinessResult? productionReadiness;
 
     internal IVmSemanticHost CreateNextRuntimeSemanticHost() => new LegacyVmSemanticHost(this);
+    internal IVmRuntimeEffects CreateNextRuntimeEffects() => new LegacyVmRuntimeEffects(this);
+#if R0_F6G7R2
+    internal LegacyVmSemanticHost CreateGraphFreeNextRuntimeSemanticHost() => new(this, graphFreeRegistry: true);
+    internal LegacyVmRuntimeEffects CreateGraphFreeNextRuntimeEffects() => new(this, graphFree: true);
+#endif
 
     internal string DescribeNextRuntimeSemanticArena(SemanticPayload payload) =>
         productionProgram is not null && ReferenceEquals(payload, productionProgram.RuntimeStatements.OperandArena) ? "RuntimeStatementOperand" :
         productionProgram is not null && ReferenceEquals(payload, productionProgram.CallArgumentArena) ? "CallArgument" : "Semantic";
 
     internal LocalVariableToken GetNextRuntimeLocalVariableToken(string key, FunctionLabelLine label) => idDic.GetNextRuntimeLocalVariableToken(key, label);
+    internal (int Local, int Locals) GetNextRuntimeDefaultLocalSizes()
+    {
+        var families = idDic.GetNextRuntimeLocalVariableFamilies().ToDictionary(pair => pair.Key, pair => pair.Value.GetDefaultSize(), Config.StrComper);
+        return (families["LOCAL"], families["LOCALS"]);
+    }
 
     internal bool TryCreateNextRuntimeFrameState(LinkedProgram program, RuntimeFunctionId entryFunctionId, IReadOnlyDictionary<int, FunctionLabelLine> labels, out IVmFrameState frameState) =>
         productionFrameCatalog is not null && ReferenceEquals(program, productionProgram)
@@ -1115,6 +1338,12 @@ internal sealed partial class Process
     // 戻す。token消費とreturn handoffの順序を変えると、同一invocationの二重実行やRESULT伝播破壊になる。
     internal NextRuntimeSessionResult TryDispatchCurrentLegacyEntryToNextRuntime()
     {
+#if R0_E1A
+        Runtime.Diagnostics.R0E1AProof.Hit(Runtime.Diagnostics.R0E1AGuard.ProductionBridgeDispatch);
+#endif
+#if R0_B1
+        Runtime.Diagnostics.B1Proof.ForbidBridge();
+#endif
 #if PERFORMANCE_METRICS
         // [Emuera改修:NEXT-3D-R1.5B.1 2026-09-04]
         // 30万回超のAlreadyConsumed early pathは性能候補だが未計測のため、最適化前に実costだけを測る。
@@ -1380,9 +1609,23 @@ internal sealed partial class Process
     internal bool TryReadNextRuntimeHostValue(VariableToken variable, ReadOnlySpan<VmSemanticValue> indices, out VmSemanticValue value)
     {
         value = VmSemanticValue.Unavailable;
-        var legacyIndices = new long[indices.Length];
-        for (var i = 0; i < indices.Length; i++) if (!indices[i].TryGetInteger(out legacyIndices[i])) return false;
+        if (!TryConvertNextRuntimeIndices(variable, indices, out var legacyIndices)) return false;
         return TryReadNextRuntimeHostValue(variable, legacyIndices, out value);
+    }
+
+    private static bool TryConvertNextRuntimeIndices(VariableToken variable, ReadOnlySpan<VmSemanticValue> indices, out long[] legacyIndices)
+    {
+        legacyIndices = new long[indices.Length];
+        for (var i = 0; i < indices.Length; i++)
+        {
+            if (indices[i].TryGetInteger(out legacyIndices[i])) continue;
+            if (!indices[i].TryGetString(out var label)) return false;
+            var dictionary = GlobalStatic.ConstantData.GetKeywordDictionary(out _, variable.Code, -1) ??
+                GlobalStatic.ConstantData.GetKeywordDictionary(out _, variable.Code, i);
+            if (dictionary is null || !dictionary.TryGetValue(label, out var index)) return false;
+            legacyIndices[i] = index;
+        }
+        return true;
     }
 
     private bool TryReadNextRuntimeHostValue(VariableToken variable, long[] legacyIndices, out VmSemanticValue value)
@@ -1406,8 +1649,7 @@ internal sealed partial class Process
 
     internal bool TryWriteNextRuntimeHostValue(VariableToken variable, ReadOnlySpan<VmSemanticValue> indices, VmSemanticValue value)
     {
-        var legacyIndices = new long[indices.Length];
-        for (var i = 0; i < indices.Length; i++) if (!indices[i].TryGetInteger(out legacyIndices[i])) return false;
+        if (!TryConvertNextRuntimeIndices(variable, indices, out var legacyIndices)) return false;
         return TryWriteNextRuntimeHostValue(variable, legacyIndices, value);
     }
 
@@ -1457,15 +1699,37 @@ internal sealed partial class Process
         return FunctionMethodCreator.GetMethodList().TryGetValue(name, out var method) && TryGetPhase3DBuiltinKind(name, method, out builtin);
     }
 
+    internal bool TryBindGraphFreeRuntimeBuiltin(SemanticPayload payload, SemanticHostIdentity identity, out FunctionMethod method)
+    {
+        method = null!;
+        if (identity.Kind != SemanticHostIdentityKind.Call || (uint)identity.NameSymbolIndex >= (uint)payload.Symbols.Length) return false;
+        return FunctionMethodCreator.GetMethodList().TryGetValue(payload.ReadSymbol(payload.Symbols[identity.NameSymbolIndex]), out method!);
+    }
+
     // This is the single Phase3D support authority.  It is intentionally based
     // on the live registry implementation, not an independently maintained name table.
     internal static bool TryGetPhase3DBuiltinKind(string name, FunctionMethod method, out LegacyVmSemanticHost.BuiltinCallKind builtin)
     {
         builtin = default;
+        if (name.Equals("GETCHARA", Config.SCExpression)) { builtin = LegacyVmSemanticHost.BuiltinCallKind.GetChara; return true; }
         if (method.ReturnType != typeof(long) || method.GetType().Name != "MaxMethod") return false;
         if (name.Equals("MAX", Config.SCExpression)) { builtin = LegacyVmSemanticHost.BuiltinCallKind.Maximum; return true; }
         if (name.Equals("MIN", Config.SCExpression)) { builtin = LegacyVmSemanticHost.BuiltinCallKind.Minimum; return true; }
         return false;
+    }
+
+    internal bool TryEvaluateNextRuntimeGetChara(ReadOnlySpan<VmSemanticValue> arguments, out VmSemanticValue value)
+    {
+        value = VmSemanticValue.Unavailable;
+        if (arguments.Length is < 1 or > 2 || !FunctionMethodCreator.GetMethodList().TryGetValue("GETCHARA", out var method)) return false;
+        var actuals = new List<AExpression>(arguments.Length);
+        foreach (var argument in arguments)
+        {
+            if (!argument.TryGetInteger(out var integer)) return false;
+            actuals.Add(new SingleLongTerm(integer));
+        }
+        value = VmSemanticValue.From(method.GetIntValue(exm, actuals));
+        return true;
     }
 
     // Opt-in evidence export.  The standalone audit consumes this TSV but has

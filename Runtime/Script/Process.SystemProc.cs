@@ -86,6 +86,9 @@ internal sealed partial class Process
 
     private void runSystemProc()
     {
+#if R0_F1
+        R0F1ObserveSystemDispatch();
+#endif
         //スクリプト実行中にここには来ないはず
         //if (!state.ScriptEnd)
         //    throw new ExeEE("不正な呼び出し");
@@ -116,6 +119,13 @@ internal sealed partial class Process
 
     private bool callFunction(string functionName, bool force, bool isEvent)
     {
+#if R0_F5B
+        R0F5BObserveFunctionCall(functionName, isEvent);
+#endif
+#if R0_F1
+        if (R0F1TryCallFunction(functionName, force, isEvent, out var r0f1Result))
+            return r0f1Result;
+#endif
         CalledFunction call;
         if (isEvent)
             call = CalledFunction.CallEventFunction(this, functionName, null);

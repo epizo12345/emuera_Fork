@@ -11,6 +11,7 @@ using MinorShift.Emuera.UI.Game;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Globalization;
 using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.GameProc;
@@ -25,6 +26,7 @@ internal sealed partial class Process
             // The Legacy CALL/JUMP setup has already evaluated arguments and
             // entered the frame.  Dispatch before ShiftNextLine so the Next
             // VM owns exactly this callee, with Legacy remaining the fallback.
+#if !R0_B1
             var calledBeforeDispatch = state.functionCount == 0 ? null : state.CurrentCalled;
             var nextResult = TryDispatchCurrentLegacyEntryToNextRuntime();
             if (nextResult == NextRuntimeSessionResult.Waiting)
@@ -32,6 +34,7 @@ internal sealed partial class Process
             if (nextResult == NextRuntimeSessionResult.Completed)
                 continue;
             TraceR1_4E("LegacyContinuation", calledBeforeDispatch, entryToken: nextResult.ToString());
+#endif
             state.ShiftNextLine();
             //WinmmTimerから時間を取得するのはそれ自体結構なコストがかかるので10000行に一回くらいで。
             if (Config.InfiniteLoopAlertTime > 0 && (state.lineCount % 10000 == 0))
@@ -44,6 +47,30 @@ internal sealed partial class Process
                 throw new CodeEE(line.ErrMes);
             else if (line is InstructionLine func)
             {//1753 InstructionLineを先に持ってきてみる。わずかに速くなった気がしないでもない
+#if R0_F4A
+                R0F4ABeforeLegacyInstruction(func);
+#endif
+#if R0_F6
+                R0F6BeforeLegacyInstruction(func);
+#endif
+#if R0_F4B
+                R0F4BBeforeLegacyInstruction(func);
+#endif
+#if R0_F4C
+                R0F4CBeforeLegacyInstruction(func);
+#endif
+#if R0_F4D4
+                R0F4D4BeforeLegacyInstruction(func);
+#endif
+#if R0_F4D5
+                R0F4D5BeforeLegacyInstruction(func);
+#endif
+#if R0_F4E1
+                R0F4E1BeforeLegacyInstruction(func);
+#endif
+#if R0_F4E2
+                R0F4E2BeforeLegacyInstruction(func);
+#endif
                 var executingCalled = state.functionCount == 0 ? null : state.CurrentCalled;
                 var lineBeforeInstruction = line;
                 if (executingCalled is not null)
@@ -80,6 +107,36 @@ internal sealed partial class Process
                     doNormalFunction(func);
                 if (executingCalled is not null)
                     TraceR1_4EInstructionAfter(func, executingCalled, lineBeforeInstruction, state.CurrentLine);
+#if R0_F2
+                R0F2AfterLegacyInstruction(func);
+#endif
+#if R0_F6
+                R0F6AfterLegacyInstruction(func);
+#endif
+#if R0_F3
+                R0F3AfterLegacyInstruction(func);
+#endif
+#if R0_F4A
+                R0F4AAfterLegacyInstruction(func);
+#endif
+#if R0_F4B
+                R0F4BAfterLegacyInstruction(func);
+#endif
+#if R0_F4C
+                R0F4CAfterLegacyInstruction(func);
+#endif
+#if R0_F4D4
+                R0F4D4AfterLegacyInstruction(func);
+#endif
+#if R0_F4D5
+                R0F4D5AfterLegacyInstruction(func);
+#endif
+#if R0_F4E1
+                R0F4E1AfterLegacyInstruction(func);
+#endif
+#if R0_F4E2
+                R0F4E2AfterLegacyInstruction(func);
+#endif
             }
             else if ((line is NullLine) || (line is FunctionLabelLine))
             {//（関数終端） or ファイル終端
@@ -87,7 +144,55 @@ internal sealed partial class Process
              //{//流れ落ちてきた
                 if (!state.IsFunctionMethod)
                     vEvaluator.RESULT = 0;
+#if R0_F3
+                R0F3BeforeLegacyFallthrough(line);
+#endif
+#if R0_F4A
+                R0F4ABeforeLegacyFallthrough(line);
+#endif
+#if R0_F4B
+                R0F4BBeforeLegacyFallthrough(line);
+#endif
+#if R0_F4C
+                R0F4CBeforeLegacyFallthrough(line);
+#endif
+#if R0_F4D4
+                R0F4D4BeforeLegacyFallthrough(line);
+#endif
+#if R0_F4D5
+                R0F4D5BeforeLegacyFallthrough(line);
+#endif
+#if R0_F4E1
+                R0F4E1BeforeLegacyFallthrough(line);
+#endif
+#if R0_F4E2
+                R0F4E2BeforeLegacyFallthrough(line);
+#endif
                 state.Return(0);
+#if R0_F3
+                R0F3AfterLegacyFallthrough(line);
+#endif
+#if R0_F4A
+                R0F4AAfterLegacyFallthrough(line);
+#endif
+#if R0_F4B
+                R0F4BAfterLegacyFallthrough(line);
+#endif
+#if R0_F4C
+                R0F4CAfterLegacyFallthrough(line);
+#endif
+#if R0_F4D5
+                R0F4D5AfterLegacyFallthrough(line);
+#endif
+#if R0_F4E1
+                R0F4E1AfterLegacyFallthrough(line);
+#endif
+#if R0_F4E2
+                R0F4E2AfterLegacyFallthrough(line);
+#endif
+#if R0_F5B
+                R0F5BAfterLegacyFallthrough(line);
+#endif
                 //}
                 //1750 飛んできた直後にShiftNextが入るのでここが実行されることは無いはず
                 //else//CALLやJUMPで飛んできた
@@ -140,9 +245,21 @@ internal sealed partial class Process
                     //ボタン処理に絡んで表示がおかしくなるため、PRINTBUTTONでの改行コードはオミット
                     str = str.Replace("\n", "");
                     if (bArg.ButtonWord.GetOperandType() == typeof(long))
-                        exm.Console.PrintButton(str, bArg.ButtonWord.GetIntValue(exm));
+                    {
+                        var value = bArg.ButtonWord.GetIntValue(exm);
+#if R0_F6D
+                        R0F6DObserveLegacyButton(func, str, value.ToString(CultureInfo.InvariantCulture));
+#endif
+                        exm.Console.PrintButton(str, value);
+                    }
                     else
-                        exm.Console.PrintButton(str, bArg.ButtonWord.GetStrValue(exm));
+                    {
+                        var value = bArg.ButtonWord.GetStrValue(exm);
+#if R0_F6D
+                        R0F6DObserveLegacyButton(func, str, value);
+#endif
+                        exm.Console.PrintButton(str, value);
+                    }
                 }
                 break;
             case FunctionCode.PRINTBUTTONC://変数の内容

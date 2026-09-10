@@ -3,11 +3,71 @@ using MinorShift.Emuera.Next.Compiler;
 using MinorShift.Emuera.Next.Core;
 using System.Text.Json;
 
+if (args.Length == 4 && args[0] == "--r0f6g3-probe")
+    return ProbeR0F6G3(args[1], args[2], args[3]);
 if (args.Length == 1 && args[0] == "--self-test")
     return SelfTest();
 
-Console.Error.WriteLine("Usage: Emuera.Next.Compiler --self-test");
+Console.Error.WriteLine("Usage: Emuera.Next.Compiler --self-test | --r0f6g3-probe <Data/ERB> <inventory.json> <output.json>");
 return args.Length == 0 ? 2 : 0;
+
+static int ProbeR0F6G3(string erbRoot, string inventoryPath, string outputPath)
+{
+    try
+    {
+        using var document = JsonDocument.Parse(File.ReadAllText(inventoryPath));
+        var options = new CompilerCompatibilityOptions(true, true, true, false);
+        var headers = Directory.EnumerateFiles(erbRoot, "*.ERH", SearchOption.AllDirectories).Order(StringComparer.OrdinalIgnoreCase)
+            .Select(path => File.ReadAllText(path, Encoding.UTF8));
+        var environment = new StructuralSemanticEnvironment(options, MacroCatalog.FromHeaderSources(headers, options));
+        var compiler = new FunctionCompiler(environment);
+        var rows = new List<object>();
+        foreach (var item in document.RootElement.GetProperty("functions").EnumerateArray())
+        {
+            var name = item.GetProperty("name").GetString()!;
+            var relativePath = item.GetProperty("path").GetString()!.Replace('/', Path.DirectorySeparatorChar);
+            var line = item.GetProperty("line").GetInt32();
+            var indexed = ErbSourceIndexer.IndexFile(Path.Combine(erbRoot, relativePath));
+            var function = indexed.Functions.Single(value => value.Span.StartLine == line && value.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            var result = compiler.TryCompileRuntime(indexed, function);
+            rows.Add(new
+            {
+                name,
+                path = relativePath.Replace('\\', '/'),
+                line,
+                status = result.Status.ToString(),
+                reason = result.Reason.ToString(),
+                detail = result.Detail,
+                instructionCount = result.Function?.Instructions.Length ?? 0,
+                opcodes = result.Function?.Instructions
+                    .GroupBy(value => value.Opcode)
+                    .OrderBy(value => value.Key)
+                    .ToDictionary(value => value.Key.ToString(), value => value.Count()),
+                runtimeMetadata = result.Function?.RuntimeMetadata is { } metadata ? new
+                {
+                    parameters = metadata.Parameters.Length,
+                    privateVariables = metadata.PrivateVariables.Length,
+                    metadata.LocalSize,
+                    metadata.LocalsSize,
+                    returnType = metadata.ReturnType?.ToString()
+                } : null
+            });
+        }
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outputPath))!);
+        File.WriteAllText(outputPath, JsonSerializer.Serialize(new
+        {
+            schema = "r0f6g3-cold-compiler-probe-v1",
+            execution = "COMPILE_ONLY_NO_VM_NO_HOST_EFFECTS",
+            rows
+        }, new JsonSerializerOptions { WriteIndented = true }));
+        return 0;
+    }
+    catch (Exception exception)
+    {
+        Console.Error.WriteLine(exception);
+        return 1;
+    }
+}
 
 static int SelfTest()
 {
@@ -49,6 +109,13 @@ static int SelfTest()
             var result = new FunctionCompiler(semanticEnvironment).TryCompileRuntime(indexedHeader, indexedHeader.Functions.Single());
             Assert(result.Status == CompileStatus.Compiled, $"{header}:{result.Status}:{result.Reason}");
             return result.Function!.RuntimeMetadata!;
+        }
+        CompileResult CompileRuntimeSource(string source)
+        {
+            var p = Path.Combine(root, "runtime-source-" + tests.Count + ".ERB");
+            WriteBom(p, source.Replace("\n", "\r\n", StringComparison.Ordinal));
+            var indexedSource = ErbSourceIndexer.IndexFile(p);
+            return new FunctionCompiler(semanticEnvironment).TryCompileRuntime(indexedSource, indexedSource.Functions.Single());
         }
         FileInfoObservation ObserveOldSnapshot(string snapshotPath, long sourceBytes, long sourceTicks)
         {
@@ -204,6 +271,22 @@ static int SelfTest()
         tests.Add(("CommaHeaderMetadataTest", () => { var metadata = CompileRuntimeHeader("@C, ARG"); Assert(metadata.Parameters.Length == 1 && metadata.Parameters[0].Name == "ARG" && metadata.Parameters[0].Type == RuntimeMetadataValueType.Integer); }));
         tests.Add(("StringArgumentHeaderMetadataTest", () => { var parenthesized = CompileRuntimeHeader("@D(ARGS)"); var comma = CompileRuntimeHeader("@E, ARGS"); Assert(parenthesized.Parameters.Length == 1 && parenthesized.Parameters[0].Type == RuntimeMetadataValueType.String && comma.Parameters.Length == 1 && comma.Parameters[0].Type == RuntimeMetadataValueType.String); }));
         tests.Add(("MixedHeaderFunctionLocalFlagTest", () => { var indexedMixed = IndexHeader("@F(ARG, ARGS)"); var metadata = CompileRuntimeHeader("@F(ARG, ARGS)"); Assert((indexedMixed.Functions.Single().Flags & SourceIndexFlags.FunctionMetadata) != 0 && metadata.Parameters.Length == 2 && metadata.Parameters[0].Type == RuntimeMetadataValueType.Integer && metadata.Parameters[1].Type == RuntimeMetadataValueType.String); var sameFile = IndexHeader("@A\r\n@B(ARG)"); Assert(sameFile.Functions.Count == 2 && sameFile.Functions[0].Flags == SourceIndexFlags.None && (sameFile.Functions[1].Flags & SourceIndexFlags.FunctionMetadata) != 0); }));
+        tests.Add(("F6E Unicode named parameters bind existing DYNAMIC declarations", () => { var result = CompileRuntimeSource("@S_NAME(対象, 文字数, ARG, ARGS)\n#FUNCTIONS\n#DIM DYNAMIC 対象\n#DIM DYNAMIC 文字数\nRETURNF ARGS"); var m = result.Function?.RuntimeMetadata; Assert(result.Status == CompileStatus.Compiled && m is not null && m.Parameters.Length == 4 && m.Parameters[0] is { Name: "対象", Type: RuntimeMetadataValueType.Integer, IsPrivate: true } && m.Parameters[1] is { Name: "文字数", Type: RuntimeMetadataValueType.Integer, IsPrivate: true } && !m.Parameters[2].IsPrivate && !m.Parameters[3].IsPrivate); }));
+        tests.Add(("F6E inline defaults do not consume following named parameters", () => { var result = CompileRuntimeSource("@F, ARG, ARG:1, ARG:2 = 0, L_SITUATION, SHOW_SET_PT_NO = -1\n#DIM DYNAMIC SHOW_SET_PT_NO\n#DIMS DYNAMIC L_SITUATION\nRETURN"); var m = result.Function?.RuntimeMetadata; Assert(result.Status == CompileStatus.Compiled && m is not null && m.Parameters.Length == 5 && m.Parameters[2] is { Slot: 2, HasDefault: true, DefaultInteger: 0 } && m.Parameters[3] is { Name: "L_SITUATION", Type: RuntimeMetadataValueType.String, IsPrivate: true } && m.Parameters[4] is { Name: "SHOW_SET_PT_NO", HasDefault: true, DefaultInteger: -1, IsPrivate: true }); }));
+        tests.Add(("F6E static string and CONST private metadata", () => { var result = CompileRuntimeSource("@F\n#FUNCTION\n#DIM COUNT\n#DIMS NAME\n#DIM CONST COMMANDLENS = 20\nRETURNF COMMANDLENS"); var p = result.Function?.RuntimeMetadata?.PrivateVariables; Assert(result.Status == CompileStatus.Compiled && p is { Length: 3 } && p.Value.All(x => x.IsStatic) && p.Value[1].Type == RuntimeMetadataValueType.String && p.Value[2] is { IsConst: true, HasInitializer: true, InitialInteger: 20 }); }));
+        tests.Add(("F6G3 event metadata is cold metadata, not an instruction", () => { var result = CompileRuntimeSource("@EVENTSHOP\n#PRI\n#DIM LCOUNT\nRETURN"); Assert(result.Status == CompileStatus.Compiled && result.Function!.Instructions.Length == 1); }));
+        tests.Add(("F6G3 static named and indexed private formals bind their declared slots", () => { var result = CompileRuntimeSource("@F, L_CHARA, SHOW = \"base\", SHOW:1\n#DIMS SHOW,2\n#DIM L_CHARA\nRETURN"); var p = result.Function?.RuntimeMetadata?.Parameters; Assert(result.Status == CompileStatus.Compiled && p is { Length: 3 } && p.Value[0] is { Name: "L_CHARA", Slot: 0, IsPrivate: true } && p.Value[1] is { Name: "SHOW", Slot: 0, HasDefault: true } && p.Value[2] is { Name: "SHOW", Slot: 1 }); }));
+        tests.Add(("F6G3 empty parenthesized signature has no formal", () => { var result = CompileRuntimeSource("@F()\n#FUNCTION\nRETURNF 0"); Assert(result.Status == CompileStatus.Compiled && result.Function!.RuntimeMetadata!.Parameters.Length == 0); }));
+        tests.Add(("F6G3 private initializer list preserves every element", () => { var result = CompileRuntimeSource("@F\n#DIM DYNAMIC CARDINAL,4 = 0,1,2,3\n#DIMS CONST NAMES = \"a\",\"b\"\nRETURN"); var p = result.Function?.RuntimeMetadata?.PrivateVariables; Assert(result.Status == CompileStatus.Compiled && p is { Length: 2 } && p.Value[0].InitialIntegers.SequenceEqual([0L,1L,2L,3L]) && p.Value[1].Dimensions[0] == 2 && p.Value[1].InitialStrings.SequenceEqual(["a","b"])); }));
+        tests.Add(("F6G3 ERH constant initializes private metadata", () => { var options = new CompilerCompatibilityOptions(true, true, true, false); var macros = MacroCatalog.FromHeaderText("#DIM CONST SIZE = 180", options); var bytes = Encoding.UTF8.GetBytes("@F\n#DIM SIZE_LOCAL = SIZE\nRETURN"); var source = new FunctionSource(new SourceFileIndex("fixture", bytes.Length, 3, [], SourceIndexFlags.FunctionMetadata, null), new FunctionIndex("F", new SourceSpan(0, bytes.Length, 1, 3), SourceIndexFlags.FunctionMetadata), bytes); Assert(FunctionRuntimeMetadataParser.TryParse(source, options, out var metadata, out _, macros) && metadata.PrivateVariables.Single().InitialInteger == 180); }));
+        tests.Add(("F6G7R2 private metadata accepts Legacy hexadecimal and binary constants", () => { var result = CompileRuntimeSource("@F\n#DIM CONST COLORS = 0xFF9999, 0b1010\nRETURN"); var p = result.Function?.RuntimeMetadata?.PrivateVariables.Single(); Assert(result.Status == CompileStatus.Compiled && p is not null && p.Value.InitialIntegers.SequenceEqual([0xFF9999L, 10L])); }));
+        tests.Add(("F6G7R2 signature-only metadata may defer dynamic initializer expressions", () => { var options = new CompilerCompatibilityOptions(true, true, true, false); var bytes = Encoding.UTF8.GetBytes("@F, X = 1\n#FUNCTION\n#DIM DYNAMIC X\n#DIM DYNAMIC Y = X + 3\nRETURNF Y"); var source = new FunctionSource(new SourceFileIndex("fixture", bytes.Length, 5, [], SourceIndexFlags.FunctionMetadata, null), new FunctionIndex("F", new SourceSpan(0, bytes.Length, 1, 5), SourceIndexFlags.FunctionMetadata), bytes); Assert(!FunctionRuntimeMetadataParser.TryParse(source, options, out _, out _) && FunctionRuntimeMetadataParser.TryParse(source, options, out var metadata, out _, allowUnresolvedDynamicInitializer: true) && metadata.Parameters.Single().IsPrivate && !metadata.PrivateVariables[1].HasInitializer); }));
+        tests.Add(("F6E source-bound OtherSemanticFallback resolves safely", () => { var result = CompileRuntimeSource("@F\n　#DIM X\n#FUNCTION\nRETURNF X"); Assert(result.Status == CompileStatus.Compiled && result.Function!.RuntimeMetadata!.PrivateVariables.Single().Name == "X"); }));
+        tests.Add(("F6F body-local VARI VARS descriptors and statements", () => { var result = CompileRuntimeSource("@F\n#FUNCTION\nVARI I\nVARI J = I + 2\nVARS S\nVARS T = \"x\"\nVARI IA,2,3\nVARS SA,4\nRETURNF J"); var m = result.Function?.RuntimeMetadata; Assert(result.Status == CompileStatus.Compiled && m is not null && m.PrivateVariables.Length == 6 && m.PrivateVariables.All(x => !x.IsStatic) && m.PrivateVariables[4].Dimensions.SequenceEqual([2,3]) && m.PrivateVariables[5].Dimensions.SequenceEqual([4]) && result.Function!.Instructions.Take(6).Select(x => x.Opcode).SequenceEqual([PrototypeOpcode.VARI,PrototypeOpcode.VARI,PrototypeOpcode.VARS,PrototypeOpcode.VARS,PrototypeOpcode.VARI,PrototypeOpcode.VARS])); }));
+        tests.Add(("F6F scoped declarations honor compatibility switch", () => { var result = CompileRuntimeSource("@F\nVARI X\nRETURN"); var disabled = CompileLine("VARI X", CompilerCompatibilityOptions.LegacyDefaults); Assert(result.Status == CompileStatus.Compiled && disabled.Status == CompileStatus.Unsupported); }));
+        tests.Add(("F6F standalone increments compile as SET", () => { foreach (var line in new[] { "X++", "X--", "++X", "--X", "A:I++" }) { var result = CompileRuntimeSource("@F\n#FUNCTION\n#DIM X\n" + line + "\nRETURNF X"); Assert(result.Status == CompileStatus.Compiled && result.Function!.Instructions[^2].Opcode == PrototypeOpcode.SET, $"{line}: {result.Status}/{result.Reason}/{result.Detail}"); } }));
+        tests.Add(("F6F PRINTBUTTON and THROW are typed opcodes", () => { var result = CompileRuntimeSource("@F\n#FUNCTION\nPRINTBUTTON \"x\",1\nSIF 0\n THROW fault\nRETURNF 0"); Assert(result.Status == CompileStatus.Compiled && result.Function!.Instructions.Any(x => x.Opcode == PrototypeOpcode.PRINTBUTTON) && result.Function.Instructions.Any(x => x.Opcode == PrototypeOpcode.THROW)); }));
+        tests.Add(("F6E preprocessor fallback stays unresolved", () => { var result = CompileRuntimeSource("@F\n[IF DEBUG]\n#FUNCTION\nRETURNF 1"); Assert(result.Status == CompileStatus.Unsupported && result.Reason == UnsupportedReason.IndexFallback); }));
         tests.Add(("P3K PositionKey equivalence covers path forms", () =>
         {
             var baseDirectory = Path.Combine(root, "位置", "日本語");

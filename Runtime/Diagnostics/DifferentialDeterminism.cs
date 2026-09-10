@@ -14,6 +14,9 @@ internal static class DifferentialDeterminism
     private static long observations;
 
     internal static bool Enabled => enabled;
+#if R0_F1
+    internal static long ObservationCount { get { lock (Gate) return observations; } }
+#endif
 
     internal static bool Configure(bool captureEnabled, int? seed, string? baseInstant, long step)
     {

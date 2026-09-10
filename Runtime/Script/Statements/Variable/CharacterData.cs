@@ -489,6 +489,9 @@ internal sealed class CharacterData : IDisposable
                     array = null;
                 }
             }
+#if R0_E1A
+            MinorShift.Emuera.Runtime.Diagnostics.R0E1AProof.ObserveCodec("Character", nameAndType.Key, nameAndType.Value, vToken, array);
+#endif
             switch (nameAndType.Value)
             {
                 case EraSaveDataType.Separator:

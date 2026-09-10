@@ -26,6 +26,14 @@ namespace MinorShift.Emuera.GameData.Function;
 
 internal static partial class FunctionMethodCreator
 {
+    internal static long EvaluateStrFind(string target, string word, long start = 0, bool unicode = false)
+    {
+        var utfStart = unicode ? (int)start : LangManager.GetUFTIndex(target, (int)start);
+        if (utfStart < 0 || utfStart >= target.Length) return -1;
+        var index = target.IndexOf(word, utfStart, StringComparison.Ordinal);
+        return index > 0 && !unicode ? LangManager.GetStrlenLang(target[..index]) : index;
+    }
+
     #region CSVデータ関係
     private sealed class GetcharaMethod : FunctionMethod
     {
@@ -2283,30 +2291,10 @@ internal static partial class FunctionMethodCreator
         }
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
-
             string target = arguments[0].GetStrValue(exm);
             string word = arguments[1].GetStrValue(exm);
-            int UFTstart = 0;
-            if ((arguments.Count >= 3) && (arguments[2] != null))
-            {
-                if (unicode)
-                {
-                    UFTstart = (int)arguments[2].GetIntValue(exm);
-                }
-                else
-                {
-                    UFTstart = LangManager.GetUFTIndex(target, (int)arguments[2].GetIntValue(exm));
-                }
-            }
-            if (UFTstart < 0 || UFTstart >= target.Length)
-                return -1;
-            int index = target.IndexOf(word, UFTstart, StringComparison.Ordinal);
-            if (index > 0 && !unicode)
-            {
-                string subStr = target[..index];
-                index = LangManager.GetStrlenLang(subStr);
-            }
-            return index;
+            long start = (arguments.Count >= 3) && (arguments[2] != null) ? arguments[2].GetIntValue(exm) : 0;
+            return EvaluateStrFind(target, word, start, unicode);
         }
     }
 

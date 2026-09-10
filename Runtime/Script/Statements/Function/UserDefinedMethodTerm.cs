@@ -12,6 +12,9 @@ internal abstract class SuperUserDefinedMethodTerm : AExpression
     protected SuperUserDefinedMethodTerm(Type returnType)
         : base(returnType)
     {
+#if R0_E1A
+        MinorShift.Emuera.Runtime.Diagnostics.R0E1AProof.Hit(MinorShift.Emuera.Runtime.Diagnostics.R0E1AGuard.UserDefinedMethodTermConstruction);
+#endif
     }
     public abstract UserDefinedFunctionArgument Argument { get; }
     public abstract CalledFunction Call { get; }

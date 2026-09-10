@@ -73,6 +73,14 @@ internal static class PerformanceMetrics
     private static readonly Dictionary<string, (int Count, long Ticks)> nextDispatchStages = new(StringComparer.Ordinal);
     private static readonly Dictionary<string, int> nextDispatchRejections = new(StringComparer.Ordinal);
     private static readonly Dictionary<string, int> nextDispatchFunctions = new(StringComparer.Ordinal);
+#if R0_C
+    private static string r0CMode = "LegacyControl";
+    private static bool r0CRegistryEnabled;
+    private static string r0CRegistryReason = "NotConfigured";
+    private static int r0CFlatAttempts;
+    private static int r0CFlatCompleted;
+    private static int r0CFlatFaults;
+#endif
 #if PERFORMANCE_METRICS
     internal readonly record struct MeasurementToken(long Ticks, long AllocatedBytes);
     private static readonly Dictionary<string, (int Count, long Ticks, long AllocatedBytes, long MaxTicks)> nextStartupStages = new(StringComparer.Ordinal);
@@ -1646,6 +1654,25 @@ internal static class PerformanceMetrics
         });
     }
 
+#if R0_C
+    internal static void ConfigureR0C(string mode, bool enabled, string reason)
+    {
+        r0CMode = mode;
+        r0CRegistryEnabled = enabled;
+        r0CRegistryReason = reason;
+        WriteRecord(new { type = "r0c-startup", utc = DateTime.UtcNow, processId = Environment.ProcessId, mode, registryEnabled = enabled, reason });
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static void RecordR0CFlatAttempt() { if (MacroActive) Interlocked.Increment(ref r0CFlatAttempts); }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static void RecordR0CFlatComplete() { if (MacroActive) Interlocked.Increment(ref r0CFlatCompleted); }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static void RecordR0CFlatFault() { if (MacroActive) Interlocked.Increment(ref r0CFlatFaults); }
+    internal static (int Attempts, int Completed, int Faults) GetR0C2FlatCounterSnapshot()
+        => (Volatile.Read(ref r0CFlatAttempts), Volatile.Read(ref r0CFlatCompleted), Volatile.Read(ref r0CFlatFaults));
+#endif
+
     internal static void BeginMacro(string text)
     {
         if (!Enabled || MacroActive)
@@ -1684,6 +1711,11 @@ internal static class PerformanceMetrics
         nextDispatchStages.Clear();
         nextDispatchRejections.Clear();
         nextDispatchFunctions.Clear();
+#if R0_C
+        r0CFlatAttempts = 0;
+        r0CFlatCompleted = 0;
+        r0CFlatFaults = 0;
+#endif
 #if PERFORMANCE_METRICS
         nextSessionStartRejectSubreasons.Clear();
         nextSessionStartRejectFunctionBuckets.Clear();
@@ -1765,6 +1797,15 @@ internal static class PerformanceMetrics
             result.NextRuntimeDispatchStages = nextDispatchStages.ToDictionary(pair => pair.Key, pair => new PerformanceStageResult(pair.Value.Count, TicksToMilliseconds(pair.Value.Ticks)), StringComparer.Ordinal);
             result.NextRuntimeDispatchRejections = new Dictionary<string, int>(nextDispatchRejections, StringComparer.Ordinal);
             result.NextRuntimeDispatchFunctions = new Dictionary<string, int>(nextDispatchFunctions, StringComparer.Ordinal);
+#if R0_C
+            result.R0CMode = r0CMode;
+            result.R0CRegistryEnabled = r0CRegistryEnabled;
+            result.R0CRegistryReason = r0CRegistryReason;
+            result.R0CFlatAttempts = r0CFlatAttempts;
+            result.R0CFlatCompleted = r0CFlatCompleted;
+            result.R0CFlatFaults = r0CFlatFaults;
+            result.R0CLegacyRetryAfterFlat = 0;
+#endif
         }
         WriteRecord(result);
     }
@@ -2248,6 +2289,15 @@ internal sealed class MacroResult
     public string StateSha256 { get; set; }
     public string DisplaySha256 { get; set; }
     public int DisplayLineCount { get; set; }
+#if R0_C
+    public string R0CMode { get; set; }
+    public bool R0CRegistryEnabled { get; set; }
+    public string R0CRegistryReason { get; set; }
+    public int R0CFlatAttempts { get; set; }
+    public int R0CFlatCompleted { get; set; }
+    public int R0CFlatFaults { get; set; }
+    public int R0CLegacyRetryAfterFlat { get; set; }
+#endif
 }
 
 internal sealed record PerformanceStageResult(int Count, double Milliseconds);

@@ -56,6 +56,30 @@ static class AppContents
         imageDictionary.TryRemove(name, out _);
     }
 
+#if R0_F4G1
+    internal readonly record struct R0F4G1ImageState(string Kind, string Key, bool Present, bool Created, int Width, int Height);
+    internal static R0F4G1ImageState R0F4G1GraphicsState(long id) => gList.TryGetValue(id, out var value)
+        ? new("Graphics", id.ToString(System.Globalization.CultureInfo.InvariantCulture), true, value.IsCreated, value.Width, value.Height)
+        : new("Graphics", id.ToString(System.Globalization.CultureInfo.InvariantCulture), false, false, 0, 0);
+    internal static R0F4G1ImageState R0F4G1SpriteState(string name) => imageDictionary.TryGetValue(name.ToUpper(), out var value)
+        ? new("Sprite", name, true, value.IsCreated, value.DestBaseSize.Width, value.DestBaseSize.Height)
+        : new("Sprite", name, false, false, 0, 0);
+#endif
+
+#if R0_F4G2
+    internal readonly record struct R0F4G2ResourceState(string Kind, string Key, bool Present, bool Created,
+        int Width, int Height, int Frames, long TotalDelayMs, string ContentSha256);
+    internal static R0F4G2ResourceState R0F4G2GraphicsState(long id) => gList.TryGetValue(id, out var value)
+        ? new("Graphics", id.ToString(System.Globalization.CultureInfo.InvariantCulture), true, value.IsCreated,
+            value.Width, value.Height, 0, 0, value.R0F4G2ContentSha256())
+        : new("Graphics", id.ToString(System.Globalization.CultureInfo.InvariantCulture), false, false, 0, 0, 0, 0, "");
+    internal static R0F4G2ResourceState R0F4G2SpriteState(string name) => imageDictionary.TryGetValue(name.ToUpper(), out var value)
+        ? new("Sprite", name, true, value.IsCreated, value.DestBaseSize.Width, value.DestBaseSize.Height,
+            value is SpriteAnime anime ? anime.R0F4G2FrameCount : 0,
+            value is SpriteAnime timed ? timed.totaltime : 0, "")
+        : new("Sprite", name, false, false, 0, 0, 0, 0, "");
+#endif
+
     static public void CreateSpriteG(string imgName, GraphicsImage parent, Rectangle rect)
     {
         if (string.IsNullOrEmpty(imgName))

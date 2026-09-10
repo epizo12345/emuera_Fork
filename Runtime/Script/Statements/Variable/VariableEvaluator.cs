@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -29,6 +30,9 @@ internal sealed class VariableEvaluator : IDisposable
     readonly VariableData varData;
     MTRandom rand = new();
     Random _newRand = new();
+#if R0_F4D3
+    long r0f4d3RandomCalls;
+#endif
 
     public VariableData VariableData { get { return varData; } }
     internal ConstantData Constant { get { return constant; } }
@@ -51,6 +55,9 @@ internal sealed class VariableEvaluator : IDisposable
     {
         rand = new(seed);
         _newRand = new(seed);
+#if R0_F4D3
+        r0f4d3RandomCalls = 0;
+#endif
     }
 
     public void InitRanddata()
@@ -77,6 +84,9 @@ internal sealed class VariableEvaluator : IDisposable
         // 比較試験で乱数の「呼ばれた回数と順序」を確認するために記録する。
         // 新しい乱数は引かず、すでに得たmaxとvalueを見るだけ。通常版では空処理。
         PerformanceMetrics.RecordRandom(max, value);
+#if R0_F4D3
+        r0f4d3RandomCalls++;
+#endif
         return value;
     }
 
@@ -2369,6 +2379,23 @@ internal sealed class VariableEvaluator : IDisposable
         return Convert.ToHexString(SHA256.HashData(stream.ToArray()));
     }
 
+#if R0_F1
+    internal string GetR0F1GlobalHash()
+    {
+        using MemoryStream stream = new();
+        using (EraBinaryDataWriter writer = new(stream)) varData.SaveGlobalToStreamBinary(writer);
+        return Convert.ToHexString(SHA256.HashData(stream.ToArray()));
+    }
+
+    internal string GetR0F1GlobalSchemaHash()
+    {
+        var rows = varData.GetVarTokenDic().Values.Where(token => token.IsGlobal && !token.IsPrivate && !token.IsLocal)
+            .Select(token => $"{token.Name}\t{(token.IsInteger ? "INT" : "STR")}\t{token.Dimension}\t{token.IsSavedata}")
+            .Order(StringComparer.OrdinalIgnoreCase);
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join('\n', rows))));
+    }
+#endif
+
     // R1.4I diagnostic-only split hashes.  The normal engine never calls this;
     // each domain preserves the existing binary save ordering rather than object identity.
     internal DifferentialStateHashes GetDifferentialStateHashes()
@@ -2388,6 +2415,22 @@ internal sealed class VariableEvaluator : IDisposable
             }),
             "UNAVAILABLE");
     }
+
+#if R0_C
+    internal string GetR0C2RngHash()
+    {
+        if (JSONConfig.Game.UseNewRandom)
+            throw new InvalidOperationException("R0-C2 RNG proof requires the configured legacy RNG");
+        var state = new long[RANDDATA.Length];
+        rand.GetRand(state);
+        var bytes = new byte[state.Length * sizeof(long)];
+        Buffer.BlockCopy(state, 0, bytes, 0, bytes.Length);
+        return Convert.ToHexString(SHA256.HashData(bytes));
+    }
+#endif
+#if R0_F4D3
+    internal long GetR0F4D3RandomCallCount() => r0f4d3RandomCalls;
+#endif
 
     // R1.4I opt-in leaf inventory.  It is intentionally built only after a
     // checkpoint root change; the caller writes a delta rather than a full

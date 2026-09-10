@@ -263,7 +263,12 @@ internal sealed partial class EmueraConsole : IDisposable
 
     MinorShift.Emuera.GameProc.Process process;
     ConsoleState state = ConsoleState.Initializing;
-    public bool Enabled { get { return window.Created; } }
+    public bool Enabled { get {
+#if R0_F6C
+        if (Program.R0F6CDisplayCapture) return true;
+#endif
+        return window.Created;
+    } }
 
     /// <summary>
     /// 現在、Emueraがアクティブかどうか
@@ -713,6 +718,11 @@ internal sealed partial class EmueraConsole : IDisposable
 
         state = ConsoleState.WaitInput;
         inputReq = req;
+#if R0_F6C
+        // R0-F6C's headless oracle has no attached Process; the wait state itself is the checkpoint.
+        if (Program.R0F6CMode && process is null)
+            return;
+#endif
         process.TraceR1_4IDifferentialInputBoundary();
         if (req.Timelimit > 0)
         {
@@ -729,6 +739,17 @@ internal sealed partial class EmueraConsole : IDisposable
         //	MoveMouse(point);
         //}
     }
+
+#if R0_F6C
+    internal object R0F6CInputState() => new
+    {
+        State = state.ToString(),
+        Present = inputReq is not null,
+        Kind = inputReq?.InputType.ToString() ?? "NONE",
+        OneInput = inputReq?.OneInput ?? false,
+        NeedValue = inputReq?.NeedValue ?? false
+    };
+#endif
 
     public void ReadAnyKey(bool anykey = false, bool stopMesskip = false)
     {
@@ -759,6 +780,10 @@ internal sealed partial class EmueraConsole : IDisposable
 
     private void Draw()
     {
+#if R0_F6C
+        if (Program.R0F6CMode)
+            return;
+#endif
         //INPUT待ちでないとき、又はタイマー付きINPUT状態の場合はこれ以外の処理に任せる
         if (state != ConsoleState.WaitInput || genericTimer.Enabled)
         {
@@ -1475,6 +1500,9 @@ internal sealed partial class EmueraConsole : IDisposable
     /// </summary>
     public void RefreshStrings(bool force_Paint)
     {
+#if R0_B1
+        if (MinorShift.Emuera.Runtime.Diagnostics.B1Proof.Active) return;
+#endif
         long refreshStart = PerformanceMetrics.StartTiming();
         try
         {

@@ -14,6 +14,9 @@ namespace MinorShift.Emuera.UI.Game.Image;
 
 internal sealed class GraphicsImage : AbstractImage
 {
+#if R0_F4G2
+    internal string R0F4G2ContentSha256() => Bitmap is null ? "" : Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Bitmap.Bytes));
+#endif
     //public Bitmap Bitmap;
     //public IntPtr GDIhDC { get; protected set; }
     //protected Graphics g;

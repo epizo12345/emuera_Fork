@@ -17,6 +17,12 @@ namespace MinorShift.Emuera.Runtime.Script.Statements;
 /// </summary>
 internal abstract class LogicalLine
 {
+#if R0_E1A
+    protected LogicalLine() => MinorShift.Emuera.Runtime.Diagnostics.R0E1AProof.Hit(
+        this is FunctionLabelLine ? MinorShift.Emuera.Runtime.Diagnostics.R0E1AGuard.FunctionLabelLineConstruction
+        : this is InstructionLine ? MinorShift.Emuera.Runtime.Diagnostics.R0E1AGuard.InstructionLineConstruction
+        : MinorShift.Emuera.Runtime.Diagnostics.R0E1AGuard.OtherLogicalLineConstruction);
+#endif
     // [Emuera改修:MEM-13R37 2026-08-22]
     // 同一ERB内のLogicalLineはFilename stringを共有するため、行ごとに参照slotを保持しない。
     // fileId + lineNoだけをsnapshotし、Filenameはerror/warning/reload/source表示時にregistryから復元する。
@@ -326,6 +332,10 @@ internal sealed class InvalidLabelLine : FunctionLabelLine
 /// </summary>
 internal class FunctionLabelLine : ErrorCapableLogicalLine, IComparable<FunctionLabelLine>
 {
+#if R0_D1
+    // Diagnostic pilot only. Final compact calls do not require a Legacy label.
+    internal MinorShift.Emuera.GameProc.Process.R0CRegistry.Binding R0D1Binding;
+#endif
     protected FunctionLabelLine() { }
     public FunctionLabelLine(ScriptPosition? thePosition, string labelname, WordCollection wc)
     {

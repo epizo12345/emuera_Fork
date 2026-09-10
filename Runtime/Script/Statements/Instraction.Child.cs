@@ -724,19 +724,67 @@ internal sealed partial class FunctionIdentifier
             if (spsetarg.VariableDest.IsInteger)
             {
                 Int64 src = spsetarg.IsConst ? spsetarg.ConstInt : spsetarg.Term.GetIntValue(exm);
+#if R0_F2
+                GlobalStatic.Process?.R0F2BeforeLegacyScalarWrite(func, src);
+#endif
+#if R0_F3
+                GlobalStatic.Process?.R0F3BeforeLegacyScalarWrite(func, src);
+#endif
+#if R0_F4B
+                GlobalStatic.Process?.R0F4BBeforeLegacyScalarWrite(func, src);
+#endif
+#if R0_F4D5
+                GlobalStatic.Process?.R0F4D5BeforeLegacyScalarWrite(func, src);
+#endif
                 if (spsetarg.AddConst)
                     spsetarg.VariableDest.ChangeValue(src, exm);
                 else
                     spsetarg.VariableDest.SetValue(src, exm);
+#if R0_F2
+                GlobalStatic.Process?.R0F2AfterLegacyScalarWrite(func);
+#endif
+#if R0_F3
+                GlobalStatic.Process?.R0F3AfterLegacyScalarWrite(func);
+#endif
+#if R0_F4B
+                GlobalStatic.Process?.R0F4BAfterLegacyScalarWrite(func);
+#endif
+#if R0_F4D5
+                GlobalStatic.Process?.R0F4D5AfterLegacyScalarWrite(func);
+#endif
             }
             else
             {
                 string src = spsetarg.IsConst ? spsetarg.ConstStr : spsetarg.Term.GetStrValue(exm);
+#if R0_F4A
+                GlobalStatic.Process?.R0F4ABeforeLegacyStringWrite(func, src);
+#endif
+#if R0_F4C
+                GlobalStatic.Process?.R0F4CBeforeLegacyStringWrite(func, src);
+#endif
+#if R0_F4E1
+                GlobalStatic.Process?.R0F4E1BeforeLegacyStringWrite(func, src);
+#endif
+#if R0_F4E2
+                GlobalStatic.Process?.R0F4E2BeforeLegacyStringWrite(func, src);
+#endif
                 var traceExtraTitle = spsetarg.VariableDest.Identifier.Name.Equals("EXTRA_TITLE", StringComparison.OrdinalIgnoreCase)
                     && spsetarg.VariableDest.isAllConst && spsetarg.VariableDest.Identifier.IsArray1D;
                 var traceIndex = traceExtraTitle ? spsetarg.VariableDest.getEl1forArg : -1;
                 var traceOld = traceExtraTitle ? spsetarg.VariableDest.Identifier.GetStrValue(exm, [traceIndex]) ?? string.Empty : string.Empty;
                 spsetarg.VariableDest.SetValue(src, exm);
+#if R0_F4A
+                GlobalStatic.Process?.R0F4AAfterLegacyStringWrite(func);
+#endif
+#if R0_F4C
+                GlobalStatic.Process?.R0F4CAfterLegacyStringWrite(func);
+#endif
+#if R0_F4E1
+                GlobalStatic.Process?.R0F4E1AfterLegacyStringWrite(func);
+#endif
+#if R0_F4E2
+                GlobalStatic.Process?.R0F4E2AfterLegacyStringWrite(func);
+#endif
                 if (traceExtraTitle)
                     GlobalStatic.Process.TraceR1_4G2ExtraTitleWrite(func, spsetarg.VariableDest, traceIndex, traceOld,
                         spsetarg.VariableDest.Identifier.GetStrValue(exm, [traceIndex]) ?? string.Empty, "SET");
@@ -1601,7 +1649,13 @@ internal sealed partial class FunctionIdentifier
 
         public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
         {
-            exm.VEvaluator.SaveGlobal();
+#if R0_F2
+            GlobalStatic.Process?.R0F2BeforeLegacySaveGlobal(func);
+#endif
+            var result = exm.VEvaluator.SaveGlobal();
+#if R0_F2
+            GlobalStatic.Process?.R0F2AfterLegacySaveGlobal(func, result);
+#endif
         }
     }
 
@@ -1615,10 +1669,16 @@ internal sealed partial class FunctionIdentifier
 
         public override void DoInstruction(ExpressionMediator exm, InstructionLine func, ProcessState state)
         {
+#if R0_F1
+            GlobalStatic.Process?.R0F1BeforeLegacyLoadGlobal(func);
+#endif
             if (exm.VEvaluator.LoadGlobal())
                 exm.VEvaluator.RESULT = 1;
             else
                 exm.VEvaluator.RESULT = 0;
+#if R0_F1
+            GlobalStatic.Process?.R0F1AfterLegacyLoadGlobal(func);
+#endif
         }
     }
 
@@ -1771,7 +1831,13 @@ internal sealed partial class FunctionIdentifier
                 target = ((ExpressionArgument)func.Argument).Term.GetIntValue(exm);
 
             int target32 = FunctionIdentifier.toUInt32inArg(target, "DELDATA", 1);
+#if R0_F2
+            GlobalStatic.Process?.R0F2BeforeLegacyDelData(func, target32);
+#endif
             VariableEvaluator.DelData(target32);
+#if R0_F2
+            GlobalStatic.Process?.R0F2AfterLegacyDelData(func, target32);
+#endif
         }
     }
 
@@ -2094,6 +2160,9 @@ internal sealed partial class FunctionIdentifier
             state.SetBegin(keyword);
             state.Return(0);
             exm.Console.ResetStyle();
+#if R0_F5B
+            GlobalStatic.Process.R0F5BAfterBeginStyleReset();
+#endif
         }
     }
 
@@ -2732,6 +2801,24 @@ internal sealed partial class FunctionIdentifier
                 labelName = spCallArg.FuncnameTerm.GetStrValue(exm);
                 call = CalledFunction.CallFunction(GlobalStatic.Process, labelName, func);
             }
+#if R0_F4A
+            GlobalStatic.Process?.R0F4AObserveLegacyDynamicCall(func, labelName, call is not null);
+#endif
+#if R0_F4B
+            GlobalStatic.Process?.R0F4BObserveLegacyDynamicCall(func, labelName, call is not null);
+#endif
+#if R0_F4C
+            GlobalStatic.Process?.R0F4CObserveLegacyDynamicCall(func, labelName, call is not null);
+#endif
+#if R0_F4D5
+            GlobalStatic.Process?.R0F4D5ObserveLegacyDynamicCall(func, labelName, call is not null);
+#endif
+#if R0_F4E1
+            GlobalStatic.Process?.R0F4E1ObserveLegacyDynamicCall(func, labelName, call is not null);
+#endif
+#if R0_F4E2
+            GlobalStatic.Process?.R0F4E2ObserveLegacyDynamicCall(func, labelName, call is not null);
+#endif
             if (call == null)
             {
                 if (!isTry)

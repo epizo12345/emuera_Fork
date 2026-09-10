@@ -266,6 +266,18 @@ internal sealed partial class EmueraConsole : IDisposable
         return (Convert.ToHexString(hash), displayLineList.Count);
     }
 
+#if R0_F6C
+    internal object R0F6CDisplayState()
+    {
+        var pending = printBuffer.IsEmpty ? null : printBuffer.Flush(stringMeasure, force_temporary);
+        if (pending is { Length: > 0 })
+            addRangeDisplayLine(pending);
+        var snapshot = GetBenchmarkDisplayState();
+        return new { snapshot.Hash, snapshot.LineCount, LogicalLineCount = logicalLineCount,
+            ColorArgb = userStyle.Color.ToArgb(), Alignment = alignment.ToString(), Log = GetLog() };
+    }
+#endif
+
     private void addRangeDisplayLine(ConsoleDisplayLine[] lineList)
     {
         // [Emuera改修:MEASURE-02] 表示行追加に掛かった時間を計測版だけで記録する。

@@ -65,6 +65,7 @@ public interface IVmFrameVariables
 public interface IVmFrameVariableTypes
 {
     bool TryGetFrameVariableKind(string name, out VmSemanticValueKind kind);
+    bool TryGetFrameVariableLength(string name, int dimension, out long length) { length = 0; return false; }
 }
 
 // The embedding runtime owns Legacy invocation storage.  The VM addresses it
@@ -81,20 +82,44 @@ public interface IVmExpressionFunctionInvoker
 {
     bool HasExpressionFunction(SemanticHostIdentity identity);
     bool TryInvokeExpressionFunction(SemanticHostIdentity identity, ReadOnlySpan<VmSemanticValue> arguments, out VmSemanticValue value);
+    bool UsesPreActualAdmission => false;
+    VmExpressionPreparation PrepareExpressionFunction(SemanticHostIdentity identity) => new(VmExpressionPreparationStatus.NotUserMethod);
+    void CancelExpressionFunction(ref VmExpressionPreparation preparation) { }
+    bool TryInvokePreparedExpressionFunction(ref VmExpressionPreparation preparation, ReadOnlySpan<VmSemanticValue> arguments, out VmSemanticValue value)
+    {
+        value = VmSemanticValue.Unavailable;
+        return false;
+    }
 }
+public enum VmHostCallAdmission : byte { Ready, Blocked, Deferred }
+public interface IVmHostCallPreflight
+{
+    VmHostCallAdmission Classify(SemanticHostIdentity identity);
+}
+public enum VmExpressionPreparationStatus : byte { NotUserMethod, Ready, Rejected }
+public record struct VmExpressionPreparation(VmExpressionPreparationStatus Status,
+    VmAdmissionLease Lease = default, RuntimeMetadataValueType? ReturnType = null,
+    int CallerDepth = 0, VmFrameAddress CallerFrame = default);
 
 // Optional runtime policy. Hosts that do not opt in use the rigorous Legacy TIMES path.
 public interface IVmRuntimeNumericOptions { bool TimesNotRigorousCalculation { get; } }
+public interface IVmVariableMetadataHost
+{
+    bool TryGetVariableIndex(string variableName, string label, out long index);
+    bool TryInvokeVariableFunction(string functionName, string variableName, ReadOnlySpan<VmSemanticValue> arguments, out VmSemanticValue value);
+}
 
 public sealed class VmSemanticExecutor : IVmStructuralSemantics
 {
-    private readonly LinkedProgram program;
+    private readonly LinkedProgram? program;
     private readonly IVmSemanticHost host;
     private readonly IVmTypedSemanticHost? typedHost;
     private readonly IVmContextualTypedSemanticHost? contextualTypedHost;
     private readonly HashSet<SemanticPayload> boundIdentityArenas = [];
     private SemanticPayload? activeArena;
-    private readonly VmSemanticStructuralLookup structuralLookup;
+    private VmEvaluationContext? activeEvaluationContext;
+    public VmEvaluationContext? ActiveEvaluationContext => activeEvaluationContext;
+    private readonly VmSemanticStructuralLookup? structuralLookup;
     private readonly long[] repeatCounters;
     public IVmFrameVariables? FrameVariables { get; set; }
     public IVmExpressionFunctionInvoker? ExpressionFunctionInvoker { get; set; }
@@ -111,7 +136,11 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
     public bool LastHostBindingPresent { get; private set; }
     public bool LastHostResult { get; private set; }
     public bool TimesNotRigorousCalculation => host is IVmRuntimeNumericOptions options && options.TimesNotRigorousCalculation;
-    private SemanticPayload Arena => activeArena ?? program.SemanticArena;
+    private LinkedProgram ActiveProgram => activeEvaluationContext?.Function.Program ?? program
+        ?? throw new InvalidOperationException("semantic evaluation context unavailable");
+    private VmSemanticStructuralLookup ActiveStructuralLookup => activeEvaluationContext?.Function.StructuralLookup ?? structuralLookup
+        ?? throw new InvalidOperationException("semantic structural context unavailable");
+    private SemanticPayload Arena => activeArena ?? ActiveProgram.SemanticArena;
 
     public VmSemanticExecutor(LinkedProgram program, IVmSemanticHost host)
         : this(program, host, VmSemanticStructuralLookup.Build(program))
@@ -127,6 +156,14 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
         typedHost = host as IVmTypedSemanticHost;
         contextualTypedHost = host as IVmContextualTypedSemanticHost;
         repeatCounters = new long[program.Loops.Length];
+    }
+
+    public VmSemanticExecutor(IVmSemanticHost host)
+    {
+        this.host = host ?? throw new ArgumentNullException(nameof(host));
+        typedHost = host as IVmTypedSemanticHost;
+        contextualTypedHost = host as IVmContextualTypedSemanticHost;
+        repeatCounters = [];
     }
 
     public bool TryEvaluateRecord(int recordIndex, out VmSemanticValue value)
@@ -146,8 +183,17 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
         ArgumentNullException.ThrowIfNull(arena);
         var prior = activeArena;
         activeArena = arena;
-        try { LastEvaluationArena = ReferenceEquals(arena, program.RuntimeStatements.OperandArena) ? "RuntimeStatementOperand" : ReferenceEquals(arena, program.CallArgumentArena) ? "CallArgument" : "Semantic"; LastRecordIndex = recordIndex; ResetStatus(); var success = TryEvaluateRecordCore(recordIndex, out value); LastStatus = success ? VmSemanticStatus.Success : LastFault == VmSemanticFault.None ? VmSemanticStatus.Unavailable : VmSemanticStatus.Fault; return success; }
+        try { var activeProgram = ActiveProgram; LastEvaluationArena = ReferenceEquals(arena, activeProgram.RuntimeStatements.OperandArena) ? "RuntimeStatementOperand" : ReferenceEquals(arena, activeProgram.CallArgumentArena) ? "CallArgument" : "Semantic"; LastRecordIndex = recordIndex; ResetStatus(); var success = TryEvaluateRecordCore(recordIndex, out value); LastStatus = success ? VmSemanticStatus.Success : LastFault == VmSemanticFault.None ? VmSemanticStatus.Unavailable : VmSemanticStatus.Fault; return success; }
         finally { activeArena = prior; }
+    }
+
+    public bool TryEvaluateRuntimeRecord(in VmEvaluationContext context, SemanticPayload arena, int recordIndex, out VmSemanticValue value)
+    {
+        ArgumentNullException.ThrowIfNull(context.Function);
+        var prior = activeEvaluationContext;
+        activeEvaluationContext = context;
+        try { return TryEvaluateRuntimeRecord(arena, recordIndex, out value); }
+        finally { activeEvaluationContext = prior; }
     }
 
     public bool TryResolveRuntimeLValue(SemanticPayload arena, int recordIndex, out VmResolvedLValue result)
@@ -163,6 +209,14 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
             return true;
         }
         finally { activeArena = prior; }
+    }
+
+    public bool TryResolveRuntimeLValue(in VmEvaluationContext context, SemanticPayload arena, int recordIndex, out VmResolvedLValue result)
+    {
+        var prior = activeEvaluationContext;
+        activeEvaluationContext = context;
+        try { return TryResolveRuntimeLValue(arena, recordIndex, out result); }
+        finally { activeEvaluationContext = prior; }
     }
 
     public bool TryReadRuntimeLValue(in VmResolvedLValue lvalue, out VmSemanticValue value) => TryRead(lvalue.Name, lvalue.Subkey, lvalue.Indices, lvalue.Identity, lvalue.IdentityArena, out value);
@@ -189,18 +243,71 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
         finally { activeArena = prior; }
     }
 
+    public bool TryGetRuntimeAssignmentTargetKind(in VmEvaluationContext context, SemanticPayload arena, int recordIndex, out VmSemanticValueKind kind)
+    {
+        var prior = activeEvaluationContext;
+        activeEvaluationContext = context;
+        try { return TryGetRuntimeAssignmentTargetKind(arena, recordIndex, out kind); }
+        finally { activeEvaluationContext = prior; }
+    }
+
+    public VmSemanticIntResult EvaluateInt(in VmEvaluationContext context, RuntimeFunctionId functionId, int pc, VmStructuralKind kind)
+    {
+        var prior = activeEvaluationContext;
+        activeEvaluationContext = context;
+        try { return EvaluateInt(functionId, pc, kind); }
+        finally { activeEvaluationContext = prior; }
+    }
+
+    public VmSemanticCaseResult SelectCase(in VmEvaluationContext context, RuntimeFunctionId functionId, int groupIndex, ReadOnlySpan<SelectCaseRecord> cases)
+    {
+        var prior = activeEvaluationContext;
+        activeEvaluationContext = context;
+        try { return SelectCase(functionId, groupIndex, cases); }
+        finally { activeEvaluationContext = prior; }
+    }
+
+    public VmCountedLoopResult BeginCounted(in VmEvaluationContext context, RuntimeFunctionId functionId, int loopIndex, LoopDescriptor loop)
+    {
+        var prior = activeEvaluationContext;
+        activeEvaluationContext = context;
+        try { return BeginCounted(functionId, loopIndex, loop); }
+        finally { activeEvaluationContext = prior; }
+    }
+
+    public VmSemanticIntResult AdvanceCounted(in VmEvaluationContext context, RuntimeFunctionId functionId, int loopIndex, LoopDescriptor loop, long step)
+    {
+        var prior = activeEvaluationContext;
+        activeEvaluationContext = context;
+        try { return AdvanceCounted(functionId, loopIndex, loop, step); }
+        finally { activeEvaluationContext = prior; }
+    }
+
     public VmSemanticIntResult EvaluateInt(RuntimeFunctionId functionId, int pc, VmStructuralKind kind)
     {
-        ResetStatus();
-        if (TryGetRecord(functionId, pc, out var record) && TryEvaluateRecordCore(record, out var value) && value.TryGetInteger(out var integer)) return VmSemanticIntResult.From(integer);
-        return IntFailure();
+        var prior = activeArena;
+        activeArena = null;
+        try
+        {
+            LastEvaluationArena = "Structural";
+            ResetStatus();
+            if (TryGetRecord(functionId, pc, out var record) && TryEvaluateRecordCore(record, out var value) && value.TryGetInteger(out var integer)) return VmSemanticIntResult.From(integer);
+            return IntFailure();
+        }
+        finally { activeArena = prior; }
     }
 
     public VmSemanticCaseResult SelectCase(RuntimeFunctionId functionId, int groupIndex, ReadOnlySpan<SelectCaseRecord> cases)
     {
+        var prior = activeArena;
+        activeArena = null;
+        try
+        {
+        LastEvaluationArena = "Structural";
         ResetStatus();
-        if ((uint)groupIndex >= (uint)program.SelectGroups.Length) return VmSemanticCaseResult.NotAvailable;
-        var group = program.SelectGroups[groupIndex];
+        var activeProgram = ActiveProgram;
+        if ((uint)groupIndex >= (uint)activeProgram.SelectGroups.Length) return VmSemanticCaseResult.NotAvailable;
+        var group = activeProgram.SelectGroups[groupIndex];
         if (group.FunctionId != functionId.Value || !TryGetRecord(functionId, group.OpenerPc, out var selectorRecord) || !TryEvaluateRecordCore(selectorRecord, out var selector)) return CaseFailure();
         for (var ordinal = 0; ordinal < cases.Length; ordinal++)
         {
@@ -209,17 +316,25 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
             if (match) return VmSemanticCaseResult.From(ordinal);
         }
         return VmSemanticCaseResult.From(-1);
+        }
+        finally { activeArena = prior; }
     }
 
     public VmCountedLoopResult BeginCounted(RuntimeFunctionId functionId, int loopIndex, LoopDescriptor loop)
     {
+        var prior = activeArena;
+        activeArena = null;
+        try
+        {
+        LastEvaluationArena = "Structural";
         ResetStatus();
         if (!TryGetRecord(functionId, loop.HeaderPc, out var record) || !TryGetCountedLoop(record, out var node)) return CountedFailure();
         if (!TryEvaluateInt(node.B, out var start)) return CountedFailure();
         if (node.Operator == SemanticOperator.CountedRepeat)
         {
-            if (!TryEvaluateInt(node.C, out var repeatEnd) || !TryEvaluateInt(node.D, out var repeatStep) || (uint)loopIndex >= (uint)repeatCounters.Length) return CountedFailure();
-            repeatCounters[loopIndex] = start;
+            if (!TryEvaluateInt(node.C, out var repeatEnd) || !TryEvaluateInt(node.D, out var repeatStep) ||
+                activeEvaluationContext is null && (uint)loopIndex >= (uint)repeatCounters.Length) return CountedFailure();
+            if (activeEvaluationContext is null) repeatCounters[loopIndex] = start;
             return VmCountedLoopResult.From(new(start, repeatEnd, repeatStep));
         }
         // Legacy FOR order: Start, resolve/set counter, End, Step, resolve/read counter.
@@ -227,20 +342,29 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
         if (!TryEvaluateInt(node.C, out var end) || !TryEvaluateInt(node.D, out var step)) return CountedFailure();
         if (!TryResolveLValue(node.A, out counter) || !TryRead(counter.Name, counter.Subkey, counter.Indices, counter.Identity, counter.IdentityArena, out var current) || !current.TryGetInteger(out var initialCounter)) return CountedFailure();
         return VmCountedLoopResult.From(new(initialCounter, end, step));
+        }
+        finally { activeArena = prior; }
     }
 
     public VmSemanticIntResult AdvanceCounted(RuntimeFunctionId functionId, int loopIndex, LoopDescriptor loop, long step)
     {
+        var prior = activeArena;
+        activeArena = null;
+        try
+        {
+        LastEvaluationArena = "Structural";
         ResetStatus();
         if (!TryGetRecord(functionId, loop.HeaderPc, out var record) || !TryGetCountedLoop(record, out var node)) return IntFailure();
         if (node.Operator == SemanticOperator.CountedRepeat)
         {
-            if ((uint)loopIndex >= (uint)repeatCounters.Length) return IntFailure();
+            if (activeEvaluationContext is not null || (uint)loopIndex >= (uint)repeatCounters.Length) return IntFailure();
             return VmSemanticIntResult.From(repeatCounters[loopIndex] = unchecked(repeatCounters[loopIndex] + step));
         }
         if (!TryResolveLValue(node.A, out var counter) || !TryRead(counter.Name, counter.Subkey, counter.Indices, counter.Identity, counter.IdentityArena, out var current) || !current.TryGetInteger(out var integer)) return IntFailure();
         var next = unchecked(integer + step);
         return TryWrite(counter.Name, counter.Subkey, counter.Indices, counter.Identity, counter.IdentityArena, VmSemanticValue.From(next)) ? VmSemanticIntResult.From(next) : IntFailure();
+        }
+        finally { activeArena = prior; }
     }
 
     private bool TryEvaluateRecordCore(int recordIndex, out VmSemanticValue value)
@@ -259,9 +383,10 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
     private bool TryGetRecord(RuntimeFunctionId functionId, int pc, out int record)
     {
         record = -1;
-        var structural = structuralLookup.GetStructuralLinkIndex(functionId, pc);
-        if (structural < 0 || (uint)structural >= (uint)program.StructuralSemanticRecordIndices.Length) return false;
-        record = program.StructuralSemanticRecordIndices[structural];
+        var activeProgram = ActiveProgram;
+        var structural = ActiveStructuralLookup.GetStructuralLinkIndex(functionId, pc);
+        if (structural < 0 || (uint)structural >= (uint)activeProgram.StructuralSemanticRecordIndices.Length) return false;
+        record = activeProgram.StructuralSemanticRecordIndices[structural];
         return record >= 0;
     }
 
@@ -303,6 +428,44 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
             case SemanticNodeKind.VariableSubkey:
                 return TryReadSymbol(node.A, out var name) && TryReadSymbol(node.B, out var subkey) && TryEvaluateOptionalEdges(node.C, node.D, out var subkeys) && TryRead(name, subkey, subkeys, TryGetVariableIdentity(index), Arena, out value);
             case SemanticNodeKind.Call:
+                if (TryReadSymbol(node.A, out var sizeCall) && sizeCall.Equals("VARSIZE", StringComparison.OrdinalIgnoreCase) &&
+                    FrameVariables is IVmFrameVariableTypes frameTypes && node.C is 1 or 2 &&
+                    TryEvaluateNode(Arena.Edges[node.B].To, out var variableNameValue) && variableNameValue.TryGetString(out var frameVariableName))
+                {
+                    var dimension = 0L;
+                    if (node.C == 2 && (!TryEvaluateNode(Arena.Edges[node.B + 1].To, out var dimensionValue) || !dimensionValue.TryGetInteger(out dimension))) return false;
+                    if (dimension >= 0 && dimension <= int.MaxValue && frameTypes.TryGetFrameVariableLength(frameVariableName, (int)dimension, out var length))
+                        return Return(VmSemanticValue.From(length), out value);
+                }
+                if (TryReadSymbol(node.A, out var callName) && host is IVmVariableMetadataHost metadataHost && node.C >= 1)
+                {
+                    var first = Arena.Edges[node.B].To;
+                    if ((uint)first < (uint)nodes.Length && nodes[first].Kind is SemanticNodeKind.Symbol or SemanticNodeKind.Variable && TryReadSymbol(nodes[first].A, out var variableName))
+                    {
+                        var tail = new VmSemanticValue[node.C - 1];
+                        for (var i = 0; i < tail.Length; i++) if (!TryEvaluateNode(Arena.Edges[node.B + i + 1].To, out tail[i])) return false;
+                        if (callName.Equals("GETNUM", StringComparison.OrdinalIgnoreCase) && tail.Length == 1 && tail[0].TryGetString(out var label) && metadataHost.TryGetVariableIndex(variableName, label, out var variableIndex))
+                            return Return(VmSemanticValue.From(variableIndex), out value);
+                        if (metadataHost.TryInvokeVariableFunction(callName, variableName, tail, out value)) return true;
+                    }
+                }
+                if (ExpressionFunctionInvoker is { UsesPreActualAdmission: true } invoker && TryGetCallIdentity(index) is { } callIdentity)
+                {
+                    var preparation = invoker.PrepareExpressionFunction(callIdentity);
+                    if (preparation.Status == VmExpressionPreparationStatus.Rejected) return false;
+                    if (preparation.Status == VmExpressionPreparationStatus.Ready)
+                    {
+                        if (!TryEvaluateEdges(node.B, node.C, out var preparedArguments))
+                        {
+                            invoker.CancelExpressionFunction(ref preparation);
+                            return false;
+                        }
+                        return invoker.TryInvokePreparedExpressionFunction(ref preparation, preparedArguments, out value);
+                    }
+                    if (host is IVmHostCallPreflight preflight &&
+                        (!TryBindIdentities(Arena) || preflight.Classify(callIdentity) != VmHostCallAdmission.Ready))
+                        return false;
+                }
                 return TryEvaluateEdges(node.B, node.C, out var arguments) && TryCall(index, arguments, out value);
             case SemanticNodeKind.Unary:
                 return TryEvaluateUnary(node, out value);
@@ -480,7 +643,12 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
     }
     private SemanticHostIdentity? TryGetVariableIdentity(int nodeIndex) => Arena.TryGetHostIdentity(nodeIndex, SemanticHostIdentityKind.Variable, out var identity) ? identity : null;
     private SemanticHostIdentity? TryGetCallIdentity(int nodeIndex) => Arena.TryGetHostIdentity(nodeIndex, SemanticHostIdentityKind.Call, out var identity) ? identity : null;
-    private bool TryBindIdentities(SemanticPayload arena) => typedHost is null || boundIdentityArenas.Contains(arena) || typedHost.BindVariableIdentities(arena) && boundIdentityArenas.Add(arena);
+    private bool TryBindIdentities(SemanticPayload arena)
+    {
+        if (typedHost is null) return true;
+        if (activeEvaluationContext is not null) return typedHost.BindVariableIdentities(arena);
+        return boundIdentityArenas.Contains(arena) || typedHost.BindVariableIdentities(arena) && boundIdentityArenas.Add(arena);
+    }
     private bool TryCall(int nodeIndex, ReadOnlySpan<VmSemanticValue> arguments, out VmSemanticValue value)
     {
         value = VmSemanticValue.Unavailable;

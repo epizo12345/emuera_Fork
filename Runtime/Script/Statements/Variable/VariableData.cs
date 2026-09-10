@@ -1026,6 +1026,9 @@ internal sealed partial class VariableData : IDisposable
             vToken = GlobalStatic.IdentifierDictionary.GetVariableToken(nameAndType.Key, null, false);
         if (vToken != null && (vToken.IsCharacterData || vToken.IsConst || vToken.IsPrivate || vToken.IsLocal || vToken.IsCalc))
             vToken = null;
+#if R0_E1A
+        MinorShift.Emuera.Runtime.Diagnostics.R0E1AProof.ObserveCodec("Global", nameAndType.Key, nameAndType.Value, vToken);
+#endif
         switch (nameAndType.Value)
         {
             case EraSaveDataType.EOF:

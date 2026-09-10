@@ -93,7 +93,13 @@ internal sealed class UserDefinedFunctionArgument
 /// </summary>
 internal sealed class CalledFunction
 {
-    private CalledFunction(string label) { FunctionName = label; }
+    private CalledFunction(string label)
+    {
+#if R0_E1A
+        MinorShift.Emuera.Runtime.Diagnostics.R0E1AProof.Hit(MinorShift.Emuera.Runtime.Diagnostics.R0E1AGuard.CalledFunctionConstruction);
+#endif
+        FunctionName = label;
+    }
     public static CalledFunction CallEventFunction(Process parent, string label, LogicalLine retAddress)
     {
         // [Emuera改修:PERF-13R26 2026-08-21]

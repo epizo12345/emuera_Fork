@@ -165,6 +165,9 @@ internal sealed partial class Process(EmueraConsole view)
             if (!Config.DisplayReport)
             {
                 console.PrintSingleLine(Config.LoadLabel);
+#if R0_E1A
+                if (!Program.R0E1ACandidate)
+#endif
                 console.RefreshStrings(true);
             }
             //gamebase.csv読み込み
@@ -221,6 +224,19 @@ internal sealed partial class Process(EmueraConsole view)
             LexicalAnalyzer.UseMacro = idDic.UseMacro();
             logWriter.WriteLine($"Proc:Init:ERH:End {stopWatch.ElapsedMilliseconds}ms");
             PerformanceMetrics.MarkStartup("ErhLoaded"); // ERH読込完了の目印
+#if R0_E2
+            Runtime.Diagnostics.R0E2Measurement.MarkB0();
+#endif
+#if R0_E1A
+            if (Program.R0E1ACandidate)
+            {
+                Runtime.Diagnostics.R0E1AProof.CaptureBoundary(labelDic.Count, state.functionCount,
+                    state.CurrentLine is null, Program.NextRuntimeMode,
+                    Program.NextRuntimeDifferentialCapturePath is not null);
+                initialiing = false;
+                return true;
+            }
+#endif
 
 
             //TODO:ユーザー定義変数用のcsvの適用
@@ -255,6 +271,12 @@ internal sealed partial class Process(EmueraConsole view)
             logWriter.WriteLine($"Proc:Init:ERB:DeferredEager count={erbLoader.DeferredEagerCount}");
             logWriter.WriteLine($"Proc:Init:ERB:End {stopWatch.ElapsedMilliseconds}ms");
             PerformanceMetrics.MarkStartup("ErbParsed"); // ERB解析完了の目印
+#if R0_C
+            InitializeR0CRegistry(logWriter);
+#endif
+#if R0_B1
+            if (Runtime.Diagnostics.B1Proof.Active) return noError;
+#endif
 
 #if PERFORMANCE_METRICS
             // [Emuera改修:NEXT-3D-R1.5P2 2026-09-04]
@@ -293,6 +315,10 @@ internal sealed partial class Process(EmueraConsole view)
         }
         catch (Exception e)
         {
+#if R0_E1A
+            if (Program.R0E1ACandidate)
+                throw;
+#endif
             handleException(e, null, true);
             console.PrintSystemLine(LocalizationManager.Error.InitFatalError);
             return false;
@@ -315,6 +341,9 @@ internal sealed partial class Process(EmueraConsole view)
 
     public async Task ReloadErbAll()
     {
+#if R0_C
+        InvalidateR0CRegistry("ReloadErbAll");
+#endif
         InvalidateNextRuntimeProductionProgram();
         await Preload.Load(Program.ErbDir);
         await Preload.Load(Program.CsvDir);
@@ -328,6 +357,9 @@ internal sealed partial class Process(EmueraConsole view)
 
     public async Task ReloadPartialErb(List<string> paths)
     {
+#if R0_C
+        InvalidateR0CRegistry("ReloadPartialErb");
+#endif
         InvalidateNextRuntimeProductionProgram();
         // [Emuera改修:MEM-13R39.1 2026-08-23]
         // active erbLoaderは通常モードで起動時の未hydrate stubとLazy対応表を所有するため、
@@ -354,6 +386,9 @@ internal sealed partial class Process(EmueraConsole view)
 
     public async Task ReloadErbFolder(string dirPath)
     {
+#if R0_C
+        InvalidateR0CRegistry("ReloadErbFolder");
+#endif
         InvalidateNextRuntimeProductionProgram();
         // [Emuera改修:MEM-13R41F 2026-08-24]
         // ファイルが削除されて列挙結果から消えていても、configured Lazy directoryとのscope交差で
@@ -485,6 +520,9 @@ internal sealed partial class Process(EmueraConsole view)
 
     public void DoScript()
     {
+#if R0_E1A
+        Runtime.Diagnostics.R0E1AProof.Hit(Runtime.Diagnostics.R0E1AGuard.DoScript);
+#endif
         startTime.Restart();
         state.lineCount = 0;
         bool systemProcRunning = true;
@@ -587,6 +625,31 @@ internal sealed partial class Process(EmueraConsole view)
     int methodStack;
     public SingleTerm GetValue(SuperUserDefinedMethodTerm udmt)
     {
+#if R0_E1A
+        Runtime.Diagnostics.R0E1AProof.Hit(Runtime.Diagnostics.R0E1AGuard.LegacyMethodExecution);
+#endif
+#if R0_C
+#if R0_D1
+        if (r0D1Prelinked)
+        {
+            if (udmt is UserDefinedMethodTerm linked && linked.Call.TopLabel.R0D1Binding is { } binding)
+                return binding.Execute(this, linked);
+        }
+        else
+#endif
+        if (udmt is UserDefinedMethodTerm direct && TryGetR0CValue(direct, out var flatValue))
+            return flatValue;
+#endif
+#if R0_B2
+        if (Runtime.Diagnostics.FlatQueryProof.ForbidLegacy)
+        {
+            Runtime.Diagnostics.FlatQueryProof.LegacyEntryAttempts++;
+            throw new InvalidOperationException("Flat explicit FAIL: Legacy method entry forbidden");
+        }
+#endif
+#if R0_C
+        r0CLegacyEntries++;
+#endif
         methodStack++;
         if (methodStack > 100)
         {

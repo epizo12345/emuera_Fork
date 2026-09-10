@@ -2,6 +2,7 @@
 using MinorShift.Emuera.Runtime.Script;
 using MinorShift.Emuera.Runtime.Script.Data;
 using System;
+using System.Linq;
 
 namespace MinorShift.Emuera.Runtime.Script.Statements.Function;
 
@@ -25,6 +26,21 @@ internal sealed class UserDefinedRefMethod
         ret.ArgTypeList = funcData.ArgList;
         return ret;
     }
+#if R0_C
+    internal static UserDefinedRefMethod CreateR0CTest(string name, CalledFunction call)
+    {
+        var ret = new UserDefinedRefMethod
+        {
+            Name = name,
+            RetType = call.TopLabel.MethodType,
+            ArgTypeList = call.TopLabel.Arg.Select(arg => arg.Identifier.IsInteger
+                ? UserDifinedFunctionDataArgType.Int
+                : UserDifinedFunctionDataArgType.Str).ToArray()
+        };
+        ret.SetReference(call);
+        return ret;
+    }
+#endif
 
     /// <summary>
     /// 戻り値と引数の数・型の完全一致が必要

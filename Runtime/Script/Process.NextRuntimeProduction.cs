@@ -70,6 +70,12 @@ internal sealed partial class Process
     // よう、readiness/metadata/frame bindingを確定してからNext sessionを公開する。
     internal bool PrepareNextRuntimeProductionProgram(TextWriter? log = null)
     {
+#if R0_E1A
+        Runtime.Diagnostics.R0E1AProof.Hit(Runtime.Diagnostics.R0E1AGuard.PrepareNextRuntimeProductionProgram);
+#endif
+#if R0_B1
+        Runtime.Diagnostics.B1Proof.ForbidBridge();
+#endif
         productionMemoryStages.Clear();
         productionTimingStages.Clear();
         productionPeakWorkingSet64 = 0;

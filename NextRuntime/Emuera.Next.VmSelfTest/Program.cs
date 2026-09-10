@@ -1,9 +1,13 @@
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using MinorShift.Emuera.Next.Compiler;
 using MinorShift.Emuera.Next.Core;
 using MinorShift.Emuera.Next.Vm;
+
+if (args.Length == 4 && args[0] == "--r0f6g3-link-probe")
+    return RunR0F6G3LinkProbe(args[1], args[2], args[3]);
 
 var tests = new List<(string Name, Action Run)>
 {
@@ -24,11 +28,14 @@ var tests = new List<(string Name, Action Run)>
     ("runtime statement operand bases are contiguous", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var p = ControlLinker.Link(Catalog("X"), [RPO(0, [PrototypeOpcode.SET, PrototypeOpcode.TIMES, PrototypeOpcode.PRINTFORM, PrototypeOpcode.RETURNF], ["A=1", "A,2", "%A%", "A"])], runtimeEnvironment: env, runtimeStatements: true).Program; var rows = p.RuntimeStatements.Records; Check(rows.Length == 4 && rows[0] is { OperandRecord: 0, SecondaryOperandRecord: 1, FormatOperandRecord: 2 } && rows[1].OperandRecord == 3 && rows[2].OperandRecord == 4 && rows[3].OperandRecord == 5 && p.RuntimeStatements.OperandArena.Records.Length == 6); }),
     ("PRINTW yields then resumes without duplicate output", () => { var p = Executable(ControlLinker.Link(Catalog("X"), [RPO(0, [PrototypeOpcode.PRINTW, PrototypeOpcode.PRINT, PrototypeOpcode.RETURN], ["one", "two", ""]) ], runtimeStatements: true).Program); var effects = new RecordingEffects(); var vm = new VmMachine(p, runtimeEffects: effects); Check(vm.Start(new(0)) == VmStopReason.Returned && vm.Continue() == VmStopReason.WaitingForInput && effects.Events.SequenceEqual(["text:one", "wait:False"]) && vm.Continue() == VmStopReason.Returned && effects.Events.SequenceEqual(["text:one", "wait:False", "text:two"])); }),
     ("entry actual imports integer ARG without evaluation", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var metadata = new FunctionRuntimeMetadata([new("ARG", RuntimeMetadataValueType.Integer, 0, false, 0, null)], 0, 0, [], null); var p = Executable(ControlLinker.Link(Catalog("X"), [new RuntimeFunctionPrototype(new(0), [P(PrototypeOpcode.PRINTFORM), P(PrototypeOpcode.RETURN)], ["%ARG:0%", ""], RuntimeMetadata: metadata)], runtimeEnvironment: env, runtimeStatements: true).Program); var effects = new RecordingEffects(); Check(new VmMachine(p, new VmSemanticExecutor(p, new SemanticHost()), effects).Run(new(0), [VmSemanticValue.From(41L)]) == VmStopReason.Returned && effects.Events.SequenceEqual(["text:41"])); }),
+    ("entry actual imports omitted-index ARG as slot zero", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var metadata = new FunctionRuntimeMetadata([new("ARG", RuntimeMetadataValueType.Integer, 0, false, 0, null)], 0, 0, [], RuntimeMetadataValueType.Integer); var p = Executable(ControlLinker.Link(Catalog("X"), [new RuntimeFunctionPrototype(new(0), [P(PrototypeOpcode.RETURNF)], ["ARG"], RuntimeMetadata: metadata)], runtimeEnvironment: env, runtimeStatements: true).Program); var vm = new VmMachine(p, new VmSemanticExecutor(p, new SemanticHost())); Check(vm.Run(new(0), [VmSemanticValue.From(41L)]) == VmStopReason.Returned && vm.LastReturnValue.TryGetInteger(out var value) && value == 41); }),
     ("entry actual imports string ARGS across WAIT resume", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var metadata = new FunctionRuntimeMetadata([new("ARGS", RuntimeMetadataValueType.String, 0, false, 0, null)], 0, 0, [], null); var p = Executable(ControlLinker.Link(Catalog("X"), [new RuntimeFunctionPrototype(new(0), [P(PrototypeOpcode.PRINTW), P(PrototypeOpcode.PRINTFORM), P(PrototypeOpcode.RETURN)], ["hold", "%ARGS:0%", ""], RuntimeMetadata: metadata)], runtimeEnvironment: env, runtimeStatements: true).Program); var effects = new RecordingEffects(); var vm = new VmMachine(p, new VmSemanticExecutor(p, new SemanticHost()), effects); Check(vm.Start(new(0), [VmSemanticValue.From("kept")]) == VmStopReason.Returned && vm.Continue() == VmStopReason.WaitingForInput && vm.Continue() == VmStopReason.Returned && effects.Events.SequenceEqual(["text:hold", "wait:False", "text:kept"])); }),
+    ("named DYNAMIC parameter shares one activation slot and applies default", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var metadata = new FunctionRuntimeMetadata([new("対象", RuntimeMetadataValueType.Integer, 0, true, 7, null, true)], 0, 0, [new("対象", RuntimeMetadataValueType.Integer, [1], false)], RuntimeMetadataValueType.Integer); var p = Executable(ControlLinker.Link(Catalog("X"), [new RuntimeFunctionPrototype(new(0), [P(PrototypeOpcode.RETURNF)], ["対象"], RuntimeMetadata: metadata)], runtimeEnvironment: env, runtimeStatements: true).Program); var explicitVm = new VmMachine(p, new VmSemanticExecutor(p, new SemanticHost())); var omittedVm = new VmMachine(p, new VmSemanticExecutor(p, new SemanticHost())); var explicitStop = explicitVm.Run(new(0), [VmSemanticValue.From(41L)]); var omittedStop = omittedVm.Run(new(0)); var explicitOk = explicitVm.LastReturnValue.TryGetInteger(out var explicitValue); var omittedOk = omittedVm.LastReturnValue.TryGetInteger(out var defaultValue); if (explicitStop != VmStopReason.Returned || !explicitOk || explicitValue != 41 || omittedStop != VmStopReason.Returned || !omittedOk || defaultValue != 7) throw new InvalidOperationException($"explicit={explicitStop}/{explicitOk}/{explicitValue};omitted={omittedStop}/{omittedOk}/{defaultValue}"); }),
+    ("CONST private initializes once and rejects writes", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var metadata = new FunctionRuntimeMetadata([], 0, 0, [new("COMMANDLENS", RuntimeMetadataValueType.Integer, [1], true, true, true, 20)], RuntimeMetadataValueType.Integer); var read = Executable(ControlLinker.Link(Catalog("X"), [new RuntimeFunctionPrototype(new(0), [P(PrototypeOpcode.RETURNF)], ["COMMANDLENS"], RuntimeMetadata: metadata)], runtimeEnvironment: env, runtimeStatements: true).Program); var write = Executable(ControlLinker.Link(Catalog("X"), [new RuntimeFunctionPrototype(new(0), [P(PrototypeOpcode.SET), P(PrototypeOpcode.RETURN)], ["COMMANDLENS=21", ""], RuntimeMetadata: metadata)], runtimeEnvironment: env, runtimeStatements: true).Program); var vm = new VmMachine(read, new VmSemanticExecutor(read, new SemanticHost())); var readStop = vm.Run(new(0)); var readOk = vm.LastReturnValue.TryGetInteger(out var value); var writeStop = new VmMachine(write, new VmSemanticExecutor(write, new SemanticHost())).Run(new(0)); if (readStop != VmStopReason.Returned || !readOk || value != 20 || writeStop != VmStopReason.SemanticNotAvailable) throw new InvalidOperationException($"read={readStop}/{readOk}/{value};write={writeStop}"); }),
     ("bound frame state shares dynamic and static private slots", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var metadata = new FunctionRuntimeMetadata([], 0, 0, [new("D", RuntimeMetadataValueType.Integer, [1], false), new("S", RuntimeMetadataValueType.Integer, [1], true)], null); var p = Executable(ControlLinker.Link(Catalog("X"), [new RuntimeFunctionPrototype(new(0), [P(PrototypeOpcode.SET), P(PrototypeOpcode.SET), P(PrototypeOpcode.PRINTFORM), P(PrototypeOpcode.RETURN)], ["D:0=4", "S:0+=1", "%D:0%:%S:0%", ""], RuntimeMetadata: metadata)], runtimeEnvironment: env, runtimeStatements: true).Program); var state = new FrameState(); state.Set(0, VmFrameStateFamily.Private, 0, 0, VmSemanticValue.From(0L)); state.Set(0, VmFrameStateFamily.Private, 1, 0, VmSemanticValue.From(0L)); var effects = new RecordingEffects(); Check(new VmMachine(p, new VmSemanticExecutor(p, new SemanticHost()), effects, state).Run(new(0)) == VmStopReason.Returned && new VmMachine(p, new VmSemanticExecutor(p, new SemanticHost()), effects, state).Run(new(0)) == VmStopReason.Returned && effects.Events.SequenceEqual(["text:4:1", "text:4:2"])); }),
     ("root RETURNF retains integer and string result", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var intMeta = new FunctionRuntimeMetadata([], 0, 0, [], RuntimeMetadataValueType.Integer); var strMeta = new FunctionRuntimeMetadata([], 0, 0, [], RuntimeMetadataValueType.String); var integer = Executable(ControlLinker.Link(Catalog("I"), [new RuntimeFunctionPrototype(new(0), [P(PrototypeOpcode.RETURNF)], ["9"], RuntimeMetadata: intMeta)], runtimeEnvironment: env, runtimeStatements: true).Program); var text = Executable(ControlLinker.Link(Catalog("S"), [new RuntimeFunctionPrototype(new(0), [P(PrototypeOpcode.RETURNF)], ["\"ok\""], RuntimeMetadata: strMeta)], runtimeEnvironment: env, runtimeStatements: true).Program); var intVm = new VmMachine(integer, new VmSemanticExecutor(integer, new SemanticHost())); var strVm = new VmMachine(text, new VmSemanticExecutor(text, new SemanticHost())); Check(intVm.Run(new(0)) == VmStopReason.Returned && intVm.LastReturnValue.TryGetInteger(out var number) && number == 9 && strVm.Run(new(0)) == VmStopReason.Returned && strVm.LastReturnValue.TryGetString(out var value) && value == "ok"); }),
     ("ordinary Legacy RETURN expression preserves integer", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var metadata = new FunctionRuntimeMetadata([], 0, 0, [], null); var proto = new RuntimeFunctionPrototype(new(0), [P(PrototypeOpcode.RETURN)], ["G:1"], RuntimeMetadata: metadata); var program = Executable(ControlLinker.Link(Catalog("IS_TITLE_USEABLE_1"), [proto], runtimeEnvironment: env, runtimeStatements: true).Program); var host = new SemanticHost(); host.Set("G", null, [VmSemanticValue.From(1L)], VmSemanticValue.From(1L)); var vm = new VmMachine(program, new VmSemanticExecutor(program, host)); Check(vm.Run(new(0)) == VmStopReason.Returned && vm.LastReturnValue.TryGetInteger(out var one) && one == 1); host.Set("G", null, [VmSemanticValue.From(1L)], VmSemanticValue.From(0L)); Check(vm.Run(new(0)) == VmStopReason.Returned && vm.LastReturnValue.TryGetInteger(out var zero) && zero == 0); }),
-    ("UnsupportedLegacyReturnExpressionFallsBack", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var link = ControlLinker.Link(Catalog("LEGACY_RETURN_LIST"), [RPO(0, [PrototypeOpcode.RETURN], ["1,2"])], runtimeEnvironment: env, runtimeStatements: true); var code = link.Program.Code[link.Program.Descriptors[0].CodeStart]; Check(link.Program.Descriptors[0].State == VmFunctionState.UnsupportedControl && code.Opcode == (ushort)VmOpcode.UnsupportedControl && new VmMachine(link.Program).Run(new(0)) == VmStopReason.UnsupportedControl); }),
+    ("Legacy RETURN list publishes values in order", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var p = Executable(ControlLinker.Link(Catalog("LEGACY_RETURN_LIST"), [RPO(0, [PrototypeOpcode.RETURN], ["1,2"])], runtimeEnvironment: env, runtimeStatements: true).Program); var effects = new RecordingEffects(); var vm = new VmMachine(p, new VmSemanticExecutor(p, new SemanticHost()), effects); Check(vm.Run(new(0)) == VmStopReason.Returned && effects.LegacyReturns.SequenceEqual([VmSemanticValue.From(1L), VmSemanticValue.From(2L)]) && vm.LastReturnValue.TryGetInteger(out var first) && first == 1); }),
     ("nested CALL wait preserves return frame", () => { var c = FunctionCatalog.FromDefinitions([D("A", "a", Span(1)), D("B", "b", Span(1))]); var p = Executable(ControlLinker.Link(c, [RPO(0, [PrototypeOpcode.CALL, PrototypeOpcode.PRINT, PrototypeOpcode.RETURN], ["B", "after", ""]), RPO(1, [PrototypeOpcode.PRINTW, PrototypeOpcode.RETURN], ["inside", ""]) ], runtimeStatements: true).Program); var effects = new RecordingEffects(); var vm = new VmMachine(p, runtimeEffects: effects); Check(vm.Run(new(0)) == VmStopReason.WaitingForInput && vm.Continue() == VmStopReason.Returned && effects.Events.SequenceEqual(["text:inside", "wait:False", "text:after"])); }),
     ("fixed CALL and JUMP have one typed callsite each", () => { var c = FunctionCatalog.FromDefinitions([D("A", "a", Span(1)), D("B", "b", Span(1)), D("C", "c", Span(1))]); var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var p = ControlLinker.Link(c, [RPO(0, [PrototypeOpcode.CALL, PrototypeOpcode.JUMP, PrototypeOpcode.RETURN], ["B(1)", "C,2", ""]), RP(1, [PrototypeOpcode.RETURN]), RP(2, [PrototypeOpcode.RETURN])], runtimeEnvironment: env).Program; Check(p.CallSites.Length == 2 && p.CallSites[0] is { FunctionId: 0, Pc: 0, Target.Value: 1, Kind: VmInvocationKind.Call, ArgumentOffset: 1, ArgumentLength: 3, ArgumentCount: 1 } && p.CallSites[1] is { FunctionId: 0, Pc: 1, Target.Value: 2, Kind: VmInvocationKind.Jump, ArgumentOffset: 1, ArgumentLength: 2, ArgumentCount: 1 } && p.CallArgumentArena.Records.Length == 2); }),
     ("SinglePayloadBaseZero", () => { var c = FunctionCatalog.FromDefinitions([D("A", "a", Span(1)), D("B", "b", Span(1))]); var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var p = ControlLinker.Link(c, [RPO(0, [PrototypeOpcode.CALL, PrototypeOpcode.RETURN], ["B(1)", ""]), RP(1, [PrototypeOpcode.RETURN])], runtimeEnvironment: env).Program; Check(p.CallArgumentRecords.SequenceEqual([0]) && p.CallArgumentArena.Records.Length == 1); }),
@@ -40,6 +47,10 @@ var tests = new List<(string Name, Action Run)>
     ("ProducedCallArgumentRecordsEqualLegacySummation", () => { var c = FunctionCatalog.FromDefinitions([D("A", "a", Span(1)), D("B", "b", Span(1)), D("C", "c", Span(1))]); var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var p = ControlLinker.Link(c, [RPO(0, [PrototypeOpcode.CALL, PrototypeOpcode.CALL, PrototypeOpcode.RETURN], ["B(1)", "C(2,3)", ""]), RP(1, [PrototypeOpcode.RETURN]), RP(2, [PrototypeOpcode.RETURN])], runtimeEnvironment: env).Program; Check(p.CallArgumentRecords.SequenceEqual([0, 1, 2]) && p.CallSites.Select(site => site.ArgumentRecordStart).SequenceEqual([0, 1])); }),
     ("CALL argument lexer excludes trailing Legacy comments", () => { var c = FunctionCatalog.FromDefinitions([D("A", "a", Span(1)), D("B", "b", Span(1))]); var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var p = ControlLinker.Link(c, [RPO(0, [PrototypeOpcode.CALL, PrototypeOpcode.RETURN], ["B(1,\"semi;inside\") ; outside", ""]), RP(1, [PrototypeOpcode.RETURN])], runtimeEnvironment: env).Program; Check(p.CallSites.Single().ArgumentCount == 2 && p.Descriptors[0].State == VmFunctionState.LinkedSemanticPending); }),
     ("CALL evaluates typed actuals before pushing callee", () => { var c = FunctionCatalog.FromDefinitions([D("A", "a", Span(1)), D("B", "b", Span(1))]); var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var p = Executable(ControlLinker.Link(c, [RPO(0, [PrototypeOpcode.CALL, PrototypeOpcode.RETURN], ["B(SIDE())", ""]), RP(1, [PrototypeOpcode.RETURN])], runtimeEnvironment: env).Program); var host = new SemanticHost(); host.Calls["SIDE"] = _ => VmSemanticValue.From(1); Check(new VmMachine(p, new VmSemanticExecutor(p, host)).Run(new(0)) == VmStopReason.Returned && host.CallCountFor("SIDE") == 1); }),
+    ("DynamicCall evaluates target then arguments once", () => { var c = FunctionCatalog.FromDefinitions([D("A", "a", Span(1)), D("B", "b", Span(1))]); var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var p = Executable(ControlLinker.Link(c, [RPO(0, [PrototypeOpcode.CALLFORM, PrototypeOpcode.RETURN], ["B,INC()", ""]), RP(1, [PrototypeOpcode.RETURN])], runtimeEnvironment: env, runtimeStatements: true).Program); var host = new SemanticHost(); host.Calls["INC"] = _ => VmSemanticValue.From(7L); var resolver = new DynamicResolver(("B", false), new(VmDynamicResolutionKind.Ready, new(1))); Check(new VmMachine(p, new VmSemanticExecutor(p, host), dynamicCallResolver: resolver).Run(new(0)) == VmStopReason.Returned && resolver.Calls == 1 && host.CallCountFor("INC") == 1); }),
+    ("TRYCCALLFORM Missing alone enters CATCH", () => { var c = FunctionCatalog.FromDefinitions([D("A", "a", Span(1))]); var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var p = Executable(ControlLinker.Link(c, [RPO(0, [PrototypeOpcode.TRYCCALLFORM, PrototypeOpcode.PRINT, PrototypeOpcode.CATCH, PrototypeOpcode.PRINT, PrototypeOpcode.ENDCATCH, PrototypeOpcode.RETURN], ["NOPE", "success", "", "missing", "", ""])], runtimeEnvironment: env, runtimeStatements: true).Program); var effects = new RecordingEffects(); var resolver = new DynamicResolver(("NOPE", false), new(VmDynamicResolutionKind.Missing, new(-1))); Check(new VmMachine(p, new VmSemanticExecutor(p, new SemanticHost()), effects, dynamicCallResolver: resolver).Run(new(0)) == VmStopReason.Returned && effects.Events.SequenceEqual(["text:missing"])); }),
+    ("TRYCCALLFORM success skips CATCH", () => { var c = FunctionCatalog.FromDefinitions([D("A", "a", Span(1)), D("B", "b", Span(1))]); var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var p = Executable(ControlLinker.Link(c, [RPO(0, [PrototypeOpcode.TRYCCALLFORM, PrototypeOpcode.PRINT, PrototypeOpcode.CATCH, PrototypeOpcode.PRINT, PrototypeOpcode.ENDCATCH, PrototypeOpcode.RETURN], ["B", "success", "", "missing", "", ""]), RP(1, [PrototypeOpcode.RETURN])], runtimeEnvironment: env, runtimeStatements: true).Program); var effects = new RecordingEffects(); var resolver = new DynamicResolver(("B", false), new(VmDynamicResolutionKind.Ready, new(1))); Check(new VmMachine(p, new VmSemanticExecutor(p, new SemanticHost()), effects, dynamicCallResolver: resolver).Run(new(0)) == VmStopReason.Returned && effects.Events.SequenceEqual(["text:success"])); }),
+    ("TRY dynamic Blocked is terminal before arguments", () => { var c = FunctionCatalog.FromDefinitions([D("A", "a", Span(1))]); var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var p = Executable(ControlLinker.Link(c, [RPO(0, [PrototypeOpcode.TRYCALLFORM], ["BLOCKED,INC()"])], runtimeEnvironment: env, runtimeStatements: true).Program); var host = new SemanticHost(); host.Calls["INC"] = _ => VmSemanticValue.From(1L); var resolver = new DynamicResolver(("BLOCKED", false), new(VmDynamicResolutionKind.Blocked, new(-1))); Check(new VmMachine(p, new VmSemanticExecutor(p, host), dynamicCallResolver: resolver).Run(new(0)) == VmStopReason.TerminalFault && host.CallCountFor("INC") == 0); }),
     ("CALL frame binds integer ARG and restores caller continuation", () => { var c = FunctionCatalog.FromDefinitions([D("A", "a", Span(1)), D("B", "b", Span(1))]); var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var metadata = new FunctionRuntimeMetadata([new("ARG", RuntimeMetadataValueType.Integer, 0, false, 0, null)], 0, 0, [], null); var b = new RuntimeFunctionPrototype(new(1), [P(PrototypeOpcode.PRINTFORM), P(PrototypeOpcode.RETURN)], ["%ARG:0%", ""], RuntimeMetadata: metadata); var p = Executable(ControlLinker.Link(c, [RPO(0, [PrototypeOpcode.CALL, PrototypeOpcode.PRINT, PrototypeOpcode.RETURN], ["B(123)", "after", ""]), b], runtimeEnvironment: env, runtimeStatements: true).Program); var effects = new RecordingEffects(); var host = new SemanticHost(); Check(new VmMachine(p, new VmSemanticExecutor(p, host), effects).Run(new(0)) == VmStopReason.Returned && effects.Events.SequenceEqual(["text:123", "text:after"])); }),
     ("CALL frame binds string ARGS and preserves caller ARGS", () => { var c = FunctionCatalog.FromDefinitions([D("C", "c", Span(1)), D("A", "a", Span(1)), D("B", "b", Span(1))]); var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var aMeta = new FunctionRuntimeMetadata([new("ARGS", RuntimeMetadataValueType.String, 0, false, 0, null)], 0, 0, [], null); var bMeta = new FunctionRuntimeMetadata([new("ARGS", RuntimeMetadataValueType.String, 0, false, 0, null)], 0, 0, [], null); var a = new RuntimeFunctionPrototype(new(1), [P(PrototypeOpcode.CALL), P(PrototypeOpcode.PRINTFORM), P(PrototypeOpcode.RETURN)], ["B(\"inner\")", "%ARGS:0%", ""], RuntimeMetadata: aMeta); var b = new RuntimeFunctionPrototype(new(2), [P(PrototypeOpcode.PRINTFORM), P(PrototypeOpcode.RETURN)], ["%ARGS:0%", ""], RuntimeMetadata: bMeta); var p = Executable(ControlLinker.Link(c, [RPO(0, [PrototypeOpcode.CALL, PrototypeOpcode.RETURN], ["A(\"outer\")", ""]), a, b], runtimeEnvironment: env, runtimeStatements: true).Program); var effects = new RecordingEffects(); Check(new VmMachine(p, new VmSemanticExecutor(p, new SemanticHost()), effects).Run(new(0)) == VmStopReason.Returned && effects.Events.SequenceEqual(["text:inner", "text:outer"])); }),
     ("omitted arguments use typed defaults and keep explicit minus one", () => { var c = FunctionCatalog.FromDefinitions([D("A", "a", Span(1)), D("B", "b", Span(1))]); var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var metadata = new FunctionRuntimeMetadata([new("ARG", RuntimeMetadataValueType.Integer, 0, true, 7, null), new("ARGS", RuntimeMetadataValueType.String, 0, true, 0, "fallback")], 0, 0, [], null); var b = new RuntimeFunctionPrototype(new(1), [P(PrototypeOpcode.PRINTFORM), P(PrototypeOpcode.RETURN)], ["%ARG:0%:%ARGS:0%", ""], RuntimeMetadata: metadata); var p = Executable(ControlLinker.Link(c, [RPO(0, [PrototypeOpcode.CALL, PrototypeOpcode.CALL, PrototypeOpcode.RETURN], ["B(-1,\"value\")", "B(,)", ""]), b], runtimeEnvironment: env, runtimeStatements: true).Program); var effects = new RecordingEffects(); Check(new VmMachine(p, new VmSemanticExecutor(p, new SemanticHost()), effects).Run(new(0)) == VmStopReason.Returned && effects.Events.SequenceEqual(["text:-1:value", "text:7:fallback"])); }),
@@ -55,7 +66,18 @@ var tests = new List<(string Name, Action Run)>
     ("JUMP_WAIT_RESUME", () => { var c = FunctionCatalog.FromDefinitions([D("C", "c", Span(1)), D("A", "a", Span(1)), D("B", "b", Span(1))]); var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var metadata = new FunctionRuntimeMetadata([new("ARG", RuntimeMetadataValueType.Integer, 0, false, 0, null), new("ARGS", RuntimeMetadataValueType.String, 0, false, 0, null)], 0, 0, [], null); var b = new RuntimeFunctionPrototype(new(2), [P(PrototypeOpcode.PRINTFORMW), P(PrototypeOpcode.PRINTFORM), P(PrototypeOpcode.RETURN)], ["%ARG:0%:%ARGS:0%", "%ARG:0%:%ARGS:0%", ""], RuntimeMetadata: metadata); var p = Executable(ControlLinker.Link(c, [RPO(0, [PrototypeOpcode.CALL, PrototypeOpcode.PRINT, PrototypeOpcode.RETURN], ["A(1,\"outer\")", "caller", ""]), new RuntimeFunctionPrototype(new(1), [P(PrototypeOpcode.JUMP), P(PrototypeOpcode.PRINT), P(PrototypeOpcode.RETURN)], ["B(3,\"jump\")", "unreachable", ""], RuntimeMetadata: metadata), b], runtimeEnvironment: env, runtimeStatements: true).Program); var effects = new RecordingEffects(); var vm = new VmMachine(p, new VmSemanticExecutor(p, new SemanticHost()), effects); Check(vm.Run(new(0)) == VmStopReason.WaitingForInput && vm.Continue() == VmStopReason.Returned && effects.Events.SequenceEqual(["text:3:jump", "wait:False", "text:3:jump", "text:caller"])); }),
     ("WAIT FORCEWAIT and QUIT yield explicit effects", () => { var p = Executable(ControlLinker.Link(Catalog("X"), [RPO(0, [PrototypeOpcode.FORCEWAIT, PrototypeOpcode.QUIT], ["", ""]) ], runtimeStatements: true).Program); var effects = new RecordingEffects(); var vm = new VmMachine(p, runtimeEffects: effects); Check(vm.Run(new(0)) == VmStopReason.WaitingForInput && vm.Continue() == VmStopReason.QuitRequested && effects.Events.SequenceEqual(["wait:True", "quit"])); }),
     ("SET assignment evaluates typed operands and writes", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var p = Executable(ControlLinker.Link(Catalog("X"), [RPO(0, [PrototypeOpcode.SET, PrototypeOpcode.SET, PrototypeOpcode.RETURN], ["X=2", "X+=3", ""])], runtimeEnvironment: env, runtimeStatements: true).Program); var host = new SemanticHost(); var executor = new VmSemanticExecutor(p, host); var stop = new VmMachine(p, executor).Run(new(0)); if (stop != VmStopReason.Returned || host.GetInt("X") != 5 || p.RuntimeStatements.Records.Length != 2 || p.RuntimeStatements.OperandArena.Records.Length != 5) throw new InvalidOperationException($"stop={stop};x={host.GetInt("X")};records={p.RuntimeStatements.Records.Length};operands={p.RuntimeStatements.OperandArena.Records.Length}"); }),
+    ("SET list writes consecutive final indices", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var p = Executable(ControlLinker.Link(Catalog("X"), [RPO(0, [PrototypeOpcode.SET, PrototypeOpcode.RETURN], ["A:4=10,20,30", ""])], runtimeEnvironment: env, runtimeStatements: true).Program); var host = new SemanticHost(); Check(new VmMachine(p, new VmSemanticExecutor(p, host)).Run(new(0)) == VmStopReason.Returned && host.GetInt("A", 4) == 10 && host.GetInt("A", 5) == 20 && host.GetInt("A", 6) == 30); }),
+    ("string SET list writes private array in order", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var meta = new FunctionRuntimeMetadata([], 0, 0, [new("S", RuntimeMetadataValueType.String, [2], false)], null); var p = Executable(ControlLinker.Link(Catalog("X"), [new RuntimeFunctionPrototype(new(0), [P(PrototypeOpcode.SET), P(PrototypeOpcode.PRINTFORM), P(PrototypeOpcode.RETURN)], ["S:0 '= \"a\",\"b\"", "%S:0%:%S:1%", ""], RuntimeMetadata: meta)], runtimeEnvironment: env, runtimeStatements: true).Program); var effects = new RecordingEffects(); Check(new VmMachine(p, new VmSemanticExecutor(p, new SemanticHost()), effects).Run(new(0)) == VmStopReason.Returned && effects.Events.SequenceEqual(["text:a:b"])); }),
+    ("SPLIT stores full count and truncates to frame capacity", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var meta = new FunctionRuntimeMetadata([], 0, 3, [], null); var p = Executable(ControlLinker.Link(Catalog("X"), [new RuntimeFunctionPrototype(new(0), [P(PrototypeOpcode.SPLIT), P(PrototypeOpcode.PRINTFORM), P(PrototypeOpcode.RETURN)], ["\"a,b,c,d\",\",\",LOCALS", "%LOCALS:0%:%LOCALS:1%:%LOCALS:2%:%RESULT%", ""], RuntimeMetadata: meta)], runtimeEnvironment: env, runtimeStatements: true).Program); var host = new SemanticHost(); var effects = new RecordingEffects(); Check(new VmMachine(p, new VmSemanticExecutor(p, host), effects).Run(new(0)) == VmStopReason.Returned && effects.Events.SequenceEqual(["text:a:b:c:4"])); }),
+    ("F6F body-local scalar initialization and array no-op", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var meta = new FunctionRuntimeMetadata([],0,0,[new("I",RuntimeMetadataValueType.Integer,[1],false),new("S",RuntimeMetadataValueType.String,[1],false),new("A",RuntimeMetadataValueType.Integer,[2],false)],null); var p = Executable(ControlLinker.Link(Catalog("X"),[new RuntimeFunctionPrototype(new(0),[P(PrototypeOpcode.VARI),P(PrototypeOpcode.VARS),P(PrototypeOpcode.VARI),P(PrototypeOpcode.PRINTFORM),P(PrototypeOpcode.RETURN)],["I=2+3","S=\"ok\"","A,2","%I%:%S%",""] ,RuntimeMetadata:meta)],runtimeEnvironment:env,runtimeStatements:true).Program); var effects=new RecordingEffects(); Check(new VmMachine(p,new VmSemanticExecutor(p,new SemanticHost()),effects).Run(new(0))==VmStopReason.Returned && effects.Events.SequenceEqual(["text:5:ok"])); }),
+    ("F6F body-local defaults reset on each activation", () => { var env=new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true,true,true,false)); var meta=new FunctionRuntimeMetadata([],0,0,[new("I",RuntimeMetadataValueType.Integer,[1],false),new("S",RuntimeMetadataValueType.String,[1],false)],null); var p=Executable(ControlLinker.Link(Catalog("X"),[new RuntimeFunctionPrototype(new(0),[P(PrototypeOpcode.VARI),P(PrototypeOpcode.VARS),P(PrototypeOpcode.PRINTFORM),P(PrototypeOpcode.SET),P(PrototypeOpcode.SET),P(PrototypeOpcode.RETURN)],["I","S","%I%:%S%","I=9","S=\"x\"",""] ,RuntimeMetadata:meta)],runtimeEnvironment:env,runtimeStatements:true).Program); var effects=new RecordingEffects(); var first=new VmMachine(p,new VmSemanticExecutor(p,new SemanticHost()),effects).Run(new(0)); var second=new VmMachine(p,new VmSemanticExecutor(p,new SemanticHost()),effects).Run(new(0)); Check(first==VmStopReason.Returned && second==VmStopReason.Returned && effects.Events.SequenceEqual(["text:0:","text:0:"])); }),
+    ("F6F standalone prefix postfix increment decrement", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true,true,true,false)); var p=Executable(ControlLinker.Link(Catalog("X"),[RPO(0,[PrototypeOpcode.SET,PrototypeOpcode.SET,PrototypeOpcode.SET,PrototypeOpcode.SET,PrototypeOpcode.SET,PrototypeOpcode.RETURN],["X=4","X++","++X","X--","--X",""])],runtimeEnvironment:env,runtimeStatements:true).Program); var host=new SemanticHost(); Check(new VmMachine(p,new VmSemanticExecutor(p,host)).Run(new(0))==VmStopReason.Returned && host.GetInt("X")==4); }),
+    ("F6F PRINTBUTTON preserves type newline rule and order", () => { var env=new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true,true,true,false)); var p=Executable(ControlLinker.Link(Catalog("X"),[RPO(0,[PrototypeOpcode.PRINTBUTTON,PrototypeOpcode.PRINTBUTTON,PrototypeOpcode.RETURN],["\"a\\nb\",7","\"s\",\"H\"",""])],runtimeEnvironment:env,runtimeStatements:true).Program); var effects=new RecordingEffects(); Check(new VmMachine(p,new VmSemanticExecutor(p,new SemanticHost()),effects).Run(new(0))==VmStopReason.Returned && effects.Events.SequenceEqual(["button:ab:Integer:7","button:s:String:H"])); }),
+    ("F6F THROW is terminal and preserves message source", () => { var env=new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true,true,true,false)); var proto=new RuntimeFunctionPrototype(new(0),ImmutableArray.Create(new PrototypeInstruction(PrototypeOpcode.PRINT,PrototypeInstructionFlags.HasOperand,8,0,1),new PrototypeInstruction(PrototypeOpcode.THROW,PrototypeInstructionFlags.HasOperand,9,0,4),new PrototypeInstruction(PrototypeOpcode.PRINT,PrototypeInstructionFlags.HasOperand,10,0,3)),ImmutableArray.Create("x","bad","end")); var p=Executable(ControlLinker.Link(Catalog("X"),[proto],runtimeEnvironment:env,runtimeStatements:true).Program); var effects=new RecordingEffects(); var vm=new VmMachine(p,new VmSemanticExecutor(p,new SemanticHost()),effects); Check(vm.Run(new(0))==VmStopReason.TerminalFault && vm.LastTerminalFaultMessage=="bad" && vm.LastTerminalFaultSourceLine==9 && effects.Events.SequenceEqual(["text:x"])); }),
+    ("F6F unreachable THROW returns normally", () => { var env=new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true,true,true,false)); var proto=new RuntimeFunctionPrototype(new(0),[P(PrototypeOpcode.IF),P(PrototypeOpcode.THROW),P(PrototypeOpcode.ENDIF),P(PrototypeOpcode.RETURN)],["0","bad","",""] ,SemanticIrCompiler.CompileExpression("0",env,0)); var p=Executable(ControlLinker.Link(Catalog("X"),[proto],runtimeEnvironment:env,runtimeStatements:true).Program); var vm=new VmMachine(p,new VmSemanticExecutor(p,new SemanticHost()),new RecordingEffects()); var stop=vm.Run(new(0)); if(stop!=VmStopReason.Returned||vm.LastTerminalFaultMessage.Length!=0)throw new InvalidOperationException($"stop={stop};message={vm.LastTerminalFaultMessage}"); }),
     ("SET string add uses generic semantic node and typed host", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var p = Executable(ControlLinker.Link(Catalog("X"), [RPO(0, [PrototypeOpcode.SET, PrototypeOpcode.RETURN], ["TEXT += \"suffix\"", ""])], runtimeEnvironment: env, runtimeStatements: true).Program); var record = p.RuntimeStatements.Records.Single(); var host = new TypedStringAssignmentHost(); Check(record.Kind == VmRuntimeStatementKind.Set && record.Assignment == VmAssignmentOperator.Add && p.RuntimeStatements.OperandArena.Nodes[p.RuntimeStatements.OperandArena.Records[record.OperandRecord].RootNodeIndex].Kind == SemanticNodeKind.Symbol && new VmMachine(p, new VmSemanticExecutor(p, host)).Run(new(0)) == VmStopReason.Returned && host.Value == "prefixsuffix" && host.ReadIndices.Length == 0 && host.WriteIndices.Length == 0); }),
+    ("formatted SET commas are not multi-assignment", new Action(() => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var p = ControlLinker.Link(Catalog("X"), [RPO(0, [PrototypeOpcode.SET, PrototypeOpcode.RETURN], ["L_NAME = ！ %S_NAME(C, 14, 2, \"EMPTY\"), 15, LEFT%", ""])], runtimeEnvironment: env, runtimeStatements: true).Program; Check(p.RuntimeStatements.Records.Single().Kind == VmRuntimeStatementKind.Set && (VmOpcode)p.Code[0].Opcode == VmOpcode.Statement); })),
+    ("formatted quoted string add remains an expression", new Action(() => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); const string value = "@\" LV%TOSTR(LV) + \\@ LOG10(LV) == 6? .{LV/100000}# \\@,3%M \""; try { SemanticIrCompiler.CompileExpression(value, env); } catch (SemanticParseException ex) { throw new InvalidOperationException(ex.Message, ex); } var p = ControlLinker.Link(Catalog("X"), [RPO(0, [PrototypeOpcode.SET, PrototypeOpcode.RETURN], ["L_RESULTS += " + value, ""])], runtimeEnvironment: env, runtimeStatements: true).Program; Check(p.RuntimeStatements.Records.Single().Kind == VmRuntimeStatementKind.Set && (VmOpcode)p.Code[0].Opcode == VmOpcode.Statement); })),
     ("plain string assignment semantic matrix", RunPlainStringAssignmentMatrix),
     ("indexed string host writes preserve typed addresses and values", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var p = Executable(ControlLinker.Link(Catalog("X"), [RPO(0, [PrototypeOpcode.SET, PrototypeOpcode.SET, PrototypeOpcode.SET, PrototypeOpcode.SET, PrototypeOpcode.SET, PrototypeOpcode.SET, PrototypeOpcode.SET, PrototypeOpcode.SET, PrototypeOpcode.RETURN], ["I=123", "S '= \"abc\"", "NI:5=123", "SI:IDX '= \"variable\"", "SI:5 '= \"a\"", "SI:5 '= \"b\"", "MI:1:2 '= \"日本語\"", "SI:3 '= \"\"", ""])], runtimeEnvironment: env, runtimeStatements: true).Program); var host = new TypedIndexedWriteHost(); var stop = new VmMachine(p, new VmSemanticExecutor(p, host)).Run(new(0)); if (stop != VmStopReason.Returned || host.Writes.Count != 8) throw new InvalidOperationException($"stop={stop};writes={host.Describe()}"); if (!(host.Writes[0].Indices.Length == 0 && host.Writes[0].Value.TryGetInteger(out var scalarInt) && scalarInt == 123 && host.Writes[1].Indices.Length == 0 && host.Writes[1].Value.TryGetString(out var scalarText) && scalarText == "abc" && host.Writes[2].Indices.SequenceEqual([VmSemanticValue.From(5)]) && host.Writes[2].Value.TryGetInteger(out var indexedInt) && indexedInt == 123 && host.Writes[3].Indices.SequenceEqual([VmSemanticValue.From(5)]) && host.Writes[4].Indices.SequenceEqual([VmSemanticValue.From(5)]) && host.Writes[5].Value.TryGetString(out var overwritten) && overwritten == "b" && host.Writes[6].Indices.SequenceEqual([VmSemanticValue.From(1), VmSemanticValue.From(2)]) && host.Writes[6].Value.ToString() == "日本語" && host.Writes[7].Indices.SequenceEqual([VmSemanticValue.From(3)]) && host.Writes[7].Value.TryGetString(out var empty) && empty.Length == 0)) throw new InvalidOperationException($"writes={host.Describe()}"); }),
     ("indexed string host writes reject unsupported writes instead of completing", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var p = Executable(ControlLinker.Link(Catalog("X"), [RPO(0, [PrototypeOpcode.SET, PrototypeOpcode.RETURN], ["S:5 '= \"x\"", ""])], runtimeEnvironment: env, runtimeStatements: true).Program); Check(new VmMachine(p, new VmSemanticExecutor(p, new TypedIndexedWriteHost(true))).Run(new(0)) == VmStopReason.SemanticNotAvailable); }),
@@ -63,9 +85,12 @@ var tests = new List<(string Name, Action Run)>
     ("fixture SET_EXTRA_TITLE_VAR lowers all indexed string writes", RunFixtureSetExtraTitleVar),
     ("SET format fallback preserves Legacy empty and text assignments", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var p = Executable(ControlLinker.Link(Catalog("X"), [RPO(0, [PrototypeOpcode.SET, PrototypeOpcode.SET, PrototypeOpcode.PRINTFORM, PrototypeOpcode.RETURN], ["CSTR:0 = 文字列", "CSTR:1 =", "%CSTR:0%:%CSTR:1%", ""])], runtimeEnvironment: env, runtimeStatements: true).Program); var effects = new RecordingEffects(); Check(new VmMachine(p, new VmSemanticExecutor(p, new SemanticHost()), effects).Run(new(0)) == VmStopReason.Returned && effects.Events.SequenceEqual(["text:文字列:"])); }),
     ("host statement dispatch requires host acknowledgement", () => { var p = Executable(ControlLinker.Link(Catalog("X"), [RPO(0, [PrototypeOpcode.DRAWLINE, PrototypeOpcode.RETURN], ["-", ""])], runtimeStatements: true).Program); var unavailable = new RecordingEffects(); var host = new HostRecordingEffects(); Check(new VmMachine(p, runtimeEffects: unavailable).Run(new(0)) == VmStopReason.SemanticNotAvailable && new VmMachine(p, runtimeEffects: host).Run(new(0)) == VmStopReason.Returned && host.HostEvents.SequenceEqual(["DRAWLINE:-"])); }),
+    ("typed HTML host receives linked operands in order", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var p = Executable(ControlLinker.Link(Catalog("X"), [RPO(0, [PrototypeOpcode.HTML_PRINT, PrototypeOpcode.RETURN], ["\"html\",-1", ""])], runtimeEnvironment: env, runtimeStatements: true).Program); var effects = new TypedRecordingEffects(); Check(new VmMachine(p, new VmSemanticExecutor(p, new SemanticHost()), effects).Run(new(0)) == VmStopReason.Returned && effects.TypedEvents.SequenceEqual(["HTML_PRINT:html|-1"])); }),
+    ("typed ONEINPUTS suspends without primitive input", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var p = Executable(ControlLinker.Link(Catalog("X"), [RPO(0, [PrototypeOpcode.ONEINPUTS, PrototypeOpcode.RETURN], ["", ""])], runtimeEnvironment: env, runtimeStatements: true).Program); var effects = new TypedRecordingEffects(waitOnInput: true); var vm = new VmMachine(p, new VmSemanticExecutor(p, new SemanticHost()), effects); Check(vm.Run(new(0)) == VmStopReason.WaitingForInput && vm.FrameDepth == 1 && effects.TypedEvents.SequenceEqual(["ONEINPUTS:"])); }),
     ("SET division by zero is a semantic fault", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var p = Executable(ControlLinker.Link(Catalog("X"), [RPO(0, [PrototypeOpcode.SET], ["X=1/0"])], runtimeEnvironment: env, runtimeStatements: true).Program); Check(new VmMachine(p, new VmSemanticExecutor(p, new SemanticHost())).Run(new(0)) == VmStopReason.SemanticEvaluationFault); }),
     ("TIMES keeps typed multiplier and legacy numeric modes", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var p = Executable(ControlLinker.Link(Catalog("X"), [RPO(0, [PrototypeOpcode.TIMES, PrototypeOpcode.RETURN], ["X, 1.5", ""])], runtimeEnvironment: env, runtimeStatements: true).Program); var precise = new SemanticHost(); precise.Set("X", null, [], VmSemanticValue.From(4L)); var loose = new SemanticHost { TimesNotRigorousCalculation = true }; loose.Set("X", null, [], VmSemanticValue.From(-3L)); Check(new VmMachine(p, new VmSemanticExecutor(p, precise)).Run(new(0)) == VmStopReason.Returned && precise.GetInt("X") == 6 && new VmMachine(p, new VmSemanticExecutor(p, loose)).Run(new(0)) == VmStopReason.Returned && loose.GetInt("X") == -4 && p.RuntimeStatements.Records.Single().NumericValue == 1.5); }),
-    ("compile-time function metadata parses parameters locals and private declarations", () => { Check(FunctionRuntimeMetadataParser.TryParse(MetadataSource("@F(ARG,2,ARGS,\"x\")\n#LOCALSIZE 3\n#LOCALSSIZE 4\n#DIM DYNAMIC I,2,3\n#DIMS STATIC S,5\n#FUNCTION\nRETURN"), new CompilerCompatibilityOptions(true, true, true, false), out var metadata, out _) && metadata.Parameters.Length == 2 && metadata.Parameters[0] is { Type: RuntimeMetadataValueType.Integer, Slot: 0, HasDefault: true, DefaultInteger: 2 } && metadata.Parameters[1] is { Type: RuntimeMetadataValueType.String, Slot: 1, HasDefault: true, DefaultString: "x" } && metadata.LocalSize == 3 && metadata.LocalsSize == 4 && metadata.PrivateVariables.Length == 2 && !metadata.PrivateVariables[0].IsStatic && metadata.PrivateVariables[1].IsStatic && metadata.ReturnType == RuntimeMetadataValueType.Integer); }),
+    ("F6G7R2 SETBIT evaluates every bit and mutates one lvalue", () => { var env = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false)); var p = Executable(ControlLinker.Link(Catalog("X"), [RPO(0, [PrototypeOpcode.SETBIT, PrototypeOpcode.RETURN], ["A,1,3", ""])], runtimeEnvironment: env, runtimeStatements: true).Program); var host = new SemanticHost(); host.Set("A", null, [], VmSemanticValue.From(0L)); Check(new VmMachine(p, new VmSemanticExecutor(p, host)).Run(new(0)) == VmStopReason.Returned && host.GetInt("A") == 10 && p.RuntimeStatements.Records.Single().Kind == VmRuntimeStatementKind.SetBit); }),
+    ("compile-time function metadata parses parameters locals and private declarations", () => { Check(FunctionRuntimeMetadataParser.TryParse(MetadataSource("@F(ARG,2,ARGS,\"x\")\n#LOCALSIZE 3\n#LOCALSSIZE 4\n#DIM DYNAMIC I,2,3\n#DIMS STATIC S,5\n#FUNCTION\nRETURN"), new CompilerCompatibilityOptions(true, true, true, false), out var metadata, out _) && metadata.Parameters.Length == 2 && metadata.Parameters[0] is { Type: RuntimeMetadataValueType.Integer, Slot: 0, HasDefault: true, DefaultInteger: 2 } && metadata.Parameters[1] is { Type: RuntimeMetadataValueType.String, Slot: 0, HasDefault: true, DefaultString: "x" } && metadata.LocalSize == 3 && metadata.LocalsSize == 4 && metadata.PrivateVariables.Length == 2 && !metadata.PrivateVariables[0].IsStatic && metadata.PrivateVariables[1].IsStatic && metadata.ReturnType == RuntimeMetadataValueType.Integer); }),
     ("runtime metadata propagates to linked function without raw source", () => { var metadata = new FunctionRuntimeMetadata([new("ARG", RuntimeMetadataValueType.Integer, 0, false, 0, null)], 2, 0, [], null); var p = ControlLinker.Link(Catalog("X"), [new RuntimeFunctionPrototype(new(0), [P(PrototypeOpcode.RETURN)], [""], RuntimeMetadata: metadata)]).Program; Check(p.RuntimeMetadata.Length == 1 && p.RuntimeMetadata[0] == metadata && p.RuntimeMetadata[0].Parameters.Single().Name == "ARG"); }),
     ("effective-name catalog", () => { var c = FunctionCatalog.FromDefinitions([D("RAW", "a", Span(1), effectiveName: "EFFECTIVE")]); Check(c.GetPhysicalName(0) == "RAW" && c.GetEffectiveName(0) == "EFFECTIVE" && c.FindByName("EFFECTIVE").SequenceEqual([0])); }),
     ("unknown effective name excluded", () => { var c = FunctionCatalog.FromDefinitions([new("RAW", "a", Span(1))]); Check(!c[0].EffectiveNameKnown && c.GetEffectiveName(0) is null && c.FindByName("RAW").Count == 0); }),
@@ -305,6 +330,24 @@ var tests = new List<(string Name, Action Run)>
     ("machine lookup preserves duplicate-key failures", RunMachineLookupDuplicateKeyTest),
     ("machine lookup rejects another generation", RunMachineLookupGenerationMismatchTest),
     ("machines share lookup and isolate mutable state", RunMachineLookupIsolationTest),
+    ("R0F6G7 A1 cross-chunk A-B-A uses one VM", RunR0F6G7A1),
+    ("R0F6G7 A2 nested method contexts and deep storage", RunR0F6G7A2),
+    ("R0F6G7 A3 admission precedes actual evaluation", RunR0F6G7A3),
+    ("R0F6G7 A4 owner persistent and activation scopes", RunR0F6G7A4),
+    ("R0F6G7 A5 physical loop cells are owner keyed", RunR0F6G7A5),
+    ("R0F6G7 A6 lease and frame pin lifecycle", RunR0F6G7A6),
+    ("R0F6G7 A7 terminal cleanup forbids retry", RunR0F6G7A7),
+    ("R0F6G7 A8 one-shot input continuation", RunR0F6G7A8),
+    ("R0F6G7 A9 eviction keeps state and rejects ABA", RunR0F6G7A9),
+    ("R0F6G7 A10 true sparse function linker", RunR0F6G7A10),
+    ("R0F6G7R1 A2 nested expression consumer", RunR0F6G7R1A2),
+    ("R0F6G7R1 A3 pre-actual consumer matrix", RunR0F6G7R1A3),
+    ("R0F6G7R1 A4 owner storage consumers", RunR0F6G7R1A4),
+    ("R0F6G7R1 A5 physical loop consumers", RunR0F6G7R1A5),
+    ("R0F6G7R1 A6 pin lifecycle consumers", RunR0F6G7R1A6),
+    ("R0F6G7R1 A7 fault cleanup consumers", RunR0F6G7R1A7),
+    ("R0F6G7R1 A8 input host state machine", RunR0F6G7R1A8),
+    ("R0F6G7R1 A9 weak-root eviction consumers", RunR0F6G7R1A9),
 };
 var passed = 0;
 var readinessDrivenNormalDispatchTestsPassed = true;
@@ -314,7 +357,7 @@ var bridgeRegressionNames = new[] { "NestedNextReturnVisibleToLegacyParent", "Ne
 var bridgeRegressionPassed = bridgeRegressionNames.ToDictionary(name => name, _ => true);
 var csvIndexRegressionNames = new[] { "CsvIndexKnownLabelTest", "CsvIndexSameLabelDifferentOwnerTest", "CsvIndexSameLabelSameIndexTest", "CsvIndexSameOwnerDifferentLabelsTest", "NestedPayloadCsvIndexTest", "LegacyTypedHostWithoutContextTest", "CsvIndexUnknownLabelTest", "OrdinarySymbolRegressionTest", "ExplicitNumericIndexRegressionTest", "ImplicitZeroRegressionTest" };
 var csvIndexRegressionPassed = csvIndexRegressionNames.ToDictionary(name => name, _ => true);
-foreach (var test in tests) try { test.Run(); passed++; Console.WriteLine($"PASS {test.Name}"); } catch (Exception ex) { if (test.Name.StartsWith("readiness-driven dispatch", StringComparison.Ordinal)) readinessDrivenNormalDispatchTestsPassed = false; if (test.Name.StartsWith("entry-dispatch", StringComparison.Ordinal)) entryDispatchTestsPassed = false; if (test.Name.StartsWith("r1.4 set-equip-var", StringComparison.Ordinal)) setEquipVarRegressionPassed = false; if (bridgeRegressionPassed.ContainsKey(test.Name)) bridgeRegressionPassed[test.Name] = false; if (csvIndexRegressionPassed.ContainsKey(test.Name)) csvIndexRegressionPassed[test.Name] = false; Console.WriteLine($"FAIL {test.Name}: {ex.Message}"); }
+foreach (var test in tests) try { test.Run(); passed++; Console.WriteLine($"PASS {test.Name}"); } catch (Exception ex) { if (test.Name.StartsWith("readiness-driven dispatch", StringComparison.Ordinal)) readinessDrivenNormalDispatchTestsPassed = false; if (test.Name.StartsWith("entry-dispatch", StringComparison.Ordinal)) entryDispatchTestsPassed = false; if (test.Name.StartsWith("r1.4 set-equip-var", StringComparison.Ordinal)) setEquipVarRegressionPassed = false; if (bridgeRegressionPassed.ContainsKey(test.Name)) bridgeRegressionPassed[test.Name] = false; if (csvIndexRegressionPassed.ContainsKey(test.Name)) csvIndexRegressionPassed[test.Name] = false; Console.WriteLine($"FAIL {test.Name}: {ex.Message}"); if (test.Name.StartsWith("R0F6G7R1", StringComparison.Ordinal)) Console.WriteLine(ex); }
 Console.WriteLine($"VmSelfTest: executed={tests.Count} passed={passed} failed={tests.Count - passed}");
 Console.WriteLine($"ReadinessDrivenNormalDispatchTests={(readinessDrivenNormalDispatchTestsPassed ? "PASS" : "FAIL")}");
 Console.WriteLine($"EntryDispatchOncePerInvocationTests={(entryDispatchTestsPassed ? "PASS" : "FAIL")}");
@@ -322,6 +365,934 @@ Console.WriteLine($"R1_4_SetEquipVarRedispatchRegression={(setEquipVarRegression
 foreach (var name in bridgeRegressionNames) Console.WriteLine($"{name}={(bridgeRegressionPassed[name] && passed == tests.Count ? "PASS" : "FAIL")}");
 foreach (var name in csvIndexRegressionNames) Console.WriteLine($"{name}={(csvIndexRegressionPassed[name] && passed == tests.Count ? "PASS" : "FAIL")}");
 return passed == tests.Count && readinessDrivenNormalDispatchTestsPassed && entryDispatchTestsPassed && setEquipVarRegressionPassed && bridgeRegressionPassed.Values.All(value => value) && csvIndexRegressionPassed.Values.All(value => value) ? 0 : 1;
+
+static VmFunctionExecutionContext R0F6G7Context(int id, int slot, long generation, VmInstruction[] code,
+    FunctionRuntimeMetadata? metadata = null, VmRuntimeStatementArena? statements = null, SemanticPayload? semantic = null)
+{
+    metadata ??= FunctionRuntimeMetadata.Empty;
+    var program = new LinkedProgram(code, [new(id, 0, code.Length, VmFunctionState.ExecutableReady)], [], semanticArena: semantic,
+        runtimeStatements: statements, runtimeMetadata: [metadata], sparseRuntimeIds: true);
+    return new(new(id), slot, generation, program, metadata);
+}
+
+static void RunR0F6G7A1()
+{
+    var owner = new VmContextStorage(1, 1, 100);
+    owner.Register(new(10), FunctionKind.Normal, () => R0F6G7Context(10, 0, 1, [VmInstruction.Call(new(20)), VmInstruction.Return]));
+    owner.Register(new(20), FunctionKind.Normal, () => R0F6G7Context(20, 1, 1, [VmInstruction.Return]));
+    var vm = new VmMachine(owner);
+    var stop = vm.Run(new(10));
+    Check(stop == VmStopReason.Returned && vm.FrameDepth == 0 && vm.MaxFrameDepth == 2 && owner.MaterializationCount == 2 &&
+        owner.PinAcquireCount == 2 && owner.PinReleaseCount == 2 && owner.ResidentCount == 2);
+}
+
+static void RunR0F6G7A2()
+{
+    var metadata = new FunctionRuntimeMetadata([new("ARG", RuntimeMetadataValueType.Integer, 0, false, 0, null)], 1, 0, [], RuntimeMetadataValueType.Integer);
+    var environment = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false));
+    var bContext = R0F6G7Context(40, 1, 2, [VmInstruction.Return], metadata, semantic: SemanticIrCompiler.CompileExpression("41", environment));
+    var cContext = R0F6G7Context(50, 2, 3, [VmInstruction.Return], metadata, semantic: SemanticIrCompiler.CompileExpression("52", environment));
+    var owner = new VmContextStorage(2, 1, 1000);
+    owner.Register(new(30), FunctionKind.Normal, () => R0F6G7Context(30, 0, 1, [VmInstruction.Return], metadata));
+    owner.Register(new(40), FunctionKind.Method, () => bContext);
+    owner.Register(new(50), FunctionKind.Method, () => cContext);
+    var root = owner.PrepareInvocation(new(30), VmReturnKind.Normal, FunctionKind.Normal);
+    Check(owner.CommitFrame(ref root, [VmSemanticValue.From(3L)], out var a));
+    var bLease = owner.PrepareInvocation(new(40), VmReturnKind.Expression, FunctionKind.Method);
+    Check(owner.CommitFrame(ref bLease, [VmSemanticValue.From(4L)], out var b));
+    var cLease = owner.PrepareInvocation(new(50), VmReturnKind.Expression, FunctionKind.Method);
+    Check(owner.CommitFrame(ref cLease, [VmSemanticValue.From(5L)], out var c));
+    Check(a != b && b != c && owner.TryReadFrameValue(a, "ARG", 0, out var av) && av.TryGetInteger(out var ai) && ai == 3 &&
+        owner.TryReadFrameValue(b, "ARG", 0, out var bv) && bv.TryGetInteger(out var bi) && bi == 4 &&
+        owner.TryReadFrameValue(c, "ARG", 0, out var cv) && cv.TryGetInteger(out var ci) && ci == 5);
+    var evaluator = new VmSemanticExecutor(bContext.Program, new SemanticHost());
+    Check(evaluator.TryEvaluateRuntimeRecord(new(bContext, b, owner.Stamp), bContext.Program.SemanticArena, 0, out var bRecord) && bRecord.TryGetInteger(out var br) && br == 41 &&
+        evaluator.TryEvaluateRuntimeRecord(new(cContext, c, owner.Stamp), cContext.Program.SemanticArena, 0, out var cRecord) && cRecord.TryGetInteger(out var cr) && cr == 52 &&
+        evaluator.ActiveEvaluationContext is null);
+    Check(owner.TryReturn(out _) && owner.CurrentFrame.FunctionId == 40 && owner.TryReturn(out _) && owner.CurrentFrame.FunctionId == 30);
+    for (var i = 0; i < 40; i++)
+    {
+        var lease = owner.PrepareInvocation(new(40), VmReturnKind.Expression, FunctionKind.Method);
+        Check(owner.CommitFrame(ref lease, [VmSemanticValue.From((long)i)], out _));
+    }
+    Check(owner.MaxFrameDepth >= 41);
+    for (var i = 0; i < 40; i++) Check(owner.TryReturn(out _));
+    var bad = owner.PrepareInvocation(new(40), VmReturnKind.Expression, FunctionKind.Method);
+    Check(!owner.CommitFrame(ref bad, [VmSemanticValue.From("wrong")], out _) && owner.FrameDepth == 1);
+    Check(owner.TryReturn(out _) && owner.PinAcquireCount == owner.PinReleaseCount);
+}
+
+static void RunR0F6G7A3()
+{
+    var evaluations = 0;
+    var materializations = 0;
+    var owner = new VmContextStorage(3, 1, 100);
+    owner.Register(new(61), FunctionKind.Normal, () => { materializations++; return null; });
+    owner.Register(new(62), FunctionKind.Method, () => { materializations++; return R0F6G7Context(62, 0, 1, [VmInstruction.Return]); });
+    Check(owner.PrepareInvocation(new(60), VmReturnKind.Normal, FunctionKind.Normal).Status == VmAdmissionStatus.Missing && evaluations == 0);
+    Check(owner.PrepareInvocation(new(61), VmReturnKind.Normal, FunctionKind.Normal).Status == VmAdmissionStatus.Blocked && evaluations == 0);
+    Check(owner.PrepareInvocation(new(62), VmReturnKind.Normal, FunctionKind.Normal).Status == VmAdmissionStatus.WrongKind && evaluations == 0);
+    var ready = owner.PrepareInvocation(new(62), VmReturnKind.Expression, FunctionKind.Method);
+    Check(ready.Ready && ++evaluations == 1 && owner.CommitFrame(ref ready, [], out _) && materializations == 2);
+    Check(owner.TryReturn(out _));
+}
+
+static void RunR0F6G7A4()
+{
+    var metadata = new FunctionRuntimeMetadata([new("ARG", RuntimeMetadataValueType.Integer, 0, false, 0, null)], 2, 1,
+        [new("DYNAMIC", RuntimeMetadataValueType.Integer, [1], false), new("STATIC", RuntimeMetadataValueType.Integer, [1], true)], null);
+    var owner = new VmContextStorage(4, 1, 100);
+    owner.Register(new(70), FunctionKind.Normal, () => R0F6G7Context(70, 0, 1, [VmInstruction.Return], metadata));
+    var first = owner.PrepareInvocation(new(70), VmReturnKind.Normal, FunctionKind.Normal);
+    Check(owner.CommitFrame(ref first, [VmSemanticValue.From(11L)], out var outer));
+    Check(owner.TryWriteFrameValue(outer, "LOCAL", 0, VmSemanticValue.From(7L)) && owner.TryWriteFrameValue(outer, "DYNAMIC", 0, VmSemanticValue.From(8L)) && owner.TryWriteFrameValue(outer, "STATIC", 0, VmSemanticValue.From(9L)));
+    var recursive = owner.PrepareInvocation(new(70), VmReturnKind.Normal, FunctionKind.Normal);
+    Check(owner.CommitFrame(ref recursive, [VmSemanticValue.From(22L)], out var inner));
+    Check(owner.TryReadFrameValue(outer, "ARG", 0, out var sharedArg) && sharedArg.TryGetInteger(out var arg) && arg == 22 &&
+        owner.TryReadFrameValue(inner, "LOCAL", 0, out var sharedLocal) && sharedLocal.TryGetInteger(out var local) && local == 7 &&
+        owner.TryReadFrameValue(inner, "DYNAMIC", 0, out var innerDynamic) && innerDynamic.TryGetInteger(out var dynamicValue) && dynamicValue == 0 &&
+        owner.TryReadFrameValue(inner, "STATIC", 0, out var staticValue) && staticValue.TryGetInteger(out var staticInteger) && staticInteger == 9);
+    Check(owner.TryWriteFrameValue(inner, "DYNAMIC", 0, VmSemanticValue.From(10L)) && owner.TryReadFrameValue(outer, "DYNAMIC", 0, out var outerDynamic) && outerDynamic.TryGetInteger(out var outerValue) && outerValue == 8);
+    Check(owner.TryReturn(out _) && owner.TryReturn(out _));
+}
+
+static void RunR0F6G7A5()
+{
+    var owner = new VmContextStorage(5, 1, 100);
+    owner.CaptureLoop(9001, 10, 1, 3);
+    owner.CaptureLoop(9002, -10, -2, 5);
+    Check(owner.TryReadLoop(9001, out var e1, out var s1, out var r1) && (e1, s1, r1) == (10, 1, 3));
+    owner.CaptureLoop(9001, 20, 4, 6);
+    Check(owner.TryReadLoop(9001, out e1, out s1, out r1) && (e1, s1, r1) == (20, 4, 6) &&
+        owner.TryReadLoop(9002, out var e2, out var s2, out var r2) && (e2, s2, r2) == (-10, -2, 5));
+}
+
+static void RunR0F6G7A6()
+{
+    var owner = new VmContextStorage(6, 1, 100);
+    owner.Register(new(80), FunctionKind.Normal, () => R0F6G7Context(80, 0, 1, [VmInstruction.Return]));
+    var lease = owner.PrepareInvocation(new(80), VmReturnKind.Normal, FunctionKind.Normal);
+    Check(owner.TryGetPinCount(new(80), out var preparedPins) && preparedPins == 1 && owner.CommitFrame(ref lease, [], out _));
+    Check(owner.TryGetPinCount(new(80), out var activePins) && activePins == 1 && owner.TryReturn(out _) && owner.TryGetPinCount(new(80), out var returnedPins) && returnedPins == 0);
+    var cancelled = owner.PrepareInvocation(new(80), VmReturnKind.Normal, FunctionKind.Normal);
+    owner.Cancel(ref cancelled);
+    Check(owner.TryGetPinCount(new(80), out var cancelledPins) && cancelledPins == 0 && owner.PinAcquireCount == owner.PinReleaseCount);
+}
+
+static void RunR0F6G7A7()
+{
+    var owner = new VmContextStorage(7, 1, 100);
+    owner.Register(new(90), FunctionKind.Normal, () => R0F6G7Context(90, 0, 1, [new((ushort)VmOpcode.SemanticBarrier)]));
+    var vm = new VmMachine(owner);
+    Check(vm.Run(new(90)) == VmStopReason.SemanticNotAvailable && owner.IsTerminal && owner.FrameDepth == 0 && owner.PinAcquireCount == owner.PinReleaseCount &&
+        vm.Run(new(90)) == VmStopReason.TerminalFault && owner.LegacyRetryAfterCommit == 0);
+}
+
+static void RunR0F6G7A8()
+{
+    var statements = new VmRuntimeStatementArena([new(VmRuntimeStatementKind.Wait, 0, 0)], []);
+    var owner = new VmContextStorage(8, 1, 100);
+    owner.Register(new(100), FunctionKind.Normal, () => R0F6G7Context(100, 0, 1, [new((ushort)VmOpcode.Statement, aux: 0), VmInstruction.Return], statements: statements));
+    var effects = new RecordingEffects();
+    var vm = new VmMachine(owner, effects);
+    Check(vm.Start(new(100)) == VmStopReason.Returned && vm.Continue() == VmStopReason.WaitingForInput);
+    var token = owner.ReserveInput(VmInputValueKind.String);
+    Check(owner.CommitInput(token));
+    var writes = 0;
+    var callbacks = 0;
+    var invalid = token with { RequestSerial = token.RequestSerial + 1 };
+    Check(!owner.TryResume(invalid, VmSemanticValue.From("x"), _ => writes++) && !owner.TryResume(token, VmSemanticValue.From(1L), _ => writes++));
+    Check(owner.TryResume(token, VmSemanticValue.From("ok"), _ => { writes++; owner.QueueSynchronousCallback(() => callbacks++); }) && writes == 1 && callbacks == 1);
+    Check(!owner.TryResume(token, VmSemanticValue.From("again"), _ => writes++) && writes == 1 && vm.Continue() == VmStopReason.Returned);
+}
+
+static void RunR0F6G7A9()
+{
+    var generation = 0L;
+    WeakReference<VmFunctionExecutionContext>? weak = null;
+    var metadata = new FunctionRuntimeMetadata([], 1, 0, [], null);
+    var owner = new VmContextStorage(9, 1, 100);
+    owner.Register(new(110), FunctionKind.Normal, () =>
+    {
+        var context = R0F6G7Context(110, 0, ++generation, [VmInstruction.Return], metadata);
+        weak = new(context);
+        return context;
+    });
+    var first = owner.PrepareInvocation(new(110), VmReturnKind.Normal, FunctionKind.Normal);
+    Check(owner.CommitFrame(ref first, [], out var address) && owner.TryWriteFrameValue(address, "LOCAL", 0, VmSemanticValue.From(77L)));
+    var oldToken = owner.ReserveInput(VmInputValueKind.Integer);
+    Check(owner.CommitInput(oldToken) && owner.TryReturn(out _) && owner.TryEvict(new(110)));
+    GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+    Check(weak is not null && !weak.TryGetTarget(out _));
+    var second = owner.PrepareInvocation(new(110), VmReturnKind.Normal, FunctionKind.Normal);
+    Check(owner.CommitFrame(ref second, [], out var secondAddress) && generation == 2 && owner.TryReadFrameValue(secondAddress, "LOCAL", 0, out var local) && local.TryGetInteger(out var localValue) && localValue == 77);
+    var writes = 0;
+    Check(!owner.TryResume(oldToken, VmSemanticValue.From(1L), _ => writes++) && writes == 0 && owner.TryReturn(out _));
+}
+
+static void RunR0F6G7A10()
+{
+    const int count = 134_652;
+    var definitions = Enumerable.Range(0, count).Select(index => D($"F{index}", "synthetic.erb", Span(index + 1))).ToArray();
+    var catalog = FunctionCatalog.FromDefinitions(definitions);
+    var target = new RuntimeFunctionId(count - 1);
+    catalog.MarkCodeAvailable([target]);
+    var prototype = new RuntimeFunctionPrototype(target, [P(PrototypeOpcode.RETURN)], [""], RuntimeMetadata: FunctionRuntimeMetadata.Empty);
+    var linked = ControlLinker.LinkFunction(catalog, prototype, 7, 1, _ => new VmFunctionSignature(FunctionRuntimeMetadata.Empty, true));
+    Check(linked.Context.FunctionId == target && linked.DescriptorArrayLength == 1 && linked.MetadataArrayLength == 1 && linked.Context.Program.Code.Length == 1);
+    var owner = new VmContextStorage(10, 1, 100);
+    owner.Register(target, FunctionKind.Normal, () => linked.Context);
+    var first = owner.PrepareInvocation(target, VmReturnKind.Normal, FunctionKind.Normal); owner.Cancel(ref first);
+    var second = owner.PrepareInvocation(target, VmReturnKind.Normal, FunctionKind.Normal); owner.Cancel(ref second);
+    Check(owner.MaterializationCount == 1 && owner.PinAcquireCount == 2 && owner.PinReleaseCount == 2);
+}
+
+static void RunR0F6G7R1A2()
+{
+    var environment = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false));
+    var methodMetadata = new FunctionRuntimeMetadata(
+        [new("ARG", RuntimeMetadataValueType.Integer, 0, false, 0, null)],
+        0, 0, [], RuntimeMetadataValueType.Integer);
+    var prototypes = new[]
+    {
+        R0F6G7R1Prototype(0, [PrototypeOpcode.PRINTFORM, PrototypeOpcode.RETURN], ["%B(20)%", ""]),
+        R0F6G7R1Prototype(1, [PrototypeOpcode.SIF, PrototypeOpcode.RETURNF, PrototypeOpcode.RETURNF],
+            ["ARG:0", "C(ARG:0-1)", "1"], methodMetadata,
+            SemanticIrCompiler.CompileExpression("ARG:0", environment, 0)),
+        R0F6G7R1Prototype(2, [PrototypeOpcode.RETURNF], ["B(ARG:0)"], methodMetadata),
+    };
+    var definitions = new[]
+    {
+        D("A", "a.erb", Span(1)),
+        D("B", "b.erb", Span(1), FunctionKind.Method),
+        D("C", "c.erb", Span(1), FunctionKind.Method),
+    };
+    var contexts = R0F6G7R1Contexts(definitions, prototypes, environment);
+    var owner = new VmContextStorage(20, 1, 1000);
+    owner.Register(new(0), FunctionKind.Normal, () => contexts[0]);
+    owner.Register(new(1), FunctionKind.Method, () => contexts[1]);
+    owner.Register(new(2), FunctionKind.Method, () => contexts[2]);
+    var effects = new RecordingEffects();
+    var vm = new VmMachine(owner, new SemanticHost(), effects);
+    var stop = vm.Run(new(0));
+    if (stop != VmStopReason.Returned || !effects.Events.SequenceEqual(["text:1"]) ||
+        owner.MaxFrameDepth != 42 || owner.RemainingFuel >= 1000 ||
+        owner.PinAcquireCount != owner.PinReleaseCount || owner.FrameDepth != 0)
+        throw new InvalidOperationException($"stop={stop};events={string.Join('|', effects.Events)};depth={owner.MaxFrameDepth};fuel={owner.RemainingFuel};pins={owner.PinAcquireCount}/{owner.PinReleaseCount};frames={owner.FrameDepth};fault={owner.FaultMessage};semantic={System.Text.Json.JsonSerializer.Serialize(vm.SemanticDiagnostic)}");
+}
+
+static RuntimeFunctionPrototype R0F6G7R1Prototype(int id, IReadOnlyList<PrototypeOpcode> opcodes,
+    IReadOnlyList<string> operands, FunctionRuntimeMetadata? metadata = null, SemanticPayload? semantic = null) =>
+    new(new(id), opcodes.Select(P).ToImmutableArray(), operands.ToImmutableArray(), semantic,
+        metadata ?? FunctionRuntimeMetadata.Empty);
+
+static void RunR0F6G7R1A3()
+{
+    var environment = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false));
+    var normalDefinitions = new[] { D("A", "a.erb", Span(1)), D("B", "b.erb", Span(1)) };
+    var normalPrototypes = new[]
+    {
+        R0F6G7R1Prototype(0, [PrototypeOpcode.CALL, PrototypeOpcode.RETURN], ["B(INC())", ""]),
+        R0F6G7R1Prototype(1, [PrototypeOpcode.RETURN], [""]),
+    };
+    var normalContexts = R0F6G7R1Contexts(normalDefinitions, normalPrototypes, environment);
+
+    var blockedEffects = 0;
+    var blockedHost = new PreflightSemanticHost();
+    blockedHost.Calls["INC"] = _ => { blockedEffects++; return VmSemanticValue.From(1L); };
+    var blockedOwner = new VmContextStorage(21, 1, 100);
+    blockedOwner.Register(new(0), FunctionKind.Normal, () => normalContexts[0]);
+    blockedOwner.Register(new(1), FunctionKind.Normal, () => null);
+    Check(new VmMachine(blockedOwner, blockedHost).Run(new(0)) == VmStopReason.SemanticNotAvailable &&
+        blockedEffects == 0 && blockedOwner.MaterializationCount == 2);
+
+    var order = new List<string>();
+    var knownHost = new PreflightSemanticHost();
+    knownHost.Calls["INC"] = _ => { order.Add("actual"); return VmSemanticValue.From(1L); };
+    var knownOwner = new VmContextStorage(22, 1, 100);
+    knownOwner.Register(new(0), FunctionKind.Normal, () => normalContexts[0]);
+    knownOwner.Register(new(1), FunctionKind.Normal, () => { order.Add("materialize"); return normalContexts[1]; });
+    Check(new VmMachine(knownOwner, knownHost).Run(new(0)) == VmStopReason.Returned &&
+        order.SequenceEqual(["materialize", "actual"]));
+
+    var dynamicPrototypes = new[]
+    {
+        R0F6G7R1Prototype(0, [PrototypeOpcode.CALLFORM, PrototypeOpcode.RETURN], ["%TARGET()%,INC()", ""]),
+        R0F6G7R1Prototype(1, [PrototypeOpcode.RETURN], [""]),
+    };
+    var dynamicContexts = R0F6G7R1Contexts(normalDefinitions, dynamicPrototypes, environment);
+    var dynamicHost = new PreflightSemanticHost();
+    dynamicHost.Calls["TARGET"] = _ => VmSemanticValue.From("B");
+    dynamicHost.Calls["INC"] = _ => VmSemanticValue.From(1L);
+    var dynamicOwner = new VmContextStorage(23, 1, 100);
+    dynamicOwner.Register(new(0), FunctionKind.Normal, () => dynamicContexts[0]);
+    dynamicOwner.Register(new(1), FunctionKind.Normal, () => dynamicContexts[1]);
+    var dynamicResolver = new DynamicResolver(("B", false), new(VmDynamicResolutionKind.Ready, new(1)));
+    Check(new VmMachine(dynamicOwner, dynamicHost, dynamicCallResolver: dynamicResolver).Run(new(0)) == VmStopReason.Returned &&
+        dynamicHost.CallCountFor("TARGET") == 1 && dynamicHost.CallCountFor("INC") == 1 &&
+        dynamicResolver.Calls == 1 && dynamicOwner.MaterializationCount == 2);
+
+    foreach (var resolutionKind in new[] { VmDynamicResolutionKind.Missing, VmDynamicResolutionKind.WrongKind, VmDynamicResolutionKind.Blocked, VmDynamicResolutionKind.Unresolved })
+    {
+        var host = new PreflightSemanticHost();
+        host.Calls["TARGET"] = _ => VmSemanticValue.From("B");
+        host.Calls["INC"] = _ => VmSemanticValue.From(1L);
+        var owner = new VmContextStorage(24 + (int)resolutionKind, 1, 100);
+        owner.Register(new(0), FunctionKind.Normal, () => dynamicContexts[0]);
+        var resolver = new DynamicResolver(("B", false), new(resolutionKind, new(-1)));
+        var stop = new VmMachine(owner, host, dynamicCallResolver: resolver).Run(new(0));
+        Check(stop == VmStopReason.TerminalFault && host.CallCountFor("TARGET") == 1 && host.CallCountFor("INC") == 0);
+    }
+
+    var methodDefinitions = new[] { D("A", "a.erb", Span(1)), D("M", "m.erb", Span(1), FunctionKind.Method) };
+    var methodMetadata = new FunctionRuntimeMetadata([], 0, 0, [], RuntimeMetadataValueType.Integer);
+    var methodContexts = R0F6G7R1Contexts(methodDefinitions,
+        [R0F6G7R1Prototype(0, [PrototypeOpcode.PRINTFORM, PrototypeOpcode.RETURN], ["%M(INC())%", ""]),
+         R0F6G7R1Prototype(1, [PrototypeOpcode.RETURNF], ["1"], methodMetadata)], environment);
+    var methodHost = new PreflightSemanticHost();
+    methodHost.Calls["INC"] = _ => VmSemanticValue.From(1L);
+    var methodOwner = new VmContextStorage(30, 1, 100);
+    methodOwner.Register(new(0), FunctionKind.Normal, () => methodContexts[0]);
+    methodOwner.Register(new(1), FunctionKind.Method, () => null);
+    Check(new VmMachine(methodOwner, methodHost, new RecordingEffects()).Run(new(0)) == VmStopReason.SemanticNotAvailable &&
+        methodHost.CallCountFor("INC") == 0);
+
+    var builtinHost = new PreflightSemanticHost();
+    builtinHost.Calls["INC"] = _ => VmSemanticValue.From(7L);
+    var builtinContexts = R0F6G7R1Contexts([D("A", "a.erb", Span(1))],
+        [R0F6G7R1Prototype(0, [PrototypeOpcode.PRINTFORM, PrototypeOpcode.RETURN], ["%INC()%", ""])], environment);
+    var builtinOwner = new VmContextStorage(31, 1, 100);
+    builtinOwner.Register(new(0), FunctionKind.Normal, () => builtinContexts[0]);
+    var builtinEffects = new RecordingEffects();
+    Check(new VmMachine(builtinOwner, builtinHost, builtinEffects).Run(new(0)) == VmStopReason.Returned &&
+        builtinEffects.Events.SequenceEqual(["text:7"]) && builtinHost.CallCountFor("INC") == 1);
+
+    var rejectedHost = new PreflightSemanticHost { Admission = VmHostCallAdmission.Blocked };
+    rejectedHost.Calls["BLOCKED_BUILTIN"] = _ => VmSemanticValue.From(1L);
+    var rejectedContexts = R0F6G7R1Contexts([D("A", "a.erb", Span(1))],
+        [R0F6G7R1Prototype(0, [PrototypeOpcode.PRINTFORM, PrototypeOpcode.RETURN], ["%BLOCKED_BUILTIN(INC())%", ""])], environment);
+    var rejectedOwner = new VmContextStorage(32, 1, 100);
+    rejectedOwner.Register(new(0), FunctionKind.Normal, () => rejectedContexts[0]);
+    Check(new VmMachine(rejectedOwner, rejectedHost, new RecordingEffects()).Run(new(0)) == VmStopReason.SemanticNotAvailable &&
+        rejectedHost.CallCount == 0);
+
+    var yieldContexts = R0F6G7R1Contexts(methodDefinitions,
+        [R0F6G7R1Prototype(0, [PrototypeOpcode.PRINTFORM, PrototypeOpcode.RETURN], ["%M(INC())%", ""]),
+         R0F6G7R1Prototype(1, [PrototypeOpcode.ONEINPUTS, PrototypeOpcode.RETURNF], ["", "1"], methodMetadata)],
+        environment, id => id != 1);
+    var yieldHost = new PreflightSemanticHost();
+    yieldHost.Calls["INC"] = _ => VmSemanticValue.From(1L);
+    var yieldOwner = new VmContextStorage(34, 1, 100);
+    yieldOwner.Register(new(0), FunctionKind.Normal, () => yieldContexts[0]);
+    yieldOwner.Register(new(1), FunctionKind.Method, () => yieldContexts[1]);
+    Check(new VmMachine(yieldOwner, yieldHost, new RecordingEffects()).Run(new(0)) == VmStopReason.SemanticNotAvailable &&
+        yieldHost.CallCountFor("INC") == 0);
+
+    var driftHost = new PreflightSemanticHost();
+    driftHost.Calls["TARGET"] = _ => VmSemanticValue.From("B");
+    driftHost.Calls["INC"] = _ => VmSemanticValue.From(1L);
+    var driftOwner = new VmContextStorage(35, 1, 100);
+    driftOwner.Register(new(0), FunctionKind.Normal, () => dynamicContexts[0]);
+    driftOwner.Register(new(1), FunctionKind.Normal, () => dynamicContexts[1]);
+    var driftResolver = new CallbackDynamicResolver(() => driftOwner.RevokeSource());
+    Check(new VmMachine(driftOwner, driftHost, dynamicCallResolver: driftResolver).Run(new(0)) == VmStopReason.TerminalFault &&
+        driftHost.CallCountFor("TARGET") == 1 && driftHost.CallCountFor("INC") == 0);
+}
+
+static void RunR0F6G7R1A4()
+{
+    var environment = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false));
+    var metadata = new FunctionRuntimeMetadata(
+        [new("対象", RuntimeMetadataValueType.Integer, 0, false, 0, null),
+         new("省略", RuntimeMetadataValueType.Integer, 1, true, 7, null),
+         new("ARGS", RuntimeMetadataValueType.String, 0, false, 0, null)],
+        2, 3,
+        [new("D", RuntimeMetadataValueType.Integer, [3], false),
+         new("S", RuntimeMetadataValueType.Integer, [1], true)],
+        null);
+    var prototype = R0F6G7R1Prototype(0,
+        [PrototypeOpcode.VARI, PrototypeOpcode.SET, PrototypeOpcode.SET, PrototypeOpcode.SET,
+         PrototypeOpcode.VARI, PrototypeOpcode.PRINTFORM, PrototypeOpcode.SET, PrototypeOpcode.SPLIT, PrototypeOpcode.VARSET, PrototypeOpcode.PRINTFORM,
+         PrototypeOpcode.VARSET, PrototypeOpcode.PRINTFORM, PrototypeOpcode.RETURN],
+        ["D=5", "LOCAL:0=対象", "LOCALS:0=ARGS:0", "D:1=8", "D,3", "%D:1%", "S:0+=1",
+         "\"a,b,c\",\",\",LOCALS,RESULT", "D,9,0,2",
+         "%対象%:%省略%:%ARGS%:%LOCAL%:%LOCALS:0%:%LOCALS:1%:%D:0%:%D:1%:%S:0%:%RESULT%:%VARSIZE(\"D\",0)%",
+         "D", "%D:0%:%D:1%", ""], metadata);
+    var context = R0F6G7R1Contexts([D("A", "a.erb", Span(1))], [prototype], environment)[0];
+    var owner = new VmContextStorage(33, 1, 1000);
+    owner.Register(new(0), FunctionKind.Normal, () => context);
+    var effects = new RecordingEffects();
+    var vm = new VmMachine(owner, new PreflightSemanticHost(), effects);
+    var started = vm.Start(new(0), [VmSemanticValue.From(3L), VmSemanticValue.Missing, VmSemanticValue.From("first")]);
+    if (!owner.TryGetCurrentContext(out var active, out var activeFrame) ||
+        !vm.TryWriteFrame("D", null, [], VmSemanticValue.From(4L)))
+        throw new InvalidOperationException("A4 setup=" + started + ";metadata=" +
+            string.Join('|', context.Metadata.PrivateVariables.Select(value => value.Name + ":" + string.Join(',', value.Dimensions))) +
+            ";active=" + active?.FunctionId.Value + ";frame=" + activeFrame);
+    var first = vm.Continue();
+    if (first != VmStopReason.Returned)
+        throw new InvalidOperationException("A4 first=" + first + ";fault=" + owner.FaultMessage + ";semantic=" + System.Text.Json.JsonSerializer.Serialize(vm.SemanticDiagnostic));
+    Check(vm.Run(new(0), [VmSemanticValue.From(4L), VmSemanticValue.From(5L), VmSemanticValue.From("second")]) == VmStopReason.Returned);
+    Check(effects.Events.SequenceEqual([
+        "text:8", "text:3:7:first:3:a:b:9:9:1:3:3", "text:0:0",
+        "text:8", "text:4:5:second:4:a:b:9:9:2:3:3", "text:0:0"
+    ]) && owner.PinAcquireCount == owner.PinReleaseCount && owner.FrameDepth == 0);
+
+    var privateFormal = new FunctionRuntimeMetadata(
+        [new("内部", RuntimeMetadataValueType.Integer, 1, false, 0, null, true)],
+        0, 0, [new("内部", RuntimeMetadataValueType.Integer, [2], false)], null);
+    var privateContext = R0F6G7R1Contexts([D("PRIVATE", "private.erb", Span(1))],
+        [R0F6G7R1Prototype(0, [PrototypeOpcode.PRINTFORM, PrototypeOpcode.RETURN],
+            ["%内部%:%内部:1%", ""], privateFormal)], environment)[0];
+    var privateOwner = new VmContextStorage(36, 1, 100);
+    privateOwner.Register(new(0), FunctionKind.Normal, () => privateContext);
+    var privateEffects = new RecordingEffects();
+    Check(new VmMachine(privateOwner, new PreflightSemanticHost(), privateEffects)
+        .Run(new(0), [VmSemanticValue.From(12L)]) == VmStopReason.Returned &&
+        privateEffects.Events.SequenceEqual(["text:12:12"]));
+}
+
+static void RunR0F6G7R1A5()
+{
+    var environment = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false));
+    var metadata = new FunctionRuntimeMetadata([], 2, 0, [], null);
+
+    (VmContextStorage Owner, RecordingEffects Effects, VmFunctionExecutionContext Context) RunLoop(
+        PrototypeOpcode[] opcodes, string[] operands, SemanticPayload semantic, long ownerId)
+    {
+        var context = R0F6G7R1Contexts([D("LOOP", "loop.erb", Span(1))],
+            [R0F6G7R1Prototype(0, opcodes, operands, metadata, semantic)], environment)[0];
+        var owner = new VmContextStorage(ownerId, 1, 1000);
+        owner.Register(new(0), FunctionKind.Normal, () => context);
+        var effects = new RecordingEffects();
+        Check(new VmMachine(owner, new PreflightSemanticHost(), effects).Run(new(0)) == VmStopReason.Returned);
+        return (owner, effects, context);
+    }
+
+    var positive = RunLoop(
+        [PrototypeOpcode.FOR, PrototypeOpcode.PRINTFORM, PrototypeOpcode.NEXT, PrototypeOpcode.RETURN],
+        ["LOCAL:0,0,3,1", "%LOCAL:0%", "", ""],
+        SemanticIrCompiler.CompileCountedLoop("LOCAL:0,0,3,1", environment, 0, false), 40);
+    Check(positive.Effects.Events.SequenceEqual(["text:0", "text:1", "text:2"]) &&
+        positive.Owner.TryReadLoop(new(0), positive.Context.PhysicalLoopIds[0], out var end, out var step, out _) &&
+        end == 3 && step == 1);
+
+    var negative = RunLoop(
+        [PrototypeOpcode.FOR, PrototypeOpcode.PRINTFORM, PrototypeOpcode.NEXT, PrototypeOpcode.RETURN],
+        ["LOCAL:0,3,0,-1", "%LOCAL:0%", "", ""],
+        SemanticIrCompiler.CompileCountedLoop("LOCAL:0,3,0,-1", environment, 0, false), 41);
+    Check(negative.Effects.Events.SequenceEqual(["text:3", "text:2", "text:1"]));
+
+    var zero = RunLoop(
+        [PrototypeOpcode.FOR, PrototypeOpcode.PRINT, PrototypeOpcode.NEXT, PrototypeOpcode.RETURN],
+        ["LOCAL:0,0,3,0", "bad", "", ""],
+        SemanticIrCompiler.CompileCountedLoop("LOCAL:0,0,3,0", environment, 0, false), 42);
+    Check(zero.Effects.Events.Count == 0);
+
+    var repeat = RunLoop(
+        [PrototypeOpcode.REPEAT, PrototypeOpcode.PRINT, PrototypeOpcode.REND, PrototypeOpcode.RETURN],
+        ["3", "r", "", ""],
+        SemanticIrCompiler.CompileCountedLoop("3", environment, 0, true), 43);
+    Check(repeat.Effects.Events.SequenceEqual(["text:r", "text:r", "text:r"]) &&
+        repeat.Owner.TryReadLoop(new(0), repeat.Context.PhysicalLoopIds[0], out _, out _, out var repeated) && repeated == 3);
+
+    var whileHost = new PreflightSemanticHost();
+    whileHost.Set("G", null, [], VmSemanticValue.From(3L));
+    var whilePrototype = R0F6G7R1Prototype(0,
+        [PrototypeOpcode.WHILE, PrototypeOpcode.PRINT, PrototypeOpcode.SET, PrototypeOpcode.WEND, PrototypeOpcode.RETURN],
+        ["G", "w", "G-=1", "", ""], metadata, SemanticIrCompiler.CompileExpression("G", environment, 0));
+    var whileContext = R0F6G7R1Contexts([D("WHILE", "while.erb", Span(1))], [whilePrototype], environment)[0];
+    var whileOwner = new VmContextStorage(44, 1, 1000);
+    whileOwner.Register(new(0), FunctionKind.Normal, () => whileContext);
+    var whileEffects = new RecordingEffects();
+    Check(new VmMachine(whileOwner, whileHost, whileEffects).Run(new(0)) == VmStopReason.Returned &&
+        whileEffects.Events.SequenceEqual(["text:w", "text:w", "text:w"]));
+
+    var controlSemantic = SemanticPayload.Merge([
+        SemanticIrCompiler.CompileCountedLoop("LOCAL:0,0,5,1", environment, 0, false),
+        SemanticIrCompiler.CompileExpression("LOCAL:0==1", environment, 1),
+        SemanticIrCompiler.CompileExpression("LOCAL:0==3", environment, 3)
+    ]);
+    var control = RunLoop(
+        [PrototypeOpcode.FOR, PrototypeOpcode.SIF, PrototypeOpcode.CONTINUE, PrototypeOpcode.SIF,
+         PrototypeOpcode.BREAK, PrototypeOpcode.PRINTFORM, PrototypeOpcode.NEXT, PrototypeOpcode.RETURN],
+        ["LOCAL:0,0,5,1", "LOCAL:0==1", "", "LOCAL:0==3", "", "%LOCAL:0%", "", ""],
+        controlSemantic, 45);
+    Check(control.Effects.Events.SequenceEqual(["text:0", "text:2"]));
+
+    var nestedSemantic = SemanticPayload.Merge([
+        SemanticIrCompiler.CompileCountedLoop("LOCAL:0,0,2,1", environment, 0, false),
+        SemanticIrCompiler.CompileCountedLoop("LOCAL:1,0,2,1", environment, 1, false)
+    ]);
+    var nested = RunLoop(
+        [PrototypeOpcode.FOR, PrototypeOpcode.FOR, PrototypeOpcode.PRINTFORM,
+         PrototypeOpcode.NEXT, PrototypeOpcode.NEXT, PrototypeOpcode.RETURN],
+        ["LOCAL:0,0,2,1", "LOCAL:1,0,2,1", "%LOCAL:0%%LOCAL:1%", "", "", ""],
+        nestedSemantic, 46);
+    Check(nested.Effects.Events.SequenceEqual(["text:00", "text:01", "text:10", "text:11"]) &&
+        nested.Context.PhysicalLoopIds.Length == 2 &&
+        nested.Context.PhysicalLoopIds[0] != nested.Context.PhysicalLoopIds[1] &&
+        nested.Owner.TryEvict(new(0)));
+    var nestedAgain = new VmMachine(nested.Owner, new PreflightSemanticHost(), nested.Effects);
+    Check(nestedAgain.Run(new(0)) == VmStopReason.Returned &&
+        nested.Effects.Events.Count == 8);
+
+    var doHost = new PreflightSemanticHost();
+    doHost.Set("G", null, [], VmSemanticValue.From(0L));
+    var doPrototype = R0F6G7R1Prototype(0,
+        [PrototypeOpcode.DO, PrototypeOpcode.SET, PrototypeOpcode.PRINTFORM, PrototypeOpcode.LOOP, PrototypeOpcode.RETURN],
+        ["", "G+=1", "%G%", "G<3", ""], metadata,
+        SemanticIrCompiler.CompileExpression("G<3", environment, 3));
+    var doContext = R0F6G7R1Contexts([D("DO", "do.erb", Span(1))], [doPrototype], environment)[0];
+    var doOwner = new VmContextStorage(47, 1, 1000);
+    doOwner.Register(new(0), FunctionKind.Normal, () => doContext);
+    var doEffects = new RecordingEffects();
+    Check(new VmMachine(doOwner, doHost, doEffects).Run(new(0)) == VmStopReason.Returned &&
+        doEffects.Events.SequenceEqual(["text:1", "text:2", "text:3"]));
+}
+
+static void RunR0F6G7R1A6()
+{
+    var environment = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false));
+    var contexts = R0F6G7R1Contexts(
+        [D("A", "a.erb", Span(1)), D("B", "b.erb", Span(1))],
+        [R0F6G7R1Prototype(0, [PrototypeOpcode.JUMP, PrototypeOpcode.RETURN], ["B", ""]),
+         R0F6G7R1Prototype(1, [PrototypeOpcode.RETURN], [""])], environment);
+    var owner = new VmContextStorage(50, 1, 100);
+    owner.Register(new(0), FunctionKind.Normal, () => contexts[0]);
+    owner.Register(new(1), FunctionKind.Normal, () => contexts[1]);
+    Check(new VmMachine(owner, new PreflightSemanticHost()).Run(new(0)) == VmStopReason.Returned &&
+        owner.PinAcquireCount == 2 && owner.PinReleaseCount == 2 && owner.FrameDepth == 0);
+
+    var borrowOwner = new VmContextStorage(51, 1, 100);
+    borrowOwner.Register(new(0), FunctionKind.Normal, () => contexts[0]);
+    borrowOwner.Register(new(1), FunctionKind.Normal, () => contexts[1]);
+    var borrowVm = new VmMachine(borrowOwner, new PreflightSemanticHost());
+    Check(borrowVm.Start(new(0)) == VmStopReason.Returned);
+    if (!borrowOwner.TryGetCurrentContext(out var current, out var frame)) throw new InvalidOperationException("missing current context");
+    var evaluation = new VmEvaluationContext(current, frame, borrowOwner.Stamp);
+    Check(borrowOwner.TryBeginEvaluation(evaluation) && !borrowOwner.TryEvict(new(0)));
+    borrowOwner.EndEvaluation(evaluation);
+    Check(!borrowOwner.TryEvict(new(0)) && borrowVm.Continue() == VmStopReason.Returned &&
+        borrowOwner.TryEvict(new(0)));
+
+    var driftOwner = new VmContextStorage(52, 1, 100);
+    driftOwner.Register(new(0), FunctionKind.Normal, () => contexts[0]);
+    driftOwner.Register(new(1), FunctionKind.Normal, () => contexts[1]);
+    var driftVm = new VmMachine(driftOwner, new PreflightSemanticHost());
+    Check(driftVm.Start(new(0)) == VmStopReason.Returned);
+    driftOwner.RevokeSource();
+    Check(driftOwner.IsTerminal && driftOwner.FrameDepth == 0 &&
+        driftOwner.PinAcquireCount == driftOwner.PinReleaseCount &&
+        driftVm.Continue() == VmStopReason.TerminalFault);
+}
+
+static void RunR0F6G7R1A7()
+{
+    VmContextStorage RunInstruction(long ownerId, VmInstruction instruction, int maxSteps = 100)
+    {
+        var owner = new VmContextStorage(ownerId, 1, 1000);
+        owner.Register(new(0), FunctionKind.Normal, () => R0F6G7Context(0, 0, 1, [instruction]));
+        var vm = new VmMachine(owner, new PreflightSemanticHost());
+        var stop = vm.Run(new(0), maxSteps);
+        Check(stop != VmStopReason.Returned && owner.IsTerminal && owner.FaultSnapshot is { Committed: true } &&
+            owner.FaultSnapshot.Frames.Length == 1 && owner.PinAcquireCount == owner.PinReleaseCount);
+        return owner;
+    }
+
+    Check(RunInstruction(60, new((ushort)VmOpcode.SemanticBarrier)).FaultReason == VmStopReason.SemanticNotAvailable);
+    Check(RunInstruction(61, new(ushort.MaxValue)).FaultReason == VmStopReason.UnsupportedControl);
+    Check(RunInstruction(62, VmInstruction.Branch(0), 3).FaultReason == VmStopReason.StepLimit);
+
+    var invalidOwner = new VmContextStorage(63, 1, 100);
+    invalidOwner.Register(new(0), FunctionKind.Normal, () => new(new(0), 0, 1,
+        new LinkedProgram([VmInstruction.Return], [new(0, 0, 1, VmFunctionState.InvalidStructure)], [], sparseRuntimeIds: true),
+        FunctionRuntimeMetadata.Empty));
+    Check(new VmMachine(invalidOwner, new PreflightSemanticHost()).Run(new(0)) == VmStopReason.InvalidStructure &&
+        invalidOwner.FaultReason == VmStopReason.InvalidStructure && invalidOwner.PinAcquireCount == invalidOwner.PinReleaseCount);
+
+    var materializeOwner = new VmContextStorage(64, 1, 100);
+    materializeOwner.Register(new(0), FunctionKind.Normal, () => throw new InvalidOperationException("not retained"));
+    Check(new VmMachine(materializeOwner, new PreflightSemanticHost()).Run(new(0)) == VmStopReason.TerminalFault &&
+        materializeOwner.FaultMessage == "materialization failure: InvalidOperationException" &&
+        materializeOwner.FaultSnapshot is { Committed: false });
+
+    var bindingMetadata = new FunctionRuntimeMetadata(
+        [new("ARG", RuntimeMetadataValueType.Integer, 0, false, 0, null)], 0, 0, [], null);
+    var bindingOwner = new VmContextStorage(65, 1, 100);
+    bindingOwner.Register(new(0), FunctionKind.Normal, () => R0F6G7Context(0, 0, 1, [VmInstruction.Return], bindingMetadata));
+    Check(new VmMachine(bindingOwner, new PreflightSemanticHost()).Run(new(0), [VmSemanticValue.From("bad")]) == VmStopReason.SemanticNotAvailable &&
+        bindingOwner.IsTerminal && bindingOwner.PinAcquireCount == bindingOwner.PinReleaseCount);
+
+    var cleanupCount = 0;
+    var cleanupOwner = new VmContextStorage(66, 1, 100);
+    cleanupOwner.Register(new(0), FunctionKind.Normal, () => R0F6G7Context(0, 0, 1, [new((ushort)VmOpcode.SemanticBarrier)]));
+    cleanupOwner.QueueCleanupAction(() => throw new InvalidOperationException("cleanup"));
+    cleanupOwner.QueueCleanupAction(() => cleanupCount++);
+    Check(new VmMachine(cleanupOwner, new PreflightSemanticHost()).Run(new(0)) == VmStopReason.SemanticNotAvailable &&
+        cleanupOwner.CleanupErrorCount == 1 && cleanupCount == 1 &&
+        cleanupOwner.FaultSnapshot?.Reason == VmStopReason.SemanticNotAvailable);
+
+    var environment = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false));
+    var methodMetadata = new FunctionRuntimeMetadata([], 0, 0, [], RuntimeMetadataValueType.Integer);
+    var nested = R0F6G7R1Contexts(
+        [D("A", "a.erb", Span(1)), D("M", "m.erb", Span(1), FunctionKind.Method)],
+        [R0F6G7R1Prototype(0, [PrototypeOpcode.PRINTFORM, PrototypeOpcode.RETURN], ["%M()%", ""]),
+         R0F6G7R1Prototype(1, [PrototypeOpcode.RETURNF], ["1/0"], methodMetadata)], environment);
+    var nestedOwner = new VmContextStorage(67, 1, 100);
+    nestedOwner.Register(new(0), FunctionKind.Normal, () => nested[0]);
+    nestedOwner.Register(new(1), FunctionKind.Method, () => nested[1]);
+    Check(new VmMachine(nestedOwner, new PreflightSemanticHost(), new RecordingEffects()).Run(new(0)) == VmStopReason.SemanticEvaluationFault &&
+        nestedOwner.FaultSnapshot is { Frames.Length: 2 } && nestedOwner.FrameDepth == 0 &&
+        nestedOwner.PinAcquireCount == nestedOwner.PinReleaseCount);
+
+    var hostContext = R0F6G7R1Contexts([D("A", "a.erb", Span(1))],
+        [R0F6G7R1Prototype(0, [PrototypeOpcode.PRINT, PrototypeOpcode.RETURN], ["x", ""])], environment)[0];
+    var hostOwner = new VmContextStorage(68, 1, 100);
+    hostOwner.Register(new(0), FunctionKind.Normal, () => hostContext);
+    Check(new VmMachine(hostOwner, new PreflightSemanticHost(), new ThrowingEffects()).Run(new(0)) == VmStopReason.TerminalFault &&
+        hostOwner.FaultMessage == "host/runtime exception: InvalidOperationException" &&
+        hostOwner.PinAcquireCount == hostOwner.PinReleaseCount);
+}
+
+static void RunR0F6G7R1A8()
+{
+    var environment = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false));
+    var definitions = new[]
+    {
+        D("EVENT", "event.erb", Span(1), FunctionKind.Event),
+        D("NORMAL", "normal.erb", Span(1)),
+    };
+    var prototypes = new[]
+    {
+        R0F6G7R1Prototype(0, [PrototypeOpcode.PRINT, PrototypeOpcode.CALL, PrototypeOpcode.PRINT, PrototypeOpcode.RETURN],
+            ["event-before", "NORMAL", "event-after", ""]),
+        R0F6G7R1Prototype(1, [PrototypeOpcode.PRINT, PrototypeOpcode.ONEINPUTS, PrototypeOpcode.PRINT, PrototypeOpcode.RETURN],
+            ["normal-before", "", "normal-after", ""]),
+    };
+    var contexts = R0F6G7R1Contexts(definitions, prototypes, environment);
+    var owner = new VmContextStorage(70, 1, 1000);
+    owner.Register(new(0), FunctionKind.Event, () => contexts[0]);
+    owner.Register(new(1), FunctionKind.Normal, () => contexts[1]);
+    var effects = new OwnedInputEffects(owner);
+    var vm = new VmMachine(owner, new PreflightSemanticHost(), effects);
+    Check(vm.Start(new(0), FunctionKind.Event) == VmStopReason.Returned &&
+        vm.Continue() == VmStopReason.WaitingForInput &&
+        owner.RunState == VmOwnerRunState.Suspended && effects.PublishedWhileSuspended &&
+        effects.PublishCount == 1 &&
+        owner.ActiveFrames.Select(frame => frame.FunctionId).SequenceEqual([0, 1]) &&
+        owner.TryGetPinCount(new(0), out var eventPins) && eventPins == 1 &&
+        owner.TryGetPinCount(new(1), out var normalPins) && normalPins == 1);
+    if (effects.Token is not { } token) throw new InvalidOperationException("input token missing");
+
+    var invalidTokens = new[]
+    {
+        token with { RequestSerial = token.RequestSerial + 1 },
+        token with { Stamp = token.Stamp with { OwnerId = token.Stamp.OwnerId + 1 } },
+        token with { Stamp = token.Stamp with { Epoch = token.Stamp.Epoch + 1 } },
+        token with { Frame = token.Frame with { Serial = token.Frame.Serial + 1 } },
+        token with { FunctionId = new(token.FunctionId.Value + 1) },
+        token with { CodeSlot = token.CodeSlot + 1 },
+        token with { CodeGeneration = token.CodeGeneration + 1 },
+    };
+    foreach (var invalid in invalidTokens)
+        Check(!vm.TryResumeInput(invalid, VmSemanticValue.From("bad"), out _));
+    Check(!vm.TryResumeInput(token, VmSemanticValue.From(1L), out _) &&
+        effects.ResultWriteCount == 0 && effects.Events.SequenceEqual(["text:event-before", "text:normal-before"]));
+
+    Check(vm.TryResumeInput(token, VmSemanticValue.From("ok"), out var resumed) && resumed == VmStopReason.Returned &&
+        effects.ResultWriteCount == 1 && effects.Result.TryGetString(out var result) && result == "ok" &&
+        effects.Events.SequenceEqual(["text:event-before", "text:normal-before", "text:normal-after", "text:event-after"]) &&
+        vm.InputResumeCompleted == 1 && owner.FrameDepth == 0 &&
+        owner.PinAcquireCount == owner.PinReleaseCount &&
+        !vm.TryResumeInput(token, VmSemanticValue.From("again"), out _));
+
+    var synchronousOwner = new VmContextStorage(71, 1, 1000);
+    synchronousOwner.Register(new(0), FunctionKind.Event, () => contexts[0]);
+    synchronousOwner.Register(new(1), FunctionKind.Normal, () => contexts[1]);
+    var synchronousEffects = new OwnedInputEffects(synchronousOwner, synchronousResponse: true);
+    var synchronousVm = new VmMachine(synchronousOwner, new PreflightSemanticHost(), synchronousEffects);
+    Check(synchronousVm.Start(new(0), FunctionKind.Event) == VmStopReason.Returned &&
+        synchronousVm.Continue() == VmStopReason.WaitingForInput &&
+        synchronousVm.InputResumeCompleted == 1 && synchronousOwner.FrameDepth == 0 &&
+        synchronousEffects.ResultWriteCount == 1 && !synchronousEffects.PumpReenteredDuringPublish &&
+        synchronousEffects.Events.SequenceEqual(["text:event-before", "text:normal-before", "text:normal-after", "text:event-after"]));
+
+    var revokedOwner = new VmContextStorage(72, 1, 1000);
+    revokedOwner.Register(new(0), FunctionKind.Event, () => contexts[0]);
+    revokedOwner.Register(new(1), FunctionKind.Normal, () => contexts[1]);
+    var revokedEffects = new OwnedInputEffects(revokedOwner);
+    var revokedVm = new VmMachine(revokedOwner, new PreflightSemanticHost(), revokedEffects);
+    Check(revokedVm.Start(new(0), FunctionKind.Event) == VmStopReason.Returned &&
+        revokedVm.Continue() == VmStopReason.WaitingForInput);
+    if (revokedEffects.Token is not { } revokedToken) throw new InvalidOperationException("revoked token missing");
+    revokedOwner.RevokeSource();
+    Check(!revokedVm.TryResumeInput(revokedToken, VmSemanticValue.From("bad"), out _) &&
+        revokedEffects.ResultWriteCount == 0 && revokedOwner.RunState == VmOwnerRunState.Terminal);
+
+    var ownerId = 73L;
+    foreach (var invalidation in new[] { VmOwnerInvalidationReason.Reset, VmOwnerInvalidationReason.Close,
+                 VmOwnerInvalidationReason.Revoke, VmOwnerInvalidationReason.BeginApplied })
+    {
+        var invalidatedOwner = new VmContextStorage(ownerId++, 1, 1000);
+        invalidatedOwner.Register(new(0), FunctionKind.Event, () => contexts[0]);
+        invalidatedOwner.Register(new(1), FunctionKind.Normal, () => contexts[1]);
+        var invalidatedEffects = new OwnedInputEffects(invalidatedOwner);
+        var invalidatedVm = new VmMachine(invalidatedOwner, new PreflightSemanticHost(), invalidatedEffects);
+        Check(invalidatedVm.Start(new(0), FunctionKind.Event) == VmStopReason.Returned &&
+            invalidatedVm.Continue() == VmStopReason.WaitingForInput);
+        if (invalidatedEffects.Token is not { } invalidatedToken) throw new InvalidOperationException("invalidated token missing");
+        invalidatedOwner.Invalidate(invalidation);
+        Check(!invalidatedVm.TryResumeInput(invalidatedToken, VmSemanticValue.From("bad"), out _) &&
+            invalidatedEffects.ResultWriteCount == 0 && invalidatedOwner.RunState == VmOwnerRunState.Terminal);
+    }
+}
+
+static void RunR0F6G7R1A9()
+{
+    var fixture = CreateR0F6G7R1EvictionFixture();
+    GC.Collect();
+    GC.WaitForPendingFinalizers();
+    GC.Collect();
+    Check(!fixture.Context.TryGetTarget(out _) &&
+        !fixture.Program.TryGetTarget(out _) &&
+        !fixture.Semantic.TryGetTarget(out _) &&
+        !fixture.Statements.TryGetTarget(out _));
+
+    var lease = fixture.Owner.PrepareInvocation(new(0), VmReturnKind.Normal, FunctionKind.Normal);
+    Check(fixture.Owner.CommitFrame(ref lease, [], out var address) &&
+        fixture.Owner.TryReadFrameValue(address, "LOCAL", 0, out var local) && local.TryGetInteger(out var localValue) && localValue == 77 &&
+        fixture.Owner.TryReadFrameValue(address, "S", 0, out var persistent) && persistent.TryGetInteger(out var persistentValue) && persistentValue == 88 &&
+        fixture.Owner.TryReadFrameValue(address, "D", 0, out var dynamicValue) && dynamicValue.TryGetInteger(out var dynamicInteger) && dynamicInteger == 0 &&
+        fixture.Owner.TryReadLoop(new(0), 900, out var end, out var step, out var repeat) && (end, step, repeat) == (9, 2, 3) &&
+        fixture.Owner.TryReturn(out _));
+}
+
+[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+static (VmContextStorage Owner, WeakReference<VmFunctionExecutionContext> Context,
+    WeakReference<LinkedProgram> Program, WeakReference<SemanticPayload> Semantic,
+    WeakReference<VmRuntimeStatementArena> Statements) CreateR0F6G7R1EvictionFixture()
+{
+    var environment = new StructuralSemanticEnvironment(new CompilerCompatibilityOptions(true, true, true, false));
+    var metadata = new FunctionRuntimeMetadata([], 1, 0,
+        [new("D", RuntimeMetadataValueType.Integer, [1], false),
+         new("S", RuntimeMetadataValueType.Integer, [1], true)], null);
+    WeakReference<VmFunctionExecutionContext>? contextWeak = null;
+    WeakReference<LinkedProgram>? programWeak = null;
+    WeakReference<SemanticPayload>? semanticWeak = null;
+    WeakReference<VmRuntimeStatementArena>? statementsWeak = null;
+    var generation = 0L;
+    var owner = new VmContextStorage(80, 1, 100);
+    owner.Register(new(0), FunctionKind.Normal, () =>
+    {
+        var semantic = SemanticIrCompiler.CompileExpression("LOCAL:0", environment);
+        var statements = new VmRuntimeStatementArena(
+            [new(VmRuntimeStatementKind.Expression, 0, 0, 0)], [], semantic);
+        var program = new LinkedProgram([VmInstruction.Return],
+            [new(0, 0, 1, VmFunctionState.ExecutableReady)], [], semanticArena: semantic,
+            runtimeStatements: statements, runtimeMetadata: [metadata], sparseRuntimeIds: true);
+        var context = new VmFunctionExecutionContext(new(0), 0, ++generation, program, metadata);
+        contextWeak = new(context);
+        programWeak = new(program);
+        semanticWeak = new(semantic);
+        statementsWeak = new(statements);
+        return context;
+    });
+    var vm = new VmMachine(owner, new PreflightSemanticHost());
+    Check(vm.Start(new(0)) == VmStopReason.Returned &&
+        owner.TryGetCurrentContext(out _, out var address) &&
+        owner.TryWriteFrameValue(address, "LOCAL", 0, VmSemanticValue.From(77L)) &&
+        owner.TryWriteFrameValue(address, "D", 0, VmSemanticValue.From(66L)) &&
+        owner.TryWriteFrameValue(address, "S", 0, VmSemanticValue.From(88L)));
+    owner.CaptureLoop(new(0), 900, 9, 2, 3);
+    Check(vm.Continue() == VmStopReason.Returned && owner.TryEvict(new(0)));
+    return (owner, contextWeak!, programWeak!, semanticWeak!, statementsWeak!);
+}
+
+static Dictionary<int, VmFunctionExecutionContext> R0F6G7R1Contexts(
+    IReadOnlyList<FunctionDefinition> definitions,
+    IReadOnlyList<RuntimeFunctionPrototype> prototypes,
+    StructuralSemanticEnvironment environment,
+    Func<int, bool>? noYield = null)
+{
+    var catalog = FunctionCatalog.FromDefinitions(definitions);
+    catalog.MarkCodeAvailable(prototypes.Select(prototype => prototype.RuntimeId));
+    var signatures = prototypes.ToDictionary(prototype => prototype.RuntimeId.Value,
+        prototype => new VmFunctionSignature(prototype.RuntimeMetadata ?? FunctionRuntimeMetadata.Empty,
+            noYield?.Invoke(prototype.RuntimeId.Value) ?? true));
+    var result = new Dictionary<int, VmFunctionExecutionContext>();
+    for (var slot = 0; slot < prototypes.Count; slot++)
+    {
+        var linked = ControlLinker.LinkFunction(catalog, prototypes[slot], slot, slot + 1,
+            id => signatures.GetValueOrDefault(id.Value), runtimeEnvironment: environment, runtimeStatements: true);
+        var context = linked.Context;
+        var program = context.Program;
+        var ready = new LinkedProgram(program.Code,
+            program.Descriptors.Select(descriptor => new VmFunctionDescriptor(descriptor.FunctionId,
+                descriptor.CodeStart, descriptor.CodeLength, VmFunctionState.ExecutableReady)).ToArray(),
+            program.StructuralLinks, program.SifLinks, program.IfGroups, program.IfClauses,
+            program.SelectGroups, program.SelectCases, program.Loops, program.SemanticArena,
+            program.StructuralSemanticRecordIndices, program.RuntimeStatements, program.RuntimeMetadata,
+            program.CallSites, program.CallArgumentArena, program.CallArgumentRecords,
+            program.ExpressionFunctionTargets, program.DynamicCallSites, program.DynamicCallArena,
+            program.DynamicCallArgumentRecords, sparseRuntimeIds: true);
+        result.Add(context.FunctionId.Value, new(context.FunctionId, context.CodeSlot, context.Generation,
+            ready, context.Metadata, context.PhysicalLoopIds));
+    }
+    return result;
+}
+
+static int RunR0F6G3LinkProbe(string erbRoot, string inventoryPath, string outputPath)
+{
+    using var document = JsonDocument.Parse(File.ReadAllText(inventoryPath));
+    var options = new CompilerCompatibilityOptions(true, true, true, false);
+    var headers = Directory.EnumerateFiles(erbRoot, "*.ERH", SearchOption.AllDirectories).Order(StringComparer.OrdinalIgnoreCase)
+        .Select(path => File.ReadAllText(path, System.Text.Encoding.UTF8));
+    var environment = new StructuralSemanticEnvironment(options, MacroCatalog.FromHeaderSources(headers, options));
+    var compiler = new FunctionCompiler(environment);
+    var selected = document.RootElement.GetProperty("functions").EnumerateArray().Select(item => new
+    {
+        Name = item.GetProperty("name").GetString()!,
+        Path = item.GetProperty("path").GetString()!.Replace('/', Path.DirectorySeparatorChar),
+        Line = item.GetProperty("line").GetInt32(),
+        Kind = item.GetProperty("kind").GetString() switch { "method" => FunctionKind.Method, "event" => FunctionKind.Event, _ => FunctionKind.Normal }
+    }).ToArray();
+    static string Key(string path, int line, string name) => $"{Path.GetFullPath(path).ToUpperInvariant()}|{line}|{name.ToUpperInvariant()}";
+    var selectedKinds = selected.ToDictionary(item => Key(Path.Combine(erbRoot, item.Path), item.Line, item.Name), item => item.Kind);
+    var indexedFiles = Directory.EnumerateFiles(erbRoot, "*.ERB", SearchOption.AllDirectories).Order(StringComparer.OrdinalIgnoreCase)
+        .Select(ErbSourceIndexer.IndexFile).ToArray();
+    var definitions = new List<FunctionDefinition>();
+    var runtimeIds = new Dictionary<string, RuntimeFunctionId>(StringComparer.Ordinal);
+    foreach (var indexed in indexedFiles)
+    {
+        foreach (var function in indexed.Functions)
+        {
+            var key = Key(indexed.FileIdentity, function.Span.StartLine, function.Name);
+            var kind = selectedKinds.GetValueOrDefault(key, FunctionKind.Normal);
+            var id = new RuntimeFunctionId(definitions.Count);
+            definitions.Add(new(function.Name, indexed.FileIdentity, function.Span, function.Flags, kind, function.Name, true));
+            runtimeIds.Add(key, id);
+        }
+    }
+    var prototypes = new List<RuntimeFunctionPrototype>();
+    var compileRows = new List<object>();
+    foreach (var item in selected)
+    {
+        var fullPath = Path.Combine(erbRoot, item.Path);
+        var indexed = indexedFiles.Single(value => Path.GetFullPath(value.FileIdentity).Equals(Path.GetFullPath(fullPath), StringComparison.OrdinalIgnoreCase));
+        var function = indexed.Functions.Single(value => value.Span.StartLine == item.Line && value.Name.Equals(item.Name, StringComparison.OrdinalIgnoreCase));
+        var runtimeId = runtimeIds[Key(indexed.FileIdentity, item.Line, item.Name)];
+        var result = compiler.TryCompileRuntime(indexed, function);
+        if (result.Function is { } compiled)
+        {
+            var source = FunctionSourceReader.Read(indexed, function).Source!.Value;
+            var operands = compiled.OperandTexts.IsDefault ? compiled.Instructions.Select(instruction => instruction.OperandLength == 0 ? string.Empty : System.Text.Encoding.UTF8.GetString(source.Bytes, instruction.OperandOffset, instruction.OperandLength)).ToImmutableArray() : compiled.OperandTexts;
+            prototypes.Add(new(runtimeId, compiled.Instructions, operands, compiled.SemanticPayload, compiled.RuntimeMetadata));
+        }
+        else
+        {
+            prototypes.Add(new(runtimeId, [], [], RuntimeMetadata: FunctionRuntimeMetadata.Empty));
+        }
+        compileRows.Add(new { id = runtimeId.Value, name = item.Name, kind = item.Kind.ToString(), status = result.Status.ToString(), reason = result.Reason.ToString(), detail = result.Detail });
+    }
+    var catalog = FunctionCatalog.FromDefinitions(definitions);
+    catalog.MarkCodeAvailable(prototypes.Select(value => value.RuntimeId));
+    var linked = ControlLinker.Link(catalog, prototypes, runtimeEnvironment: environment, runtimeStatements: true);
+    var kinds = definitions.Select(value => value.Kind).ToArray();
+    var staged = VmRuntimeRequirementAnalyzer.AnalyzeStaged(linked.Program, kinds, VmRuntimeCapabilitySnapshot.KernelOnly, VmRuntimeCapabilitySnapshot.KernelOnly);
+    var hostIdentities = new[]
+    {
+        (Name: "Structural", Arena: linked.Program.SemanticArena),
+        (Name: "Statements", Arena: linked.Program.RuntimeStatements.OperandArena),
+        (Name: "CallArguments", Arena: linked.Program.CallArgumentArena),
+    }.SelectMany(entry => entry.Arena.HostIdentities.Select(identity => new
+    {
+        arena = entry.Name,
+        identity.Kind,
+        name = entry.Arena.ReadSymbol(entry.Arena.Symbols[identity.NameSymbolIndex]),
+        subkey = identity.SubkeySymbolIndex < 0 ? null : entry.Arena.ReadSymbol(entry.Arena.Symbols[identity.SubkeySymbolIndex]),
+        identity.IndexArity,
+        identity.StableId,
+    })).GroupBy(value => new { value.Kind, value.name, value.subkey, value.IndexArity, value.StableId })
+      .Select(group => new { group.Key.Kind, group.Key.name, group.Key.subkey, group.Key.IndexArity, group.Key.StableId, count = group.Count(), arenas = group.Select(value => value.arena).Distinct().Order().ToArray() })
+      .OrderBy(value => value.Kind).ThenBy(value => value.name).ToArray();
+    var selectedIds = prototypes.Select(value => value.RuntimeId.Value).ToHashSet();
+    var rows = linked.Program.Descriptors.Select((descriptor, index) => new
+    {
+        id = index,
+        name = definitions[index].Name,
+        kind = kinds[index].ToString(),
+        state = descriptor.State.ToString(),
+        requirements = staged.Shared.Rows[index].TransitiveRequirements.ToString(),
+        blocking = staged.Shared.Rows[index].BlockingRequirements.ToString(),
+    }).Where(row => selectedIds.Contains(row.id)).ToArray();
+    var instructionRows = prototypes.SelectMany(prototype => prototype.Instructions.Select((instruction, pc) => new
+    {
+        id = prototype.RuntimeId.Value,
+        name = definitions[prototype.RuntimeId.Value].Name,
+        pc,
+        sourceLine = instruction.SourceLine,
+        prototypeOpcode = instruction.Opcode.ToString(),
+        vmOpcode = linked.Program.Descriptors[prototype.RuntimeId.Value].CodeLength > pc
+            ? ((VmOpcode)linked.Program.Code[linked.Program.Descriptors[prototype.RuntimeId.Value].CodeStart + pc].Opcode).ToString()
+            : "NoCode",
+        operand = pc < prototype.Operands.Length ? prototype.Operands[pc] : string.Empty,
+    })).Where(row => row.vmOpcode is "SemanticBarrier" or "UnsupportedControl").ToArray();
+    var structuralRows = linked.Program.StructuralLinks.Select((record, index) => new
+    {
+        record.FunctionId,
+        name = definitions[record.FunctionId].Name,
+        record.Pc,
+        record.Kind,
+        semanticRecord = linked.Program.StructuralSemanticRecordIndices[index],
+    }).Where(row => selectedIds.Contains(row.FunctionId)).ToArray();
+    var semanticDebug = structuralRows.Where(row => row.name == "GET_DUNGEON_NAME" && row.semanticRecord >= 0).Select(row =>
+    {
+        var record = linked.Program.SemanticArena.Records[row.semanticRecord];
+        return new
+        {
+            row.Pc,
+            row.Kind,
+            Record = record,
+            Nodes = linked.Program.SemanticArena.Nodes.Skip(record.RootNodeIndex - record.NodeCount + 1).Take(record.NodeCount).Select((node, offset) => new
+            {
+                Index = record.RootNodeIndex - record.NodeCount + 1 + offset,
+                node.Kind,
+                node.Operator,
+                node.A,
+                node.B,
+                node.C,
+                node.D,
+                Symbol = node.Kind is SemanticNodeKind.IntegerLiteral or SemanticNodeKind.StringLiteral or SemanticNodeKind.Symbol or SemanticNodeKind.Variable or SemanticNodeKind.VariableSubkey or SemanticNodeKind.Call
+                    ? linked.Program.SemanticArena.ReadSymbol(linked.Program.SemanticArena.Symbols[node.A]) : null,
+            }).ToArray(),
+        };
+    }).ToArray();
+    Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outputPath))!);
+    File.WriteAllText(outputPath, JsonSerializer.Serialize(new
+    {
+        schema = "r0f6g3-link-probe-v1",
+        execution = "LINK_AND_READINESS_ONLY_NO_VM_NO_HOST_EFFECTS",
+        linked.SemanticBarriers,
+        unsupportedControlFunctions = linked.Program.Descriptors.Count(value => value.State == VmFunctionState.UnsupportedControl),
+        linked.Calls,
+        linked.ResolvedCalls,
+        linked.MissingTargets,
+        linked.WrongKinds,
+        linked.Diagnostics,
+        runtimeStatementCount = linked.Program.RuntimeStatements.Records.Length,
+        expressionTargets = linked.Program.ExpressionFunctionTargets.Length,
+        hostIdentities,
+        compileRows,
+        rows,
+        instructionRows,
+        structuralRows,
+        semanticDebug,
+        localRequirementOrigins = staged.Diagnostics?.LocalRequirementOrigins,
+        nonVariableBlockers = staged.Diagnostics?.NonVariableBlockingDiagnostics,
+    }, new JsonSerializerOptions { WriteIndented = true }));
+    return 0;
+}
 
 static void RunFixtureSetExtraTitleVar()
 {
@@ -333,7 +1304,7 @@ static void RunFixtureSetExtraTitleVar()
     var compiled = new FunctionCompiler(env).TryCompileRuntime(indexed, function);
     if (compiled.Status != CompileStatus.Compiled || compiled.Function is null) throw new InvalidOperationException($"compile={compiled.Status}/{compiled.Reason}/{compiled.Detail}");
     var source = FunctionSourceReader.Read(indexed, function).Source!.Value;
-    var operands = compiled.Function.Instructions.Select(instruction => instruction.OperandLength == 0 ? string.Empty : System.Text.Encoding.UTF8.GetString(source.Bytes, instruction.OperandOffset, instruction.OperandLength)).ToImmutableArray();
+    var operands = compiled.Function.OperandTexts.IsDefault ? compiled.Function.Instructions.Select(instruction => instruction.OperandLength == 0 ? string.Empty : System.Text.Encoding.UTF8.GetString(source.Bytes, instruction.OperandOffset, instruction.OperandLength)).ToImmutableArray() : compiled.Function.OperandTexts;
     var prototype = new RuntimeFunctionPrototype(new(0), compiled.Function.Instructions, operands, compiled.Function.SemanticPayload, compiled.Function.RuntimeMetadata);
     var expected = File.ReadAllLines(path).Select(line => System.Text.RegularExpressions.Regex.Match(line, @"^\s*EXTRA_TITLE:(\d+)\s*'=\s*""(.*)""\s*$")).Where(match => match.Success).Select(match => (Index: int.Parse(match.Groups[1].Value), Value: match.Groups[2].Value)).OrderBy(item => item.Index).ToArray();
     var link = Executable(ControlLinker.Link(FunctionCatalog.FromDefinitions([D("SET_EXTRA_TITLE_VAR", path, function.Span)]), [prototype], runtimeEnvironment: env, runtimeStatements: true).Program);
@@ -513,7 +1484,7 @@ static LinkedProgram Executable(LinkedProgram program, params (int FunctionId, i
         code[descriptor.CodeStart + replacement.Pc] = replacement.Instruction;
     }
     var descriptors = program.Descriptors.Select(d => d.State == VmFunctionState.CodeNotAvailable ? d : new VmFunctionDescriptor(d.FunctionId, d.CodeStart, d.CodeLength, VmFunctionState.ExecutableReady)).ToArray();
-    return new(code, descriptors, program.StructuralLinks, program.SifLinks, program.IfGroups, program.IfClauses, program.SelectGroups, program.SelectCases, program.Loops, program.SemanticArena, program.StructuralSemanticRecordIndices, program.RuntimeStatements, program.RuntimeMetadata, program.CallSites, program.CallArgumentArena, program.CallArgumentRecords, program.ExpressionFunctionTargets);
+    return new(code, descriptors, program.StructuralLinks, program.SifLinks, program.IfGroups, program.IfClauses, program.SelectGroups, program.SelectCases, program.Loops, program.SemanticArena, program.StructuralSemanticRecordIndices, program.RuntimeStatements, program.RuntimeMetadata, program.CallSites, program.CallArgumentArena, program.CallArgumentRecords, program.ExpressionFunctionTargets, program.DynamicCallSites, program.DynamicCallArena, program.DynamicCallArgumentRecords);
 }
 static long BridgeReturn(long value)
 {
@@ -649,17 +1620,97 @@ sealed class StructuralHost : IVmStructuralSemantics
 class RecordingEffects : IVmRuntimeEffects
 {
     public readonly List<string> Events = [];
+    public readonly List<VmSemanticValue> LegacyReturns = [];
     public void WriteText(string text) => Events.Add("text:" + text);
     public void NewLine() => Events.Add("newline");
     public void RequestWait(bool force) => Events.Add("wait:" + force);
     public void Quit() => Events.Add("quit");
     public virtual bool ExecuteHostStatement(PrototypeOpcode opcode, string operand) => false;
+    public virtual bool PrintButton(string label, VmSemanticValue value) { Events.Add($"button:{label}:{value.Kind}:{value}"); return true; }
+    public virtual bool SetLegacyReturnValues(ReadOnlySpan<VmSemanticValue> values) { LegacyReturns.AddRange(values); return true; }
+    public virtual VmHostEffectResult ExecuteTypedHostStatement(PrototypeOpcode opcode, ReadOnlySpan<VmSemanticValue> arguments) => VmHostEffectResult.Unavailable;
+}
+
+sealed class ThrowingEffects : IVmRuntimeEffects
+{
+    public void WriteText(string text) => throw new InvalidOperationException("host");
+    public void NewLine() { }
+    public void RequestWait(bool force) { }
+    public void Quit() { }
+}
+
+sealed class OwnedInputEffects(VmContextStorage owner, bool synchronousResponse = false) : RecordingEffects, IVmOwnedInputRuntimeEffects
+{
+    private bool publishing;
+    public VmInputContinuation? Token { get; private set; }
+    public VmSemanticValue Result { get; private set; } = VmSemanticValue.Unavailable;
+    public int PublishCount { get; private set; }
+    public int ResultWriteCount { get; private set; }
+    public bool PublishedWhileSuspended { get; private set; }
+    public bool PumpReenteredDuringPublish { get; private set; }
+
+    public bool TryPrepareInput(PrototypeOpcode opcode, ReadOnlySpan<VmSemanticValue> arguments, out VmInputValueKind expectedKind)
+    {
+        expectedKind = VmInputValueKind.String;
+        return opcode == PrototypeOpcode.ONEINPUTS && arguments.IsEmpty;
+    }
+
+    public void PublishInput(VmInputContinuation continuation, Action<VmSemanticValue> respond)
+    {
+        Token = continuation;
+        PublishCount++;
+        PublishedWhileSuspended = owner.RunState == VmOwnerRunState.Suspended;
+        publishing = true;
+        try
+        {
+            if (synchronousResponse) respond(VmSemanticValue.From("sync"));
+        }
+        finally { publishing = false; }
+    }
+
+    public bool TryWriteInputResult(VmSemanticValue value)
+    {
+        PumpReenteredDuringPublish |= publishing;
+        Result = value;
+        ResultWriteCount++;
+        return value.Kind == VmSemanticValueKind.String;
+    }
 }
 
 sealed class HostRecordingEffects : RecordingEffects
 {
     public readonly List<string> HostEvents = [];
     public override bool ExecuteHostStatement(PrototypeOpcode opcode, string operand) { HostEvents.Add(opcode + ":" + operand); return true; }
+}
+
+sealed class TypedRecordingEffects(bool waitOnInput = false) : RecordingEffects
+{
+    public readonly List<string> TypedEvents = [];
+    public override VmHostEffectResult ExecuteTypedHostStatement(PrototypeOpcode opcode, ReadOnlySpan<VmSemanticValue> arguments)
+    {
+        TypedEvents.Add(opcode + ":" + string.Join('|', arguments.ToArray().Select(value => value.ToString())));
+        return waitOnInput && opcode == PrototypeOpcode.ONEINPUTS ? VmHostEffectResult.WaitingForInput : VmHostEffectResult.Applied;
+    }
+}
+
+sealed class DynamicResolver((string Name, bool Method) key, VmDynamicCallResolution resolution) : IVmDynamicCallResolver
+{
+    public int Calls { get; private set; }
+    public VmDynamicCallResolution Resolve(string effectiveName, bool method)
+    {
+        Calls++;
+        return effectiveName.Equals(key.Name, StringComparison.OrdinalIgnoreCase) && method == key.Method
+            ? resolution : new(VmDynamicResolutionKind.Missing, new(-1));
+    }
+}
+
+sealed class CallbackDynamicResolver(Action callback) : IVmDynamicCallResolver
+{
+    public VmDynamicCallResolution Resolve(string effectiveName, bool method)
+    {
+        callback();
+        return new(VmDynamicResolutionKind.Ready, new(1));
+    }
 }
 
 sealed class FrameState : IVmFrameState
@@ -702,7 +1753,7 @@ sealed class CsvIndexMappingHost : IVmSemanticHost, IVmTypedSemanticHost, IVmCon
     public int CompareStrings(string left, string right) => string.CompareOrdinal(left, right);
 }
 
-sealed class SemanticHost : IVmSemanticHost, IVmAssignmentTargetTypeHost, IVmRuntimeNumericOptions
+class SemanticHost : IVmSemanticHost, IVmAssignmentTargetTypeHost, IVmRuntimeNumericOptions
 {
     private readonly Dictionary<string, VmSemanticValue> values = [];
     public readonly Dictionary<string, SemanticCall> Calls = [];
@@ -728,6 +1779,12 @@ sealed class SemanticHost : IVmSemanticHost, IVmAssignmentTargetTypeHost, IVmRun
     }
     private static string Key(string name, string? subkey, ReadOnlySpan<VmSemanticValue> indices) => name + "@" + subkey + ":" + string.Join(',', indices.ToArray().Select(x => x.ToString()));
     private long GetInt(string name, string? subkey, ReadOnlySpan<VmSemanticValue> indices) => values[Key(name, subkey, indices)].TryGetInteger(out var value) ? value : throw new InvalidOperationException("missing integer");
+}
+
+sealed class PreflightSemanticHost : SemanticHost, IVmHostCallPreflight
+{
+    public VmHostCallAdmission Admission { get; init; } = VmHostCallAdmission.Ready;
+    public VmHostCallAdmission Classify(SemanticHostIdentity identity) => Admission;
 }
 
 sealed class TypedCallHost : IVmSemanticHost, IVmTypedSemanticHost

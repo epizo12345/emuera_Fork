@@ -121,6 +121,25 @@ internal sealed class ProcessState
     SystemStateCode sysStateCode = SystemStateCode.Title_Begin;
     BeginType begintype = BeginType.NULL;
     public bool isBegun { get { return begintype != BeginType.NULL; } }
+#if R0_F5B
+    internal BeginType R0F5BPendingBegin => begintype;
+
+    internal void R0F5BRequestBeginGraphFree(BeginType type)
+    {
+        if (type != BeginType.SHOP || (sysStateCode & SystemStateCode.__CAN_BEGIN__) != SystemStateCode.__CAN_BEGIN__)
+            throw new InvalidOperationException("R0-F5B graph-free BEGIN request rejected");
+        begintype = type;
+    }
+
+    internal void R0F5BApplyBeginGraphFree()
+    {
+        if (begintype != BeginType.SHOP || functionList.Count != 0)
+            throw new InvalidOperationException("R0-F5B graph-free BEGIN application ownership mismatch");
+        calledWhenNormal = sysStateCode == SystemStateCode.Normal;
+        sysStateCode = SystemStateCode.Shop_Begin;
+        begintype = BeginType.NULL;
+    }
+#endif
 
     public LogicalLine CurrentLine { get { return currentLine; } set { currentLine = value; } }
     public LogicalLine ErrorLine
@@ -222,6 +241,9 @@ internal sealed class ProcessState
                 //    throw new ExeEE("不適当なBEGIN呼び出し");
         }
         begintype = type;
+#if R0_F5B
+        GlobalStatic.Process.R0F5BOnBeginRequested(type);
+#endif
         return;
     err:
         CalledFunction func = functionList[0];
@@ -259,6 +281,9 @@ internal sealed class ProcessState
     /// <returns></returns>
     public void Begin()
     {
+#if R0_F5B
+        GlobalStatic.Process.R0F5BBeforeBeginApplied();
+#endif
         //@EVENTSHOPからの呼び出しは一旦破棄
         if (sysStateCode == SystemStateCode.Shop_CallEventShop)
             return;
@@ -304,6 +329,9 @@ internal sealed class ProcessState
                 called.CurrentLabel.ScopeOut();
         functionList.Clear();
         begintype = BeginType.NULL;
+#if R0_F5B
+        GlobalStatic.Process.R0F5BAfterBeginApplied();
+#endif
         return;
     }
 
@@ -367,6 +395,9 @@ internal sealed class ProcessState
         //    throw new ExeEE("実行中の関数が存在しません");
         //}
         CalledFunction called = functionList[^1];
+#if R0_F5B
+        GlobalStatic.Process.R0F5BBeforeEventReturn(called, ret);
+#endif
         GlobalStatic.Process.TraceR1_4IDifferentialLegacyCompletion(called, ret);
         GlobalStatic.Process.TraceR1_4IDifferentialExit(called);
         GlobalStatic.Process.TraceR1_4G2ExtraTitleExit(called, null);
@@ -408,6 +439,9 @@ internal sealed class ProcessState
                 if (called.CurrentLabel.hasPrivDynamicVar)
                     called.CurrentLabel.ScopeIn();
             }
+#if R0_F5B
+            GlobalStatic.Process.R0F5BAfterEventReturn(called, ret, currentLine);
+#endif
         }
         if (Program.DebugMode)
             console.DebugRemoveTraceLog();
@@ -444,6 +478,9 @@ internal sealed class ProcessState
 
     public void IntoFunction(CalledFunction call, UserDefinedFunctionArgument srcArgs, ExpressionMediator exm)
     {
+#if R0_E1A
+        MinorShift.Emuera.Runtime.Diagnostics.R0E1AProof.Hit(MinorShift.Emuera.Runtime.Diagnostics.R0E1AGuard.IntoFunction);
+#endif
         // [Emuera改修:MEM-13R39 2026-08-22]
         // Lazy対象の本文は固定CALLが保持するFunctionLabelLine stubへ実行直前に接続する。
         // hydrationを引数評価・ScopeIn・functionList追加より前に行い、stub identityを変えない。
@@ -498,6 +535,21 @@ internal sealed class ProcessState
             if (call.TopLabel.hasPrivDynamicVar)
                 call.TopLabel.ScopeIn();
         }
+#if R0_F4D1
+        GlobalStatic.Process.R0F4D1AfterLegacyArgumentsBound(call);
+#endif
+#if R0_F4D2
+        GlobalStatic.Process.R0F4D2AfterLegacyArgumentsBound(call);
+#endif
+#if R0_F4D5
+        GlobalStatic.Process.R0F4D5AfterLegacyArgumentsBound(call);
+#endif
+#if R0_F4E1
+        GlobalStatic.Process.R0F4E1AfterLegacyArgumentsBound(call);
+#endif
+#if R0_F4E2
+        GlobalStatic.Process.R0F4E2AfterLegacyArgumentsBound(call);
+#endif
         var traceCaller = functionList.Count == 0 ? null : functionList[^1];
         functionList.Add(call);
         GlobalStatic.Process.TraceR1_4IDifferentialEntry(call, traceCaller);
@@ -506,6 +558,9 @@ internal sealed class ProcessState
         //sequential = false;
         currentLine = call.CurrentLabel;
         lineCount++;
+#if R0_F5B
+        GlobalStatic.Process.R0F5BAfterLegacyFunctionEntry(call);
+#endif
         //ShfitNextLine();
     }
 
@@ -548,6 +603,9 @@ internal sealed class ProcessState
         GlobalStatic.Process.TraceR1_4ECallReturned(called);
         //nextLine = null;
         MethodReturnValue = ret;
+#if R0_F4D1
+        GlobalStatic.Process.R0F4D1AfterLegacyReturnF(called, ret);
+#endif
         return;
     }
 

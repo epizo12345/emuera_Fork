@@ -17,6 +17,27 @@ namespace MinorShift.Emuera;
 
 static partial class Program
 {
+#if R0_F6G7R2
+    internal static bool R0F6G7R2Mode;
+    internal static string R0F6G7R2Root = string.Empty;
+#endif
+#if R0_F6G3
+    internal static bool R0F6G3Mode;
+    internal static string R0F6G3Root = string.Empty;
+#endif
+#if R0_F6F
+    internal static bool R0F6FMode;
+#endif
+#if R0_F6E
+    internal static bool R0F6EMode;
+#endif
+#if R0_F6C
+    internal static bool R0F6CMode;
+    internal static bool R0F6CDisplayCapture;
+#endif
+#if R0_F6D
+    internal static bool R0F6DMode;
+#endif
     /*
 	コードの開始地点。
 	ここでMainWindowを作り、
@@ -45,6 +66,9 @@ static partial class Program
     [STAThread]
     static void Main(string[] args)
     {
+#if R0_E2
+        Runtime.Diagnostics.R0E2Measurement.MarkProcessStart();
+#endif
         // [Emuera改修:MEASURE-01]
         // EXEが動き始めた瞬間を記録する。通常版では空処理になるため速度に影響しない。
         // 参照: プロジェクト資料/06_コード案内.md
@@ -54,6 +78,271 @@ static partial class Program
 
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
         CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+#if R0_F6G7R2
+        if (args.Length == 3 && args[0] == "--R0F6G7R2")
+        {
+            R0F6G7R2Mode = true;
+            R0F6G7R2Root = Path.GetFullPath(args[1]);
+            Environment.ExitCode = RunR0F1(args[1], args[2], "f6g7r2");
+            return;
+        }
+#endif
+#if R0_F6G3
+        if (args.Length == 3 && args[0] == "--R0F6G3")
+        {
+            R0F6G3Mode = true;
+            R0F6G3Root = Path.GetFullPath(args[1]);
+            Environment.ExitCode = RunR0F1(args[1], args[2], "f6g3");
+            return;
+        }
+#endif
+#if R0_F6F
+        if (args.Length == 3 && args[0] == "--R0F6F")
+        {
+            R0F6FMode = true;
+            R0F6EMode = true;
+            R0F6DMode = true;
+            R0F6CMode = true;
+            // The inherited staged flow selects its scenario by the F6D run name;
+            // Program.R0F1 rewrites only the evidence suffix to f6f.
+            Environment.ExitCode = RunR0F1(args[1], args[2], "f6d");
+            return;
+        }
+#endif
+#if R0_F6E
+        if (args.Length == 3 && args[0] == "--R0F6E")
+        {
+            R0F6EMode = true;
+            R0F6DMode = true;
+            R0F6CMode = true;
+            Environment.ExitCode = RunR0F1(args[1], args[2], "f6d");
+            return;
+        }
+#endif
+#if R0_F6D
+        if (args.Length == 3 && args[0] == "--R0F6D")
+        {
+            R0F6DMode = true;
+            R0F6CMode = true;
+            Environment.ExitCode = RunR0F1(args[1], args[2], "f6d");
+            return;
+        }
+#endif
+#if R0_F6C
+        if (args.Length == 3 && args[0] == "--R0F6C")
+        {
+            R0F6CMode = true;
+            Environment.ExitCode = RunR0F1(args[1], args[2], "f6b");
+            return;
+        }
+#endif
+#if R0_F6B
+        if (args.Length == 3 && args[0] == "--R0F6B")
+        {
+            Environment.ExitCode = RunR0F1(args[1], args[2], "f6b");
+            return;
+        }
+#endif
+#if R0_F6A
+        if (args.Length == 3 && args[0] == "--R0F6A")
+        {
+            Environment.ExitCode = RunR0F1(args[1], args[2], "f6a");
+            return;
+        }
+#endif
+#if R0_F6
+        if (args.Length == 3 && args[0] == "--R0F6")
+        {
+            Environment.ExitCode = RunR0F1(args[1], args[2], "f6");
+            return;
+        }
+#endif
+#if R0_F5B
+        if (args.Length == 3 && args[0] == "--R0F5B")
+        {
+            Environment.ExitCode = RunR0F1(args[1], args[2], "f5b");
+            return;
+        }
+#endif
+#if R0_F5A2
+        if (args.Length == 3 && args[0] == "--R0F5A2")
+        {
+            Environment.ExitCode = RunR0F1(args[1], args[2], "f5a2");
+            return;
+        }
+#endif
+#if R0_F5A
+        if (args.Length == 3 && args[0] == "--R0F5A")
+        {
+            Environment.ExitCode = RunR0F1(args[1], args[2], "f5a");
+            return;
+        }
+#endif
+#if R0_F4G4
+        if (args.Length == 3 && args[0] == "--R0F4G4")
+        {
+            Environment.ExitCode = RunR0F1(args[1], args[2], "f4g4");
+            return;
+        }
+#endif
+#if R0_F4G3
+        if (args.Length == 3 && args[0] == "--R0F4G3")
+        {
+            Environment.ExitCode = RunR0F1(args[1], args[2], "f4g3");
+            return;
+        }
+#endif
+#if R0_F4G2
+        if (args.Length == 3 && args[0] == "--R0F4G2")
+        {
+            Environment.ExitCode = RunR0F1(args[1], args[2], "f4g2");
+            return;
+        }
+#endif
+#if R0_F4G1
+        if (args.Length == 3 && args[0] == "--R0F4G1")
+        {
+            Environment.ExitCode = RunR0F1(args[1], args[2], "f4g1");
+            return;
+        }
+#endif
+#if R0_F4F
+        if (args.Length == 3 && args[0] == "--R0F4F")
+        {
+            Environment.ExitCode = RunR0F1(args[1], args[2], "f4f");
+            return;
+        }
+#endif
+#if R0_F4E3
+        if (args.Length == 3 && args[0] == "--R0F4E3")
+        {
+            Environment.ExitCode = RunR0F1(args[1], args[2], "f4e3");
+            return;
+        }
+#endif
+#if R0_F4E2
+        if (args.Length == 3 && args[0] == "--R0F4E2")
+        {
+            Environment.ExitCode = RunR0F1(args[1], args[2], "f4e2");
+            return;
+        }
+#endif
+#if R0_F4E1
+        if (args.Length == 3 && args[0] == "--R0F4E1Break")
+        {
+            Environment.ExitCode = RunR0F4E1Break(args[1], args[2]);
+            return;
+        }
+        if (args.Length == 3 && args[0] == "--R0F4E1")
+        {
+            Environment.ExitCode = RunR0F1(args[1], args[2], "f4e1");
+            return;
+        }
+#endif
+#if R0_F4D5
+        if (args.Length == 3 && args[0] == "--R0F4D5")
+        {
+            Environment.ExitCode = RunR0F1(args[1], args[2], "f4d5");
+            return;
+        }
+#endif
+#if R0_F4D4
+        if (args.Length == 3 && args[0] == "--R0F4D4")
+        {
+            Environment.ExitCode = RunR0F1(args[1], args[2], "f4d4");
+            return;
+        }
+#endif
+#if R0_F4D3
+        if (args.Length == 4 && args[0] == "--R0F4D3")
+        {
+            Environment.ExitCode = RunR0F1(args[1], args[2], args[3]);
+            return;
+        }
+#endif
+#if R0_F4D2
+        if (args.Length == 3 && args[0] == "--R0F4D2")
+        {
+            Environment.ExitCode = RunR0F4D2(args[1], args[2]);
+            return;
+        }
+#endif
+#if R0_F4D1
+        if (args.Length == 3 && args[0] == "--R0F4D1")
+        {
+            Environment.ExitCode = RunR0F4D1(args[1], args[2]);
+            return;
+        }
+#endif
+#if R0_F4C
+        if (args.Length == 4 && args[0] == "--R0F4C")
+        {
+            Environment.ExitCode = RunR0F1(args[1], args[2], args[3]);
+            return;
+        }
+#endif
+#if R0_F4B
+        if (args.Length == 4 && args[0] == "--R0F4B")
+        {
+            Environment.ExitCode = RunR0F1(args[1], args[2], args[3]);
+            return;
+        }
+#endif
+#if R0_F4A
+        if (args.Length == 4 && args[0] == "--R0F4A")
+        {
+            Environment.ExitCode = RunR0F1(args[1], args[2], args[3]);
+            return;
+        }
+#endif
+#if R0_F3
+        if (args.Length == 4 && args[0] == "--R0F3")
+        {
+            Environment.ExitCode = RunR0F1(args[1], args[2], args[3]);
+            return;
+        }
+#endif
+#if R0_F2
+        if (args.Length == 4 && args[0] == "--R0F2")
+        {
+            Environment.ExitCode = RunR0F1(args[1], args[2], args[3]);
+            return;
+        }
+#endif
+#if R0_F1
+        if (args.Length == 4 && args[0] == "--R0F1")
+        {
+            Environment.ExitCode = RunR0F1(args[1], args[2], args[3]);
+            return;
+        }
+#endif
+#if R0_E1A
+        if (args.Length == 4 && args[0] == "--R0E2")
+        {
+            Environment.ExitCode = RunR0E2(args[1], args[2], args[3]);
+            return;
+        }
+        if (args.Length == 3 && args[0] == "--R0E1B")
+        {
+            Environment.ExitCode = RunR0E1A(args[1], args[2]);
+            return;
+        }
+        if (args.Length == 3 && args[0] == "--R0E1A")
+        {
+            Environment.ExitCode = RunR0E1A(args[1], args[2]);
+            return;
+        }
+#endif
+#if R0_B1
+        if (args.Length == 3 && args[0] == "--R0B1")
+        {
+            Environment.ExitCode = RunR0B1(args[1], args[2]);
+            return;
+        }
+#endif
+#if R0_C
+        args = ConfigureR0C(args);
+#endif
 
         var rootCommand = new RootCommand("Emuera");
 
@@ -204,7 +493,15 @@ static partial class Program
         NextRuntimeDifferentialSeed = result.GetValue(nextRuntimeDifferentialSeedOption);
         NextRuntimeDifferentialClockBase = result.GetValue(nextRuntimeDifferentialClockBaseOption);
         NextRuntimeDifferentialClockStepMs = result.GetValue(nextRuntimeDifferentialClockStepOption);
+#if R0_C
+        var determinismConfigured = Runtime.Diagnostics.DifferentialDeterminism.Configure(R0CDeterministic ||
+            !string.IsNullOrWhiteSpace(NextRuntimeDifferentialCapturePath), NextRuntimeDifferentialSeed,
+            NextRuntimeDifferentialClockBase, NextRuntimeDifferentialClockStepMs);
+        if (R0CDeterministic && !determinismConfigured)
+            throw new ArgumentException("R0-C deterministic mode requires seed, clock base, and a positive clock step");
+#else
         Runtime.Diagnostics.DifferentialDeterminism.Configure(!string.IsNullOrWhiteSpace(NextRuntimeDifferentialCapturePath), NextRuntimeDifferentialSeed, NextRuntimeDifferentialClockBase, NextRuntimeDifferentialClockStepMs);
+#endif
         if (result.GetValue(nextRuntimeDifferentialSelfTestOption))
         {
             Environment.ExitCode = Runtime.Diagnostics.DifferentialDeterminism.SelfTest();

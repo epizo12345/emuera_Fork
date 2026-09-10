@@ -191,6 +191,9 @@ internal sealed class LabelDictionary
     }
     public void AddLabel(FunctionLabelLine point, int fileIndex)
     {
+#if R0_E1A
+        MinorShift.Emuera.Runtime.Diagnostics.R0E1AProof.Hit(MinorShift.Emuera.Runtime.Diagnostics.R0E1AGuard.AddLabel);
+#endif
         point.FileIndex = fileIndex;
         // count++ は同時実行で加算を取りこぼすため、Interlockedで確実に1増やす。
         Interlocked.Increment(ref count);
