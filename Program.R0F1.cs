@@ -80,6 +80,11 @@ static partial class Program
 #if R0_F6G7R2
             || Path.GetFileName(root).StartsWith("CompactReplacementR0F6G7R2_", StringComparison.Ordinal)
             || Path.GetFileName(root).StartsWith("CompactReplacementR0F6G8_", StringComparison.Ordinal)
+            || Path.GetFileName(root).StartsWith("CompactReplacementR0F6G10A_", StringComparison.Ordinal)
+            || Path.GetFileName(root).StartsWith("CompactReplacementR0F6G10A1_", StringComparison.Ordinal)
+#if R0_F6G10C
+            || IsCompactProductionProofRoot(root)
+#endif
 #endif
 #endif
 #endif

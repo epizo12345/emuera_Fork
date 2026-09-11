@@ -107,7 +107,19 @@ public sealed class FunctionSourceSession : IDisposable
         if (snapshotChanged) throw new IOException("file length or last-write time changed");
     }
 
-    public FunctionSourceReadResult Read(FunctionIndex function)
+    public FunctionSourceReadResult Read(FunctionIndex function) => ReadCore(function, checkSnapshot: true);
+
+    // A caller that owns one file-wide validation batch checks the snapshot at
+    // session open and close instead of issuing a filesystem stat per function.
+    public FunctionSourceReadResult ReadStableBatch(FunctionIndex function) => ReadCore(function, checkSnapshot: false);
+
+    public bool VerifyStableBatchSnapshot()
+    {
+        ObjectDisposedException.ThrowIf(disposed, this);
+        return !IsSnapshotChanged(initial: false);
+    }
+
+    private FunctionSourceReadResult ReadCore(FunctionIndex function, bool checkSnapshot)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
         var span = function.Span;
@@ -125,7 +137,7 @@ public sealed class FunctionSourceSession : IDisposable
 #if PERFORMANCE_METRICS
             var snapshotCheckStart = Stopwatch.GetTimestamp();
 #endif
-            var snapshotChanged = IsSnapshotChanged(initial: false);
+            var snapshotChanged = checkSnapshot && IsSnapshotChanged(initial: false);
 #if PERFORMANCE_METRICS
             SourceReaderMetrics.RecordReadSnapshotCheck(Stopwatch.GetTimestamp() - snapshotCheckStart, snapshotChanged);
 #endif

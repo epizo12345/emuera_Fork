@@ -515,6 +515,13 @@ internal sealed partial class FunctionIdentifier
             {
                 exm.Console.ClearHTMLIsland((int)args.TargetLayer.GetIntValue(exm));
             }
+#if R0_F6G10C3
+            if (MinorShift.Emuera.Program.R0F6G10C3PauseAfterIslandClear)
+            {
+                MinorShift.Emuera.Program.R0F6G10C3IslandClearObserved = true;
+                exm.Console.ReadAnyKey();
+            }
+#endif
         }
     }
 

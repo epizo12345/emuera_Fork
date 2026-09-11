@@ -119,6 +119,10 @@ internal sealed partial class Process
 
     private bool callFunction(string functionName, bool force, bool isEvent)
     {
+#if R0_F6G10A
+        if (Program.RuntimeMode == Program.ScriptRuntimeMode.CompactStrict)
+            return InvokeCompactScript(functionName, isEvent, force);
+#endif
 #if R0_F5B
         R0F5BObserveFunctionCall(functionName, isEvent);
 #endif
@@ -1017,6 +1021,10 @@ internal sealed partial class Process
 #else
         if (!vEvaluator.LoadFrom((int)systemResult))
             throw new ExeEE(LocalizationManager.Error.UnexpectedErrorInLoaddata);
+#endif
+#if R0_F6G10B
+        if (Program.RuntimeMode == Program.ScriptRuntimeMode.CompactStrict)
+            R0F6G10AApplyDataReset(discardExecution: true);
 #endif
         deletePrevState();
         beginDataLoaded();

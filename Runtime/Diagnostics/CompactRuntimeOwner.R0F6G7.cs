@@ -20,14 +20,21 @@ internal sealed partial class CompactRuntimeOwner : IVmContextOwner
     private Process.LegacyVmRuntimeEffects? contextNeutralEffects;
 #endif
 
-    private VmContextStorage ContextNeutralStorage => contextNeutralStorage ??=
-        new VmContextStorage(Interlocked.Increment(ref nextContextNeutralOwnerId), 1,
+    private VmContextStorage ContextNeutralStorage
+    {
+        get
+        {
+            if (contextNeutralStorage is not null) return contextNeutralStorage;
+            var sizes = hostIdentity is Process process ? process.GetNextRuntimeDefaultFrameSizes() : (Arg: 1, Args: 1);
+            return contextNeutralStorage = new VmContextStorage(Interlocked.Increment(ref nextContextNeutralOwnerId), 1,
 #if R0_F6G7R2
-            50_000_000
+                50_000_000,
 #else
-            10_000_000
+                10_000_000,
 #endif
-        );
+                sizes.Arg, sizes.Args);
+        }
+    }
 
     internal VmMachine ContextNeutralMachine => contextNeutralMachine ??= hostIdentity is Process process
 #if R0_F6G7R2
@@ -49,6 +56,9 @@ internal sealed partial class CompactRuntimeOwner : IVmContextOwner
     internal int ContextNeutralPendingLeaseCount => ContextNeutralStorage.PendingLeaseCount;
     internal int ContextNeutralFrameDepth => ContextNeutralStorage.FrameDepth;
     internal VmFrame[] ContextNeutralFrames => ContextNeutralStorage.ActiveFrames;
+#if R0_F6G10B
+    internal VmFrameAddress[] ContextNeutralFrameAddresses => ContextNeutralStorage.ActiveFrameAddresses;
+#endif
     internal long ContextNeutralMaterializationCount => ContextNeutralStorage.MaterializationCount;
     internal long ContextNeutralPinAcquireCount => ContextNeutralStorage.PinAcquireCount;
     internal long ContextNeutralPinReleaseCount => ContextNeutralStorage.PinReleaseCount;
@@ -61,6 +71,28 @@ internal sealed partial class CompactRuntimeOwner : IVmContextOwner
         contextNeutralDynamicResolver = resolver;
     }
     internal void RegisterContext(RuntimeFunctionId id, FunctionKind kind) => ContextNeutralStorage.Register(id, kind);
+    internal void ResetContextNeutralPersistentBanks() => ContextNeutralStorage.ResetPersistentBanks();
+    internal bool UnwindContextNeutralToFloor(int floor) => ContextNeutralStorage.UnwindToFloor(floor);
+    internal void RevokeContextNeutralInput() => ContextNeutralStorage.RevokeInput();
+#if R0_F6G10B
+    internal void RevokeContextNeutralSource() => ContextNeutralStorage.RevokeSource();
+#if R0_F6G10C
+    internal void ShutdownContextNeutral()
+    {
+        if (!ContextNeutralStorage.IsTerminal)
+            ContextNeutralStorage.TerminalFault(VmStopReason.TerminalFault,
+                ContextNeutralStorage.FrameDepth == 0 ? -1 : ContextNeutralStorage.CurrentFrame.FunctionId,
+                ContextNeutralStorage.FrameDepth == 0 ? -1 : ContextNeutralStorage.CurrentFrame.Pc,
+                "owner shutdown");
+        ContextNeutralStorage.ReleaseOwnedCodeAfterTerminal();
+        r0f6g7r2Cursor = null;
+    }
+#endif
+#endif
+    internal bool AdvanceContextNeutralExecutionEpoch() => ContextNeutralStorage.AdvanceExecutionEpoch();
+    internal bool TryParkContextNeutralSegment(int floor, out VmSegmentBookmark bookmark) => ContextNeutralStorage.TryParkSegment(floor, out bookmark);
+    internal bool TryResumeContextNeutralSegment(VmSegmentBookmark bookmark) => ContextNeutralStorage.TryResumeSegment(bookmark);
+    internal bool DiscardContextNeutralSegment(VmSegmentBookmark bookmark, bool advanceExecutionEpoch) => ContextNeutralStorage.DiscardSegment(bookmark, advanceExecutionEpoch);
 #endif
 
     internal void RegisterContext(RuntimeFunctionId id, FunctionKind kind, Func<VmFunctionExecutionContext?> materialize) =>

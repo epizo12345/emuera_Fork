@@ -17,6 +17,10 @@ namespace MinorShift.Emuera;
 
 static partial class Program
 {
+#if R0_F6G10A
+    internal enum ScriptRuntimeMode : byte { Legacy, CompactStrict }
+    internal static ScriptRuntimeMode RuntimeMode { get; private set; }
+#endif
 #if R0_F6G7R2
     internal static bool R0F6G7R2Mode;
     internal static string R0F6G7R2Root = string.Empty;
@@ -78,6 +82,41 @@ static partial class Program
 
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
         CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+#if R0_F6G10C3
+        if (args.Length == 4 && args[0] == "--R0F6G10C3")
+        {
+            Environment.ExitCode = RunR0F6G10C3(args[1], args[2], args[3]);
+            return;
+        }
+#endif
+#if R0_F6G10C2
+        if (args.Length == 4 && args[0] == "--R0F6G10C2")
+        {
+            Environment.ExitCode = RunR0F6G10C2(args[1], args[2], args[3]);
+            return;
+        }
+#endif
+#if R0_F6G10B
+        if (args.Length == 4 && args[0] == "--R0F6G10B")
+        {
+            Environment.ExitCode = RunR0F6G10B(args[1], args[2], args[3]);
+            return;
+        }
+#endif
+#if R0_F6G10C1
+        if (args.Length == 4 && args[0] == "--R0F6G10C1")
+        {
+            Environment.ExitCode = RunR0F6G10C1(args[1], args[2], args[3]);
+            return;
+        }
+#endif
+#if R0_F6G10A
+        if (args.Length is 3 or 4 && args[0] == "--R0F6G10A")
+        {
+            Environment.ExitCode = RunR0F6G10A(args[1], args[2], args.Length == 4 ? args[3] : "Probe");
+            return;
+        }
+#endif
 #if R0_F6G7R2
         if (args.Length == 3 && args[0] == "--R0F6G7R2")
         {
@@ -359,6 +398,13 @@ static partial class Program
         // Diagnostic probe switches remain independent of this flag.
         var nextRuntimeOption = new Option<bool>(name: "--NextRuntime");
         rootCommand.Options.Add(nextRuntimeOption);
+#if R0_F6G10A
+        var runtimeModeOption = new Option<string>(name: "--Runtime")
+        {
+            Description = "Script runtime: Legacy (default) or CompactStrict"
+        };
+        rootCommand.Options.Add(runtimeModeOption);
+#endif
 
         // [Emuera改修:TOOLS-01]
         // 自動テスト用の入口。ゲーム操作用の通常オプションではない。
@@ -541,6 +587,14 @@ static partial class Program
         var debugMode = result.GetValue(debugModeOption);
         DebugMode = debugMode;
         NextRuntimeMode = result.GetValue(nextRuntimeOption);
+#if R0_F6G10A
+        var runtimeModeText = result.GetValue(runtimeModeOption);
+        RuntimeMode = string.IsNullOrWhiteSpace(runtimeModeText) || runtimeModeText.Equals("Legacy", StringComparison.OrdinalIgnoreCase)
+            ? ScriptRuntimeMode.Legacy
+            : runtimeModeText.Equals("CompactStrict", StringComparison.OrdinalIgnoreCase)
+                ? ScriptRuntimeMode.CompactStrict
+                : throw new ArgumentException("--Runtime must be Legacy or CompactStrict");
+#endif
         StartupTestMode = result.GetValue(startupTestOption);
 
         var fileArgs = result.GetValue(filesArg) ?? [];
@@ -550,6 +604,10 @@ static partial class Program
             //必要なファイルのチェックにはConfig読み込みが必須なので、ここではフラグだけ立てておく
             AnalysisMode = true;
         }
+#if R0_F6G10A
+        if (RuntimeMode == ScriptRuntimeMode.CompactStrict && (DebugMode || AnalysisMode || NextRuntimeMode))
+            throw new ArgumentException("CompactStrict cannot be combined with Debug, Analysis, or --NextRuntime");
+#endif
 
         //利用推奨の.NET Coreのバージョン
         var targetVersion = "10.0.0";

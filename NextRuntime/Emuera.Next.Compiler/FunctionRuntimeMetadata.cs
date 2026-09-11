@@ -9,7 +9,7 @@ public enum RuntimeMetadataValueType : byte { Integer, String }
 public readonly record struct FunctionRuntimeParameter(string Name, RuntimeMetadataValueType Type, int Slot, bool HasDefault, long DefaultInteger, string? DefaultString, bool IsPrivate = false);
 public readonly record struct FunctionRuntimePrivate(string Name, RuntimeMetadataValueType Type, ImmutableArray<int> Dimensions, bool IsStatic,
     bool IsConst = false, bool HasInitializer = false, long InitialInteger = 0, string? InitialString = null,
-    ImmutableArray<long> InitialIntegers = default, ImmutableArray<string> InitialStrings = default);
+    ImmutableArray<long> InitialIntegers = default, ImmutableArray<string> InitialStrings = default, string? RuntimeInitializer = null);
 
 // Compile-time-only representation. It contains no source slice or Legacy parser object.
 public sealed record FunctionRuntimeMetadata(
@@ -50,8 +50,13 @@ public static class FunctionRuntimeMetadataParser
                 if (!bodyScan.Identifier.Equals("VARI", options.NameComparison) && !bodyScan.Identifier.Equals("VARS", options.NameComparison)) continue;
                 if (!TryParseBodyPrivate(bodyLine[bodyScan.StopPosition..], bodyScan.Identifier.Equals("VARS", options.NameComparison), options, out var bodyVariable))
                 { detail = "unsupported body-local " + bodyScan.Identifier; return false; }
-                if (privateVariables.Any(existing => existing.Name.Equals(bodyVariable.Name, options.NameComparison)))
-                { detail = "duplicate private variable: " + bodyVariable.Name; return false; }
+                var duplicate = privateVariables.FirstOrDefault(existing => existing.Name.Equals(bodyVariable.Name, options.NameComparison));
+                if (duplicate.Name is not null)
+                {
+                    if (duplicate.Type == bodyVariable.Type && duplicate.Dimensions.SequenceEqual(bodyVariable.Dimensions) && !duplicate.IsStatic) continue;
+                    detail = "conflicting private variable: " + bodyVariable.Name;
+                    return false;
+                }
                 privateVariables.Add(bodyVariable);
                 continue;
             }
@@ -194,23 +199,25 @@ public static class FunctionRuntimeMetadataParser
         }
         if (dynamic && (explicitlyStatic || isConst)) return false;
         var dimensions = ImmutableArray.CreateBuilder<int>();
-        for (var i = 1; i < parts.Count; i++) { if (!TryParsePositiveInt(parts[i].Trim(), out var length)) return false; dimensions.Add(length); }
+        for (var i = 1; i < parts.Count; i++) { if (!TryParsePositiveDimension(parts[i].Trim(), constants, out var length)) return false; dimensions.Add(length); }
         var type = isString ? RuntimeMetadataValueType.String : RuntimeMetadataValueType.Integer;
         long initialInteger = 0;
         string? initialString = null;
         var integerInitializers = ImmutableArray.CreateBuilder<long>();
         var stringInitializers = ImmutableArray.CreateBuilder<string>();
+        string? runtimeInitializer = null;
         if (initializer.Length != 0)
         {
-            foreach (var item in SemanticLexicalTokenStream.SplitTopLevel(initializer, ',', options))
+            var initializerItems = SemanticLexicalTokenStream.SplitTopLevel(initializer, ',', options);
+            foreach (var item in initializerItems)
             {
                 var itemText = item.Trim();
                 if (!TryParseConstant(itemText, type, out var integerValue, out var stringValue) &&
                     (constants is null || !constants.TryGetConstant(itemText, out integerValue, out stringValue) ||
                      type == RuntimeMetadataValueType.Integer && stringValue is not null || type == RuntimeMetadataValueType.String && stringValue is null))
                 {
-                    if (!allowUnresolvedDynamicInitializer || !dynamic) return false;
-                    integerInitializers.Clear(); stringInitializers.Clear(); initializer = string.Empty;
+                    if (!allowUnresolvedDynamicInitializer || !dynamic || dimensions.Count != 0 || initializerItems.Count != 1) return false;
+                    integerInitializers.Clear(); stringInitializers.Clear(); runtimeInitializer = itemText; initializer = string.Empty;
                     break;
                 }
                 if (type == RuntimeMetadataValueType.Integer) integerInitializers.Add(integerValue); else stringInitializers.Add(stringValue ?? string.Empty);
@@ -222,7 +229,7 @@ public static class FunctionRuntimeMetadataParser
         var elementCount = dimensions.Aggregate(1, static (count, dimension) => checked(count * dimension));
         if (integerInitializers.Count > elementCount || stringInitializers.Count > elementCount) return false;
         variable = new(declaration[^1], type, dimensions.ToImmutable(), !dynamic, isConst, initializer.Length != 0, initialInteger, initialString,
-            integerInitializers.ToImmutable(), stringInitializers.ToImmutable());
+            integerInitializers.ToImmutable(), stringInitializers.ToImmutable(), runtimeInitializer);
         return true;
     }
 
@@ -248,6 +255,21 @@ public static class FunctionRuntimeMetadataParser
     }
 
     private static bool TryParsePositiveInt(string value, out int result) => int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out result) && result is > 0 and < int.MaxValue;
+    private static bool TryParsePositiveDimension(string value, MacroCatalog? constants, out int result)
+    {
+        if (TryParsePositiveInt(value, out result)) return true;
+        long product = 1;
+        foreach (var factor in value.Split('*', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (!long.TryParse(factor, NumberStyles.None, CultureInfo.InvariantCulture, out var number) &&
+                (constants is null || !constants.TryGetConstant(factor, out number, out var text) || text is not null))
+            { result = 0; return false; }
+            try { product = checked(product * number); }
+            catch (OverflowException) { result = 0; return false; }
+        }
+        result = product is > 0 and < int.MaxValue ? (int)product : 0;
+        return result != 0;
+    }
     private static int FindTopLevelEquals(string value)
     {
         var quote = '\0';

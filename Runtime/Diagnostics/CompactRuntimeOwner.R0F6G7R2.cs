@@ -26,10 +26,11 @@ internal sealed partial class CompactRuntimeOwner
     }
 
     private R0F6G7R2Cursor? r0f6g7r2Cursor;
-    private int r0f6g7r2MachineCreationCount;
+    private int eventSetInvocationCount;
     private readonly Dictionary<int, long> r0f6g7r2InvocationCounts = [];
 
-    internal int R0F6G7R2MachineCreationCount => r0f6g7r2MachineCreationCount;
+    internal int R0F6G7R2MachineCreationCount => contextNeutralMachine is null ? 0 : 1;
+    internal int EventSetInvocationCount => eventSetInvocationCount;
     internal IReadOnlyDictionary<int, long> R0F6G7R2InvocationCounts => r0f6g7r2InvocationCounts;
     internal bool R0F6G7R2EventCursorActive => r0f6g7r2Cursor?.Active == true;
     internal object? R0F6G7R2EventCursorEvidence => r0f6g7r2Cursor is not { } cursor ? null : new
@@ -50,6 +51,11 @@ internal sealed partial class CompactRuntimeOwner
 
     internal VmStopReason RunR0F6G7R2Event(string eventSetId,
         IReadOnlyList<R0F6G7R2EventDefinition> definitions, string hostContinuation,
+        string pendingBeginRelation, long stateEpoch, int maxSteps) =>
+        RunEventSet(eventSetId, definitions, hostContinuation, pendingBeginRelation, stateEpoch, maxSteps);
+
+    internal VmStopReason RunEventSet(string eventSetId,
+        IReadOnlyList<R0F6G7R2EventDefinition> definitions, string hostContinuation,
         string pendingBeginRelation, long stateEpoch, int maxSteps)
     {
         if (R0F6G7R2StartRejection(r0f6g7r2Cursor?.Active == true, ContextNeutralFrameDepth, definitions.Count) is { } rejection)
@@ -65,7 +71,7 @@ internal sealed partial class CompactRuntimeOwner
             StateEpoch = stateEpoch,
             Active = true,
         };
-        r0f6g7r2MachineCreationCount++;
+        eventSetInvocationCount++;
         var machine = ContextNeutralMachine;
         var start = machine.Start(ordered[0].Id, FunctionKind.Event);
         if (start != VmStopReason.Returned) return start;

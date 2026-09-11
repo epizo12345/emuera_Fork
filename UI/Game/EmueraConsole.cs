@@ -267,6 +267,9 @@ internal sealed partial class EmueraConsole : IDisposable
 #if R0_F6C
         if (Program.R0F6CDisplayCapture) return true;
 #endif
+#if R0_F6G10A
+        if (Program.R0F6G10AHeadlessCapture) return true;
+#endif
         return window.Created;
     } }
 
@@ -592,7 +595,14 @@ internal sealed partial class EmueraConsole : IDisposable
     }
 
 
-    public void Quit() { state = ConsoleState.Quit; }
+    public void Quit()
+    {
+#if R0_F6G10B
+        if (Program.RuntimeMode == Program.ScriptRuntimeMode.CompactStrict)
+            process?.R0F6G10BRevokeForClose();
+#endif
+        state = ConsoleState.Quit;
+    }
     public void ThrowTitleError(bool error)
     {
         state = ConsoleState.Error;
@@ -780,6 +790,10 @@ internal sealed partial class EmueraConsole : IDisposable
 
     private void Draw()
     {
+#if R0_F6G10A
+        if (suppressInitialPaint)
+            return;
+#endif
 #if R0_F6C
         if (Program.R0F6CMode)
             return;
@@ -929,20 +943,20 @@ internal sealed partial class EmueraConsole : IDisposable
     /// スクリプト実行。RefreshStringsはしないので呼び出し側がすること
     /// </summary>
     /// <param name="input"></param>
-    private void RunEmueraProgram(string input)
+    private bool RunEmueraProgram(string input)
     {
         //入力文字列の表示処理を行わない場合はstr == null
         if (input != null)
         {
             //INPUT文字列をPRINTする処理など
             if (!doInputToEmueraProgram(input))
-                return;
+                return false;
             if (state == ConsoleState.Error)
-                return;
+                return false;
         }
         state = ConsoleState.Running;
         //process.CompileScript();
-        process.DoScript();
+        process.PumpExecution();
         if (state == ConsoleState.Running)
         {//RunningならProcessは処理を継続するべき
             state = ConsoleState.Error;
@@ -954,6 +968,7 @@ internal sealed partial class EmueraConsole : IDisposable
         //1819 Refreshは呼び出し側で行う
         //RefreshStrings(false);
         newGeneration();
+        return true;
     }
 
     private bool doInputToEmueraProgram(string str)
@@ -975,7 +990,17 @@ internal sealed partial class EmueraConsole : IDisposable
                     if (inputReq.IsSystemInput)
                         process.InputSystemInteger(inputValue);
                     else
+#if R0_F6G10B
+                    {
+                        var intDisposition = process.R0F6G10BAcceptInput(inputReq,
+                            MinorShift.Emuera.Next.Vm.VmSemanticValue.From(inputValue));
+                        if (intDisposition == GameProc.Process.CompactInputDisposition.Rejected) return false;
+                        if (intDisposition == GameProc.Process.CompactInputDisposition.NotCompact)
+                            process.InputInteger(inputValue);
+                    }
+#else
                         process.InputInteger(inputValue);
+#endif
                     break;
                 case InputType.StrValue:
                     if (string.IsNullOrEmpty(str) && inputReq.HasDefValue && !IsRunningTimer)
@@ -983,8 +1008,25 @@ internal sealed partial class EmueraConsole : IDisposable
                     //空入力と時間切れ
                     if (str == null)
                         str = "";
+#if R0_F6G10B
+                    var stringDisposition = process.R0F6G10BAcceptInput(inputReq,
+                        MinorShift.Emuera.Next.Vm.VmSemanticValue.From(str));
+                    if (stringDisposition == GameProc.Process.CompactInputDisposition.Rejected) return false;
+                    if (stringDisposition == GameProc.Process.CompactInputDisposition.NotCompact)
+                        process.InputString(str);
+#else
                     process.InputString(str);
+#endif
                     break;
+#if R0_F6G10B
+                case InputType.EnterKey:
+                case InputType.AnyKey:
+                case InputType.Void:
+                    if (!inputReq.IsSystemInput && process.R0F6G10BAcceptInput(inputReq,
+                            MinorShift.Emuera.Next.Vm.VmSemanticValue.From(0L)) == GameProc.Process.CompactInputDisposition.Rejected)
+                        return false;
+                    break;
+#endif
             }
             stopTimer();
         }
@@ -1172,8 +1214,7 @@ internal sealed partial class EmueraConsole : IDisposable
                     MesSkip = true;
                 }
 
-                if (inputReq.OneInput && (!Config.AllowLongInputByMouse || !changedByMouse) && inputs.Length > 1)
-                    inputs = inputs.Remove(1);
+                inputs = NormalizeOneInput(inputs, inputReq.OneInput, changedByMouse);
                 //1819 TODO:入力無効系（強制待ちTWAIT）でスキップとマクロを止めるかそのままか
                 //現在はそのまま。強制待ち中はスキップの開始もできないのにスキップ中なら飛ばせる。
                 if (inputReq.InputType == InputType.Void)
@@ -1249,6 +1290,49 @@ internal sealed partial class EmueraConsole : IDisposable
             }
         }
     }
+
+#if R0_F6G10B
+    internal void R0F6G10BAttachProcess(GameProc.Process value) => process = value;
+
+    internal bool R0F6G10BAcceptControlledInput(string input)
+    {
+        if (state != ConsoleState.WaitInput || inputReq is null || inputReq.IsSystemInput) return false;
+        return RunEmueraProgram(NormalizeOneInput(input, inputReq.OneInput, changedByMouse: false));
+    }
+#endif
+#if R0_F6G10C1
+    internal bool R0F6G10C1StartProgram() => RunEmueraProgram("");
+
+    internal bool R0F6G10C1AcceptControlledInput(string input)
+    {
+        if (state != ConsoleState.WaitInput || inputReq is null) return false;
+        return RunEmueraProgram(NormalizeOneInput(input, inputReq.OneInput, changedByMouse: false));
+    }
+#endif
+#if R0_F6G10C2
+    internal long[] R0F6G10C2VisibleIntegerButtons()
+    {
+        var values = new List<long>();
+        foreach (var line in displayLineList)
+            foreach (var button in line.Buttons)
+                if (button.IsButton && button.IsInteger) values.Add(button.Input);
+        return values.ToArray();
+    }
+
+    internal object R0F6G10C2InputModel() => new
+    {
+        ConsoleState = state.ToString(),
+        Pending = inputReq is not null,
+        InputType = inputReq?.InputType.ToString(),
+        inputReq?.OneInput,
+        inputReq?.IsSystemInput,
+        inputReq?.NeedValue,
+        inputReq?.Timelimit,
+    };
+#endif
+
+    private static string NormalizeOneInput(string input, bool oneInput, bool changedByMouse) =>
+        oneInput && (!Config.AllowLongInputByMouse || !changedByMouse) && input.Length > 1 ? input.Remove(1) : input;
 
     private void OpenErrorFile(ScriptPosition? pos)
     {
@@ -1463,6 +1547,9 @@ internal sealed partial class EmueraConsole : IDisposable
     uint msPerFrame = 1000 / 60;//60FPS
     ConsoleRedraw redraw = ConsoleRedraw.Normal;
     bool suppressInitialPaint;
+#if R0_F6G10A
+    internal void R0F6G10ASetHeadlessPaintSuppressed(bool value) => suppressInitialPaint = value;
+#endif
     public ConsoleRedraw Redraw { get { return redraw; } }
     public void SetRedraw(Int64 i)
     {
@@ -1475,21 +1562,42 @@ internal sealed partial class EmueraConsole : IDisposable
     }
 
     string debugTitle;
+#if R0_F6G10C
+    private const string CompactStrictTitleSuffix = " [CompactStrict]";
+    private string scriptWindowTitle;
+    internal void R0F6G10CApplyRuntimeWindowTitle()
+    {
+        scriptWindowTitle = window.Text;
+        if (Program.RuntimeMode == Program.ScriptRuntimeMode.CompactStrict)
+            window.Text += CompactStrictTitleSuffix;
+    }
+#endif
     public void SetWindowTitle(string str)
     {
+#if R0_F6G10C
+        scriptWindowTitle = str;
+#endif
         if (Program.DebugMode)
         {
             debugTitle = str;
             window.Text = str + " (Debug Mode)";
         }
         else
+#if R0_F6G10C
+            window.Text = Program.RuntimeMode == Program.ScriptRuntimeMode.CompactStrict ? str + CompactStrictTitleSuffix : str;
+#else
             window.Text = str;
+#endif
     }
 
     public string GetWindowTitle()
     {
         if (Program.DebugMode && debugTitle != null)
             return debugTitle;
+#if R0_F6G10C
+        if (Program.RuntimeMode == Program.ScriptRuntimeMode.CompactStrict)
+            return scriptWindowTitle ?? string.Empty;
+#endif
         return window.Text;
     }
 

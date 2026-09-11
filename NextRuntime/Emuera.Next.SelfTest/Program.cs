@@ -26,6 +26,7 @@ var boundaries = Path.Combine(root, "boundaries.ERB");
 var duplicate = Path.Combine(root, "duplicate.ERB");
 var continuation = Path.Combine(root, "continuation.ERB");
 var continuationFunction = Path.Combine(root, "continuation-function.ERB");
+var continuationHeader = Path.Combine(root, "continuation-header.ERB");
 var unclosedContinuation = Path.Combine(root, "unclosed-continuation.ERB");
 var malformedContinuation = Path.Combine(root, "malformed-continuation.ERB");
 var strayContinuationEnd = Path.Combine(root, "stray-continuation-end.ERB");
@@ -35,6 +36,7 @@ var verticalTabHeader = Path.Combine(root, "vertical-tab-header.ERB");
 var formFeedHeader = Path.Combine(root, "form-feed-header.ERB");
 var fullWidthHeader = Path.Combine(root, "full-width-header.ERB");
 var backslashHeader = Path.Combine(root, "backslash-header.ERB");
+var scopedVariables = Path.Combine(root, "scoped-variables.ERB");
 
 WriteBom(valid, "@通常関数, ARG\r\n; comment\r\n\r\n  PRINTFORM こんにちは\r\n@二つ目\nIF 1 == 1 [[名前]]\\\n続き\n");
 WriteBom(one, "@ONE\nPRINT 1\n");
@@ -58,6 +60,7 @@ WriteBom(boundaries, "@A(ARG)\nX\n@B(ARG)\nY\n");
 WriteBom(duplicate, "@D\nX\n@D\nY\n");
 WriteBom(continuation, "{\n複数行\n}\n");
 WriteBom(continuationFunction, "@BEFORE\n{\n@INSIDE(ARG)\nX\n}\n@AFTER\nY\n");
+WriteBom(continuationHeader, "@BEFORE\nRETURN\n{\n@MULTI, ARG\n, ARGS\n}\n#FUNCTION\nRETURNF ARG\n@AFTER\nY\n");
 WriteBom(unclosedContinuation, "@BEFORE\n{\nX\n");
 WriteBom(malformedContinuation, "{\n{\n}\n");
 WriteBom(strayContinuationEnd, "}\n");
@@ -67,6 +70,7 @@ WriteBom(verticalTabHeader, "\v@VT\n");
 WriteBom(formFeedHeader, "\f@FF\n");
 WriteBom(fullWidthHeader, "　@FULL\n");
 WriteBom(backslashHeader, "@FUNC\\XXX\n");
+WriteBom(scopedVariables, "@A\n  VARI X = 1\n@B\nVARS Y = \"ok\"\n@C\nPRINT VARIANT\n@D\nVARS:0 = \"not a declaration\"\n");
 
 tests.Add(("UTF-8 BOM simple ERB", () => Assert(ErbSourceIndexer.IndexFile(one).Flags == SourceIndexFlags.None)));
 tests.Add(("UTF-8 BOM Japanese function", () => Assert(ErbSourceIndexer.IndexFile(valid).Functions[0].Name == "通常関数")));
@@ -89,6 +93,7 @@ tests.Add(("#DIMS declaration", () => Assert(Has(dims, SourceIndexFlags.Declarat
 tests.Add(("#FUNCTION metadata", () => Assert(Has(function, SourceIndexFlags.FunctionMetadata))));
 tests.Add(("#FUNCTIONS metadata", () => Assert(Has(functions, SourceIndexFlags.FunctionMetadata))));
 tests.Add(("#LOCALSIZE and #LOCALSSIZE metadata", () => Assert(Has(localsize, SourceIndexFlags.FunctionMetadata))));
+tests.Add(("VARI/VARS are function-local metadata flags", () => { var functions = ErbSourceIndexer.IndexFile(scopedVariables).Functions; Assert(HasFlag(functions[0], SourceIndexFlags.ScopedVariableDeclaration) && HasFlag(functions[1], SourceIndexFlags.ScopedVariableDeclaration) && !HasFlag(functions[2], SourceIndexFlags.ScopedVariableDeclaration) && !HasFlag(functions[3], SourceIndexFlags.ScopedVariableDeclaration)); }));
 tests.Add(("[IF_DEBUG] preprocessor", () => Assert(Has(pp, SourceIndexFlags.Preprocessor))));
 tests.Add(("[IF ...] preprocessor", () => Assert(Has(pp, SourceIndexFlags.Preprocessor))));
 tests.Add(("[ELSEIF]/[ELSE]/[ENDIF] preprocessor", () => Assert(Has(pp, SourceIndexFlags.Preprocessor))));
@@ -113,6 +118,7 @@ tests.Add(("Adjacent @FUNC(ARG) boundaries", () => { var i = ErbSourceIndexer.In
 tests.Add(("Simple brace block is LineContinuation", () => Assert((ErbSourceIndexer.IndexFile(continuation).Flags & SourceIndexFlags.LineContinuation) != 0)));
 tests.Add(("Brace block makes file fallback", () => Assert(ErbSourceIndexer.IndexFile(continuation).HasFallback)));
 tests.Add(("@ inside brace block is not a safe header", () => Assert(ErbSourceIndexer.IndexFile(continuationFunction).Functions.Count == 2)));
+tests.Add(("continued function header is indexed", () => { var i = ErbSourceIndexer.IndexFile(continuationHeader); Assert(i.Functions.Count == 3 && i.Functions[1].Name == "MULTI" && i.Functions[1].Span.StartLine == 3); }));
 tests.Add(("Brace block preserves function spans", () => { var i = ErbSourceIndexer.IndexFile(continuationFunction); Assert(i.Functions[0].Span.EndOffset == i.Functions[1].Span.StartOffset); }));
 tests.Add(("Unclosed brace block is safe fallback", () => { var i = ErbSourceIndexer.IndexFile(unclosedContinuation); Assert((i.Flags & SourceIndexFlags.OtherSemanticFallback) != 0); Assert(i.UnclosedContinuationBlockCount == 1); }));
 tests.Add(("Nested brace is safe fallback", () => { var i = ErbSourceIndexer.IndexFile(malformedContinuation); Assert((i.Flags & SourceIndexFlags.OtherSemanticFallback) != 0); Assert(i.MalformedContinuationBlockCount == 1); }));
@@ -146,6 +152,7 @@ Console.WriteLine($"SelfTest: executed={tests.Count} passed={passed} failed={fai
 return failed == 0 ? 0 : 1;
 
 static bool Has(string path, SourceIndexFlags flag) => (ErbSourceIndexer.IndexFile(path).Functions[0].Flags & flag) != 0;
+static bool HasFlag(FunctionIndex function, SourceIndexFlags flag) => (function.Flags & flag) != 0;
 static string Name(string path) => ErbSourceIndexer.IndexFile(path).Functions[0].Name;
 static void WriteBom(string path, string text) => File.WriteAllBytes(path, [0xEF, 0xBB, 0xBF, ..Encoding.UTF8.GetBytes(text)]);
 static void Assert(bool condition) { if (!condition) throw new InvalidOperationException("assertion failed"); }

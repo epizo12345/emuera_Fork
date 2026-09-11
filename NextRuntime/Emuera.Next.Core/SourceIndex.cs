@@ -20,6 +20,7 @@ public enum SourceIndexFlags
     MissingBom = 64,
     InvalidUtf8 = 128,
     ScanError = 256,
+    ScopedVariableDeclaration = 512,
 }
 
 public readonly record struct SourceSpan(long StartOffset, long EndOffset, int StartLine, int EndLine)
@@ -99,6 +100,18 @@ public static class ErbSourceIndexer
 #endif
     }
 
+#if R0_F6G10C1
+    public static IReadOnlyList<SourceFileIndex> IndexDirectoryParallel(string directory)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(directory);
+        if (!Directory.Exists(directory)) throw new DirectoryNotFoundException(directory);
+        var paths = EnumerateLegacyErbFiles(directory);
+        var result = new SourceFileIndex[paths.Count];
+        Parallel.For(0, paths.Count, index => result[index] = IndexFile(paths[index]));
+        return result;
+    }
+#endif
+
     private static List<string> EnumerateLegacyErbFiles(string root)
     {
         var files = new List<string>();
@@ -150,6 +163,9 @@ public static class ErbSourceIndexer
             var continuationRanges = new List<ContinuationBlock>();
             var inContinuation = false;
             var continuationStartLine = 0;
+            long continuationStartOffset = 0;
+            FunctionDraft? continuationHeader = null;
+            var continuationHeaderOnly = false;
             FunctionDraft? current = null;
             while (reader.ReadLine(out var lineStart, out _, out var lineBytes))
             {
@@ -174,6 +190,9 @@ public static class ErbSourceIndexer
                 {
                     inContinuation = true;
                     continuationStartLine = lineCount;
+                    continuationStartOffset = lineStart;
+                    continuationHeader = null;
+                    continuationHeaderOnly = true;
                     continuationBlocks++;
                     fileFlags |= SourceIndexFlags.LineContinuation;
                     current?.AddFlags(SourceIndexFlags.LineContinuation);
@@ -198,7 +217,26 @@ public static class ErbSourceIndexer
                         {
                             inContinuation = false;
                             continuationRanges.Add(new(continuationStartLine, lineCount));
+                            if (continuationHeader is not null && continuationHeaderOnly)
+                            {
+                                current?.End(continuationStartOffset, continuationStartLine - 1);
+                                current = continuationHeader;
+                                functions.Add(current);
+                            }
                         }
+                    }
+                    else if (trimmed.Length != 0 && trimmed[0] != (byte)';')
+                    {
+                        if (continuationHeader is null && TryReadFunctionHeader(trimmed, out var continuationName,
+                                out var continuationParenthesized, out var continuationMetadata, out _))
+                        {
+                            continuationHeader = new FunctionDraft(StrictUtf8.GetString(continuationName), continuationStartOffset, continuationStartLine);
+                            continuationHeader.AddFlags(SourceIndexFlags.LineContinuation);
+                            if (continuationParenthesized) parenthesizedHeaders++;
+                            if (continuationMetadata) continuationHeader.AddFlags(SourceIndexFlags.FunctionMetadata);
+                        }
+                        else if (continuationHeader is null || trimmed[0] != (byte)',')
+                            continuationHeaderOnly = false;
                     }
                 }
                 else if (IsStandalone(trimmed, (byte)'}'))
@@ -316,6 +354,8 @@ public static class ErbSourceIndexer
             flags |= SourceIndexFlags.Rename;
         if (trimmed.Length > 0 && trimmed[0] == (byte)'#')
             flags |= DirectiveFlag(trimmed[1..]);
+        if (StartsWithStatementKeyword(trimmed, "VARI"u8) || StartsWithStatementKeyword(trimmed, "VARS"u8))
+            flags |= SourceIndexFlags.ScopedVariableDeclaration;
         if (trimmed.Length > 0 && (trimmed[0] == (byte)'*' || trimmed[0] == (byte)'$'))
             flags |= SourceIndexFlags.OtherSemanticFallback;
         var end = trimmed.Length;
@@ -342,6 +382,20 @@ public static class ErbSourceIndexer
 
     private static bool Contains(ReadOnlySpan<byte> value, ReadOnlySpan<byte> target) => value.IndexOf(target) >= 0;
 
+    private static bool StartsWithIdentifier(ReadOnlySpan<byte> value, ReadOnlySpan<byte> identifier)
+    {
+        if (value.Length < identifier.Length || !AsciiEquals(value[..identifier.Length], identifier)) return false;
+        return value.Length == identifier.Length || IsIdentifierDelimiter(value[identifier.Length]) ||
+            IsFullWidthSpace(value[identifier.Length..]);
+    }
+
+    private static bool StartsWithStatementKeyword(ReadOnlySpan<byte> value, ReadOnlySpan<byte> keyword)
+    {
+        if (value.Length < keyword.Length || !AsciiEquals(value[..keyword.Length], keyword)) return false;
+        return value.Length == keyword.Length || value[keyword.Length] is (byte)' ' or (byte)'\t' ||
+            IsFullWidthSpace(value[keyword.Length..]);
+    }
+
     private static bool AsciiEquals(ReadOnlySpan<byte> value, ReadOnlySpan<byte> target)
     {
         if (value.Length != target.Length) return false;
@@ -361,7 +415,8 @@ public static class ErbSourceIndexer
         private long endOffset;
         private int endLine;
         private SourceIndexFlags flags;
-        public void AddFlags(SourceIndexFlags value) => flags |= value & SourceFileIndex.FallbackFlags;
+        public void AddFlags(SourceIndexFlags value) => flags |= value &
+            (SourceFileIndex.FallbackFlags | SourceIndexFlags.ScopedVariableDeclaration);
         public void End(long offset, int line) { endOffset = offset; endLine = line; }
         public FunctionIndex ToIndex() => new(name, new SourceSpan(startOffset, endOffset, startLine, endLine), flags);
     }

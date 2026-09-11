@@ -78,6 +78,9 @@ internal sealed partial class MainWindow : Form
         mainPicBox.MouseWheel += new System.Windows.Forms.MouseEventHandler(richTextBox1_MouseWheel);
         vScrollBar.MouseWheel += new System.Windows.Forms.MouseEventHandler(richTextBox1_MouseWheel);
         Localize();
+#if R0_F6G10C
+        console.R0F6G10CApplyRuntimeWindowTitle();
+#endif
     }
     private readonly ToolStripMenuItem[] macroMenuItems = new ToolStripMenuItem[KeyMacro.MaxFkey];
     public EraPictureBox MainPicBox { get { return mainPicBox; } }
@@ -785,6 +788,9 @@ internal sealed partial class MainWindow : Form
             KeyMacro.SaveMacro();
         if (console != null)
         {
+#if R0_F6G10C
+            console.Quit();
+#endif
             //ほっとしても勝手に閉じるが、その場合はDebugDialogのClosingイベントが発生しない
             if (Program.DebugMode && (console.DebugDialog != null) && console.DebugDialog.Created)
                 console.DebugDialog.Close();

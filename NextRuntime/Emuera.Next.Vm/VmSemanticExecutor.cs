@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.RegularExpressions;
 using MinorShift.Emuera.Next.Compiler;
 
 namespace MinorShift.Emuera.Next.Vm;
@@ -30,6 +31,7 @@ public interface IVmSemanticHost
     bool TryWrite(string name, string? subkey, ReadOnlySpan<VmSemanticValue> indices, VmSemanticValue value);
     bool TryCall(string name, ReadOnlySpan<VmSemanticValue> arguments, out VmSemanticValue value);
     int CompareStrings(string left, string right);
+    int GetStringDisplayLength(string value) => value.Length;
 }
 // Opt-in typed path. Legacy resolves diagnostic names once while binding; VM execution then passes stable IDs only.
 public interface IVmTypedSemanticHost
@@ -107,12 +109,25 @@ public interface IVmVariableMetadataHost
 {
     bool TryGetVariableIndex(string variableName, string label, out long index);
     bool TryInvokeVariableFunction(string functionName, string variableName, ReadOnlySpan<VmSemanticValue> arguments, out VmSemanticValue value);
+    bool TryInvokeVariableFunction(string functionName, in VmResolvedLValue variable, ReadOnlySpan<VmSemanticValue> arguments, out VmSemanticValue value) =>
+        variable.Subkey is null && variable.Indices.Length == 0
+            ? TryInvokeVariableFunction(functionName, variable.Name, arguments, out value)
+            : ReturnUnavailable(out value);
+    private static bool ReturnUnavailable(out VmSemanticValue value) { value = VmSemanticValue.Unavailable; return false; }
+}
+public interface IVmVariableBulkHost
+{
+    bool TryClear(in VmResolvedLValue target);
+    bool TryFill(in VmResolvedLValue target, VmSemanticValue value, long start, long end);
+    bool TrySort(in VmResolvedLValue target, bool descending, long start, long count) => false;
+    bool TryFillCharacters(in VmResolvedLValue target, VmSemanticValue element, VmSemanticValue value, long start, long end) => false;
 }
 
 public sealed class VmSemanticExecutor : IVmStructuralSemantics
 {
     private readonly LinkedProgram? program;
     private readonly IVmSemanticHost host;
+    internal IVmSemanticHost Host => host;
     private readonly IVmTypedSemanticHost? typedHost;
     private readonly IVmContextualTypedSemanticHost? contextualTypedHost;
     private readonly HashSet<SemanticPayload> boundIdentityArenas = [];
@@ -440,13 +455,16 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
                 if (TryReadSymbol(node.A, out var callName) && host is IVmVariableMetadataHost metadataHost && node.C >= 1)
                 {
                     var first = Arena.Edges[node.B].To;
-                    if ((uint)first < (uint)nodes.Length && nodes[first].Kind is SemanticNodeKind.Symbol or SemanticNodeKind.Variable && TryReadSymbol(nodes[first].A, out var variableName))
+                    if ((uint)first < (uint)nodes.Length && nodes[first].Kind is SemanticNodeKind.Symbol or SemanticNodeKind.Variable or SemanticNodeKind.VariableSubkey &&
+                        TryResolveLValue(first, out var targetVariable))
                     {
                         var tail = new VmSemanticValue[node.C - 1];
                         for (var i = 0; i < tail.Length; i++) if (!TryEvaluateNode(Arena.Edges[node.B + i + 1].To, out tail[i])) return false;
-                        if (callName.Equals("GETNUM", StringComparison.OrdinalIgnoreCase) && tail.Length == 1 && tail[0].TryGetString(out var label) && metadataHost.TryGetVariableIndex(variableName, label, out var variableIndex))
+                        if (targetVariable.Subkey is null && targetVariable.Indices.Length == 0 && TryInvokeFrameVariableFunction(callName, targetVariable.Name, tail, out value)) return true;
+                        if (callName.Equals("GETNUM", StringComparison.OrdinalIgnoreCase) && targetVariable.Subkey is null && targetVariable.Indices.Length == 0 && tail.Length == 1 && tail[0].TryGetString(out var label) && metadataHost.TryGetVariableIndex(targetVariable.Name, label, out var variableIndex))
                             return Return(VmSemanticValue.From(variableIndex), out value);
-                        if (metadataHost.TryInvokeVariableFunction(callName, variableName, tail, out value)) return true;
+                        var resolved = new VmResolvedLValue(targetVariable.Name, targetVariable.Subkey, targetVariable.Indices, targetVariable.Identity, targetVariable.IdentityArena);
+                        if (metadataHost.TryInvokeVariableFunction(callName, resolved, tail, out value)) return true;
                     }
                 }
                 if (ExpressionFunctionInvoker is { UsesPreActualAdmission: true } invoker && TryGetCallIdentity(index) is { } callIdentity)
@@ -486,6 +504,59 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
             default:
                 return false; // Explicitly deferred: RenameTemplate, TripleLiteral, Case, CountedLoop.
         }
+    }
+
+    private bool TryInvokeFrameVariableFunction(string functionName, string variableName, ReadOnlySpan<VmSemanticValue> arguments, out VmSemanticValue value)
+    {
+        value = VmSemanticValue.Unavailable;
+        if (FrameVariables is not IVmFrameVariableTypes types || !FrameVariables.OwnsFrameVariable(variableName) ||
+            !types.TryGetFrameVariableLength(variableName, 0, out var length) || length < 0 || length > int.MaxValue) return false;
+        var firstRangeArgument = functionName.Equals("SUMARRAY", StringComparison.OrdinalIgnoreCase) ? 0 : 1;
+        if (firstRangeArgument == 1 && arguments.Length < 1) return false;
+        var start = arguments.Length > firstRangeArgument && arguments[firstRangeArgument].TryGetInteger(out var startValue) ? startValue : 0;
+        var end = arguments.Length > firstRangeArgument + 1 && arguments[firstRangeArgument + 1].TryGetInteger(out var endValue) ? endValue : length;
+        if (start < 0 || end < start || end > length) return false;
+        if (functionName.Equals("SUMARRAY", StringComparison.OrdinalIgnoreCase))
+        {
+            long sum = 0;
+            for (var index = start; index < end; index++)
+            {
+                if (!FrameVariables.TryReadFrame(variableName, null, [VmSemanticValue.From(index)], out var candidate) || !candidate.TryGetInteger(out var integer)) return false;
+                sum = unchecked(sum + integer);
+            }
+            return Return(VmSemanticValue.From(sum), out value);
+        }
+        if (functionName.Equals("MATCH", StringComparison.OrdinalIgnoreCase))
+        {
+            long count = 0;
+            for (var index = start; index < end; index++)
+                if (FrameVariables.TryReadFrame(variableName, null, [VmSemanticValue.From(index)], out var candidate) &&
+                    (candidate.TryGetInteger(out var integer) && arguments[0].TryGetInteger(out var targetInteger) && integer == targetInteger ||
+                     candidate.TryGetString(out var text) && arguments[0].TryGetString(out var targetText) && text == targetText)) count++;
+            return Return(VmSemanticValue.From(count), out value);
+        }
+        if (!functionName.Equals("FINDELEMENT", StringComparison.OrdinalIgnoreCase)) return false;
+        if (arguments[0].TryGetInteger(out var findTargetInteger))
+        {
+            for (var index = start; index < end; index++)
+                if (FrameVariables.TryReadFrame(variableName, null, [VmSemanticValue.From(index)], out var candidate) &&
+                    candidate.TryGetInteger(out var integer) && integer == findTargetInteger)
+                    return Return(VmSemanticValue.From(index), out value);
+            return Return(VmSemanticValue.From(-1L), out value);
+        }
+        if (!arguments[0].TryGetString(out var target)) return false;
+        var exact = arguments.Length > 3 && arguments[3].TryGetInteger(out var exactValue) && exactValue != 0;
+        Regex regex;
+        try { regex = new Regex(target); }
+        catch (ArgumentException) { return false; }
+        for (var index = start; index < end; index++)
+            if (FrameVariables.TryReadFrame(variableName, null, [VmSemanticValue.From(index)], out var candidate) &&
+                candidate.TryGetString(out var text))
+            {
+                var match = regex.Match(text);
+                if (match.Success && (!exact || match.Length == text.Length)) return Return(VmSemanticValue.From(index), out value);
+            }
+        return Return(VmSemanticValue.From(-1L), out value);
     }
 
     private bool TryEvaluateUnary(SemanticNode node, out VmSemanticValue value)
@@ -596,6 +667,11 @@ public sealed class VmSemanticExecutor : IVmStructuralSemantics
         if (!TryEvaluateInt(node.B, out var width) || width is < int.MinValue or > int.MaxValue || !TryReadSymbol(node.C, out var alignment)) return false;
         var count = Math.Abs((int)width);
         if (count > 1_000_000) return false;
+        if (node.D == (int)SemanticFormatKind.Percent)
+        {
+            count -= host.GetStringDisplayLength(text) - text.Length;
+            if (count < text.Length) return Return(VmSemanticValue.From(text), out value);
+        }
         return Return(VmSemanticValue.From(alignment == "LEFT" ? text.PadRight(count) : text.PadLeft(count)), out value);
     }
 

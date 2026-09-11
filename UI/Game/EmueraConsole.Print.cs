@@ -278,6 +278,69 @@ internal sealed partial class EmueraConsole : IDisposable
     }
 #endif
 
+#if R0_F6G10C1
+    internal object R0F6G10C1DisplayModel()
+    {
+        var pendingBeforeFlush = !printBuffer.IsEmpty;
+        var pending = printBuffer.IsEmpty ? null : printBuffer.Flush(stringMeasure, force_temporary);
+        if (pending is { Length: > 0 }) addRangeDisplayLine(pending);
+        var lines = new List<object>(displayLineList.Count);
+        var unexpectedMergedLines = 0;
+        var titleNewGamePresent = false;
+        var titleLoadGamePresent = false;
+        object Serialize(ConsoleDisplayLine line, int index) => new
+        {
+            Index = index,
+            Text = line.ToString(),
+            line.LineNo,
+            line.IsLineEnd,
+            line.IsLogicalLine,
+            line.IsTemporary,
+            Alignment = line.Align.ToString(),
+            Html = HtmlManager.DisplayLine2Html([line], true),
+            Buttons = line.Buttons.Select(button => new
+            {
+                Label = button.ToString(),
+                button.IsButton,
+                Value = button.IsButton ? button.Inputs : null,
+                button.IsInteger,
+                button.PointX,
+                button.RelativePointX,
+                button.Width,
+                button.Generation,
+            }).ToArray(),
+        };
+        for (var index = 0; index < displayLineList.Count; index++)
+        {
+            var line = displayLineList[index];
+            var text = line.ToString();
+            if (!line.IsLineEnd) unexpectedMergedLines++;
+            titleNewGamePresent |= text.Contains("ＮＥＷ", StringComparison.Ordinal);
+            titleLoadGamePresent |= text.Contains("ＬＯＡＤ", StringComparison.Ordinal);
+            lines.Add(Serialize(line, index));
+        }
+        return new
+        {
+            DisplayLineCount = displayLineList.Count,
+            LogicalLineCount = logicalLineCount,
+            Lines = lines,
+            UnexpectedMergedLines = unexpectedMergedLines,
+            TitleNewGamePresent = titleNewGamePresent,
+            TitleLoadGamePresent = titleLoadGamePresent,
+            PendingPrintStringBufferBeforeFlush = pendingBeforeFlush,
+            PendingPrintStringBufferEmpty = printBuffer.IsEmpty,
+            HtmlIslands = _htmlElementListDict.Select(layer => new
+            {
+                Depth = layer.Key,
+                Lines = layer.Value.Select((line, index) => Serialize(line, index)).ToArray(),
+            }).ToArray(),
+            ButtonGeneration = new { Last = lastButtonGeneration, Next = newButtonGeneration, Updated = updatedGeneration },
+            Style = new { ColorArgb = userStyle.Color.ToArgb(), ButtonColorArgb = userStyle.ButtonColor.ToArgb(),
+                FontStyle = userStyle.FontStyle.ToString(), userStyle.Fontname, Alignment = alignment.ToString(), UseUserStyle, UseSetColorStyle },
+        };
+    }
+#endif
+
     private void addRangeDisplayLine(ConsoleDisplayLine[] lineList)
     {
         // [Emuera改修:MEASURE-02] 表示行追加に掛かった時間を計測版だけで記録する。

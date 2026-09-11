@@ -224,6 +224,15 @@ internal sealed partial class Process(EmueraConsole view)
             LexicalAnalyzer.UseMacro = idDic.UseMacro();
             logWriter.WriteLine($"Proc:Init:ERH:End {stopWatch.ElapsedMilliseconds}ms");
             PerformanceMetrics.MarkStartup("ErhLoaded"); // ERH読込完了の目印
+#if R0_F6G10A
+            if (Program.RuntimeMode == Program.ScriptRuntimeMode.CompactStrict)
+            {
+                InitializeCompactProduction(logWriter);
+                noError = true;
+                logWriter.WriteLine($"Proc:Init:CompactCatalog:End {stopWatch.ElapsedMilliseconds}ms");
+                goto CompactOrLegacyErbLoaded;
+            }
+#endif
 #if R0_E2
             Runtime.Diagnostics.R0E2Measurement.MarkB0();
 #endif
@@ -271,6 +280,9 @@ internal sealed partial class Process(EmueraConsole view)
             logWriter.WriteLine($"Proc:Init:ERB:DeferredEager count={erbLoader.DeferredEagerCount}");
             logWriter.WriteLine($"Proc:Init:ERB:End {stopWatch.ElapsedMilliseconds}ms");
             PerformanceMetrics.MarkStartup("ErbParsed"); // ERB解析完了の目印
+#if R0_F6G10A
+CompactOrLegacyErbLoaded:
+#endif
 #if R0_C
             InitializeR0CRegistry(logWriter);
 #endif
@@ -341,6 +353,9 @@ internal sealed partial class Process(EmueraConsole view)
 
     public async Task ReloadErbAll()
     {
+#if R0_F6G10A
+        if (Program.RuntimeMode == Program.ScriptRuntimeMode.CompactStrict) { R0F6G10ARejectReload(); return; }
+#endif
 #if R0_C
         InvalidateR0CRegistry("ReloadErbAll");
 #endif
@@ -357,6 +372,9 @@ internal sealed partial class Process(EmueraConsole view)
 
     public async Task ReloadPartialErb(List<string> paths)
     {
+#if R0_F6G10A
+        if (Program.RuntimeMode == Program.ScriptRuntimeMode.CompactStrict) { R0F6G10ARejectReload(); return; }
+#endif
 #if R0_C
         InvalidateR0CRegistry("ReloadPartialErb");
 #endif
@@ -386,6 +404,9 @@ internal sealed partial class Process(EmueraConsole view)
 
     public async Task ReloadErbFolder(string dirPath)
     {
+#if R0_F6G10A
+        if (Program.RuntimeMode == Program.ScriptRuntimeMode.CompactStrict) { R0F6G10ARejectReload(); return; }
+#endif
 #if R0_C
         InvalidateR0CRegistry("ReloadErbFolder");
 #endif
@@ -556,9 +577,25 @@ internal sealed partial class Process(EmueraConsole view)
         }
     }
 
+    public void PumpExecution()
+    {
+#if R0_F6G10A
+        if (Program.RuntimeMode == Program.ScriptRuntimeMode.CompactStrict)
+        {
+            PumpCompactExecution();
+            return;
+        }
+#endif
+        DoScript();
+    }
+
     public void BeginTitle()
     {
         vEvaluator.ResetData();
+#if R0_F6G10B
+        if (Program.RuntimeMode == Program.ScriptRuntimeMode.CompactStrict)
+            R0F6G10AApplyDataReset(discardExecution: true);
+#endif
         state = originalState;
         state.Begin(BeginType.TITLE);
     }

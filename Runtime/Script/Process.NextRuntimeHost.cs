@@ -10,6 +10,7 @@ using System.Drawing;
 using MinorShift.Emuera.Next.Compiler;
 using MinorShift.Emuera.Next.Core;
 using MinorShift.Emuera.Next.Vm;
+using MinorShift.Emuera.UI.Framework;
 using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Script;
 using MinorShift.Emuera.Runtime.Utils;
@@ -75,12 +76,14 @@ internal sealed record CsvIndexReadTraceRow(
 }
 
 // The host stays in the Legacy assembly so no Legacy object crosses the VM boundary.
-internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparationCounters? preparationCounters = null, bool graphFreeRegistry = false) : IVmSemanticHost, IVmTypedSemanticHost, IVmAssignmentTargetTypeHost, IVmContextualTypedSemanticHost, IVmVariableMetadataHost, IVmHostCallPreflight
+internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparationCounters? preparationCounters = null,
+    bool graphFreeRegistry = false, Func<string, long>? graphFreeFunctionExists = null) : IVmSemanticHost, IVmTypedSemanticHost, IVmAssignmentTargetTypeHost, IVmContextualTypedSemanticHost, IVmVariableMetadataHost, IVmVariableBulkHost, IVmHostCallPreflight
 {
     private readonly Dictionary<ulong, BoundVariable> variables = [];
     private readonly Dictionary<ulong, BuiltinCallKind> builtins = [];
     private readonly Dictionary<ulong, FunctionMethod> graphFreeBuiltins = [];
     private readonly VmRuntimePreparationCounters counters = preparationCounters ?? new();
+    public int GetStringDisplayLength(string value) => LangManager.GetStrlenLang(value);
     // [Emuera改修:NEXT-3D-R1.5P3Z-M7]
     // generation-scoped production prebind済みの同一payloadだけを短絡する。
     // 値や未解決identityはcacheせず、diagnostic時は旧full scanへ戻す。
@@ -306,6 +309,122 @@ internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparation
     public bool TryWrite(string name, string? subkey, ReadOnlySpan<VmSemanticValue> indices, VmSemanticValue value)
         => process.TryWriteNextRuntimeHostValue(name, subkey, indices, value);
 
+    public bool TryClear(in VmResolvedLValue target)
+    {
+        if (!TryGetFillToken(target, out var token, out var charaPos)) return false;
+        return FillToken(token, token.IsString ? VmSemanticValue.From(string.Empty) : VmSemanticValue.From(0L), 0, -1, charaPos);
+    }
+
+    public bool TryFill(in VmResolvedLValue target, VmSemanticValue value, long start, long end)
+    {
+        if (!TryGetFillToken(target, out var token, out var charaPos)) return false;
+        return FillToken(token, value, start, end, charaPos);
+    }
+
+    public bool TrySort(in VmResolvedLValue target, bool descending, long start, long count)
+        {
+            if (!TryGetBulkToken(target, out var token) || token.Dimension != 1 || start < 0 || count < -1) return false;
+            if (count == 0) return true;
+            var length = token.GetLength(0);
+            var range = count == -1 ? length - start : count;
+            if (start >= length || range < 0 || start + range > length || start > int.MaxValue || range > int.MaxValue) return false;
+            if (token.IsInteger)
+            {
+                var values = ((long[])token.GetArray()).AsSpan((int)start, (int)range);
+                values.Sort();
+                if (descending) values.Reverse();
+                return true;
+            }
+            if (token.IsString)
+            {
+                var values = ((string[])token.GetArray()).AsSpan((int)start, (int)range);
+                values.Sort();
+                if (descending) values.Reverse();
+                return true;
+            }
+            return false;
+        }
+
+    public bool TryFillCharacters(in VmResolvedLValue target, VmSemanticValue element, VmSemanticValue value, long start, long end)
+    {
+        VariableToken? token = null;
+        if (target.Identity is { } identity && variables.TryGetValue(identity.StableId, out var bound)) token = bound.Token;
+        token ??= process.GetNextRuntimeVariableToken(target.Name, target.Subkey);
+        if (token is null || token.IsConst || !token.IsCharacterData || token.Dimension > 1) return false;
+        var characterCount = process.NextRuntimeExpressionMediator.VEvaluator.CHARANUM;
+        if (end == -1) end = characterCount;
+        if (start < 0 || end < 0 || start > characterCount || end > characterCount) return false;
+        if (start > end) (start, end) = (end, start);
+        if (value.Kind == VmSemanticValueKind.Missing)
+            value = token.IsString ? VmSemanticValue.From(string.Empty) : VmSemanticValue.From(0L);
+        var elementIndex = 0L;
+        if (token.Dimension == 1)
+        {
+            if (element.TryGetInteger(out elementIndex)) { }
+            else if (element.TryGetString(out var label))
+            {
+                var dictionary = GlobalStatic.ConstantData.GetKeywordDictionary(out _, token.Code, -1) ??
+                    GlobalStatic.ConstantData.GetKeywordDictionary(out _, token.Code, 0);
+                if (dictionary is null || !dictionary.TryGetValue(label, out var resolvedElement)) return false;
+                elementIndex = resolvedElement;
+            }
+            else return false;
+            if (elementIndex < 0 || elementIndex >= token.GetLength(0)) return false;
+        }
+        for (var character = start; character < end; character++)
+        {
+            var indices = token.Dimension == 0
+                ? new[] { VmSemanticValue.From(character) }
+                : new[] { VmSemanticValue.From(character), VmSemanticValue.From(elementIndex) };
+            if (!process.TryWriteNextRuntimeHostValue(token, indices, value)) return false;
+        }
+        return true;
+    }
+
+    private bool TryGetBulkToken(in VmResolvedLValue target, out VariableToken token)
+    {
+        token = null!;
+        if (target.Identity is { } identity && variables.TryGetValue(identity.StableId, out var bound)) token = bound.Token;
+        token ??= process.GetNextRuntimeVariableToken(target.Name, target.Subkey)!;
+        return token is not null && !token.IsConst && !token.IsCharacterData && target.Indices.Length == 0;
+    }
+
+    private bool TryGetFillToken(in VmResolvedLValue target, out VariableToken token, out int charaPos)
+    {
+        charaPos = 0;
+        token = null!;
+        if (target.Identity is { } identity && variables.TryGetValue(identity.StableId, out var bound)) token = bound.Token;
+        token ??= process.GetNextRuntimeVariableToken(target.Name, target.Subkey)!;
+        if (token is null || token.IsConst) return false;
+        if (!token.IsCharacterData) return target.Indices.Length == 0;
+        if (token.Dimension == 0 || target.Indices.Length != token.Dimension + 1) return false;
+        var indices = new long[target.Indices.Length];
+        for (var index = 0; index < indices.Length; index++)
+            if (!target.Indices[index].TryGetInteger(out indices[index])) return false;
+        try { token.CheckElement(indices); }
+        catch (Exception) { return false; }
+        if (indices[0] is < 0 or > int.MaxValue) return false;
+        charaPos = (int)indices[0];
+        return true;
+    }
+
+    private static bool FillToken(VariableToken token, VmSemanticValue value, long start, long end, int charaPos)
+    {
+        if (token.Dimension == 0)
+        {
+            if (token.IsInteger && value.TryGetInteger(out var integer)) token.SetValue(integer, []);
+            else if (token.IsString && value.TryGetString(out var text)) token.SetValue(text, []);
+            else return false;
+            return true;
+        }
+        var limit = end == -1 ? token.GetLength(0) : end;
+        if (start < 0 || limit < start || limit > token.GetLength(0) || start > int.MaxValue || limit > int.MaxValue) return false;
+        if (token.IsInteger && value.TryGetInteger(out var fillInteger)) token.SetValueAll(fillInteger, (int)start, (int)limit, charaPos);
+        else if (token.IsString && value.TryGetString(out var fillText)) token.SetValueAll(fillText, (int)start, (int)limit, charaPos);
+        else return false;
+        return true;
+    }
+
     // Non-typed callers cannot use a raw builtin name through this adapter.
     public bool TryCall(string name, ReadOnlySpan<VmSemanticValue> arguments, out VmSemanticValue value) { value = VmSemanticValue.Unavailable; return false; }
     public int CompareStrings(string left, string right) => string.Compare(left, right, Config.SCExpression);
@@ -377,6 +496,96 @@ internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparation
         }
         return false;
     }
+
+    public bool TryInvokeVariableFunction(string functionName, in VmResolvedLValue variable, ReadOnlySpan<VmSemanticValue> arguments, out VmSemanticValue value)
+    {
+        if ((functionName.Equals("FINDCHARA", Config.SCExpression) || functionName.Equals("FINDLASTCHARA", Config.SCExpression)) && arguments.Length >= 1)
+        {
+            value = VmSemanticValue.Unavailable;
+            var findCharaToken = process.GetNextRuntimeVariableToken(variable.Name, null);
+            if (findCharaToken is null || !findCharaToken.IsCharacterData) return false;
+            var elementIndices = new List<VmSemanticValue>(findCharaToken.Dimension);
+            if (variable.Subkey is not null)
+            {
+                var dictionary = GlobalStatic.ConstantData.GetKeywordDictionary(out _, findCharaToken.Code, -1) ??
+                    GlobalStatic.ConstantData.GetKeywordDictionary(out _, findCharaToken.Code, 0);
+                if (dictionary is null || !dictionary.TryGetValue(variable.Subkey, out var elementIndex)) return false;
+                elementIndices.Add(VmSemanticValue.From(elementIndex));
+            }
+            else
+            {
+                var offset = variable.Indices.Length == findCharaToken.Dimension + 1 ? 1 : 0;
+                if (variable.Indices.Length - offset != findCharaToken.Dimension) return false;
+                for (var index = offset; index < variable.Indices.Length; index++) elementIndices.Add(variable.Indices[index]);
+            }
+            if (elementIndices.Count != findCharaToken.Dimension) return false;
+            var findCharaCount = process.NextRuntimeExpressionMediator.VEvaluator.CHARANUM;
+            var findCharaStart = arguments.Length > 1 && arguments[1].TryGetInteger(out var findCharaStartValue) ? findCharaStartValue : 0;
+            var findCharaEnd = arguments.Length > 2 && arguments[2].TryGetInteger(out var findCharaEndValue) ? findCharaEndValue : findCharaCount;
+            if (findCharaStart < 0 || findCharaStart >= findCharaCount || findCharaEnd < 0 || findCharaEnd > findCharaCount) return false;
+            var findLast = functionName.Equals("FINDLASTCHARA", Config.SCExpression);
+            var step = findLast ? -1L : 1L;
+            for (var character = findLast ? findCharaEnd - 1 : findCharaStart;
+                 findLast ? character >= findCharaStart : character < findCharaEnd; character += step)
+            {
+                var indices = new VmSemanticValue[elementIndices.Count + 1];
+                indices[0] = VmSemanticValue.From(character);
+                elementIndices.CopyTo(indices, 1);
+                if (process.TryReadNextRuntimeHostValue(findCharaToken, indices, out var candidate) &&
+                    (candidate.TryGetInteger(out var integer) && arguments[0].TryGetInteger(out var targetInteger) && integer == targetInteger ||
+                     candidate.TryGetString(out var text) && arguments[0].TryGetString(out var targetText) && text == targetText))
+                {
+                    value = VmSemanticValue.From(character);
+                    return true;
+                }
+            }
+            value = VmSemanticValue.From(-1L);
+            return true;
+        }
+        if (functionName.Equals("MATCH", Config.SCExpression) && arguments.Length >= 1)
+        {
+            if (variable.Subkey is null && variable.Indices.Length == 0)
+                return TryInvokeVariableFunction(functionName, variable.Name, arguments, out value);
+            value = VmSemanticValue.Unavailable;
+            var matchToken = process.GetNextRuntimeVariableToken(variable.Name, variable.Subkey);
+            var expectedIndices = matchToken is null ? -1 : matchToken.Dimension + (matchToken.IsCharacterData ? 1 : 0);
+            if (matchToken is null || matchToken.Dimension != 1 || variable.Indices.Length != expectedIndices) return false;
+            var matchStart = arguments.Length > 1 && arguments[1].TryGetInteger(out var matchStartValue) ? matchStartValue : 0;
+            var matchEnd = arguments.Length > 2 && arguments[2].TryGetInteger(out var matchEndValue) ? matchEndValue : matchToken.GetLength(0);
+            if (matchStart < 0 || matchEnd < matchStart || matchEnd > matchToken.GetLength(0)) return false;
+            var indices = variable.Indices.ToArray();
+            long matchCount = 0;
+            for (var index = matchStart; index < matchEnd; index++)
+            {
+                indices[^1] = VmSemanticValue.From(index);
+                if (process.TryReadNextRuntimeHostValue(variable.Name, variable.Subkey, indices, out var candidate) &&
+                    (candidate.TryGetInteger(out var integer) && arguments[0].TryGetInteger(out var targetInteger) && integer == targetInteger ||
+                     candidate.TryGetString(out var text) && arguments[0].TryGetString(out var targetText) && text == targetText)) matchCount++;
+            }
+            value = VmSemanticValue.From(matchCount);
+            return true;
+        }
+        if (!functionName.Equals("CMATCH", Config.SCExpression) || arguments.Length < 1)
+            return variable.Subkey is null && variable.Indices.Length == 0
+                ? TryInvokeVariableFunction(functionName, variable.Name, arguments, out value)
+                : ReturnUnavailable(out value);
+        value = VmSemanticValue.Unavailable;
+        var token = process.GetNextRuntimeVariableToken(variable.Name, variable.Subkey);
+        if (token is null || !token.IsCharacterData) return false;
+        var charaCount = process.NextRuntimeExpressionMediator.VEvaluator.CHARANUM;
+        var start = arguments.Length > 1 && arguments[1].TryGetInteger(out var startValue) ? startValue : 0;
+        var end = arguments.Length > 2 && arguments[2].TryGetInteger(out var endValue) ? endValue : charaCount;
+        if (start < 0 || end < start || end > charaCount) return false;
+        long count = 0;
+        for (var index = start; index < end; index++)
+            if (process.TryReadNextRuntimeHostValue(variable.Name, variable.Subkey, [VmSemanticValue.From(index)], out var candidate) &&
+                (candidate.TryGetInteger(out var integer) && arguments[0].TryGetInteger(out var targetInteger) && integer == targetInteger ||
+                 candidate.TryGetString(out var text) && arguments[0].TryGetString(out var targetText) && (text == targetText || string.IsNullOrEmpty(text) && string.IsNullOrEmpty(targetText)))) count++;
+        value = VmSemanticValue.From(count);
+        return true;
+    }
+
+    private static bool ReturnUnavailable(out VmSemanticValue value) { value = VmSemanticValue.Unavailable; return false; }
 
     internal bool PrebindProductionVariableIdentities(SemanticPayload payload)
     {
@@ -629,6 +838,12 @@ internal sealed class LegacyVmSemanticHost(Process process, VmRuntimePreparation
         value = VmSemanticValue.Unavailable;
         if (graphFreeBuiltins.TryGetValue(identity.StableId, out var method))
         {
+            if (graphFreeFunctionExists is not null && method is FunctionMethodCreator.EXISTFUNCTION &&
+                arguments.Length == 1 && arguments[0].TryGetString(out var functionName))
+            {
+                value = VmSemanticValue.From(graphFreeFunctionExists(functionName));
+                return true;
+            }
             var actuals = new List<AExpression>(arguments.Length);
             foreach (var argument in arguments)
             {
@@ -812,7 +1027,44 @@ internal sealed partial class Process
         internal int InputRequests { get; private set; }
         internal List<string> TypedTrace { get; } = [];
         internal List<string> Buttons { get; } = [];
-        public void WriteText(string text) => process.console.Print(text, lineEnd: false);
+#if R0_F6G10C
+        private bool CaptureDiagnosticTrace => Program.R0F6G10AHeadlessCapture;
+#endif
+#if R0_F6G10A
+        private PrototypeOpcode pendingInputOpcode;
+#if R0_F6G10C3
+        internal string R0F6G10C3PendingInputOpcode => pendingInputOpcode.ToString();
+#endif
+        private long pendingInputTime;
+#if R0_F6G10B
+        private long pendingInputFlag;
+#endif
+#endif
+#if R0_F6G10B
+        internal int InputResultWriteCount { get; private set; }
+        internal bool FailNextInputWrite { get; set; }
+        public bool ResumeThroughOuterPump => graphFree;
+#endif
+        public void WriteText(string text, bool lineEnd)
+        {
+            process.console.UseUserStyle = true;
+            process.console.UseSetColorStyle = true;
+            process.console.Print(text, lineEnd);
+            process.console.UseSetColorStyle = true;
+        }
+        public bool WriteColumn(string text, bool alignmentRight)
+        {
+            process.console.UseUserStyle = true;
+            process.console.UseSetColorStyle = true;
+            process.console.PrintC(text, alignmentRight);
+            process.console.UseSetColorStyle = true;
+            return true;
+        }
+        public bool ReuseLastLine(string text)
+        {
+            process.console.PrintTemporaryLine(text);
+            return true;
+        }
         public void NewLine() => process.console.NewLine();
         public void RequestWait(bool force) { process.console.ReadAnyKey(force); }
         public void Quit() => process.console.Quit();
@@ -823,7 +1075,10 @@ internal sealed partial class Process
             if (value.TryGetInteger(out var number)) process.console.PrintButton(label, number);
             else if (value.TryGetString(out var text)) process.console.PrintButton(label, text);
             else return false;
-            Buttons.Add(label + "|" + value);
+#if R0_F6G10C
+            if (CaptureDiagnosticTrace)
+#endif
+                Buttons.Add(label + "|" + value);
             return true;
         }
         public bool SetLegacyReturnValues(ReadOnlySpan<VmSemanticValue> values)
@@ -834,11 +1089,69 @@ internal sealed partial class Process
             else return false;
             return true;
         }
+#if R0_F6G10A
+        internal bool CanExecuteHostStatement(PrototypeOpcode opcode) => graphFree &&
+            opcode is PrototypeOpcode.LOADGLOBAL or PrototypeOpcode.SAVEGLOBAL or PrototypeOpcode.DRAWLINE or PrototypeOpcode.CUSTOMDRAWLINE;
+        internal bool CanRequestBegin => graphFree;
+        internal bool CanExecuteTypedHostStatement(PrototypeOpcode opcode) => graphFree &&
+            (opcode is PrototypeOpcode.PRINTS or PrototypeOpcode.PRINTSL or PrototypeOpcode.HTML_PRINT or
+                PrototypeOpcode.SETCOLOR or PrototypeOpcode.RESETCOLOR or PrototypeOpcode.RESETBGCOLOR or
+                PrototypeOpcode.ALIGNMENT or PrototypeOpcode.REDRAW or PrototypeOpcode.CLEARLINE or
+                PrototypeOpcode.ONEINPUTS or PrototypeOpcode.INPUT or PrototypeOpcode.INPUTMOUSEKEY or
+                PrototypeOpcode.RESETDATA or PrototypeOpcode.ADDCHARA or PrototypeOpcode.LOADDATA
+#if R0_F6G10B
+                or PrototypeOpcode.DELDATA or PrototypeOpcode.SAVEDATA or PrototypeOpcode.TWAIT or PrototypeOpcode.WAITANYKEY
+#endif
+#if R0_F6G10C3
+                or PrototypeOpcode.HTML_PRINT_ISLAND or PrototypeOpcode.HTML_PRINT_ISLAND_CLEAR or PrototypeOpcode.RANDOMIZE
+#endif
+                ||
+             FunctionMethodCreator.GetMethodList().ContainsKey(opcode.ToString()));
+        public bool ExecuteHostStatement(PrototypeOpcode opcode, string operand)
+        {
+            if (!graphFree) return false;
+            switch (opcode)
+            {
+                case PrototypeOpcode.LOADGLOBAL:
+                    process.vEvaluator.RESULT = process.vEvaluator.LoadGlobal() ? 1 : 0;
+                    return true;
+                case PrototypeOpcode.SAVEGLOBAL:
+                    _ = process.vEvaluator.SaveGlobal();
+                    return true;
+                case PrototypeOpcode.DRAWLINE:
+                    if (!process.skipPrint)
+                    {
+                        process.console.PrintBar();
+                        process.console.NewLine();
+                    }
+                    return true;
+                case PrototypeOpcode.CUSTOMDRAWLINE:
+                    if (!process.skipPrint)
+                    {
+                        process.console.printCustomBar(process.console.getStBar(operand), true);
+                        process.console.NewLine();
+                    }
+                    return true;
+                default:
+                    return false;
+            }
+        }
+        public bool RequestBegin(string keyword)
+        {
+            if (!graphFree) return false;
+            process.state.SetBegin(keyword.Trim().ToUpperInvariant());
+            process.console.ResetStyle();
+            return true;
+        }
+#endif
         public VmHostEffectResult ExecuteTypedHostStatement(PrototypeOpcode opcode, ReadOnlySpan<VmSemanticValue> arguments)
         {
             if (!graphFree) return VmHostEffectResult.Unavailable;
             TypedOperations++;
-            TypedTrace.Add(opcode.ToString());
+#if R0_F6G10C
+            if (CaptureDiagnosticTrace)
+#endif
+                TypedTrace.Add(opcode.ToString());
             static bool Int(VmSemanticValue value, out long number) => value.TryGetInteger(out number);
             static bool Str(VmSemanticValue value, out string text) => value.TryGetString(out text!);
             switch (opcode)
@@ -846,13 +1159,36 @@ internal sealed partial class Process
                 case PrototypeOpcode.PRINTS:
                 case PrototypeOpcode.PRINTSL:
                     if (arguments.Length != 1) return VmHostEffectResult.Fault;
-                    process.console.Print(arguments[0].ToString(), lineEnd: false);
+                    WriteText(arguments[0].ToString(), lineEnd: true);
                     if (opcode == PrototypeOpcode.PRINTSL) process.console.NewLine();
                     return VmHostEffectResult.Applied;
                 case PrototypeOpcode.HTML_PRINT:
                     if (arguments.Length != 2 || !Str(arguments[0], out var html) || !Int(arguments[1], out var lineEnd)) return VmHostEffectResult.Fault;
                     process.console.PrintHtml(html, lineEnd == 0);
                     return VmHostEffectResult.Applied;
+#if R0_F6G10C3
+                case PrototypeOpcode.HTML_PRINT_ISLAND:
+                    if (arguments.Length != 2 || !Str(arguments[0], out var islandHtml) ||
+                        !Int(arguments[1], out var islandDepth) || islandDepth is < int.MinValue or > int.MaxValue)
+                        return VmHostEffectResult.Fault;
+                    if (!process.skipPrint) process.console.PrintHTMLIsland(islandHtml, (int)islandDepth);
+                    return VmHostEffectResult.Applied;
+                case PrototypeOpcode.HTML_PRINT_ISLAND_CLEAR:
+                    if (arguments.IsEmpty) process.console.ClearHTMLIsland();
+                    else if (arguments.Length == 1 && Int(arguments[0], out var clearDepth) &&
+                             clearDepth is >= int.MinValue and <= int.MaxValue)
+                        process.console.ClearHTMLIsland((int)clearDepth);
+                    else return VmHostEffectResult.Fault;
+                    if (Program.R0F6G10C3PauseAfterIslandClear)
+                    {
+                        Program.R0F6G10C3IslandClearObserved = true;
+                    }
+                    return VmHostEffectResult.Applied;
+                case PrototypeOpcode.RANDOMIZE:
+                    if (arguments.Length != 1 || !Int(arguments[0], out var seed)) return VmHostEffectResult.Fault;
+                    if (!MinorShift.Emuera.Runtime.Config.JSON.JSONConfig.Game.UseNewRandom) process.vEvaluator.Randomize(seed);
+                    return VmHostEffectResult.Applied;
+#endif
                 case PrototypeOpcode.SETCOLOR:
                     if (arguments.Length == 1 && Int(arguments[0], out var rgb))
                         process.console.SetStringStyle(Color.FromArgb((int)((rgb >> 16) & 255), (int)((rgb >> 8) & 255), (int)(rgb & 255)));
@@ -863,6 +1199,54 @@ internal sealed partial class Process
                 case PrototypeOpcode.RESETCOLOR:
                     process.console.ResetStyle();
                     return VmHostEffectResult.Applied;
+#if R0_F6G10A
+                case PrototypeOpcode.RESETBGCOLOR:
+                    if (!arguments.IsEmpty) return VmHostEffectResult.Fault;
+                    process.console.SetBgColor(Config.BackColor);
+                    return VmHostEffectResult.Applied;
+                case PrototypeOpcode.RESETDATA:
+                    if (!arguments.IsEmpty) return VmHostEffectResult.Fault;
+                    process.vEvaluator.ResetData();
+                    process.console.ResetStyle();
+                    process.R0F6G10AApplyDataReset(discardExecution: false);
+                    return VmHostEffectResult.Applied;
+#endif
+                case PrototypeOpcode.ADDCHARA:
+                    if (arguments.IsEmpty) return VmHostEffectResult.Fault;
+                    foreach (var argument in arguments)
+                    {
+                        if (!Int(argument, out var csvNo)) return VmHostEffectResult.Fault;
+                        if (Config.CompatiSPChara) process.vEvaluator.AddCharacter_UseSp(csvNo, false);
+                        else process.vEvaluator.AddCharacter(csvNo);
+                    }
+                    return VmHostEffectResult.Applied;
+#if R0_F6G10A
+                case PrototypeOpcode.LOADDATA:
+                    if (arguments.Length != 1 || !Int(arguments[0], out var target) || target < 0 || target > int.MaxValue)
+                        return VmHostEffectResult.Fault;
+                    var checkedData = process.vEvaluator.CheckData((int)target, EraSaveFileType.Normal);
+                    if (checkedData.State != EraDataState.OK)
+                        throw new CodeEE(LocalizationManager.Error.LoadCorruptedData);
+                    if (!process.vEvaluator.LoadFrom((int)target))
+                        throw new ExeEE(LocalizationManager.Error.UnexpectedErrorInLoaddata);
+                    process.R0F6G10AApplyDataReset(discardExecution: true);
+                    process.state.SystemState = SystemStateCode.LoadData_DataLoaded;
+                    return VmHostEffectResult.HostTransfer;
+#endif
+#if R0_F6G10B
+                case PrototypeOpcode.DELDATA:
+                    if (arguments.Length != 1 || !Int(arguments[0], out var dataIndex) || dataIndex < 0 || dataIndex > int.MaxValue)
+                        return VmHostEffectResult.Fault;
+                    VariableEvaluator.DelData((int)dataIndex);
+                    return VmHostEffectResult.Applied;
+                case PrototypeOpcode.SAVEDATA:
+                    if (arguments.Length != 2 || !Int(arguments[0], out var saveIndex) || saveIndex < 0 || saveIndex > int.MaxValue ||
+                        !Str(arguments[1], out var saveText) || saveText.Contains('\n'))
+                        return VmHostEffectResult.Fault;
+                    if (!process.vEvaluator.SaveTo((int)saveIndex, saveText))
+                        process.console.PrintError(LocalizationManager.Error.UnexpectedErrorInSavedata);
+                    return VmHostEffectResult.Applied;
+#endif
                 case PrototypeOpcode.ALIGNMENT:
                     if (arguments.Length != 1 || !Str(arguments[0], out var alignment) || !Enum.TryParse<DisplayLineAlignment>(alignment, true, out var parsedAlignment)) return VmHostEffectResult.Fault;
                     process.console.Alignment = parsedAlignment;
@@ -888,7 +1272,83 @@ internal sealed partial class Process
         public bool TryPrepareInput(PrototypeOpcode opcode, ReadOnlySpan<VmSemanticValue> arguments, out VmInputValueKind expectedKind)
         {
             expectedKind = VmInputValueKind.String;
-            return graphFree && opcode == PrototypeOpcode.ONEINPUTS && arguments.IsEmpty;
+            if (!graphFree) return false;
+#if R0_F6G10C3
+            if (Program.R0F6G10C3PauseAfterIslandClear && opcode == PrototypeOpcode.HTML_PRINT_ISLAND_CLEAR)
+            {
+                if (arguments.IsEmpty) process.console.ClearHTMLIsland();
+                else if (arguments.Length == 1 && arguments[0].TryGetInteger(out var depth) && depth is >= int.MinValue and <= int.MaxValue)
+                    process.console.ClearHTMLIsland((int)depth);
+                else return false;
+                Program.R0F6G10C3IslandClearObserved = true;
+                expectedKind = VmInputValueKind.Integer;
+                pendingInputOpcode = PrototypeOpcode.WAIT;
+                pendingInputTime = -1;
+                pendingInputFlag = 0;
+                return true;
+            }
+#endif
+#if R0_F6G10B
+            if (Program.R0F6G10BMode && opcode == PrototypeOpcode.INPUTMOUSEKEY) return false;
+            if (opcode is PrototypeOpcode.WAIT or PrototypeOpcode.FORCEWAIT && arguments.IsEmpty)
+            {
+                expectedKind = VmInputValueKind.Integer;
+                pendingInputOpcode = opcode;
+                pendingInputTime = -1;
+                pendingInputFlag = 0;
+                return true;
+            }
+            if (opcode == PrototypeOpcode.WAITANYKEY && arguments.IsEmpty)
+            {
+                expectedKind = VmInputValueKind.Integer;
+                pendingInputOpcode = opcode;
+                pendingInputTime = -1;
+                pendingInputFlag = 0;
+                return true;
+            }
+            if (opcode == PrototypeOpcode.TWAIT && arguments.Length == 2 &&
+                arguments[0].TryGetInteger(out var waitTime) && arguments[1].TryGetInteger(out var waitFlag))
+            {
+                expectedKind = VmInputValueKind.Integer;
+                pendingInputOpcode = opcode;
+                pendingInputTime = waitTime;
+                pendingInputFlag = waitFlag;
+                return true;
+            }
+#endif
+            if (opcode == PrototypeOpcode.ONEINPUTS && arguments.IsEmpty)
+            {
+#if R0_F6G10A
+                pendingInputOpcode = opcode;
+#endif
+                return true;
+            }
+#if R0_F6G10A
+            if (opcode == PrototypeOpcode.INPUTMOUSEKEY && arguments.IsEmpty)
+            {
+                expectedKind = VmInputValueKind.Integer;
+                pendingInputOpcode = opcode;
+                pendingInputTime = 0;
+                return true;
+            }
+            if (opcode == PrototypeOpcode.INPUT && arguments.Length <= 1 &&
+                (arguments.IsEmpty || arguments[0].TryGetInteger(out _)))
+            {
+                expectedKind = VmInputValueKind.Integer;
+                pendingInputOpcode = opcode;
+                pendingInputTime = 0;
+                return true;
+            }
+            if (opcode == PrototypeOpcode.INPUTMOUSEKEY && arguments.Length == 1 &&
+                arguments[0].TryGetInteger(out var time))
+            {
+                expectedKind = VmInputValueKind.Integer;
+                pendingInputOpcode = opcode;
+                pendingInputTime = time > 0 ? (int)time : 0;
+                return true;
+            }
+#endif
+            return false;
         }
         public void PublishInput(VmInputContinuation continuation, Action<VmSemanticValue> respond)
         {
@@ -897,12 +1357,66 @@ internal sealed partial class Process
             // The R2 authority stops at the committed D9 suspension; it never opens GUI input.
             if (Program.R0F6G7R2Mode) return;
 #endif
+#if R0_F6G10A
+#if R0_F6G10B
+            if (Program.R0F6G10BMode || !Program.R0F6G10AHeadlessCapture)
+            {
+                process.R0F6G10BBindInput(continuation, respond, pendingInputOpcode, pendingInputTime, pendingInputFlag);
+                return;
+            }
+#endif
+            // Headless proof retains the owner input continuation but deliberately opens no GUI input.
+            if (Program.R0F6G10AHeadlessCapture) return;
+            if (pendingInputOpcode == PrototypeOpcode.INPUTMOUSEKEY)
+            {
+                process.console.WaitInput(new InputRequest
+                {
+                    InputType = InputType.PrimitiveMouseKey,
+                    Timelimit = pendingInputTime,
+                });
+                return;
+            }
+            if (pendingInputOpcode == PrototypeOpcode.INPUT)
+            {
+                process.console.WaitInput(new InputRequest { InputType = InputType.IntValue });
+                return;
+            }
+#endif
             process.console.WaitInput(new InputRequest { InputType = InputType.StrValue, OneInput = true });
         }
         public bool TryWriteInputResult(VmSemanticValue value)
         {
+#if R0_F6G10B
+            if (FailNextInputWrite) { FailNextInputWrite = false; return false; }
+            if (pendingInputOpcode is PrototypeOpcode.TWAIT or PrototypeOpcode.WAITANYKEY or PrototypeOpcode.WAIT or PrototypeOpcode.FORCEWAIT)
+            {
+                pendingInputOpcode = default;
+                pendingInputTime = 0;
+                pendingInputFlag = 0;
+                return true;
+            }
+#endif
+#if R0_F6G10A
+            if (pendingInputOpcode is PrototypeOpcode.INPUTMOUSEKEY or PrototypeOpcode.INPUT)
+            {
+                if (!value.TryGetInteger(out var number)) return false;
+                process.vEvaluator.RESULT = number;
+#if R0_F6G10B
+                InputResultWriteCount++;
+#endif
+                pendingInputOpcode = default;
+                pendingInputTime = 0;
+                return true;
+            }
+#endif
             if (!value.TryGetString(out var text)) return false;
             process.vEvaluator.RESULTS = text;
+#if R0_F6G10B
+            InputResultWriteCount++;
+#endif
+#if R0_F6G10A
+            pendingInputOpcode = default;
+#endif
             return true;
         }
     }
@@ -958,7 +1472,12 @@ internal sealed partial class Process
     internal IVmSemanticHost CreateNextRuntimeSemanticHost() => new LegacyVmSemanticHost(this);
     internal IVmRuntimeEffects CreateNextRuntimeEffects() => new LegacyVmRuntimeEffects(this);
 #if R0_F6G7R2
-    internal LegacyVmSemanticHost CreateGraphFreeNextRuntimeSemanticHost() => new(this, graphFreeRegistry: true);
+    internal LegacyVmSemanticHost CreateGraphFreeNextRuntimeSemanticHost() => new(this, graphFreeRegistry: true,
+#if R0_F6G10A
+        graphFreeFunctionExists: R0F6G10AExistFunction);
+#else
+        graphFreeFunctionExists: null);
+#endif
     internal LegacyVmRuntimeEffects CreateGraphFreeNextRuntimeEffects() => new(this, graphFree: true);
 #endif
 
@@ -971,6 +1490,11 @@ internal sealed partial class Process
     {
         var families = idDic.GetNextRuntimeLocalVariableFamilies().ToDictionary(pair => pair.Key, pair => pair.Value.GetDefaultSize(), Config.StrComper);
         return (families["LOCAL"], families["LOCALS"]);
+    }
+    internal (int Arg, int Args) GetNextRuntimeDefaultFrameSizes()
+    {
+        var families = idDic.GetNextRuntimeLocalVariableFamilies().ToDictionary(pair => pair.Key, pair => pair.Value.GetDefaultSize(), Config.StrComper);
+        return (families["ARG"], families["ARGS"]);
     }
 
     internal bool TryCreateNextRuntimeFrameState(LinkedProgram program, RuntimeFunctionId entryFunctionId, IReadOnlyDictionary<int, FunctionLabelLine> labels, out IVmFrameState frameState) =>

@@ -1,4 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup Condition="'$(R0F6G10C3)' == 'true'">
+    <DefineConstants>$(DefineConstants);R0_F6G10A;R0_F6G10B;R0_F6G10C;R0_F6G10C1;R0_F6G10C2;R0_F6G10C3</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(R0F6G10C2)' == 'true'">
+    <DefineConstants>$(DefineConstants);R0_F6G10A;R0_F6G10B;R0_F6G10C;R0_F6G10C1;R0_F6G10C2</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(R0F6G10C1)' == 'true'">
+    <DefineConstants>$(DefineConstants);R0_F6G10A;R0_F6G10B;R0_F6G10C;R0_F6G10C1</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(R0F6G10B)' == 'true'">
+    <DefineConstants>$(DefineConstants);R0_F6G10A;R0_F6G10B</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(R0F6G10A)' == 'true'">
+    <DefineConstants>$(DefineConstants);R0_F6G10A</DefineConstants>
+  </PropertyGroup>
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>

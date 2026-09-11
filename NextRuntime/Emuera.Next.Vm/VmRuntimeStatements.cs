@@ -4,9 +4,19 @@ namespace MinorShift.Emuera.Next.Vm;
 
 // Phase 3C keeps statement operands out of the structural semantic arena. The
 // linker copies their UTF-8 value once; the VM never consults source text again.
-public enum VmRuntimeStatementKind : byte { Print, PrintLine, PrintWait, Wait, ForceWait, Quit, Set, MultiSet, Split, Times, ReturnValue, LegacyReturnInteger, LegacyReturnValues, Host, TypedHost, NoOp, Expression, PrintButton, Throw, ClearFrame, VarSet, DeclarePrivate, SetBit }
+public enum VmRuntimeStatementKind : byte { Print, PrintNoLineEnd, PrintLine, PrintWait, PrintColumn, ReuseLastLine, Wait, ForceWait, Quit, Set, MultiSet, Split, Times, ReturnValue, LegacyReturnInteger, LegacyReturnValues, Host, TypedHost, NoOp, Expression, PrintButton, Throw, ClearFrame, VarSet, DeclarePrivate, SetBit
+#if R0_F6G10A
+    , Begin
+#endif
+#if R0_F6G10B
+    , ArrayRemove, ArrayShift
+#endif
+#if R0_F6G10C3
+    , ArraySort, ArrayMultiSort, CharacterVarSet, Swap
+#endif
+}
 public enum VmAssignmentOperator : byte { Assign, AssignString, Add, Subtract, Multiply, Divide, Modulo, BitOr, BitAnd, BitXor }
-public enum VmHostEffectResult : byte { Applied, Unavailable, WaitingForInput, Fault }
+public enum VmHostEffectResult : byte { Applied, Unavailable, WaitingForInput, HostTransfer, Fault }
 
 public readonly record struct VmRuntimeStatementRecord(VmRuntimeStatementKind Kind, int TextOffset, int TextLength, int OperandRecord = -1, int SecondaryOperandRecord = -1, VmAssignmentOperator Assignment = VmAssignmentOperator.Assign, double NumericValue = 0, ushort HostOpcode = 0, int FormatOperandRecord = -1, int SourceLine = 0, int ValueCount = 0, int TertiaryOperandRecord = -1, int QuaternaryOperandRecord = -1);
 
@@ -23,12 +33,17 @@ public sealed class VmRuntimeStatementArena
 // UI ownership stays outside the VM so desktop and browser hosts share the same execution core.
 public interface IVmRuntimeEffects
 {
-    void WriteText(string text);
+    void WriteText(string text, bool lineEnd);
+    bool WriteColumn(string text, bool alignmentRight) => false;
+    bool ReuseLastLine(string text) => false;
     void NewLine();
     void RequestWait(bool force);
     void Quit();
     // Host-owned UI commands are dispatched explicitly; a missing handler is not treated as execution.
     bool ExecuteHostStatement(MinorShift.Emuera.Next.Compiler.PrototypeOpcode opcode, string operand) => false;
+#if R0_F6G10A
+    bool RequestBegin(string keyword) => false;
+#endif
     bool PrintButton(string label, VmSemanticValue value) => false;
     bool SetLegacyReturnValues(ReadOnlySpan<VmSemanticValue> values) => false;
     VmHostEffectResult ExecuteTypedHostStatement(MinorShift.Emuera.Next.Compiler.PrototypeOpcode opcode, ReadOnlySpan<VmSemanticValue> arguments) => VmHostEffectResult.Unavailable;
@@ -42,6 +57,9 @@ public interface IVmOwnedInputRuntimeEffects
         ReadOnlySpan<VmSemanticValue> arguments, out VmInputValueKind expectedKind);
     void PublishInput(VmInputContinuation continuation, Action<VmSemanticValue> respond);
     bool TryWriteInputResult(VmSemanticValue value);
+#if R0_F6G10B
+    bool ResumeThroughOuterPump => false;
+#endif
 }
 
 internal sealed class VmRuntimeStatementArenaBuilder
@@ -75,6 +93,18 @@ internal sealed class VmRuntimeStatementArenaBuilder
         records.Add(new(kind, 0, 0, recordBase));
         return index;
     }
+    public int AddColumn(string text, bool alignmentRight)
+    {
+        var index = Add(VmRuntimeStatementKind.PrintColumn, text);
+        records[index] = records[index] with { ValueCount = alignmentRight ? 1 : 0 };
+        return index;
+    }
+    public int AddColumn(MinorShift.Emuera.Next.Compiler.SemanticPayload payload, bool alignmentRight)
+    {
+        var index = AddOperand(VmRuntimeStatementKind.PrintColumn, payload);
+        records[index] = records[index] with { ValueCount = alignmentRight ? 1 : 0 };
+        return index;
+    }
     public int AddPair(VmRuntimeStatementKind kind, MinorShift.Emuera.Next.Compiler.SemanticPayload first, MinorShift.Emuera.Next.Compiler.SemanticPayload second, int sourceLine = 0)
     {
         var index = records.Count;
@@ -104,13 +134,14 @@ internal sealed class VmRuntimeStatementArenaBuilder
         records.Add(new(VmRuntimeStatementKind.Set, 0, 0, destinationBase, sourceBase, assignment, FormatOperandRecord: formatBase));
         return index;
     }
-    public int AddMultiple(VmRuntimeStatementKind kind, MinorShift.Emuera.Next.Compiler.SemanticPayload? destination, IReadOnlyList<MinorShift.Emuera.Next.Compiler.SemanticPayload> values)
+    public int AddMultiple(VmRuntimeStatementKind kind, MinorShift.Emuera.Next.Compiler.SemanticPayload? destination, IReadOnlyList<MinorShift.Emuera.Next.Compiler.SemanticPayload> values,
+        VmAssignmentOperator assignment = VmAssignmentOperator.Assign)
     {
         var index = records.Count;
         var destinationRecord = destination is null ? -1 : AddOperandPart(destination);
         var firstValueRecord = values.Count == 0 ? -1 : operandRecordCount;
         foreach (var value in values) AddOperandPart(value);
-        records.Add(new(kind, 0, 0, destinationRecord, firstValueRecord, ValueCount: values.Count));
+        records.Add(new(kind, 0, 0, destinationRecord, firstValueRecord, Assignment: assignment, ValueCount: values.Count));
         return index;
     }
     public int AddTypedHost(MinorShift.Emuera.Next.Compiler.PrototypeOpcode opcode, IReadOnlyList<MinorShift.Emuera.Next.Compiler.SemanticPayload> values)

@@ -21,7 +21,10 @@ public enum PrototypeOpcode : ushort
     ADDCHARA, ADDSPCHARA, ADDDEFCHARA, ADDVOIDCHARA, DELCHARA,
     // [Emuera改修:NEXT-1B 2026-08-27] Legacy FunctionCodeごとにenumを分離し、実行意味の統合を先送りする。
     RESETCOLOR, CUSTOMDRAWLINE, SETCOLOR, SETFONT,
-    CALL, TRYCALL, CALLEVENT, CALLTRAIN, CALLF,
+#if R0_F6G10A
+    LOADGLOBAL, SAVEGLOBAL, RESETBGCOLOR, INPUTMOUSEKEY, CHKDATA, RESETDATA, LOADDATA, BEGIN,
+#endif
+    CALL, TRYCALL, TRYCCALL, CALLEVENT, CALLTRAIN, CALLF,
     RETURN, RETURNFORM, RETURNF,
     IF, SIF, ELSE, ELSEIF, ENDIF, SELECTCASE, CASE, CASEELSE, ENDSELECT,
     REPEAT, REND, CONTINUE, BREAK, FOR, NEXT, WHILE, WEND, DO, LOOP,
@@ -34,8 +37,14 @@ public enum PrototypeOpcode : ushort
     VARI, VARS, PRINTBUTTON, THROW,
     CALLFORM, TRYCALLFORM, TRYCCALLFORM, CALLFORMF, CATCH, ENDCATCH,
     DELDATA, SAVEDATA, RESTART,
+#if R0_F6G10B
+    ARRAYREMOVE,
+#endif
     SETANIMETIMER, GDISPOSE, GCREATEFROMFILE, GCREATE, GDRAWSPRITE,
-    SPRITECREATE, SPRITECREATED, SPRITEDISPOSE, HTML_PRINT, FINDELEMENT,
+    SPRITECREATE, SPRITECREATED, SPRITEDISPOSE, SPRITEANIMECREATE, SPRITEANIMEADDFRAME, HTML_PRINT, FINDELEMENT,
+#if R0_F6G10C3
+    HTML_PRINT_ISLAND, HTML_PRINT_ISLAND_CLEAR, ARRAYSORT, ARRAYMSORT, CVARSET, RANDOMIZE,
+#endif
     DEBUGPRINT, DEBUGPRINTL, DEBUGPRINTFORM, DEBUGPRINTFORML,
 }
 
@@ -138,6 +147,14 @@ public static class LegacyOpcodeMap
         ("PRINTFORM", PrototypeOpcode.PRINTFORM), ("PRINTFORML", PrototypeOpcode.PRINTFORML), ("PRINTFORMW", PrototypeOpcode.PRINTFORMW), ("PRINTFORMN", PrototypeOpcode.PRINTFORMN), ("PRINTFORMS", PrototypeOpcode.PRINTFORMS), ("PRINTFORMSL", PrototypeOpcode.PRINTFORMSL), ("PRINTFORMSW", PrototypeOpcode.PRINTFORMSW), ("PRINTFORMSN", PrototypeOpcode.PRINTFORMSN), ("PRINTFORMC", PrototypeOpcode.PRINTFORMC), ("PRINTFORMLC", PrototypeOpcode.PRINTFORMLC),
         ("INPUT", PrototypeOpcode.INPUT), ("INPUTS", PrototypeOpcode.INPUTS), ("TINPUT", PrototypeOpcode.TINPUT), ("TINPUTS", PrototypeOpcode.TINPUTS), ("ONEINPUT", PrototypeOpcode.ONEINPUT), ("ONEINPUTS", PrototypeOpcode.ONEINPUTS), ("TONEINPUT", PrototypeOpcode.TONEINPUT), ("TONEINPUTS", PrototypeOpcode.TONEINPUTS), ("WAIT", PrototypeOpcode.WAIT), ("TWAIT", PrototypeOpcode.TWAIT), ("WAITANYKEY", PrototypeOpcode.WAITANYKEY), ("FORCEWAIT", PrototypeOpcode.FORCEWAIT), ("AWAIT", PrototypeOpcode.AWAIT), ("DRAWLINE", PrototypeOpcode.DRAWLINE), ("DRAWLINEFORM", PrototypeOpcode.DRAWLINEFORM), ("BAR", PrototypeOpcode.BAR), ("BARL", PrototypeOpcode.BARL),
         ("ADDCHARA", PrototypeOpcode.ADDCHARA), ("ADDSPCHARA", PrototypeOpcode.ADDSPCHARA), ("ADDDEFCHARA", PrototypeOpcode.ADDDEFCHARA), ("ADDVOIDCHARA", PrototypeOpcode.ADDVOIDCHARA), ("DELCHARA", PrototypeOpcode.DELCHARA), ("RESETCOLOR", PrototypeOpcode.RESETCOLOR), ("CUSTOMDRAWLINE", PrototypeOpcode.CUSTOMDRAWLINE), ("SETCOLOR", PrototypeOpcode.SETCOLOR), ("SETFONT", PrototypeOpcode.SETFONT),
+#if R0_F6G10A
+        ("LOADGLOBAL", PrototypeOpcode.LOADGLOBAL), ("SAVEGLOBAL", PrototypeOpcode.SAVEGLOBAL),
+        ("RESETBGCOLOR", PrototypeOpcode.RESETBGCOLOR), ("INPUTMOUSEKEY", PrototypeOpcode.INPUTMOUSEKEY),
+        ("CHKDATA", PrototypeOpcode.CHKDATA),
+        ("RESETDATA", PrototypeOpcode.RESETDATA), ("LOADDATA", PrototypeOpcode.LOADDATA),
+        ("BEGIN", PrototypeOpcode.BEGIN),
+#endif
+        ("TRYCCALL", PrototypeOpcode.TRYCCALL),
         ("CALL", PrototypeOpcode.CALL), ("TRYCALL", PrototypeOpcode.TRYCALL), ("CALLEVENT", PrototypeOpcode.CALLEVENT), ("CALLTRAIN", PrototypeOpcode.CALLTRAIN), ("CALLF", PrototypeOpcode.CALLF), ("RETURN", PrototypeOpcode.RETURN), ("RETURNFORM", PrototypeOpcode.RETURNFORM), ("RETURNF", PrototypeOpcode.RETURNF), ("IF", PrototypeOpcode.IF), ("SIF", PrototypeOpcode.SIF), ("ELSE", PrototypeOpcode.ELSE), ("ELSEIF", PrototypeOpcode.ELSEIF), ("ENDIF", PrototypeOpcode.ENDIF), ("SELECTCASE", PrototypeOpcode.SELECTCASE), ("CASE", PrototypeOpcode.CASE), ("CASEELSE", PrototypeOpcode.CASEELSE), ("ENDSELECT", PrototypeOpcode.ENDSELECT),
         ("REPEAT", PrototypeOpcode.REPEAT), ("REND", PrototypeOpcode.REND), ("CONTINUE", PrototypeOpcode.CONTINUE), ("BREAK", PrototypeOpcode.BREAK), ("FOR", PrototypeOpcode.FOR), ("NEXT", PrototypeOpcode.NEXT), ("WHILE", PrototypeOpcode.WHILE), ("WEND", PrototypeOpcode.WEND), ("DO", PrototypeOpcode.DO), ("LOOP", PrototypeOpcode.LOOP), ("GOTO", PrototypeOpcode.GOTO), ("JUMP", PrototypeOpcode.JUMP), ("TRYJUMP", PrototypeOpcode.TRYJUMP), ("TRYGOTO", PrototypeOpcode.TRYGOTO), ("TRYGOTOFORM", PrototypeOpcode.TRYGOTOFORM),
         ("PRINTDATA", PrototypeOpcode.PRINTDATA), ("PRINTDATAL", PrototypeOpcode.PRINTDATAL), ("PRINTDATAW", PrototypeOpcode.PRINTDATAW), ("DATA", PrototypeOpcode.DATA), ("DATAFORM", PrototypeOpcode.DATAFORM), ("ENDDATA", PrototypeOpcode.ENDDATA), ("SETBIT", PrototypeOpcode.SETBIT), ("CLEARBIT", PrototypeOpcode.CLEARBIT), ("INVERTBIT", PrototypeOpcode.INVERTBIT), ("SWAP", PrototypeOpcode.SWAP), ("POWER", PrototypeOpcode.POWER), ("TIMES", PrototypeOpcode.TIMES), ("UPCHECK", PrototypeOpcode.UPCHECK), ("CUPCHECK", PrototypeOpcode.CUPCHECK), ("CLEARLINE", PrototypeOpcode.CLEARLINE), ("REUSELASTLINE", PrototypeOpcode.REUSELASTLINE), ("OUTPUTLOG", PrototypeOpcode.OUTPUTLOG), ("QUIT", PrototypeOpcode.QUIT), ("REDRAW", PrototypeOpcode.REDRAW),
@@ -145,9 +162,18 @@ public static class LegacyOpcodeMap
         ("VARI", PrototypeOpcode.VARI), ("VARS", PrototypeOpcode.VARS), ("PRINTBUTTON", PrototypeOpcode.PRINTBUTTON), ("THROW", PrototypeOpcode.THROW),
         ("CALLFORM", PrototypeOpcode.CALLFORM), ("TRYCALLFORM", PrototypeOpcode.TRYCALLFORM), ("TRYCCALLFORM", PrototypeOpcode.TRYCCALLFORM), ("CALLFORMF", PrototypeOpcode.CALLFORMF),
         ("CATCH", PrototypeOpcode.CATCH), ("ENDCATCH", PrototypeOpcode.ENDCATCH), ("DELDATA", PrototypeOpcode.DELDATA), ("SAVEDATA", PrototypeOpcode.SAVEDATA), ("RESTART", PrototypeOpcode.RESTART),
+#if R0_F6G10B
+        ("ARRAYREMOVE", PrototypeOpcode.ARRAYREMOVE),
+#endif
         ("SETANIMETIMER", PrototypeOpcode.SETANIMETIMER), ("GDISPOSE", PrototypeOpcode.GDISPOSE), ("GCREATEFROMFILE", PrototypeOpcode.GCREATEFROMFILE),
         ("GCREATE", PrototypeOpcode.GCREATE), ("GDRAWSPRITE", PrototypeOpcode.GDRAWSPRITE), ("SPRITECREATE", PrototypeOpcode.SPRITECREATE),
-        ("SPRITECREATED", PrototypeOpcode.SPRITECREATED), ("SPRITEDISPOSE", PrototypeOpcode.SPRITEDISPOSE), ("HTML_PRINT", PrototypeOpcode.HTML_PRINT),
+        ("SPRITECREATED", PrototypeOpcode.SPRITECREATED), ("SPRITEDISPOSE", PrototypeOpcode.SPRITEDISPOSE),
+        ("SPRITEANIMECREATE", PrototypeOpcode.SPRITEANIMECREATE), ("SPRITEANIMEADDFRAME", PrototypeOpcode.SPRITEANIMEADDFRAME), ("HTML_PRINT", PrototypeOpcode.HTML_PRINT),
+#if R0_F6G10C3
+        ("HTML_PRINT_ISLAND", PrototypeOpcode.HTML_PRINT_ISLAND), ("HTML_PRINT_ISLAND_CLEAR", PrototypeOpcode.HTML_PRINT_ISLAND_CLEAR),
+        ("ARRAYSORT", PrototypeOpcode.ARRAYSORT), ("ARRAYMSORT", PrototypeOpcode.ARRAYMSORT), ("CVARSET", PrototypeOpcode.CVARSET),
+        ("RANDOMIZE", PrototypeOpcode.RANDOMIZE),
+#endif
         ("FINDELEMENT", PrototypeOpcode.FINDELEMENT), ("DEBUGPRINT", PrototypeOpcode.DEBUGPRINT), ("DEBUGPRINTL", PrototypeOpcode.DEBUGPRINTL),
         ("DEBUGPRINTFORM", PrototypeOpcode.DEBUGPRINTFORM), ("DEBUGPRINTFORML", PrototypeOpcode.DEBUGPRINTFORML)
     ];
@@ -262,7 +288,7 @@ public static class LegacyOpcodeMap
         PrototypeOpcode.REPEAT or PrototypeOpcode.REND or PrototypeOpcode.CONTINUE or PrototypeOpcode.BREAK or
         PrototypeOpcode.FOR or PrototypeOpcode.NEXT or PrototypeOpcode.WHILE or PrototypeOpcode.WEND or
         PrototypeOpcode.DO or PrototypeOpcode.LOOP;
-    public static bool IsCall(PrototypeOpcode opcode) => opcode is PrototypeOpcode.CALL or PrototypeOpcode.TRYCALL or
+    public static bool IsCall(PrototypeOpcode opcode) => opcode is PrototypeOpcode.CALL or PrototypeOpcode.TRYCALL or PrototypeOpcode.TRYCCALL or
         PrototypeOpcode.CALLEVENT or PrototypeOpcode.CALLTRAIN or PrototypeOpcode.CALLF;
 }
 
@@ -322,8 +348,10 @@ public sealed class FunctionCompiler
 #if PERFORMANCE_METRICS
         var runtimeGateMetadataStart = Stopwatch.GetTimestamp();
 #endif
-        const SourceIndexFlags metadataFlags = SourceIndexFlags.DeclarationDirective | SourceIndexFlags.FunctionMetadata;
-        const SourceIndexFlags sourceResolvableFlags = metadataFlags | SourceIndexFlags.Rename | SourceIndexFlags.LineContinuation | SourceIndexFlags.OtherSemanticFallback;
+        var metadataFlags = SourceIndexFlags.DeclarationDirective | SourceIndexFlags.FunctionMetadata;
+        if (options.UseScopedVariableInstruction) metadataFlags |= SourceIndexFlags.ScopedVariableDeclaration;
+        const SourceIndexFlags sourceResolvableFlags = SourceIndexFlags.DeclarationDirective | SourceIndexFlags.FunctionMetadata |
+            SourceIndexFlags.ScopedVariableDeclaration | SourceIndexFlags.Rename | SourceIndexFlags.LineContinuation | SourceIndexFlags.OtherSemanticFallback;
         if ((source.Function.Flags & ~sourceResolvableFlags) != SourceIndexFlags.None ||
             (source.Function.Flags & SourceIndexFlags.Rename) != 0 && semanticEnvironment is null)
         {
@@ -344,7 +372,8 @@ public sealed class FunctionCompiler
 #endif
             return TryCompileCore(source, FunctionRuntimeMetadata.Empty);
         }
-        if (!FunctionRuntimeMetadataParser.TryParse(source, options, out var metadata, out var detail, semanticEnvironment?.Macros))
+        if (!FunctionRuntimeMetadataParser.TryParse(source, options, out var metadata, out var detail, semanticEnvironment?.Macros,
+                allowUnresolvedDynamicInitializer: true))
         {
 #if PERFORMANCE_METRICS
             CompileRuntimeMetrics.RecordRuntimeGateMetadata(Stopwatch.GetTimestamp() - runtimeGateMetadataStart);
@@ -375,14 +404,14 @@ public sealed class FunctionCompiler
             var scanStart = Stopwatch.GetTimestamp();
             try
             {
-                scanned = Scan(source.Bytes, source.Function.Span.StartLine, options, semanticEnvironment, runtimeMetadata is not null, out reason, out detail);
+                scanned = Scan(source.Bytes, source.Function.Span.StartLine, options, semanticEnvironment, runtimeMetadata, out reason, out detail);
             }
             finally
             {
                 CompileRuntimeMetrics.RecordScanInclusive(Stopwatch.GetTimestamp() - scanStart);
             }
 #else
-            scanned = Scan(source.Bytes, source.Function.Span.StartLine, options, semanticEnvironment, runtimeMetadata is not null, out reason, out detail);
+            scanned = Scan(source.Bytes, source.Function.Span.StartLine, options, semanticEnvironment, runtimeMetadata, out reason, out detail);
 #endif
             if (reason != UnsupportedReason.None)
             {
@@ -442,13 +471,24 @@ public sealed class FunctionCompiler
         }
     }
 
-    private static (ImmutableArray<PrototypeInstruction> Instructions, SemanticPayload? SemanticPayload, ImmutableArray<string> Operands) Scan(byte[] bytes, int startLine, CompilerCompatibilityOptions options, StructuralSemanticEnvironment? semanticEnvironment, bool metadataParsed, out UnsupportedReason reason, out string? detail)
+    private static (ImmutableArray<PrototypeInstruction> Instructions, SemanticPayload? SemanticPayload, ImmutableArray<string> Operands) Scan(byte[] bytes, int startLine, CompilerCompatibilityOptions options, StructuralSemanticEnvironment? semanticEnvironment, FunctionRuntimeMetadata? runtimeMetadata, out UnsupportedReason reason, out string? detail)
     {
         var list = ImmutableArray.CreateBuilder<PrototypeInstruction>();
         var operands = ImmutableArray.CreateBuilder<string>();
         var semanticParts = new List<SemanticPayload>();
         reason = UnsupportedReason.None;
         detail = null;
+        if (runtimeMetadata is not null)
+        {
+            foreach (var variable in runtimeMetadata.PrivateVariables)
+            {
+                if (variable.RuntimeInitializer is null) continue;
+                var operand = variable.Name + " = " + variable.RuntimeInitializer;
+                list.Add(new(variable.Type == RuntimeMetadataValueType.String ? PrototypeOpcode.VARS : PrototypeOpcode.VARI,
+                    PrototypeInstructionFlags.HasOperand, startLine + 1, 0, 0));
+                operands.Add(operand);
+            }
+        }
         var offset = 0;
         var line = startLine;
         var first = true;
@@ -520,7 +560,7 @@ public sealed class FunctionCompiler
                 line += physicalLines; continue;
             }
             if (trimmed.EndsWith('\\')) return Fail(UnsupportedReason.Multiline, "line continuation", out reason, out detail);
-            if (metadataParsed && trimmed[0] == '#')
+            if (runtimeMetadata is not null && trimmed[0] == '#')
             {
 #if PERFORMANCE_METRICS
                 CompileRuntimeMetrics.RecordMetadataSkippedLine();
@@ -553,7 +593,7 @@ public sealed class FunctionCompiler
                 if (!LegacyIdentifierScanner.IsCommandSeparator(separator, options))
                     return Fail(UnsupportedReason.UnknownSyntax, $"invalid command separator after: {token}", out reason, out detail);
                 if (!isMappedCommand)
-                    return Fail(UnsupportedReason.UnsupportedInstruction, $"unsupported instruction: {token}", out reason, out detail);
+                    return Fail(UnsupportedReason.UnsupportedInstruction, $"line {instructionLine}: unsupported instruction: {token}", out reason, out detail);
             }
             var assignmentFound = false;
             var incrementFound = false;
@@ -567,13 +607,17 @@ public sealed class FunctionCompiler
             }
             if (!isKnownLineHead && !assignmentFound && !incrementFound)
             {
-                return Fail(UnsupportedReason.UnsupportedInstruction, $"unsupported instruction: {token}", out reason, out detail);
+                return Fail(UnsupportedReason.UnsupportedInstruction, $"line {instructionLine}: unsupported instruction: {token}", out reason, out detail);
             }
             var isAssignment = !isKnownLineHead;
             if (isAssignment) opcode = PrototypeOpcode.SET;
-            var operandStart = isAssignment ? 0 : LegacyIdentifierScanner.SkipCommandSeparators(trimmed, tokenLength, options);
+            var preservesPrintSpacing = opcode is PrototypeOpcode.PRINT or PrototypeOpcode.PRINTN or PrototypeOpcode.PRINTL or PrototypeOpcode.PRINTW or
+                PrototypeOpcode.PRINTFORM or PrototypeOpcode.PRINTFORMN or PrototypeOpcode.PRINTFORML or PrototypeOpcode.PRINTFORMW;
+            // Legacy consumes one command separator for plain/formatted PRINT, leaving additional spacing as output.
+            var operandStart = isAssignment ? 0 : preservesPrintSpacing && tokenLength < trimmed.Length && trimmed[tokenLength] != ';'
+                ? tokenLength + 1 : LegacyIdentifierScanner.SkipCommandSeparators(trimmed, tokenLength, options);
             var rawOperand = operandStart < trimmed.Length && trimmed[operandStart] != ';' ? trimmed[operandStart..] : string.Empty;
-            var operand = rawOperand.TrimEnd(' ', '\t', '　');
+            var operand = preservesPrintSpacing ? rawOperand : rawOperand.TrimEnd(' ', '\t', '　');
             var operandOffset = syntheticOperand ? 0 : lineStart + Encoding.UTF8.GetByteCount(text[..(trimStart + operandStart)]);
             var operandLength = syntheticOperand ? 0 : Encoding.UTF8.GetByteCount(operand);
             var flags = operand.Length > 0 ? PrototypeInstructionFlags.HasOperand : PrototypeInstructionFlags.None;
@@ -679,7 +723,11 @@ public sealed class FunctionCompiler
             if (text.Length < 3) return false;
             if ((text.StartsWith("++", StringComparison.Ordinal) || text.StartsWith("--", StringComparison.Ordinal)) && text[2] is not (' ' or '\t' or '　'))
                 return IsStructuralLValue(text[2..]);
+#if R0_F6G10B
+            if (text.EndsWith("++", StringComparison.Ordinal) || text.EndsWith("--", StringComparison.Ordinal))
+#else
             if ((text.EndsWith("++", StringComparison.Ordinal) || text.EndsWith("--", StringComparison.Ordinal)) && text[^3] is not (' ' or '\t' or '　'))
+#endif
                 return IsStructuralLValue(text[..^2]);
             return false;
         }

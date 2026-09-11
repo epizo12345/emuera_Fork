@@ -270,7 +270,7 @@ internal sealed class ErbLoader
         return Volatile.Read(ref hasError) == 0;
     }
 
-    private sealed class PPState
+    internal sealed class PPState
     {
         bool skip;
         bool done;

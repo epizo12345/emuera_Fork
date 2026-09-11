@@ -117,6 +117,16 @@ static int SelfTest()
             var indexedSource = ErbSourceIndexer.IndexFile(p);
             return new FunctionCompiler(semanticEnvironment).TryCompileRuntime(indexedSource, indexedSource.Functions.Single());
         }
+        StartupSourceValidation ValidateStartup(string source)
+        {
+            var p = Path.Combine(root, "startup-source-" + tests.Count + ".ERB");
+            WriteBom(p, source.Replace("\n", "\r\n", StringComparison.Ordinal));
+            var indexedSource = ErbSourceIndexer.IndexFile(p);
+            Assert(indexedSource.Functions.Count == 1, "startup fixture header");
+            var read = FunctionSourceReader.Read(indexedSource, indexedSource.Functions.Single());
+            Assert(read.Status == SourceReadStatus.Read, "startup fixture read");
+            return StartupSourceValidator.Validate(read.Source!.Value, semanticEnvironment.Compatibility);
+        }
         FileInfoObservation ObserveOldSnapshot(string snapshotPath, long sourceBytes, long sourceTicks)
         {
             try
@@ -162,6 +172,23 @@ static int SelfTest()
             Assert(oldObservation == refreshedObservation, $"{label}: old={oldObservation} refreshed={refreshedObservation}");
         }
         tests.Add(("reader reads one function", () => { var read = FunctionSourceReader.Read(indexed, function); Assert(read.Status == SourceReadStatus.Read, $"{read.Status}:{read.Reason}"); }));
+        tests.Add(("stable batch reads without per-function snapshot refresh", () =>
+        {
+            using var session = FunctionSourceReader.OpenFile(indexed);
+            Assert(session.ReadStableBatch(function).Status == SourceReadStatus.Read);
+            Assert(session.ReadStableBatch(function).Status == SourceReadStatus.Read);
+            Assert(session.VerifyStableBatchSnapshot());
+        }));
+        tests.Add(("stable batch detects source drift at close boundary", () =>
+        {
+            var batchPath = Path.Combine(root, "batch-drift.ERB");
+            WriteBom(batchPath, "@BATCH\nPRINT ok\nRETURN\n");
+            var batch = ErbSourceIndexer.IndexFile(batchPath);
+            using var session = FunctionSourceReader.OpenFile(batch);
+            Assert(session.ReadStableBatch(batch.Functions.Single()).Status == SourceReadStatus.Read);
+            File.AppendAllText(batchPath, ";changed\n");
+            Assert(!session.VerifyStableBatchSnapshot());
+        }));
         tests.Add(("start offset", () => Assert(function.Span.StartOffset == 3)));
         tests.Add(("end offset", () => Assert(function.Span.EndOffset == new FileInfo(path).Length, $"{function.Span.EndOffset}!={new FileInfo(path).Length}")));
         tests.Add(("BOM excluded from function slice", () => Assert(FunctionSourceReader.Read(indexed, function).Source!.Value.Bytes[0] == (byte)'@')));
@@ -200,7 +227,7 @@ static int SelfTest()
         tests.Add(("R5 Legacy // comment syntax remains unsupported", () => Assert(CompileLine("// comment").Status != CompileStatus.Compiled)));
         tests.Add(("instruction payload is 16 bytes", () => Assert(System.Runtime.InteropServices.Marshal.SizeOf<PrototypeInstruction>() == 16)));
         tests.Add(("source lines", () => Assert(compiler.TryCompile(indexed, function).Function!.Instructions[0].SourceLine == 2)));
-        tests.Add(("operand span", () => { var i = compiler.TryCompile(indexed, function).Function!.Instructions[1]; Assert(i.OperandLength > 0 && i.OperandOffset > 0); }));
+        tests.Add(("operand span", () => { var i = compiler.TryCompile(indexed, function).Function!.Instructions[1]; var padded = CompileLine("PRINTFORML A　").Function!; Assert(i.OperandLength > 0 && i.OperandOffset > 0 && padded.OperandTexts[0] == "A　"); }));
         tests.Add(("semantic precedence", () => { var p = Semantic("1+2*3"); Assert(p.Nodes[p.Records[0].RootNodeIndex].Operator == SemanticOperator.Plus && p.Nodes[p.Nodes[p.Records[0].RootNodeIndex].B].Operator == SemanticOperator.Multiply); }));
         tests.Add(("same-priority operators reduce left", () => { var p = Semantic("A-B-C"); var root = p.Nodes[p.Records[0].RootNodeIndex]; Assert(root.Kind == SemanticNodeKind.Binary && root.Operator == SemanticOperator.Minus && p.Nodes[root.A].Operator == SemanticOperator.Minus); }));
          tests.Add(("logical operators preserve short-circuit shape", () => { var p = Semantic("A&&B||C"); var root = p.Nodes[p.Records[0].RootNodeIndex]; Assert(root.Operator == SemanticOperator.LogicalOr && p.Nodes[root.A].Operator == SemanticOperator.LogicalAnd); }));
@@ -281,6 +308,17 @@ static int SelfTest()
         tests.Add(("F6G3 ERH constant initializes private metadata", () => { var options = new CompilerCompatibilityOptions(true, true, true, false); var macros = MacroCatalog.FromHeaderText("#DIM CONST SIZE = 180", options); var bytes = Encoding.UTF8.GetBytes("@F\n#DIM SIZE_LOCAL = SIZE\nRETURN"); var source = new FunctionSource(new SourceFileIndex("fixture", bytes.Length, 3, [], SourceIndexFlags.FunctionMetadata, null), new FunctionIndex("F", new SourceSpan(0, bytes.Length, 1, 3), SourceIndexFlags.FunctionMetadata), bytes); Assert(FunctionRuntimeMetadataParser.TryParse(source, options, out var metadata, out _, macros) && metadata.PrivateVariables.Single().InitialInteger == 180); }));
         tests.Add(("F6G7R2 private metadata accepts Legacy hexadecimal and binary constants", () => { var result = CompileRuntimeSource("@F\n#DIM CONST COLORS = 0xFF9999, 0b1010\nRETURN"); var p = result.Function?.RuntimeMetadata?.PrivateVariables.Single(); Assert(result.Status == CompileStatus.Compiled && p is not null && p.Value.InitialIntegers.SequenceEqual([0xFF9999L, 10L])); }));
         tests.Add(("F6G7R2 signature-only metadata may defer dynamic initializer expressions", () => { var options = new CompilerCompatibilityOptions(true, true, true, false); var bytes = Encoding.UTF8.GetBytes("@F, X = 1\n#FUNCTION\n#DIM DYNAMIC X\n#DIM DYNAMIC Y = X + 3\nRETURNF Y"); var source = new FunctionSource(new SourceFileIndex("fixture", bytes.Length, 5, [], SourceIndexFlags.FunctionMetadata, null), new FunctionIndex("F", new SourceSpan(0, bytes.Length, 1, 5), SourceIndexFlags.FunctionMetadata), bytes); Assert(!FunctionRuntimeMetadataParser.TryParse(source, options, out _, out _) && FunctionRuntimeMetadataParser.TryParse(source, options, out var metadata, out _, allowUnresolvedDynamicInitializer: true) && metadata.Parameters.Single().IsPrivate && !metadata.PrivateVariables[1].HasInitializer); }));
+        tests.Add(("F6G10A1 runtime compile preserves dynamic scalar initializer", () => { var result = CompileRuntimeSource("@F\n#FUNCTION\n#DIM DYNAMIC X = FILTER_GID + 100\nRETURNF X"); Assert(result.Status == CompileStatus.Compiled && result.Function!.RuntimeMetadata!.PrivateVariables.Single().RuntimeInitializer == "FILTER_GID + 100" && result.Function.Instructions[0].Opcode == PrototypeOpcode.VARI && result.Function.OperandTexts[0] == "X = FILTER_GID + 100"); }));
+        tests.Add(("F6G10C3 PRINT consumes exactly one separator", () => { var result = CompileRuntimeSource("@F\nPRINT  x\nPRINTFORM   y\nRETURN"); Assert(result.Status == CompileStatus.Compiled && result.Function!.OperandTexts[0] == " x" && result.Function.OperandTexts[1] == "  y"); }));
+#if R0_F6G10C3
+        tests.Add(("F6G10C3 HTML island opcodes compile without raw runtime parsing", () => { var result = CompileRuntimeSource("@F\nHTML_PRINT_ISLAND \"a\"\nHTML_PRINT_ISLAND \"b\",2\nHTML_PRINT_ISLAND_CLEAR\nHTML_PRINT_ISLAND_CLEAR 2\nRETURN"); Assert(result.Status == CompileStatus.Compiled && result.Function!.Instructions.Select(value => value.Opcode).SequenceEqual([PrototypeOpcode.HTML_PRINT_ISLAND, PrototypeOpcode.HTML_PRINT_ISLAND, PrototypeOpcode.HTML_PRINT_ISLAND_CLEAR, PrototypeOpcode.HTML_PRINT_ISLAND_CLEAR, PrototypeOpcode.RETURN])); }));
+#endif
+        tests.Add(("F6G10A1 startup validator accepts balanced labels blocks and extracts static calls", () => { var v = ValidateStartup("@F\n$OK\nIF 1\nCALL TARGET\nENDIF\nGOTO OK"); Assert(v.Valid && v.LocalLabelCount == 1 && v.StructuralBlockCount == 1 && v.StaticCalls.SequenceEqual(["TARGET"])); }));
+        tests.Add(("F6G10A1 startup validator rejects missing local label", () => Assert(!ValidateStartup("@F\nGOTO MISSING").Valid)));
+        tests.Add(("F6G10A1 startup validator rejects unbalanced loop", () => Assert(!ValidateStartup("@F\nFOR I,0,1\nPRINT I").Valid)));
+        tests.Add(("F6G10A1 startup validator rejects malformed command separator", () => Assert(!ValidateStartup("@F\nPRINT=1").Valid)));
+        tests.Add(("F6G10A1 lazy unsupported semantic is valid source but fails first demand", () => { var v = ValidateStartup("@F\nUNKNOWN 1"); var c = CompileRuntimeSource("@F\nUNKNOWN 1"); Assert(v.Valid && c.Status == CompileStatus.Unsupported); }));
+        tests.Add(("F6G10A1 constant metadata operand error is rejected", () => Assert(CompileRuntimeSource("@F\n#LOCALSIZE nope\nRETURN").Status == CompileStatus.Unsupported)));
         tests.Add(("F6E source-bound OtherSemanticFallback resolves safely", () => { var result = CompileRuntimeSource("@F\n　#DIM X\n#FUNCTION\nRETURNF X"); Assert(result.Status == CompileStatus.Compiled && result.Function!.RuntimeMetadata!.PrivateVariables.Single().Name == "X"); }));
         tests.Add(("F6F body-local VARI VARS descriptors and statements", () => { var result = CompileRuntimeSource("@F\n#FUNCTION\nVARI I\nVARI J = I + 2\nVARS S\nVARS T = \"x\"\nVARI IA,2,3\nVARS SA,4\nRETURNF J"); var m = result.Function?.RuntimeMetadata; Assert(result.Status == CompileStatus.Compiled && m is not null && m.PrivateVariables.Length == 6 && m.PrivateVariables.All(x => !x.IsStatic) && m.PrivateVariables[4].Dimensions.SequenceEqual([2,3]) && m.PrivateVariables[5].Dimensions.SequenceEqual([4]) && result.Function!.Instructions.Take(6).Select(x => x.Opcode).SequenceEqual([PrototypeOpcode.VARI,PrototypeOpcode.VARI,PrototypeOpcode.VARS,PrototypeOpcode.VARS,PrototypeOpcode.VARI,PrototypeOpcode.VARS])); }));
         tests.Add(("F6F scoped declarations honor compatibility switch", () => { var result = CompileRuntimeSource("@F\nVARI X\nRETURN"); var disabled = CompileLine("VARI X", CompilerCompatibilityOptions.LegacyDefaults); Assert(result.Status == CompileStatus.Compiled && disabled.Status == CompileStatus.Unsupported); }));
@@ -906,7 +944,15 @@ static int SelfTest()
         {
             tests.Add((name + " remains SET", () => Assert(CompileLine(line).Status == CompileStatus.Compiled && CompileLine(line).Function!.Instructions.Single().Opcode == PrototypeOpcode.SET)));
         }
-        foreach (var (name, line) in new[] { ("unknown two identifiers", "UNKNOWN X=Y"), ("foo two identifiers", "FOO BAR=1"), ("line-head assignment", "PRINT=1"), ("rand assignment", "RAND=1"), ("unexpanded shift assignment", "A <<= 1"), ("unexpanded increment", "A ++"), ("unexpanded decrement", "A --") })
+        var invalidAssignments = new List<(string name, string line)> { ("unknown two identifiers", "UNKNOWN X=Y"), ("foo two identifiers", "FOO BAR=1"), ("line-head assignment", "PRINT=1"), ("rand assignment", "RAND=1"), ("unexpanded shift assignment", "A <<= 1") };
+#if R0_F6G10B
+        tests.Add(("G10B actual-game spaced postfix increment remains SET", () => Assert(CompileLine("LOCAL:4 ++").Status == CompileStatus.Compiled && CompileLine("LOCAL:4 ++").Function!.Instructions.Single().Opcode == PrototypeOpcode.SET)));
+        tests.Add(("G10B spaced postfix decrement remains SET", () => Assert(CompileLine("LOCAL:4 --").Status == CompileStatus.Compiled && CompileLine("LOCAL:4 --").Function!.Instructions.Single().Opcode == PrototypeOpcode.SET)));
+#else
+        invalidAssignments.Add(("unexpanded increment", "A ++"));
+        invalidAssignments.Add(("unexpanded decrement", "A --"));
+#endif
+        foreach (var (name, line) in invalidAssignments)
         {
             tests.Add((name + " never becomes SET", () => { var result = CompileLine(line); Assert(result.Status != CompileStatus.Compiled || result.Function!.Instructions.All(i => i.Opcode != PrototypeOpcode.SET)); }));
         }

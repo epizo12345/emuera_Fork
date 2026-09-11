@@ -18,7 +18,7 @@ public enum VmFunctionState : int
     CodeNotAvailable, LinkReady, LinkedSemanticPending, UnsupportedControl,
     InvalidStructure, ExecutableReady, Ready = ExecutableReady,
 }
-public enum VmStopReason : byte { Halted, Returned, WaitingForInput, QuitRequested, CodeNotAvailable, SemanticNotAvailable, SemanticEvaluationFault, UnsupportedControl, InvalidStructure, InvalidFunctionId, InvalidLocalPc, StackUnderflow, StepLimit, TerminalFault }
+public enum VmStopReason : byte { Halted, Returned, WaitingForInput, HostTransfer, QuitRequested, CodeNotAvailable, SemanticNotAvailable, SemanticEvaluationFault, UnsupportedControl, InvalidStructure, InvalidFunctionId, InvalidLocalPc, StackUnderflow, StepLimit, TerminalFault }
 public enum VmReturnKind : int { Normal, Propagate, Expression }
 public enum VmInvocationKind : byte { Call, Jump }
 public enum VmDynamicCallKind : byte { CallForm, TryCallForm, TryCCallForm, CallFormMethod }
@@ -363,7 +363,11 @@ public sealed record VmFunctionLinkResult(VmFunctionExecutionContext Context, IR
 public static class ControlLinker
 {
     private static readonly HashSet<PrototypeOpcode> Structure = [PrototypeOpcode.IF, PrototypeOpcode.SIF, PrototypeOpcode.ELSEIF, PrototypeOpcode.ELSE, PrototypeOpcode.ENDIF, PrototypeOpcode.SELECTCASE, PrototypeOpcode.CASE, PrototypeOpcode.CASEELSE, PrototypeOpcode.ENDSELECT, PrototypeOpcode.REPEAT, PrototypeOpcode.REND, PrototypeOpcode.FOR, PrototypeOpcode.NEXT, PrototypeOpcode.WHILE, PrototypeOpcode.WEND, PrototypeOpcode.DO, PrototypeOpcode.LOOP, PrototypeOpcode.BREAK, PrototypeOpcode.CONTINUE];
-    private static readonly HashSet<PrototypeOpcode> HostStatements = [PrototypeOpcode.RESETCOLOR, PrototypeOpcode.CUSTOMDRAWLINE, PrototypeOpcode.SETCOLOR, PrototypeOpcode.SETFONT, PrototypeOpcode.DRAWLINE, PrototypeOpcode.RESET_STAIN, PrototypeOpcode.VARSET, PrototypeOpcode.ALIGNMENT, PrototypeOpcode.ARRAYSHIFT, PrototypeOpcode.CALLF, PrototypeOpcode.PRINTS, PrototypeOpcode.PRINTSW, PrototypeOpcode.SETBIT, PrototypeOpcode.CLEARBIT, PrototypeOpcode.INVERTBIT];
+    private static readonly HashSet<PrototypeOpcode> HostStatements = [PrototypeOpcode.RESETCOLOR, PrototypeOpcode.CUSTOMDRAWLINE, PrototypeOpcode.SETCOLOR, PrototypeOpcode.SETFONT, PrototypeOpcode.DRAWLINE, PrototypeOpcode.RESET_STAIN, PrototypeOpcode.VARSET, PrototypeOpcode.ALIGNMENT, PrototypeOpcode.ARRAYSHIFT, PrototypeOpcode.CALLF, PrototypeOpcode.PRINTS, PrototypeOpcode.PRINTSW, PrototypeOpcode.SETBIT, PrototypeOpcode.CLEARBIT, PrototypeOpcode.INVERTBIT
+#if R0_F6G10A
+        , PrototypeOpcode.LOADGLOBAL, PrototypeOpcode.SAVEGLOBAL
+#endif
+    ];
     private static readonly Dictionary<PrototypeOpcode, VmStructuralKind> Kinds = new() { [PrototypeOpcode.SIF]=VmStructuralKind.Sif,[PrototypeOpcode.IF]=VmStructuralKind.If,[PrototypeOpcode.ELSEIF]=VmStructuralKind.ElseIf,[PrototypeOpcode.ELSE]=VmStructuralKind.Else,[PrototypeOpcode.ENDIF]=VmStructuralKind.EndIf,[PrototypeOpcode.SELECTCASE]=VmStructuralKind.SelectCase,[PrototypeOpcode.CASE]=VmStructuralKind.Case,[PrototypeOpcode.CASEELSE]=VmStructuralKind.CaseElse,[PrototypeOpcode.ENDSELECT]=VmStructuralKind.EndSelect,[PrototypeOpcode.REPEAT]=VmStructuralKind.Repeat,[PrototypeOpcode.REND]=VmStructuralKind.Rend,[PrototypeOpcode.FOR]=VmStructuralKind.For,[PrototypeOpcode.NEXT]=VmStructuralKind.Next,[PrototypeOpcode.WHILE]=VmStructuralKind.While,[PrototypeOpcode.WEND]=VmStructuralKind.Wend,[PrototypeOpcode.DO]=VmStructuralKind.Do,[PrototypeOpcode.LOOP]=VmStructuralKind.Loop,[PrototypeOpcode.BREAK]=VmStructuralKind.Break,[PrototypeOpcode.CONTINUE]=VmStructuralKind.Continue };
     private static readonly Dictionary<PrototypeOpcode, VmStructuralKind> Openers = new() { [PrototypeOpcode.IF]=VmStructuralKind.If,[PrototypeOpcode.SELECTCASE]=VmStructuralKind.SelectCase,[PrototypeOpcode.REPEAT]=VmStructuralKind.Repeat,[PrototypeOpcode.FOR]=VmStructuralKind.For,[PrototypeOpcode.WHILE]=VmStructuralKind.While,[PrototypeOpcode.DO]=VmStructuralKind.Do };
     private static readonly Dictionary<PrototypeOpcode, VmStructuralKind> Closers = new() { [PrototypeOpcode.ENDIF]=VmStructuralKind.If,[PrototypeOpcode.ENDSELECT]=VmStructuralKind.SelectCase,[PrototypeOpcode.REND]=VmStructuralKind.Repeat,[PrototypeOpcode.NEXT]=VmStructuralKind.For,[PrototypeOpcode.WEND]=VmStructuralKind.While,[PrototypeOpcode.LOOP]=VmStructuralKind.Do };
@@ -426,6 +430,9 @@ public static class ControlLinker
             {
                 var p = prototype.Instructions[pc]; var operand = pc < prototype.Operands.Length ? prototype.Operands[pc] : string.Empty;
                 if (p.Opcode == PrototypeOpcode.LABEL) { code.Add(Linked(p, VmOpcode.Nop)); continue; }
+#if R0_F6G10A
+                if (p.Opcode == PrototypeOpcode.RESTART) { code.Add(Linked(p, VmOpcode.Branch, 0)); continue; }
+#endif
                 if (p.Opcode is PrototypeOpcode.GOTO or PrototypeOpcode.TRYGOTO)
                 {
                     var label = operand.Trim();
@@ -451,13 +458,19 @@ public static class ControlLinker
                     }
                     dynamicCallSites.Add(dynamicSite); code.Add(Linked(p, VmOpcode.DynamicCall, dynamicCallSites.Count - 1)); continue;
                 }
-                if (p.Opcode is PrototypeOpcode.CALL or PrototypeOpcode.JUMP)
+                if (p.Opcode is PrototypeOpcode.CALL or PrototypeOpcode.JUMP or PrototypeOpcode.TRYCALL or PrototypeOpcode.TRYCCALL)
                 {
-                    if (p.Opcode == PrototypeOpcode.CALL) calls++; else jumps++; if (!FixedCallTargetScanner.TryScan(operand, out var scan)) { scans++; state = VmFunctionState.UnsupportedControl; diagnostics.Add($"function={runtimeId} pc={pc} scan-fail"); code.Add(Linked(p, VmOpcode.UnsupportedControl)); continue; }
-                    var resolution = FixedCallResolver.Resolve(catalog, scan.Target, ignoreCase, compatiCallEvent); if (!resolution.FunctionResolved) { if (resolution.Reason?.StartsWith("WrongKind", StringComparison.Ordinal) == true) wrong++; else missing++; state = VmFunctionState.UnsupportedControl; code.Add(Linked(p, VmOpcode.UnsupportedControl)); continue; }
-                    resolved++; if (resolution.CodeAvailable) yes++; else no++; var argumentStart = scan.End; var argumentLength = Math.Max(0, operand.Length - argumentStart); var argumentRecordStart = callArgumentRecords.Count;
-                    if (!TryLinkCallArguments(operand[argumentStart..], runtimeEnvironment, callArgumentParts, callArgumentRecords, measureCallArgumentPrefixScan, ref callArgumentPayloadAdditionCount, ref callArgumentRecordCount)) { state = VmFunctionState.UnsupportedControl; diagnostics.Add($"function={runtimeId} pc={pc} unsupported-call-arguments"); code.Add(Linked(p, VmOpcode.UnsupportedControl)); continue; }
-                    callSites.Add(new(runtimeId, pc, resolution.RuntimeId, p.Opcode == PrototypeOpcode.CALL ? VmInvocationKind.Call : VmInvocationKind.Jump, argumentStart, argumentLength, argumentRecordStart, callArgumentRecords.Count - argumentRecordStart)); code.Add(Linked(p, p.Opcode == PrototypeOpcode.CALL ? VmOpcode.Call : VmOpcode.Jump, resolution.RuntimeId.Value)); continue;
+                    var callOperand = operand;
+#if R0_F6G10B
+                    if (runtimeEnvironment?.RenameResolver is not null)
+                        callOperand = SemanticLexicalTokenStream.ApplyRename(callOperand, runtimeEnvironment.RenameResolver);
+#endif
+                    if (p.Opcode == PrototypeOpcode.JUMP) jumps++; else calls++; if (!FixedCallTargetScanner.TryScan(callOperand, out var scan)) { scans++; state = VmFunctionState.UnsupportedControl; diagnostics.Add($"function={runtimeId} pc={pc} scan-fail"); code.Add(Linked(p, VmOpcode.UnsupportedControl)); continue; }
+                    var resolution = FixedCallResolver.Resolve(catalog, scan.Target, ignoreCase, compatiCallEvent); if (!resolution.FunctionResolved) { if (resolution.Reason?.StartsWith("WrongKind", StringComparison.Ordinal) == true) wrong++; else missing++; if (p.Opcode == PrototypeOpcode.TRYCALL) { code.Add(Linked(p, VmOpcode.Nop)); continue; } if (p.Opcode == PrototypeOpcode.TRYCCALL && catchTargets.TryGetValue(pc, out var catchPc)) { code.Add(Linked(p, VmOpcode.Branch, catchPc)); continue; } state = VmFunctionState.UnsupportedControl; code.Add(Linked(p, VmOpcode.UnsupportedControl)); continue; }
+                    resolved++; if (resolution.CodeAvailable) yes++; else no++; var argumentStart = scan.End; var argumentLength = Math.Max(0, callOperand.Length - argumentStart); var argumentRecordStart = callArgumentRecords.Count;
+                    if (!TryLinkCallArguments(callOperand[argumentStart..], runtimeEnvironment, callArgumentParts, callArgumentRecords, measureCallArgumentPrefixScan, ref callArgumentPayloadAdditionCount, ref callArgumentRecordCount)) { state = VmFunctionState.UnsupportedControl; diagnostics.Add($"function={runtimeId} pc={pc} unsupported-call-arguments"); code.Add(Linked(p, VmOpcode.UnsupportedControl)); continue; }
+                    var isJump = p.Opcode == PrototypeOpcode.JUMP;
+                    callSites.Add(new(runtimeId, pc, resolution.RuntimeId, isJump ? VmInvocationKind.Jump : VmInvocationKind.Call, argumentStart, argumentLength, argumentRecordStart, callArgumentRecords.Count - argumentRecordStart)); code.Add(Linked(p, isJump ? VmOpcode.Jump : VmOpcode.Call, resolution.RuntimeId.Value)); continue;
                 }
                 if (p.Opcode == PrototypeOpcode.RETURN && operand.Length != 0)
                 {
@@ -533,6 +546,7 @@ public static class ControlLinker
         {
             switch (instructions[pc].Opcode)
             {
+                case PrototypeOpcode.TRYCCALL:
                 case PrototypeOpcode.TRYCCALLFORM:
                     stack.Push((pc, -1));
                     break;
@@ -752,15 +766,16 @@ public static class ControlLinker
             {
                 var parts = SemanticLexicalTokenStream.SplitTopLevel(operand, ',', environment.Compatibility);
                 if (parts.Count == 1) index = statements.AddOperand(VmRuntimeStatementKind.ClearFrame, SemanticIrCompiler.CompileExpression(parts[0].Trim(), environment), sourceLine);
-                else if (parts.Count == 4) index = statements.AddVarSet(
+                else if (parts.Count is >= 2 and <= 4) index = statements.AddVarSet(
                     SemanticIrCompiler.CompileExpression(parts[0].Trim(), environment), SemanticIrCompiler.CompileExpression(parts[1].Trim(), environment),
-                    SemanticIrCompiler.CompileExpression(parts[2].Trim(), environment), SemanticIrCompiler.CompileExpression(parts[3].Trim(), environment));
+                    SemanticIrCompiler.CompileExpression(parts.Count >= 3 ? parts[2].Trim() : "0", environment),
+                    SemanticIrCompiler.CompileExpression(parts.Count == 4 ? parts[3].Trim() : "-1", environment));
                 else { index = -1; return false; }
                 return true;
             }
             catch (SemanticParseException) { index = -1; return false; }
         }
-        if (environment is not null && opcode == PrototypeOpcode.SETBIT)
+        if (environment is not null && opcode is PrototypeOpcode.SETBIT or PrototypeOpcode.CLEARBIT or PrototypeOpcode.INVERTBIT)
         {
             try
             {
@@ -768,27 +783,154 @@ public static class ControlLinker
                 if (parts.Count < 2) { index = -1; return false; }
                 index = statements.AddMultiple(VmRuntimeStatementKind.SetBit,
                     SemanticIrCompiler.CompileExpression(parts[0].Trim(), environment),
+                    parts.Skip(1).Select(part => SemanticIrCompiler.CompileExpression(part.Trim(), environment)).ToArray(),
+                    opcode == PrototypeOpcode.SETBIT ? VmAssignmentOperator.BitOr :
+                    opcode == PrototypeOpcode.CLEARBIT ? VmAssignmentOperator.BitAnd : VmAssignmentOperator.BitXor);
+                return true;
+            }
+            catch (SemanticParseException) { index = -1; return false; }
+        }
+#if R0_F6G10B
+        if (environment is not null && opcode == PrototypeOpcode.ARRAYREMOVE)
+        {
+            try
+            {
+                var parts = SemanticLexicalTokenStream.SplitTopLevel(operand, ',', environment.Compatibility);
+                if (parts.Count != 3) { index = -1; return false; }
+                index = statements.AddMultiple(VmRuntimeStatementKind.ArrayRemove,
+                    SemanticIrCompiler.CompileExpression(parts[0].Trim(), environment),
+                    [SemanticIrCompiler.CompileExpression(parts[1].Trim(), environment),
+                     SemanticIrCompiler.CompileExpression(parts[2].Trim(), environment)]);
+                return true;
+            }
+            catch (SemanticParseException) { index = -1; return false; }
+        }
+        if (environment is not null && opcode == PrototypeOpcode.ARRAYSHIFT)
+        {
+            try
+            {
+                var parts = SemanticLexicalTokenStream.SplitTopLevel(operand, ',', environment.Compatibility);
+                if (parts.Count is not (4 or 5)) { index = -1; return false; }
+                index = statements.AddMultiple(VmRuntimeStatementKind.ArrayShift,
+                    SemanticIrCompiler.CompileExpression(parts[0].Trim(), environment),
+                    [SemanticIrCompiler.CompileExpression(parts[1].Trim(), environment),
+                     SemanticIrCompiler.CompileExpression(parts[2].Trim(), environment),
+                     SemanticIrCompiler.CompileExpression(parts[3].Trim(), environment),
+                     SemanticIrCompiler.CompileExpression(parts.Count == 5 ? parts[4].Trim() : "-1", environment)]);
+                return true;
+            }
+            catch (SemanticParseException) { index = -1; return false; }
+        }
+#endif
+#if R0_F6G10C3
+        if (environment is not null && opcode == PrototypeOpcode.SWAP)
+        {
+            try
+            {
+                var parts = SemanticLexicalTokenStream.SplitTopLevel(operand, ',', environment.Compatibility);
+                if (parts.Count != 2) { index = -1; return false; }
+                index = statements.AddPair(VmRuntimeStatementKind.Swap,
+                    SemanticIrCompiler.CompileExpression(parts[0].Trim(), environment),
+                    SemanticIrCompiler.CompileExpression(parts[1].Trim(), environment));
+                return true;
+            }
+            catch (SemanticParseException) { index = -1; return false; }
+        }
+        if (environment is not null && opcode == PrototypeOpcode.ARRAYSORT)
+        {
+            try
+            {
+                var parts = SemanticLexicalTokenStream.SplitTopLevel(operand, ',', environment.Compatibility);
+                if (parts.Count is < 1 or > 4) { index = -1; return false; }
+                var order = parts.Count >= 2 ? parts[1].Trim() : "FORWARD";
+                if (!order.Equals("FORWARD", StringComparison.OrdinalIgnoreCase) && !order.Equals("BACK", StringComparison.OrdinalIgnoreCase)) { index = -1; return false; }
+                index = statements.AddMultiple(VmRuntimeStatementKind.ArraySort,
+                    SemanticIrCompiler.CompileExpression(parts[0].Trim(), environment),
+                    [SemanticIrCompiler.CompileExpression(order.Equals("BACK", StringComparison.OrdinalIgnoreCase) ? "1" : "0", environment),
+                     SemanticIrCompiler.CompileExpression(parts.Count >= 3 ? parts[2].Trim() : "0", environment),
+                     SemanticIrCompiler.CompileExpression(parts.Count == 4 ? parts[3].Trim() : "-1", environment)]);
+                return true;
+            }
+            catch (SemanticParseException) { index = -1; return false; }
+        }
+        if (environment is not null && opcode == PrototypeOpcode.ARRAYMSORT)
+        {
+            try
+            {
+                var parts = SemanticLexicalTokenStream.SplitTopLevel(operand, ',', environment.Compatibility);
+                if (parts.Count != 2) { index = -1; return false; }
+                index = statements.AddPair(VmRuntimeStatementKind.ArrayMultiSort,
+                    SemanticIrCompiler.CompileExpression(parts[0].Trim(), environment),
+                    SemanticIrCompiler.CompileExpression(parts[1].Trim(), environment));
+                return true;
+            }
+            catch (SemanticParseException) { index = -1; return false; }
+        }
+        if (environment is not null && opcode == PrototypeOpcode.CVARSET)
+        {
+            try
+            {
+                var parts = SemanticLexicalTokenStream.SplitTopLevel(operand, ',', environment.Compatibility);
+                if (parts.Count is < 1 or > 5) { index = -1; return false; }
+                index = statements.AddMultiple(VmRuntimeStatementKind.CharacterVarSet,
+                    SemanticIrCompiler.CompileExpression(parts[0].Trim(), environment),
                     parts.Skip(1).Select(part => SemanticIrCompiler.CompileExpression(part.Trim(), environment)).ToArray());
                 return true;
             }
             catch (SemanticParseException) { index = -1; return false; }
         }
+#endif
+#if R0_F6G10A
+        if (opcode == PrototypeOpcode.BEGIN)
+        {
+            index = statements.Add(VmRuntimeStatementKind.Begin, operand);
+            return true;
+        }
+#endif
         if (environment is not null && TryLinkTypedHost(opcode, operand, environment, statements, out index))
             return true;
         // A format is linked into its own semantic arena, never retained as a raw operand string.
-        if (environment is not null && opcode is PrototypeOpcode.PRINTFORM or PrototypeOpcode.PRINTFORML or PrototypeOpcode.PRINTFORMW)
+        if (environment is not null && opcode is PrototypeOpcode.PRINTFORM or PrototypeOpcode.PRINTFORMN or PrototypeOpcode.PRINTFORML or PrototypeOpcode.PRINTFORMW or PrototypeOpcode.PRINTFORMC or PrototypeOpcode.PRINTFORMLC)
         {
             try
             {
-                var formatKind = opcode == PrototypeOpcode.PRINTFORM ? VmRuntimeStatementKind.Print : opcode == PrototypeOpcode.PRINTFORML ? VmRuntimeStatementKind.PrintLine : VmRuntimeStatementKind.PrintWait;
+                if (opcode is PrototypeOpcode.PRINTFORMC or PrototypeOpcode.PRINTFORMLC)
+                {
+                    index = statements.AddColumn(SemanticIrCompiler.CompileFormat(operand, environment),
+                        opcode == PrototypeOpcode.PRINTFORMC);
+                    return true;
+                }
+                var formatKind = opcode switch
+                {
+                    PrototypeOpcode.PRINTFORM => VmRuntimeStatementKind.Print,
+                    PrototypeOpcode.PRINTFORMN => VmRuntimeStatementKind.PrintNoLineEnd,
+                    PrototypeOpcode.PRINTFORML => VmRuntimeStatementKind.PrintLine,
+                    _ => VmRuntimeStatementKind.PrintWait,
+                };
                 index = statements.AddOperand(formatKind, SemanticIrCompiler.CompileFormat(operand, environment));
                 return true;
             }
             catch (SemanticParseException) { index = -1; return false; }
         }
+        if (environment is not null && opcode == PrototypeOpcode.REUSELASTLINE)
+        {
+            try
+            {
+                index = statements.AddOperand(VmRuntimeStatementKind.ReuseLastLine,
+                    SemanticIrCompiler.CompileFormat(operand, environment));
+                return true;
+            }
+            catch (SemanticParseException) { index = -1; return false; }
+        }
+        if (opcode is PrototypeOpcode.PRINTC or PrototypeOpcode.PRINTLC)
+        {
+            index = statements.AddColumn(operand, opcode == PrototypeOpcode.PRINTC);
+            return true;
+        }
         var kind = opcode switch
         {
             PrototypeOpcode.PRINT => VmRuntimeStatementKind.Print,
+            PrototypeOpcode.PRINTN => VmRuntimeStatementKind.PrintNoLineEnd,
             PrototypeOpcode.PRINTL => VmRuntimeStatementKind.PrintLine,
             PrototypeOpcode.PRINTW => VmRuntimeStatementKind.PrintWait,
             PrototypeOpcode.WAIT => VmRuntimeStatementKind.Wait,
@@ -811,11 +953,26 @@ public static class ControlLinker
     {
         index = -1;
         var typed = opcode is PrototypeOpcode.PRINTS or PrototypeOpcode.PRINTSL or PrototypeOpcode.HTML_PRINT or
-            PrototypeOpcode.SETCOLOR or PrototypeOpcode.RESETCOLOR or PrototypeOpcode.ALIGNMENT or PrototypeOpcode.REDRAW or
-            PrototypeOpcode.CLEARLINE or PrototypeOpcode.ONEINPUTS or PrototypeOpcode.SETANIMETIMER or
+#if R0_F6G10C3
+            PrototypeOpcode.HTML_PRINT_ISLAND or PrototypeOpcode.HTML_PRINT_ISLAND_CLEAR or PrototypeOpcode.RANDOMIZE or
+#endif
+            PrototypeOpcode.SETCOLOR or PrototypeOpcode.RESETCOLOR or
+#if R0_F6G10A
+            PrototypeOpcode.RESETBGCOLOR or
+#endif
+            PrototypeOpcode.ALIGNMENT or PrototypeOpcode.REDRAW or
+            PrototypeOpcode.CLEARLINE or PrototypeOpcode.ONEINPUTS or
+#if R0_F6G10A
+            PrototypeOpcode.INPUT or PrototypeOpcode.INPUTMOUSEKEY or PrototypeOpcode.CHKDATA or
+            PrototypeOpcode.RESETDATA or PrototypeOpcode.ADDCHARA or PrototypeOpcode.LOADDATA or
+#endif
+#if R0_F6G10B
+            PrototypeOpcode.DELDATA or PrototypeOpcode.SAVEDATA or PrototypeOpcode.TWAIT or PrototypeOpcode.WAITANYKEY or
+#endif
+            PrototypeOpcode.SETANIMETIMER or
             PrototypeOpcode.GDISPOSE or PrototypeOpcode.GCREATEFROMFILE or PrototypeOpcode.GCREATE or
             PrototypeOpcode.GDRAWSPRITE or PrototypeOpcode.SPRITECREATE or PrototypeOpcode.SPRITECREATED or
-            PrototypeOpcode.SPRITEDISPOSE;
+            PrototypeOpcode.SPRITEDISPOSE or PrototypeOpcode.SPRITEANIMECREATE or PrototypeOpcode.SPRITEANIMEADDFRAME;
         if (!typed) return false;
         try
         {
@@ -829,7 +986,43 @@ public static class ControlLinker
                 payloads.Add(SemanticIrCompiler.CompileExpression(parts[0].Trim(), environment));
                 payloads.Add(SemanticIrCompiler.CompileExpression(parts.Count == 2 ? parts[1].Trim() : "0", environment));
             }
-            else if (opcode is not (PrototypeOpcode.RESETCOLOR or PrototypeOpcode.ONEINPUTS))
+#if R0_F6G10C3
+            else if (opcode == PrototypeOpcode.HTML_PRINT_ISLAND)
+            {
+                var parts = SemanticLexicalTokenStream.SplitTopLevel(operand, ',', environment.Compatibility);
+                if (parts.Count is < 1 or > 2) return false;
+                payloads.Add(SemanticIrCompiler.CompileExpression(parts[0].Trim(), environment));
+                payloads.Add(SemanticIrCompiler.CompileExpression(parts.Count == 2 ? parts[1].Trim() : "0", environment));
+            }
+            else if (opcode == PrototypeOpcode.HTML_PRINT_ISLAND_CLEAR)
+            {
+                if (!string.IsNullOrWhiteSpace(operand))
+                {
+                    var parts = SemanticLexicalTokenStream.SplitTopLevel(operand, ',', environment.Compatibility);
+                    if (parts.Count != 1) return false;
+                    payloads.Add(SemanticIrCompiler.CompileExpression(parts[0].Trim(), environment));
+                }
+            }
+#endif
+#if R0_F6G10A
+            else if (opcode == PrototypeOpcode.INPUTMOUSEKEY || opcode == PrototypeOpcode.INPUT)
+            {
+                if (!string.IsNullOrWhiteSpace(operand))
+                    payloads.Add(SemanticIrCompiler.CompileExpression(operand.Trim(), environment));
+            }
+#endif
+            else if (opcode is not (PrototypeOpcode.RESETCOLOR or
+#if R0_F6G10A
+                         PrototypeOpcode.RESETDATA or PrototypeOpcode.RESETBGCOLOR or
+#endif
+                         PrototypeOpcode.ONEINPUTS
+#if R0_F6G10B
+                         or PrototypeOpcode.WAITANYKEY
+#endif
+#if R0_F6G10C3
+                         or PrototypeOpcode.HTML_PRINT_ISLAND_CLEAR
+#endif
+                         ))
             {
                 foreach (var part in SemanticLexicalTokenStream.SplitTopLevel(operand, ',', environment.Compatibility))
                 {
@@ -1283,7 +1476,11 @@ public sealed class VmMachine : IVmFrameVariables, IVmFrameVariableTypes, IVmExp
         if (!contextOwner.CommitInput(input))
             return OwnerFault(VmStopReason.TerminalFault, "input suspension commit failed");
         contextOwner.PublishInput(input, respond => inputHost.PublishInput(input, respond),
+#if R0_F6G10B
+            value => { if (inputHost.ResumeThroughOuterPump) TryAcceptInput(input, value, out _); else TryResumeInput(input, value, out _); });
+#else
             value => TryResumeInput(input, value, out _));
+#endif
         return VmStopReason.WaitingForInput;
     }
 
@@ -1392,7 +1589,7 @@ public sealed class VmMachine : IVmFrameVariables, IVmFrameVariableTypes, IVmExp
             }
             catch (Exception ex) when (contextOwner is not null)
             {
-                return OwnerFault(VmStopReason.TerminalFault, "host/runtime exception: " + ex.GetType().Name);
+                return OwnerFault(VmStopReason.TerminalFault, "host/runtime exception: " + ex.GetType().Name + ": " + ex.Message);
             }
         }
         return OwnerFault(VmStopReason.StepLimit, "step limit");
@@ -1663,9 +1860,77 @@ public sealed class VmMachine : IVmFrameVariables, IVmFrameVariableTypes, IVmExp
             return ExecuteTimes(record);
         if (record.Kind == VmRuntimeStatementKind.SetBit)
             return ExecuteSetBit(record);
+#if R0_F6G10B
+        if (record.Kind == VmRuntimeStatementKind.ArrayRemove)
+        {
+            if (runtimeSemantics is null || !ResolveLValue(activeProgram.RuntimeStatements.OperandArena, record.OperandRecord, out var target) ||
+                !EvaluateRecord(activeProgram.RuntimeStatements.OperandArena, record.SecondaryOperandRecord, out var startValue) || !startValue.TryGetInteger(out var start) ||
+                !EvaluateRecord(activeProgram.RuntimeStatements.OperandArena, record.SecondaryOperandRecord + 1, out var countValue) || !countValue.TryGetInteger(out var count) ||
+                !TryRemoveFrameVariable(target, start, count)) return VmStopReason.SemanticNotAvailable;
+            return null;
+        }
+        if (record.Kind == VmRuntimeStatementKind.ArrayShift)
+        {
+            if (runtimeSemantics is null || !ResolveLValue(activeProgram.RuntimeStatements.OperandArena, record.OperandRecord, out var target) ||
+                !EvaluateRecord(activeProgram.RuntimeStatements.OperandArena, record.SecondaryOperandRecord, out var shiftValue) || !shiftValue.TryGetInteger(out var shift))
+                return VmStopReason.SemanticNotAvailable;
+            if (shift == 0) return null;
+            if (!EvaluateRecord(activeProgram.RuntimeStatements.OperandArena, record.SecondaryOperandRecord + 2, out var startValue) || !startValue.TryGetInteger(out var start) ||
+                !EvaluateRecord(activeProgram.RuntimeStatements.OperandArena, record.SecondaryOperandRecord + 3, out var countValue) || !countValue.TryGetInteger(out var count) ||
+                !EvaluateRecord(activeProgram.RuntimeStatements.OperandArena, record.SecondaryOperandRecord + 1, out var defaultValue) ||
+                !TryShiftFrameVariable(target, shift, defaultValue, start, count)) return VmStopReason.SemanticNotAvailable;
+            return null;
+        }
+#endif
+#if R0_F6G10C3
+        if (record.Kind == VmRuntimeStatementKind.Swap)
+        {
+            if (runtimeSemantics is null ||
+                !ResolveLValue(activeProgram.RuntimeStatements.OperandArena, record.OperandRecord, out var left) ||
+                !ResolveLValue(activeProgram.RuntimeStatements.OperandArena, record.SecondaryOperandRecord, out var right) ||
+                !runtimeSemantics.TryReadRuntimeLValue(left, out var leftValue) ||
+                !runtimeSemantics.TryReadRuntimeLValue(right, out var rightValue) ||
+                !runtimeSemantics.TryWriteRuntimeLValue(left, rightValue) ||
+                !runtimeSemantics.TryWriteRuntimeLValue(right, leftValue)) return VmStopReason.SemanticNotAvailable;
+            return null;
+        }
+        if (record.Kind == VmRuntimeStatementKind.ArraySort)
+        {
+            if (runtimeSemantics is null || !ResolveLValue(activeProgram.RuntimeStatements.OperandArena, record.OperandRecord, out var target) ||
+                !EvaluateRecord(activeProgram.RuntimeStatements.OperandArena, record.SecondaryOperandRecord, out var orderValue) || !orderValue.TryGetInteger(out var order) ||
+                !EvaluateRecord(activeProgram.RuntimeStatements.OperandArena, record.SecondaryOperandRecord + 1, out var startValue) || !startValue.TryGetInteger(out var start) ||
+                !EvaluateRecord(activeProgram.RuntimeStatements.OperandArena, record.SecondaryOperandRecord + 2, out var countValue) || !countValue.TryGetInteger(out var count) ||
+                !TrySortVariable(target, order != 0, start, count)) return VmStopReason.SemanticNotAvailable;
+            return null;
+        }
+        if (record.Kind == VmRuntimeStatementKind.ArrayMultiSort)
+        {
+            if (runtimeSemantics is null ||
+                !ResolveLValue(activeProgram.RuntimeStatements.OperandArena, record.OperandRecord, out var key) ||
+                !ResolveLValue(activeProgram.RuntimeStatements.OperandArena, record.SecondaryOperandRecord, out var companion) ||
+                !TryMultiSortFrameVariables(key, companion)) return VmStopReason.SemanticNotAvailable;
+            return null;
+        }
+        if (record.Kind == VmRuntimeStatementKind.CharacterVarSet)
+        {
+            if (runtimeSemantics is null || record.ValueCount > 4 ||
+                !ResolveLValue(activeProgram.RuntimeStatements.OperandArena, record.OperandRecord, out var target) ||
+                runtimeSemantics.Host is not IVmVariableBulkHost bulk) return VmStopReason.SemanticNotAvailable;
+            var element = VmSemanticValue.From(0L);
+            var value = VmSemanticValue.Missing;
+            var start = 0L;
+            var end = -1L;
+            if (record.ValueCount >= 1 && !EvaluateRecord(activeProgram.RuntimeStatements.OperandArena, record.SecondaryOperandRecord, out element) ||
+                record.ValueCount >= 2 && !EvaluateRecord(activeProgram.RuntimeStatements.OperandArena, record.SecondaryOperandRecord + 1, out value) ||
+                record.ValueCount >= 3 && (!EvaluateRecord(activeProgram.RuntimeStatements.OperandArena, record.SecondaryOperandRecord + 2, out var startValue) || !startValue.TryGetInteger(out start)) ||
+                record.ValueCount >= 4 && (!EvaluateRecord(activeProgram.RuntimeStatements.OperandArena, record.SecondaryOperandRecord + 3, out var endValue) || !endValue.TryGetInteger(out end)) ||
+                !bulk.TryFillCharacters(target, element, value, start, end)) return VmStopReason.SemanticNotAvailable;
+            return null;
+        }
+#endif
         if (record.Kind == VmRuntimeStatementKind.ClearFrame)
         {
-            if (runtimeSemantics is null || !ResolveLValue(activeProgram.RuntimeStatements.OperandArena, record.OperandRecord, out var target) || !TryClearFrameVariable(target.Name))
+            if (runtimeSemantics is null || !ResolveLValue(activeProgram.RuntimeStatements.OperandArena, record.OperandRecord, out var target) || !TryClearVariable(target))
                 return VmStopReason.SemanticNotAvailable;
             return null;
         }
@@ -1674,10 +1939,9 @@ public sealed class VmMachine : IVmFrameVariables, IVmFrameVariableTypes, IVmExp
             if (runtimeSemantics is null || !ResolveLValue(activeProgram.RuntimeStatements.OperandArena, record.OperandRecord, out var target) ||
                 !EvaluateRecord(activeProgram.RuntimeStatements.OperandArena, record.SecondaryOperandRecord, out var value) ||
                 !EvaluateRecord(activeProgram.RuntimeStatements.OperandArena, record.TertiaryOperandRecord, out var startValue) || !startValue.TryGetInteger(out var start) ||
-                !EvaluateRecord(activeProgram.RuntimeStatements.OperandArena, record.QuaternaryOperandRecord, out var endValue) || !endValue.TryGetInteger(out var end) || start < 0 || end < start)
+                !EvaluateRecord(activeProgram.RuntimeStatements.OperandArena, record.QuaternaryOperandRecord, out var endValue) || !endValue.TryGetInteger(out var end) || start < 0 || end != -1 && end < start)
                 return VmStopReason.SemanticNotAvailable;
-            for (var i = start; i < end; i++)
-                if (!runtimeSemantics.TryWriteRuntimeLValue(target with { Indices = [VmSemanticValue.From(i)] }, value)) return VmStopReason.SemanticNotAvailable;
+            if (!TryFillVariable(target, value, start, end)) return VmStopReason.SemanticNotAvailable;
             return null;
         }
         if (record.Kind == VmRuntimeStatementKind.DeclarePrivate)
@@ -1718,6 +1982,8 @@ public sealed class VmMachine : IVmFrameVariables, IVmFrameVariableTypes, IVmExp
                 !EvaluateRecord(activeProgram.RuntimeStatements.OperandArena, record.OperandRecord, out var value) ||
                 !value.TryGetInteger(out _))
                 return runtimeSemantics?.LastStatus == VmSemanticStatus.Fault ? VmStopReason.SemanticEvaluationFault : VmStopReason.SemanticNotAvailable;
+            if (runtimeEffects is not null && !runtimeEffects.SetLegacyReturnValues(MemoryMarshal.CreateReadOnlySpan(ref value, 1)))
+                return VmStopReason.SemanticNotAvailable;
             SetCurrentReturnValue(value);
             return Return() ? null : VmStopReason.StackUnderflow;
         }
@@ -1761,6 +2027,7 @@ public sealed class VmMachine : IVmFrameVariables, IVmFrameVariableTypes, IVmExp
             {
                 VmHostEffectResult.Applied => null,
                 VmHostEffectResult.WaitingForInput => VmStopReason.WaitingForInput,
+                VmHostEffectResult.HostTransfer => VmStopReason.HostTransfer,
                 VmHostEffectResult.Fault => VmStopReason.TerminalFault,
                 _ => VmStopReason.SemanticNotAvailable,
             };
@@ -1776,15 +2043,35 @@ public sealed class VmMachine : IVmFrameVariables, IVmFrameVariableTypes, IVmExp
         }
         switch (record.Kind)
         {
-            case VmRuntimeStatementKind.Print: runtimeEffects.WriteText(text); return null;
-            case VmRuntimeStatementKind.PrintLine: runtimeEffects.WriteText(text); runtimeEffects.NewLine(); return null;
-            case VmRuntimeStatementKind.PrintWait: runtimeEffects.WriteText(text); runtimeEffects.RequestWait(false); return VmStopReason.WaitingForInput;
-            case VmRuntimeStatementKind.Wait: runtimeEffects.RequestWait(false); return VmStopReason.WaitingForInput;
-            case VmRuntimeStatementKind.ForceWait: runtimeEffects.RequestWait(true); return VmStopReason.WaitingForInput;
+            case VmRuntimeStatementKind.Print: runtimeEffects.WriteText(text, true); return null;
+            case VmRuntimeStatementKind.PrintNoLineEnd: runtimeEffects.WriteText(text, false); return null;
+            case VmRuntimeStatementKind.PrintLine: runtimeEffects.WriteText(text, true); runtimeEffects.NewLine(); return null;
+            case VmRuntimeStatementKind.PrintWait: runtimeEffects.WriteText(text, true); runtimeEffects.NewLine(); return SuspendRuntimeWait(false);
+            case VmRuntimeStatementKind.PrintColumn: return runtimeEffects.WriteColumn(text, record.ValueCount != 0) ? null : VmStopReason.SemanticNotAvailable;
+            case VmRuntimeStatementKind.ReuseLastLine: return runtimeEffects.ReuseLastLine(text) ? null : VmStopReason.SemanticNotAvailable;
+            case VmRuntimeStatementKind.Wait: return SuspendRuntimeWait(false);
+            case VmRuntimeStatementKind.ForceWait: return SuspendRuntimeWait(true);
             case VmRuntimeStatementKind.Quit: runtimeEffects.Quit(); return VmStopReason.QuitRequested;
+#if R0_F6G10A
+            case VmRuntimeStatementKind.Begin:
+                if (!runtimeEffects.RequestBegin(text)) return VmStopReason.SemanticNotAvailable;
+                SetCurrentReturnValue(VmSemanticValue.From(0L));
+                return Return() ? null : VmStopReason.StackUnderflow;
+#endif
             case VmRuntimeStatementKind.Host: return runtimeEffects.ExecuteHostStatement((PrototypeOpcode)record.HostOpcode, text) ? null : VmStopReason.SemanticNotAvailable;
             default: return VmStopReason.UnsupportedControl;
         }
+    }
+
+    private VmStopReason SuspendRuntimeWait(bool force)
+    {
+        if (contextOwner is not null && runtimeEffects is IVmOwnedInputRuntimeEffects inputHost &&
+            inputHost.TryPrepareInput(force ? PrototypeOpcode.FORCEWAIT : PrototypeOpcode.WAIT,
+                ReadOnlySpan<VmSemanticValue>.Empty, out var expectedKind))
+            pendingInput = contextOwner.ReserveInput(expectedKind);
+        else
+            runtimeEffects!.RequestWait(force);
+        return VmStopReason.WaitingForInput;
     }
 
     private VmStopReason? ExecuteAssignment(in VmRuntimeStatementRecord record)
@@ -1931,8 +2218,17 @@ public sealed class VmMachine : IVmFrameVariables, IVmFrameVariableTypes, IVmExp
                 return VmStopReason.SemanticEvaluationFault;
             // Legacy reevaluates and writes the destination after each bit expression.
             if (!ResolveLValue(arena, record.OperandRecord, out var target) ||
-                !runtimeSemantics.TryReadRuntimeLValue(target, out var currentValue) || !currentValue.TryGetInteger(out var current) ||
-                !runtimeSemantics.TryWriteRuntimeLValue(target, VmSemanticValue.From(current | 1L << (int)bit)))
+                !runtimeSemantics.TryReadRuntimeLValue(target, out var currentValue) || !currentValue.TryGetInteger(out var current))
+                return SemanticResultReason(runtimeSemantics.LastStatus);
+            var mask = 1L << (int)bit;
+            var result = record.Assignment switch
+            {
+                VmAssignmentOperator.BitOr => current | mask,
+                VmAssignmentOperator.BitAnd => current & ~mask,
+                VmAssignmentOperator.BitXor => current ^ mask,
+                _ => current
+            };
+            if (!runtimeSemantics.TryWriteRuntimeLValue(target, VmSemanticValue.From(result)))
                 return SemanticResultReason(runtimeSemantics.LastStatus);
         }
         return null;
@@ -2393,6 +2689,190 @@ public sealed class VmMachine : IVmFrameVariables, IVmFrameVariableTypes, IVmExp
         Array.Fill(values, text ? VmSemanticValue.From(string.Empty) : VmSemanticValue.From(0L));
         return true;
     }
+    private bool TryClearVariable(in VmResolvedLValue target)
+    {
+        if (TryClearFrameVariable(target.Name)) return true;
+        return runtimeSemantics is not null && runtimeSemantics.Host is IVmVariableBulkHost bulk && bulk.TryClear(target);
+    }
+    private bool TryFillVariable(in VmResolvedLValue target, VmSemanticValue value, long start, long end)
+    {
+        if (!OwnsFrameVariable(target.Name))
+            return runtimeSemantics is not null && runtimeSemantics.Host is IVmVariableBulkHost bulk && bulk.TryFill(target, value, start, end);
+        if (target.Subkey is not null || target.Indices.Length != 0) return false;
+        var dimensions = new List<int>(3);
+        for (var dimension = 0; dimension < 3 && TryGetFrameVariableLength(target.Name, dimension, out var length); dimension++)
+        {
+            if (length < 0 || length > int.MaxValue) return false;
+            dimensions.Add((int)length);
+        }
+        if (dimensions.Count == 0) return false;
+        if (dimensions.Count == 1)
+        {
+            var limit = end == -1 ? dimensions[0] : end;
+            if (start < 0 || limit < start || limit > dimensions[0]) return false;
+            for (var index = start; index < limit; index++)
+                if (!TryWriteFrame(target.Name, null, [VmSemanticValue.From(index)], value)) return false;
+            return true;
+        }
+        var total = 1L;
+        foreach (var length in dimensions)
+        {
+            total *= length;
+            if (total > int.MaxValue) return false;
+        }
+        for (var linear = 0L; linear < total; linear++)
+        {
+            var remainder = linear;
+            var indices = new VmSemanticValue[dimensions.Count];
+            for (var dimension = dimensions.Count - 1; dimension >= 0; dimension--)
+            {
+                indices[dimension] = VmSemanticValue.From(remainder % dimensions[dimension]);
+                remainder /= dimensions[dimension];
+            }
+            if (!TryWriteFrame(target.Name, null, indices, value)) return false;
+        }
+        return true;
+    }
+#if R0_F6G10B
+    private bool TryRemoveFrameVariable(in VmResolvedLValue target, long start, long count)
+    {
+        if (!OwnsFrameVariable(target.Name) || target.Subkey is not null || target.Indices.Length != 0 || start < 0 || count < 0) return false;
+        if (count == 0) return true;
+        if (!TryGetFrameVariableLength(target.Name, 0, out var length) || TryGetFrameVariableLength(target.Name, 1, out _) || start >= length) return false;
+        var source = count >= length - start ? length : start + count;
+        for (var destination = start; source < length; destination++, source++)
+        {
+            if (!TryReadFrame(target.Name, null, [VmSemanticValue.From(source)], out var value) ||
+                !TryWriteFrame(target.Name, null, [VmSemanticValue.From(destination)], value)) return false;
+        }
+        if (!TryGetFrameVariableKind(target.Name, out var kind)) return false;
+        var empty = kind == VmSemanticValueKind.String ? VmSemanticValue.From(string.Empty) : VmSemanticValue.From(0L);
+        for (var index = Math.Max(start, length - count); index < length; index++)
+            if (!TryWriteFrame(target.Name, null, [VmSemanticValue.From(index)], empty)) return false;
+        return true;
+    }
+
+    private bool TryShiftFrameVariable(in VmResolvedLValue target, long shift, VmSemanticValue defaultValue, long start, long count)
+    {
+        if (!OwnsFrameVariable(target.Name) || target.Subkey is not null || target.Indices.Length != 0 ||
+            shift is < int.MinValue or > int.MaxValue || start < 0 || count < -1) return false;
+        if (!TryGetFrameVariableLength(target.Name, 0, out var length) || TryGetFrameVariableLength(target.Name, 1, out _) || start >= length) return false;
+        if (count == 0) return true;
+        var range = count == -1 || count >= length - start ? length - start : count;
+        if (range > int.MaxValue || !TryGetFrameVariableKind(target.Name, out var kind) ||
+            kind == VmSemanticValueKind.String && !defaultValue.TryGetString(out _) ||
+            kind == VmSemanticValueKind.Integer && !defaultValue.TryGetInteger(out _)) return false;
+        var values = new VmSemanticValue[(int)range];
+        for (var index = 0L; index < range; index++)
+            if (!TryReadFrame(target.Name, null, [VmSemanticValue.From(start + index)], out values[(int)index])) return false;
+        var magnitude = Math.Abs(shift);
+        if (magnitude >= range)
+        {
+            for (var index = 0L; index < range; index++)
+                if (!TryWriteFrame(target.Name, null, [VmSemanticValue.From(start + index)], defaultValue)) return false;
+            return true;
+        }
+        if (shift > 0)
+        {
+            for (var index = 0L; index < shift; index++)
+                if (!TryWriteFrame(target.Name, null, [VmSemanticValue.From(start + index)], defaultValue)) return false;
+            for (var index = 0L; index < range - shift; index++)
+                if (!TryWriteFrame(target.Name, null, [VmSemanticValue.From(start + shift + index)], values[(int)index])) return false;
+        }
+        else
+        {
+            for (var index = 0L; index < range - magnitude; index++)
+                if (!TryWriteFrame(target.Name, null, [VmSemanticValue.From(start + index)], values[(int)(magnitude + index)])) return false;
+            for (var index = range - magnitude; index < range; index++)
+                if (!TryWriteFrame(target.Name, null, [VmSemanticValue.From(start + index)], defaultValue)) return false;
+        }
+        return true;
+    }
+#endif
+#if R0_F6G10C3
+    private bool TrySortVariable(in VmResolvedLValue target, bool descending, long start, long count)
+    {
+        if (!OwnsFrameVariable(target.Name))
+            return runtimeSemantics?.Host is IVmVariableBulkHost bulk && bulk.TrySort(target, descending, start, count);
+        if (target.Subkey is not null || target.Indices.Length != 0 || start < 0 || count < -1) return false;
+        if (count == 0) return true;
+        if (!TryGetFrameVariableLength(target.Name, 0, out var length) || TryGetFrameVariableLength(target.Name, 1, out _) || start >= length) return false;
+        var range = count == -1 ? length - start : count;
+        if (range < 0 || range > int.MaxValue || start + range > length || !TryGetFrameVariableKind(target.Name, out var kind)) return false;
+        if (kind == VmSemanticValueKind.Integer)
+        {
+            var values = new long[(int)range];
+            for (var index = 0; index < values.Length; index++)
+                if (!TryReadFrame(target.Name, null, [VmSemanticValue.From(start + index)], out var value) || !value.TryGetInteger(out values[index])) return false;
+            Array.Sort(values);
+            if (descending) Array.Reverse(values);
+            for (var index = 0; index < values.Length; index++)
+                if (!TryWriteFrame(target.Name, null, [VmSemanticValue.From(start + index)], VmSemanticValue.From(values[index]))) return false;
+            return true;
+        }
+        if (kind == VmSemanticValueKind.String)
+        {
+            var values = new string[(int)range];
+            for (var index = 0; index < values.Length; index++)
+                if (!TryReadFrame(target.Name, null, [VmSemanticValue.From(start + index)], out var value) || !value.TryGetString(out values[index]!)) return false;
+            Array.Sort(values);
+            if (descending) Array.Reverse(values);
+            for (var index = 0; index < values.Length; index++)
+                if (!TryWriteFrame(target.Name, null, [VmSemanticValue.From(start + index)], VmSemanticValue.From(values[index]))) return false;
+            return true;
+        }
+        return false;
+    }
+
+    private bool TryMultiSortFrameVariables(in VmResolvedLValue key, in VmResolvedLValue companion)
+    {
+        if (!OwnsFrameVariable(key.Name) || !OwnsFrameVariable(companion.Name) ||
+            key.Subkey is not null || companion.Subkey is not null || key.Indices.Length != 0 || companion.Indices.Length != 0 ||
+            !TryGetFrameVariableLength(key.Name, 0, out var keyLength) || TryGetFrameVariableLength(key.Name, 1, out _) ||
+            !TryGetFrameVariableLength(companion.Name, 0, out var companionLength) || TryGetFrameVariableLength(companion.Name, 1, out _) ||
+            keyLength < 0 || keyLength > int.MaxValue || companionLength < keyLength ||
+            !TryGetFrameVariableKind(key.Name, out var keyKind)) return false;
+
+        var order = new List<int>((int)keyLength);
+        if (keyKind == VmSemanticValueKind.Integer)
+        {
+            var sortable = new List<KeyValuePair<long, int>>((int)keyLength);
+            for (var index = 0; index < keyLength; index++)
+            {
+                if (!TryReadFrame(key.Name, null, [VmSemanticValue.From(index)], out var value) || !value.TryGetInteger(out var integer)) return false;
+                if (integer == 0) break;
+                sortable.Add(new(integer, (int)index));
+            }
+            sortable.Sort(static (left, right) => left.Key.CompareTo(right.Key));
+            order.AddRange(sortable.Select(static pair => pair.Value));
+        }
+        else if (keyKind == VmSemanticValueKind.String)
+        {
+            var sortable = new List<KeyValuePair<string, int>>((int)keyLength);
+            for (var index = 0; index < keyLength; index++)
+            {
+                if (!TryReadFrame(key.Name, null, [VmSemanticValue.From(index)], out var value) || !value.TryGetString(out var text)) return false;
+                if (string.IsNullOrEmpty(text)) return true;
+                sortable.Add(new(text, (int)index));
+            }
+            sortable.Sort(static (left, right) => left.Key.CompareTo(right.Key));
+            order.AddRange(sortable.Select(static pair => pair.Value));
+        }
+        else return false;
+
+        return ApplyOrder(key, order) && ApplyOrder(companion, order);
+    }
+
+    private bool ApplyOrder(in VmResolvedLValue target, IReadOnlyList<int> order)
+    {
+        var values = new VmSemanticValue[order.Count];
+        for (var index = 0; index < order.Count; index++)
+            if (!TryReadFrame(target.Name, null, [VmSemanticValue.From(index)], out values[index])) return false;
+        for (var index = 0; index < order.Count; index++)
+            if (!TryWriteFrame(target.Name, null, [VmSemanticValue.From(index)], values[order[index]])) return false;
+        return true;
+    }
+#endif
     private static int PrivateSlot(FunctionRuntimeMetadata metadata, string name)
     {
         for (var index = 0; index < metadata.PrivateVariables.Length; index++)
@@ -2501,6 +2981,13 @@ public sealed class VmMachine : IVmFrameVariables, IVmFrameVariableTypes, IVmExp
 
     public bool TryResumeInput(VmInputContinuation continuation, VmSemanticValue value, out VmStopReason reason)
     {
+        if (!TryAcceptInput(continuation, value, out reason)) return false;
+        reason = ContinueToDepth(0, int.MaxValue);
+        return true;
+    }
+
+    public bool TryAcceptInput(VmInputContinuation continuation, VmSemanticValue value, out VmStopReason reason)
+    {
         reason = VmStopReason.TerminalFault;
         InputResumeAttempts++;
         var applied = false;
@@ -2514,7 +3001,7 @@ public sealed class VmMachine : IVmFrameVariables, IVmFrameVariableTypes, IVmExp
         }
         pendingInput = null;
         InputResumeCompleted++;
-        reason = ContinueToDepth(0, int.MaxValue);
+        reason = VmStopReason.Returned;
         return true;
     }
 
@@ -2531,7 +3018,7 @@ public sealed class VmMachine : IVmFrameVariables, IVmFrameVariableTypes, IVmExp
 
     private VmStopReason OwnerFault(VmStopReason reason, string message)
     {
-        if (contextOwner is null || reason is VmStopReason.Returned or VmStopReason.WaitingForInput or VmStopReason.Halted or VmStopReason.QuitRequested)
+        if (contextOwner is null || reason is VmStopReason.Returned or VmStopReason.WaitingForInput or VmStopReason.HostTransfer or VmStopReason.Halted or VmStopReason.QuitRequested)
             return reason;
         contextOwner.TerminalFault(reason, LastExecutedFunctionId, LastExecutedPc, message);
         return reason;

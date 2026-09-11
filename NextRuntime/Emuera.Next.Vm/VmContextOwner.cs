@@ -56,6 +56,7 @@ public readonly record struct VmOwnerReturn(VmReturnKind ReturnKind, VmSemanticV
 public enum VmInputValueKind : byte { Integer, String }
 public readonly record struct VmInputContinuation(long RequestSerial, VmOwnerStamp Stamp, VmFrameAddress Frame,
     RuntimeFunctionId FunctionId, int CodeSlot, long CodeGeneration, VmInputValueKind ExpectedKind);
+public readonly record struct VmSegmentBookmark(long Serial, VmOwnerStamp Stamp, int Floor, int Depth, VmFrameAddress Top);
 public readonly record struct VmFaultFrameSnapshot(long FrameSerial, int FunctionId, int Pc, int CodeSlot, long CodeGeneration, int PinCount);
 public sealed record VmFaultSnapshot(VmStopReason Reason, int FunctionId, int Pc, string Message,
     ImmutableArray<VmFaultFrameSnapshot> Frames, int PendingLeases, bool Committed);
@@ -156,6 +157,7 @@ public sealed class VmContextStorage : IVmContextOwner
     private readonly Dictionary<int, Resident> residents = [];
     private readonly Dictionary<int, ScopeBank> banks = [];
     private readonly Dictionary<(int FunctionId, int PrivateOrdinal), VmSemanticValue[]> statics = [];
+    private readonly Dictionary<(int FunctionId, int PrivateOrdinal), FunctionRuntimePrivate> staticDeclarations = [];
     private readonly Dictionary<(int FunctionId, int SourceLoopOrdinal), LoopCell> loops = [];
     private readonly Dictionary<long, LeaseState> leases = [];
     private VmFrame[] frames = new VmFrame[16];
@@ -165,7 +167,9 @@ public sealed class VmContextStorage : IVmContextOwner
     private int frameDepth;
     private long nextSerial;
     private long nextInputSerial;
+    private long nextBookmarkSerial;
     private VmInputContinuation? pendingInput;
+    private VmSegmentBookmark? activeBookmark;
     private bool inputCommitted;
     private readonly Queue<Action> synchronousCallbacks = [];
     private bool publishingInput;
@@ -178,15 +182,19 @@ public sealed class VmContextStorage : IVmContextOwner
     private readonly Queue<Action> cleanupActions = [];
     private int cleanupErrorCount;
     private Func<RuntimeFunctionId, VmFunctionExecutionContext?>? sharedMaterializer;
+    private readonly int minimumArgSize;
+    private readonly int minimumArgsSize;
 
-    public VmContextStorage(long ownerId, long epoch, long fuel)
+    public VmContextStorage(long ownerId, long epoch, long fuel, int minimumArgSize = 1, int minimumArgsSize = 1)
     {
-        if (ownerId <= 0 || epoch <= 0 || fuel <= 0) throw new ArgumentOutOfRangeException();
+        if (ownerId <= 0 || epoch <= 0 || fuel <= 0 || minimumArgSize < 1 || minimumArgsSize < 1) throw new ArgumentOutOfRangeException();
         Stamp = new(ownerId, epoch);
         RemainingFuel = fuel;
+        this.minimumArgSize = minimumArgSize;
+        this.minimumArgsSize = minimumArgsSize;
     }
 
-    public VmOwnerStamp Stamp { get; }
+    public VmOwnerStamp Stamp { get; private set; }
     public bool IsTerminal => terminal;
     public int FrameDepth => frameDepth;
     public int MaxFrameDepth { get; private set; }
@@ -204,6 +212,10 @@ public sealed class VmContextStorage : IVmContextOwner
     public string FaultMessage => faultMessage;
     public VmFrame CurrentFrame => frameDepth == 0 ? default : frames[frameDepth - 1];
     public VmFrame[] ActiveFrames => frames[..frameDepth].ToArray();
+#if R0_F6G10B
+    public VmFrameAddress[] ActiveFrameAddresses => Enumerable.Range(0, frameDepth)
+        .Select(depth => new VmFrameAddress(depth, sidecars[depth].Serial)).ToArray();
+#endif
     public int ResidentCount => residents.Count;
     public int PendingLeaseCount => leases.Count;
 
@@ -225,7 +237,7 @@ public sealed class VmContextStorage : IVmContextOwner
     public void Register(RuntimeFunctionId id, FunctionKind kind)
     {
         if (terminal || sharedMaterializer is null || id.Value < 0 || !registrations.TryAdd(id.Value, new(kind, null)))
-            throw new InvalidOperationException("owner registration rejected");
+            throw new InvalidOperationException($"owner registration rejected: id={id.Value};kind={kind};terminal={terminal};sharedMaterializer={sharedMaterializer is not null};duplicate={registrations.ContainsKey(id.Value)}");
     }
 
     public bool TryConsumeFuel()
@@ -249,7 +261,7 @@ public sealed class VmContextStorage : IVmContextOwner
             catch (Exception ex)
             {
                 TerminalFault(VmStopReason.TerminalFault, frameDepth == 0 ? target.Value : CurrentFrame.FunctionId,
-                    frameDepth == 0 ? -1 : CurrentFrame.Pc, "materialization failure: " + ex.GetType().Name);
+                    frameDepth == 0 ? -1 : CurrentFrame.Pc, "materialization failure: " + ex.GetType().Name + ": " + ex.Message);
                 return new(0, target, returnKind, -1, 0, VmAdmissionStatus.Terminal);
             }
             MaterializationCount++;
@@ -427,9 +439,97 @@ public sealed class VmContextStorage : IVmContextOwner
 
     public void RevokeSource() => Invalidate(VmOwnerInvalidationReason.SourceDrift);
 
+    public void RevokeInput()
+    {
+        pendingInput = null;
+        inputCommitted = false;
+        synchronousCallbacks.Clear();
+    }
+
+    public bool TryParkSegment(int floor, out VmSegmentBookmark bookmark)
+    {
+        bookmark = default;
+        if (terminal || activeBookmark is not null || floor < 0 || floor > frameDepth) return false;
+        var top = frameDepth == 0 ? default : new VmFrameAddress(frameDepth - 1, sidecars[frameDepth - 1].Serial);
+        bookmark = new(checked(++nextBookmarkSerial), Stamp, floor, frameDepth, top);
+        activeBookmark = bookmark;
+        return true;
+    }
+
+    public bool TryResumeSegment(VmSegmentBookmark bookmark)
+    {
+        if (terminal || activeBookmark != bookmark || bookmark.Stamp != Stamp || bookmark.Depth != frameDepth ||
+            frameDepth != 0 && bookmark.Top != new VmFrameAddress(frameDepth - 1, sidecars[frameDepth - 1].Serial)) return false;
+        activeBookmark = null;
+        return true;
+    }
+
+    public bool DiscardSegment(VmSegmentBookmark bookmark, bool advanceExecutionEpoch)
+    {
+        if (terminal || activeBookmark != bookmark || bookmark.Stamp != Stamp) return false;
+        activeBookmark = null;
+        return UnwindToFloor(bookmark.Floor) && (!advanceExecutionEpoch || AdvanceExecutionEpoch());
+    }
+
+    public void ResetPersistentBanks()
+    {
+        foreach (var bank in banks.Values)
+        {
+            Array.Fill(bank.Arg, VmSemanticValue.From(0L));
+            Array.Fill(bank.Args, VmSemanticValue.From(string.Empty));
+            Array.Fill(bank.Local, VmSemanticValue.From(0L));
+            Array.Fill(bank.Locals, VmSemanticValue.From(string.Empty));
+        }
+        foreach (var pair in statics)
+        {
+            if (!staticDeclarations.TryGetValue(pair.Key, out var declaration)) continue;
+            var defaults = CreatePrivateValues(declaration);
+            defaults.CopyTo(pair.Value, 0);
+        }
+    }
+
+    public bool UnwindToFloor(int floor)
+    {
+        if (terminal || floor < 0 || floor > frameDepth) return false;
+        RevokeInput();
+        foreach (var lease in leases.Values) ReleasePin(lease.Target, lease.CodeSlot, lease.Generation);
+        leases.Clear();
+        while (frameDepth > floor)
+        {
+            var depth = --frameDepth;
+            var frame = frames[depth];
+            var sidecar = sidecars[depth];
+            if (sidecar.Active) ReleasePin(frame.FunctionId, sidecar.CodeSlot, sidecar.Generation);
+            if (sidecar.Active) Array.Clear(activationValues, sidecar.ActivationStart, sidecar.ActivationCount);
+            activationTop = sidecar.ActivationStart;
+            sidecars[depth] = default;
+            frames[depth] = default;
+        }
+        return true;
+    }
+
+    public bool AdvanceExecutionEpoch()
+    {
+        if (terminal) return false;
+        activeBookmark = null;
+        Stamp = Stamp with { Epoch = checked(Stamp.Epoch + 1) };
+        return true;
+    }
+
     public void Invalidate(VmOwnerInvalidationReason reason) => TerminalFault(VmStopReason.TerminalFault,
         frameDepth == 0 ? -1 : CurrentFrame.FunctionId, frameDepth == 0 ? -1 : CurrentFrame.Pc,
         "owner invalidated: " + reason);
+
+    public void ReleaseOwnedCodeAfterTerminal()
+    {
+        if (!terminal) throw new InvalidOperationException("code release requires terminal owner");
+        residents.Clear();
+        registrations.Clear();
+        banks.Clear();
+        statics.Clear();
+        staticDeclarations.Clear();
+        sharedMaterializer = null;
+    }
 
     public bool TryGetPinCount(RuntimeFunctionId id, out int count)
     {
@@ -653,8 +753,8 @@ public sealed class VmContextStorage : IVmContextOwner
         var metadata = context.Metadata;
         bank = new()
         {
-            Arg = Filled(Math.Max(1, metadata.Parameters.Where(p => !p.IsPrivate && p.Type == RuntimeMetadataValueType.Integer).Select(p => p.Slot + 1).DefaultIfEmpty(0).Max()), VmSemanticValue.Missing),
-            Args = Filled(Math.Max(1, metadata.Parameters.Where(p => !p.IsPrivate && p.Type == RuntimeMetadataValueType.String).Select(p => p.Slot + 1).DefaultIfEmpty(0).Max()), VmSemanticValue.Missing),
+            Arg = Filled(Math.Max(minimumArgSize, metadata.Parameters.Where(p => !p.IsPrivate && p.Type == RuntimeMetadataValueType.Integer).Select(p => p.Slot + 1).DefaultIfEmpty(0).Max()), VmSemanticValue.From(0L)),
+            Args = Filled(Math.Max(minimumArgsSize, metadata.Parameters.Where(p => !p.IsPrivate && p.Type == RuntimeMetadataValueType.String).Select(p => p.Slot + 1).DefaultIfEmpty(0).Max()), VmSemanticValue.From(string.Empty)),
             Local = Filled(metadata.LocalSize, VmSemanticValue.From(0L)),
             Locals = Filled(metadata.LocalsSize, VmSemanticValue.From(string.Empty)),
             Private = new VmSemanticValue[metadata.PrivateVariables.Length][],
@@ -665,6 +765,7 @@ public sealed class VmContextStorage : IVmContextOwner
             bank.Private[ordinal] = declaration.IsStatic
                 ? statics.GetValueOrDefault((context.FunctionId.Value, ordinal)) ?? (statics[(context.FunctionId.Value, ordinal)] = CreatePrivateValues(declaration))
                 : [];
+            if (declaration.IsStatic) staticDeclarations[(context.FunctionId.Value, ordinal)] = declaration;
         }
         banks.Add(context.ScopeKey, bank);
         return bank;

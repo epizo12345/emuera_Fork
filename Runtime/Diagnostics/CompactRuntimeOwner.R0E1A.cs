@@ -199,6 +199,16 @@ internal sealed partial class CompactRuntimeOwner
 #endif
     }
 
+#if R0_F6G10A
+    internal CompactRuntimeOwner(object hostIdentity, object mediatorIdentity, StructuralSemanticEnvironment productionEnvironment)
+    {
+        this.hostIdentity = hostIdentity;
+        this.mediatorIdentity = mediatorIdentity;
+        environment = productionEnvironment;
+        externalAliasBlocked = new bool[Specs.Length];
+    }
+#endif
+
     internal CompactFunctionHandle Handle(string name)
     {
         var id = Array.FindIndex(Specs, spec => string.Equals(spec.Name, name, environment.Compatibility.NameComparison));
