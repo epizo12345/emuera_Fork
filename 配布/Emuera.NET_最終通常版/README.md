@@ -1,14 +1,20 @@
 # Emuera.NET 最終通常版
 
-- 更新日: 2026-08-26
+- 更新日: 2026-09-13
 - 基礎: BugFix_Test `7b7dd3bf240eff4fdfc7094f4175de0e014532b7`
+- MAIN_OPT-R1 source commit: `39e7fd18f5c8e8685b2af23c5045ca0bae7751f3`
 - 対象OS: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
-- `Emuera.exe` サイズ: 24,663,786バイト（約23.5 MiB）
-- `Emuera.exe` SHA-256: `45DB53405DD36962485B4537B0FFC7F2641A2F92F264DE3D8E98AB20F0D03F2E`
-- `Emuera.exe` ProductVersion: `0.2.6.0+485f2e37f011234d3d25adcb9e7c5925b0f4c435`（suffixはEXEを生成したsource commit）
+- `Emuera.exe` サイズ: 24,680,170バイト（約23.5 MiB）
+- `Emuera.exe` SHA-256: `EC3F311BB7C58D490F7DD5031205FF3A2A2064472ABD8A90B4FD0FB9E5D2B3D8`
+- `Emuera.exe` ProductVersion: `0.2.6.0+39e7fd18f5c8e8685b2af23c5045ca0bae7751f3`（suffixはEXEを生成したsource commit）
 - publish条件: Release / win-x64 / framework-dependent / self-contained false / PublishSingleFile=true
+- publish時の計測: `PERFORMANCE_METRICS`無効
+- source revision検証、正式EXEの起動・title到達・save219ロードsmoke: PASS
+- SAVE-01 / SAVE-02で整数配列binary serializerの0連続探索を高速化しました。セーブ形式と出力byte列は従来どおりです。
+- MEM-C1WでCDFLAGが全0の間は配列backingを作らないwhole-array lazyを採用しました。save形式は変更せず、save219の5 / 100 / 450人ロード直後はmaterialize 0です。
+- 450人条件ではCDFLAG backingを185.39 MiB削減し、N100のSaveTo中央値は約38%短縮しました。測定値は環境依存です。
 - JSON設定ファイルをUTF-8 BOM付きへ統一しました。`setting.json` / `setting_user.json`は新規生成・保存時にBOM付きとなり、既存のUTF-8 BOMなし設定は本文を維持して自動移行します。malformed設定は書き換えません。
 - Phase 13R41Iとして、Lazyから到達した未解析Eager関数のDeferred Eager処理、同一Lazy fileのready判定、runtime parse後のwarning/error処理、#DIM/#DIMS transaction、Rename安全化、Lazy state存在時のRELOADERB全体再読み込み昇格、設定条件による安全側のLazy制限、ReduceArgumentOnLoad=ONCE更新判定を正式採用しました。correctness validation、save39 Request/Event/調教口上/save-load、save219/Repeat、settings matrix 9/9を確認済みです。性能はR41C比で実質維持です。
 - Phase 13R41B1として、`ERB/RPG/依頼`をLazy ERBの新しい既定対象へ追加しました。依頼5「教授の隠れ家」の一覧・本編・初回hydration、save/load、save219実戦闘を実機確認済みです。既存の明示的な`setting.json`のLazy対象は自動変更せず、欠落・null・新規設定のdefaultだけを更新します。Repeat1000では安定したruntime性能悪化を確認していません。

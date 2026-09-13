@@ -127,7 +127,17 @@ GC managed memoryとWorking SetはGC timingで揺れるためsecondaryとし、�
 - 起動・save219 load smoke: PASS（fresh working copy上でN10まで完走、応答あり）
 - ユーザー実機確認: PASS（上記C1-W candidate）
 
-ProductVersionのsuffixは未commit sourceの内容を識別するものではなく、publish時のHEADを示す。上記candidateは正式配布物ではなく、MAIN_OPT-R1ではsource adoption commitから正式EXEを再publishする。
+ProductVersionのsuffixは未commit sourceの内容を識別するものではなく、publish時のHEADを示す。上記candidateは正式配布物ではなく、MAIN_OPT-R1ではsource adoption commitから正式EXEを再publishした。
+
+## MAIN_OPT-R1正式配布
+
+- source commit: `39e7fd18f5c8e8685b2af23c5045ca0bae7751f3`
+- publish条件: Release / win-x64 / framework-dependent / single-file / `PERFORMANCE_METRICS`無効
+- 正式EXE: 24,680,170 bytes / SHA-256 `EC3F311BB7C58D490F7DD5031205FF3A2A2064472ABD8A90B4FD0FB9E5D2B3D8`
+- ProductVersion: `0.2.6.0+39e7fd18f5c8e8685b2af23c5045ca0bae7751f3`
+- source revision検証: PASS
+- fresh working copyでの正式EXE起動・title到達・save219ロード・N10応答: PASS（スクリーンショットと`save401.sav`生成を確認。速度計測目的ではない）
+- canonical 5人fixtureのsave219 SHA-256はsmoke前後で`6C26E53CE95D3C5388E9E7A1EEFF512E57645368E8744EE14D9298D7F3E4814B`のまま。更新されたsave401等はworking copy内のみ。
 
 ## 原本と作業状態
 
