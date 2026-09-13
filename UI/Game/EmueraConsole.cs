@@ -519,6 +519,9 @@ internal sealed partial class EmueraConsole : IDisposable
         Preload.Clear();
         logWriter.WriteLine("Preload:Clear:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
 
+#if PERFORMANCE_METRICS
+        PerformanceMetrics.WriteInstructionStorageCensus("H0");
+#endif
         logWriter.WriteLine("Init:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
         logWriter.Flush();
 
@@ -1068,6 +1071,10 @@ internal sealed partial class EmueraConsole : IDisposable
                 if (input.Contains('(', StringComparison.Ordinal))
                 {
                     PerformanceMetrics.BeginMacro(input);
+#if PERFORMANCE_METRICS
+                    if (PerformanceMetrics.TryGetBenchmarkSeed(out long benchmarkSeed))
+                        process.VEvaluator.SeedForBenchmark(benchmarkSeed);
+#endif
                     long expansionStart = PerformanceMetrics.StartTiming();
                     input = parseInput(new CharStream(input), false);
                     PerformanceMetrics.AddExpansion(expansionStart);

@@ -4,6 +4,7 @@ using MinorShift.Emuera.Runtime.Script.Statements.Variable;
 using MinorShift.Emuera.Runtime.Utils;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.GameData.Variable;
@@ -1083,6 +1084,199 @@ internal sealed partial class VariableData : IDisposable
         }
         return true;
     }
+#if PERFORMANCE_METRICS
+    internal object CreatePerformanceLayoutRecord(int saveIndex)
+    {
+        long logicalSlots = 0, savedataLogicalSlots = 0, nonSavedataLogicalSlots = 0;
+        long materializedSlots = 0, materializedPayloadBytes = 0;
+        long savedataMaterializedSlots = 0, savedataPayloadBytes = 0;
+        long nonSavedataMaterializedSlots = 0, nonSavedataPayloadBytes = 0;
+        int savedataDefinitions = 0, nonSavedataDefinitions = 0;
+        int materializedDefinitions = 0, savedataMaterializedDefinitions = 0, nonSavedataMaterializedDefinitions = 0;
+
+        foreach (UserDefinedVariableToken token in userDefinedStaticVarList)
+        {
+            long slots = 1;
+            for (int dimension = 0; dimension < token.Dimension; dimension++)
+                slots *= token.GetLength(dimension);
+            logicalSlots += slots;
+            if (token.IsSavedata)
+            {
+                savedataDefinitions++;
+                savedataLogicalSlots += slots;
+            }
+            else
+            {
+                nonSavedataDefinitions++;
+                nonSavedataLogicalSlots += slots;
+            }
+
+            Array backing = GetMaterializedStaticArray(token);
+            if (backing == null)
+                continue;
+            long actualSlots = backing.LongLength;
+            long bytes = GetArrayPayloadBytes(backing);
+            materializedDefinitions++;
+            materializedSlots += actualSlots;
+            materializedPayloadBytes += bytes;
+            if (token.IsSavedata)
+            {
+                savedataMaterializedDefinitions++;
+                savedataMaterializedSlots += actualSlots;
+                savedataPayloadBytes += bytes;
+            }
+            else
+            {
+                nonSavedataMaterializedDefinitions++;
+                nonSavedataMaterializedSlots += actualSlots;
+                nonSavedataPayloadBytes += bytes;
+            }
+        }
+
+        long userCharaLogicalSlots = 0;
+        foreach (UserDefinedCharaVariableToken token in UserDefinedCharaVarList)
+        {
+            long slots = 1;
+            for (int dimension = 0; dimension < token.Dimension; dimension++)
+                slots *= token.GetLength(dimension);
+            userCharaLogicalSlots += slots;
+        }
+
+        int userCharaMaterializedArrays = 0;
+        long userCharaMaterializedSlots = 0, userCharaPayloadBytes = 0;
+        foreach (CharacterData chara in characterList)
+        {
+            foreach (UserDefinedCharaVariableToken token in UserDefinedCharaVarList)
+            {
+                if (chara.UserDefCVarDataList[token.ArrayIndex] is not Array backing)
+                    continue;
+                userCharaMaterializedArrays++;
+                userCharaMaterializedSlots += backing.LongLength;
+                userCharaPayloadBytes += GetArrayPayloadBytes(backing);
+            }
+        }
+
+        long integerBytes = 0, stringReferenceBytes = 0, arrayReferenceBytes = 0;
+        long cdFlagMaterializedCharacters = 0, cdFlagPayloadBytes = 0;
+        int cdFlagIndex = (int)(VariableCode.CDFLAG & VariableCode.__LOWERCASE__);
+        foreach (CharacterData chara in characterList)
+        {
+            integerBytes += (long)chara.DataInteger.LongLength * sizeof(long);
+            stringReferenceBytes += (long)chara.DataString.LongLength * IntPtr.Size;
+            arrayReferenceBytes += (long)chara.DataIntegerArray.LongLength * IntPtr.Size;
+            foreach (long[] array in chara.DataIntegerArray)
+                if (array != null)
+                    integerBytes += (long)array.LongLength * sizeof(long);
+            arrayReferenceBytes += (long)chara.DataStringArray.LongLength * IntPtr.Size;
+            foreach (string[] array in chara.DataStringArray)
+                if (array != null)
+                    stringReferenceBytes += (long)array.LongLength * IntPtr.Size;
+            arrayReferenceBytes += (long)chara.DataIntegerArray2D.LongLength * IntPtr.Size;
+            foreach (long[,] array in chara.DataIntegerArray2D)
+                if (array != null)
+                    integerBytes += (long)array.LongLength * sizeof(long);
+            arrayReferenceBytes += (long)chara.DataStringArray2D.LongLength * IntPtr.Size;
+            foreach (string[,] array in chara.DataStringArray2D)
+                if (array != null)
+                    stringReferenceBytes += (long)array.LongLength * IntPtr.Size;
+
+            long[,] cdFlag = chara.DataIntegerArray2D[cdFlagIndex];
+            if (cdFlag != null)
+            {
+                cdFlagMaterializedCharacters++;
+                cdFlagPayloadBytes += (long)cdFlag.LongLength * sizeof(long);
+            }
+        }
+
+        long cdFlagLogicalSlots = 0;
+        if (varTokenDic.TryGetValue("CDFLAG", out VariableToken cdFlagToken))
+            cdFlagLogicalSlots = (long)cdFlagToken.GetLength(0) * cdFlagToken.GetLength(1);
+
+        int charaCount = characterList.Count;
+        long builtInBytes = integerBytes + stringReferenceBytes + arrayReferenceBytes;
+        return new
+        {
+            type = "layout",
+            utc = DateTime.UtcNow,
+            processId = Environment.ProcessId,
+            saveIndex,
+            charanum = charaCount,
+            bcharanum = (int?)null,
+            allocatedBytes = GC.GetTotalAllocatedBytes(false),
+            managedBytes = GC.GetTotalMemory(false),
+            workingSetBytes = Environment.WorkingSet,
+            userStaticVariables = new
+            {
+                definitionCount = userDefinedStaticVarList.Count,
+                logicalSlots,
+                savedataDefinitionCount = savedataDefinitions,
+                savedataLogicalSlots,
+                nonSavedataDefinitionCount = nonSavedataDefinitions,
+                nonSavedataLogicalSlots,
+                materializedDefinitionCount = materializedDefinitions,
+                materializedSlots,
+                backingPayloadBytes = materializedPayloadBytes,
+                savedataMaterializedDefinitionCount = savedataMaterializedDefinitions,
+                savedataMaterializedSlots,
+                savedataBackingPayloadBytes = savedataPayloadBytes,
+                nonSavedataMaterializedDefinitionCount = nonSavedataMaterializedDefinitions,
+                nonSavedataMaterializedSlots,
+                nonSavedataBackingPayloadBytes = nonSavedataPayloadBytes
+            },
+            userCharaData = new
+            {
+                definitionCount = UserDefinedCharaVarList.Count,
+                logicalSlotsPerCharacter = userCharaLogicalSlots,
+                materializedArrayCount = userCharaMaterializedArrays,
+                materializedTotalSlots = userCharaMaterializedSlots,
+                backingPayloadBytesPerCharacter = charaCount == 0 ? 0 : userCharaPayloadBytes / charaCount,
+                backingPayloadBytesTotal = userCharaPayloadBytes
+            },
+            builtInCharacterData = new
+            {
+                integerBackingBytesPerCharacter = charaCount == 0 ? 0 : integerBytes / charaCount,
+                stringReferenceBackingBytesPerCharacter = charaCount == 0 ? 0 : stringReferenceBytes / charaCount,
+                arrayReferenceBackingBytesPerCharacter = charaCount == 0 ? 0 : arrayReferenceBytes / charaCount,
+                totalBackingBytesPerCharacter = charaCount == 0 ? 0 : builtInBytes / charaCount,
+                integerBackingBytesTotal = integerBytes,
+                stringReferenceBackingBytesTotal = stringReferenceBytes,
+                arrayReferenceBackingBytesTotal = arrayReferenceBytes,
+                totalBackingBytesTotal = builtInBytes,
+                backingArrayLowerBound = true,
+                excludesArrayHeadersAndStringObjects = true
+            },
+            cdFlag = new
+            {
+                logicalSlotsPerCharacter = cdFlagLogicalSlots,
+                backingPayloadBytesPerCharacter = charaCount == 0 ? 0 : cdFlagPayloadBytes / charaCount,
+                materializedCharacterCount = cdFlagMaterializedCharacters,
+                materializedTotalPayloadBytes = cdFlagPayloadBytes
+            }
+        };
+    }
+
+    private static Array GetMaterializedStaticArray(UserDefinedVariableToken token)
+    {
+        for (Type type = token.GetType(); type != null; type = type.BaseType)
+        {
+            FieldInfo field = type.GetField("array", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+            if (field != null)
+                return field.GetValue(token) as Array;
+        }
+        return null;
+    }
+
+    private static long GetArrayPayloadBytes(Array array)
+    {
+        Type elementType = array.GetType().GetElementType();
+        if (elementType == typeof(long))
+            return array.LongLength * sizeof(long);
+        if (elementType == typeof(string))
+            return array.LongLength * IntPtr.Size;
+        return 0;
+    }
+#endif
+
     #region IDisposable メンバ
 
     public void Dispose()

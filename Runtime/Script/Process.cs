@@ -47,6 +47,247 @@ internal sealed partial class Process(EmueraConsole view)
     // マクロ後の変数状態を保存形式と同じ並びでハッシュ化し、比較試験に使う入口。
     // セーブファイル自体は作成・変更しない。通常プレイからは呼ばれない。
     internal string GetBenchmarkStateHash() => vEvaluator.GetBenchmarkStateHash();
+#if PERFORMANCE_METRICS
+    // H0/H1のbenchmark診断専用。全FunctionLabelLineからNextLineだけを走査し、
+    // ParentLabelLine identityとcycle checkで重複を除き、InstructionLine用の巨大な集合を作らない。
+    internal object CreateInstructionStorageCensusRecord(string phase)
+    {
+        List<FunctionLabelLine> labels = labelDic.GetAllLabels(true);
+        var argumentStateCounts = new Dictionary<string, long>(StringComparer.Ordinal)
+        {
+            ["rawArgumentSource"] = 0,
+            ["parsedArgument"] = 0,
+            ["errorString"] = 0,
+            ["noArgumentStorage"] = 0,
+            ["unexpectedArgumentStorage"] = 0,
+        };
+        var auxiliaryCounts = new Dictionary<string, long>(StringComparer.Ordinal)
+        {
+            ["assignmentWordCollection"] = 0,
+            ["ifCaseList"] = 0,
+            ["dataList"] = 0,
+            ["callList"] = 0,
+            ["jumpTarget"] = 0,
+            ["functionIdentifier"] = 0,
+            ["other"] = 0,
+            ["null"] = 0,
+        };
+        var rawByFunction = new Dictionary<FunctionCode, (long Count, long TotalChars)>();
+        var assignmentsByFunction = new Dictionary<FunctionCode, (long Count, long TotalWords)>();
+        var parsedArgumentTypes = new Dictionary<string, long>(StringComparer.Ordinal);
+
+        long instructionLineCount = 0;
+        long nextLineInstructionOccurrenceCount = 0;
+        long parentLabelMismatchCount = 0;
+        long instructionLineWithNullParentLabelCount = 0;
+        long instructionLineWithDifferentParentLabelCount = 0;
+        long cyclicLabelChainCount = 0;
+        long rawArgumentSourceCount = 0;
+        long rawArgumentTotalChars = 0;
+        int rawArgumentMaxChars = 0;
+        long parsedArgumentCount = 0;
+        long errorStringCount = 0;
+        long errorStringTotalChars = 0;
+        long noArgumentStorageCount = 0;
+        long unexpectedArgumentStorageCount = 0;
+        long assignmentWordCollectionCount = 0;
+        long totalWordCount = 0;
+        long compactCollectionCount = 0;
+        long linkedCollectionCount = 0;
+        long compactTotalCount = 0;
+        long compactTotalCapacity = 0;
+        long linkedNodeCount = 0;
+        long identifierWordCount = 0;
+        long symbolWordCount = 0;
+        long literalIntegerWordCount = 0;
+        long operatorWordCount = 0;
+        long otherWordCount = 0;
+        long separateJumpToReferenceCount = 0;
+
+        foreach (FunctionLabelLine label in labels)
+        {
+            if (HasNextLineCycle(label))
+            {
+                cyclicLabelChainCount++;
+                continue;
+            }
+
+            for (LogicalLine line = label.NextLine;
+                 line != null && line is not FunctionLabelLine && line is not NullLine;
+                 line = line.NextLine)
+            {
+                if (line is not InstructionLine instruction)
+                    continue;
+
+                nextLineInstructionOccurrenceCount++;
+                if (!ReferenceEquals(instruction.ParentLabelLine, label))
+                {
+                    parentLabelMismatchCount++;
+                    if (instruction.ParentLabelLine == null)
+                        instructionLineWithNullParentLabelCount++;
+                    else
+                        instructionLineWithDifferentParentLabelCount++;
+                    continue;
+                }
+
+                instructionLineCount++;
+                FunctionCode functionCode = instruction.FunctionCode;
+                InstructionLineBenchmarkStorage state = instruction.GetBenchmarkStorage();
+                argumentStateCounts[state.ArgumentKind]++;
+                auxiliaryCounts[state.AuxiliaryKind]++;
+                if (state.HasJumpTo)
+                    separateJumpToReferenceCount++;
+
+                switch (state.ArgumentKind)
+                {
+                    case "rawArgumentSource":
+                        rawArgumentSourceCount++;
+                        rawArgumentTotalChars += state.RawSourceLength;
+                        rawArgumentMaxChars = Math.Max(rawArgumentMaxChars, state.RawSourceLength);
+                        rawByFunction.TryGetValue(functionCode, out var rawCount);
+                        rawByFunction[functionCode] = (rawCount.Count + 1, rawCount.TotalChars + state.RawSourceLength);
+                        break;
+                    case "parsedArgument":
+                        parsedArgumentCount++;
+                        parsedArgumentTypes.TryGetValue(state.ParsedArgumentType, out long typeCount);
+                        parsedArgumentTypes[state.ParsedArgumentType] = typeCount + 1;
+                        break;
+                    case "errorString":
+                        errorStringCount++;
+                        errorStringTotalChars += state.ErrorStringLength;
+                        break;
+                    case "noArgumentStorage":
+                        noArgumentStorageCount++;
+                        break;
+                    default:
+                        unexpectedArgumentStorageCount++;
+                        break;
+                }
+
+                if (state.AssignmentWords is not WordCollection assignmentWords)
+                    continue;
+
+                assignmentWordCollectionCount++;
+                WordCollectionBenchmarkStorage words = assignmentWords.GetBenchmarkStorage();
+                long wordCount = words.CompactTotalCount + words.LinkedNodeCount;
+                totalWordCount += wordCount;
+                compactCollectionCount += words.CompactCollectionCount;
+                linkedCollectionCount += words.LinkedCollectionCount;
+                compactTotalCount += words.CompactTotalCount;
+                compactTotalCapacity += words.CompactTotalCapacity;
+                linkedNodeCount += words.LinkedNodeCount;
+                identifierWordCount += words.IdentifierWordCount;
+                symbolWordCount += words.SymbolWordCount;
+                literalIntegerWordCount += words.LiteralIntegerWordCount;
+                operatorWordCount += words.OperatorWordCount;
+                otherWordCount += words.OtherWordCount;
+
+                assignmentsByFunction.TryGetValue(functionCode, out var assignmentCount);
+                assignmentsByFunction[functionCode] = (assignmentCount.Count + 1, assignmentCount.TotalWords + wordCount);
+            }
+        }
+
+        var rawFunctionCodeRows = rawByFunction
+            .OrderByDescending(pair => pair.Value.TotalChars)
+            .ThenBy(pair => pair.Key.ToString(), StringComparer.Ordinal)
+            .Take(50)
+            .Select(pair => new { functionCode = pair.Key.ToString(), count = pair.Value.Count, totalChars = pair.Value.TotalChars })
+            .ToArray();
+        var assignmentFunctionCodeRows = assignmentsByFunction
+            .OrderByDescending(pair => pair.Value.Count)
+            .ThenBy(pair => pair.Key.ToString(), StringComparer.Ordinal)
+            .Take(50)
+            .Select(pair => new { functionCode = pair.Key.ToString(), lineCount = pair.Value.Count, wordCount = pair.Value.TotalWords })
+            .ToArray();
+        var parsedArgumentTypeRows = parsedArgumentTypes
+            .OrderByDescending(pair => pair.Value)
+            .ThenBy(pair => pair.Key, StringComparer.Ordinal)
+            .Take(20)
+            .Select(pair => new { argumentType = pair.Key, count = pair.Value })
+            .ToArray();
+
+        return new
+        {
+            type = "instructionStorageCensus",
+            phase,
+            utc = DateTime.UtcNow,
+            processId = Environment.ProcessId,
+            functionLabelCount = labels.Count,
+            instructionLineCount,
+            graphTraversal = new
+            {
+                nextLineInstructionOccurrenceCount,
+                parentLabelMismatchCount,
+                instructionLineWithNullParentLabelCount,
+                instructionLineWithDifferentParentLabelCount,
+                cyclicLabelChainCount,
+                instructionLineCountUniqueByParentLabel = instructionLineCount,
+            },
+            storageStates = new
+            {
+                rawArgumentSourceCount,
+                rawArgumentTotalChars,
+                rawArgumentMaxChars,
+                parsedArgumentCount,
+                errorStringCount,
+                errorStringTotalChars,
+                noArgumentStorageCount,
+                unexpectedArgumentStorageCount,
+            },
+            rawFunctionCodeTotalCount = rawArgumentSourceCount,
+            rawFunctionCodeTotalChars = rawArgumentTotalChars,
+            rawFunctionCodeGroupCount = rawByFunction.Count,
+            rawFunctionCodeRows,
+            parsedArgumentTypeGroupCount = parsedArgumentTypes.Count,
+            parsedArgumentTypeRows,
+            auxiliaryDataCounts = auxiliaryCounts,
+            separateJumpToReferenceCount,
+            assignmentWords = new
+            {
+                assignmentWordCollectionCount,
+                totalWordCount,
+                compactCollectionCount,
+                linkedCollectionCount,
+                compactListCount = compactCollectionCount,
+                compactTotalCount,
+                compactTotalCapacity,
+                linkedNodeCount,
+                linkedTotalCount = linkedNodeCount,
+                wordTypeCounts = new { identifierWord = identifierWordCount, symbolWord = symbolWordCount, literalIntegerWord = literalIntegerWordCount, operatorWord = operatorWordCount, other = otherWordCount },
+                byFunctionCodeTotalCount = assignmentsByFunction.Values.Sum(value => value.Count),
+                byFunctionCodeTotalWords = assignmentsByFunction.Values.Sum(value => value.TotalWords),
+                byFunctionCodeGroupCount = assignmentsByFunction.Count,
+                byFunctionCode = assignmentFunctionCodeRows,
+            },
+            needReduceArgumentOnLoad = Config.NeedReduceArgumentOnLoad,
+            lazyErbFileCount = erbLoader?.LazyErbFileCount ?? 0,
+            lazyErbLoadedFileCount = erbLoader?.LazyErbLoadedFileCount ?? 0,
+            lazyErbPendingLabelCount = erbLoader?.LazyErbPendingLabelCount ?? 0,
+            lazyErbFallbackFileCount = erbLoader?.LazyErbFallbackFileCount ?? 0,
+            deferredEagerCount = erbLoader?.DeferredEagerCount ?? 0,
+        };
+    }
+
+    private static bool HasNextLineCycle(FunctionLabelLine label)
+    {
+        LogicalLine slow = label.NextLine;
+        LogicalLine fast = label.NextLine;
+        while (!IsNextLineBoundary(fast))
+        {
+            fast = fast.NextLine;
+            if (IsNextLineBoundary(fast))
+                return false;
+            fast = fast.NextLine;
+            slow = slow.NextLine;
+            if (ReferenceEquals(slow, fast))
+                return true;
+        }
+        return false;
+    }
+
+    private static bool IsNextLineBoundary(LogicalLine line) =>
+        line == null || line is FunctionLabelLine or NullLine;
+#endif
     private ExpressionMediator exm;
     private GameBase gamebase;
     readonly EmueraConsole console = view;

@@ -4,6 +4,8 @@
 
 - `07_ERB起動詳細Profiling.md` — ERB起動・並列解析・profilingの調査記録
 - `08_ArgumentParser性能設計.md` — ArgumentParser、Lexer、allocation改善の調査記録
+- `MAIN_OPT-C0-summary.md` — CDFLAGのERB使用状況、save219ロード後の疎性、N100アクセス集計
+- `MAIN_OPT-C1W-summary.md` — CDFLAG whole-array lazyの実装、互換性、メモリ・性能検証
 
 日付付きの採用理由・検証結果は `../修正履歴/` に移動しました。現行の採用状態は `../01_仕様書.md`〜`../06_コード案内.md` とルートの `更新履歴.md` を正とします。
 

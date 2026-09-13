@@ -83,6 +83,22 @@ static partial class Program
         rootCommand.Options.Add(benchmarkLogOption);
 
 #if PERFORMANCE_METRICS
+        var benchmarkDeterministicSeedOption = new Option<string>(name: "--BenchmarkDeterministicSeed")
+        {
+            Description = "計測中のRANDOMIZEを指定seedへ固定するbenchmark専用オプション"
+        };
+        rootCommand.Options.Add(benchmarkDeterministicSeedOption);
+        var benchmarkDiagnosticsOption = new Option<bool>(name: "--BenchmarkDiagnostics")
+        {
+            Description = "保存・layout・RANDOMIZEの追加診断を有効にする"
+        };
+        rootCommand.Options.Add(benchmarkDiagnosticsOption);
+        var benchmarkClockOption = new Option<bool>(name: "--BenchmarkDeterministicClock")
+        {
+            Description = "ERB向け時刻をbenchmark専用の単調仮想clockへ切り替える"
+        };
+        rootCommand.Options.Add(benchmarkClockOption);
+
         var erbStartupProfileOption = new Option<string>(name: "--ErbStartupProfile")
         {
             Description = "ERB詳細計測の出力フォルダ（計測ビルド専用）"
@@ -102,7 +118,23 @@ static partial class Program
         rootCommand.Arguments.Add(filesArg);
 
         var result = rootCommand.Parse(args);
+#if PERFORMANCE_METRICS
+        long? benchmarkSeed = null;
+        string? benchmarkSeedText = result.GetValue(benchmarkDeterministicSeedOption);
+        if (benchmarkSeedText != null)
+        {
+            if (!long.TryParse(benchmarkSeedText, NumberStyles.Integer, CultureInfo.InvariantCulture, out long parsedSeed))
+                throw new ArgumentException("--BenchmarkDeterministicSeed はInt64で指定してください");
+            benchmarkSeed = parsedSeed;
+        }
+        PerformanceMetrics.Configure(
+            result.GetValue(benchmarkLogOption),
+            benchmarkSeed,
+            result.GetValue(benchmarkDiagnosticsOption),
+            result.GetValue(benchmarkClockOption));
+#else
         PerformanceMetrics.Configure(result.GetValue(benchmarkLogOption));
+#endif
 #if PERFORMANCE_METRICS
         ErbStartupProfiler.Configure(result.GetValue(erbStartupProfileOption), result.GetValue(erbStartupProfileModeOption));
 #endif

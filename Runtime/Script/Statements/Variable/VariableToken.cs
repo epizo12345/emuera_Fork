@@ -1036,22 +1036,55 @@ internal sealed partial class VariableData
 
     private sealed class CharaInt2DVariableToken : CharaVariableToken
     {
+        // [Emuera改修:MEM-C1W]
+        // CDFLAGのみ、null backingを論理all-zeroとして扱う。範囲確認とraw arrayの同一性は従来どおり保つ。
+        private readonly bool isCFlag;
+
         public CharaInt2DVariableToken(VariableCode varCode, VariableData varData)
             : base(varCode, varData)
         {
+            isCFlag = varCode == VariableCode.CDFLAG;
             CanRestructure = false;
+        }
+
+        private void ValidateCFlagIndex(long index1, long index2)
+        {
+            if ((ulong)index1 >= (uint)sizes[0] || (ulong)index2 >= (uint)sizes[1])
+                throw new IndexOutOfRangeException();
         }
 
         public override Int64 GetIntValue(ExpressionMediator exm, Int64[] arguments)
         {
             CharacterData chara = varData.CharacterList[(int)arguments[0]];
-            return chara.DataIntegerArray2D[VarCodeInt][arguments[1], arguments[2]];
+            long[,] array = chara.DataIntegerArray2D[VarCodeInt];
+            long value;
+            if (isCFlag && array == null)
+            {
+                ValidateCFlagIndex(arguments[1], arguments[2]);
+                value = 0;
+            }
+            else
+                value = array[arguments[1], arguments[2]];
+#if PERFORMANCE_METRICS
+            PerformanceMetrics.RecordCFlagRead(isCFlag, (int)arguments[0], (int)arguments[1]);
+#endif
+            return value;
         }
 
         public override void SetValue(Int64 value, Int64[] arguments)
         {
             CharacterData chara = varData.CharacterList[(int)arguments[0]];
-            chara.DataIntegerArray2D[VarCodeInt][arguments[1], arguments[2]] = value;
+            if (isCFlag)
+            {
+                ValidateCFlagIndex(arguments[1], arguments[2]);
+                if (value != 0 || chara.DataIntegerArray2D[VarCodeInt] != null)
+                    chara.EnsureCFlagBacking()[arguments[1], arguments[2]] = value;
+            }
+            else
+                chara.DataIntegerArray2D[VarCodeInt][arguments[1], arguments[2]] = value;
+#if PERFORMANCE_METRICS
+            PerformanceMetrics.RecordCFlagWrite(isCFlag, (int)arguments[0], (int)arguments[1]);
+#endif
         }
 
         public override void SetValue(Int64[] values, Int64[] arguments)
@@ -1061,13 +1094,30 @@ internal sealed partial class VariableData
             int start = (int)arguments[2];
             int end = start + values.Length;
             int index1 = (int)arguments[1];
-            for (int i = start; i < end; i++)
-                array[index1, i] = values[i - start];
+            if (isCFlag && array == null && values.AsSpan().IndexOfAnyExcept(0L) >= 0)
+                array = chara.EnsureCFlagBacking();
+            if (array == null)
+            {
+                for (int i = start; i < end; i++)
+                    ValidateCFlagIndex(index1, i);
+            }
+            else
+                for (int i = start; i < end; i++)
+                    array[index1, i] = values[i - start];
+#if PERFORMANCE_METRICS
+            PerformanceMetrics.RecordCFlagBulkWrite(isCFlag, (int)arguments[0], index1);
+#endif
         }
 
         public override void SetValueAll(long value, int start, int end, int charaPos)
         {
-            varData.characterList[charaPos].setValueAll2D(VarCodeInt, value);
+            if (isCFlag)
+                varData.characterList[charaPos].SetCFlagAll(value);
+            else
+                varData.characterList[charaPos].setValueAll2D(VarCodeInt, value);
+#if PERFORMANCE_METRICS
+            PerformanceMetrics.RecordCFlagSetAll(isCFlag, charaPos, 9);
+#endif
             //CharacterData chara = varData.CharacterList[charaPos];
             //Int64[,] array = chara.DataIntegerArray2D[VarCodeInt];
             //int a1 = array.GetLength(0);
@@ -1080,14 +1130,33 @@ internal sealed partial class VariableData
         public override Int64 PlusValue(Int64 value, Int64[] arguments)
         {
             CharacterData chara = varData.CharacterList[(int)arguments[0]];
-            chara.DataIntegerArray2D[VarCodeInt][arguments[1], arguments[2]] += value;
-            return chara.DataIntegerArray2D[VarCodeInt][arguments[1], arguments[2]];
+            long[,] array = chara.DataIntegerArray2D[VarCodeInt];
+            if (isCFlag && array == null)
+            {
+                ValidateCFlagIndex(arguments[1], arguments[2]);
+                if (value == 0)
+                {
+#if PERFORMANCE_METRICS
+                    PerformanceMetrics.RecordCFlagPlus(isCFlag, (int)arguments[0], (int)arguments[1]);
+#endif
+                    return 0;
+                }
+                array = chara.EnsureCFlagBacking();
+            }
+            array[arguments[1], arguments[2]] += value;
+#if PERFORMANCE_METRICS
+            PerformanceMetrics.RecordCFlagPlus(isCFlag, (int)arguments[0], (int)arguments[1]);
+#endif
+            return array[arguments[1], arguments[2]];
         }
 
         public override object GetArrayChara(int charano)
         {
             CharacterData chara = varData.CharacterList[charano];
-            return chara.DataIntegerArray2D[VarCodeInt];
+#if PERFORMANCE_METRICS
+            PerformanceMetrics.RecordCFlagRawArrayRequest(isCFlag, charano);
+#endif
+            return isCFlag ? chara.EnsureCFlagBacking() : chara.DataIntegerArray2D[VarCodeInt];
         }
 
     }

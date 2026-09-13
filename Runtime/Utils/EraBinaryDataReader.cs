@@ -119,6 +119,7 @@ internal abstract class EraBinaryDataReader : IDisposable
     public abstract long ReadInt();
     public abstract void ReadIntArray(long[] refArray, bool needInit);
     public abstract void ReadIntArray2D(long[,] refArray, bool needInit);
+    public abstract long[,] ReadIntArray2DZeroLazy(long[,] refArray, int length0, int length1, bool needInit);
     public abstract void ReadIntArray3D(long[,,] refArray, bool needInit);
     public abstract void ReadStrArray(string[] refArray, bool needInit);
     public abstract void ReadStrArray2D(string[,] refArray, bool needInit);
@@ -345,6 +346,78 @@ internal abstract class EraBinaryDataReader : IDisposable
                         oriArray[x, y] = refArray[x, y];
             }
             return;
+        }
+
+        public override long[,] ReadIntArray2DZeroLazy(long[,] refArray, int length0, int length1, bool needInit)
+        {
+            // [Emuera改修:MEM-C1W]
+            // CDFLAG専用。現行shape内の非0を読むまでbackingを作らず、保存データ自体は最後まで消費する。
+            int saveLength0 = reader.ReadInt32();
+            int saveLength1 = reader.ReadInt32();
+            if (saveLength0 < 0 || saveLength1 < 0 || length0 < 0 || length1 < 0)
+                throw new FileEE(LocalizationManager.Error.AbnormalBinaryData);
+            if (refArray != null)
+            {
+                if (refArray.GetLength(0) != length0 || refArray.GetLength(1) != length1)
+                    throw new FileEE(LocalizationManager.Error.AbnormalBinaryData);
+                if (needInit)
+                    Array.Clear(refArray);
+            }
+
+            int x = 0;
+            int y = 0;
+            while (true)
+            {
+                byte b = reader.ReadByte();
+                if (b == Ebdb.EoD)
+                    return refArray;
+                if (b == Ebdb.ZeroA1)
+                {
+                    long count = m_ReadInt();
+                    if (count < 0 || count > saveLength0 - x)
+                        throw new FileEE(LocalizationManager.Error.AbnormalBinaryData);
+                    x += (int)count;
+                    y = 0;
+                    continue;
+                }
+                if (b == Ebdb.EoA1)
+                {
+                    if (x >= saveLength0)
+                        throw new FileEE(LocalizationManager.Error.AbnormalBinaryData);
+                    x++;
+                    y = 0;
+                    continue;
+                }
+                if (b == Ebdb.Zero)
+                {
+                    long count = m_ReadInt();
+                    if (count < 0 || count > saveLength1 - y)
+                        throw new FileEE(LocalizationManager.Error.AbnormalBinaryData);
+                    y += (int)count;
+                    continue;
+                }
+                if (x >= saveLength0 || y >= saveLength1)
+                    throw new FileEE(LocalizationManager.Error.AbnormalBinaryData);
+
+                long value;
+                if (b <= Ebdb.Byte)
+                    value = b;
+                else if (b == Ebdb.Int16)
+                    value = reader.ReadInt16();
+                else if (b == Ebdb.Int32)
+                    value = reader.ReadInt32();
+                else if (b == Ebdb.Int64)
+                    value = reader.ReadInt64();
+                else
+                    throw new FileEE(LocalizationManager.Error.AbnormalBinaryData);
+
+                if (value != 0 && x < length0 && y < length1)
+                {
+                    refArray ??= new long[length0, length1];
+                    refArray[x, y] = value;
+                }
+                y++;
+            }
         }
         /// <summary>
         /// 

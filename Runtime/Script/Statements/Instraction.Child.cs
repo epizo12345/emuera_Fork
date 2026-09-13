@@ -1528,6 +1528,12 @@ internal sealed partial class FunctionIdentifier
             else
                 iValue = ((ExpressionArgument)func.Argument).Term.GetIntValue(exm);
 
+#if PERFORMANCE_METRICS
+            long requestedSeed = iValue;
+            if (!JSONConfig.Game.UseNewRandom)
+                iValue = PerformanceMetrics.GetEffectiveRandomizeSeed(iValue);
+            PerformanceMetrics.RecordRandomize(requestedSeed, iValue, func.Position, !JSONConfig.Game.UseNewRandom);
+#endif
             if (JSONConfig.Game.UseNewRandom)
             {
                 ParserMediator.Warn("新しい乱数アルゴリズムではRANDOMIZEは無視されます", null, 1);

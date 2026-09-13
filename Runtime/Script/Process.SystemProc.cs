@@ -652,7 +652,11 @@ internal sealed partial class Process
             return;
         }
         saveTarget = AutoSaveIndex;
+#if PERFORMANCE_METRICS
+        vEvaluator.SAVEDATA_TEXT = PerformanceMetrics.GetBenchmarkDateTime().ToString("yyyy/MM/dd HH:mm:ss") + " ";
+#else
         vEvaluator.SAVEDATA_TEXT = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " ";
+#endif
         state.SystemState = SystemStateCode.AutoSave_CallSaveInfo;
         if (!callFunction("SAVEINFO", false, false))
             endAutoSaveCallSaveInfo();//存在しなければスキップ
@@ -922,7 +926,11 @@ internal sealed partial class Process
             setWaitInput();
             return;
         }
+#if PERFORMANCE_METRICS
+        vEvaluator.SAVEDATA_TEXT = PerformanceMetrics.GetBenchmarkDateTime().ToString("yyyy/MM/dd HH:mm:ss") + " ";
+#else
         vEvaluator.SAVEDATA_TEXT = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " ";
+#endif
         state.SystemState = SystemStateCode.SaveGame_CallSaveInfo;
         if (!callFunction("SAVEINFO", false, false))
             endCallSaveInfo();//存在しなければスキップ

@@ -444,6 +444,7 @@ internal sealed class ProcessState
                 ? "関数の実行準備に失敗しました。"
                 : errMes);
         }
+        PerformanceMetrics.RecordBenchmarkFunctionEntry(call.TopLabel.LabelName);
 
         if (call.IsEvent)
         {

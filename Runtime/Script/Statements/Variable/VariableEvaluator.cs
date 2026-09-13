@@ -35,6 +35,10 @@ internal sealed class VariableEvaluator : IDisposable
         this.constant = constant;
         varData = new VariableData(gamebase, constant);
         GlobalStatic.VariableData = varData;
+#if PERFORMANCE_METRICS
+        if (PerformanceMetrics.TryGetBenchmarkSeed(out long benchmarkSeed))
+            SeedForBenchmark(benchmarkSeed);
+#endif
     }
     #region set/get
 
@@ -42,6 +46,16 @@ internal sealed class VariableEvaluator : IDisposable
     {
         rand = new(seed);
     }
+
+#if PERFORMANCE_METRICS
+    internal void SeedForBenchmark(long seed)
+    {
+        if (JSONConfig.Game.UseNewRandom)
+            _newRand = new Random(unchecked((int)seed));
+        else
+            rand = new(seed);
+    }
+#endif
 
     public void InitRanddata()
     {
@@ -2174,21 +2188,43 @@ internal sealed class VariableEvaluator : IDisposable
 
     public void SaveToStream(EraDataWriter writer, string saveDataText)
     {
+#if PERFORMANCE_METRICS
+        long nonCharacterStart = PerformanceMetrics.StartDiagnosticTiming();
+#endif
         writer.Write(gamebase.ScriptUniqueCode);
         writer.Write(gamebase.ScriptVersion);
         writer.Write(saveDataText);
         writer.Write(varData.CharacterList.Count);
+#if PERFORMANCE_METRICS
+        PerformanceMetrics.AddNonCharacterSerialization(nonCharacterStart);
+        long characterStart = PerformanceMetrics.StartDiagnosticTiming();
+#endif
         for (int i = 0; i < varData.CharacterList.Count; i++)
         {
             varData.CharacterList[i].SaveToStream(writer);
         }
+#if PERFORMANCE_METRICS
+        PerformanceMetrics.AddCharacterSerialization(characterStart);
+        nonCharacterStart = PerformanceMetrics.StartDiagnosticTiming();
+#endif
         varData.SaveToStream(writer);
         writer.EmuStart();
+#if PERFORMANCE_METRICS
+        PerformanceMetrics.AddNonCharacterSerialization(nonCharacterStart);
+        characterStart = PerformanceMetrics.StartDiagnosticTiming();
+#endif
         for (int i = 0; i < varData.CharacterList.Count; i++)
         {
             varData.CharacterList[i].SaveToStreamExtended(writer);
         }
+#if PERFORMANCE_METRICS
+        PerformanceMetrics.AddCharacterSerialization(characterStart);
+        nonCharacterStart = PerformanceMetrics.StartDiagnosticTiming();
+#endif
         varData.SaveToStreamExtended(writer);
+#if PERFORMANCE_METRICS
+        PerformanceMetrics.AddNonCharacterSerialization(nonCharacterStart);
+#endif
     }
 
     public void LoadFromStream(EraDataReader reader)
@@ -2334,18 +2370,32 @@ internal sealed class VariableEvaluator : IDisposable
 
     public void SaveToStreamBinary(EraBinaryDataWriter bWriter, string saveDataText)
     {
+#if PERFORMANCE_METRICS
+        long nonCharacterStart = PerformanceMetrics.StartDiagnosticTiming();
+#endif
         bWriter.WriteHeader();
         bWriter.WriteFileType(EraSaveFileType.Normal);
         bWriter.WriteInt64(gamebase.ScriptUniqueCode);
         bWriter.WriteInt64(gamebase.ScriptVersion);
         bWriter.WriteString(saveDataText);
         bWriter.WriteInt64(varData.CharacterList.Count);
+#if PERFORMANCE_METRICS
+        PerformanceMetrics.AddNonCharacterSerialization(nonCharacterStart);
+        long characterStart = PerformanceMetrics.StartDiagnosticTiming();
+#endif
         for (int i = 0; i < varData.CharacterList.Count; i++)
         {
             varData.CharacterList[i].SaveToStreamBinary(bWriter, varData);
         }
+#if PERFORMANCE_METRICS
+        PerformanceMetrics.AddCharacterSerialization(characterStart);
+        nonCharacterStart = PerformanceMetrics.StartDiagnosticTiming();
+#endif
         varData.SaveToStreamBinary(bWriter);
         bWriter.WriteEOF();
+#if PERFORMANCE_METRICS
+        PerformanceMetrics.AddNonCharacterSerialization(nonCharacterStart);
+#endif
     }
 
     internal string GetBenchmarkStateHash()
@@ -2385,16 +2435,48 @@ internal sealed class VariableEvaluator : IDisposable
             chara.LoadFromStreamBinary(bReader);
         }
         VariableData.LoadFromStreamBinary(bReader);
+#if PERFORMANCE_METRICS
+        PerformanceMetrics.RecordCFlagPostLoadSparsity(
+            varData.CharacterList,
+            (int)(VariableCode.CDFLAG & VariableCode.__LOWERCASE__));
+#endif
     }
 
     public bool SaveTo(int saveIndex, string saveText)
     {
+#if PERFORMANCE_METRICS
+        PerformanceMetrics.RecordSaveToCall(saveIndex);
+        long saveToStart = PerformanceMetrics.StartDiagnosticTiming();
+        bool measureSave = saveToStart != 0;
+        bool saveSucceeded = false;
+        bool binarySave = false;
+        int saveCharanum = measureSave ? varData.CharacterList.Count : 0;
+        long bytesWritten = 0;
+#endif
         var filepath = getSaveDataPath(saveIndex);
 
         {
             var fileInfo = new FileInfo(filepath);
             var dbFileDir = fileInfo.Directory;
+#if PERFORMANCE_METRICS
+            bool sqlSaveActive = measureSave && Directory.Exists(Path.Combine(Config.Config.SavDir, "temp_db"));
+            long sqlSaveStart = measureSave ? PerformanceMetrics.StartDiagnosticTiming() : 0;
+            try
+            {
+                SQL.Save(Path.Combine(dbFileDir.FullName, Path.GetFileNameWithoutExtension(fileInfo.Name)));
+            }
+            catch
+            {
+                PerformanceMetrics.RecordSaveTo(saveIndex, Config.Config.SystemSaveInBinary, false, saveToStart, 0, saveCharanum);
+                throw;
+            }
+            finally
+            {
+                PerformanceMetrics.AddSqlSave(sqlSaveStart, sqlSaveActive);
+            }
+#else
             SQL.Save(Path.Combine(dbFileDir.FullName, Path.GetFileNameWithoutExtension(fileInfo.Name)));
+#endif
         }
 
         FileStream fs = null;
@@ -2404,8 +2486,16 @@ internal sealed class VariableEvaluator : IDisposable
         {
             Config.Config.CreateSavDir();
             fs = new FileStream(filepath, FileMode.Create, FileAccess.Write);
+#if PERFORMANCE_METRICS
+            long serializerStart = measureSave ? PerformanceMetrics.StartDiagnosticTiming() : 0;
+            try
+            {
+#endif
             if (Config.Config.SystemSaveInBinary)
             {
+#if PERFORMANCE_METRICS
+                binarySave = true;
+#endif
                 bWriter = new EraBinaryDataWriter(fs);
                 SaveToStreamBinary(bWriter, saveText);
             }
@@ -2414,6 +2504,16 @@ internal sealed class VariableEvaluator : IDisposable
                 writer = new EraDataWriter(fs);
                 SaveToStream(writer, saveText);
             }
+#if PERFORMANCE_METRICS
+            }
+            finally
+            {
+                PerformanceMetrics.AddSerializer(serializerStart);
+            }
+#endif
+            #if PERFORMANCE_METRICS
+            saveSucceeded = true;
+            #endif
             return true;
         }
         catch (Exception)
@@ -2428,6 +2528,18 @@ internal sealed class VariableEvaluator : IDisposable
                 bWriter.Close();
             else if (fs != null)
                 fs.Close();
+#if PERFORMANCE_METRICS
+            if (measureSave)
+            {
+                try
+                {
+                    if (File.Exists(filepath))
+                        bytesWritten = new FileInfo(filepath).Length;
+                }
+                catch { }
+                PerformanceMetrics.RecordSaveTo(saveIndex, binarySave, saveSucceeded, saveToStart, bytesWritten, saveCharanum);
+            }
+#endif
         }
     }
 
@@ -2456,6 +2568,14 @@ internal sealed class VariableEvaluator : IDisposable
             LoadFromStream(reader);
         }
         varData.LastLoadNo = dataIndex;
+#if PERFORMANCE_METRICS
+        if (dataIndex == 219 && PerformanceMetrics.DiagnosticsEnabled)
+        {
+            if (bReader != null)
+                PerformanceMetrics.WriteInstructionStorageCensus("H1");
+            PerformanceMetrics.WriteLayout(varData.CreatePerformanceLayoutRecord(dataIndex));
+        }
+#endif
         return true;
     }
 

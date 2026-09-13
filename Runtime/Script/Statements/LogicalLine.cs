@@ -245,6 +245,67 @@ internal class InstructionLine : LogicalLine
         return ret;
     }
 
+#if PERFORMANCE_METRICS
+    // census専用。既存slotを変更せず、引数と補助データの保持状態だけを返す。
+    internal InstructionLineBenchmarkStorage GetBenchmarkStorage()
+    {
+        string argumentKind;
+        int rawSourceLength = 0;
+        int errorStringLength = 0;
+        string parsedArgumentType = null;
+        if (argumentPrimitivePosition == ErrorArgumentPosition)
+        {
+            argumentKind = "errorString";
+            errorStringLength = (argumentStorage as string)?.Length ?? 0;
+        }
+        else if (argumentStorage is string source)
+        {
+            argumentKind = "rawArgumentSource";
+            rawSourceLength = source.Length;
+        }
+        else if (argumentStorage is Argument argument)
+        {
+            argumentKind = "parsedArgument";
+            parsedArgumentType = argument.GetType().Name;
+        }
+        else if (argumentStorage == null)
+            argumentKind = "noArgumentStorage";
+        else
+            argumentKind = "unexpectedArgumentStorage";
+
+        string auxiliaryKind;
+        WordCollection assignmentWords = null;
+        if (auxiliaryData == null)
+            auxiliaryKind = "null";
+        else if (auxiliaryData is WordCollection words)
+        {
+            auxiliaryKind = "assignmentWordCollection";
+            assignmentWords = words;
+        }
+        else if (auxiliaryData is LinkedList<InstructionLine>)
+            auxiliaryKind = "ifCaseList";
+        else if (auxiliaryData is List<List<InstructionLine>>)
+            auxiliaryKind = "dataList";
+        else if (auxiliaryData is List<InstructionLine>)
+            auxiliaryKind = "callList";
+        else if (auxiliaryData is LogicalLine)
+            auxiliaryKind = "jumpTarget";
+        else if (auxiliaryData is FunctionIdentifier)
+            auxiliaryKind = "functionIdentifier";
+        else
+            auxiliaryKind = "other";
+
+        return new InstructionLineBenchmarkStorage(
+            argumentKind,
+            rawSourceLength,
+            errorStringLength,
+            parsedArgumentType,
+            auxiliaryKind,
+            assignmentWords,
+            jumpto != null);
+    }
+#endif
+
     private LogicalLine jumpto;
     // JumpToEndCatch / IfCaseList / dataList / callList are mutually exclusive by command type.
     // Keep them in one reference slot to reduce the retained size of every InstructionLine.
@@ -282,6 +343,17 @@ internal class InstructionLine : LogicalLine
     }
 
 }
+
+#if PERFORMANCE_METRICS
+internal readonly record struct InstructionLineBenchmarkStorage(
+    string ArgumentKind,
+    int RawSourceLength,
+    int ErrorStringLength,
+    string ParsedArgumentType,
+    string AuxiliaryKind,
+    WordCollection AssignmentWords,
+    bool HasJumpTo);
+#endif
 
 // ERB起動時に大量生成される通常InstructionLineへ、FOR/REPEATだけが使うloop stateを持たせない。
 // factoryでloop命令だけLoopInstructionLineへ分け、通常命令のlayout/retained sizeとloop semanticsを両立する。

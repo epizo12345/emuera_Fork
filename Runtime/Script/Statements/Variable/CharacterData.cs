@@ -11,12 +11,16 @@ namespace MinorShift.Emuera.Runtime.Script.Statements.Variable;
 
 internal sealed class CharacterData : IDisposable
 {
+    private const int CFlagIndex = (int)(VariableCode.CDFLAG & VariableCode.__LOWERCASE__);
+
     readonly long[] dataInteger;
     readonly string[] dataString;
     readonly long[][] dataIntegerArray;
     readonly string[][] dataStringArray;
     readonly long[][,] dataIntegerArray2D;
     readonly string[][,] dataStringArray2D;
+    readonly int cFlagLength0;
+    readonly int cFlagLength1;
     public long[] DataInteger { get { return dataInteger; } }
     public string[] DataString { get { return dataString; } }
     public long[][] DataIntegerArray { get { return dataIntegerArray; } }
@@ -43,6 +47,14 @@ internal sealed class CharacterData : IDisposable
             long length64 = constant.CharacterIntArray2DLength[i];
             int length = (int)(length64 >> 32);
             int length2 = (int)(length64 & 0x7FFFFFFF);
+            if (i == CFlagIndex)
+            {
+                // [Emuera改修:MEM-C1W]
+                // CDFLAGは論理的な全要素0をnullで表し、実際に非0を保持するときだけ配列を作る。
+                cFlagLength0 = length;
+                cFlagLength1 = length2;
+                continue;
+            }
             dataIntegerArray2D[i] = new long[length, length2];
         }
         for (int i = 0; i < dataStringArray2D.Length; i++)
@@ -91,6 +103,22 @@ internal sealed class CharacterData : IDisposable
                 throw new ExeEE("");
             UserDefCVarDataList.Add(array);
         }
+    }
+
+    public long[,] EnsureCFlagBacking()
+    {
+        return dataIntegerArray2D[CFlagIndex] ??= new long[cFlagLength0, cFlagLength1];
+    }
+
+    public void SetCFlagAll(long value)
+    {
+        long[,] array = dataIntegerArray2D[CFlagIndex];
+        if (array == null && value == 0)
+            return;
+        array ??= EnsureCFlagBacking();
+        for (int i = 0; i < cFlagLength0; i++)
+            for (int j = 0; j < cFlagLength1; j++)
+                array[i, j] = value;
     }
 
 
@@ -200,6 +228,22 @@ internal sealed class CharacterData : IDisposable
 
         for (int i = 0; i < dataIntegerArray2D.Length; i++)
         {
+            if (i == CFlagIndex)
+            {
+                long[,] source = dataIntegerArray2D[i];
+                long[,] destination = other.dataIntegerArray2D[i];
+                if (source == null)
+                {
+                    if (destination != null)
+                        Array.Clear(destination);
+                    continue;
+                }
+                destination ??= other.EnsureCFlagBacking();
+                for (int j = 0; j < cFlagLength0; j++)
+                    for (int k = 0; k < cFlagLength1; k++)
+                        destination[j, k] = source[j, k];
+                continue;
+            }
             int length1 = dataIntegerArray2D[i].GetLength(0);
             int length2 = dataIntegerArray2D[i].GetLength(1);
             for (int j = 0; j < length1; j++)
@@ -325,7 +369,11 @@ internal sealed class CharacterData : IDisposable
         //dataIntegerArray2D
         codeList = VariableIdentifier.GetExtSaveList(VariableCode.__CHARACTER_DATA__ | VariableCode.__ARRAY_2D__ | VariableCode.__INTEGER__);
         foreach (VariableCode code in codeList)
-            writer.WriteExtended(code.ToString(), dataIntegerArray2D[(int)VariableCode.__LOWERCASE__ & (int)code]);
+        {
+            long[,] array = dataIntegerArray2D[(int)VariableCode.__LOWERCASE__ & (int)code];
+            if (code != VariableCode.CDFLAG || array != null)
+                writer.WriteExtended(code.ToString(), array);
+        }
         writer.EmuSeparete();
     }
 
@@ -371,7 +419,13 @@ internal sealed class CharacterData : IDisposable
         codeList = VariableIdentifier.GetExtSaveList(VariableCode.__CHARACTER_DATA__ | VariableCode.__ARRAY_2D__ | VariableCode.__INTEGER__);
         foreach (VariableCode code in codeList)
             if (int2DListDic.ContainsKey(code.ToString()))
-                copyListToArray2D(int2DListDic[code.ToString()], dataIntegerArray2D[(int)VariableCode.__LOWERCASE__ & (int)code]);
+            {
+                int index = (int)(VariableCode.__LOWERCASE__ & code);
+                if (code == VariableCode.CDFLAG)
+                    LoadCFlagExtended(int2DListDic[code.ToString()]);
+                else
+                    copyListToArray2D(int2DListDic[code.ToString()], dataIntegerArray2D[index]);
+            }
     }
 
     public void LoadFromStreamExtended_Old1802(EraDataReader reader)
@@ -432,7 +486,10 @@ internal sealed class CharacterData : IDisposable
                     writer.WriteWithKey(code.ToString(), dataStringArray[CodeInt]);
                     break;
                 case VariableCode.__INTEGER__ | VariableCode.__ARRAY_2D__:
-                    writer.WriteWithKey(code.ToString(), dataIntegerArray2D[CodeInt]);
+                    if (code == VariableCode.CDFLAG && dataIntegerArray2D[CodeInt] == null)
+                        writer.WriteZeroIntArray2DWithKey(code.ToString(), cFlagLength0, cFlagLength1);
+                    else
+                        writer.WriteWithKey(code.ToString(), dataIntegerArray2D[CodeInt]);
                     break;
                 case VariableCode.__STRING__ | VariableCode.__ARRAY_2D__:
                     writer.WriteWithKey(code.ToString(), dataStringArray2D[CodeInt]);
@@ -530,6 +587,9 @@ internal sealed class CharacterData : IDisposable
                         reader.ReadIntArray2D(array as long[,], true);
                     else if (vToken == null || !vToken.IsInteger || vToken.Dimension != 2)
                         reader.ReadIntArray2D(null, true);
+                    else if (vToken.Code == VariableCode.CDFLAG)
+                        dataIntegerArray2D[codeInt] = reader.ReadIntArray2DZeroLazy(
+                            dataIntegerArray2D[codeInt], cFlagLength0, cFlagLength1, true);
                     else
                         reader.ReadIntArray2D(dataIntegerArray2D[codeInt], true);
                     break;
@@ -584,6 +644,28 @@ internal sealed class CharacterData : IDisposable
                 destArray[x, y] = srcArray[y];
             }
         }
+    }
+
+    private void LoadCFlagExtended(List<long[]> source)
+    {
+        long[,] destination = dataIntegerArray2D[CFlagIndex];
+        if (destination == null)
+        {
+            int rows = Math.Min(source.Count, cFlagLength0);
+            for (int row = 0; row < rows && destination == null; row++)
+            {
+                int columns = Math.Min(source[row].Length, cFlagLength1);
+                for (int column = 0; column < columns; column++)
+                    if (source[row][column] != 0)
+                    {
+                        destination = EnsureCFlagBacking();
+                        break;
+                    }
+            }
+            if (destination == null)
+                return;
+        }
+        copyListToArray2D(source, destination);
     }
 
     public void setValueAll(int varInt, long value)
@@ -719,9 +801,11 @@ internal sealed class CharacterData : IDisposable
                     : dataIntegerArray2D[sortkey.CodeInt];
                 int elem1 = (int)(elem64 >> 32);
                 int elem2 = (int)(elem64 & 0x7FFFFFFF);
-                if (elem1 < 0 || elem1 >= array.GetLength(0) || elem2 < 0 || elem2 >= array.GetLength(1))
+                int length0 = array?.GetLength(0) ?? cFlagLength0;
+                int length1 = array?.GetLength(1) ?? cFlagLength1;
+                if (elem1 < 0 || elem1 >= length0 || elem2 < 0 || elem2 >= length1)
                     throw new CodeEE(LocalizationManager.Error.OoRSortKey);
-                temp_SortKey = array[elem1, elem2];
+                temp_SortKey = array == null ? 0L : array[elem1, elem2];
             }
             else if (sortkey.IsArray1D)
             {

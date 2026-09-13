@@ -867,6 +867,21 @@ internal static partial class FunctionMethodCreator
         }
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
+#if PERFORMANCE_METRICS
+            if (PerformanceMetrics.BenchmarkDeterministicClockEnabled)
+            {
+                DateTime now = PerformanceMetrics.GetBenchmarkDateTime();
+                long deterministicDate = now.Year;
+                deterministicDate = deterministicDate * 100 + now.Month;
+                deterministicDate = deterministicDate * 100 + now.Day;
+                deterministicDate = deterministicDate * 100 + now.Hour;
+                deterministicDate = deterministicDate * 100 + now.Minute;
+                deterministicDate = deterministicDate * 100 + now.Second;
+                deterministicDate = deterministicDate * 1000 + now.Millisecond;
+                PerformanceMetrics.RecordClockRead("GETTIME", deterministicDate, exm.Process.getCurrentLine?.Position);
+                return deterministicDate;
+            }
+#endif
             long date = DateTime.Now.Year;
             date = date * 100 + DateTime.Now.Month;
             date = date * 100 + DateTime.Now.Day;
@@ -888,6 +903,14 @@ internal static partial class FunctionMethodCreator
         }
         public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
         {
+#if PERFORMANCE_METRICS
+            if (PerformanceMetrics.BenchmarkDeterministicClockEnabled)
+            {
+                DateTime now = PerformanceMetrics.GetBenchmarkDateTime();
+                PerformanceMetrics.RecordClockRead("GETTIMES", now.Ticks, exm.Process.getCurrentLine?.Position);
+                return now.ToString("yyyy/MM/dd HH:mm:ss");
+            }
+#endif
             return DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss");
         }
     }
@@ -903,7 +926,15 @@ internal static partial class FunctionMethodCreator
         public override Int64 GetIntValue(ExpressionMediator exm, List<AExpression> arguments)
         {
             //西暦0001年1月1日からの経過時間をミリ秒で。
+#if PERFORMANCE_METRICS
+            long value = PerformanceMetrics.BenchmarkDeterministicClockEnabled
+                ? PerformanceMetrics.GetBenchmarkDateTime().Ticks / TimeSpan.TicksPerMillisecond
+                : DateTime.Now.Ticks / 10000;
+            PerformanceMetrics.RecordClockRead("GETMILLISECOND", value, exm.Process.getCurrentLine?.Position);
+            return value;
+#else
             return DateTime.Now.Ticks / 10000;
+#endif
         }
     }
 
@@ -919,7 +950,15 @@ internal static partial class FunctionMethodCreator
         {
             //西暦0001年1月1日からの経過時間を秒で。
             //Ticksは100ナノ秒単位であるが実際にはそんな精度はないので無駄。
+#if PERFORMANCE_METRICS
+            long value = PerformanceMetrics.BenchmarkDeterministicClockEnabled
+                ? PerformanceMetrics.GetBenchmarkDateTime().Ticks / TimeSpan.TicksPerSecond
+                : DateTime.Now.Ticks / 10000000;
+            PerformanceMetrics.RecordClockRead("GETSECOND", value, exm.Process.getCurrentLine?.Position);
+            return value;
+#else
             return DateTime.Now.Ticks / 10000000;
+#endif
         }
     }
     #endregion

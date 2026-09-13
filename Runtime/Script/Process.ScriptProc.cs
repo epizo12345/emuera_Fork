@@ -367,6 +367,23 @@ internal sealed partial class Process
                 }
             case FunctionCode.GETTIME:
                 {
+#if PERFORMANCE_METRICS
+                    if (PerformanceMetrics.BenchmarkDeterministicClockEnabled)
+                    {
+                        DateTime now = PerformanceMetrics.GetBenchmarkDateTime();
+                        long deterministicDate = now.Year;
+                        deterministicDate = deterministicDate * 100 + now.Month;
+                        deterministicDate = deterministicDate * 100 + now.Day;
+                        deterministicDate = deterministicDate * 100 + now.Hour;
+                        deterministicDate = deterministicDate * 100 + now.Minute;
+                        deterministicDate = deterministicDate * 100 + now.Second;
+                        deterministicDate = deterministicDate * 1000 + now.Millisecond;
+                        vEvaluator.RESULT = deterministicDate;
+                        vEvaluator.RESULTS = now.ToString("yyyy/MM/dd HH:mm:ss");
+                        PerformanceMetrics.RecordClockRead("GETTIME", deterministicDate, func.Position);
+                        break;
+                    }
+#endif
                     long date = DateTime.Now.Year;
                     date = date * 100 + DateTime.Now.Month;
                     date = date * 100 + DateTime.Now.Day;
@@ -376,6 +393,9 @@ internal sealed partial class Process
                     date = date * 1000 + DateTime.Now.Millisecond;
                     vEvaluator.RESULT = date;//17桁。2京くらい。
                     vEvaluator.RESULTS = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss");
+#if PERFORMANCE_METRICS
+                    PerformanceMetrics.RecordClockRead("GETTIME", date, func.Position);
+#endif
                 }
                 break;
             case FunctionCode.SETCOLOR:

@@ -53,6 +53,23 @@ internal sealed class ErbLoader
     public int LazyErbFileCount => Volatile.Read(ref lazyErbFileCount);
     public int LazyErbFallbackFileCount => Volatile.Read(ref lazyErbFallbackFileCount);
     public int DeferredEagerCount => deferredEagerLabels.Count;
+#if PERFORMANCE_METRICS
+    // LazyErbFileCountは起動時にindexしたファイルの累積値なので、hydration状態は別に数える。
+    public int LazyErbLoadedFileCount
+    {
+        get
+        {
+            int count = 0;
+            foreach (KeyValuePair<string, LazyErbFile> pair in lazyErbFiles)
+            {
+                if (pair.Value.State == LazyErbState.Loaded)
+                    count++;
+            }
+            return count;
+        }
+    }
+    public int LazyErbPendingLabelCount => lazyErbLabels.Count;
+#endif
     public bool HasRuntimeLazyState => LazyErbFileCount > 0 || deferredEagerLabels.Count > 0;
 
     enum LazyErbState

@@ -3,7 +3,8 @@
 # save219.savをロードし、(H\e\nd\e\n)*N をWindowsの入力欄へ送って所要時間を測る。
 # N=10は画面確認、100は短い比較、1000は通常比較、5000は耐久試験に使う。
 # InternalMetrics付きではEmuera内部のERB・描画・GC等もJSON Linesへ記録する。
-# ゲームデータやセーブは書き換えない。使い方: プロジェクト資料/06_コード案内.md
+# ゲーム起動によりsave401やtime.log等が更新される。canonical fixtureを直接指定せず、fresh working copyをGameDirに指定する。
+# 使い方: プロジェクト資料/06_コード案内.md
 # GameDirは実効DataDir（sav\save219.savとsetting.jsonの親）を指定する。
 param(
     [string]$ExePath = (Join-Path $PSScriptRoot '..\artifacts\publish\Emuera\release_win-x64\Emuera.exe'),
@@ -15,6 +16,9 @@ param(
     [ValidateRange(10, 1800)]
     [int]$TimeoutSeconds = 300,
     [switch]$InternalMetrics,
+    [string]$BenchmarkDeterministicSeed,
+    [switch]$BenchmarkDiagnostics,
+    [switch]$BenchmarkDeterministicClock,
     [switch]$CaptureScreenshots,
     [switch]$CpuProfile,
     [ValidateRange(10, 300)]
@@ -24,6 +28,14 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+
+if ((-not [string]::IsNullOrWhiteSpace($BenchmarkDeterministicSeed) -or $BenchmarkDiagnostics -or $BenchmarkDeterministicClock) -and -not $InternalMetrics) {
+    throw 'BenchmarkDeterministicSeed, BenchmarkDiagnostics, and BenchmarkDeterministicClock require -InternalMetrics.'
+}
+if (-not [string]::IsNullOrWhiteSpace($BenchmarkDeterministicSeed)) {
+    try { $BenchmarkDeterministicSeed = [long]::Parse($BenchmarkDeterministicSeed, [Globalization.CultureInfo]::InvariantCulture).ToString([Globalization.CultureInfo]::InvariantCulture) }
+    catch { throw 'BenchmarkDeterministicSeed must be a signed Int64 value.' }
+}
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName UIAutomationClient
@@ -426,6 +438,15 @@ for ($iteration = 1; $iteration -le $Iterations; $iteration++) {
         $processArguments = @('--ExeDir', ('"{0}"' -f $GameDir))
         if ($InternalMetrics) {
             $processArguments += @('--BenchmarkLog', ('"{0}"' -f $benchmarkLogPath))
+            if (-not [string]::IsNullOrWhiteSpace($BenchmarkDeterministicSeed)) {
+                $processArguments += @('--BenchmarkDeterministicSeed', $BenchmarkDeterministicSeed)
+            }
+            if ($BenchmarkDiagnostics) {
+                $processArguments += '--BenchmarkDiagnostics'
+            }
+            if ($BenchmarkDeterministicClock) {
+                $processArguments += '--BenchmarkDeterministicClock'
+            }
         }
         $process = Start-Process -FilePath $ExePath `
             -ArgumentList $processArguments `

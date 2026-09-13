@@ -28,6 +28,69 @@ internal sealed class WordCollection
     private static Word nullToken = new NullWord();
     public int Count => linkedCollection?.Count ?? compactCollection?.Count ?? 0;
 
+#if PERFORMANCE_METRICS
+    // census専用。Collection/Pointerを呼ばず、compactからlinkedへの昇格も行わない。
+    internal WordCollectionBenchmarkStorage GetBenchmarkStorage()
+    {
+        int compactCount = compactCollection == null ? 0 : 1;
+        int linkedCount = linkedCollection == null ? 0 : 1;
+        int compactWords = 0;
+        int compactCapacity = 0;
+        int linkedNodes = 0;
+        long identifierWords = 0;
+        long symbolWords = 0;
+        long literalIntegerWords = 0;
+        long operatorWords = 0;
+        long otherWords = 0;
+
+        if (compactCollection is List<Word> compact)
+        {
+            compactWords = compact.Count;
+            compactCapacity = compact.Capacity;
+            foreach (Word word in compact)
+                CountWordType(word, ref identifierWords, ref symbolWords, ref literalIntegerWords, ref operatorWords, ref otherWords);
+        }
+        if (linkedCollection is LinkedList<Word> linked)
+        {
+            linkedNodes = linked.Count;
+            foreach (Word word in linked)
+                CountWordType(word, ref identifierWords, ref symbolWords, ref literalIntegerWords, ref operatorWords, ref otherWords);
+        }
+
+        return new WordCollectionBenchmarkStorage(
+            compactCount,
+            linkedCount,
+            compactWords,
+            compactCapacity,
+            linkedNodes,
+            identifierWords,
+            symbolWords,
+            literalIntegerWords,
+            operatorWords,
+            otherWords);
+    }
+
+    private static void CountWordType(
+        Word word,
+        ref long identifierWords,
+        ref long symbolWords,
+        ref long literalIntegerWords,
+        ref long operatorWords,
+        ref long otherWords)
+    {
+        if (word is IdentifierWord)
+            identifierWords++;
+        else if (word is SymbolWord)
+            symbolWords++;
+        else if (word is LiteralIntegerWord)
+            literalIntegerWords++;
+        else if (word is OperatorWord)
+            operatorWords++;
+        else
+            otherWords++;
+    }
+#endif
+
     public LinkedList<Word> Collection
     {
         get
@@ -301,5 +364,18 @@ internal sealed class WordCollection
 
 }
 
+#if PERFORMANCE_METRICS
+internal readonly record struct WordCollectionBenchmarkStorage(
+    int CompactCollectionCount,
+    int LinkedCollectionCount,
+    int CompactTotalCount,
+    int CompactTotalCapacity,
+    int LinkedNodeCount,
+    long IdentifierWordCount,
+    long SymbolWordCount,
+    long LiteralIntegerWordCount,
+    long OperatorWordCount,
+    long OtherWordCount);
+#endif
 
 
