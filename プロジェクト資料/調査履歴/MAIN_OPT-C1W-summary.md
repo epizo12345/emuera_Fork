@@ -154,3 +154,7 @@ canonical `save219.sav` SHA-256:
 ## 次候補
 
 C1-Wで450人のCDFLAG payloadは解消した。M2のlazy argument / assignment snapshot compact化は実装せず保留し、**通常5人側の次候補**とする。本phaseでは次のproduction最適化へ進まない。
+
+## MAIN_OPT-C1W-AUDIT1 実プレイ追跡
+
+run-04の元JSONLによる追跡結果は[`MAIN_OPT-C1W-AUDIT1-null-safety-and-lifetime.md`](MAIN_OPT-C1W-AUDIT1-null-safety-and-lifetime.md)に記録した。`AUDIT1_RUNTIME_CORE = PASS`、`AUDIT1_FORMAL = PASS_WITH_CHECKPOINT_NOTE`（P4 manual snapshot recordなし）。実ERBのnull readは0を返し、readではmaterializeせず、同一キャラのnonzero write時にキャラ単位でmaterializeした。save/load後に復元されたのはnonzeroを持つ7人のみ。7人materialize後も443 / 450人が未materializedで、remaining avoidedは191,376,000 bytes（約182.51 MiB）。これは恒久削減ではなく、未materialized人数に応じて変化する。
