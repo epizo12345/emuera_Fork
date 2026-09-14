@@ -91,6 +91,7 @@ internal sealed class WordCollection
     }
 #endif
 
+
     public LinkedList<Word> Collection
     {
         get
@@ -307,6 +308,30 @@ internal sealed class WordCollection
     {
         var ret = new WordCollection();
         ret.Add(this);
+        return ret;
+    }
+
+    // SET左辺の長寿命保持専用。既存Wordをcloneせず、現在の順序だけをexact-size配列へ凍結する。
+    // Collection/Pointerを呼ばないため、compact collectionをlinkedへ昇格させずpointerも変更しない。
+    internal Word[] FreezeSetSnapshot()
+    {
+        if (compactCollection is List<Word> compact)
+            return compact.ToArray();
+        if (linkedCollection is LinkedList<Word> linked)
+        {
+            var snapshot = new Word[linked.Count];
+            linked.CopyTo(snapshot, 0);
+            return snapshot;
+        }
+        return [];
+    }
+
+    // SETの初回parse専用。凍結時と同じWord参照・順序を既存parser向けの一時collectionへ戻す。
+    internal static WordCollection ThawSetSnapshot(Word[] snapshot)
+    {
+        var ret = new WordCollection();
+        foreach (Word word in snapshot)
+            ret.Add(word);
         return ret;
     }
 

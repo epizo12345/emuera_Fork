@@ -153,7 +153,7 @@ internal class InstructionLine : LogicalLine
         // [Emuera改修:MEM-13R30 2026-08-22]
         // 代入左辺はSET引数解析までだけ必要で、IF/PRINTDATA/TRYCALLLIST/EndCatch用データとは命令種別上共存しない。
         // 遅延引数解析と左辺→右辺の解析順を維持したままauxiliaryDataを一時利用し、全InstructionLineの専用参照slotを持たせない。
-        auxiliaryData = dest;
+        auxiliaryData = dest?.FreezeSetSnapshot();
         argumentStorage = theArgPrimitive?.RowString;
         argumentPrimitivePosition = theArgPrimitive?.CurrentPosition ?? 0;
     }
@@ -240,9 +240,14 @@ internal class InstructionLine : LogicalLine
     }
     public WordCollection PopAssignmentDestStr()
     {
-        WordCollection ret = auxiliaryData as WordCollection;
+        object snapshot = auxiliaryData;
         auxiliaryData = null;
-        return ret;
+        return snapshot switch
+        {
+            Word[] frozenWords => WordCollection.ThawSetSnapshot(frozenWords),
+            WordCollection legacyWords => legacyWords,
+            _ => null,
+        };
     }
 
 #if PERFORMANCE_METRICS
