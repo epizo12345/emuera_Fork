@@ -1,7 +1,7 @@
 # MAIN_OPT-M3A1 — Frozen SET Snapshot Adoption & Phase Diagnostics Cleanup
 
 最終更新: 2026-09-14
-対象worktree: `MAIN_OPT/main_作業フォルダ`
+対象: 最適化用worktree
 branch / authority HEAD: `main-opt/diag-01-save219` / `a7e3962`
 
 ## Adoption decision

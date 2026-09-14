@@ -7,7 +7,6 @@
 https://gitlab.com/alnatiyan/EmueraDotNet/-/tree/BugFix_Test?ref_type=heads  
 を独自にForkしたバージョンです。  
 上記にCRER氏がVVII氏のダークモードパッチや.NET10への更新などを取り込んだ版をForkしています。
-ChatGPTsolを使用して修正しているため動作は保証できません。  
 個人用に作成しているため、使用は自己責任でお願いします。  
 
 # 動作環境

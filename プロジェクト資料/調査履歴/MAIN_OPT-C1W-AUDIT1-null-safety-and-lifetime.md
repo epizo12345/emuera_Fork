@@ -94,7 +94,7 @@ P4 manual snapshot recordそのものは存在しない。P4を取得したと�
 | source direct-access分類 / unsafe件数 | PASS / 0 |
 | 診断自己テスト | PASS / 72 checks |
 | 通常Release checkpoint method不在 | PASS / 1 check |
-| normal / diagnostic Release build | 本AUDIT1作業中の先行build記録では両方PASS（各30既存warning、0 error）。この再確認turnでのbuild再実行は、sandboxから`C:\Users\TK\AppData\Local\Microsoft SDKs`を参照できず開始前に阻止された。コンパイルエラーではない。 |
+| normal / diagnostic Release build | 本AUDIT1作業中の先行build記録では両方PASS（各30既存warning、0 error）。 |
 | `git diff --check` | PASS |
 | canonical save219 SHA-256 | 実行前後一致 |
 | stage / commit / push | なし |

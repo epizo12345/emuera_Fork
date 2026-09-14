@@ -1,87 +1,32 @@
 --------------------------------------------------------------------------
-GitLab上のリモートリポジトリをクローンして
-自分の端末にローカルリポジトリを作成する手順を記載する。
+リモートリポジトリをcloneして、任意の作業場所に開発用repositoryを作成する手順。
 --------------------------------------------------------------------------
-1.ローカルリポジトリ用のディレクトリを作成する
-※どこでもよいのだけれど、例として「C:\work\GitLab」とします。(カッコつけて)コマンドプロンプトで以下のコマンドでディレクトリを作成
-mkdir C:\work\GitLab
 
-作成された「C:\work\GitLab」で右クリックして「Open Git Bash Here」を選択
-→GitBashをそのディレクトリで起動する
+1. 任意の作業場所でGit Bashまたはコマンドプロンプトを開く。
+2. リモートリポジトリをcloneする。
 
-GitLab上のリモートリポジトリをクローンして、ローカルリポジトリを作成する
-→「EmueraDotNet」ディレクトリが作成され、その中にいろいろ入る。
 git clone https://gitlab.com/alnatiyan/EmueraDotNet.git
-
-作成されたディレクトリへ移動する
 cd EmueraDotNet
 
-正常にチェックアウトできたか確認する
-git branch
+3. 必要なbranchを確認してcheckoutする。
 
-リモートリポジトリのブランチを一覧表示する
 git branch -r
-
-リモートリポジトリから特定のブランチを取得する　※例として「SkiaSharp」ブランチ
-git checkout SkiaSharp
 git checkout BugFix_Test
 
+--------------------------------------------------------------------------
+簡易なデバッグ実行
+--------------------------------------------------------------------------
+
+1. repository rootの`Emuera.sln`を開いてDebug buildする。
+2. `Emuera以外(開発補助ツールなど)/デバッグ実行用の配置ファイル/1.簡易テスト用(可能な限りファイル数を少なく)/debug_win-x64`を、build outputの`artifacts/bin/Emuera/debug_win-x64`へコピーする。
+3. 必要に応じて`artifacts/bin/Emuera/debug_win-x64/Data/ERB/SYSTEM_TITLE.erb`を編集し、ERBに対応する処理を確認する。
 
 --------------------------------------------------------------------------
-簡易なデバッグ実行するための準備を行う
--------------------------------------------------------------------------
-本格的に各種テストを行う場合はeraMegatenの全ファイルを
-C:\work\GitLab\EmueraDotNet\artifacts\bin\Emuera\debug_win-x64
-フォルダに配置すればよいが、それではあまりに重すぎるため
-ちょっとした関数の動作確認をしたい場合のために「デバッグ実行用の配置ファイル」フォルダを用意しています。
-
-1.「C:\work\GitLab\EmueraDotNet\Emuera.sln」を起動してリビルドする
-
-2.デバッグ実行に必要なファイルの配置
-上記のリビルドで作成された下記の「フォルダ1」をコピーして「フォルダ2」へ上書きする
-
-[フォルダ1]
-C:\work\GitLab\EmueraDotNet\Emuera以外(開発補助ツールなど)\デバッグ実行用の配置ファイル\1.簡易テスト用(可能な限りファイル数を少なく)\debug_win-x64
-
-[フォルダ2]
-C:\work\GitLab\EmueraDotNet\artifacts\bin\Emuera\debug_win-x64
-
-
-上記のコピーが面倒な場合、コマンドプロンプトで以下のコマンドを実行すればOK
-xcopy /E "C:\work\GitLab\EmueraDotNet\Emuera以外(開発補助ツールなど)\デバッグ実行用の配置ファイル\1.簡易テスト用(可能な限りファイル数を少なく)\debug_win-x64\Data\" "C:\work\GitLab\EmueraDotNet\artifacts\bin\Emuera\debug_win-x64\Data\"
-
-
-上記の「デバッグ実行するための準備を行う」で配置した
-以下のerbファイルの記述を変更することで
-erbの記述に対応したEmuera側の処理をデバッグ実行で確認します。
-
-C:\work\GitLab\EmueraDotNet\artifacts\bin\Emuera\debug_win-x64\Data\ERB\SYSTEM_TITLE.erb
-
-
+広い範囲のデバッグ実行
 --------------------------------------------------------------------------
-がっつりデバッグ実行するための準備を行う
---------------------------------------------------------------------------
-正式にリリースされているeraMegatenの全ファイルを導入し
-さらにテスト専用の「イベント125：開発テスト」を追加する
 
-1.「C:\work\GitLab\EmueraDotNet\Emuera.sln」を起動してリビルドする
+1. repository rootの`Emuera.sln`を開いてDebug buildする。
+2. 互換性テスト環境のゲームデータを、`Emuera以外(開発補助ツールなど)/デバッグ実行用の配置ファイル/1.簡易テスト用(可能な限りファイル数を少なく)/debug_win-x64`へ配置する。
+3. 必要な場合だけ、`2.がっつりテスト用(eraMegatenの本体にテスト用イベントを追加する)/debug_win-x64`をbuild outputの`artifacts/bin/Emuera/debug_win-x64`へ上書きする。
 
-2.eraMegatenの正式にリリースされている各ファイルを配置する。
-普段プレイしているeraMegatenの全ファイル(「Data」「追加アイコン」フォルダなどがおいてあるところの一式)をコピーして
-下記の「フォルダ1」の中へ配置する
-
-[フォルダ1]
-C:\work\GitLab\EmueraDotNet\Emuera以外(開発補助ツールなど)\デバッグ実行用の配置ファイル\1.簡易テスト用(可能な限りファイル数を少なく)\debug_win-x64
-
-3.テスト専用の「イベント125：開発テスト」を配置する。
-下記の「フォルダ2」をコピーして「フォルダ3」を上書きする
-
-[フォルダ2]
-C:\work\GitLab\EmueraDotNet\Emuera以外(開発補助ツールなど)\デバッグ実行用の配置ファイル\2.がっつりテスト用(eraMegatenの本体にテスト用イベントを追加する)\debug_win-x64
-
-[フォルダ3]
-C:\work\GitLab\EmueraDotNet\artifacts\bin\Emuera\debug_win-x64
-
-
-上記のコピーが面倒な場合、コマンドプロンプトで以下のコマンドを実行すればOK
-xcopy /E "C:\work\GitLab\EmueraDotNet\Emuera以外(開発補助ツールなど)\デバッグ実行用の配置ファイル\2.がっつりテスト用(eraMegatenの本体にテスト用イベントを追加する)\debug_win-x64\Data\" "C:\work\GitLab\EmueraDotNet\artifacts\bin\Emuera\debug_win-x64\Data\"
+ゲームデータはrepositoryや配布物へ追加しない。
