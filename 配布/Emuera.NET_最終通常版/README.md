@@ -1,17 +1,21 @@
 # Emuera.NET 最終通常版
 
-- 更新日: 2026-09-13
+- 更新日: 2026-09-15
 - 基礎: BugFix_Test `7b7dd3bf240eff4fdfc7094f4175de0e014532b7`
-- MAIN_OPT-R1 source commit: `39e7fd18f5c8e8685b2af23c5045ca0bae7751f3`
+- EXE生成元source commit: `a63b594237825f4b6a9e5335ed13f4ea32175c0a`
 - 対象OS: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
-- `Emuera.exe` サイズ: 24,680,170バイト（約23.5 MiB）
-- `Emuera.exe` SHA-256: `EC3F311BB7C58D490F7DD5031205FF3A2A2064472ABD8A90B4FD0FB9E5D2B3D8`
-- `Emuera.exe` ProductVersion: `0.2.6.0+39e7fd18f5c8e8685b2af23c5045ca0bae7751f3`（suffixはEXEを生成したsource commit）
+- `Emuera.exe` サイズ: 24,684,266バイト（約23.5 MiB）
+- `Emuera.exe` SHA-256: `B68A494119816D4D788F5B7A5B56AC786BA45B179D0EE00304F283E561B388CF`
+- `Emuera.exe` ProductVersion: `0.2.6.0+a63b594237825f4b6a9e5335ed13f4ea32175c0a`（suffixはEXEを生成したsource commit）
 - publish条件: Release / win-x64 / framework-dependent / self-contained false / PublishSingleFile=true
 - publish時の計測: `PERFORMANCE_METRICS`無効
-- source revision検証、正式EXEの起動・title到達・save219ロードsmoke: PASS
+- source revision検証: PASS
+- startup smoke: 3/3 PASS、Lv2 warning 0、InputReady到達
+- save219ロード / N10 macro smoke: PASS、応答性確認済み
+- M3AはSET左辺をexact-size `Word[]` snapshotで保持し、初回SET parse時だけ一時`WordCollection`へ戻します。Word参照・順序・parse順は維持します。
+- M4Aは定数添字の長寿命`FixedVariableTerm`がexact-size transporterを共有します。不足添字は論理0、書込み時だけcopy-on-writeし、通常pool/Reset経路は従来どおりです。
 - SAVE-01 / SAVE-02で整数配列binary serializerの0連続探索を高速化しました。セーブ形式と出力byte列は従来どおりです。
 - MEM-C1WでCDFLAGが全0の間は配列backingを作らないwhole-array lazyを採用しました。save形式は変更せず、save219の5 / 100 / 450人ロード直後はmaterialize 0です。
 - 450人条件ではCDFLAG backingを185.39 MiB削減し、N100のSaveTo中央値は約38%短縮しました。測定値は環境依存です。
