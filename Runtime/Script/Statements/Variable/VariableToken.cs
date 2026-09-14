@@ -368,7 +368,10 @@ internal abstract class UserDefinedVariableToken : VariableToken
     }
     public override void IsArrayRangeValid(Int64[] arguments, Int64 index1, Int64 index2, string funcName, Int64 i1, Int64 i2)
     {
-        CheckBounds(arguments[0], arguments[1], arguments[2]);
+        long argument0 = arguments.Length > 0 ? arguments[0] : 0;
+        long argument1 = arguments.Length > 1 ? arguments[1] : 0;
+        long argument2 = arguments.Length > 2 ? arguments[2] : 0;
+        CheckBounds(argument0, argument1, argument2);
         if ((index1 < 0) || (index1 > sizes[Dimension - 1]))
             throw new CodeEE(string.Format(LocalizationManager.Error.OoRInstructionArg, funcName, i1.ToString(), index1.ToString(), varName));
         if ((index2 < 0) || (index2 > sizes[Dimension - 1]))

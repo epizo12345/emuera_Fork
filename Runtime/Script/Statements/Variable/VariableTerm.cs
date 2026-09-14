@@ -367,13 +367,24 @@ internal sealed class FixedVariableTerm : VariableTerm
     {
         allArgIsConst = true;
         Identifier = token;
-        transporter = new long[3];
-        for (int i = 0; i < args.Length; i++)
-            transporter[i] = args[i];
+        transporter = args;
     }
-    public long Index1 { get { return transporter[0]; } set { transporter[0] = value; } }
-    public long Index2 { get { return transporter[1]; } set { transporter[1] = value; } }
-    public long Index3 { get { return transporter[2]; } set { transporter[2] = value; } }
+    public long Index1 { get { return GetIndex(0); } set { SetIndex(0, value); } }
+    public long Index2 { get { return GetIndex(1); } set { SetIndex(1, value); } }
+    public long Index3 { get { return GetIndex(2); } set { SetIndex(2, value); } }
+
+    private long GetIndex(int index) => transporter.Length > index ? transporter[index] : 0;
+
+    private void SetIndex(int index, long value)
+    {
+        if (transporter.Length <= index)
+        {
+            long[] expanded = new long[3];
+            Array.Copy(transporter, expanded, transporter.Length);
+            transporter = expanded;
+        }
+        transporter[index] = value;
+    }
 
     internal void Reset(VariableToken token, long[] args)
     {
