@@ -311,8 +311,9 @@ internal sealed class WordCollection
         return ret;
     }
 
-    // SET左辺の長寿命保持専用。既存Wordをcloneせず、現在の順序だけをexact-size配列へ凍結する。
-    // Collection/Pointerを呼ばないため、compact collectionをlinkedへ昇格させずpointerも変更しない。
+    // [Emuera改修:MEM-M3A]
+    // SET左辺は初回の引数解析までだけ保持するため、長寿命のWordCollectionを残さずexact-sizeのWord[]へ凍結する。
+    // Wordはcloneせず参照同一性と順序を保つ。Collection/Pointerを呼ばないため、compact collectionのlinked昇格やpointer変更もない。
     internal Word[] FreezeSetSnapshot()
     {
         if (compactCollection is List<Word> compact)
@@ -326,7 +327,9 @@ internal sealed class WordCollection
         return [];
     }
 
-    // SETの初回parse専用。凍結時と同じWord参照・順序を既存parser向けの一時collectionへ戻す。
+    // [Emuera改修:MEM-M3A]
+    // SETの初回parse専用。凍結時と同じWord参照・順序を既存parser向けの一時WordCollectionへ戻す。
+    // 長寿命のWordCollectionを復活させる用途には使わない。
     internal static WordCollection ThawSetSnapshot(Word[] snapshot)
     {
         var ret = new WordCollection();

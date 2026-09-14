@@ -368,6 +368,8 @@ internal abstract class UserDefinedVariableToken : VariableToken
     }
     public override void IsArrayRangeValid(Int64[] arguments, Int64 index1, Int64 index2, string funcName, Int64 i1, Int64 i2)
     {
+        // [Emuera改修:MEM-M4A]
+        // exact-size transporterの欠けた添字は、従来の未使用long[3] slotと同じ論理0として境界確認する。
         long argument0 = arguments.Length > 0 ? arguments[0] : 0;
         long argument1 = arguments.Length > 1 ? arguments[1] : 0;
         long argument2 = arguments.Length > 2 ? arguments[2] : 0;

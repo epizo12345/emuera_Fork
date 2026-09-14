@@ -313,6 +313,9 @@ internal class VariableTerm : AExpression
         if (Identifier.CanRestructure && allArgIsConst)
             return GetValue(exm);
         else if (allArgIsConst)
+            // [Emuera改修:MEM-M4A]
+            // 長寿命のFixedVariableTermはVariableTermのexact-size transporterを共有し、未使用slot込みのlong[3]複製を避ける。
+            // source transporterは後から変更しないことを監査とfocused testで確認済み。
             return new FixedVariableTerm(Identifier, transporter);
         return this;
     }
@@ -362,6 +365,8 @@ internal sealed class FixedVariableTerm : VariableTerm
         transporter = new long[3];
         allArgIsConst = true;
     }
+    // [Emuera改修:MEM-M4A]
+    // Restructure専用。通常のpool/Reset経路とは異なり、確定済み添字のexact-size transporterをそのまま共有する。
     public FixedVariableTerm(VariableToken token, long[] args)
         : base(token)
     {
@@ -373,12 +378,16 @@ internal sealed class FixedVariableTerm : VariableTerm
     public long Index2 { get { return GetIndex(1); } set { SetIndex(1, value); } }
     public long Index3 { get { return GetIndex(2); } set { SetIndex(2, value); } }
 
+    // [Emuera改修:MEM-M4A]
+    // exact-size transporterの欠けた添字は、従来の未使用long[3] slotと同じ論理0として読む。
     private long GetIndex(int index) => transporter.Length > index ? transporter[index] : 0;
 
     private void SetIndex(int index, long value)
     {
         if (transporter.Length <= index)
         {
+            // [Emuera改修:MEM-M4A]
+            // 欠けた添字への書込み時だけlong[3]へcopy-on-writeし、共有元のexact-size配列を変更しない。
             long[] expanded = new long[3];
             Array.Copy(transporter, expanded, transporter.Length);
             transporter = expanded;

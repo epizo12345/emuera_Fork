@@ -153,6 +153,9 @@ internal class InstructionLine : LogicalLine
         // [Emuera改修:MEM-13R30 2026-08-22]
         // 代入左辺はSET引数解析までだけ必要で、IF/PRINTDATA/TRYCALLLIST/EndCatch用データとは命令種別上共存しない。
         // 遅延引数解析と左辺→右辺の解析順を維持したままauxiliaryDataを一時利用し、全InstructionLineの専用参照slotを持たせない。
+        // [Emuera改修:MEM-M3A]
+        // SET左辺は初回parseまでだけ必要なため、auxiliaryDataにはWordCollectionではなくexact-sizeのWord[] snapshotを保持する。
+        // InstructionLine専用fieldは増やさない。
         auxiliaryData = dest?.FreezeSetSnapshot();
         argumentStorage = theArgPrimitive?.RowString;
         argumentPrimitivePosition = theArgPrimitive?.CurrentPosition ?? 0;
@@ -240,6 +243,9 @@ internal class InstructionLine : LogicalLine
     }
     public WordCollection PopAssignmentDestStr()
     {
+        // [Emuera改修:MEM-M3A]
+        // snapshotを先に取り出してslotをnullに戻すことで、初回parseだけで消費する従来のone-shot寿命を保つ。
+        // Word[]は一時WordCollectionへ戻し、旧形式のWordCollectionは互換fallbackとしてそのまま扱う。
         object snapshot = auxiliaryData;
         auxiliaryData = null;
         return snapshot switch
