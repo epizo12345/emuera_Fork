@@ -682,4 +682,16 @@ Emuera的历史版本有效的内容变得无效等等现象而设置的。
 	<data name="MainWindow_CopyToClipboard" xml:space="preserve">
 		<value>复制到剪贴板</value>
 	</data>
+	<data name="ConfigDialog_LazyErb" xml:space="preserve"><value>启动</value></data>
+	<data name="ConfigDialog_LazyErb_UseGameSettings" xml:space="preserve"><value>使用游戏推荐设置</value></data>
+	<data name="ConfigDialog_LazyErb_UseLocalSettings" xml:space="preserve"><value>使用此电脑的设置</value></data>
+	<data name="ConfigDialog_LazyErb_Enabled" xml:space="preserve"><value>将所选文件夹延迟到实际需要时再加载</value></data>
+	<data name="ConfigDialog_LazyErb_Directories" xml:space="preserve"><value>目标文件夹</value></data>
+	<data name="ConfigDialog_LazyErb_ChooseDirectories" xml:space="preserve"><value>选择文件夹...</value></data>
+	<data name="ConfigDialog_LazyErb_Reset" xml:space="preserve"><value>恢复游戏推荐设置</value></data>
+	<data name="ConfigDialog_LazyErb_Help" xml:space="preserve"><value>启动时跳过这些文件夹可能会减少内存占用。所选ERB会在实际需要时加载。设置将在下次启动后生效；Debug和Analysis仍会在启动时加载。</value></data>
+	<data name="LazyErbDirectoryDialog_Title" xml:space="preserve"><value>选择延迟加载的文件夹</value></data>
+	<data name="LazyErbDirectoryDialog_Description" xml:space="preserve"><value>请选择游戏“ERB”文件夹中的子文件夹。选择一个文件夹后，其下的所有子文件夹也会一并纳入范围。ERB文件夹本身和链接文件夹不能选择。</value></data>
+	<data name="LazyErbDirectoryDialog_Ok" xml:space="preserve"><value>确定</value></data>
+	<data name="LazyErbDirectoryDialog_Cancel" xml:space="preserve"><value>取消</value></data>
 </root>

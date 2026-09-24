@@ -1026,6 +1026,43 @@ namespace MinorShift.Emuera.UI.Framework {
                 return ResourceManager.GetString("ConfigDialog_System2_UseScopedVariableInstruction", resourceCulture);
             }
         }
+
+        internal static string ConfigDialog_LazyErb {
+            get { return ResourceManager.GetString("ConfigDialog_LazyErb", resourceCulture); }
+        }
+        internal static string ConfigDialog_LazyErb_UseGameSettings {
+            get { return ResourceManager.GetString("ConfigDialog_LazyErb_UseGameSettings", resourceCulture); }
+        }
+        internal static string ConfigDialog_LazyErb_UseLocalSettings {
+            get { return ResourceManager.GetString("ConfigDialog_LazyErb_UseLocalSettings", resourceCulture); }
+        }
+        internal static string ConfigDialog_LazyErb_Enabled {
+            get { return ResourceManager.GetString("ConfigDialog_LazyErb_Enabled", resourceCulture); }
+        }
+        internal static string ConfigDialog_LazyErb_Directories {
+            get { return ResourceManager.GetString("ConfigDialog_LazyErb_Directories", resourceCulture); }
+        }
+        internal static string ConfigDialog_LazyErb_ChooseDirectories {
+            get { return ResourceManager.GetString("ConfigDialog_LazyErb_ChooseDirectories", resourceCulture); }
+        }
+        internal static string ConfigDialog_LazyErb_Reset {
+            get { return ResourceManager.GetString("ConfigDialog_LazyErb_Reset", resourceCulture); }
+        }
+        internal static string ConfigDialog_LazyErb_Help {
+            get { return ResourceManager.GetString("ConfigDialog_LazyErb_Help", resourceCulture); }
+        }
+        internal static string LazyErbDirectoryDialog_Title {
+            get { return ResourceManager.GetString("LazyErbDirectoryDialog_Title", resourceCulture); }
+        }
+        internal static string LazyErbDirectoryDialog_Description {
+            get { return ResourceManager.GetString("LazyErbDirectoryDialog_Description", resourceCulture); }
+        }
+        internal static string LazyErbDirectoryDialog_Ok {
+            get { return ResourceManager.GetString("LazyErbDirectoryDialog_Ok", resourceCulture); }
+        }
+        internal static string LazyErbDirectoryDialog_Cancel {
+            get { return ResourceManager.GetString("LazyErbDirectoryDialog_Cancel", resourceCulture); }
+        }
         
         /// <summary>
         ///   Settings に類似しているローカライズされた文字列を検索します。

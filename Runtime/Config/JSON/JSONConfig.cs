@@ -23,6 +23,14 @@ static class JSONConfig
 
     public static JSONGameConfigData Game;
     public static JSONUserConfigData User;
+    static JsonObject _userJson;
+    static JSONLazyErbConfigData _activeUserLazyErb;
+    static bool _hasActiveUserLazyErbOverride;
+    static JSONLazyErbConfigData _configuredUserLazyErb;
+    static bool _hasConfiguredUserLazyErbOverride;
+    static JSONLazyErbConfigData _pendingUserLazyErb;
+    static bool _pendingHasUserLazyErbOverride;
+    static bool _hasPendingUserLazyErbChange;
 
     static readonly JsonSerializerOptions _jsonOptions = new()
     {
@@ -42,6 +50,33 @@ static class JSONConfig
     static readonly Encoding _utf8Bom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: true);
 
     public static SKSamplingOptions SamplingOptions { get; private set; }
+
+    public static JSONLazyErbConfigData EffectiveLazyErb
+        => _hasActiveUserLazyErbOverride ? _activeUserLazyErb : Game?.LazyErb;
+
+    public static bool HasUserLazyErbOverride => _hasConfiguredUserLazyErbOverride;
+    public static JSONLazyErbConfigData UserLazyErbOverride
+        => _hasConfiguredUserLazyErbOverride ? _configuredUserLazyErb : null;
+
+    public static void SetUserLazyErbOverride(bool enabled, string[] directories)
+    {
+        ArgumentNullException.ThrowIfNull(directories);
+        _pendingUserLazyErb = new JSONLazyErbConfigData
+        {
+            Enabled = enabled,
+            Directories = (string[])directories.Clone(),
+        };
+        _pendingHasUserLazyErbOverride = true;
+        _hasPendingUserLazyErbChange = true;
+    }
+
+    public static void ResetUserLazyErbOverride()
+    {
+        _pendingUserLazyErb = null;
+        _pendingHasUserLazyErbOverride = false;
+        _hasPendingUserLazyErbChange = true;
+    }
+
     public static void SetSamplingOptions()
     {
         SamplingOptions = Game.ImageSamplingOption switch
@@ -53,59 +88,52 @@ static class JSONConfig
         };
     }
 
+    // [Emuera改修:LAZY-01]
+    // ゲーム推奨値とプレイヤー上書きを別JSONで管理し、user blockの存在を完全上書きとして扱う。
+    // unknown propertyを保持しながら、旧LazyErb形式の読み込みも互換維持する。
     public static void Load()
     {
-        {
-            if (!File.Exists(_gameConfigFilePath))
-            {
-                var defaultData = new JSONGameConfigData();
-                var defaultJson = JsonSerializer.Serialize(defaultData, _jsonOptions);
-                WriteJsonFile(_gameConfigFilePath, defaultJson);
-            }
+        bool gameExists = File.Exists(_gameConfigFilePath);
+        bool userExists = File.Exists(_userConfigFilePath);
+        string gameSource = gameExists ? File.ReadAllText(_gameConfigFilePath) : null;
+        string userSource = userExists ? File.ReadAllText(_userConfigFilePath) : null;
+        JsonObject gameJson = gameExists
+            ? ParseJsonObject(gameSource, "setting.json")
+            : JsonSerializer.SerializeToNode(new JSONGameConfigData(), _jsonOptions).AsObject();
+        JsonObject userJson = userExists
+            ? ParseJsonObject(userSource, "setting_user.json")
+            : JsonSerializer.SerializeToNode(new JSONUserConfigData(), _jsonOptions).AsObject();
 
-            {
-                var json = File.ReadAllText(_gameConfigFilePath);
-                JsonNode parsed = JsonNode.Parse(json);
-                if (parsed is not JsonObject gameJson)
-                    throw new JsonException("setting.json must contain a JSON object");
+        // 既存両ファイルを読み、型検証がすべて済むまではどちらも書き換えない。
+        bool migrated = MigrateLazyErbSettings(gameJson);
+        string validatedGameJson = gameJson.ToJsonString(_jsonOptions);
+        JSONGameConfigData loadedGame = JsonSerializer.Deserialize<JSONGameConfigData>(validatedGameJson)
+            ?? throw new JsonException("setting.json must contain a valid game configuration");
+        ValidateUserLazyErb(userJson, out JSONLazyErbConfigData userLazyErb, out bool hasUserLazyErb);
+        JSONUserConfigData loadedUser = JsonSerializer.Deserialize<JSONUserConfigData>(userJson.ToJsonString(_jsonOptions))
+            ?? throw new JsonException("setting_user.json must contain a valid user configuration");
 
-                // [Emuera改修:MEM-13R40.3 2026-08-23]
-                // 旧LazyErbを日本語設定へ一度だけ移し、旧known fieldは変換、unknown fieldは新objectへ移して保持する。
-                // 新旧が同時にある場合は新設定を優先し、欠落known fieldだけ旧設定から補完する。
-                bool migrated = MigrateLazyErbSettings(gameJson);
-                string validatedJson = gameJson.ToJsonString(_jsonOptions);
-                JSONGameConfigData loadedGame = JsonSerializer.Deserialize<JSONGameConfigData>(validatedJson)
-                    ?? throw new JsonException("setting.json must contain a valid game configuration");
-                loadedGame.LazyErb ??= new JSONLazyErbConfigData();
-                loadedGame.LazyErb.Enabled ??= true;
-                loadedGame.LazyErb.Directories ??= ["ERB/口上/口上まとめ", "ERB/RPG/依頼", "ERB/RPG/イベント"];
+        if (!gameExists)
+            WriteJsonFile(_gameConfigFilePath, validatedGameJson);
+        else if (migrated || !HasUtf8Bom(_gameConfigFilePath))
+            WriteJsonFile(_gameConfigFilePath, migrated ? validatedGameJson : gameSource);
 
-                // [Emuera改修:MEM-13R40.3 2026-08-23]
-                // migration結果はtyped validation成功後だけ保存する。設定ミスを先にdefault補完してdiskへ書くと、
-                // 後段の型エラー発生時にユーザーの元設定を部分的に書き換えて隠してしまうため。
-                if (migrated || !HasUtf8Bom(_gameConfigFilePath))
-                    WriteJsonFile(_gameConfigFilePath, migrated ? validatedJson : json);
-                _gameJson = gameJson;
-                Game = loadedGame;
-            }
-        }
+        if (!userExists)
+            WriteJsonFile(_userConfigFilePath, userJson.ToJsonString(_jsonOptions));
+        else if (!HasUtf8Bom(_userConfigFilePath))
+            WriteJsonFile(_userConfigFilePath, userSource);
 
-        {
-            if (!File.Exists(_userConfigFilePath))
-            {
-                var defaultData = new JSONUserConfigData();
-                var defaultJson = JsonSerializer.Serialize(defaultData, _jsonOptions);
-                WriteJsonFile(_userConfigFilePath, defaultJson);
-            }
-
-            {
-                var json = File.ReadAllText(_userConfigFilePath);
-
-                User = JsonSerializer.Deserialize<JSONUserConfigData>(json);
-                if (!HasUtf8Bom(_userConfigFilePath))
-                    WriteJsonFile(_userConfigFilePath, json);
-            }
-        }
+        _gameJson = gameJson;
+        _userJson = userJson;
+        Game = loadedGame;
+        User = loadedUser;
+        _activeUserLazyErb = userLazyErb;
+        _hasActiveUserLazyErbOverride = hasUserLazyErb;
+        _configuredUserLazyErb = userLazyErb;
+        _hasConfiguredUserLazyErbOverride = hasUserLazyErb;
+        _pendingUserLazyErb = null;
+        _pendingHasUserLazyErbOverride = false;
+        _hasPendingUserLazyErbChange = false;
 
         SetSamplingOptions();
     }
@@ -132,8 +160,29 @@ static class JSONConfig
             WriteJsonFile(_gameConfigFilePath, gameJson.ToJsonString(_jsonOptions));
         }
         {
-            var json = JsonSerializer.Serialize(User, _jsonOptions);
-            WriteJsonFile(_userConfigFilePath, json);
+            // [Emuera改修:LAZY-01]
+            // 既存JSONを土台に既知値だけ更新し、unknown propertyを保ってuser側LazyERBを保存する。
+            JsonObject userJson = _userJson ?? JsonSerializer.SerializeToNode(User, _jsonOptions).AsObject();
+            JsonObject knownUserJson = JsonSerializer.SerializeToNode(User, _jsonOptions).AsObject();
+            foreach (KeyValuePair<string, JsonNode> property in knownUserJson)
+                userJson[property.Key] = property.Value?.DeepClone();
+
+            if (_hasPendingUserLazyErbChange)
+            {
+                if (_pendingHasUserLazyErbOverride)
+                    MergeLazyErbObject(userJson, _pendingUserLazyErb);
+                else
+                    userJson.Remove(_lazyErbKey);
+            }
+
+            WriteJsonFile(_userConfigFilePath, userJson.ToJsonString(_jsonOptions));
+            _userJson = userJson;
+            if (_hasPendingUserLazyErbChange)
+            {
+                _configuredUserLazyErb = _pendingUserLazyErb;
+                _hasConfiguredUserLazyErbOverride = _pendingHasUserLazyErbOverride;
+                _hasPendingUserLazyErbChange = false;
+            }
         }
     }
 
@@ -150,45 +199,97 @@ static class JSONConfig
             && bom[2] == 0xBF;
     }
 
+    static JsonObject ParseJsonObject(string json, string fileName)
+        => JsonNode.Parse(json) as JsonObject
+            ?? throw new JsonException($"{fileName} must contain a JSON object");
+
+    static void ValidateUserLazyErb(JsonObject userJson, out JSONLazyErbConfigData value, out bool exists)
+    {
+        if (!userJson.TryGetPropertyValue(_lazyErbKey, out JsonNode lazyNode))
+        {
+            value = null;
+            exists = false;
+            return;
+        }
+
+        JsonObject lazyJson = RequireObject(lazyNode, _lazyErbKey);
+        ValidateKnownLazyErbProperties(lazyJson, _enabledKey, _directoriesKey);
+        value = JsonSerializer.Deserialize<JSONLazyErbConfigData>(lazyJson.ToJsonString(_jsonOptions))
+            ?? throw new JsonException($"{_lazyErbKey} must contain a valid object");
+        exists = true;
+    }
+
+    static JsonObject RequireObject(JsonNode node, string propertyName)
+        => node as JsonObject ?? throw new JsonException($"{propertyName} must be a JSON object");
+
+    static void ValidateKnownLazyErbProperties(JsonObject lazyJson, string enabledKey, string directoriesKey)
+    {
+        if (lazyJson.TryGetPropertyValue(enabledKey, out JsonNode enabledNode)
+            && (enabledNode is not JsonValue enabledValue || !enabledValue.TryGetValue<bool>(out _)))
+            throw new JsonException($"{enabledKey} must be a JSON boolean");
+
+        if (lazyJson.TryGetPropertyValue(directoriesKey, out JsonNode directoriesNode))
+        {
+            if (directoriesNode is not JsonArray directories)
+                throw new JsonException($"{directoriesKey} must be a JSON string array");
+            foreach (JsonNode directory in directories)
+            {
+                if (directory is not JsonValue directoryValue || !directoryValue.TryGetValue<string>(out _))
+                    throw new JsonException($"{directoriesKey} must contain only strings");
+            }
+        }
+    }
+
+    static void MergeLazyErbObject(JsonObject owner, JSONLazyErbConfigData value)
+    {
+        JsonObject lazyJson = owner[_lazyErbKey] as JsonObject ?? new JsonObject();
+        JsonObject known = JsonSerializer.SerializeToNode(value, _jsonOptions).AsObject();
+        foreach (KeyValuePair<string, JsonNode> property in known)
+            lazyJson[property.Key] = property.Value?.DeepClone();
+        owner[_lazyErbKey] = lazyJson;
+    }
+
     static bool MigrateLazyErbSettings(JsonObject gameJson)
     {
         bool changed = false;
-        bool hasNew = TryGetObjectOrMissing(gameJson, _lazyErbKey, out JsonObject newJson);
+        bool hasNew = gameJson.TryGetPropertyValue(_lazyErbKey, out JsonNode newNode);
         bool hasLegacyProperty = gameJson.TryGetPropertyValue(_legacyLazyErbKey, out JsonNode legacyNode);
-        bool hasLegacy = TryGetObjectOrMissing(gameJson, _legacyLazyErbKey, out JsonObject legacyJson);
+        bool hasLegacy = hasLegacyProperty && legacyNode is not null;
+        JsonObject newJson = hasNew ? RequireObject(newNode, _lazyErbKey) : null;
+        JsonObject legacyJson = hasLegacy ? RequireObject(legacyNode, _legacyLazyErbKey) : null;
 
         if (hasNew)
+            ValidateKnownLazyErbProperties(newJson, _enabledKey, _directoriesKey);
+        if (hasLegacy)
+            ValidateKnownLazyErbProperties(legacyJson, _legacyEnabledKey, _legacyDirectoriesKey);
+
+        if (!hasNew && !hasLegacy)
         {
-            // newJson is validated by TryGetObjectOrMissing; a non-null non-object is a configuration error.
+            JSONLazyErbConfigData initialValue = hasLegacyProperty
+                ? new JSONLazyErbConfigData()
+                : new JSONLazyErbConfigData { Enabled = false, Directories = [] };
+            gameJson[_lazyErbKey] = JsonSerializer.SerializeToNode(initialValue, _jsonOptions);
+            if (hasLegacyProperty)
+                gameJson.Remove(_legacyLazyErbKey);
+            return true;
         }
-        else if (hasLegacy)
+
+        if (!hasNew)
         {
             newJson = new JsonObject();
             gameJson[_lazyErbKey] = newJson;
             changed = true;
         }
-        else
-        {
-            newJson = JsonSerializer.SerializeToNode(new JSONLazyErbConfigData(), _jsonOptions).AsObject();
-            gameJson[_lazyErbKey] = newJson;
-            if (hasLegacyProperty)
-            {
-                gameJson.Remove(_legacyLazyErbKey);
-            }
-            return true;
-        }
 
-        JsonObject defaults = JsonSerializer.SerializeToNode(new JSONLazyErbConfigData(), _jsonOptions).AsObject();
         if (hasLegacy)
         {
             CopyKnownIfMissing(newJson, _enabledKey, legacyJson, _legacyEnabledKey, ref changed);
             if (!newJson.ContainsKey(_directoriesKey))
             {
-                if (legacyJson.TryGetPropertyValue(_legacyDirectoriesKey, out JsonNode legacyDirectories)
-                    && legacyDirectories is not null)
+                if (legacyJson.TryGetPropertyValue(_legacyDirectoriesKey, out JsonNode legacyDirectories))
                     newJson[_directoriesKey] = ConvertLegacyDirectories(legacyDirectories);
                 else
-                    newJson[_directoriesKey] = defaults[_directoriesKey]?.DeepClone();
+                    newJson[_directoriesKey] = JsonSerializer.SerializeToNode(new JSONLazyErbConfigData(), _jsonOptions)[_directoriesKey]?.DeepClone();
                 changed = true;
             }
             foreach (KeyValuePair<string, JsonNode> property in legacyJson)
@@ -206,35 +307,21 @@ static class JSONConfig
         }
         else if (hasLegacyProperty)
         {
-            // nullはmissing/default互換として扱うが、migration後に旧LazyErb keyを残してはいけない。
+            // 旧キーのnullは従来どおりmissing/default互換として扱い、migration後に削除する。
             gameJson.Remove(_legacyLazyErbKey);
             changed = true;
         }
 
+        JsonObject defaults = JsonSerializer.SerializeToNode(new JSONLazyErbConfigData(), _jsonOptions).AsObject();
         foreach (string propertyName in new[] { _enabledKey, _directoriesKey })
         {
-            if (!newJson.TryGetPropertyValue(propertyName, out JsonNode property) || property is null)
+            if (!newJson.ContainsKey(propertyName))
             {
                 newJson[propertyName] = defaults[propertyName]?.DeepClone();
                 changed = true;
             }
         }
         return changed;
-    }
-
-    static bool TryGetObjectOrMissing(JsonObject gameJson, string propertyName, out JsonObject value)
-    {
-        value = null;
-        if (!gameJson.TryGetPropertyValue(propertyName, out JsonNode property) || property is null)
-            return false;
-        if (property is JsonObject jsonObject)
-        {
-            value = jsonObject;
-            return true;
-        }
-        // [Emuera改修:MEM-13R40.3 2026-08-23]
-        // 設定keyが存在するのに非null非Objectならmissing扱いでdefaultへ置換せず、誤設定を設定errorとして表面化する。
-        throw new JsonException($"{propertyName} must be a JSON object");
     }
 
     static void CopyKnownIfMissing(JsonObject destination, string destinationKey, JsonObject source, string sourceKey, ref bool changed)

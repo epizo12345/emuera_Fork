@@ -807,4 +807,16 @@ Settings apply only at start</value>
   <data name="ConfigDialog_ImageSampling" xml:space="preserve">
     <value>ImageSampling</value>
   </data>
+  <data name="ConfigDialog_LazyErb" xml:space="preserve"><value>Startup</value></data>
+  <data name="ConfigDialog_LazyErb_UseGameSettings" xml:space="preserve"><value>Use the game's recommended settings</value></data>
+  <data name="ConfigDialog_LazyErb_UseLocalSettings" xml:space="preserve"><value>Use settings for this computer</value></data>
+  <data name="ConfigDialog_LazyErb_Enabled" xml:space="preserve"><value>Delay loading selected folders until they are needed</value></data>
+  <data name="ConfigDialog_LazyErb_Directories" xml:space="preserve"><value>Selected folders</value></data>
+  <data name="ConfigDialog_LazyErb_ChooseDirectories" xml:space="preserve"><value>Choose folders...</value></data>
+  <data name="ConfigDialog_LazyErb_Reset" xml:space="preserve"><value>Use the game's recommended settings</value></data>
+  <data name="ConfigDialog_LazyErb_Help" xml:space="preserve"><value>Delaying these folders may reduce startup memory. Selected ERB files are loaded when first needed. Changes take effect after restarting the game; Debug and Analysis always load them at startup.</value></data>
+  <data name="LazyErbDirectoryDialog_Title" xml:space="preserve"><value>Select delayed-load folders</value></data>
+  <data name="LazyErbDirectoryDialog_Description" xml:space="preserve"><value>Choose subfolders inside the game's "ERB" folder. All subfolders of a selected folder are included. The ERB folder itself and linked folders cannot be selected.</value></data>
+  <data name="LazyErbDirectoryDialog_Ok" xml:space="preserve"><value>OK</value></data>
+  <data name="LazyErbDirectoryDialog_Cancel" xml:space="preserve"><value>Cancel</value></data>
 </root>

@@ -56,6 +56,18 @@ public static class LocalizationManager
     public static class ConfigDialog
     {
         public static string Title => FormLocalization.ConfigDialog_Title;
+        public static string LazyErb => FormLocalization.ConfigDialog_LazyErb;
+        public static string LazyErb_UseGameSettings => FormLocalization.ConfigDialog_LazyErb_UseGameSettings;
+        public static string LazyErb_UseLocalSettings => FormLocalization.ConfigDialog_LazyErb_UseLocalSettings;
+        public static string LazyErb_Enabled => FormLocalization.ConfigDialog_LazyErb_Enabled;
+        public static string LazyErb_Directories => FormLocalization.ConfigDialog_LazyErb_Directories;
+        public static string LazyErb_ChooseDirectories => FormLocalization.ConfigDialog_LazyErb_ChooseDirectories;
+        public static string LazyErb_Reset => FormLocalization.ConfigDialog_LazyErb_Reset;
+        public static string LazyErb_Help => FormLocalization.ConfigDialog_LazyErb_Help;
+        public static string LazyErbDirectoryDialog_Title => FormLocalization.LazyErbDirectoryDialog_Title;
+        public static string LazyErbDirectoryDialog_Description => FormLocalization.LazyErbDirectoryDialog_Description;
+        public static string LazyErbDirectoryDialog_Ok => FormLocalization.LazyErbDirectoryDialog_Ok;
+        public static string LazyErbDirectoryDialog_Cancel => FormLocalization.LazyErbDirectoryDialog_Cancel;
 
         public static string ChangeWontTakeEffectUntilRestart =>
             FormLocalization.ConfigDialog_ChangeWontTakeEffectUntilRestart;

@@ -29,6 +29,7 @@ Windows 11ではメニューや設定画面にダークモードが適用され�
 『WinRT.Runtime』だけをEXE内へ残して、配布サイズを抑えています。
 
 # 主な修正
+- LazyERBのゲーム推奨設定とプレイヤー設定を分けました。設定画面の「起動」タブから対象フォルダを変更でき、ゲーム推奨設定へ戻すこともできます。変更は次回起動後に反映されます。（設定UIの正式配布版への反映は未実施です。）
 - Phase 13R39で`Data\ERB\口上\口上まとめ\`配下だけをLazy ERB Hydration化しました。起動時は関数stub／metadataを登録し、本文は初回実行直前にERBファイル単位でhydrateします。KOJO startup Managedは`1,762,740,872`から`1,174,959,288 bytes`へ実測削減（-33.34%）。通常ERB、AnalysisMode、DebugModeは従来どおりeagerです。
 - Phase 13R39.1で、通常モードの口上まとめ対象reloadだけをfull reloadへ昇格し、DebugMode / AnalysisModeでは従来のpartial/folder reloadを維持するよう修正しました。preprocessorはeager fallback、`[[...]]` renameは従来どおりです。
 - Phase 13R40.3で、`Data\setting.json`から設定できる日本語名のLazy ERB設定を正式採用しました。旧`LazyErb`形式から自動移行し、Data基準の`ERB\`配下だけを対象に、不正パスやERB root指定を拒否します。Preload時の不要なbulk cacheを抑制し、従来互換性とreload safetyを維持しています。
@@ -57,16 +58,17 @@ Windows 11ではメニューや設定画面にダークモードが適用され�
 - `InstructionLine`のSET左辺専用slotを既存`auxiliaryData`へ統合し、retained shallow sizeを120 bytesから112 bytesへ削減
 
 # 配布フォルダについて
-『配布/Emuera.NET_最終通常版』には、2026-08-26時点のmainに対応する.NET 10正式single-file EXEを置いています。
+『配布/Emuera.NET_最終通常版』には、2026-09-15更新のM3A/M4A反映版.NET 10正式single-file EXEを置いています。
 
 - 対象: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 形式: フレームワーク依存・単一EXE
-- 『Emuera.exe』: 配布用実行ファイル（24,663,786バイト、SHA-256 `45DB53405DD36962485B4537B0FFC7F2641A2F92F264DE3D8E98AB20F0D03F2E`）
+- EXE生成元source commit: `a63b594237825f4b6a9e5335ed13f4ea32175c0a`
+- 『Emuera.exe』: 配布用実行ファイル（24,684,266バイト、SHA-256 `B68A494119816D4D788F5B7A5B56AC786BA45B179D0EE00304F283E561B388CF`、ProductVersion `0.2.6.0+a63b594237825f4b6a9e5335ed13f4ea32175c0a`）
 - 『README.md』: 導入方法と採用機能
 - 『SHA256SUMS.txt』: 配布物の改ざん確認用ハッシュ
 
-変更の流れは[更新履歴](更新履歴.md)、現在の変更理由と検証結果は`プロジェクト資料/修正履歴/#今回の修正説明_2026-08-23.md`および`プロジェクト資料/修正履歴/#今回の修正説明_2026-08-22.md`を参照してください。
+変更の流れは[更新履歴](更新履歴.md)、現行正式版の変更理由と検証結果は`プロジェクト資料/修正履歴/#今回の修正説明_2026-09-15.md`を参照してください。
 
 ## 起動後メモリ整理
 

@@ -56,6 +56,9 @@
     <!-- [Emuera改修:TOOLS-01]
          補助ツールのC#をEmuera本体へ誤って混ぜないため、コンパイル対象から外す。 -->
     <Compile Remove="Emuera以外(開発補助ツールなど)\TraceAllocationAnalyzer\**\*.cs" />
+    <Compile Remove="Emuera以外(開発補助ツールなど)\ConfigRegressionTests\**\*.cs" />
+    <!-- [Emuera改修:TOOLS-05] 回帰テストから本体のinternal実装を検証できるようにし、テストコード自体は本体へ含めない。 -->
+    <InternalsVisibleTo Include="Emuera.ConfigRegressionTests" />
     <Compile Update="Forms\ColorBox.cs">
       <SubType>UserControl</SubType>
     </Compile>

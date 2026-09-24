@@ -807,4 +807,16 @@ Emueraを終了しますか？</value>
   <data name="ConfigDialog_ImageSampling" xml:space="preserve">
     <value>画像リサイズフィルタ</value>
   </data>
+  <data name="ConfigDialog_LazyErb" xml:space="preserve"><value>起動</value></data>
+  <data name="ConfigDialog_LazyErb_UseGameSettings" xml:space="preserve"><value>ゲームの推奨設定を使う</value></data>
+  <data name="ConfigDialog_LazyErb_UseLocalSettings" xml:space="preserve"><value>このパソコン用の設定を使う</value></data>
+  <data name="ConfigDialog_LazyErb_Enabled" xml:space="preserve"><value>選択したフォルダの読み込みを必要になるまで遅らせる</value></data>
+  <data name="ConfigDialog_LazyErb_Directories" xml:space="preserve"><value>対象フォルダ</value></data>
+  <data name="ConfigDialog_LazyErb_ChooseDirectories" xml:space="preserve"><value>フォルダを選択...</value></data>
+  <data name="ConfigDialog_LazyErb_Reset" xml:space="preserve"><value>ゲームの推奨設定に戻す</value></data>
+  <data name="ConfigDialog_LazyErb_Help" xml:space="preserve"><value>対象フォルダを起動時に読み込まないため、起動時メモリが減る場合があります。選択したERBは必要になった時点で読み込みます。設定は次回起動から有効です。Debug／Analysisは起動時に読み込みます。</value></data>
+  <data name="LazyErbDirectoryDialog_Title" xml:space="preserve"><value>遅延読み込み対象フォルダ</value></data>
+  <data name="LazyErbDirectoryDialog_Description" xml:space="preserve"><value>ゲームの「ERB」フォルダ内にあるサブフォルダを指定します。選択したフォルダ内のサブフォルダもすべて対象になります。ERBフォルダそのものやリンクされたフォルダは選択できません。</value></data>
+  <data name="LazyErbDirectoryDialog_Ok" xml:space="preserve"><value>決定</value></data>
+  <data name="LazyErbDirectoryDialog_Cancel" xml:space="preserve"><value>キャンセル</value></data>
 </root>

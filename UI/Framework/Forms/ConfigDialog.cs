@@ -18,9 +18,31 @@ internal enum ConfigDialogResult
 
 internal sealed partial class ConfigDialog : Form
 {
+    readonly TabPage _lazyErbTab = new();
+    readonly RadioButton _lazyUseGameSettings = new() { AutoSize = false, Location = new Point(16, 18), Size = new Size(300, 26) };
+    readonly RadioButton _lazyUseLocalSettings = new() { AutoSize = false, Location = new Point(16, 48), Size = new Size(300, 26) };
+    readonly CheckBox _lazyEnabled = new() { AutoSize = false, Location = new Point(32, 82), Size = new Size(284, 34) };
+    readonly Label _lazyDirectoriesLabel = new() { AutoSize = true, Location = new Point(16, 116) };
+    readonly Label _lazyDirectoryCount = new() { AutoSize = true, Location = new Point(16, 142) };
+    readonly Button _lazyChooseDirectories = new() { Location = new Point(108, 137), Size = new Size(135, 28) };
+    readonly Button _lazyReset = new() { Location = new Point(16, 175), Size = new Size(300, 28) };
+    readonly TextBox _lazyDirectoryList = new()
+    {
+        Location = new Point(16, 212), Size = new Size(300, 94),
+        Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical,
+    };
+    readonly Label _lazyHelp = new()
+    {
+        Location = new Point(16, 316), Size = new Size(300, 90),
+        AutoSize = false,
+    };
+    bool _lazyLocalEnabled;
+    string[] _lazyLocalDirectories = [];
+
     public ConfigDialog()
     {
         InitializeComponent();
+        InitializeLazyErbSettings();
         numericUpDown1.Minimum = 1;//PrintCPerLine
         numericUpDown1.Maximum = 100;
         numericUpDown2.Minimum = 128;//ConfigCode.WindowX(Width)
@@ -435,7 +457,68 @@ internal sealed partial class ConfigDialog : Form
 
         config.SaveConfig();
 
+        if (_lazyUseGameSettings.Checked)
+            JSONConfig.ResetUserLazyErbOverride();
+        else
+            JSONConfig.SetUserLazyErbOverride(_lazyLocalEnabled, _lazyLocalDirectories);
         JSONConfig.Save();
+    }
+
+    // [Emuera改修:LAZY-03]
+    // 「起動」タブでゲーム推奨値とこのPC用の上書きを選び、設定変更は次回起動から適用する。
+    private void InitializeLazyErbSettings()
+    {
+        tabControl.TabPages.Add(_lazyErbTab);
+        _lazyErbTab.Controls.AddRange([
+            _lazyUseGameSettings, _lazyUseLocalSettings, _lazyEnabled,
+            _lazyDirectoriesLabel, _lazyDirectoryCount, _lazyChooseDirectories,
+            _lazyReset, _lazyDirectoryList, _lazyHelp,
+        ]);
+
+        bool hasOverride = JSONConfig.HasUserLazyErbOverride;
+        JSONLazyErbConfigData configured = hasOverride ? JSONConfig.UserLazyErbOverride : JSONConfig.Game?.LazyErb;
+        _lazyLocalEnabled = configured?.Enabled ?? false;
+        _lazyLocalDirectories = configured?.Directories is { } directories ? (string[])directories.Clone() : [];
+        _lazyUseGameSettings.Checked = !hasOverride;
+        _lazyUseLocalSettings.Checked = hasOverride;
+
+        _lazyUseGameSettings.CheckedChanged += LazyErbMode_CheckedChanged;
+        _lazyUseLocalSettings.CheckedChanged += LazyErbMode_CheckedChanged;
+        _lazyEnabled.CheckedChanged += (_, _) =>
+        {
+            if (_lazyUseLocalSettings.Checked)
+                _lazyLocalEnabled = _lazyEnabled.Checked;
+        };
+        _lazyChooseDirectories.Click += LazyChooseDirectories_Click;
+        _lazyReset.Click += (_, _) => _lazyUseGameSettings.Checked = true;
+        RefreshLazyErbSettings();
+    }
+
+    private void LazyErbMode_CheckedChanged(object sender, EventArgs e) => RefreshLazyErbSettings();
+
+    private void RefreshLazyErbSettings()
+    {
+        bool useLocal = _lazyUseLocalSettings.Checked;
+        JSONLazyErbConfigData game = JSONConfig.Game?.LazyErb;
+        bool enabled = useLocal ? _lazyLocalEnabled : game?.Enabled ?? false;
+        string[] directories = useLocal ? _lazyLocalDirectories : game?.Directories ?? [];
+
+        _lazyEnabled.Checked = enabled;
+        _lazyEnabled.Enabled = useLocal;
+        _lazyChooseDirectories.Enabled = useLocal;
+        _lazyReset.Enabled = useLocal;
+        _lazyDirectoryCount.Text = directories.Length.ToString();
+        _lazyDirectoryList.Text = string.Join(Environment.NewLine, directories);
+    }
+
+    private void LazyChooseDirectories_Click(object sender, EventArgs e)
+    {
+        using LazyErbDirectoryDialog dialog = new(Program.ExeDir, Program.ErbDir, _lazyLocalDirectories);
+        if (dialog.ShowDialog(this) == DialogResult.OK)
+        {
+            _lazyLocalDirectories = dialog.SelectedDirectories ?? [];
+            RefreshLazyErbSettings();
+        }
     }
 
 
@@ -619,6 +702,14 @@ internal sealed partial class ConfigDialog : Form
         Text = LocalizationManager.ConfigDialog.Title;
 
         tabEnvironment.Text = LocalizationManager.ConfigDialog.Environment;
+        _lazyErbTab.Text = LocalizationManager.ConfigDialog.LazyErb;
+        _lazyUseGameSettings.Text = LocalizationManager.ConfigDialog.LazyErb_UseGameSettings;
+        _lazyUseLocalSettings.Text = LocalizationManager.ConfigDialog.LazyErb_UseLocalSettings;
+        _lazyEnabled.Text = LocalizationManager.ConfigDialog.LazyErb_Enabled;
+        _lazyDirectoriesLabel.Text = LocalizationManager.ConfigDialog.LazyErb_Directories;
+        _lazyChooseDirectories.Text = LocalizationManager.ConfigDialog.LazyErb_ChooseDirectories;
+        _lazyReset.Text = LocalizationManager.ConfigDialog.LazyErb_Reset;
+        _lazyHelp.Text = LocalizationManager.ConfigDialog.LazyErb_Help;
         checkBox3.Text = LocalizationManager.ConfigDialog.Environment_UseMouse;
         checkBox4.Text = LocalizationManager.ConfigDialog.Environment_UseMenu;
         checkBox5.Text = LocalizationManager.ConfigDialog.Environment_UseDebugCommand;
