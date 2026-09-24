@@ -566,6 +566,18 @@ namespace MinorShift.Emuera.UI.Framework {
                 return ResourceManager.GetString("ConfigDialog_Display_ButtonWrap", resourceCulture);
             }
         }
+
+        internal static string ConfigDialog_Display_UseDarkMode {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Display_UseDarkMode", resourceCulture);
+            }
+        }
+
+        internal static string ConfigDialog_Display_DarkModeRestart {
+            get {
+                return ResourceManager.GetString("ConfigDialog_Display_DarkModeRestart", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Frames per second に類似しているローカライズされた文字列を検索します。

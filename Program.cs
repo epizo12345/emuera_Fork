@@ -246,7 +246,8 @@ static partial class Program
         }
 
         ApplicationConfiguration.Initialize();
-        Application.SetColorMode(SystemColorMode.Dark);
+        // [Emuera改修:THEME-01] 起動時設定に従いWinFormsのテーマを選択する。
+        Application.SetColorMode(Config.UseDarkMode ? SystemColorMode.Dark : SystemColorMode.Classic);
 
         using var win = new Forms.MainWindow(args);
 

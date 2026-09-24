@@ -445,6 +445,12 @@ The drawing process cannot continue and will be terminated.</value>
   <data name="ConfigDialog_Display_ButtonWrap" xml:space="preserve">
     <value>Don't break lines in the middle buttons</value>
   </data>
+  <data name="ConfigDialog_Display_UseDarkMode" xml:space="preserve">
+    <value>Use dark mode</value>
+  </data>
+  <data name="ConfigDialog_Display_DarkModeRestart" xml:space="preserve">
+    <value>※Changes take effect after restarting.</value>
+  </data>
   <data name="ConfigDialog_Window" xml:space="preserve">
     <value>Window</value>
   </data>

@@ -154,6 +154,7 @@ internal sealed partial class ConfigDialog : Form
         //setCheckBox(checkBox12, ConfigCode.ReduceFormattedStringOnLoad);
         setCheckBox(checkBox13, ConfigCode.DisplayReport);
         setCheckBox(checkBox14, ConfigCode.ButtonWrap);
+        setCheckBox(_useDarkMode, ConfigCode.UseDarkMode);
         setCheckBox(checkBox15, ConfigCode.SearchSubdirectory);
         setCheckBox(checkBox16, ConfigCode.SortWithFilename);
         setCheckBox(checkBox17, ConfigCode.SetWindowPos);
@@ -338,6 +339,7 @@ internal sealed partial class ConfigDialog : Form
         //config.GetConfigItem(ConfigCode.ReduceFormattedStringOnLoad).SetValue<bool>(checkBox12.Checked);
         config.GetConfigItem(ConfigCode.DisplayReport).SetValue<bool>(checkBox13.Checked);
         config.GetConfigItem(ConfigCode.ButtonWrap).SetValue<bool>(checkBox14.Checked);
+        config.GetConfigItem(ConfigCode.UseDarkMode).SetValue<bool>(_useDarkMode.Checked);
         config.GetConfigItem(ConfigCode.SearchSubdirectory).SetValue<bool>(checkBox15.Checked);
         config.GetConfigItem(ConfigCode.SortWithFilename).SetValue<bool>(checkBox16.Checked);
         config.GetConfigItem(ConfigCode.SetWindowPos).SetValue<bool>(checkBox17.Checked);
@@ -731,6 +733,8 @@ internal sealed partial class ConfigDialog : Form
         label5.Text = LocalizationManager.ConfigDialog.Display_PrintCPerLine;
         label1.Text = LocalizationManager.ConfigDialog.Display_PrintCLength;
         checkBox14.Text = LocalizationManager.ConfigDialog.Display_ButtonWrap;
+        _useDarkMode.Text = LocalizationManager.ConfigDialog.Display_UseDarkMode;
+        _darkModeRestartNote.Text = LocalizationManager.ConfigDialog.Display_DarkModeRestart;
         _useButtonFocusColor.Text = LocalizationManager.ConfigDialog.Display_UseButtonFocusColor;
         //label26.Text = LocalizationManager.ConfigDialog.Display_EmueraLang;
 

@@ -29,6 +29,7 @@ Windows 11ではメニューや設定画面にダークモードが適用され�
 『WinRT.Runtime』だけをEXE内へ残して、配布サイズを抑えています。
 
 # 主な修正
+- 設定画面の「表示」タブからWinForms UIのダークモード／通常表示を切り替えられます。変更は再起動後に反映されます。
 - LazyERBのゲーム推奨設定とプレイヤー設定を分けました。設定画面の「起動」タブから安全な対象フォルダを変更でき、ゲーム推奨設定へ戻すこともできます。未知の設定項目を通常保存で保持し、変更は次回起動後に反映されます。
 - Phase 13R39で`Data\ERB\口上\口上まとめ\`配下だけをLazy ERB Hydration化しました。起動時は関数stub／metadataを登録し、本文は初回実行直前にERBファイル単位でhydrateします。KOJO startup Managedは`1,762,740,872`から`1,174,959,288 bytes`へ実測削減（-33.34%）。通常ERB、AnalysisMode、DebugModeは従来どおりeagerです。
 - Phase 13R39.1で、通常モードの口上まとめ対象reloadだけをfull reloadへ昇格し、DebugMode / AnalysisModeでは従来のpartial/folder reloadを維持するよう修正しました。preprocessorはeager fallback、`[[...]]` renameは従来どおりです。

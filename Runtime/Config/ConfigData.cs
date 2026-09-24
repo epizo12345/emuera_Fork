@@ -113,6 +113,8 @@ internal sealed class ConfigData
         //SetConfigItem(new ConfigItem<bool>(ConfigCode.ForbidOneCodeVariable, "一文字変数の使用を禁止する", false));
         SetConfigItem(new ConfigItem<bool>(ConfigCode.SystemNoTarget, "キャラクタ変数の引数を補完しない", false));
         SetConfigItem(new ConfigItem<bool>(ConfigCode.SystemIgnoreStringSet, "文字列変数の代入に文字列式を強制する", false));
+        // [Emuera改修:THEME-01] 設定がない既存環境でも従来どおりダークテーマを使用する。
+        SetConfigItem(new ConfigItem<bool>(ConfigCode.UseDarkMode, "ダークモードを使用する", true));
 
         var i = 0;
         debugArray[i++] = new ConfigItem<bool>(ConfigCode.DebugShowWindow, "起動時にデバッグウインドウを表示する", true);

@@ -15,6 +15,7 @@ using MinorShift.Emuera;
 using MinorShift.Emuera.Forms;
 using MinorShift.Emuera.GameProc.Function;
 using MinorShift.Emuera.GameView;
+using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Config.JSON;
 using MinorShift.Emuera.Runtime.Utils;
 using MinorShift.Emuera.UI.Framework;
@@ -29,11 +30,14 @@ internal static class Program
     private static readonly List<string> Failures = [];
     private static int TotalCases;
     private static int SkippedCases;
+    private static string? _themeConfigDirectory;
+    private static string? _themeConfigPath;
 
     [STAThread]
     private static int Main()
     {
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        Run("dark mode config defaults to YES, round-trips YES/NO, and preserves display colors and other settings", DarkModeConfigRoundTrips);
         Run("missing game block persists disabled-empty default and retains unknown properties", MissingGameBlockDefault);
         Run("valid existing game block is unchanged by load", ExistingGameBlockIsNotRewritten);
         Run("new user file does not gain a LazyERB override", NewUserFileHasNoOverride);
@@ -71,8 +75,64 @@ internal static class Program
         Run("settings dialog exposes LazyERB startup tab without saving radio edits", ConfigDialogLazyErbTabDoesNotSaveUntilConfirmation);
         RunReparsePointCase();
 
+        if (_themeConfigDirectory is not null && Directory.Exists(_themeConfigDirectory))
+            Directory.Delete(_themeConfigDirectory, recursive: true);
+
         Console.WriteLine($"RESULT: {TotalCases - Failures.Count - SkippedCases}/{TotalCases} passed; {Failures.Count} failed; {SkippedCases} skipped.");
         return Failures.Count == 0 ? 0 : 1;
+    }
+
+    private static void DarkModeConfigRoundTrips()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "Emuera.ConfigRegressionTests", Guid.NewGuid().ToString("N"));
+        string csvDirectory = Path.Combine(directory, "Csv");
+        Directory.CreateDirectory(csvDirectory);
+        _themeConfigDirectory = directory;
+        _themeConfigPath = Path.Combine(directory, "emuera.config");
+
+        Type programType = typeof(MinorShift.Emuera.Program);
+        PropertyInfo exeDir = programType.GetProperty("ExeDir", BindingFlags.Public | BindingFlags.Static)!;
+        PropertyInfo csvDir = programType.GetProperty("CsvDir", BindingFlags.Public | BindingFlags.Static)!;
+        object? oldExeDir = exeDir.GetValue(null);
+        object? oldCsvDir = csvDir.GetValue(null);
+        try
+        {
+            exeDir.GetSetMethod(nonPublic: true)!.Invoke(null, [directory + Path.DirectorySeparatorChar]);
+            csvDir.GetSetMethod(nonPublic: true)!.Invoke(null, [csvDirectory + Path.DirectorySeparatorChar]);
+
+            ConfigData config = ConfigData.Instance;
+            True(config.GetConfigItem("ダークモードを使用する") is ConfigItem<bool>, "dark-mode config item is registered as a bool");
+            Equal(true, config.GetConfigValue<bool>((ConfigCode)163), "missing setting uses the compatibility default YES");
+
+            config.LoadConfig();
+            True(File.ReadAllLines(_themeConfigPath!, Config.Encode).Contains("ダークモードを使用する:YES"), "missing setting is persisted as YES");
+
+            const string yesConfig = "ダークモードを使用する:YES\r\n履歴ログの行数:4321\r\n文字色:11,22,33\r\n背景色:44,55,66\r\n選択中文字色:77,88,99\r\n履歴文字色:101,112,123\r\n";
+            File.WriteAllText(_themeConfigPath!, yesConfig, Config.Encode);
+            config.LoadConfig();
+            Equal(true, ReadRuntimeConfig<bool>("UseDarkMode"), "YES enables dark mode when config is loaded at startup");
+            Equal(4321, RuntimeConfig.MaxLog, "an existing unrelated config setting is loaded");
+            Equal(Color.FromArgb(11, 22, 33), RuntimeConfig.ForeColor, "dark-mode setting leaves game text color unchanged");
+            Equal(Color.FromArgb(44, 55, 66), RuntimeConfig.BackColor, "dark-mode setting leaves game background color unchanged");
+            Equal(Color.FromArgb(77, 88, 99), RuntimeConfig.FocusColor, "dark-mode setting leaves game highlight color unchanged");
+            Equal(Color.FromArgb(101, 112, 123), RuntimeConfig.LogColor, "dark-mode setting leaves game history color unchanged");
+
+            True(config.SaveConfig(), "existing config saves successfully");
+            string[] savedYes = File.ReadAllLines(_themeConfigPath!, Config.Encode);
+            True(savedYes.Contains("ダークモードを使用する:YES"), "YES is saved through the existing config writer");
+            True(savedYes.Contains("履歴ログの行数:4321"), "saving dark mode preserves existing config values");
+
+            File.WriteAllText(_themeConfigPath!, yesConfig.Replace("ダークモードを使用する:YES", "ダークモードを使用する:NO", StringComparison.Ordinal), Config.Encode);
+            config.LoadConfig();
+            Equal(false, ReadRuntimeConfig<bool>("UseDarkMode"), "NO disables dark mode when config is reloaded at startup");
+            Equal(Color.FromArgb(11, 22, 33), RuntimeConfig.ForeColor, "switching theme does not alter game text color");
+            Equal(Color.FromArgb(44, 55, 66), RuntimeConfig.BackColor, "switching theme does not alter game background color");
+        }
+        finally
+        {
+            exeDir.GetSetMethod(nonPublic: true)!.Invoke(null, [oldExeDir]);
+            csvDir.GetSetMethod(nonPublic: true)!.Invoke(null, [oldCsvDir]);
+        }
     }
 
     private static void MissingGameBlockDefault()
@@ -677,6 +737,7 @@ internal static class Program
             "ConfigDialog_LazyErb_Enabled", "ConfigDialog_LazyErb_Directories", "ConfigDialog_LazyErb_ChooseDirectories",
             "ConfigDialog_LazyErb_Reset", "ConfigDialog_LazyErb_Help", "LazyErbDirectoryDialog_Title",
             "LazyErbDirectoryDialog_Description", "LazyErbDirectoryDialog_Ok", "LazyErbDirectoryDialog_Cancel",
+            "ConfigDialog_Display_UseDarkMode", "ConfigDialog_Display_DarkModeRestart",
         ];
         foreach (string key in resourceKeys)
         {
@@ -709,6 +770,7 @@ internal static class Program
             try
             {
                 using ConfigDialog dialog = new();
+                dialog.SetConfig(null!);
 
                 TabControl tabs = (TabControl)typeof(ConfigDialog)
                     .GetField("tabControl", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(dialog)!;
@@ -718,12 +780,22 @@ internal static class Program
                     .GetField("_lazyUseGameSettings", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(dialog)!;
                 RadioButton local = (RadioButton)typeof(ConfigDialog)
                     .GetField("_lazyUseLocalSettings", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(dialog)!;
+                CheckBox useDarkMode = (CheckBox)typeof(ConfigDialog)
+                    .GetField("_useDarkMode", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(dialog)!;
+                Equal(false, useDarkMode.Checked, "settings dialog displays the currently loaded dark-mode setting");
                 True(recommended.Checked && !local.Checked, "missing user override initially selects game settings");
 
                 local.Checked = true;
                 True(!JSONConfig.HasUserLazyErbOverride, "changing the radio only edits the dialog draft");
                 SequenceEqual(gameBefore, File.ReadAllBytes(gamePath), "opening/editing the dialog does not save game settings");
                 SequenceEqual(userBefore, File.ReadAllBytes(userPath), "opening/editing the dialog does not save user settings");
+
+                useDarkMode.Checked = true;
+                recommended.Checked = true;
+                typeof(ConfigDialog).GetMethod("SaveConfig", BindingFlags.NonPublic | BindingFlags.Instance)!
+                    .Invoke(dialog, null);
+                True(File.ReadAllLines(_themeConfigPath!, Config.Encode).Contains("ダークモードを使用する:YES"), "dialog save writes dark mode through emuera.config");
+                Equal(false, ReadRuntimeConfig<bool>("UseDarkMode"), "dialog save leaves the running theme unchanged until restart");
             }
             finally
             {
@@ -836,6 +908,13 @@ internal static class Program
         PropertyInfo property = owner.GetProperty(name, BindingFlags.Public | BindingFlags.Static)
             ?? throw new InvalidOperationException($"{owner.Name}.{name} was not found");
         property.GetSetMethod(nonPublic: true)!.Invoke(null, [value]);
+    }
+
+    private static T ReadRuntimeConfig<T>(string propertyName)
+    {
+        PropertyInfo property = typeof(RuntimeConfig).GetProperty(propertyName, BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException($"Config.{propertyName} was not found");
+        return (T)property.GetValue(null)!;
     }
 
     private static void WithTemporaryDirectory(Action<string> test)

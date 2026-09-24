@@ -110,6 +110,8 @@ public static class LocalizationManager
         public static string Display_PrintCPerLine => FormLocalization.ConfigDialog_Display_PrintCPerLine;
         public static string Display_PrintCLength => FormLocalization.ConfigDialog_Display_PrintCLength;
         public static string Display_ButtonWrap => FormLocalization.ConfigDialog_Display_ButtonWrap;
+        public static string Display_UseDarkMode => FormLocalization.ConfigDialog_Display_UseDarkMode;
+        public static string Display_DarkModeRestart => FormLocalization.ConfigDialog_Display_DarkModeRestart;
         public static string Display_UseButtonFocusColor => FormLocalization.ConfigDialog_Display_UseButtonFocusColor;
 
 

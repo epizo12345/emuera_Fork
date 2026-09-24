@@ -46,6 +46,7 @@ internal static class Config
         AllowMultipleInstances = instance.GetConfigValue<bool>(ConfigCode.AllowMultipleInstances);
         AutoSave = instance.GetConfigValue<bool>(ConfigCode.AutoSave);
         UseKeyMacro = instance.GetConfigValue<bool>(ConfigCode.UseKeyMacro);
+        UseDarkMode = instance.GetConfigValue<bool>(ConfigCode.UseDarkMode);
         SizableWindow = instance.GetConfigValue<bool>(ConfigCode.SizableWindow);
         //UseImageBuffer = instance.GetConfigValue<bool>(ConfigCode.UseImageBuffer);
         TextDrawingMode = instance.GetConfigValue<TextDrawingMode>(ConfigCode.TextDrawingMode);
@@ -368,6 +369,7 @@ internal static class Config
     public static bool AllowMultipleInstances { get; private set; }
     public static bool AutoSave { get; private set; }
     public static bool UseKeyMacro { get; private set; }
+    public static bool UseDarkMode { get; private set; }
     public static bool SizableWindow { get; private set; }
     //public static bool UseImageBuffer { get; private set; }
     public static TextDrawingMode TextDrawingMode { get; private set; }

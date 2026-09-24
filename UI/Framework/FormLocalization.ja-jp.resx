@@ -300,6 +300,12 @@
   <data name="ConfigDialog_Display_ButtonWrap" xml:space="preserve">
     <value>ボタンの途中で行を折りかえさない</value>
   </data>
+  <data name="ConfigDialog_Display_UseDarkMode" xml:space="preserve">
+    <value>ダークモードを使用する</value>
+  </data>
+  <data name="ConfigDialog_Display_DarkModeRestart" xml:space="preserve">
+    <value>※変更は再起動後に反映されます</value>
+  </data>
   <data name="ConfigDialog_Window" xml:space="preserve">
     <value>ウィンドウ</value>
   </data>

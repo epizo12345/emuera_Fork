@@ -141,4 +141,5 @@ internal enum ConfigCode
     RelationDef = 115,
 
     UseKeyMacro = 162,
+    UseDarkMode = 163,
 }

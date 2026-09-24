@@ -59,6 +59,8 @@ namespace MinorShift.Emuera.Forms
             _imageSamplingLabel = new System.Windows.Forms.Label();
             _imageSampling = new System.Windows.Forms.ComboBox();
             _useButtonFocusColor = new System.Windows.Forms.CheckBox();
+            _useDarkMode = new System.Windows.Forms.CheckBox();
+            _darkModeRestartNote = new System.Windows.Forms.Label();
             checkBox14 = new System.Windows.Forms.CheckBox();
             label1 = new System.Windows.Forms.Label();
             numericUpDown9 = new System.Windows.Forms.NumericUpDown();
@@ -495,6 +497,8 @@ namespace MinorShift.Emuera.Forms
             tabPageView.Controls.Add(_imageSamplingLabel);
             tabPageView.Controls.Add(_imageSampling);
             tabPageView.Controls.Add(_useButtonFocusColor);
+            tabPageView.Controls.Add(_useDarkMode);
+            tabPageView.Controls.Add(_darkModeRestartNote);
             tabPageView.Controls.Add(checkBox14);
             tabPageView.Controls.Add(label1);
             tabPageView.Controls.Add(numericUpDown9);
@@ -543,6 +547,24 @@ namespace MinorShift.Emuera.Forms
             _useButtonFocusColor.UseVisualStyleBackColor = true;
             _useButtonFocusColor.CheckedChanged += UseButtonFocusColor_CheckedChanged;
             // 
+            // _useDarkMode
+            //
+            _useDarkMode.AutoSize = true;
+            _useDarkMode.Location = new System.Drawing.Point(18, 306);
+            _useDarkMode.Margin = new System.Windows.Forms.Padding(2);
+            _useDarkMode.Name = "_useDarkMode";
+            _useDarkMode.Size = new System.Drawing.Size(180, 19);
+            _useDarkMode.TabIndex = 71;
+            _useDarkMode.UseVisualStyleBackColor = true;
+            //
+            // _darkModeRestartNote
+            //
+            _darkModeRestartNote.AutoSize = true;
+            _darkModeRestartNote.Location = new System.Drawing.Point(38, 330);
+            _darkModeRestartNote.Name = "_darkModeRestartNote";
+            _darkModeRestartNote.Size = new System.Drawing.Size(176, 15);
+            _darkModeRestartNote.TabIndex = 72;
+            //
             // checkBox14
             // 
             checkBox14.AutoSize = true;
@@ -2108,6 +2130,8 @@ namespace MinorShift.Emuera.Forms
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel4;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
         private System.Windows.Forms.CheckBox _useButtonFocusColor;
+        private System.Windows.Forms.CheckBox _useDarkMode;
+        private System.Windows.Forms.Label _darkModeRestartNote;
         private System.Windows.Forms.CheckBox _useNewRandom;
         private System.Windows.Forms.CheckBox _useScopedVariableInstruction;
         private System.Windows.Forms.TabPage tabPageClipboard;

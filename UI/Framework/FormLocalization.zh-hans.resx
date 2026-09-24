@@ -173,6 +173,12 @@
     <data name="ConfigDialog_Display_ButtonWrap" xml:space="preserve">
 		<value>按钮文本不产生换行</value>
 	</data>
+	<data name="ConfigDialog_Display_UseDarkMode" xml:space="preserve">
+		<value>使用深色模式</value>
+	</data>
+	<data name="ConfigDialog_Display_DarkModeRestart" xml:space="preserve">
+		<value>※更改将在重启后生效</value>
+	</data>
 	<data name="ConfigDialog_Window" xml:space="preserve">
 		<value>窗口</value>
 	</data>
