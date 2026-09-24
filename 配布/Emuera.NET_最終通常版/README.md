@@ -1,19 +1,22 @@
 # Emuera.NET 最終通常版
 
-- 更新日: 2026-09-15
+- 更新日: 2026-09-24
 - 基礎: BugFix_Test `7b7dd3bf240eff4fdfc7094f4175de0e014532b7`
-- EXE生成元source commit: `a63b594237825f4b6a9e5335ed13f4ea32175c0a`
+- EXE生成元source commit: `946032e74de19f5ff857430ae8c2c406183f74f7`
 - 対象OS: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
-- `Emuera.exe` サイズ: 24,684,266バイト（約23.5 MiB）
-- `Emuera.exe` SHA-256: `B68A494119816D4D788F5B7A5B56AC786BA45B179D0EE00304F283E561B388CF`
-- `Emuera.exe` ProductVersion: `0.2.6.0+a63b594237825f4b6a9e5335ed13f4ea32175c0a`（suffixはEXEを生成したsource commit）
+- `Emuera.exe` サイズ: 24,696,554バイト（約23.55 MiB）
+- `Emuera.exe` SHA-256: `C03E45AB5FD720441010EF4236D1C5AB7446387700A4BA310FF8EB5358967344`
+- `Emuera.exe` ProductVersion: `0.2.6.0+946032e74de19f5ff857430ae8c2c406183f74f7`（suffixはEXEを生成したsource commit）
+- `Emuera.exe` FileVersion: `0.2.6.0`
 - publish条件: Release / win-x64 / framework-dependent / self-contained false / PublishSingleFile=true
 - publish時の計測: `PERFORMANCE_METRICS`無効
-- source revision検証: PASS
-- startup smoke: 3/3 PASS、Lv2 warning 0、InputReady到達
-- save219ロード / N10 macro smoke: PASS、応答性確認済み
+- source revision検証: PASS（ProductVersion suffixが上記source commitのfull SHAと一致）
+- startup smoke: 3/3 PASS、`Init:End`到達、Lv2 warning 0
+- fresh working copyでのsave219ロード / N10 macro smoke: PASS、`Responding=True`
+- LazyERB設定UIを正式採用。`setting.json`をゲーム推奨値、`setting_user.json`をプレイヤー上書きとして分離し、未知property保持、安全なERBサブフォルダ選択、次回起動時反映に対応
+- LazyERB設定UIの性能改善量は測定していません
 - M3AはSET左辺をexact-size `Word[]` snapshotで保持し、初回SET parse時だけ一時`WordCollection`へ戻します。Word参照・順序・parse順は維持します。
 - M4Aは定数添字の長寿命`FixedVariableTerm`がexact-size transporterを共有します。不足添字は論理0、書込み時だけcopy-on-writeし、通常pool/Reset経路は従来どおりです。
 - SAVE-01 / SAVE-02で整数配列binary serializerの0連続探索を高速化しました。セーブ形式と出力byte列は従来どおりです。
