@@ -2,19 +2,19 @@
 
 - 更新日: 2026-09-24
 - 基礎: BugFix_Test `7b7dd3bf240eff4fdfc7094f4175de0e014532b7`
-- EXE生成元source commit: `946032e74de19f5ff857430ae8c2c406183f74f7`
+- EXE生成元source commit: `5984742aeece293a2136540a093632e979872d65`
 - 対象OS: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
 - `Emuera.exe` サイズ: 24,696,554バイト（約23.55 MiB）
-- `Emuera.exe` SHA-256: `C03E45AB5FD720441010EF4236D1C5AB7446387700A4BA310FF8EB5358967344`
-- `Emuera.exe` ProductVersion: `0.2.6.0+946032e74de19f5ff857430ae8c2c406183f74f7`（suffixはEXEを生成したsource commit）
+- `Emuera.exe` SHA-256: `81D20180E0798E871ED1D477DA790DB885918F4930A1E5BB3EB206A448A3BB10`
+- `Emuera.exe` ProductVersion: `0.2.6.0+5984742aeece293a2136540a093632e979872d65`（suffixはEXEを生成したsource commit）
 - `Emuera.exe` FileVersion: `0.2.6.0`
 - publish条件: Release / win-x64 / framework-dependent / self-contained false / PublishSingleFile=true
 - publish時の計測: `PERFORMANCE_METRICS`無効
 - source revision検証: PASS（ProductVersion suffixが上記source commitのfull SHAと一致）
 - startup smoke: 3/3 PASS、`Init:End`到達、Lv2 warning 0
-- fresh working copyでのsave219ロード / N10 macro smoke: PASS、`Responding=True`
+- 設定画面の「表示」タブからWinForms UIのダークモードをON/OFFできます。既定値ONで従来互換、ONは`SystemColorMode.Dark`、OFFは`SystemColorMode.Classic`です。変更は再起動後に反映され、ゲーム本文の文字色・背景色等とは独立しています。
 - LazyERB設定UIを正式採用。`setting.json`をゲーム推奨値、`setting_user.json`をプレイヤー上書きとして分離し、未知property保持、安全なERBサブフォルダ選択、次回起動時反映に対応
 - LazyERB設定UIの性能改善量は測定していません
 - M3AはSET左辺をexact-size `Word[]` snapshotで保持し、初回SET parse時だけ一時`WordCollection`へ戻します。Word参照・順序・parse順は維持します。
