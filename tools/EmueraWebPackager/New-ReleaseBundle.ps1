@@ -39,7 +39,12 @@ foreach ($requiredLicense in @('licenses/DOTNET-LICENSE.txt', 'licenses/DOTNET-T
 }
 if (!(Test-Path -LiteralPath (Join-Path $runtimeSource 'fonts/DotGothic16-OFL.txt') -PathType Leaf)) { throw 'runtime-templateにDotGothic16 OFL noticeがありません。' }
 
-$templateFiles = @(Get-ChildItem -LiteralPath $runtimeSource -File -Recurse -Force)
+# P1 query-only test assets are not part of the user's production runtime template.
+$runtimeFixtureRoots = @('p1a-fixture', 'p1a-r1-guards', 'p1a-r2-fixture', 'p1c1-fixture', 'p1c2-host-fixture')
+$templateFiles = @(Get-ChildItem -LiteralPath $runtimeSource -File -Recurse -Force | Where-Object {
+    $relative = [System.IO.Path]::GetRelativePath($runtimeSource, $_.FullName).Replace('\', '/')
+    $runtimeFixtureRoots -notcontains $relative.Split('/')[0]
+})
 foreach ($file in $templateFiles) {
     $relative = [System.IO.Path]::GetRelativePath($runtimeSource, $file.FullName).Replace('\', '/')
     if ($relative -match '(^|/)(p1b-data|reports|artifacts|browser-profiles|user-data-dir)(/|$)' -or $relative -match '\.sav$') {
