@@ -83,7 +83,9 @@ try {
 
     # 既存Packager CoreのSealTemplateを利用し、形式を二重実装しない。
     $sealProject = Join-Path $PSScriptRoot 'Tests/EmueraWebPackager.Tests.csproj'
-    & dotnet run --project $sealProject -c Release --artifacts-path $buildArtifacts --no-restore -- seal $runtimeTarget
+    $sealAssembly = Join-Path $buildArtifacts 'bin/EmueraWebPackager.Tests/release/EmueraWebPackager.Tests.dll'
+    if (!(Test-Path -LiteralPath $sealAssembly -PathType Leaf)) { throw 'Release bundle作成前にbuild.ps1 -Mode Testを実行してください。' }
+    & dotnet run --project $sealProject -c Release --artifacts-path $buildArtifacts --no-restore --no-build -- seal $runtimeTarget
     if ($LASTEXITCODE -ne 0) { throw "Packager Coreのtemplate sealに失敗しました (exit $LASTEXITCODE)" }
     $templateManifest = Join-Path $runtimeTarget '.template-manifest.json'
     if (!(Test-Path -LiteralPath $templateManifest -PathType Leaf)) { throw 'Packager Coreがtemplate manifestを生成しませんでした。' }
