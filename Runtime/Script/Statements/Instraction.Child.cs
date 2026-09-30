@@ -876,7 +876,10 @@ internal sealed partial class FunctionIdentifier
             Int64 flag = arg.Y.GetIntValue(exm);
             InputRequest req = new()
             {
-                InputType = InputType.EnterKey
+                InputType = InputType.EnterKey,
+#if WEB_RUNTIME
+                TimedInputName = "TWAIT"
+#endif
             };
             if (flag != 0)
                 req.InputType = InputType.Void;
@@ -1032,7 +1035,10 @@ internal sealed partial class FunctionIdentifier
             {
                 InputType = InputType.IntValue,
                 HasDefValue = true,
-                OneInput = isOne
+                OneInput = isOne,
+#if WEB_RUNTIME
+                TimedInputName = isOne ? "TONEINPUT" : "TINPUT"
+#endif
             };
             Int64 x = tinputarg.Time.GetIntValue(exm);
             Int64 y = tinputarg.Def.GetIntValue(exm);
@@ -1070,7 +1076,10 @@ internal sealed partial class FunctionIdentifier
             {
                 InputType = InputType.StrValue,
                 HasDefValue = true,
-                OneInput = isOne
+                OneInput = isOne,
+#if WEB_RUNTIME
+                TimedInputName = isOne ? "TONEINPUTS" : "TINPUTS"
+#endif
             };
             Int64 x = tinputarg.Time.GetIntValue(exm);
             string strs = tinputarg.Def.GetStrValue(exm);
@@ -1131,7 +1140,11 @@ internal sealed partial class FunctionIdentifier
             {
                 SpCallFArgment spCallformArg = (SpCallFArgment)func.Argument;
                 labelName = spCallformArg.FuncnameTerm.GetStrValue(exm);
+#if WEB_RUNTIME // R7 direct-call metadata
+                mToken = GlobalStatic.IdentifierDictionary.GetFunctionMethod(GlobalStatic.LabelDictionary, labelName, spCallformArg.RowArgs, true, reusableCallsite: false);
+#else // WEB_RUNTIME
                 mToken = GlobalStatic.IdentifierDictionary.GetFunctionMethod(GlobalStatic.LabelDictionary, labelName, spCallformArg.RowArgs, true);
+#endif // WEB_RUNTIME
             }
             else
             {

@@ -19,6 +19,8 @@ internal static class VariableParser
     public static SingleTerm ZeroTerm { get; private set; }
     public static VariableTerm TARGET { get; private set; }
 
+    public static void ReleaseBootstrapReferences() => TARGET = null;
+
     ///// <summary>
     ///// まだ最初の識別子を読んでいない状態から決め打ちで変数を解読する
     ///// </summary>

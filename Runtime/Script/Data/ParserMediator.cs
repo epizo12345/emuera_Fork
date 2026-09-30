@@ -7,6 +7,10 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
+using System.Text;
+using System.Linq;
 
 namespace MinorShift.Emuera;
 
@@ -14,6 +18,7 @@ namespace MinorShift.Emuera;
 //本当は引数として渡すべきなのかもしれないが全てのParserの引数を書きなおすのが面倒なのでstatic
 internal static partial class ParserMediator
 {
+    internal sealed record BootstrapWarningSummary(int Count, int KindCount, string IdentitySha256, string KindCounts, string Examples);
     static ParserMediator()
     {
         RenameDic = [];
@@ -25,11 +30,11 @@ internal static partial class ParserMediator
     /// </summary>
     /// <param name="str"></param>
     /// <param name="?"></param>
-    public static void ConfigWarn(string str, ScriptPosition? pos, int level, string stack)
+    public static void ConfigWarn(string str, ScriptPosition? pos, int level, string stack, [CallerMemberName] string source = "")
     {
         if (level < Config.DisplayWarningLevel && !Program.AnalysisMode)
             return;
-        warningList.Enqueue(new ParserWarning(str, pos, level, stack));
+        Enqueue(new ParserWarning(str, pos, level, stack, source));
     }
 
     static EmueraConsole console;
@@ -81,16 +86,16 @@ internal static partial class ParserMediator
 
     public static void Warn(string str, ScriptPosition? pos, int level)
     {
-        Warn(str, pos, level, null);
+        Warn(str, pos, level, null, "Warn");
     }
 
-    public static void Warn(string str, ScriptPosition? pos, int level, string stack)
+    public static void Warn(string str, ScriptPosition? pos, int level, string stack, [CallerMemberName] string source = "")
     {
         if (level < Config.DisplayWarningLevel && !Program.AnalysisMode)
             return;
         if (console != null && !console.RunERBFromMemory)
         {
-            warningList.Enqueue(new ParserWarning(str, pos, level, stack));
+            Enqueue(new ParserWarning(str, pos, level, stack, source));
         }
     }
 
@@ -102,10 +107,10 @@ internal static partial class ParserMediator
     /// <param name="level">警告レベル.0:軽微なミス.1:無視できる行.2:行が実行されなければ無害.3:致命的</param>
     public static void Warn(string str, LogicalLine line, int level, bool isError, bool isBackComp)
     {
-        Warn(str, line, level, isError, isBackComp, null);
+        Warn(str, line, level, isError, isBackComp, null, "WarnLine");
     }
 
-    public static void Warn(string str, LogicalLine line, int level, bool isError, bool isBackComp, string stack)
+    public static void Warn(string str, LogicalLine line, int level, bool isError, bool isBackComp, string stack, [CallerMemberName] string source = "")
     {
         if (isError)
         {
@@ -117,7 +122,7 @@ internal static partial class ParserMediator
         if (isBackComp && !Config.WarnBackCompatibility)
             return;
         if (console != null && !console.RunERBFromMemory)
-            warningList.Enqueue(new ParserWarning(str, line.Position, level, stack));
+            Enqueue(new ParserWarning(str, line.Position, level, stack, source));
         //				console.PrintWarning(str, line.Position, level);
     }
 
@@ -126,6 +131,45 @@ internal static partial class ParserMediator
     // 解析後に画面側の1か所から順に取り出せる。警告を隠すための変更ではない。
     // 参照: プロジェクト資料/06_コード案内.md
     private static readonly ConcurrentQueue<ParserWarning> warningList = [];
+    private static readonly ConcurrentQueue<ParserWarning> bootstrapWarningList = [];
+    private static bool captureBootstrapWarnings;
+
+    static void Enqueue(ParserWarning warning)
+    {
+        warningList.Enqueue(warning);
+        if (captureBootstrapWarnings)
+            bootstrapWarningList.Enqueue(warning);
+    }
+
+    internal static void BeginBootstrapDiagnostics()
+    {
+        captureBootstrapWarnings = true;
+        while (bootstrapWarningList.TryDequeue(out _)) { }
+    }
+
+    internal static BootstrapWarningSummary GetBootstrapWarningSummary()
+    {
+        static string Escape(string value) => value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\r", "\\r", StringComparison.Ordinal).Replace("\n", "\\n", StringComparison.Ordinal).Replace("\t", "\\t", StringComparison.Ordinal);
+        static string Relative(ScriptPosition? position)
+        {
+            string path = position?.Filename ?? string.Empty;
+            if (Path.IsPathRooted(path) && !string.IsNullOrEmpty(Program.ExeDir))
+                path = Path.GetRelativePath(Program.ExeDir, path);
+            return path.Replace('\\', '/');
+        }
+
+        string[] rows = bootstrapWarningList.Select(warning =>
+                $"{warning.Source}\t{warning.WarningLevel}\t{Relative(warning.WarningPos)}\t{warning.WarningPos?.LineNo ?? 0}\t{Escape(warning.WarningMes)}")
+            .OrderBy(value => value, StringComparer.Ordinal)
+            .ToArray();
+        string[] kinds = bootstrapWarningList.GroupBy(warning => $"{warning.Source}:L{warning.WarningLevel}", StringComparer.Ordinal)
+            .Select(group => $"{group.Key}={group.Count()}")
+            .OrderBy(value => value, StringComparer.Ordinal)
+            .ToArray();
+        return new(rows.Length, kinds.Length, Hash(rows), string.Join('|', kinds), string.Join("\n", rows.Take(5)));
+    }
+
+    static string Hash(IEnumerable<string> rows) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join('\n', rows))));
 
     public static bool HasWarning { get { return !warningList.IsEmpty; } }
     public static void FlushWarningList()
@@ -146,17 +190,19 @@ internal static partial class ParserMediator
 
     private sealed class ParserWarning
     {
-        public ParserWarning(string mes, ScriptPosition? pos, int level, string stackTrace)
+        public ParserWarning(string mes, ScriptPosition? pos, int level, string stackTrace, string source)
         {
             WarningMes = mes;
             WarningPos = pos;
             WarningLevel = level;
             StackTrace = stackTrace;
+            Source = source;
         }
         public string WarningMes;
         public ScriptPosition? WarningPos;
         public int WarningLevel;
         public string StackTrace;
+        public string Source;
     }
 
     [GeneratedRegex(@"(?<!\\),")]

@@ -5,6 +5,7 @@ using SkiaSharp;
 using SkiaSharp.Views.Desktop;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Drawing;
 using System.Drawing.Imaging;
 using MinorShift.Emuera.UI.Framework;
@@ -276,6 +277,9 @@ internal sealed class SpriteAnime : ASprite
         }
     }
     List<AnimeFrame> FrameList;
+    internal int FrameCount => FrameList.Count;
+    internal IEnumerable<(string ParentName, Rectangle SourceRectangle, Point Offset, int Delay)> BootstrapFrames =>
+        FrameList.Select(frame => ((frame.BaseImage as ConstImage)?.Name ?? string.Empty, frame.SrcRectangle, frame.Offset, frame.DelayTimeMs));
     public long totaltime;
     bool disposed;
 

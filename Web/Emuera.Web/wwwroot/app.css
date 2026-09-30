@@ -1,0 +1,83 @@
+:root { color-scheme: dark; font-family: system-ui, sans-serif; background: #111; color: #eee; }
+body { margin: 0; }
+main { max-width: 60rem; margin: 0 auto; padding: 1.5rem; }
+pre { min-height: 20rem; padding: 1rem; overflow: auto; white-space: pre-wrap; background: #050505; border: 1px solid #444; }
+form { display: flex; gap: .75rem; align-items: end; }
+label { display: grid; gap: .25rem; }
+input, button { font: inherit; padding: .6rem; }
+input { flex: 1; min-width: 12rem; }
+.error { white-space: pre-wrap; color: #ff9a9a; }
+#game-screen { position: relative; min-height: 30rem; padding: 1rem; overflow: auto; background: #050505; border: 1px solid #444; }
+#game-screen.game-windowed { height: clamp(24rem, 70vh, 45rem); min-height: 24rem; overflow: auto; }
+.game-surface { position: relative; min-width: 0; font-family: "ＭＳ ゴシック", "MS Gothic", monospace; font-size: 18px; line-height: 1; }
+.game-island-layer { position: absolute; inset: 1px; z-index: 20; overflow: hidden; pointer-events: none; }
+.game-island-layer .game-line { height: 0; min-height: 0; }
+.game-island-layer .game-html-group, .game-island-layer .game-button { pointer-events: auto; }
+.game-window-spacer { width: 1px; pointer-events: none; }
+.game-line { height: var(--game-line-height, 18px); min-height: var(--game-line-height, 18px); white-space: pre-wrap; }
+.game-log-lines { box-sizing: border-box; width: 100%; overflow: clip; flex-shrink: 0; }
+.game-log-lines > .game-line { pointer-events: none; }
+.game-log-lines > .game-line > * { isolation: isolate; pointer-events: auto; }
+.game-part { color: var(--normal-color, inherit); }
+.game-html-origin { position: relative; display: inline-block; width: max-content; height: 0; vertical-align: top; }
+.game-line > .game-html-origin.game-positioned-origin { width: 0; }
+.game-positioned-origin > .game-html-group { position: absolute !important; }
+.game-html-group { display: inline-block; box-sizing: border-box; }
+#game-screen .game-html-group { pointer-events: none; }
+#game-screen .game-html-group .game-button { pointer-events: auto; }
+#game-screen .game-html-group > span.game-part:not(.game-html-group, .game-nonbutton) { pointer-events: auto; }
+.game-html-origin > .game-html-group { width: max-content; max-width: none; height: auto; white-space: pre; }
+.game-line:has(> .game-html-origin ~ .game-html-origin) { position: relative; }
+.game-line:has(> .game-button > .game-positioned-origin) { position: relative; }
+.game-line > .game-html-origin ~ .game-html-origin { position: absolute; left: 0; top: 0; width: 0; }
+.game-html-row > .game-html-origin ~ .game-html-origin,
+.game-button > .game-html-origin ~ .game-html-origin,
+.game-nonbutton > .game-html-origin ~ .game-html-origin { position: absolute; left: 0; top: 0; width: 0; }
+.game-html-group > .game-html-origin ~ .game-html-origin { position: absolute; left: var(--group-padding, 0px); top: var(--group-padding, 0px); width: 0; }
+.game-html-row { display: block; position: relative; min-height: 18px; line-height: 18px; }
+.game-line > .game-button:has(> .game-positioned-origin),
+.game-html-group > .game-button:has(> .game-html-origin) { position: absolute; left: 0; top: 0; width: 0; height: 0; background-color: transparent !important; pointer-events: none; }
+#game-screen .game-line > .game-button:has(> .game-positioned-origin) > .game-html-origin > .game-html-group { pointer-events: auto; }
+.game-html-group > .game-button:has(> .game-html-origin) ~ .game-button:has(> .game-html-origin) > .game-html-origin > .game-html-group { pointer-events: auto; }
+.align-center { text-align: center; }
+.align-right { text-align: right; }
+.game-button { margin: 0; padding: 0; border: 0; background: transparent; line-height: inherit; cursor: pointer; white-space: pre-wrap; text-align: inherit; }
+.game-button[data-current-input="true"]:hover, .game-button[data-current-input="true"]:focus, .game-button[data-current-input="true"]:hover .game-part, .game-button[data-current-input="true"]:focus .game-part { color: var(--button-color, #fff); }
+.game-image { display: inline-block; max-width: 100%; object-fit: fill; vertical-align: top; }
+.game-tooltip { position: fixed; z-index: 1000; max-width: min(32rem, calc(100vw - 1rem)); max-height: calc(100vh - 1rem); overflow: hidden; padding: .2rem .35rem; border: 1px solid #777; color: var(--tooltip-foreground); background: var(--tooltip-background); white-space: pre-line; pointer-events: none; box-shadow: 0 2px 6px #0008; }
+.game-shape { display: inline-block; position: relative; vertical-align: top; overflow: visible; }
+.game-shape::before { content: ""; position: absolute; left: var(--shape-x); top: var(--shape-y); width: var(--shape-width); height: var(--shape-height); background: var(--shape-color); }
+.game-button[data-current-input="true"]:hover .game-shape::before, .game-button[data-current-input="true"]:focus .game-shape::before { background: var(--shape-focus-color); }
+.production-shell { box-sizing: border-box; width: min(100vw, 1524px); max-width: none; height: max(882px, 100dvh); margin: 0 auto; padding: 0 6px; display: flex; flex-direction: column; align-items: center; gap: 0; }
+.production-shell .app-heading, .production-shell #p1c2-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.host-toolbar, .runtime-continue { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+.production-shell .host-toolbar { box-sizing: border-box; width: 100%; height: 32px; min-height: 32px; padding: 2px 6px; font-size: 12px; flex-wrap: nowrap; }
+.production-shell .host-toolbar button { padding: 2px 6px; }
+.host-title { font-weight: 700; margin-right: auto; }
+.save-manager { position: relative; }
+.save-manager > summary { cursor: pointer; }
+.save-manager-panel { position: absolute; top: 100%; right: 0; z-index: 30; box-sizing: border-box; width: min(28rem, calc(100vw - 1rem)); max-height: min(70vh, 36rem); overflow: auto; padding: .5rem; border: 1px solid #444; background: #171717; }
+.save-manager-panel input { box-sizing: border-box; max-width: 100%; min-width: 0; }
+.save-manager label { margin-top: .35rem; }
+.save-manager ul { max-height: 8rem; overflow: auto; margin: .35rem 0 0; padding-left: 1.25rem; }
+.production-shell .game-frame { box-sizing: border-box; display: flex; flex-direction: column; flex: 1 0 850px; width: 100%; background: #050505; }
+.production-shell .game-surface { flex: 1 0 824px; min-height: 0; width: 100%; }
+.production-shell #game-screen, .production-shell #game-screen.game-windowed { box-sizing: border-box; width: 100%; height: 100%; min-height: 824px; padding: 0; border: 0; overflow: auto; scrollbar-width: none; }
+.production-shell #game-screen { display: flex; flex-direction: column; }
+.production-shell #game-screen > :first-child { margin-top: auto; }
+.production-shell #game-screen > .game-line, .production-shell #game-screen > .game-window-spacer { flex-shrink: 0; }
+.production-shell #game-screen:focus { outline: none; }
+.production-shell #game-screen:focus-visible { outline: 1px solid #666; outline-offset: 2px; }
+.production-shell .game-island-layer { inset: 0; }
+.production-shell .game-input-slot { box-sizing: border-box; flex: 0 0 18px; width: 100%; margin-top: 8px; overflow: hidden; }
+.production-shell .game-input-form { display: flex; align-items: center; box-sizing: border-box; width: 100%; height: 18px; gap: 0; margin: 0; }
+.production-shell .game-input-label { flex: 0 0 auto; font: 12px/18px "ＭＳ ゴシック", "MS Gothic", monospace; padding: 0 4px; }
+.production-shell #runtime-input { box-sizing: border-box; flex: 1 1 auto; min-width: 0; height: 18px; padding: 0 3px; border: 0; border-radius: 0; outline-offset: -1px; background: #111; color: #eee; font: 14px/18px "ＭＳ ゴシック", "MS Gothic", monospace; }
+.production-shell .game-input-form button { box-sizing: border-box; flex: 0 0 26px; height: 18px; padding: 0; border: 0; line-height: 18px; }
+.production-shell #timed-input-remaining { flex: 0 0 auto; padding: 0 3px; font: 12px/18px "ＭＳ ゴシック", "MS Gothic", monospace; }
+.production-shell:has(#p1c2-status[data-stage="title-input-ready"]) #game-screen:has(.game-button[data-input="9"]) .game-button[data-input="999"] { transform: translateX(20px); }
+@media (max-width: 1511px) {
+  .production-shell { width: 1524px; margin: 0; }
+  .production-shell .host-toolbar, .production-shell .game-frame, .production-shell .game-surface,
+  .production-shell #game-screen, .production-shell #game-screen.game-windowed, .production-shell .game-input-slot { width: 1512px; }
+}

@@ -1,0 +1,2672 @@
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@using System.Text
+@using System.Text.Json
+@using MinorShift.Emuera.Runtime.Script
+@implements IAsyncDisposable
+
+<PageTitle>Emuera WEB</PageTitle>
+
+<main class="@(isP1C3 ? "production-shell" : string.Empty)">
+    <h1 class="app-heading">@(isP1C3 ? "ShinEraTenseiP" : isP1C2 ? "Emuera WEB-P1C2" : isP1C1 ? "Emuera WEB-P1C1" : isP1B ? "Emuera WEB-P1B" : "Emuera WEB-P1A")</h1>
+        @if (isP1C2)
+    {
+        <p id="p1c2-status" data-stage="@diagnosticStage" data-data-ready="@dataReady.ToString().ToLowerInvariant()" data-title-ready="@p1c2Ready.ToString().ToLowerInvariant()" data-status="@(session?.Status.ToString().ToLowerInvariant() ?? "starting")" data-persistence="@persistenceState" data-pending-persistence-count="@(session?.PendingPersistenceCount ?? 0)" data-load-source="@loadSource" data-revision="@revision" data-pending-kind="@(session?.PendingInput?.Kind.ToString().ToLowerInvariant() ?? "none")" data-request-id="@(session?.PendingInput?.RequestId.ToString() ?? string.Empty)" data-time-limit="@(session?.PendingInput?.TimeLimit ?? -1)" data-timed-input-name="@(session?.PendingInput?.TimedInputName ?? string.Empty)" data-session-generation="@(session?.SessionGeneration ?? 0)" data-display-generation="@(session?.DisplayGeneration ?? 0)" data-twait-timer-state="@twaitTimerState" data-twait-scheduled-request-id="@(scheduledTwaitRequestId?.ToString() ?? string.Empty)" data-twait-scheduled-session-generation="@scheduledTwaitSessionGeneration" data-twait-schedule-count="@twaitScheduleCount" data-twait-callback-count="@twaitCallbackCount" data-primitive-timer-schedule-count="@primitiveTimerScheduleCount" data-primitive-timer-callback-count="@primitiveTimerCallbackCount" data-run-root="@p1c1Root" data-display-lines="@(session?.DisplayLines.Count ?? 0)" data-display-images="@DisplayDiagnosticCount(BrowserDisplayPartKind.Image)" data-display-buttons="@DisplayDiagnosticCount(BrowserDisplayPartKind.Button)" data-diagnostic-continuation="@diagnosticContinuation.ToString().ToLowerInvariant()" data-diagnostic-warning-limit="@BrowserInfiniteLoopContinuation.WarningLimit" data-diagnostic-elapsed-limit-ms="@BrowserInfiniteLoopContinuation.ElapsedLimitMilliseconds" data-diagnostic-warning-count="@(session?.InfiniteLoopContinuation?.WarningCount ?? 0)" data-diagnostic-elapsed-ms="@(session?.InfiniteLoopContinuation?.ElapsedMilliseconds ?? 0)" data-diagnostic-erb-position="@(session?.InfiniteLoopContinuation?.Events.LastOrDefault()?.ErbPosition ?? string.Empty)" data-long-running-mode="@(diagnosticContinuation ? "diagnostic" : "interactive")" data-long-running-event-count="@(session?.LongRunningPrompt?.Events.Count ?? 0)" data-long-running-reason="@(session?.LongRunningPrompt?.Events.LastOrDefault()?.Reason ?? string.Empty)" data-message-skip-active="@(session?.MessageSkip.Active.ToString().ToLowerInvariant() ?? "false")" data-message-skip-operation="@(session?.MessageSkip.OperationId ?? 0)" data-message-skip-continuations="@(session?.MessageSkip.Continuations ?? 0)" data-message-skip-reason="@(session?.MessageSkip.StopReason ?? string.Empty)" data-macro-active="@macroActive.ToString().ToLowerInvariant()" data-macro-pending-count="@(macroQueue?.Count ?? 0)" data-macro-total-token-count="@macroTotalTokenCount" data-macro-consumed-token-count="@macroConsumedTokenCount" data-doscript-count="@(session?.DoScriptCallCount ?? 0)" data-doscript-ms="@(session?.DoScriptElapsedMilliseconds ?? 0)" data-managed-memory-bytes="@(perfGate01b ? session?.CurrentManagedMemoryBytes ?? 0 : (long?)null)" data-output-length="@(session?.OutputLength ?? 0)" data-island-lines="@(session?.IslandLineCount ?? 0)" data-gc-collections="@(perfGate01b ? string.Join(",", Enumerable.Range(0, GC.MaxGeneration + 1).Select(GC.CollectionCount)) : null)" data-display-projection-count="@(session?.DisplayProjectionCount ?? 0)" data-erb-position="@(session?.CurrentErbPosition ?? string.Empty)" data-save-import-selected-count="@saveImportSelectedCount" data-save-import-bytes-read="@saveImportBytesRead">@progress</p>
+        <pre id="save-import-trace" hidden>@JsonSerializer.Serialize(saveImportTrace)</pre>
+        <p id="package-cache-metrics" hidden data-state="@packageCacheState" data-hits="@packageCacheHits" data-misses="@packageCacheMisses" data-recovered-packs="@packageCacheRecoveredPacks" data-cleaned-packs="@packageCacheCleanedPacks" data-persisted="@packageCachePersistent.ToString().ToLowerInvariant()" data-usage="@packageCacheUsage" data-quota="@packageCacheQuota" data-network-bytes="@transferBytes" data-download-ms="@downloadMilliseconds" data-extract-ms="@extractMilliseconds" data-extracted-bytes="@extractedBytes" data-package-lookups="@packageLookups"></p>
+        @if (warmStartupProfile)
+        {
+            <pre id="warm-startup-metrics" hidden>@JsonSerializer.Serialize(new { phases = startupPhases, durations = startupDurations, runtime = session is null ? null : new { configMs = session.ConfigLoadMilliseconds, preloadMs = session.PreloadMilliseconds, processInitializeMs = session.ProcessInitializeMilliseconds, bootstrapMs = session.BootstrapElapsedMilliseconds, titleDoScriptMs = session.DoScriptElapsedMilliseconds }, processInitialize = session?.ProcessInitializeProfile })</pre>
+        }
+        @if (error is not null)
+        {
+            <p class="error" role="alert" data-p1c2-error>@error</p>
+            @if (runtimeFailureDiagnostic is not null)
+            {
+                <details id="runtime-failure-diagnostic">
+                    <summary>実行診断情報</summary>
+                    <pre>@JsonSerializer.Serialize(runtimeFailureDiagnostic)</pre>
+                </details>
+            }
+        }
+        @if (isP1C3 && !isP1C3Integration && !isP1C4Small)
+        {
+            <section id="host-toolbar" class="host-toolbar" aria-label="ゲーム操作">
+                <span class="host-title">ShinEraTenseiP</span>
+                <button id="return-title" type="button" disabled="@(importInProgress || (session is null && !saveManagerMode))" @onclick="ReturnToTitle">タイトルに戻る</button>
+                <details id="p1c3-save-manager" class="save-manager">
+                    <summary>セーブ管理</summary>
+                    <div class="save-manager-panel">
+                    <button id="close-save-panel" type="button" @onclick="CloseSavePanel">閉じる</button>
+                    @if (!saveManagerMode && !saveImportReadProbe)
+                    {
+                        <p>管理画面への移動・取り込みでは、未保存の進行が失われます。確認後、タイトルから再開します。</p>
+                        <button id="open-save-manager" type="button" disabled="@importInProgress" @onclick="OpenSaveManager">セーブ管理画面を開く</button>
+                        <label for="p1c3-active-import">実行中のセーブを取り込む</label>
+                        <input id="p1c3-active-import" type="file" multiple disabled="@importInProgress" accept=".sav,application/octet-stream" @onchange="StageActiveImport" />
+                    }
+                    else
+                    {
+                    <label for="p1c3-import">セーブを取り込む</label>
+                    <InputFile id="p1c3-import" multiple disabled="@importInProgress" accept=".sav,application/octet-stream" OnChange="ImportP1C3Files" />
+                    }
+                    @if (importInProgress)
+                    {
+                        <p id="p1c2-import-busy" aria-live="polite">GLOBALと通常savを検証して保存中です…</p>
+                    }
+                    @if (!string.IsNullOrEmpty(saveManagementMessage))
+                    {
+                        <p id="save-management-result" aria-live="polite">@saveManagementMessage</p>
+                    }
+                    <ul id="p1c3-files" data-file-count="@persistedFiles.Count">
+                        @foreach (StorePreparedFile file in persistedFiles.Where(file => !file.Deleted))
+                        {
+                            <li data-save-name="@file.LogicalFilename" data-save-revision="@file.Revision" data-save-size="@(file.Bytes?.Length ?? 0)">
+                                @file.LogicalFilename (@(file.Bytes?.Length ?? 0) bytes)
+                                <button type="button" @onclick="() => ExportSave(file.LogicalFilename)">書き出し</button>
+                            </li>
+                        }
+                    </ul>
+                    </div>
+                </details>
+            </section>
+        }
+        else if (importMode && importFormReady && session is null && error is null && !importInProgress)
+        {
+            <label for="p1c2-import">global.savを選択</label>
+            <InputFile id="p1c2-import" accept=".sav,application/octet-stream" OnChange="ImportP1C2Global" />
+        }
+        else if (importInProgress)
+        {
+            <p id="p1c2-import-busy" aria-live="polite">global.savを検証して保存中です…</p>
+        }
+        @if (isP1C3 && (isP1C3Integration || isP1C4Small))
+        {
+            <ul id="p1c3-files" data-file-count="@persistedFiles.Count">
+                @foreach (StorePreparedFile file in persistedFiles.Where(file => !file.Deleted))
+                {
+                    <li data-save-name="@file.LogicalFilename" data-save-revision="@file.Revision" data-save-size="@(file.Bytes?.Length ?? 0)">
+                        @file.LogicalFilename (@(file.Bytes?.Length ?? 0) bytes)
+                        <button type="button" @onclick="() => ExportSave(file.LogicalFilename)">export</button>
+                    </li>
+                }
+            </ul>
+        }
+        @if (stateDiagnostic is not null)
+        {
+            <pre id="p1c4-state-diagnostic" data-read-only="true" data-doscript-count="@(session?.DoScriptCallCount ?? -1)" data-pending-persistence="@(session?.PendingPersistenceCount ?? -1)">@JsonSerializer.Serialize(stateDiagnostic)</pre>
+        }
+        @if (session?.PersistenceAckTimeline.Count > 0)
+        {
+            <pre id="persistence-ack-timeline" hidden>@JsonSerializer.Serialize(session.PersistenceAckTimeline)</pre>
+        }
+        @if (isP1C3Integration)
+        {
+            <p id="p1c3-r1-state" data-stage="@diagnosticStage" data-action="@integrationAction" data-count="@integrationCount" data-status="@(session?.Status.ToString().ToLowerInvariant() ?? "starting")" data-file-count="@persistedFiles.Count(file => !file.Deleted)" data-runtime-file-count="@IntegrationRuntimeFileCount()"></p>
+            <pre id="p1c3-r1-files">@JsonSerializer.Serialize(IntegrationPersistedSnapshot())</pre>
+            <pre id="p1c3-r1-runtime-files">@JsonSerializer.Serialize(IntegrationRuntimeSnapshot())</pre>
+            <pre id="runtime-output">@session?.Output</pre>
+        }
+        else if (isP1C5 && isP1C4Real && session is not null)
+        {
+            string tail = session.OutputTail(262144);
+            <pre id="p1c5-output-tail" data-output-start="@(session.OutputLength - tail.Length)" data-output-end="@session.OutputLength">@tail</pre>
+            <pre id="p1c5-persistence-diagnostics" hidden>@JsonSerializer.Serialize(session.PersistenceDiagnostics)</pre>
+        }
+        @if (perfGate01b && session is not null)
+        {
+            <pre id="perf-gate-01b-display-metrics" hidden>@JsonSerializer.Serialize(session.DisplayPerformance)</pre>
+            <pre id="ux16r3-render-metrics" hidden>@JsonSerializer.Serialize(new { animationRenderRequests, hiddenCountCalls, hiddenCountElapsedTicks })</pre>
+        }
+        else if (isP1C4Small || (isP1C4Real && diagnosticOutput))
+        {
+            <pre id="runtime-output">@session?.Output</pre>
+        }
+        <div class="game-frame">
+        <div class="game-surface">
+        <div id="game-screen" class="@(IsDisplayWindowMode ? "game-windowed" : string.Empty)" style="background-color:@(session?.BackgroundColor ?? "#000000")" tabindex="0" data-one-input="@(session?.PendingInput is { Kind: BrowserInputKind.String or BrowserInputKind.Integer, OneInput: true } ? "true" : "false")" data-tooltip-delay="@(session?.TooltipDelayMilliseconds ?? 500)" data-tooltip-duration="@(session?.TooltipDurationMilliseconds ?? 0)" data-tooltip-foreground="@(session?.TooltipForeground ?? "#000000")" data-tooltip-background="@(session?.TooltipBackground ?? "#FFFFFF")" @onkeydown="SubmitPrimitiveKey" @onkeydown:preventDefault="@(session?.PendingInput is { Kind: BrowserInputKind.Enter or BrowserInputKind.AnyKey })" @onkeyup="KeyReleaseHandler" @onblur="ResetPrimitiveKeys" @onmousedown="SubmitPrimitivePointer" @onclick="SubmitGameAreaClick" @oncontextmenu:preventDefault>
+        @if (session is not null)
+        {
+#if ERB_EXECUTION_PROFILE
+            TraceGameplayStage("razor-begin");
+#endif
+            <div class="game-log-lines" style="--game-line-height:@(session.DisplayLineHeight)px;padding-left:@(session.DrawingPositionShift)px;">
+            @if (IsDisplayWindowMode)
+            {
+                BrowserDisplayWindowSlice slice = displayWindow.Calculate(session.RetainedDisplayLines, session.RetainedDisplayLines.Count - session.IslandLineCount, session.DisplayStructureGeneration);
+                animationFirstLine = slice.Start;
+                animationEndLine = slice.End;
+                <div class="game-window-spacer" aria-hidden="true" style="@SpacerStyle(slice.TopSpacerPx)"></div>
+                @for (int lineIndex = slice.Start; lineIndex < slice.End; lineIndex++)
+                {
+                    BrowserDisplayLine line = session.DisplayLines[lineIndex];
+                    <div @key="line.LineId" class="game-line align-@line.Alignment" data-line-id="@line.LineId">
+                        @foreach (BrowserDisplayPart part in line.Parts)
+                        {
+                            <BrowserPartView Part="part" OnMouseDown="SubmitDisplay" />
+                        }
+                    </div>
+                }
+                <div class="game-window-spacer" aria-hidden="true" style="@SpacerStyle(slice.BottomSpacerPx)"></div>
+            }
+            else
+            {
+                @foreach (BrowserDisplayLine line in session.DisplayLines.Take(session.DisplayLines.Count - session.IslandLineCount))
+                {
+                    <div class="game-line align-@line.Alignment">
+                        @foreach (BrowserDisplayPart part in line.Parts)
+                        {
+                            <BrowserPartView Part="part" OnMouseDown="SubmitDisplay" />
+                        }
+                    </div>
+                }
+            }
+            </div>
+#if ERB_EXECUTION_PROFILE
+            TraceGameplayStage("razor-end");
+#endif
+        }
+        </div>
+        @if (session is { IslandLineCount: > 0 })
+        {
+            <div id="game-island-layer" class="game-island-layer" @onmousedown="SubmitPrimitivePointer" @onclick="SubmitIslandAreaClick" @oncontextmenu:preventDefault>
+                @for (int lineIndex = session.DisplayLines.Count - session.IslandLineCount; lineIndex < session.DisplayLines.Count; lineIndex++)
+                {
+                    BrowserDisplayLine line = session.DisplayLines[lineIndex];
+                    <div @key="line.LineId" class="game-line align-@line.Alignment" data-line-id="@line.LineId">
+                        @foreach (BrowserDisplayPart part in line.Parts)
+                        {
+                            <BrowserPartView Part="part" OnMouseDown="SubmitDisplay" />
+                        }
+                    </div>
+                }
+            </div>
+        }
+        </div>
+        <div class="game-input-slot">
+        @if (isP1C3 && !isP1C3Integration && !isP1C4Small && session?.PendingInput is { Kind: BrowserInputKind.Integer or BrowserInputKind.String, OneInput: false } valuePrompt)
+        {
+            <form class="game-input-form" @onsubmit="SubmitP1C2Form" @onsubmit:preventDefault>
+                <label class="game-input-label" for="runtime-input">@InputLabel(valuePrompt)</label>
+                <input @key="valuePrompt.RequestId" id="runtime-input" type="text" data-request-id="@valuePrompt.RequestId" inputmode="@(valuePrompt.Kind == BrowserInputKind.Integer ? "numeric" : "text")" @bind="input" @bind:event="oninput" autocomplete="off" />
+                <button id="runtime-submit" type="submit" aria-label="入力を確定">↵</button>
+            </form>
+        }
+        </div>
+        </div>
+        @if (IsDisplayWindowMode && session is not null)
+        {
+            BrowserDisplayWindowSlice diagnosticSlice = displayWindow.Calculate(session.RetainedDisplayLines, session.RetainedDisplayLines.Count - session.IslandLineCount, session.DisplayStructureGeneration);
+            <p id="perf-gate-01c-window" hidden data-dom-window-mode="@domWindowMode" data-retained-lines="@session.DisplayLines.Count" data-rendered-lines="@(diagnosticSlice.End - diagnosticSlice.Start)" data-window-start="@diagnosticSlice.Start" data-window-end="@diagnosticSlice.End" data-top-spacer="@diagnosticSlice.TopSpacerPx" data-bottom-spacer="@diagnosticSlice.BottomSpacerPx" data-follow-tail="@diagnosticSlice.FollowTail.ToString().ToLowerInvariant()" data-measurement-cache="@displayWindow.MeasurementCount" data-scroll-count="@displayWindowScrollCount" data-measure-count="@displayWindowMeasureCount" data-recalculate-count="@displayWindowRecalculateCount" data-correction-count="@displayWindowCorrectionCount" data-correction-limit-count="@displayWindowCorrectionLimitCount"></p>
+        }
+        @if (session is not null && (!isP1C3 || isP1C3Integration || isP1C4Small))
+        {
+            @if (session.MessageSkip.Active)
+            {
+                <button id="message-skip-stop" type="button" @onclick="StopMessageSkip">送りを停止</button>
+            }
+            @if (session.PendingInput is { Kind: not BrowserInputKind.MouseKey and not BrowserInputKind.TimedVoid } prompt)
+            {
+                @if (prompt.Kind is BrowserInputKind.Enter or BrowserInputKind.AnyKey)
+                {
+                    <section id="runtime-continue" class="runtime-continue">
+                        <span>画面内を左クリックして進む（Enterキーも可）</span>
+                        <button id="runtime-submit" type="button" @onclick="SubmitP1C2Text">進む</button>
+                        @if (!prompt.StopMessageSkip)
+                        {
+                            <button id="message-skip-start" type="button" @onclick="StartMessageSkip">まとめて送る</button>
+                        }
+                    </section>
+                }
+                else
+                {
+                    <form @onsubmit="SubmitP1C2Form" @onsubmit:preventDefault>
+                        <label for="runtime-input">@InputLabel(prompt)</label>
+                        <input id="runtime-input" data-request-id="@prompt.RequestId" inputmode="@(prompt.Kind == BrowserInputKind.Integer ? "numeric" : "text")" @bind="input" @bind:event="oninput" autofocus />
+                        @if (prompt.TimeLimit > 0 && prompt.DisplayTime)
+                        {
+                            <span id="timed-input-remaining" data-request-id="@prompt.RequestId" aria-live="off">残り @((prompt.TimeLimit / 1000.0).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)) 秒</span>
+                        }
+                        <button id="runtime-submit" type="submit">入力</button>
+                        <button id="runtime-submit-skip" type="button" @onclick="SubmitP1C2TextWithSkip">入力＋スキップ</button>
+                    </form>
+                }
+            }
+            else if (session.PendingInput is { Kind: BrowserInputKind.MouseKey })
+            {
+                <p id="mousekey-wait" aria-live="polite">クリックまたはキー入力待ち</p>
+            }
+            else if (session.PendingInput is { Kind: BrowserInputKind.TimedVoid } timedVoid)
+            {
+                <p id="timed-void-wait" data-request-id="@timedVoid.RequestId" data-time-limit="@timedVoid.TimeLimit" aria-live="polite">時間待ち</p>
+            }
+        }
+    }
+    else if (isP1C1)
+    {
+        <p id="p1c1-status" data-stage="@diagnosticStage" data-stage-history="@string.Join(",", diagnosticStages)" data-ready="@p1c1Ready.ToString().ToLowerInvariant()" data-status="@(session?.Status.ToString().ToLowerInvariant() ?? "starting")" data-persistence="@persistenceState" data-pending-persistence-count="@(session?.PendingPersistenceCount ?? 0)" data-load-source="@loadSource" data-revision="@revision" data-durability="@durability" data-pending="@(session?.PendingPersistenceCount ?? 0)" data-doscript-count="@(session?.DoScriptCallCount ?? 0)" data-codec-value-sha256="@codecValueSha256" data-input-sha256="@inputSha256" data-run-root="@p1c1Root" data-schema-count="@(session?.Scripts.VariableSchemaCount ?? 0)" data-schema-sha256="@(session?.Scripts.VariableSchemaSha256 ?? "")" data-warning-count="@(session?.Scripts.WarningCount ?? -1)" data-resource-sha256="@(session?.Resources.IdentitySha256 ?? "")">@progress</p>
+        @if (error is not null)
+        {
+            <p class="error" role="alert" data-p1c1-error>@error</p>
+        }
+        @if (importMode && importFormReady && !p1c1Ready && error is null && !importInProgress)
+        {
+            <label for="p1c1-import">global.savを選択</label>
+            <InputFile id="p1c1-import" accept=".sav,application/octet-stream" OnChange="ImportGlobal" />
+        }
+        else if (importMode && importInProgress)
+        {
+            <p id="p1c1-import-busy" aria-live="polite">global.savを検証して保存中です…</p>
+        }
+        <button id="p1c1-export" disabled="@(storeModule is null || storeHandle is null || string.IsNullOrEmpty(revision))" @onclick="ExportGlobal">commit済みglobal.savをexport</button>
+        <pre id="runtime-output">@session?.Output</pre>
+    }
+    else if (error is not null)
+    {
+        <p class="error" role="alert">@error</p>
+    }
+    else if (session is null)
+    {
+        <p aria-live="polite">@progress</p>
+    }
+    else
+    {
+        @if (isP1B)
+        {
+            <p id="bootstrap-ready" data-p1b-ready="true" data-p1b-status="@session.Status.ToString().ToLowerInvariant()" data-doscript-count="@session.DoScriptCallCount">実ゲーム初期化完了（タイトル未実行）</p>
+            <pre id="bootstrap-metrics" data-http-requests="@httpRequests" data-transfer-bytes="@transferBytes" data-extracted-bytes="@extractedBytes" data-package-lookups="@packageLookups" data-download-ms="@downloadMilliseconds" data-extract-ms="@extractMilliseconds" data-package-cache-state="@packageCacheState" data-package-cache-hits="@packageCacheHits" data-package-cache-misses="@packageCacheMisses" data-package-cache-recovered-packs="@packageCacheRecoveredPacks" data-package-cache-cleaned-packs="@packageCacheCleanedPacks" data-package-cache-persisted="@packageCachePersistent.ToString().ToLowerInvariant()" data-package-cache-usage="@packageCacheUsage" data-package-cache-quota="@packageCacheQuota" data-config-ms="@session.ConfigLoadMilliseconds" data-preload-ms="@session.PreloadMilliseconds" data-process-ms="@session.ProcessInitializeMilliseconds" data-bootstrap-ms="@session.BootstrapElapsedMilliseconds" data-managed-memory-bytes="@session.ManagedMemoryBytes" data-csv-files="@session.Scripts.CsvFileCount" data-erh-files="@session.Scripts.ErhFileCount" data-erb-files="@session.Scripts.ErbFileCount" data-character-templates="@session.Scripts.CharacterTemplateCount" data-variable-tokens="@session.Scripts.VariableTokenCount" data-variable-schema-count="@session.Scripts.VariableSchemaCount" data-variable-schema-sha256="@session.Scripts.VariableSchemaSha256" data-config-sha256="@session.Scripts.ConfigurationIdentitySha256" data-warning-count="@session.Scripts.WarningCount" data-warning-kind-count="@session.Scripts.WarningKindCount" data-warning-sha256="@session.Scripts.WarningIdentitySha256" data-labels="@session.Scripts.LabelCount" data-label-sha256="@session.Scripts.LabelIdentitySha256" data-lazy-files="@session.Scripts.LazyErbFileCount" data-lazy-fallback="@session.Scripts.LazyErbFallbackFileCount" data-deferred-eager="@session.Scripts.DeferredEagerCount" data-resource-parents="@session.Resources.ParentImageCount" data-resource-sprites="@session.Resources.SpriteCount" data-resource-animations="@session.Resources.AnimationCount" data-resource-animation-frames="@session.Resources.AnimationFrameCount" data-resource-sha256="@session.Resources.IdentitySha256" data-parent-sha256="@session.Resources.ParentIdentitySha256" data-sprite-sha256="@session.Resources.SpriteIdentitySha256" data-sprite-name-sha256="@session.Resources.SpriteNameSha256" data-nonzero-offsets="@session.Resources.NonZeroOffsetCount" data-width-total="@session.Resources.WidthTotal" data-height-total="@session.Resources.HeightTotal" data-offset-x-total="@session.Resources.OffsetXTotal" data-offset-y-total="@session.Resources.OffsetYTotal" data-source-x-total="@session.Resources.SourceXTotal" data-source-y-total="@session.Resources.SourceYTotal" data-animation-source-x-total="@session.Resources.AnimationSourceXTotal" data-animation-source-y-total="@session.Resources.AnimationSourceYTotal" data-animation-offset-x-total="@session.Resources.AnimationOffsetXTotal" data-animation-offset-y-total="@session.Resources.AnimationOffsetYTotal" data-animation-delay-total="@session.Resources.AnimationDelayTotal">files=@packageFiles resources=@session.Resources.ParentImageCount sprites=@session.Resources.SpriteCount animations=@session.Resources.AnimationCount frames=@session.Resources.AnimationFrameCount</pre>
+            <pre id="bootstrap-config">@JsonSerializer.Serialize(session.EffectiveConfiguration)</pre>
+            <pre id="bootstrap-variable-schema">@session.Scripts.VariableSchemaRows</pre>
+            <pre id="bootstrap-warning-kinds">@session.Scripts.WarningKindCounts</pre>
+            <pre id="bootstrap-warning-examples">@session.Scripts.WarningExamples</pre>
+            <pre id="bootstrap-log">@session.BootstrapLog</pre>
+        }
+        <pre id="runtime-output" data-p1a-ready="true" data-p1a-status="@session.Status.ToString().ToLowerInvariant()" data-p1a-complete="@session.IsComplete.ToString().ToLowerInvariant()">@session.Output</pre>
+        @if (session.IsFailed)
+        {
+            <p class="error" role="alert" data-p1a-runtime-error>実Runtimeはエラー停止しました。出力に表示された命令名とERB位置を確認してください。</p>
+        }
+        @if (session.PendingInput is { } prompt)
+        {
+            <form @onsubmit="Submit" @onsubmit:preventDefault>
+                <label for="runtime-input">@InputLabel(prompt)</label>
+                <input id="runtime-input" data-request-id="@prompt.RequestId" inputmode="@(prompt.Kind == BrowserInputKind.Integer ? "numeric" : "text")" @bind="input" autofocus />
+                <button id="runtime-submit" type="submit">@(prompt.Kind is BrowserInputKind.Enter or BrowserInputKind.AnyKey ? "再開" : "入力")</button>
+            </form>
+        }
+    }
+</main>
+
+@code {
+    BrowserRuntimeSession? session;
+    string input = string.Empty;
+    string? error;
+    BrowserRuntimeFailureDiagnostic? runtimeFailureDiagnostic;
+    string? saveManagementMessage;
+    string progress = "実Runtimeを読み込み中です…";
+    bool isP1B;
+    bool isP1C1;
+    bool isP1C1Real;
+    bool isP1C2;
+    bool isP1C3;
+    bool isP1C3Integration;
+    bool isP1C4Small;
+    bool isP1C4Real;
+    bool isP1C4State;
+    bool isP1C5;
+    bool isP1C6;
+    readonly BrowserKeyboardInputState keyboardInput = new();
+    bool keyboardTransition;
+    bool perfGate01b;
+    long animationRenderRequests, hiddenCountCalls, hiddenCountElapsedTicks;
+    int animationFirstLine, animationEndLine;
+    long diagnosticCountGeneration = -1, diagnosticCountSession = -1;
+    int diagnosticImages, diagnosticButtons;
+    bool perfGate01c;
+    bool diagnosticOutput;
+    string domWindowMode = string.Empty;
+    bool dataReady;
+    bool p1c2Ready;
+    bool diagnosticContinuation;
+    CancellationTokenSource? primitiveTimer;
+    CancellationTokenSource? animationTimer;
+    long? scheduledTwaitRequestId;
+    long scheduledTwaitSessionGeneration;
+    long? scheduledCountdownRequestId;
+    IJSObjectReference? timedInputDisplayModule;
+    int twaitScheduleCount;
+    int twaitCallbackCount;
+    string twaitTimerState = "none";
+    string? acceptedPrimitiveModifier;
+    string p1c5PersistenceFault = string.Empty;
+    int p1c5CommitDelayMilliseconds;
+    int p1c5SkipBatchSize = 16;
+    bool p1c1Ready;
+    string persistenceState = "none";
+    string loadSource = "none";
+    string revision = string.Empty;
+    string durability = string.Empty;
+    string codecValueSha256 = string.Empty;
+    string inputSha256 = string.Empty;
+    bool importMode;
+    bool importFormReady;
+    bool importInProgress;
+    bool saveManagerMode;
+    bool saveImportReadProbe;
+    string? pendingStagedImportNonce;
+    bool stagedImportApplied;
+    int saveImportSelectedCount;
+    long saveImportBytesRead;
+    readonly List<SaveImportTracePoint> saveImportTrace = [];
+    string p1c1Root = string.Empty;
+    string diagnosticStage = "none";
+    readonly List<string> diagnosticStages = [];
+    IJSObjectReference? storeModule;
+    IJSObjectReference? packageCacheModule;
+    IJSObjectReference? displayWindowModule;
+    IJSObjectReference? tooltipModule;
+    bool tooltipAttached;
+    bool inputGuardAttached;
+    bool islandInputGuardAttached;
+    IJSInProcessObjectReference? longRunningModule;
+    DotNetObjectReference<App>? displayWindowReference;
+    readonly BrowserDisplayWindowState displayWindow = new();
+    BrowserRuntimeSession? displayWindowSession;
+    bool displayWindowAttached;
+    int displayWindowScrollCount;
+    int displayWindowMeasureCount;
+    int displayWindowRecalculateCount;
+    int displayWindowCorrectionCount;
+    int displayWindowCorrectionLimitCount;
+    long lastCurrentDisplayLineId;
+    long lastMeasuredCurrentLineId;
+    long lastMeasuredCurrentDisplayGeneration = -1;
+    string? storeHandle;
+    readonly List<StorePreparedFile> persistedFiles = [];
+    int httpRequests;
+    int packageFiles;
+    long transferBytes;
+    long downloadMilliseconds;
+    long extractMilliseconds;
+    long extractedBytes;
+    int packageLookups;
+    int packageCacheHits;
+    int packageCacheMisses;
+    int packageCacheRecoveredPacks;
+    int packageCacheCleanedPacks;
+    long packageCacheUsage;
+    long packageCacheQuota;
+    bool packageCachePersistent;
+    string packageCacheState = "none";
+    bool warmStartupProfile;
+    bool erbExecutionProfile;
+#if ERB_EXECUTION_PROFILE
+    string? erbProfileMode;
+    void TraceGameplayStage(string stage)
+    {
+        if (session?.GameplayTrace is null || JS is not IJSInProcessRuntime sync) return;
+        sync.InvokeVoid("uxR5Stage", stage, session.PendingInput?.RequestId, session.DisplayGeneration,
+            session.DisplayStructureGeneration, session.ReadGameplayPoint(), session.CurrentErbPosition,
+            new { BrowserPartView.UnchangedPartRenders, BrowserPartView.ChangedPartRenders, BrowserPartView.SkippedPartRenders });
+    }
+    string? erbProfileMacro;
+    string? erbProfileStartAt;
+    bool erbProfileMacroStarted;
+    bool erbProfileSelfCheck;
+    bool erbProfileSelfCheckCompleted;
+#endif
+    bool captureR3R3RawHtml;
+    readonly System.Diagnostics.Stopwatch startupStopwatch = System.Diagnostics.Stopwatch.StartNew();
+    readonly Dictionary<string, long> startupPhases = new(StringComparer.Ordinal);
+    readonly Dictionary<string, long> startupDurations = new(StringComparer.Ordinal);
+    string integrationAction = string.Empty;
+    int integrationCount;
+    SaveStateDiagnosticResult? stateDiagnostic;
+    long macroOperationId;
+    int macroTotalTokenCount;
+    int macroConsumedTokenCount;
+    bool macroActive;
+    bool macroDraining;
+    Queue<InputMacroToken>? macroQueue;
+    int primitiveTimerScheduleCount;
+    int primitiveTimerCallbackCount;
+    bool titleBootstrapInProgress;
+    bool titleReturnPending;
+    long focusSessionGeneration = -1;
+    long focusRequestId = -1;
+
+    bool IsDisplayWindowMode => !string.Equals(domWindowMode, "full", StringComparison.OrdinalIgnoreCase);
+
+    sealed class PackageCacheOpenResult
+    {
+        public string Token { get; set; } = string.Empty;
+        public bool CacheHit { get; set; }
+        public bool Persisted { get; set; }
+        public string CacheError { get; set; } = string.Empty;
+        public long ByteLength { get; set; }
+    }
+
+    sealed class PackageCacheReconcileResult
+    {
+        public int Removed { get; set; }
+        public long Usage { get; set; }
+        public long Quota { get; set; }
+        public bool Persisted { get; set; }
+    }
+
+    sealed class ViewportResult
+    {
+        public int Width { get; set; }
+        public int Height { get; set; }
+    }
+
+    sealed class PointerContext
+    {
+        public int X { get; set; }
+        public int Y { get; set; }
+        public int Width { get; set; }
+        public int Height { get; set; }
+        public string? ButtonValue { get; set; }
+        public bool ButtonIsInteger { get; set; } = true;
+    }
+
+    sealed class GameAreaClickContext
+    {
+        public long RequestId { get; set; }
+        public long SessionGeneration { get; set; }
+    }
+
+    public sealed class DisplayWindowScrollEvent
+    {
+        public double ScrollTop { get; set; }
+        public double ClientHeight { get; set; }
+        public bool NearBottom { get; set; }
+        public long AnchorLineId { get; set; }
+        public double AnchorOffsetPx { get; set; }
+    }
+
+    sealed class DisplayWindowMeasurement
+    {
+        public long LineId { get; set; }
+        public double Height { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            string query = Navigation.ToAbsoluteUri(Navigation.Uri).Query;
+            warmStartupProfile = QueryValue(query, "warmStartupProfile") == "1";
+            string? requestedErbProfileMode = QueryValue(query, "erbProfile");
+            erbExecutionProfile = requestedErbProfileMode is not null && BrowserRuntimeSession.SupportsErbExecutionProfiler;
+#if ERB_EXECUTION_PROFILE
+            erbProfileMode = requestedErbProfileMode == "1" ? "full" : requestedErbProfileMode;
+            if (erbExecutionProfile && erbProfileMode is not ("off" or "functions" or "full"))
+                throw new InvalidDataException("erbProfile must be off, functions, or full");
+            erbProfileMacro = erbExecutionProfile ? QueryValue(query, "erbProfileMacro") : null;
+            erbProfileStartAt = erbExecutionProfile ? QueryValue(query, "erbProfileStartAt") : null;
+            erbProfileSelfCheck = QueryValue(query, "erbProfileSelfCheck") == "1";
+#endif
+            captureR3R3RawHtml = QueryValue(query, "r3r3CaptureRawHtml") == "1";
+            string key = FixtureKey(query);
+            perfGate01b = QueryValue(query, "perfGate01b") == "1";
+            perfGate01c = QueryValue(query, "perfGate01c") == "1";
+            diagnosticOutput = QueryValue(query, "diagnosticOutput") == "1";
+            domWindowMode = QueryValue(query, "domWindowMode") ?? "window";
+            isP1C3Integration = key == "p1c3-r1";
+            isP1C5 = key == "p1c5-skip" || (key == "p1c3-real" && QueryValue(query, "p1c5") == "1");
+            isP1C6 = key == "p1c6-macro";
+            isP1C4Small = key is "p1c4-twait" or "p1c5-skip" or "p1c6-macro";
+            isP1C3 = key is "p1c3-real" or "p1c3-r1" or "p1c4-twait" or "p1c5-skip" or "p1c6-macro";
+            isP1C4Real = key == "p1c3-real" && QueryValue(query, "p1c4") == "1";
+            isP1C4State = key == "p1c3-real" && QueryValue(query, "p1c4state") == "1";
+            isP1C2 = isP1C3 || key is "p1c2-real" or "p1c2-host";
+            if (isP1C2)
+            {
+                SetDiagnosticStage("component-start");
+                if (isP1C4Small) await StartP1C4Twait(query);
+                else if (isP1C3Integration) await StartP1C3Integration(query);
+                else if (isP1C3) await StartP1C3(query);
+                else if (key == "p1c2-host") await StartP1C2Host(query);
+                else await StartP1C2(query);
+                return;
+            }
+            isP1C1Real = key == "p1c1-real";
+            isP1C1 = key is "p1c1" or "p1c1-real";
+            if (isP1C1)
+            {
+                SetDiagnosticStage("component-start");
+                await StartP1C1(query);
+                return;
+            }
+            isP1B = key == "p1b";
+            if (isP1B)
+            {
+                await StartP1B();
+                return;
+            }
+            string sourceRoot = key switch
+            {
+                "main" => "p1a-fixture",
+                "r2" => "p1a-r2-fixture",
+                _ => "p1a-r1-guards/" + key
+            };
+            string root = "/p1a-runtime-fixture-" + key;
+            string[] files = key switch
+            {
+                "main" => ["CSV/GAMEBASE.CSV", "ERB/P1A.ERH", "ERB/P1A.ERB"],
+                "r2" => ["CSV/GAMEBASE.CSV", "ERB/P1A_R2.ERH", "ERB/P1A_R2.ERB"],
+                _ => ["CSV/GAMEBASE.CSV", "ERB/P1A.ERB"]
+            };
+            foreach (string relative in files)
+            {
+                string destination = Path.Combine(root, relative.Replace('/', Path.DirectorySeparatorChar));
+                Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+                File.WriteAllBytes(destination, await Http.GetByteArrayAsync(sourceRoot + "/" + relative));
+            }
+            session = await BrowserRuntimeSession.StartAsync(root);
+        }
+        catch (Exception ex)
+        {
+            if (isP1C1)
+                SetDiagnosticStage("component-error");
+            error = ex.ToString();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+#if ERB_EXECUTION_PROFILE
+        TraceGameplayStage("after-render-begin");
+#endif
+        if (isP1C2 && storeModule is not null && !inputGuardAttached)
+        {
+            displayWindowReference ??= DotNetObjectReference.Create(this);
+            await storeModule.InvokeVoidAsync("installOneInputGuard", "game-screen", displayWindowReference);
+            await storeModule.InvokeVoidAsync("installAbsoluteViewport", "game-screen");
+            inputGuardAttached = true;
+        }
+        if (isP1C2 && storeModule is not null && session is { IslandLineCount: > 0 } && !islandInputGuardAttached)
+        {
+            await storeModule.InvokeVoidAsync("installOneInputGuard", "game-island-layer");
+            islandInputGuardAttached = true;
+        }
+        else if (session is not { IslandLineCount: > 0 }) islandInputGuardAttached = false;
+        if (isP1C2 && session is not null && !tooltipAttached)
+        {
+            tooltipModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./game-tooltip.js");
+            await tooltipModule.InvokeVoidAsync("attach", "game-screen");
+            tooltipAttached = true;
+        }
+        if (saveManagerMode && importFormReady && !stagedImportApplied && pendingStagedImportNonce is not null
+            && storeModule is not null && storeHandle is not null)
+        {
+            stagedImportApplied = true;
+            try { await storeModule.InvokeAsync<int>("applyStagedImport", storeHandle, pendingStagedImportNonce, "p1c3-import"); }
+            catch (Exception ex)
+            {
+                persistenceState = "validation-refused";
+                saveManagementMessage = "取込準備に失敗しました: " + ex.Message;
+                await storeModule.InvokeVoidAsync("clearStagedImport", pendingStagedImportNonce);
+                StateHasChanged();
+            }
+        }
+        if (session?.PendingInput is { TimedInputName: "TWAIT" or "TINPUT" or "TINPUTS" or "TONEINPUT" or "TONEINPUTS", TimeLimit: > 0 } prompt
+            && !session.MessageSkip.Active
+            && scheduledTwaitRequestId != prompt.RequestId)
+            ScheduleTwaitTimeout(prompt);
+        if (session?.PendingInput is { Kind: BrowserInputKind.Integer or BrowserInputKind.String, TimeLimit: > 0, DisplayTime: true } timedPrompt
+            && scheduledCountdownRequestId != timedPrompt.RequestId)
+        {
+            timedInputDisplayModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./timed-input-display.js");
+            await timedInputDisplayModule.InvokeVoidAsync("start", timedPrompt.RequestId, timedPrompt.TimeLimit);
+            scheduledCountdownRequestId = timedPrompt.RequestId;
+        }
+        if (session?.PendingInput is { } focusPrompt && storeModule is not null
+            && (focusSessionGeneration != session.SessionGeneration || focusRequestId != focusPrompt.RequestId))
+        {
+            string? target = focusPrompt is { Kind: BrowserInputKind.String or BrowserInputKind.Integer, OneInput: true }
+                ? "game-screen"
+                : focusPrompt.Kind is BrowserInputKind.Integer or BrowserInputKind.String
+                ? "runtime-input"
+                : focusPrompt.Kind is BrowserInputKind.Enter or BrowserInputKind.AnyKey or BrowserInputKind.MouseKey ? "game-screen" : null;
+            if (target is not null)
+            {
+                focusSessionGeneration = session.SessionGeneration;
+                focusRequestId = focusPrompt.RequestId;
+                if (target == "runtime-input") await storeModule.InvokeVoidAsync("installInputCompositionGuard", target);
+                await storeModule.InvokeVoidAsync("focusElement", target);
+            }
+        }
+        if (IsDisplayWindowMode && session is not null)
+        {
+            await UpdateDisplayWindowAsync();
+        }
+        if (isP1C2 && storeModule is not null)
+            await storeModule.InvokeVoidAsync("positionLockedButtons", "game-screen");
+        if (IsDisplayWindowMode && displayWindowModule is not null
+            && session?.PendingInput is { Kind: BrowserInputKind.String, OneInput: true, TimeLimit: <= 0, TimedInputName: null or "" } movementPrompt)
+            await displayWindowModule.InvokeVoidAsync("oneInputPresentation", session.SessionGeneration, movementPrompt.RequestId, true);
+#if ERB_EXECUTION_PROFILE
+        TraceGameplayStage("after-render-end");
+        if (erbProfileSelfCheck && !erbProfileSelfCheckCompleted)
+        {
+            erbProfileSelfCheckCompleted = true;
+            await JS.InvokeVoidAsync("console.info", "WEB_ERB_EXECUTION_PROFILE_CHECK", BrowserRuntimeSession.RunErbExecutionProfilerSelfCheck());
+        }
+        if (erbExecutionProfile && isP1C4Real && !erbProfileMacroStarted
+            && !string.IsNullOrWhiteSpace(erbProfileMacro) && !string.IsNullOrWhiteSpace(erbProfileStartAt)
+            && session?.PendingInput is { Kind: BrowserInputKind.String, OneInput: true }
+            && session.CurrentErbPosition.Contains(erbProfileStartAt, StringComparison.Ordinal))
+        {
+            erbProfileMacroStarted = true;
+            await SubmitP1C2Macro(erbProfileMacro);
+        }
+#endif
+    }
+
+    async Task UpdateDisplayWindowAsync()
+    {
+        if (session is null) return;
+        if (!ReferenceEquals(displayWindowSession, session))
+        {
+            if (displayWindowAttached && displayWindowModule is not null)
+                await displayWindowModule.InvokeVoidAsync("detach", "game-screen");
+            displayWindow.Reset();
+            displayWindowSession = session;
+            displayWindowAttached = false;
+            displayWindowCorrectionCount = 0;
+            lastCurrentDisplayLineId = 0;
+            lastMeasuredCurrentLineId = 0;
+            lastMeasuredCurrentDisplayGeneration = -1;
+        }
+        displayWindowModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./display-window.js");
+        displayWindowReference ??= DotNetObjectReference.Create(this);
+        if (!displayWindowAttached)
+        {
+            await displayWindowModule.InvokeVoidAsync("attach", "game-screen", displayWindowReference);
+            displayWindowAttached = true;
+        }
+
+        IReadOnlyList<BrowserDisplayLine> lines = session.RetainedDisplayLines;
+        long currentLineId = session.CurrentDisplayLineId;
+        if (lastCurrentDisplayLineId > 0 && lastCurrentDisplayLineId != currentLineId)
+            displayWindow.RemoveMeasurement(lastCurrentDisplayLineId);
+        lastCurrentDisplayLineId = currentLineId;
+        BrowserDisplayWindowSlice before = displayWindow.Calculate(lines, lines.Count - session.IslandLineCount, session.DisplayStructureGeneration);
+        var requested = new HashSet<long>();
+        bool currentVisible = false;
+        for (int lineIndex = before.Start; lineIndex < before.End; lineIndex++)
+        {
+            BrowserDisplayLine line = lines[lineIndex];
+            currentVisible |= line.LineId == currentLineId;
+            if (line.LineId != currentLineId && !displayWindow.HasMeasurement(line.LineId)) requested.Add(line.LineId);
+        }
+        if (currentLineId > 0 && currentVisible
+            && (lastMeasuredCurrentLineId != currentLineId || lastMeasuredCurrentDisplayGeneration != session.DisplayGeneration))
+        {
+            requested.Add(currentLineId);
+        }
+        if (requested.Count != 0)
+        {
+            long[] lineIds = requested.ToArray();
+            DisplayWindowMeasurement[] values = await displayWindowModule.InvokeAsync<DisplayWindowMeasurement[]>("measureRendered", "game-screen", lineIds);
+            displayWindowMeasureCount++;
+            if (values.Any(value => value.LineId == currentLineId))
+            {
+                lastMeasuredCurrentLineId = currentLineId;
+                lastMeasuredCurrentDisplayGeneration = session.DisplayGeneration;
+            }
+            if (displayWindow.ApplyMeasurements(values.Select(value => new BrowserDisplayLineMeasurement(value.LineId, value.Height)).ToArray()))
+            {
+                BrowserDisplayWindowSlice after = displayWindow.Calculate(lines, lines.Count - session.IslandLineCount, session.DisplayStructureGeneration);
+                if (SliceChanged(before, after))
+                {
+                    if (displayWindowCorrectionCount++ < 2)
+                    {
+                        displayWindowRecalculateCount++;
+                        StateHasChanged();
+                        return;
+                    }
+                    displayWindowCorrectionLimitCount++;
+                }
+            }
+        }
+        if (displayWindow.FollowTail)
+            await displayWindowModule.InvokeVoidAsync("scrollToBottom", "game-screen");
+        else if (displayWindow.ScrollState.AnchorLineId > 0)
+            await displayWindowModule.InvokeVoidAsync("restoreAnchor", "game-screen", displayWindow.ScrollState.AnchorLineId, displayWindow.ScrollState.AnchorOffsetPx);
+    }
+
+    // Explicit diagnostic sampling only; GC.GetTotalMemory is expensive in Wasm.
+    [JSInvokable]
+    public long ReadCurrentManagedMemoryBytes() => session?.CurrentManagedMemoryBytes ?? 0;
+
+    [JSInvokable]
+    public async Task OnDisplayWindowScroll(DisplayWindowScrollEvent value)
+    {
+        if (!IsDisplayWindowMode || session is null) return;
+        BrowserDisplayWindowSlice before = displayWindow.Calculate(session.RetainedDisplayLines, session.RetainedDisplayLines.Count - session.IslandLineCount, session.DisplayStructureGeneration);
+        displayWindowScrollCount++;
+        displayWindowCorrectionCount = 0;
+        if (!displayWindow.UpdateScroll(new(value.ScrollTop, value.ClientHeight, value.NearBottom, value.AnchorLineId, value.AnchorOffsetPx))) return;
+        BrowserDisplayWindowSlice after = displayWindow.Calculate(session.RetainedDisplayLines, session.RetainedDisplayLines.Count - session.IslandLineCount, session.DisplayStructureGeneration);
+        if (!SliceChanged(before, after)) return;
+        session.RefreshAnimations(after.Start, after.End);
+        displayWindowRecalculateCount++;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    static bool SliceChanged(BrowserDisplayWindowSlice before, BrowserDisplayWindowSlice after) =>
+        before.Start != after.Start || before.End != after.End || before.FollowTail != after.FollowTail
+        || Math.Abs(before.TopSpacerPx - after.TopSpacerPx) > 0.5 || Math.Abs(before.BottomSpacerPx - after.BottomSpacerPx) > 0.5;
+
+    static string SpacerStyle(double height) => "height:" + Math.Max(0, height).ToString(System.Globalization.CultureInfo.InvariantCulture) + "px";
+
+    void SetDiagnosticStage(string stage)
+    {
+        diagnosticStage = stage;
+        diagnosticStages.Add(stage);
+        if (warmStartupProfile) startupPhases[stage] = startupStopwatch.ElapsedMilliseconds;
+    }
+
+    void SetSaveImportStage(string stage)
+    {
+        SetDiagnosticStage(stage);
+        saveImportTrace.Add(new SaveImportTracePoint(
+            stage,
+            session is not null,
+            session?.Status.ToString().ToLowerInvariant() ?? "none",
+            GC.GetTotalMemory(forceFullCollection: false),
+            saveImportSelectedCount,
+            saveImportBytesRead));
+    }
+
+    void AddStartupDuration(string name, long milliseconds)
+    {
+        if (!warmStartupProfile) return;
+        startupDurations.TryGetValue(name, out long elapsed);
+        startupDurations[name] = elapsed + milliseconds;
+    }
+
+    async Task StartP1C1(string query)
+    {
+        string profile = QueryValue(query, "profile") ?? "default";
+        if (profile.Length is < 1 or > 64 || profile.Any(character => !char.IsAsciiLetterOrDigit(character) && character is not '.' and not '_' and not '-'))
+            throw new InvalidDataException("profileIdが不正です");
+        string fixtureCase = QueryValue(query, "case") ?? "default";
+        string fault = QueryValue(query, "fault") ?? string.Empty;
+        importMode = QueryValue(query, "import") == "1";
+        SetDiagnosticStage("js-module-import-start");
+        storeModule = await JS.InvokeAsync<IJSObjectReference>("import", "./global-persistence.js");
+        SetDiagnosticStage("js-module-import-end");
+        string gameId = isP1C1Real ? "shin-era-tensei-p" : "p1c1-fixture";
+        SetDiagnosticStage("web-lock-acquire-start");
+        StoreLockResult lockResult = await storeModule.InvokeAsync<StoreLockResult>("acquire", gameId, profile);
+        SetDiagnosticStage("web-lock-acquire-end");
+        if (!lockResult.Acquired || string.IsNullOrEmpty(lockResult.HandleId))
+        {
+            persistenceState = "lock-failed";
+            error = lockResult.Reason ?? "この保存領域は別タブで使用中です";
+            return;
+        }
+        storeHandle = lockResult.HandleId;
+        SetDiagnosticStage("indexeddb-prepare-start");
+        StorePrepareResult prepared = await storeModule.InvokeAsync<StorePrepareResult>("prepare", storeHandle, fault);
+        SetDiagnosticStage("indexeddb-prepare-end");
+        loadSource = prepared.Exists ? "indexeddb" : "absent";
+        revision = prepared.Revision ?? string.Empty;
+
+        p1c1Root = (isP1C1Real ? "/p1c1-real-runtime-" : "/p1c1-runtime-") + profile;
+        SetDiagnosticStage("run-root-assigned");
+        SetDiagnosticStage("data-prepare-start");
+        await PrepareP1C1Data(p1c1Root, isP1C1Real, fixtureCase);
+        SetDiagnosticStage("data-prepare-end");
+
+        if (importMode)
+        {
+            if (prepared.Exists)
+            {
+                persistenceState = "import-refused";
+                error = "既存profileにはimportしません。新しいprofileIdを指定してください";
+                return;
+            }
+            progress = "global.savを選択してください";
+            importFormReady = true;
+            SetDiagnosticStage("import-form-ready");
+            return;
+        }
+
+        progress = isP1C1Real ? "実GLOBAL codec診断中です…" : "GLOBAL Runtimeを実行中です…";
+        SetDiagnosticStage("runtime-bootstrap-start");
+        session = isP1C1Real
+            ? await BrowserRuntimeSession.StartPersistentBootstrapAsync(p1c1Root, prepared.Bytes)
+            : await BrowserRuntimeSession.StartPersistentAsync(p1c1Root, prepared.Bytes);
+        SetDiagnosticStage("runtime-bootstrap-end");
+        if (isP1C1Real)
+        {
+            SetDiagnosticStage("loadglobal-diagnostic-start");
+            GlobalCodecDiagnosticResult diagnostic = session.RunGlobalCodecDiagnostic(resave: false);
+            SetDiagnosticStage("loadglobal-diagnostic-end");
+            inputSha256 = diagnostic.InputSha256;
+            codecValueSha256 = diagnostic.ValueSha256;
+            if (!diagnostic.LoadSucceeded)
+            {
+                persistenceState = "validation-failed";
+                error = "既存LoadGlobalが実GLOBALを拒否しました";
+                return;
+            }
+        }
+        if (session.Status == BrowserRuntimeStatus.Persisting)
+        {
+            persistenceState = "persisting";
+            try
+            {
+                await session.DrainPersistenceAsync(async request =>
+                {
+                    SetDiagnosticStage("indexeddb-commit-start");
+                    StoreCommitResult committed = await CommitMutation(request, fault);
+                    SetDiagnosticStage("indexeddb-commit-end");
+                    revision = committed.Revision;
+                    durability = committed.Durability;
+                    persistenceState = "committed";
+                });
+            }
+            catch (Exception ex)
+            {
+                persistenceState = "failed";
+                error = session.PersistenceError ?? ex.Message;
+                progress = "GLOBAL永続保存に失敗しました";
+                return;
+            }
+        }
+        p1c1Ready = isP1C1Real
+            ? session.Status == BrowserRuntimeStatus.BootstrapReady && session.DoScriptCallCount == 0
+            : session.Status == BrowserRuntimeStatus.Succeeded;
+        progress = p1c1Ready ? (isP1C1Real ? "実GLOBAL codec診断完了（タイトル未実行）" : "GLOBAL Runtime完了") : $"GLOBAL Runtime停止: {session.Status}";
+    }
+
+    async Task StartP1C2(string query)
+    {
+        string profile = QueryValue(query, "profile") ?? "default";
+        if (profile.Length is < 1 or > 64 || profile.Any(character => !char.IsAsciiLetterOrDigit(character) && character is not '.' and not '_' and not '-'))
+            throw new InvalidDataException("profileIdが不正です");
+        importMode = QueryValue(query, "import") == "1";
+        diagnosticContinuation = QueryValue(query, "diagnosticContinuation") == "1";
+        SetDiagnosticStage("js-module-import-start");
+        storeModule = await JS.InvokeAsync<IJSObjectReference>("import", "./global-persistence.js");
+        longRunningModule = await JS.InvokeAsync<IJSInProcessObjectReference>("import", "./long-running-prompt.js");
+        SetDiagnosticStage("js-module-import-end");
+        SetDiagnosticStage("web-lock-acquire-start");
+        StoreLockResult lockResult = await storeModule.InvokeAsync<StoreLockResult>("acquire", "shin-era-tensei-p", profile);
+        SetDiagnosticStage("web-lock-acquire-end");
+        if (!lockResult.Acquired || string.IsNullOrEmpty(lockResult.HandleId))
+            throw new InvalidOperationException(lockResult.Reason ?? "この保存領域は別タブで使用中です");
+        storeHandle = lockResult.HandleId;
+        SetDiagnosticStage("indexeddb-prepare-start");
+        StorePrepareResult prepared = await storeModule.InvokeAsync<StorePrepareResult>("prepare", storeHandle, string.Empty);
+        SetDiagnosticStage("indexeddb-prepare-end");
+        loadSource = prepared.Exists ? "indexeddb" : "absent";
+        revision = prepared.Revision ?? string.Empty;
+        p1c1Root = "/p1c2-runtime-" + profile;
+        SetDiagnosticStage("data-prepare-start");
+        await PrepareP1C1Data(p1c1Root, real: true, fixtureCase: "default");
+        SetDiagnosticStage("data-prepare-end");
+        dataReady = true;
+
+        if (importMode)
+        {
+            if (prepared.Exists)
+                throw new InvalidOperationException("既存profileにはimportしません。新しいprofileIdを指定してください");
+            importFormReady = true;
+            progress = "実データ準備完了。global.savを選択してください";
+            SetDiagnosticStage("import-form-ready");
+            return;
+        }
+        await StartP1C2Title(prepared.Bytes);
+    }
+
+    async Task StartP1C3(string query)
+    {
+        string profile = QueryValue(query, "profile") ?? "default";
+        if (profile.Length is < 1 or > 64 || profile.Any(character => !char.IsAsciiLetterOrDigit(character) && character is not '.' and not '_' and not '-'))
+            throw new InvalidDataException("profileIdが不正です");
+        importMode = QueryValue(query, "import") == "1";
+        saveImportReadProbe = QueryValue(query, "saveImportProbe") == "1";
+        saveManagerMode = QueryValue(query, "saveManager") == "1";
+        pendingStagedImportNonce = QueryValue(query, "stagedImport");
+        diagnosticContinuation = false;
+        SetDiagnosticStage("js-module-import-start");
+        storeModule = await JS.InvokeAsync<IJSObjectReference>("import", "./global-persistence.js");
+        longRunningModule = await JS.InvokeAsync<IJSInProcessObjectReference>("import", "./long-running-prompt.js");
+        SetDiagnosticStage("js-module-import-end");
+        SetDiagnosticStage("web-lock-acquire-start");
+        StoreLockResult lockResult = await storeModule.InvokeAsync<StoreLockResult>("acquire", "shin-era-tensei-p", profile);
+        SetDiagnosticStage("web-lock-acquire-end");
+        if (!lockResult.Acquired || string.IsNullOrEmpty(lockResult.HandleId))
+            throw new InvalidOperationException(lockResult.Reason ?? "この保存領域は別タブで使用中です");
+        storeHandle = lockResult.HandleId;
+        SetDiagnosticStage("indexeddb-prepare-start");
+        StorePreparedFilesResult prepared = await storeModule.InvokeAsync<StorePreparedFilesResult>("prepareFiles", storeHandle, string.Empty);
+        SetDiagnosticStage("indexeddb-prepare-end");
+        persistedFiles.Clear();
+        persistedFiles.AddRange(prepared.Files);
+        loadSource = persistedFiles.Any(file => !file.Deleted) ? "indexeddb" : "absent";
+        p1c1Root = "/p1c3-runtime-" + profile;
+        SetDiagnosticStage("data-prepare-start");
+        await PrepareP1C1Data(p1c1Root, real: true, fixtureCase: "default");
+        SetDiagnosticStage("data-prepare-end");
+        dataReady = true;
+
+        importFormReady = true;
+        if (saveManagerMode)
+        {
+            if (QueryValue(query, "saveImportDone") == "1")
+                saveManagementMessage = "保存ファイルを取り込みました。タイトルに戻れます。";
+            progress = "セーブを選択してください";
+            SetDiagnosticStage("save-manager-ready");
+            return;
+        }
+        await StartP1C3Title(CurrentSaveFiles());
+    }
+
+    async Task StartP1C3Integration(string query)
+    {
+        string profile = QueryValue(query, "profile") ?? "default";
+        if (profile.Length is < 1 or > 64 || profile.Any(character => !char.IsAsciiLetterOrDigit(character) && character is not '.' and not '_' and not '-'))
+            throw new InvalidDataException("profileIdが不正です");
+        integrationAction = QueryValue(query, "action") ?? "restore";
+        if (integrationAction is not ("seed" or "restore" or "mutate" or "recreate"))
+            throw new InvalidDataException("integration actionが不正です");
+        if (!int.TryParse(QueryValue(query, "count") ?? "244", out integrationCount) || integrationCount is not (65 or 244))
+            throw new InvalidDataException("integration countは65または244です");
+        importMode = QueryValue(query, "import") == "1";
+        diagnosticContinuation = false;
+        SetDiagnosticStage("js-module-import-start");
+        storeModule = await JS.InvokeAsync<IJSObjectReference>("import", "./global-persistence.js");
+        longRunningModule = await JS.InvokeAsync<IJSInProcessObjectReference>("import", "./long-running-prompt.js");
+        SetDiagnosticStage("js-module-import-end");
+        SetDiagnosticStage("web-lock-acquire-start");
+        StoreLockResult lockResult = await storeModule.InvokeAsync<StoreLockResult>("acquire", "p1c3-r1-integration", profile);
+        SetDiagnosticStage("web-lock-acquire-end");
+        if (!lockResult.Acquired || string.IsNullOrEmpty(lockResult.HandleId))
+            throw new InvalidOperationException(lockResult.Reason ?? "この保存領域は別タブで使用中です");
+        storeHandle = lockResult.HandleId;
+        SetDiagnosticStage("indexeddb-prepare-start");
+        StorePreparedFilesResult prepared = await storeModule.InvokeAsync<StorePreparedFilesResult>("prepareFiles", storeHandle, string.Empty);
+        SetDiagnosticStage("indexeddb-prepare-end");
+        persistedFiles.Clear();
+        persistedFiles.AddRange(prepared.Files);
+        loadSource = persistedFiles.Any(file => !file.Deleted) ? "indexeddb" : "absent";
+        p1c1Root = "/p1c3-r1-runtime-" + profile;
+        SetDiagnosticStage("data-prepare-start");
+        await PrepareP1C3IntegrationData(integrationAction, integrationCount);
+        SetDiagnosticStage("data-prepare-end");
+        dataReady = true;
+        if (importMode)
+        {
+            importFormReady = true;
+            progress = "P1C3-R1 import fixture ready";
+            SetDiagnosticStage("integration-import-form-ready");
+            return;
+        }
+        await StartP1C3Title(CurrentSaveFiles());
+    }
+
+    async Task StartP1C4Twait(string query)
+    {
+        string profile = QueryValue(query, "profile") ?? "default";
+        string fixtureCase = QueryValue(query, "case") ?? "tw01";
+        p1c5PersistenceFault = isP1C5 ? QueryValue(query, "fault") ?? string.Empty : string.Empty;
+        if ((isP1C5 || isP1C6) && (!int.TryParse(QueryValue(query, "commitDelay") ?? "0", out p1c5CommitDelayMilliseconds)
+            || p1c5CommitDelayMilliseconds is < 0 or > 2000))
+            throw new InvalidDataException("P1C5 commitDelayが不正です");
+        if (isP1C5 && (!int.TryParse(QueryValue(query, "skipBatch") ?? "16", out p1c5SkipBatchSize)
+            || p1c5SkipBatchSize is < 1 or > 16))
+            throw new InvalidDataException("P1C5 skipBatchが不正です");
+        if (profile.Length is < 1 or > 64 || profile.Any(character => !char.IsAsciiLetterOrDigit(character) && character is not '.' and not '_' and not '-'))
+            throw new InvalidDataException("profileIdが不正です");
+        if (fixtureCase is not ("tw01" or "tw02" or "tw03" or "tw04" or "reject" or "reject-animation"
+            or "layout-short" or "layout-long" or "layout-commands" or "layout-detail"
+            or "p5-s01" or "p5-s02" or "p5-s03" or "p5-s04" or "p5-s05" or "p5-window" or "p5-input-skip" or "p5-primitive"
+            or "p5-r1-messkip" or "p5-r1-button" or "p5-r1-toneinputs" or "historical-button"
+            or "p6-main" or "p6-repeat" or "p6-force" or "p6-primitive" or "p6-native" or "p6-twait" or "p6-toneinputs" or "p6-save" or "p6-stop"
+            or "r3r2-shop" or "r3r2-keypad" or "r3r2-background" or "r3r2-timed" or "r3r2-daimaq" or "r3r2-pos"))
+            throw new InvalidDataException("P1C4 TWAIT fixture caseが不正です");
+        storeModule = await JS.InvokeAsync<IJSObjectReference>("import", "./global-persistence.js");
+        longRunningModule = await JS.InvokeAsync<IJSInProcessObjectReference>("import", "./long-running-prompt.js");
+        string fixtureGameId = isP1C6 ? "p1c6-macro" : isP1C5 ? "p1c5-skip" : "p1c4-twait";
+        StoreLockResult lockResult = await storeModule.InvokeAsync<StoreLockResult>("acquire", fixtureGameId, profile);
+        if (!lockResult.Acquired || string.IsNullOrEmpty(lockResult.HandleId))
+            throw new InvalidOperationException(lockResult.Reason ?? "この保存領域は別タブで使用中です");
+        storeHandle = lockResult.HandleId;
+        StorePreparedFilesResult prepared = await storeModule.InvokeAsync<StorePreparedFilesResult>("prepareFiles", storeHandle, string.Empty);
+        persistedFiles.Clear();
+        persistedFiles.AddRange(prepared.Files);
+        p1c1Root = (isP1C6 ? "/p1c6-macro-runtime-" : isP1C5 ? "/p1c5-skip-runtime-" : "/p1c4-twait-runtime-") + profile;
+        await PrepareP1C4TwaitData(fixtureCase);
+        dataReady = true;
+        SetDiagnosticStage("p1c4-twait-start");
+        await StartP1C3Title(CurrentSaveFiles());
+    }
+
+    async Task PrepareP1C4TwaitData(string fixtureCase)
+    {
+        string csv = Path.Combine(p1c1Root, "CSV", "GAMEBASE.CSV");
+        string erbPath = Path.Combine(p1c1Root, "ERB", "P1C4_TWAIT.ERB");
+        string erhPath = Path.Combine(p1c1Root, "ERB", "P1C4_TWAIT.ERH");
+        Directory.CreateDirectory(Path.GetDirectoryName(csv)!);
+        Directory.CreateDirectory(Path.GetDirectoryName(erbPath)!);
+        File.WriteAllBytes(csv, await Http.GetByteArrayAsync("p1a-fixture/CSV/GAMEBASE.CSV"));
+        var utf8Bom = new UTF8Encoding(true);
+        File.WriteAllText(erhPath, "#DIM GLOBAL SAVEDATA P1C4_VALUE\n", utf8Bom);
+        string erb = fixtureCase switch
+        {
+            "tw01" => "@SYSTEM_TITLE\nLOCAL = 2468\nRESULTS = 維持対象\nPRINTL TW01_BEFORE\nSETANIMETIMER 10\nTWAIT 100, 1\nPRINTFORML TW01_AFTER RESULT={LOCAL} TEXT=[%RESULTS%]\nWAIT\nPRINTL TW01_AFTER_MANUAL\nQUIT\n",
+            "tw02" => "@SYSTEM_TITLE\nPRINTL TW02_BEFORE\nTWAIT 1500, 0\nPRINTL TW02_AFTER\nWAIT\nPRINTL TW02_AFTER_MANUAL\nQUIT\n",
+            "tw03" => "@SYSTEM_TITLE\nPRINTL TW03_1_BEFORE\nTWAIT 50, 1\nPRINTL TW03_1_AFTER\nTWAIT 50, 1\nPRINTL TW03_2_AFTER\nINPUT\nPRINTFORML TW03_MARKER={RESULT}\nWAIT\nQUIT\n",
+            "reject" => "@SYSTEM_TITLE\nRESULT = 2468\nRESULTS = 維持対象\nPRINTBUTTON \"TWAIT_CLICK_TARGET\", \"ignored\"\nPRINTL\nPRINTL CLICK_WAIT_BEGIN\nTWAIT 700, 1\nPRINTFORML CLICK_WAIT_END RESULT={RESULT} TEXT=[%RESULTS%]\nWAIT\nPRINTL MUST_REQUIRE_NEW_INPUT\nQUIT\n",
+            "reject-animation" => "@SYSTEM_TITLE\nRESULT = 2468\nRESULTS = 維持対象\nSETANIMETIMER 20\nPRINTBUTTON \"TWAIT_CLICK_TARGET\", \"ignored\"\nPRINTL\nPRINTL CLICK_WAIT_BEGIN\nTWAIT 700, 1\nPRINTFORML CLICK_WAIT_END RESULT={RESULT} TEXT=[%RESULTS%]\nWAIT\nPRINTL MUST_REQUIRE_NEW_INPUT\nQUIT\n",
+            "layout-short" => "@SYSTEM_TITLE\nHTML_PRINT @\"<div xpos='0' ypos='0'>A</div><div xpos='950' ypos='0'>B</div>\"\nPRINTL\nWAIT\nQUIT\n",
+            "layout-long" => "@SYSTEM_TITLE\nHTML_PRINT @\"<div xpos='0' ypos='0'>AAAAAAAAAA</div><div xpos='950' ypos='0'>B</div>\"\nPRINTL\nWAIT\nQUIT\n",
+            "layout-commands" => "@SYSTEM_TITLE\nHTML_PRINT @\"<div xpos='0' ypos='0'>[a] <button value='a'>AUTO</button></div><div xpos='950' ypos='0'>[s] <button value='s'>GUN AUTO</button></div><div xpos='1900' ypos='0'>[d] <button value='d'>REPEAT AUTO</button></div><div xpos='2850' ypos='0'>[f] <button value='f'>GUARD AUTO</button></div>\"\nPRINTL\nONEINPUTS\nPRINTFORML SELECTED=[%RESULTS%]\nWAIT\nQUIT\n",
+            "layout-detail" => "@SYSTEM_TITLE\nHTML_PRINT @\"<div xpos='0' ypos='0'><font color='#00FF00'>GREEN</font><br><b>BOLD</b><img src='dot_a' height='18px'><img src='dot_b' height='18px'></div>\"\nPRINTL\nPRINTL NORMAL_AFTER\nWAIT\nQUIT\n",
+            "r3r2-shop" => "@SYSTEM_TITLE\nHTML_PRINT @\"<div display='absolute-leftbottom' xpos='10px' ypos='-220px' width='520px' height='180px'><button value='1'>VISIBLE_SHOP_VOICE</button></div>\"\nPRINTL\nWAIT\nPRINTL AFTER_SHOP_WAIT\nQUIT\n",
+            "r3r2-keypad" => "@SYSTEM_TITLE\n" + string.Concat(Enumerable.Repeat("PRINTL\n", 30)) + "HTML_PRINT @\"<div xpos='0' ypos='-1600'><button value='1'><div xpos='0' ypos='300' width='250' height='250' border_width='2px'>　　　<br>　　　<br>　　　</div><div xpos='75' ypos='325' width='200' height='225'>1</div></button><button value='2'><div xpos='300' ypos='300' width='250' height='250' border_width='2px'>　　　<br>　　　<br>　　　</div><div xpos='375' ypos='325' width='200' height='225'>2</div></button><button value='ENTER'><div xpos='600' ypos='300' width='250' height='250' border_width='2px'>　　　<br>　　　<br>　　　</div><div xpos='675' ypos='325' width='200' height='225'>ENTER</div></button></div>\"\nPRINTL\nINPUTS\nPRINTFORML KEYPAD_RESULT=[%RESULTS%]\nWAIT\nQUIT\n",
+            "r3r2-background" => "@SYSTEM_TITLE\nHTML_PRINT @\"<div display='absolute-lefttop' xpos='20px' ypos='20px' width='400px' height='100px' background_color='#002244'>UNDERLAY<div xpos='0' ypos='0'>OMITTED_BG</div><div xpos='200px' ypos='0' background_color='#000000'>EXPLICIT_BLACK</div></div>\"\nPRINTL\nWAIT\nQUIT\n",
+            "r3r2-pos" => "@SYSTEM_TITLE\nHTML_PRINT @\"<nobr><nonbutton>PRE</nonbutton><button value='1' pos='200'>POS</button><nonbutton>POST</nonbutton></nobr>\"\nPRINTL\nINPUT\nPRINTFORML POS_RESULT={RESULT}\nQUIT\n",
+            "r3r2-timed" => "@SYSTEM_TITLE\nPRINTBUTTON \"CHOICE_1\", 1\nPRINTL\nTINPUT 5000, -1, 1\nPRINTFORML TIMED_INT={RESULT} TIMEOUT={ISTIMEOUT}\nTINPUTS 10000, \"時間切れ\", 0\nPRINTFORML TIMED_STRING=[%RESULTS%] TIMEOUT={ISTIMEOUT}\nWAIT\nQUIT\n",
+            "r3r2-daimaq" => "@SYSTEM_TITLE\nLOCAL:0 = 0\n$RETRY\nLOCAL:0 += 1\nREDRAW 0\nCLEARLINE 1\nPRINTFORML ┌────────────┐\nPRINTBUTTON \"[0] 戻す\", 0\nPRINTBUTTON \"[1] 置く\", 1\nPRINTBUTTON \"[9] 出る\", 9\nPRINTL\nPRINTFORML └────────────┘\nREDRAW 1\nTINPUT 5000, -1, 1\nPRINTFORML CHOICE={RESULT} TIMEOUT={ISTIMEOUT} ATTEMPT={LOCAL:0}\nIF RESULT != 1\nGOTO RETRY\nENDIF\nREDRAW 0\nCLEARLINE 1\nPRINTFORML ┌────────────┐\nPRINTFORML │アイテム名を入力してください│\nPRINTFORML └────────────┘\nREDRAW 1\nTINPUTS 10000, \"時間切れ\", 1\nPRINTFORML NAME=[%RESULTS%] TIMEOUT={ISTIMEOUT} ATTEMPT={LOCAL:0}\nIF RESULTS != \"アレスの首飾り\"\nGOTO RETRY\nENDIF\nPRINTL DAIMAQ_SUCCESS\nWAIT\nQUIT\n",
+            "p5-s01" => "@SYSTEM_TITLE\nFLAG:0 = 0\nFLAG:1 = 0\nPRINTW P5_START\nFLAG:0 += 1\nPRINTFORMW P5_A_{P5_ONCE()}\nWAIT\nFLAG:0 += 1\nPRINTFORMW P5_B_{P5_ONCE()}\nWAITANYKEY\nPRINTFORML P5_COUNTS={FLAG:0},{FLAG:1}\nINPUT\nPRINTFORML P5_VALUE={RESULT}\nWAIT\nQUIT\n\n@P5_ONCE()\n#FUNCTION\nFLAG:1 += 1\nRETURNF FLAG:1\n",
+            "p5-s02" => "@SYSTEM_TITLE\nPRINTW P5_FORCE_START\nPRINTL P5_BEFORE_FORCE\nFORCEWAIT\nPRINTL P5_AFTER_FORCE\nWAIT\nPRINTL P5_AFTER_MANUAL_WAIT\nQUIT\n",
+            "p5-s03" => "@SYSTEM_TITLE\nRESULT = 2468\nRESULTS = 維持対象\nPRINTW P5_TIMED_START\nTWAIT 700, 1\nPRINTFORML P5_TIMED_AFTER RESULT={RESULT} TEXT=[%RESULTS%]\nPRINTFORML P5_TIMED_TIMEOUT={ISTIMEOUT}\nINPUT\nPRINTFORML P5_TIMED_VALUE={RESULT}\nWAIT\nQUIT\n",
+            "p5-s04" => "@SYSTEM_TITLE\nPRINTW P5_SAVE_START\nGLOBAL:0 = 11\nSAVEGLOBAL\nGLOBAL:0 = 99\nPRINTW P5_AFTER_SAVE\nLOADGLOBAL\nPRINTFORML P5_SAVED_VALUE={GLOBAL:0}\nINPUT\nPRINTFORML P5_SAVE_INPUT={RESULT}\nWAIT\nQUIT\n",
+            "p5-s05" => "@SYSTEM_TITLE\n" + string.Concat(Enumerable.Range(0, 400).Select(index => $"PRINTW P5_STOP_{index:000}\n")) + "INPUTS\nPRINTFORML P5_TEXT=[%RESULTS%]\nWAIT\nQUIT\n",
+            "p5-window" => "@SYSTEM_TITLE\n" + string.Concat(Enumerable.Range(0, 1200).Select(index => $"PRINTFORML P5_WINDOW_{index:0000}\n")) + "PRINTL [1] WINDOW_A\nPRINTL [2] WINDOW_B\nPRINTL [3] WINDOW_C\nINPUT\nPRINTFORML WINDOW_SELECTED={RESULT}\nWAIT\nQUIT\n",
+            "p5-input-skip" => "@SYSTEM_TITLE\nINPUTS\nPRINTFORML P5_TEXT=[%RESULTS%]\nPRINTW P5_INPUT_SKIP_A\nPRINTW P5_INPUT_SKIP_B\nINPUT\nPRINTFORML P5_INPUT_SKIP_VALUE={RESULT}\nWAIT\nQUIT\n",
+            "p5-primitive" => "@SYSTEM_TITLE\nINPUTMOUSEKEY 5000\nPRINTFORML P5_PRIMITIVE={RESULT:0},{RESULT:1}\nWAIT\nPRINTL P5_PRIMITIVE_AFTER_WAIT\nQUIT\n",
+            "p5-r1-messkip" => "@SYSTEM_TITLE\nPRINTW P5R1_READY\nPRINTFORMW P5R1_FIRST={MESSKIP()} ISSKIP={ISSKIP()}\nGLOBAL:0 = 11\nSAVEGLOBAL\nPRINTFORMW P5R1_AFTER_SAVE={MESSKIP()}\nFORCEWAIT\nPRINTFORMW P5R1_AFTER_FORCE={MESSKIP()}\nINPUT\nPRINTFORML P5R1_VALUE={RESULT} SKIP={MESSKIP()}\nWAIT\nQUIT\n",
+            "p5-r1-button" => "@SYSTEM_TITLE\nHTML_PRINT @\"<button value='7'><b>P5R1_CHOOSE_7</b><img src='dot_a' height='18px'></button>\"\nPRINTL\nINPUT\nPRINTFORML P5R1_CHOSEN={RESULT}\nWAIT\nPRINTL P5R1_AFTER_WAIT\nQUIT\n",
+            "p5-r1-toneinputs" => "@SYSTEM_TITLE\nPRINTW P5R1_TIMED_READY\nPRINTFORMW P5R1_TIMED_BEFORE={MESSKIP()}\nTONEINPUTS 100, \"\", 0, \"\"\nPRINTFORML P5R1_TIMED_AFTER=[%RESULTS%] TIMEOUT={ISTIMEOUT} SKIP={MESSKIP()}\nINPUT\nQUIT\n",
+            "historical-button" => "@SYSTEM_TITLE\nPRINTL [1] OLD_CHOICE\nINPUT\nPRINTFORML FIRST={RESULT}\nPRINTL [2] NEW_CHOICE\nINPUT\nPRINTFORML SECOND={RESULT}\nWAIT\nQUIT\n",
+            "p6-main" => "@SYSTEM_TITLE\nINPUTS\nPRINTFORML P6_A=[%RESULTS%] SKIP={MESSKIP()}\nWAIT\nPRINTFORML P6_AFTER_WAIT SKIP={MESSKIP()}\nINPUTS\nPRINTFORML P6_B=[%RESULTS%] SKIP={MESSKIP()}\nINPUT\nPRINTFORML P6_INT={RESULT}\nWAIT\nQUIT\n",
+            "p6-repeat" => "@SYSTEM_TITLE\n" + string.Concat(Enumerable.Range(1, 20).Select(index => $"INPUTS\nPRINTFORML P6_REPEAT_{index:00}=[%RESULTS%] SKIP={{MESSKIP()}}\nWAIT\n")) + "INPUT\nPRINTFORML P6_REPEAT_INT={RESULT}\nWAIT\nQUIT\n",
+            "p6-force" => "@SYSTEM_TITLE\nINPUTS\nPRINTFORML P6_FORCE_INPUT=[%RESULTS%]\nFORCEWAIT\nPRINTL P6_FORCE_AFTER\nWAIT\nQUIT\n",
+            "p6-primitive" => "@SYSTEM_TITLE\nINPUTS\nPRINTFORML P6_PRIMITIVE_INPUT=[%RESULTS%]\nINPUTMOUSEKEY 200\nPRINTL P6_PRIMITIVE_AFTER\nWAIT\nQUIT\n",
+            "p6-native" => "@SYSTEM_TITLE\nINPUTS\nPRINTFORML P6_NATIVE_A=[%RESULTS%] SKIP={MESSKIP()}\nINPUTS\nPRINTFORML P6_NATIVE_D=[%RESULTS%] SKIP={MESSKIP()}\nINPUTMOUSEKEY 100\nPRINTFORML P6_NATIVE_PRIMITIVE={RESULT:0},{RESULT:1} SKIP={MESSKIP()}\nWAIT\nPRINTFORML P6_NATIVE_WAIT SKIP={MESSKIP()}\nINPUTS\nPRINTFORML P6_NATIVE_FINAL=[%RESULTS%] SKIP={MESSKIP()}\nWAIT\nQUIT\n",
+            "p6-twait" => "@SYSTEM_TITLE\nINPUTS\nPRINTFORML P6_TWAIT_INPUT=[%RESULTS%]\nTWAIT 100, 1\nPRINTFORML P6_TWAIT_AFTER TIMEOUT={ISTIMEOUT}\nINPUT\nWAIT\nQUIT\n",
+            "p6-toneinputs" => "@SYSTEM_TITLE\nINPUTS\nPRINTFORML P6_TONE_INPUT=[%RESULTS%]\nTONEINPUTS 100, \"\", 0, \"\"\nPRINTFORML P6_TONE_AFTER=[%RESULTS%] TIMEOUT={ISTIMEOUT}\nINPUT\nWAIT\nQUIT\n",
+            "p6-save" => "@SYSTEM_TITLE\nINPUTS\nPRINTFORML P6_SAVE_A=[%RESULTS%] SKIP={MESSKIP()}\nGLOBAL:0 = 61\nSAVEGLOBAL\nPRINTFORML P6_SAVE_COMMITTED SKIP={MESSKIP()}\nWAIT\nINPUTS\nPRINTFORML P6_SAVE_B=[%RESULTS%] SKIP={MESSKIP()}\nINPUT\nWAIT\nQUIT\n",
+            "p6-stop" => "@SYSTEM_TITLE\nINPUTS\n" + string.Concat(Enumerable.Range(0, 400).Select(index => $"PRINTW P6_STOP_{index:000}\n")) + "INPUTS\nPRINTFORML P6_STOP_INPUT=[%RESULTS%]\nWAIT\nQUIT\n",
+            _ => "@SYSTEM_TITLE\nP1C4_VALUE = 11\nSAVEGLOBAL\nP1C4_VALUE = 99\nPRINTL TW04_BEFORE\nTWAIT 100, 1\nLOADGLOBAL\nPRINTFORML TW04_VALUE={P1C4_VALUE}\nWAIT\nQUIT\n"
+        };
+        File.WriteAllText(erbPath, erb, utf8Bom);
+        if (fixtureCase is "layout-detail" or "p5-r1-button")
+        {
+            string resources = Path.Combine(p1c1Root, "resources");
+            Directory.CreateDirectory(resources);
+            File.WriteAllBytes(Path.Combine(resources, "dot.png"), Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="));
+            File.WriteAllText(Path.Combine(resources, "sprites.csv"), "dot_a,dot.png\ndot_b,dot.png\n", utf8Bom);
+        }
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        File.WriteAllBytes(Path.Combine(p1c1Root, "emuera.config"), Encoding.GetEncoding(932).GetBytes("セーブデータをバイナリ形式で保存する:YES"));
+    }
+
+    async Task PrepareP1C3IntegrationData(string action, int count)
+    {
+        string csv = Path.Combine(p1c1Root, "CSV", "GAMEBASE.CSV");
+        string erbPath = Path.Combine(p1c1Root, "ERB", "R1.ERB");
+        string erhPath = Path.Combine(p1c1Root, "ERB", "R1.ERH");
+        Directory.CreateDirectory(Path.GetDirectoryName(csv)!);
+        Directory.CreateDirectory(Path.GetDirectoryName(erbPath)!);
+        File.WriteAllBytes(csv, await Http.GetByteArrayAsync("p1a-fixture/CSV/GAMEBASE.CSV"));
+        var utf8Bom = new UTF8Encoding(true);
+        File.WriteAllText(erhPath, "#DIM SAVEDATA R1_SLOT\n#DIM SAVEDATA R1_WIDE\n#DIMS SAVEDATA R1_TEXT\n#DIM GLOBAL SAVEDATA R1_GLOBAL\n", utf8Bom);
+        var erb = new StringBuilder();
+        erb.AppendLine("@SYSTEM_TITLE");
+        if (action == "seed")
+        {
+            erb.AppendLine("R1_GLOBAL = 13579").AppendLine("SAVEGLOBAL");
+            foreach (int slot in IntegrationSlots(count))
+            {
+                erb.AppendLine($"R1_SLOT = {slot}");
+                erb.AppendLine($"R1_WIDE = {9007199254740993L + slot}");
+                erb.AppendLine($"R1_TEXT = 境界確認-{slot}");
+                erb.AppendLine($"SAVEDATA {slot}, \"R1-{slot}\"");
+            }
+            erb.AppendLine("PRINTL R1_SEED_DONE").AppendLine("WAIT").AppendLine("QUIT");
+        }
+        else if (action == "mutate")
+        {
+            AppendIntegrationSave(erb, 0, 100000, "上書き-0");
+            AppendIntegrationSave(erb, 9, 100009, "上書き-9");
+            erb.AppendLine("DELDATA 1").AppendLine("CHKDATA 1").AppendLine("PRINTFORML R1_DELETED_1={RESULT}");
+            erb.AppendLine("PRINTL R1_MUTATE_DONE").AppendLine("WAIT").AppendLine("QUIT");
+        }
+        else if (action == "recreate")
+        {
+            AppendIntegrationSave(erb, 1, 200001, "再作成-1");
+            erb.AppendLine("PRINTL R1_RECREATE_DONE").AppendLine("WAIT").AppendLine("QUIT");
+        }
+        else
+        {
+            erb.AppendLine("LOADGLOBAL").AppendLine("PRINTFORML R1_GLOBAL_VALUE={R1_GLOBAL}");
+            erb.AppendLine("PRINTL R1_RESTORE_READY").AppendLine("INPUT").AppendLine("LOADDATA RESULT");
+            erb.AppendLine("THROW R1_LOAD_FAILED").AppendLine("QUIT");
+            erb.AppendLine().AppendLine("@SYSTEM_LOADEND").AppendLine("PRINTL R1_SYSTEM_LOADEND");
+            erb.AppendLine().AppendLine("@EVENTLOAD");
+            erb.AppendLine("PRINTFORML R1_LOADED_SLOT={LASTLOAD_NO},VALUE={R1_SLOT},WIDE={R1_WIDE}");
+            erb.AppendLine("PRINTFORML R1_LOADED_TEXT=[%R1_TEXT%]");
+            erb.AppendLine("INPUT").AppendLine("LOADDATA RESULT").AppendLine("THROW R1_LOAD_FAILED").AppendLine("QUIT");
+        }
+        File.WriteAllText(erbPath, erb.ToString(), utf8Bom);
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        File.WriteAllBytes(Path.Combine(p1c1Root, "emuera.config"), Encoding.GetEncoding(932).GetBytes("セーブデータをバイナリ形式で保存する:YES"));
+    }
+
+    static int[] IntegrationSlots(int count) => count == 65
+        ? Enumerable.Range(10, 64).ToArray()
+        : Enumerable.Concat(Enumerable.Range(0, 240), new[] { 300, 400, 401 }).ToArray();
+
+    static void AppendIntegrationSave(StringBuilder erb, int slot, int value, string text)
+    {
+        erb.AppendLine($"R1_SLOT = {value}");
+        erb.AppendLine($"R1_WIDE = {9007199254740993L + value}");
+        erb.AppendLine($"R1_TEXT = {text}");
+        erb.AppendLine($"SAVEDATA {slot}, \"R1-{slot}\"");
+    }
+
+    async Task StartP1C2Host(string query)
+    {
+        string fixtureCase = QueryValue(query, "case") ?? "display-a";
+        if (fixtureCase is not ("display-a" or "display-b" or "display-c" or "input" or "long-running" or "tooltip" or "mousekey-stale"))
+            throw new InvalidDataException("host completion fixture caseが不正です");
+        storeModule = await JS.InvokeAsync<IJSObjectReference>("import", "./global-persistence.js");
+        longRunningModule = await JS.InvokeAsync<IJSInProcessObjectReference>("import", "./long-running-prompt.js");
+        storeHandle = "host-completion-no-persistence";
+        p1c1Root = "/p1c2-host-runtime-" + fixtureCase;
+        foreach ((string source, string destination) in new[]
+        {
+            ("p1c2-host-fixture/CSV/GAMEBASE.CSV", "CSV/GAMEBASE.CSV"),
+            ($"p1c2-host-fixture/ERB/{fixtureCase}.ERB", "ERB/HOST.ERB"),
+            ("p1c2-host-fixture/resources/dot.png", "resources/dot.png"),
+            ("p1c2-host-fixture/resources/sprites.csv", "resources/sprites.csv")
+        })
+        {
+            string destinationPath = Path.Combine(p1c1Root, destination.Replace('/', Path.DirectorySeparatorChar));
+            Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
+            File.WriteAllBytes(destinationPath, await Http.GetByteArrayAsync(source));
+        }
+        if (fixtureCase == "long-running")
+            File.WriteAllBytes(Path.Combine(p1c1Root, "ERB", "HOST.ERH"), await Http.GetByteArrayAsync("p1c2-host-fixture/ERB/long-running.ERH"));
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        string config = "セーブデータをバイナリ形式で保存する:YES" + (fixtureCase == "long-running" ? "\n無限ループ警告までのミリ秒数:50" : string.Empty);
+        File.WriteAllBytes(Path.Combine(p1c1Root, "emuera.config"), Encoding.GetEncoding(932).GetBytes(config));
+        dataReady = true;
+        session = await BrowserRuntimeSession.StartTitleBootstrapAsync(p1c1Root, null);
+#if ERB_EXECUTION_PROFILE
+        if (QueryValue(query, "ux16r5Trace") == "1") session.GameplayTrace = TraceGameplayStage;
+#endif
+        session.EnableInteractiveInfiniteLoopPrompt(ConfirmLongRunning);
+        ViewportResult viewport = await storeModule.InvokeAsync<ViewportResult>("measureElement", "game-screen");
+        ConfigureTextMeasurement();
+        session.SetViewport(viewport.Width, viewport.Height);
+        session.StartTitle();
+        progress = $"Host completion fixture: {fixtureCase}";
+        SetDiagnosticStage("host-fixture-ready");
+        SchedulePrimitiveTimeout();
+        ScheduleAnimationRefresh();
+    }
+
+    async Task StartP1C2Title(byte[]? globalBytes)
+    {
+        if (!dataReady || storeModule is null || storeHandle is null)
+            throw new InvalidOperationException("実データ準備前にはタイトルを開始できません");
+        progress = "実SYSTEM_TITLEを実行中です…";
+        SetDiagnosticStage("runtime-bootstrap-start");
+        session = await BrowserRuntimeSession.StartTitleBootstrapAsync(p1c1Root, globalBytes, captureProcessInitializeProfile: warmStartupProfile);
+        if (diagnosticContinuation)
+            session.EnableDiagnosticInfiniteLoopContinuation();
+        else
+            session.EnableInteractiveInfiniteLoopPrompt(ConfirmLongRunning);
+        SetDiagnosticStage("runtime-bootstrap-end");
+        ViewportResult viewport = await storeModule.InvokeAsync<ViewportResult>("measureElement", "game-screen");
+        if (viewport.Width <= 0 || viewport.Height <= 0)
+            throw new InvalidOperationException("ゲーム画面の実寸を取得できません");
+        ConfigureTextMeasurement();
+        session.SetViewport(viewport.Width, viewport.Height);
+        SetDiagnosticStage("title-script-start");
+        titleBootstrapInProgress = true;
+        session.StartTitle();
+        if (captureR3R3RawHtml)
+            session.EnableR3R3RawHtmlCapture();
+        SetDiagnosticStage("title-script-end");
+        await AdvanceP1C2();
+    }
+
+    async Task StartP1C3Title(IReadOnlyDictionary<string, byte[]> files)
+    {
+        if (!dataReady || storeModule is null || storeHandle is null)
+            throw new InvalidOperationException("実データ準備前にはタイトルを開始できません");
+        // AOT cannot safely hold the outgoing real-data Runtime while a replacement bootstrap allocates images.
+        // StopAndDrainForTitleTransition has already made its persistence boundary safe for every replacement path.
+        bool replacing = session is not null;
+        displayWindowSession = null;
+        session = null;
+        await Task.Yield();
+        if (replacing)
+        {
+            BrowserRuntimeSession.ReleaseBootstrapResources();
+            // The replacement bootstrap allocates another full real-data graph before AOT GC would reclaim the old one.
+            _ = GC.GetTotalMemory(forceFullCollection: true);
+        }
+        progress = "実SYSTEM_TITLEを実行中です…";
+        SetDiagnosticStage("runtime-bootstrap-start");
+        session = await BrowserRuntimeSession.StartSavePersistentBootstrapAsync(p1c1Root, files);
+#if ERB_EXECUTION_PROFILE
+        if (QueryValue(new Uri(Navigation.Uri).Query, "ux16r5Trace") == "1") session.GameplayTrace = TraceGameplayStage;
+#endif
+        if (perfGate01b)
+            session.EnableDisplayPerformanceMetrics();
+        session.EnableInteractiveInfiniteLoopPrompt(ConfirmLongRunning);
+        SetDiagnosticStage("runtime-bootstrap-end");
+        ViewportResult viewport = await storeModule.InvokeAsync<ViewportResult>("measureElement", "game-screen");
+        if (viewport.Width <= 0 || viewport.Height <= 0)
+            throw new InvalidOperationException("ゲーム画面の実寸を取得できません");
+        ConfigureTextMeasurement();
+        session.SetViewport(viewport.Width, viewport.Height);
+        SetDiagnosticStage("title-script-start");
+        titleBootstrapInProgress = true;
+        session.StartTitle();
+        if (captureR3R3RawHtml)
+            session.EnableR3R3RawHtmlCapture();
+        SetDiagnosticStage("title-script-end");
+        await AdvanceP1C2();
+    }
+
+    void ConfigureTextMeasurement()
+    {
+        if (session is not null && longRunningModule is { } module)
+            session.TextWidthMeasurer = (text, font, size) => module.Invoke<double>("measureText", text, font, size);
+    }
+
+    BrowserLongRunningDecision ConfirmLongRunning(BrowserLongRunningNotice notice)
+    {
+        if (isP1C3 && titleBootstrapInProgress && IsStartupImageImport(notice.File))
+            return new(true, "startup-image-import-auto-continue");
+        if (longRunningModule is null)
+            throw new InvalidOperationException("LONG_RUNNING_CONFIRM_SYNC_UNAVAILABLE");
+        return longRunningModule.Invoke<BrowserLongRunningDecision>("confirmLongRunning", notice);
+    }
+
+    static bool IsStartupImageImport(string path) => path.Replace('\\', '/').EndsWith("関数/組み込み関数/画像関連関数/01_画像取り込み.ERB", StringComparison.OrdinalIgnoreCase);
+
+    async Task AdvanceP1C2()
+    {
+        if (session is null || storeModule is null || storeHandle is null) return;
+        if (session.Status == BrowserRuntimeStatus.Persisting || session.IsFailed || session.MessageSkip.Active || macroActive)
+            keyboardInput.Clear();
+        else keyboardInput.Revalidate(session.PendingInput, session.SessionGeneration);
+        primitiveTimer?.Cancel();
+        scheduledTwaitRequestId = null;
+        animationTimer?.Cancel();
+        while (true)
+        {
+            try
+            {
+                while (session.Status == BrowserRuntimeStatus.Persisting)
+                {
+                    persistenceState = "persisting";
+                    await session.DrainPersistenceAsync(async request =>
+                    {
+                        SetDiagnosticStage("indexeddb-commit-start");
+                        StateHasChanged();
+                        if (p1c5CommitDelayMilliseconds > 0)
+                            await Task.Delay(p1c5CommitDelayMilliseconds);
+                        StoreCommitResult committed = await CommitMutation(request, p1c5PersistenceFault);
+                        SetDiagnosticStage("indexeddb-commit-end");
+                        revision = committed.Revision;
+                        durability = committed.Durability;
+                        persistenceState = "committed";
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                persistenceState = "failed";
+                error = session.PersistenceError ?? ex.Message;
+                progress = "保存に失敗しました";
+                SetDiagnosticStage("persistence-failed");
+                return;
+            }
+            if (!session.MessageSkip.Active) break;
+            if (macroActive && session.PendingInput is { } macroPrompt
+                && (macroPrompt.Kind == BrowserInputKind.TimedVoid || !string.IsNullOrEmpty(macroPrompt.TimedInputName)))
+            {
+                session.StopMessageSkip("macro-boundary");
+                SetDiagnosticStage("macro-boundary-stop");
+                break;
+            }
+            if (macroActive && session.PendingInput is { Kind: BrowserInputKind.MouseKey, TimeLimit: > 0 })
+                break;
+            long batchStarted = System.Diagnostics.Stopwatch.GetTimestamp();
+            int resumed = 0;
+            while (session.MessageSkip.Active && resumed < p1c5SkipBatchSize
+                && System.Diagnostics.Stopwatch.GetElapsedTime(batchStarted).TotalMilliseconds < 8)
+            {
+                if (!session.ContinueMessageSkip(holdAtTimedPrimitive: macroActive)) break;
+                resumed++;
+                if (session.Status == BrowserRuntimeStatus.Persisting) break;
+            }
+            StateHasChanged();
+            await Task.Delay(1);
+        }
+        if (session.IsFailed)
+        {
+            titleBootstrapInProgress = false;
+            titleReturnPending = false;
+            runtimeFailureDiagnostic = session.FailureDiagnostic;
+            error = "実SYSTEM_TITLEがエラー停止しました。詳細は実行診断情報を開いて確認してください。";
+            progress = "タイトル実行失敗";
+            SetDiagnosticStage("runtime-failed");
+            return;
+        }
+        p1c2Ready = session.PendingInput is { Kind: BrowserInputKind.Integer }
+            && FlattenDisplay(session.DisplayLines.SelectMany(line => line.Parts)).Any(part => part.Kind == BrowserDisplayPartKind.Image)
+            && FlattenDisplay(session.DisplayLines.SelectMany(line => line.Parts)).Any(part => part.Kind == BrowserDisplayPartKind.Button && part.Input == "0");
+        progress = p1c2Ready ? "実タイトル表示・入力待ちへ到達" : $"実Runtime: {session.Status}";
+        if (p1c2Ready) SetDiagnosticStage("title-input-ready");
+        if (p1c2Ready) titleBootstrapInProgress = false;
+        if (p1c2Ready && titleReturnPending)
+        {
+            titleReturnPending = false;
+            saveManagementMessage = "保存済みデータを維持してタイトルへ戻りました。";
+            SetDiagnosticStage("title-return-ready");
+        }
+        if (isP1C3Integration && session.PendingInput is not null)
+            SetDiagnosticStage($"integration-{integrationAction}-ready");
+        SchedulePrimitiveTimeout();
+        ScheduleAnimationRefresh();
+        keyboardInput.Revalidate(session.PendingInput, session.SessionGeneration);
+    }
+
+    void ScheduleAnimationRefresh()
+    {
+        animationTimer?.Cancel();
+        if (session is null || session.AnimationIntervalMilliseconds <= 0 || session.IsFailed || session.IsComplete) return;
+        animationTimer = new CancellationTokenSource();
+        CancellationToken token = animationTimer.Token;
+        long sessionGeneration = session.SessionGeneration;
+        int interval = session.AnimationIntervalMilliseconds;
+        _ = RefreshAnimationLoop(sessionGeneration, interval, token);
+    }
+
+    async Task RefreshAnimationLoop(long sessionGeneration, int interval, CancellationToken token)
+    {
+        try
+        {
+            while (true)
+            {
+                await Task.Delay(interval, token);
+                await InvokeAsync(() =>
+                {
+                    if (!token.IsCancellationRequested && session?.SessionGeneration == sessionGeneration)
+                    {
+                        if (session.RefreshAnimations(IsDisplayWindowMode ? animationFirstLine : 0, IsDisplayWindowMode ? animationEndLine : null))
+                        {
+                            animationRenderRequests++;
+                            StateHasChanged();
+                        }
+                    }
+                });
+            }
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    void SchedulePrimitiveTimeout()
+    {
+        if (session?.PendingInput is not { Kind: BrowserInputKind.MouseKey, TimeLimit: > 0 } prompt) return;
+        primitiveTimer?.Cancel();
+        primitiveTimerScheduleCount++;
+        primitiveTimer = new CancellationTokenSource();
+        CancellationToken token = primitiveTimer.Token;
+        long sessionGeneration = session.SessionGeneration;
+        long displayGeneration = session.DisplayGeneration;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(prompt.TimeLimit), token);
+                await InvokeAsync(async () =>
+                {
+                    primitiveTimerCallbackCount++;
+                    PointerContext pointer = await storeModule!.InvokeAsync<PointerContext>("inputContext", "game-screen");
+                    if (!token.IsCancellationRequested && session?.PendingInput?.RequestId == prompt.RequestId
+                        && session.SubmitPrimitive(new(prompt.RequestId, BrowserPrimitiveInputKind.Timeout, pointer.ButtonValue,
+                            ButtonIsInteger: pointer.ButtonIsInteger,
+                            SessionGeneration: sessionGeneration, DisplayGeneration: displayGeneration)))
+                    {
+                        SetDiagnosticStage("mousekey-timeout");
+                        await AdvanceP1C2();
+                        await DrainMacroQueue();
+                        StateHasChanged();
+                    }
+                });
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                await InvokeAsync(() =>
+                {
+                    error = "INPUTMOUSEKEY timer失敗: " + ex.Message;
+                    SetDiagnosticStage("mousekey-timer-failed");
+                    StateHasChanged();
+                });
+            }
+        }, token);
+    }
+
+    void ScheduleTwaitTimeout(BrowserInputPrompt prompt)
+    {
+        primitiveTimer?.Cancel();
+        primitiveTimer = new CancellationTokenSource();
+        CancellationToken token = primitiveTimer.Token;
+        long sessionGeneration = session!.SessionGeneration;
+        long displayGeneration = session.DisplayGeneration;
+        scheduledTwaitRequestId = prompt.RequestId;
+        scheduledTwaitSessionGeneration = sessionGeneration;
+        twaitScheduleCount++;
+        twaitTimerState = "scheduled";
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(prompt.TimeLimit), token);
+                await InvokeAsync(async () =>
+                {
+                    twaitCallbackCount++;
+                    twaitTimerState = "callback";
+                    if (!token.IsCancellationRequested && session?.PendingInput?.RequestId == prompt.RequestId
+                        && session.SubmitTimeout(prompt.RequestId, sessionGeneration, displayGeneration))
+                    {
+                        twaitTimerState = "accepted";
+                        SetDiagnosticStage(prompt.TimedInputName == "TWAIT" ? "twait-timeout" : "timed-input-timeout");
+                        await AdvanceP1C2();
+                        await DrainMacroQueue();
+                        StateHasChanged();
+                    }
+                });
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                await InvokeAsync(() =>
+                {
+                    error = (prompt.TimedInputName == "TWAIT" ? "TWAIT" : prompt.TimedInputName) + " timer失敗: " + ex.Message;
+                    twaitTimerState = "failed";
+                    SetDiagnosticStage("twait-timer-failed");
+                    StateHasChanged();
+                });
+            }
+        }, token);
+    }
+
+    async Task SubmitDisplay((BrowserDisplayPart Part, MouseEventArgs Mouse) inputEvent)
+    {
+        BrowserDisplayPart part = inputEvent.Part;
+        MouseEventArgs mouse = inputEvent.Mouse;
+        BrowserRuntimeSession? activeSession = session;
+        if (!dataReady || activeSession?.PendingInput is not { } prompt) return;
+        if (prompt.Kind != BrowserInputKind.MouseKey && mouse.Button != 0)
+        {
+            if (mouse.Button != 2 || prompt is not { Kind: BrowserInputKind.Enter or BrowserInputKind.AnyKey, StopMessageSkip: false }) return;
+            var envelope = new InputEnvelope(prompt.RequestId, string.Empty, BrowserInputSource.Keyboard,
+                activeSession.SessionGeneration, activeSession.DisplayGeneration);
+            if (!activeSession.SubmitWithMessageSkip(envelope)) return;
+            input = string.Empty;
+            SetDiagnosticStage("message-skip-start");
+            await AdvanceP1C2();
+            return;
+        }
+        // For Enter/AnyKey, the button markup is only old display content. The
+        // click event on game-screen submits the captured current WAIT instead.
+        if (prompt.Kind is BrowserInputKind.Enter or BrowserInputKind.AnyKey) return;
+        if (part.Input is null) return;
+        PointerContext pointer = await ReadPointerContext(mouse.ClientX, mouse.ClientY);
+        bool currentMouseKeyButton = part.Activation is { } activation
+            && activation.RequestId == prompt.RequestId
+            && activation.SessionGeneration == activeSession.SessionGeneration
+            && activation.DisplayGeneration == activeSession.DisplayStructureGeneration;
+        // A historical button is only a pointer target during primitive waits; its stale value belongs to another request.
+        bool accepted = prompt.Kind == BrowserInputKind.MouseKey && !currentMouseKeyButton
+            ? activeSession.SubmitPrimitive(new(prompt.RequestId, BrowserPrimitiveInputKind.Click,
+                Code: MouseCode(mouse.Button), X: pointer.X, Y: pointer.Y, ButtonIsInteger: false,
+                SessionGeneration: activeSession.SessionGeneration, DisplayGeneration: activeSession.DisplayGeneration))
+            : activeSession.SubmitDisplay(part, pointer.X, pointer.Y, MouseCode(mouse.Button));
+        if (!accepted) return;
+        SetDiagnosticStage(prompt.Kind == BrowserInputKind.MouseKey ? "mousekey-click" : "button-input");
+        await AdvanceP1C2();
+    }
+
+    Task SubmitP1C2Text() => SubmitP1C2TextCore(startMessageSkip: false);
+
+    async Task SubmitP1C2Form()
+    {
+        if (storeModule is not null && await storeModule.InvokeAsync<bool>("consumeInputCompositionSubmit", "runtime-input")) return;
+        await SubmitP1C2Text();
+    }
+
+    Task SubmitP1C2TextWithSkip() => SubmitP1C2TextCore(startMessageSkip: true);
+
+    Task StartMessageSkip() => SubmitP1C2TextCore(startMessageSkip: true, forceEmpty: true);
+
+    async Task SubmitP1C2Macro(string macroText)
+    {
+#if ERB_EXECUTION_PROFILE
+        long macroStarted = erbExecutionProfile ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+#endif
+        IReadOnlyList<InputMacroToken> tokens = InputMacroSyntax.Expand(macroText);
+        if (tokens.Count == 0) return;
+#if ERB_EXECUTION_PROFILE
+        if (erbExecutionProfile)
+            session?.BeginErbExecutionProfile(erbProfileMode!, macroStarted);
+#endif
+        ++macroOperationId;
+        macroQueue = new Queue<InputMacroToken>(tokens);
+        macroTotalTokenCount = tokens.Count;
+        macroConsumedTokenCount = 0;
+        macroActive = true;
+        await DrainMacroQueue();
+    }
+
+    async Task DrainMacroQueue()
+    {
+        if (macroDraining || macroQueue is null) return;
+        Queue<InputMacroToken> queue = macroQueue;
+        long operationId = macroOperationId;
+        macroDraining = true;
+        try
+        {
+            while (macroActive && macroOperationId == operationId && queue.Count > 0)
+            {
+                if (!dataReady || session?.PendingInput is not { } pending)
+                {
+                    StopMacroQueue();
+                    return;
+                }
+                if (pending.Kind == BrowserInputKind.TimedVoid || !string.IsNullOrEmpty(pending.TimedInputName))
+                    return;
+                if (pending.StopMessageSkip)
+                {
+                    StopMacroQueue();
+                    return;
+                }
+                if (pending.Kind is BrowserInputKind.Enter or BrowserInputKind.AnyKey)
+                {
+                    var skipEnvelope = new InputEnvelope(pending.RequestId, string.Empty, BrowserInputSource.Keyboard, session!.SessionGeneration, session.DisplayGeneration);
+                    if (!session.SubmitWithMessageSkip(skipEnvelope))
+                    {
+                        StopMacroQueue("macro-input-rejected");
+                        return;
+                    }
+                    SetDiagnosticStage("macro-wait-resume");
+                    await AdvanceP1C2();
+                    continue;
+                }
+                if (pending.Kind == BrowserInputKind.MouseKey)
+                    return;
+                if (pending.Kind != BrowserInputKind.String)
+                {
+                    StopMacroQueue();
+                    return;
+                }
+                InputMacroToken token = queue.Dequeue();
+                macroConsumedTokenCount++;
+                await RefreshViewport();
+                var envelope = new InputEnvelope(pending.RequestId, token.Value, BrowserInputSource.Keyboard, session!.SessionGeneration, session.DisplayGeneration);
+                bool accepted = token.MessageSkip ? session.SubmitWithMessageSkip(envelope, holdAtTimedPrimitive: true) : session.Submit(envelope);
+                if (!accepted)
+                {
+                    StopMacroQueue("macro-input-rejected");
+                    return;
+                }
+                input = string.Empty;
+                SetDiagnosticStage("macro-token");
+                await AdvanceP1C2();
+            }
+            if (macroOperationId == operationId)
+            {
+                macroQueue = null;
+                macroActive = false;
+                SetDiagnosticStage("macro-complete");
+                if (erbExecutionProfile && session is not null)
+                    await JS.InvokeVoidAsync("console.info", "WEB_ERB_EXECUTION_PROFILE", session.FinishErbExecutionProfile());
+            }
+        }
+        finally
+        {
+            macroDraining = false;
+            StateHasChanged();
+        }
+    }
+
+    void StopMacroQueue(string stage = "macro-boundary-stop")
+    {
+        ++macroOperationId;
+        macroQueue = null;
+        macroActive = false;
+        SetDiagnosticStage(stage);
+    }
+
+    async Task SubmitP1C2TextCore(bool startMessageSkip, bool forceEmpty = false, string? directValue = null)
+    {
+        if (!dataReady || session?.PendingInput is not { } prompt) return;
+        if (directValue is null && !startMessageSkip && !forceEmpty && input.Contains('(', StringComparison.Ordinal))
+        {
+            await SubmitP1C2Macro(input);
+            return;
+        }
+        PointerContext pointer = await ReadPointerContext();
+        session.SetMousePosition(pointer.X, pointer.Y);
+        var envelope = new InputEnvelope(prompt.RequestId, forceEmpty ? string.Empty : directValue ?? input, BrowserInputSource.Keyboard, session.SessionGeneration, session.DisplayGeneration);
+        bool accepted = startMessageSkip ? session.SubmitWithMessageSkip(envelope) : session.Submit(envelope);
+        if (!accepted) return;
+        input = string.Empty;
+        SetDiagnosticStage(startMessageSkip ? "message-skip-start" : "text-input");
+        await AdvanceP1C2();
+    }
+
+    void StopMessageSkip()
+    {
+        StopMacroQueue();
+        if (session?.StopMessageSkip() != true) return;
+        SetDiagnosticStage("message-skip-stop");
+        StateHasChanged();
+    }
+
+    async Task SubmitPrimitiveKey(KeyboardEventArgs keyboard)
+    {
+#if ERB_EXECUTION_PROFILE
+        TraceGameplayStage("handler-enter:" + keyboard.Code);
+#endif
+        var active = session;
+        var pending = active?.PendingInput;
+        long? startSession = active?.SessionGeneration;
+        string reason;
+        (string Code, string Key)? deferred = null;
+        if (keyboard.MetaKey || ((keyboard.CtrlKey || keyboard.AltKey) && !ModifierOnly(keyboard.Code))
+            || keyboard.Code is "Tab" or "Backspace") reason = "modifier";
+        else
+        {
+            BrowserKeyInput? mapped = BrowserInputMapping.MapKey(keyboard.Code, keyboard.Key, keyboard.CtrlKey, keyboard.ShiftKey, keyboard.AltKey);
+            active?.SetKeyState(mapped?.Code ?? 0, true);
+            if (keyboard.Code == "Escape" && active?.MessageSkip.Active == true)
+            { StopMessageSkip(); keyboardInput.Clear(); reason = "message-skip-stop"; }
+            else if (!dataReady || keyboardTransition || macroActive || active?.MessageSkip.Active == true || active?.Status == BrowserRuntimeStatus.Persisting)
+            { keyboardInput.Clear(); reason = !dataReady ? "not-data-ready" : "input-gate"; }
+            else
+            {
+                keyboardInput.KeyDown(keyboard.Code, keyboard.Repeat, pending, startSession ?? 0);
+                if (keyboardInput.TryBegin(keyboard.Code, keyboard.Key, keyboard.Repeat, pending, startSession ?? 0, out reason))
+                {
+                    try
+                    {
+                        bool movement = keyboard.Code is "KeyW" or "KeyA" or "KeyS" or "KeyD"
+                            && pending is { Kind: BrowserInputKind.String, OneInput: true, TimeLimit: <= 0, TimedInputName: null or "" };
+                        bool heldMovement = keyboard.Repeat && movement;
+                        bool presentationAllowed = true;
+                        if (movement && !keyboard.Repeat && displayWindowModule is not null)
+                            presentationAllowed = await displayWindowModule.InvokeAsync<bool>("oneInputPresentation", startSession, pending!.RequestId);
+                        if (heldMovement && displayWindowModule is not null)
+                        {
+                            StateHasChanged();
+                            if (!await displayWindowModule.InvokeAsync<bool>("presentationOpportunity"))
+                                ResetPrimitiveKeys(new FocusEventArgs());
+                        }
+                        if (!presentationAllowed || movement && (!ReferenceEquals(active, session) || session?.PendingInput?.RequestId != pending?.RequestId || keyboardTransition))
+                            reason = "movement-stale-after-frame";
+                        else if (heldMovement && (!ReferenceEquals(active, session) || session?.PendingInput?.RequestId != pending?.RequestId
+                            || !keyboardInput.IsHeld(keyboard.Code, session.PendingInput, session.SessionGeneration)))
+                            reason = "repeat-stale-after-frame";
+                        else reason = await SubmitPrimitiveKeyCore(keyboard);
+                    }
+                    finally
+                    {
+                        if (keyboardTransition || session?.IsFailed != false || session.Status == BrowserRuntimeStatus.Persisting
+                            || session.MessageSkip.Active || macroActive) keyboardInput.Clear();
+                        deferred = keyboardInput.Complete(session?.PendingInput, session?.SessionGeneration ?? 0);
+                    }
+                }
+            }
+        }
+        if (deferred is { } key)
+            await SubmitPrimitiveKey(new KeyboardEventArgs { Code = key.Code, Key = key.Key, Repeat = true });
+    }
+
+    async Task<string> SubmitPrimitiveKeyCore(KeyboardEventArgs keyboard)
+    {
+        BrowserKeyInput? mapped = BrowserInputMapping.MapKey(keyboard.Code, keyboard.Key, keyboard.CtrlKey, keyboard.ShiftKey, keyboard.AltKey);
+        if (session?.PendingInput is not { } pending) return "no-pending-input";
+        if (keyboard.Key == "Enter" && (pending.Kind == BrowserInputKind.Enter
+            || pending is { Kind: BrowserInputKind.String or BrowserInputKind.Integer, OneInput: true }))
+        {
+            await SubmitP1C2TextCore(startMessageSkip: false, forceEmpty: true);
+            return session?.PendingInput?.RequestId != pending.RequestId ? "accepted" : "input-gate";
+        }
+        if (pending.Kind == BrowserInputKind.AnyKey && !ModifierOnly(keyboard.Code))
+        {
+            await SubmitP1C2TextCore(startMessageSkip: false, forceEmpty: true);
+            return session?.PendingInput?.RequestId != pending.RequestId ? "accepted" : "input-gate";
+        }
+        if (pending is { Kind: BrowserInputKind.String or BrowserInputKind.Integer, OneInput: true }
+            && keyboard.Key.Length == 1 && !keyboard.CtrlKey && !keyboard.AltKey && !keyboard.MetaKey)
+        {
+            await SubmitP1C2TextCore(startMessageSkip: false, directValue: keyboard.Key);
+            return session?.PendingInput?.RequestId != pending.RequestId ? "accepted" : "input-gate";
+        }
+        if (acceptedPrimitiveModifier is not null || pending.Kind != BrowserInputKind.MouseKey) return "wrong-kind";
+        BrowserInputPrompt prompt = pending;
+        if (mapped is null) return "other";
+        PointerContext pointer = await ReadPointerContext();
+        session.SetMousePosition(pointer.X, pointer.Y);
+        if (!session.SubmitPrimitive(new(prompt.RequestId, BrowserPrimitiveInputKind.Key, pointer.ButtonValue, mapped.Code, mapped.KeyData,
+            ButtonIsInteger: pointer.ButtonIsInteger,
+            SessionGeneration: session.SessionGeneration, DisplayGeneration: session.DisplayGeneration))) return "input-gate";
+        if (keyboard.Code.StartsWith("Shift", StringComparison.Ordinal) || keyboard.Code.StartsWith("Control", StringComparison.Ordinal) || keyboard.Code.StartsWith("Alt", StringComparison.Ordinal))
+            acceptedPrimitiveModifier = keyboard.Code;
+        SetDiagnosticStage("mousekey-key");
+        await AdvanceP1C2();
+        return "accepted";
+    }
+
+    static bool ModifierOnly(string code) => code.StartsWith("Shift", StringComparison.Ordinal)
+        || code.StartsWith("Control", StringComparison.Ordinal)
+        || code.StartsWith("Alt", StringComparison.Ordinal)
+        || code is "MetaLeft" or "MetaRight";
+
+    KeyboardReleaseReceiver? keyboardReleaseReceiver;
+    Action<KeyboardEventArgs> KeyReleaseHandler => (keyboardReleaseReceiver ??= new(this)).Release;
+
+    // Keyup changes GETKEY/held state, not the displayed model.
+    sealed class KeyboardReleaseReceiver(App owner) : IHandleEvent
+    {
+        public void Release(KeyboardEventArgs args) => owner.ReleasePrimitiveKey(args);
+        public Task HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+    }
+
+    void ReleasePrimitiveKey(KeyboardEventArgs keyboard)
+    {
+        keyboardInput.KeyUp(keyboard.Code);
+        BrowserKeyInput? mapped = BrowserInputMapping.MapKey(keyboard.Code, keyboard.Key, keyboard.CtrlKey, keyboard.ShiftKey, keyboard.AltKey);
+        session?.SetKeyState(mapped?.Code ?? 0, false);
+        if (keyboard.Code == acceptedPrimitiveModifier) acceptedPrimitiveModifier = null;
+    }
+
+    void ResetPrimitiveKeys(FocusEventArgs _)
+    {
+        keyboardInput.Clear();
+        session?.ClearKeyStates();
+        acceptedPrimitiveModifier = null;
+    }
+
+    [JSInvokable]
+    public void ClearKeyboardFocus() => ResetPrimitiveKeys(new FocusEventArgs());
+
+    Task SubmitGameAreaClick(MouseEventArgs mouse) => SubmitGameAreaClick(mouse, "game-screen");
+
+    Task SubmitIslandAreaClick(MouseEventArgs mouse) => SubmitGameAreaClick(mouse, "game-island-layer");
+
+    async Task SubmitGameAreaClick(MouseEventArgs mouse, string elementId)
+    {
+        if (mouse.Button != 0 || storeModule is null) return;
+        GameAreaClickContext? click = await storeModule.InvokeAsync<GameAreaClickContext?>("consumeGameAreaClick", elementId);
+        BrowserRuntimeSession? activeSession = session;
+        if (click is null || !dataReady || activeSession?.PendingInput is not { Kind: BrowserInputKind.Enter or BrowserInputKind.AnyKey } prompt
+            || prompt.RequestId != click.RequestId
+            || activeSession.SessionGeneration != click.SessionGeneration) return;
+        // Animation/display redraws can change DisplayGeneration while this same WAIT is still active.
+        var envelope = new InputEnvelope(click.RequestId, string.Empty, BrowserInputSource.Keyboard,
+            click.SessionGeneration, activeSession.DisplayGeneration);
+        if (!activeSession.Submit(envelope)) return;
+        input = string.Empty;
+        SetDiagnosticStage("text-input");
+        await AdvanceP1C2();
+    }
+
+    async Task SubmitPrimitivePointer(MouseEventArgs mouse)
+    {
+        BrowserRuntimeSession? activeSession = session;
+        if (!dataReady || activeSession?.PendingInput is not { } prompt) return;
+        if (mouse.Button == 2 && prompt is { Kind: BrowserInputKind.Enter or BrowserInputKind.AnyKey, StopMessageSkip: false })
+        {
+            await SubmitP1C2TextCore(startMessageSkip: true, forceEmpty: true);
+            return;
+        }
+        if (prompt.Kind != BrowserInputKind.MouseKey) return;
+        PointerContext pointer = await ReadPointerContext(mouse.ClientX, mouse.ClientY);
+        if (!activeSession.SubmitPrimitive(new(prompt.RequestId, BrowserPrimitiveInputKind.Click,
+            ButtonValue: pointer.ButtonValue, Code: MouseCode(mouse.Button), X: pointer.X, Y: pointer.Y,
+            ButtonIsInteger: pointer.ButtonIsInteger,
+            SessionGeneration: activeSession.SessionGeneration, DisplayGeneration: activeSession.DisplayGeneration))) return;
+        SetDiagnosticStage("mousekey-click");
+        await AdvanceP1C2();
+    }
+
+    static int MouseCode(long button) => button switch { 0 => 1048576, 1 => 4194304, 2 => 2097152, _ => 0 };
+
+    int? DisplayDiagnosticCount(BrowserDisplayPartKind kind)
+    {
+        if (!perfGate01b) return null;
+        if (session is null) return 0;
+        if (diagnosticCountGeneration != session.DisplayStructureGeneration || diagnosticCountSession != session.SessionGeneration)
+        {
+            long started = System.Diagnostics.Stopwatch.GetTimestamp();
+            diagnosticImages = diagnosticButtons = 0;
+            foreach (BrowserDisplayPart part in FlattenDisplay(session.DisplayLines.SelectMany(line => line.Parts)))
+            {
+                if (part.Kind == BrowserDisplayPartKind.Image) diagnosticImages++;
+                if (part.Kind == BrowserDisplayPartKind.Button) diagnosticButtons++;
+            }
+            diagnosticCountGeneration = session.DisplayStructureGeneration;
+            diagnosticCountSession = session.SessionGeneration;
+            hiddenCountCalls++;
+            hiddenCountElapsedTicks += System.Diagnostics.Stopwatch.GetElapsedTime(started).Ticks;
+        }
+        return kind == BrowserDisplayPartKind.Image ? diagnosticImages : diagnosticButtons;
+    }
+
+    static IEnumerable<BrowserDisplayPart> FlattenDisplay(IEnumerable<BrowserDisplayPart> parts)
+    {
+        foreach (BrowserDisplayPart part in parts)
+        {
+            yield return part;
+            if (part.Children is not null)
+                foreach (BrowserDisplayPart child in FlattenDisplay(part.Children))
+                    yield return child;
+        }
+    }
+
+    async Task RefreshViewport()
+    {
+        if (session is null || storeModule is null) return;
+        ViewportResult viewport = await storeModule.InvokeAsync<ViewportResult>("measureElement", "game-screen");
+        if (viewport.Width > 0 && viewport.Height > 0)
+            session.SetViewport(viewport.Width, viewport.Height);
+    }
+
+    async Task<PointerContext> ReadPointerContext(double? clientX = null, double? clientY = null)
+    {
+        PointerContext pointer = storeModule is IJSInProcessObjectReference inProcess
+            ? inProcess.Invoke<PointerContext>("inputContext", "game-screen", clientX, clientY)
+            : await storeModule!.InvokeAsync<PointerContext>("inputContext", "game-screen", clientX, clientY);
+        if (pointer.Width > 0 && pointer.Height > 0)
+            session!.SetViewport(pointer.Width, pointer.Height);
+        return pointer;
+    }
+
+    async Task StopAndDrainForTitleTransition(string stage)
+    {
+        keyboardTransition = true;
+        keyboardInput.Clear();
+        StopMacroQueue(stage + "-macro-stop");
+        session?.StopMessageSkip(stage + "-message-skip-stop");
+        primitiveTimer?.Cancel();
+        animationTimer?.Cancel();
+        if (session?.Status == BrowserRuntimeStatus.Persisting)
+            await AdvanceP1C2();
+        if (session?.IsFailed == true || persistenceState == "failed")
+            throw new InvalidOperationException("保存処理に失敗したため画面を移動できません");
+    }
+
+    async Task OpenSaveManager()
+    {
+        if (!isP1C3 || isP1C3Integration || isP1C4Small || importInProgress || storeModule is null || storeHandle is null)
+            return;
+        try
+        {
+            if (!await JS.InvokeAsync<bool>("confirm", "保存管理画面へ移動すると、未保存のゲーム進行は失われます。移動前に確定済みの保存処理を完了します。続けますか？"))
+                return;
+            await StopAndDrainForTitleTransition("save-manager-open");
+            if (session?.PendingPersistenceCount != 0)
+                throw new InvalidOperationException("保存処理が完了していません");
+            await storeModule.InvokeVoidAsync("release", storeHandle);
+            storeHandle = null;
+            Navigation.NavigateTo(Navigation.GetUriWithQueryParameter("saveManager", "1"), forceLoad: true, replace: true);
+        }
+        catch (Exception ex) { saveManagementMessage = "保存管理画面へ移動できません: " + ex.Message; }
+    }
+
+    async Task CloseSavePanel()
+    {
+        if (storeModule is not null)
+        {
+            await storeModule.InvokeVoidAsync("closeSavePanel", "p1c3-save-manager");
+            string target = session?.PendingInput is { Kind: BrowserInputKind.Integer or BrowserInputKind.String, OneInput: false }
+                ? "runtime-input" : "game-screen";
+            await storeModule.InvokeVoidAsync("focusElement", target);
+        }
+    }
+
+    async Task StageActiveImport()
+    {
+        if (!isP1C3 || isP1C3Integration || isP1C4Small || session is null || storeModule is null || storeHandle is null || importInProgress)
+            return;
+        importInProgress = true;
+        string? nonce = null;
+        try
+        {
+            nonce = await storeModule.InvokeAsync<string>("stageImportFiles", storeHandle, "p1c3-active-import");
+            SetSaveImportStage("active-import-file-captured");
+            if (!await JS.InvokeAsync<bool>("confirm", "保存ファイルを取得しました。保存管理画面へ移動すると、未保存のゲーム進行は失われます。移動前に確定済みの保存処理を完了します。続けますか？"))
+            {
+                await storeModule.InvokeVoidAsync("clearStagedImport", nonce);
+                nonce = null;
+                saveManagementMessage = "セーブ取込を取り消しました。";
+                return;
+            }
+            await StopAndDrainForTitleTransition("save-import");
+            if (session.PendingPersistenceCount != 0)
+                throw new InvalidOperationException("保存処理が完了していません");
+            await storeModule.InvokeVoidAsync("release", storeHandle);
+            storeHandle = null;
+            Navigation.NavigateTo(Navigation.GetUriWithQueryParameters(new Dictionary<string, object?>
+            {
+                ["saveManager"] = "1",
+                ["stagedImport"] = nonce
+            }), forceLoad: true, replace: true);
+        }
+        catch (Exception ex)
+        {
+            if (nonce is not null) await storeModule.InvokeVoidAsync("clearStagedImport", nonce);
+            saveManagementMessage = "セーブ取込を開始できません: " + ex.Message;
+        }
+        finally { importInProgress = false; }
+    }
+
+    async Task CloseSaveManager()
+    {
+        if (storeModule is not null && storeHandle is not null)
+        {
+            await storeModule.InvokeVoidAsync("release", storeHandle);
+            storeHandle = null;
+        }
+        if (pendingStagedImportNonce is not null && storeModule is not null)
+            await storeModule.InvokeVoidAsync("clearStagedImport", pendingStagedImportNonce);
+        Navigation.NavigateTo(Navigation.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            ["saveManager"] = null,
+            ["saveImportDone"] = null,
+            ["stagedImport"] = null
+        }), forceLoad: true, replace: true);
+    }
+
+    async Task ReturnToTitle()
+    {
+        if (saveManagerMode && !importInProgress)
+        {
+            await CloseSaveManager();
+            return;
+        }
+        if (!isP1C3 || isP1C3Integration || isP1C4Small || session is null || importInProgress) return;
+        try { await StopAndDrainForTitleTransition("title-return"); }
+        catch (Exception ex) { saveManagementMessage = ex.Message; return; }
+        error = null;
+        runtimeFailureDiagnostic = null;
+        p1c2Ready = false;
+        displayWindowSession = null;
+        titleBootstrapInProgress = true;
+        titleReturnPending = true;
+        SetDiagnosticStage("title-script-start");
+        session.ReturnToTitle();
+        _ = GC.GetTotalMemory(forceFullCollection: true);
+        SetDiagnosticStage("title-script-end");
+        await AdvanceP1C2();
+        keyboardTransition = false;
+    }
+
+    async Task ImportP1C2Global(InputFileChangeEventArgs change)
+    {
+        const long maxBytes = 16L * 1024 * 1024;
+        if (!dataReady || storeModule is null || storeHandle is null || !importMode || !importFormReady || importInProgress) return;
+        importInProgress = true;
+        try
+        {
+            IBrowserFile file = change.File;
+            if (!string.Equals(file.Name, "global.sav", StringComparison.OrdinalIgnoreCase) || file.Size is <= 0 or > maxBytes)
+                throw new InvalidDataException("有効なglobal.savを選択してください");
+            using Stream inputStream = file.OpenReadStream(maxBytes);
+            using var memory = new MemoryStream((int)file.Size);
+            await inputStream.CopyToAsync(memory);
+            byte[] bytes = memory.ToArray();
+            SetDiagnosticStage("file-read-complete");
+            BrowserRuntimeSession validator = await BrowserRuntimeSession.StartPersistentBootstrapAsync(p1c1Root, bytes);
+            GlobalCodecDiagnosticResult diagnostic = validator.RunGlobalCodecDiagnostic(resave: false);
+            if (!diagnostic.LoadSucceeded || validator.PendingPersistenceCount != 0 || validator.DoScriptCallCount != 0)
+                throw new InvalidDataException("既存LoadGlobalが選択ファイルを拒否しました");
+            SetDiagnosticStage("indexeddb-commit-start");
+            StoreCommitResult committed = await storeModule.InvokeAsync<StoreCommitResult>("commit", storeHandle, bytes, "import-" + Guid.NewGuid().ToString("N"), string.Empty);
+            SetDiagnosticStage("indexeddb-commit-end");
+            revision = committed.Revision;
+            durability = committed.Durability;
+            persistenceState = "committed";
+            loadSource = "file-import";
+            importFormReady = false;
+            await StartP1C2Title(bytes);
+        }
+        catch (Exception ex)
+        {
+            error = "global.sav import失敗: " + ex.Message;
+            persistenceState = "failed";
+        }
+        finally
+        {
+            importInProgress = false;
+        }
+    }
+
+    async Task ImportP1C3Files(InputFileChangeEventArgs change)
+    {
+        const long maxFileBytes = 256L * 1024 * 1024;
+        const long maxTotalBytes = 512L * 1024 * 1024;
+        if (storeModule is null || storeHandle is null || importInProgress || (!saveManagerMode && !saveImportReadProbe && !isP1C3Integration && !isP1C4Small))
+            return;
+        importInProgress = true;
+        persistenceState = "validating";
+        error = null;
+        saveImportSelectedCount = 0;
+        saveImportBytesRead = 0;
+        saveImportTrace.Clear();
+        SetSaveImportStage("save-import-event-enter");
+        try
+        {
+            SetSaveImportStage("save-import-file-list-start");
+            IReadOnlyList<IBrowserFile> selected = change.GetMultipleFiles(64);
+            saveImportSelectedCount = selected.Count;
+            SetSaveImportStage("save-import-file-list-end");
+            if (selected.Count == 0 || selected.Sum(file => file.Size) > maxTotalBytes)
+                throw new InvalidDataException("import件数または総量が不正です");
+            var imported = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
+            foreach (IBrowserFile file in selected)
+            {
+                string logicalFilename = NormalizeImportedSaveFilename(file.Name);
+                if (!imported.TryAdd(logicalFilename, []))
+                    throw new InvalidDataException($"同じ保存番号が重複しています: {logicalFilename}");
+                if (file.Size is <= 0 or > maxFileBytes)
+                    throw new InvalidDataException($"保存ファイルのサイズが不正です: {logicalFilename}");
+                SetSaveImportStage("save-import-open-stream-start");
+                using Stream inputStream = file.OpenReadStream(maxFileBytes);
+                SetSaveImportStage("save-import-open-stream-end");
+                using var memory = new MemoryStream((int)file.Size);
+                SetSaveImportStage("save-import-copy-start");
+                await inputStream.CopyToAsync(memory);
+                saveImportBytesRead += memory.Length;
+                SetSaveImportStage("save-import-copy-end");
+                imported[logicalFilename] = memory.ToArray();
+            }
+            SetSaveImportStage("save-import-file-read-complete");
+            if (saveImportReadProbe)
+            {
+                persistenceState = "read-probe-complete";
+                saveManagementMessage = $"{imported.Count}件の保存ファイルを読み取りました。";
+                return;
+            }
+
+            if (!saveManagerMode)
+            {
+                SetSaveImportStage("save-import-session-stop-start");
+                await StopAndDrainForTitleTransition("save-import");
+                session = null;
+                BrowserRuntimeSession.ReleaseBootstrapResources();
+                SetSaveImportStage("save-import-session-stop-end");
+            }
+
+            Dictionary<string, byte[]> staged = CurrentSaveFiles();
+            foreach ((string name, byte[] bytes) in imported) staged[name] = bytes;
+            if (!staged.ContainsKey("global.sav"))
+                throw new InvalidDataException("global.savも選択してください");
+            SetSaveImportStage("save-import-validator-start");
+            BrowserRuntimeSession validator = await BrowserRuntimeSession.StartSavePersistentBootstrapAsync(p1c1Root, staged);
+            SetSaveImportStage("save-import-validator-ready");
+            SetSaveImportStage("save-import-codec-start");
+            GlobalCodecDiagnosticResult global = validator.RunGlobalCodecDiagnostic(resave: false);
+            SetSaveImportStage("save-import-codec-end");
+            if (!global.LoadSucceeded)
+                throw new InvalidDataException("既存LoadGlobalがglobal.savを拒否しました");
+            if (isP1C4State)
+            {
+                if (imported.Count != 2 || !imported.ContainsKey("global.sav") || !imported.ContainsKey("save218.sav"))
+                    throw new InvalidDataException("P1C4状態診断にはglobal.savとsave218.savだけが必要です");
+                stateDiagnostic = validator.RunSaveStateDiagnostic(218);
+                if (!stateDiagnostic.LoadSucceeded)
+                    throw new InvalidDataException("既存LoadFromがsave218.savを拒否しました");
+                if (validator.DoScriptCallCount != 0 || validator.PendingPersistenceCount != 0)
+                    throw new InvalidOperationException("P1C4状態診断で実行または保存が発生しました");
+                session = validator;
+                persistenceState = "read-only";
+                loadSource = "file-import-read-only";
+                importFormReady = false;
+                progress = "P1C4戦闘後状態を読取専用で読み込みました";
+                SetDiagnosticStage("p1c4-state-ready");
+                return;
+            }
+            foreach (string name in imported.Keys.Where(name => name != "global.sav"))
+            {
+                int slot = ParseSaveSlot(name);
+                SaveCodecDiagnosticResult diagnostic = validator.RunSaveCodecDiagnostic(slot);
+                if (!diagnostic.LoadSucceeded)
+                    throw new InvalidDataException($"既存LoadFromが{name}を拒否しました");
+            }
+            if (validator.DoScriptCallCount != 0 || validator.PendingPersistenceCount != 0)
+                throw new InvalidOperationException("sav import検証で実行または保存が発生しました");
+            validator = null!;
+            BrowserRuntimeSession.ReleaseBootstrapResources();
+            SetSaveImportStage("save-import-validator-released");
+
+            SaveMutation[] mutations = imported.Select(pair => new SaveMutation(
+                "import-" + Guid.NewGuid().ToString("N"), pair.Key, SaveMutationKind.Put, pair.Value)).ToArray();
+            SetSaveImportStage("save-import-commit-start");
+            StoreMutationBatchResult committed = await storeModule.InvokeAsync<StoreMutationBatchResult>(
+                "commitMutations", storeHandle, mutations, string.Empty);
+            SetSaveImportStage("save-import-commit-end");
+            foreach (StoreMutationResult result in committed.Files)
+                UpsertPersisted(result, imported[result.LogicalFilename]);
+            durability = committed.Durability;
+            persistenceState = "committed";
+            loadSource = "file-import";
+            saveManagementMessage = $"{imported.Count}件の保存ファイルを取り込みました。タイトルを再開しています。";
+            runtimeFailureDiagnostic = null;
+            SetSaveImportStage("save-import-runtime-restart-start");
+            if (saveManagerMode)
+            {
+                await storeModule.InvokeVoidAsync("release", storeHandle);
+                storeHandle = null;
+                Navigation.NavigateTo(Navigation.GetUriWithQueryParameters(new Dictionary<string, object?>
+                {
+                    ["saveImportDone"] = "1",
+                    ["stagedImport"] = null
+                }), forceLoad: true, replace: true);
+                return;
+            }
+            await StartP1C3Title(CurrentSaveFiles());
+            SetSaveImportStage("save-import-runtime-restart-end");
+            if (isP1C3Integration && error is null)
+                SetDiagnosticStage("integration-import-ready");
+        }
+        catch (InvalidDataException ex) when (ex.Message == "global.savも選択してください")
+        {
+            persistenceState = saveManagerMode ? "validation-refused" : "committed";
+            error = null;
+            saveManagementMessage = ex.Message;
+            if (!saveManagerMode)
+                await StartP1C3Title(CurrentSaveFiles());
+        }
+        catch (Exception ex)
+        {
+            persistenceState = "failed";
+            error = "通常sav import失敗: " + ex.Message;
+        }
+        finally
+        {
+            if (pendingStagedImportNonce is not null && storeModule is not null)
+                await storeModule.InvokeVoidAsync("clearStagedImport", pendingStagedImportNonce);
+            importInProgress = false;
+        }
+    }
+
+    async Task ImportGlobal(InputFileChangeEventArgs change)
+    {
+        const long maxBytes = 16L * 1024 * 1024;
+        if (storeModule is null || storeHandle is null || !importMode || !importFormReady || importInProgress)
+            return;
+        SetDiagnosticStage("file-selected");
+        importInProgress = true;
+        persistenceState = "validating";
+        error = null;
+        IBrowserFile file = change.File;
+        try
+        {
+            if (!string.Equals(file.Name, "global.sav", StringComparison.OrdinalIgnoreCase))
+            {
+                persistenceState = "validation-failed";
+                error = "P1C1で選択できるファイルはglobal.savだけです";
+                return;
+            }
+            if (file.Size is <= 0 or > maxBytes)
+            {
+                persistenceState = "validation-failed";
+                error = $"global.savのサイズが不正です（上限{maxBytes} bytes）";
+                return;
+            }
+            string query = Navigation.ToAbsoluteUri(Navigation.Uri).Query;
+            string profile = QueryValue(query, "profile") ?? "default";
+            bool realImport = FixtureKey(query) == "p1c1-real";
+            string importRoot = (realImport ? "/p1c1-real-runtime-" : "/p1c1-runtime-") + profile;
+            p1c1Root = importRoot;
+            using Stream input = file.OpenReadStream(maxBytes);
+            using var memory = new MemoryStream((int)file.Size);
+            await input.CopyToAsync(memory);
+            byte[] bytes = memory.ToArray();
+            SetDiagnosticStage("file-read-complete");
+            progress = "global.savを検証用Runtimeで検証中です…";
+            SetDiagnosticStage("runtime-bootstrap-start");
+            session = await BrowserRuntimeSession.StartPersistentBootstrapAsync(importRoot, bytes);
+            SetDiagnosticStage("runtime-bootstrap-end");
+            SetDiagnosticStage("loadglobal-diagnostic-start");
+            GlobalCodecDiagnosticResult diagnostic = session.RunGlobalCodecDiagnostic(resave: false);
+            SetDiagnosticStage("loadglobal-diagnostic-end");
+            inputSha256 = diagnostic.InputSha256;
+            codecValueSha256 = diagnostic.ValueSha256;
+            if (!diagnostic.LoadSucceeded)
+            {
+                session = null;
+                persistenceState = "validation-failed";
+                error = "既存LoadGlobalが選択ファイルを拒否しました";
+                return;
+            }
+            if (session.Status != BrowserRuntimeStatus.BootstrapReady
+                || session.DoScriptCallCount != 0
+                || session.PendingPersistenceCount != 0)
+                throw new InvalidOperationException("GLOBAL import検証で実行または保存が発生しました");
+
+            SetDiagnosticStage("indexeddb-commit-start");
+            StoreCommitResult committed = await storeModule.InvokeAsync<StoreCommitResult>("commit", storeHandle, bytes, "import-" + Guid.NewGuid().ToString("N"), string.Empty);
+            SetDiagnosticStage("indexeddb-commit-end");
+            revision = committed.Revision;
+            durability = committed.Durability;
+            loadSource = "file-import";
+            persistenceState = "committed";
+            p1c1Ready = true;
+            progress = "global.savの検証・import完了（タイトル未実行）";
+        }
+        catch (Exception ex)
+        {
+            persistenceState = "failed";
+            error = "global.sav import失敗: " + ex.Message;
+        }
+        finally
+        {
+            importInProgress = false;
+        }
+    }
+
+    async Task ExportGlobal()
+    {
+        if (storeModule is null || storeHandle is null) return;
+        await storeModule.InvokeVoidAsync("downloadCommitted", storeHandle, "global.sav");
+    }
+
+    async Task ExportSave(string logicalFilename)
+    {
+        if (storeModule is null || storeHandle is null) return;
+        await storeModule.InvokeVoidAsync("downloadCommitted", storeHandle, logicalFilename);
+    }
+
+    Dictionary<string, byte[]> CurrentSaveFiles() => persistedFiles
+        .Where(file => !file.Deleted && file.Bytes is not null)
+        .ToDictionary(file => file.LogicalFilename, file => file.Bytes!, StringComparer.OrdinalIgnoreCase);
+
+    Dictionary<string, object> IntegrationPersistedSnapshot() => persistedFiles
+        .OrderBy(file => file.LogicalFilename, StringComparer.OrdinalIgnoreCase)
+        .ToDictionary(file => file.LogicalFilename, file => (object)new
+        {
+            sha256 = file.Bytes is null ? string.Empty : Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(file.Bytes)).ToLowerInvariant(),
+            byteLength = file.Bytes?.Length ?? 0,
+            revision = file.Revision,
+            deleted = file.Deleted,
+            lastOperationId = file.LastOperationId
+        }, StringComparer.OrdinalIgnoreCase);
+
+    Dictionary<string, object> IntegrationRuntimeSnapshot()
+    {
+        string root = p1c1Root;
+        if (!Directory.Exists(root)) return new(StringComparer.OrdinalIgnoreCase);
+        return Directory.GetFiles(root, "*.sav", SearchOption.AllDirectories)
+            .OrderBy(path => Path.GetFileName(path), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(path => Path.GetFileName(path), path =>
+            {
+                byte[] bytes = File.ReadAllBytes(path);
+                return (object)new
+                {
+                    sha256 = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes)).ToLowerInvariant(),
+                    byteLength = bytes.Length
+                };
+            }, StringComparer.OrdinalIgnoreCase);
+    }
+
+    int IntegrationRuntimeFileCount() => string.IsNullOrEmpty(p1c1Root) || !Directory.Exists(p1c1Root)
+        ? 0 : Directory.GetFiles(p1c1Root, "*.sav", SearchOption.AllDirectories).Length;
+
+    static string NormalizeImportedSaveFilename(string value)
+    {
+        if (string.Equals(value, "global.sav", StringComparison.OrdinalIgnoreCase)) return "global.sav";
+        if (!value.StartsWith("save", StringComparison.OrdinalIgnoreCase) || !value.EndsWith(".sav", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException($"保存ファイル名が不正です: {value}");
+        string digits = value[4..^4];
+        if (!int.TryParse(digits, out int slot) || slot < 0)
+            throw new InvalidDataException($"保存番号が不正です: {value}");
+        string normalized = $"save{slot:00}.sav";
+        if (!string.Equals(value, normalized, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException($"非canonicalな保存ファイル名です: {value}");
+        return normalized;
+    }
+
+    static int ParseSaveSlot(string value)
+    {
+        string normalized = NormalizeImportedSaveFilename(value);
+        if (normalized == "global.sav") throw new InvalidDataException("GLOBALには通常保存番号がありません");
+        return int.Parse(normalized[4..^4], System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    async Task<StoreCommitResult> CommitMutation(SaveMutation request, string fault)
+    {
+        if (storeModule is null || storeHandle is null)
+            throw new InvalidOperationException("保存領域が準備されていません");
+        StoreMutationBatchResult batch = await storeModule.InvokeAsync<StoreMutationBatchResult>(
+            "commitMutations", storeHandle, new[] { request }, fault);
+        StoreMutationResult file = batch.Files.Single();
+        UpsertPersisted(file, request.Bytes);
+        return new() { Revision = file.Revision, Durability = batch.Durability };
+    }
+
+    void UpsertPersisted(StoreMutationResult result, byte[]? bytes)
+    {
+        persistedFiles.RemoveAll(file => string.Equals(file.LogicalFilename, result.LogicalFilename, StringComparison.OrdinalIgnoreCase));
+        persistedFiles.Add(new()
+        {
+            LogicalFilename = result.LogicalFilename,
+            Deleted = result.Deleted,
+            Bytes = result.Deleted ? null : bytes,
+            Revision = result.Revision,
+            LastOperationId = result.LastOperationId
+        });
+        if (result.LogicalFilename == "global.sav") revision = result.Revision;
+    }
+
+    async Task StartP1B()
+    {
+        const string root = "/p1b-runtime";
+        await InstallP1BData(root);
+        Directory.CreateDirectory(Path.Combine(root, "sav"));
+        progress = "実設定・CSV・ERH・ERB・resourcesを初期化中です…";
+        session = await BrowserRuntimeSession.StartBootstrapAsync(root);
+        if (session.Status != BrowserRuntimeStatus.BootstrapReady || session.DoScriptCallCount != 0)
+            throw new InvalidOperationException($"BootstrapReadyへ到達していません: {session.Status}, DoScript={session.DoScriptCallCount}");
+    }
+
+    async Task PrepareP1C1Data(string root, bool real, string fixtureCase)
+    {
+        if (real)
+        {
+            string csv = Directory.Exists(Path.Combine(root, "CSV")) ? Path.Combine(root, "CSV") : Path.Combine(root, "csv");
+            if (!Directory.Exists(csv) || !Directory.EnumerateFiles(csv).Any(path => string.Equals(Path.GetFileName(path), "GAMEBASE.CSV", StringComparison.OrdinalIgnoreCase)))
+                await InstallP1BData(root);
+            return;
+        }
+        foreach ((string source, string destination) in new[]
+        {
+            ("p1c1-fixture/CSV/GAMEBASE.CSV", "CSV/GAMEBASE.CSV"),
+            ("p1c1-fixture/ERB/P1C1.ERH", "ERB/P1C1.ERH"),
+            (fixtureCase == "overwrite" ? "p1c1-fixture/ERB/OVERWRITE.ERB" : "p1c1-fixture/ERB/P1C1.ERB", "ERB/P1C1.ERB")
+        })
+        {
+            string destinationPath = Path.Combine(root, destination.Replace('/', Path.DirectorySeparatorChar));
+            Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
+            File.WriteAllBytes(destinationPath, await Http.GetByteArrayAsync(source));
+        }
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        File.WriteAllBytes(Path.Combine(root, "emuera.config"), Encoding.GetEncoding(932).GetBytes("セーブデータをバイナリ形式で保存する:YES"));
+    }
+
+    async Task InstallP1BData(string root)
+    {
+        httpRequests = 0;
+        packageFiles = 0;
+        transferBytes = 0;
+        downloadMilliseconds = 0;
+        extractMilliseconds = 0;
+        extractedBytes = 0;
+        packageLookups = 0;
+        packageCacheHits = 0;
+        packageCacheMisses = 0;
+        packageCacheRecoveredPacks = 0;
+        packageCacheCleanedPacks = 0;
+        packageCacheUsage = -1;
+        packageCacheQuota = -1;
+        packageCachePersistent = true;
+        packageCacheState = "preparing";
+        string downloads = root + "-downloads";
+        var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        progress = "manifestを取得中です…";
+        var manifestFetch = System.Diagnostics.Stopwatch.StartNew();
+        string manifestJson = await Http.GetStringAsync("p1b-data/manifest.json");
+        AddStartupDuration("manifestFetch", manifestFetch.ElapsedMilliseconds);
+        DataPackageManifest manifest = JsonSerializer.Deserialize<DataPackageManifest>(manifestJson, jsonOptions)
+            ?? throw new InvalidDataException("manifest.jsonを読めません");
+        httpRequests++;
+        transferBytes += Encoding.UTF8.GetByteCount(manifestJson);
+        packageFiles = manifest.Files.Count;
+        progress = "manifestを検証中です…";
+        var manifestValidation = System.Diagnostics.Stopwatch.StartNew();
+        DataPackageIndex packageIndex = DataPackageExtractor.Validate(manifest, manifest.TotalSize);
+        AddStartupDuration("manifestValidation", manifestValidation.ElapsedMilliseconds);
+        var cacheModuleImport = System.Diagnostics.Stopwatch.StartNew();
+        packageCacheModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./package-cache.js");
+        AddStartupDuration("packageCacheModuleImport", cacheModuleImport.ElapsedMilliseconds);
+        Directory.CreateDirectory(root);
+        Directory.CreateDirectory(downloads);
+
+        foreach (string pack in manifest.Files.Select(file => file.Pack).Distinct(StringComparer.Ordinal))
+        {
+            string identity = PackageIdentity(manifest, pack);
+            string archivePath = Path.Combine(downloads, pack);
+            bool extracted = false;
+            for (int attempt = 0; attempt < 2 && !extracted; attempt++)
+            {
+                progress = $"{pack}を{(attempt == 0 ? "取得" : "再取得")}中です…";
+                var download = System.Diagnostics.Stopwatch.StartNew();
+                var cacheLookup = System.Diagnostics.Stopwatch.StartNew();
+                PackageCacheOpenResult opened = await packageCacheModule.InvokeAsync<PackageCacheOpenResult>("openPack", "shin-era-tensei-p", manifest.Version, pack, identity, Navigation.ToAbsoluteUri("p1b-data/" + pack).AbsoluteUri, attempt != 0);
+                AddStartupDuration("packageCacheLookup", cacheLookup.ElapsedMilliseconds);
+                try
+                {
+                    IJSStreamReference streamReference = await packageCacheModule.InvokeAsync<IJSStreamReference>("openPackStream", opened.Token);
+                    await using Stream input = await streamReference.OpenReadStreamAsync(manifest.TotalSize + 64L * 1024 * 1024);
+                    await using (FileStream output = File.Create(archivePath))
+                        await input.CopyToAsync(output);
+                    downloadMilliseconds += download.ElapsedMilliseconds;
+                    AddStartupDuration("cachedZipReadAndRuntimeTempWrite", download.ElapsedMilliseconds);
+                    if (opened.CacheHit) packageCacheHits++;
+                    else
+                    {
+                        packageCacheMisses++;
+                        httpRequests++;
+                        transferBytes += Math.Max(0, opened.ByteLength);
+                    }
+                    if (!opened.Persisted)
+                    {
+                        packageCachePersistent = false;
+                        packageCacheState = "degraded: " + opened.CacheError;
+                    }
+
+                    progress = $"{pack}を展開中です…";
+                    var extract = System.Diagnostics.Stopwatch.StartNew();
+                    await using FileStream archive = File.OpenRead(archivePath);
+                    DataPackageExtractionResult result = await DataPackageExtractor.ExtractPackAsync(archive, pack, root, packageIndex, manifest.TotalSize, extractedBytes);
+                    extractedBytes += result.BytesWritten;
+                    packageLookups += result.LookupCount;
+                    extractMilliseconds += extract.ElapsedMilliseconds;
+                    AddStartupDuration("zipExtractShaValidateAndRuntimeFsPopulate", extract.ElapsedMilliseconds);
+                    extracted = true;
+                }
+                catch when (opened.CacheHit && attempt == 0)
+                {
+                    packageCacheRecoveredPacks++;
+                    await packageCacheModule.InvokeVoidAsync("invalidatePack", "shin-era-tensei-p", manifest.Version, pack, identity);
+                }
+                finally
+                {
+                    if (File.Exists(archivePath)) File.Delete(archivePath);
+                }
+            }
+            if (!extracted)
+                throw new InvalidDataException($"packageを展開できません: {pack}");
+        }
+        if (extractedBytes != manifest.TotalSize || packageLookups != manifest.Files.Count)
+            throw new InvalidDataException($"展開結果がmanifestと一致しません: bytes={extractedBytes}, lookups={packageLookups}");
+        var cacheReconcile = System.Diagnostics.Stopwatch.StartNew();
+        PackageCacheReconcileResult reconciled = await packageCacheModule.InvokeAsync<PackageCacheReconcileResult>("reconcile", "shin-era-tensei-p", manifest.Version,
+            manifest.Files.Select(file => file.Pack).Distinct(StringComparer.Ordinal).Select(pack => new { pack, identity = PackageIdentity(manifest, pack) }).ToArray());
+        AddStartupDuration("packageCacheReconcile", cacheReconcile.ElapsedMilliseconds);
+        packageCacheCleanedPacks = reconciled.Removed;
+        packageCacheUsage = reconciled.Usage;
+        packageCacheQuota = reconciled.Quota;
+        if (packageCachePersistent) packageCacheState = reconciled.Persisted ? "ready-protected" : "ready";
+    }
+
+    static string PackageIdentity(DataPackageManifest manifest, string pack)
+    {
+        var bytes = new StringBuilder();
+        foreach (DataPackageFile file in manifest.Files.Where(file => file.Pack == pack).OrderBy(file => file.Path, StringComparer.Ordinal))
+            bytes.Append(file.Path).Append('\n').Append(file.Size).Append('\n').Append(file.Sha256.ToUpperInvariant()).Append('\n');
+        return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(bytes.ToString()))).ToLowerInvariant();
+    }
+
+    static string FixtureKey(string query)
+    {
+        foreach (string pair in query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
+            if (pair.StartsWith("fixture=", StringComparison.Ordinal))
+                return Uri.UnescapeDataString(pair[8..]) switch
+                {
+                    "tinput" => "tinput",
+                    "main" => "main",
+                    "saveglobal" => "saveglobal",
+                    "error" => "error",
+                    "r2" => "r2",
+                    "p1b" => "p1b",
+                    "p1c1" => "p1c1",
+                    "p1c1-real" => "p1c1-real",
+                    "p1c2-real" => "p1c2-real",
+                    "p1c2-host" => "p1c2-host",
+                    "p1c3-real" => "p1c3-real",
+                    "p1c3-r1" => "p1c3-r1",
+                    "p1c4-twait" => "p1c4-twait",
+                    "p1c5-skip" => "p1c5-skip",
+                    "p1c6-macro" => "p1c6-macro",
+                    _ => "main"
+                };
+        return "p1c3-real";
+    }
+
+    static string? QueryValue(string query, string key)
+    {
+        foreach (string pair in query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            int equals = pair.IndexOf('=');
+            string name = equals < 0 ? pair : pair[..equals];
+            if (string.Equals(Uri.UnescapeDataString(name), key, StringComparison.Ordinal))
+                return equals < 0 ? string.Empty : Uri.UnescapeDataString(pair[(equals + 1)..]);
+        }
+        return null;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        primitiveTimer?.Cancel();
+        primitiveTimer?.Dispose();
+        animationTimer?.Cancel();
+        animationTimer?.Dispose();
+        if (tooltipAttached && tooltipModule is not null)
+            try { await tooltipModule.InvokeVoidAsync("detach", "game-screen"); } catch (JSDisconnectedException) { }
+        if (tooltipModule is not null)
+            try { await tooltipModule.DisposeAsync(); } catch (JSDisconnectedException) { }
+        if (timedInputDisplayModule is not null)
+        {
+            try { await timedInputDisplayModule.InvokeVoidAsync("stop"); } catch (JSDisconnectedException) { }
+            try { await timedInputDisplayModule.DisposeAsync(); } catch (JSDisconnectedException) { }
+        }
+        if (displayWindowAttached && displayWindowModule is not null)
+            try { await displayWindowModule.InvokeVoidAsync("detach", "game-screen"); } catch (JSDisconnectedException) { }
+        displayWindowReference?.Dispose();
+        if (displayWindowModule is not null)
+            try { await displayWindowModule.DisposeAsync(); } catch (JSDisconnectedException) { }
+        if (storeModule is not null && storeHandle is not null)
+            try { await storeModule.InvokeVoidAsync("release", storeHandle); } catch (JSDisconnectedException) { }
+        if (storeModule is not null)
+            try { await storeModule.DisposeAsync(); } catch (JSDisconnectedException) { }
+        longRunningModule?.Dispose();
+    }
+
+    sealed class StoreLockResult
+    {
+        public bool Acquired { get; set; }
+        public string? HandleId { get; set; }
+        public string? Reason { get; set; }
+    }
+
+    sealed class StorePrepareResult
+    {
+        public bool Exists { get; set; }
+        public byte[]? Bytes { get; set; }
+        public string? Revision { get; set; }
+    }
+
+    sealed class StorePreparedFilesResult
+    {
+        public StorePreparedFile[] Files { get; set; } = [];
+    }
+
+    sealed class StorePreparedFile
+    {
+        public string LogicalFilename { get; set; } = string.Empty;
+        public bool Deleted { get; set; }
+        public byte[]? Bytes { get; set; }
+        public string Revision { get; set; } = string.Empty;
+        public string LastOperationId { get; set; } = string.Empty;
+    }
+
+    sealed class StoreCommitResult
+    {
+        public string Revision { get; set; } = string.Empty;
+        public string Durability { get; set; } = string.Empty;
+    }
+
+    sealed class StoreMutationBatchResult
+    {
+        public StoreMutationResult[] Files { get; set; } = [];
+        public string Durability { get; set; } = string.Empty;
+    }
+
+    sealed class StoreMutationResult
+    {
+        public string LogicalFilename { get; set; } = string.Empty;
+        public string Revision { get; set; } = string.Empty;
+        public bool Deleted { get; set; }
+        public long ByteLength { get; set; }
+        public string LastOperationId { get; set; } = string.Empty;
+    }
+
+    sealed record SaveImportTracePoint(
+        string Stage,
+        bool SessionExists,
+        string RuntimeStatus,
+        long ManagedMemoryBytes,
+        int SelectedFileCount,
+        long BytesRead);
+
+    void Submit()
+    {
+        if (session?.PendingInput is not { } prompt) return;
+        if (session.Submit(new InputEnvelope(prompt.RequestId, input))) input = string.Empty;
+    }
+
+    static string InputLabel(BrowserInputPrompt prompt) => prompt.Kind switch
+    {
+        BrowserInputKind.Integer => "整数を入力",
+        BrowserInputKind.String when prompt.OneInput => "1文字を入力",
+        BrowserInputKind.String => "文字列を入力",
+        BrowserInputKind.Enter => "Enter待ち",
+        _ => "キー入力待ち"
+    };
+}

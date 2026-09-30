@@ -47,6 +47,9 @@ internal sealed class InputRequest
     public long Timelimit = -1;
     public bool DisplayTime;
     public string TimeUpMes;
+#if WEB_RUNTIME
+    public string? TimedInputName;
+#endif
 
     static long LastRequestID;
 }

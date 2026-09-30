@@ -1,5 +1,11 @@
 ﻿using MinorShift.Emuera.GameData.Variable;
 using MinorShift.Emuera.GameView;
+#if WEB_RUNTIME // R7 direct-call metadata
+using MinorShift.Emuera.Runtime.Script.Statements.Function;
+#endif // R7 direct-call metadata
+#if WEB_RUNTIME && ERB_EXECUTION_PROFILE
+using MinorShift.Emuera.GameProc;
+#endif
 using MinorShift.Emuera.Runtime.Script.Statements;
 using MinorShift.Emuera.Runtime.Script.Statements.Expression;
 using MinorShift.Emuera.Runtime.Utils;
@@ -96,6 +102,11 @@ internal sealed class ProcessState
     }
     readonly EmueraConsole console;
     readonly List<CalledFunction> functionList = [];
+#if WEB_RUNTIME && ERB_EXECUTION_PROFILE
+    ErbExecutionProfiler erbExecutionProfiler;
+    internal void AttachErbExecutionProfiler(ErbExecutionProfiler profiler) => erbExecutionProfiler = profiler;
+    internal FunctionLabelLine[] GetErbProfileFunctionStack() => functionList.Select(called => called.CurrentLabel).Where(label => label is not null).ToArray();
+#endif
     private LogicalLine currentLine;
     //private LogicalLine nextLine;
     public int lineCount;
@@ -247,6 +258,9 @@ internal sealed class ProcessState
         foreach (CalledFunction called in functionList)
             if (called.CurrentLabel.hasPrivDynamicVar)
                 called.CurrentLabel.ScopeOut();
+#if WEB_RUNTIME && ERB_EXECUTION_PROFILE
+        erbExecutionProfiler?.ClearFunctions();
+#endif
         functionList.Clear();
         begintype = BeginType.NULL;
     }
@@ -302,6 +316,9 @@ internal sealed class ProcessState
         foreach (CalledFunction called in functionList)
             if (called.CurrentLabel.hasPrivDynamicVar)
                 called.CurrentLabel.ScopeOut();
+#if WEB_RUNTIME && ERB_EXECUTION_PROFILE
+        erbExecutionProfiler?.ClearFunctions();
+#endif
         functionList.Clear();
         begintype = BeginType.NULL;
         return;
@@ -368,6 +385,9 @@ internal sealed class ProcessState
         {//JUMPした場合。即座にRETURN RESULTする。
             if (called.TopLabel.hasPrivDynamicVar)
                 called.TopLabel.ScopeOut();
+#if WEB_RUNTIME && ERB_EXECUTION_PROFILE
+            erbExecutionProfiler?.ExitFunction();
+#endif
             functionList.Remove(called);
             if (Program.DebugMode)
                 console.DebugRemoveTraceLog();
@@ -406,6 +426,9 @@ internal sealed class ProcessState
         //関数終了
         if (currentLine == null)
         {
+#if WEB_RUNTIME && ERB_EXECUTION_PROFILE
+            erbExecutionProfiler?.ExitFunction();
+#endif
             currentLine = called.ReturnAddress;
             functionList.RemoveAt(functionList.Count - 1);
             if (currentLine == null)
@@ -492,9 +515,78 @@ internal sealed class ProcessState
         functionList.Add(call);
         //sequential = false;
         currentLine = call.CurrentLabel;
+#if WEB_RUNTIME && ERB_EXECUTION_PROFILE
+        erbExecutionProfiler?.EnterFunction(call.CurrentLabel);
+#endif
         lineCount++;
         //ShfitNextLine();
     }
+#if WEB_RUNTIME // R7 direct-call metadata
+    public void IntoDirectFunction(CalledFunction call, UserDefinedFunctionArgument srcArgs, ExpressionMediator exm, DirectUserDefinedMethodTerm direct)
+    {
+        // [Emuera改修:MEM-13R39 2026-08-22]
+        // Lazy対象の本文は固定CALLが保持するFunctionLabelLine stubへ実行直前に接続する。
+        // hydrationを引数評価・ScopeIn・functionList追加より前に行い、stub identityを変えない。
+        if (!GlobalStatic.Process.EnsureFunctionReady(call.TopLabel))
+        {
+            string errMes = call.TopLabel?.ErrMes;
+            throw new CodeEE(string.IsNullOrEmpty(errMes)
+                ? "関数の実行準備に失敗しました。"
+                : errMes);
+        }
+        PerformanceMetrics.RecordBenchmarkFunctionEntry(call.TopLabel.LabelName);
+
+        if (call.IsEvent)
+        {
+            foreach (CalledFunction called in functionList)
+            {
+                if (called.IsEvent)
+                    throw new CodeEE(LocalizationManager.Error.CalleventBeforeFinishEvent);
+            }
+        }
+        if (Program.DebugMode)
+        {
+            FunctionLabelLine label = call.CurrentLabel;
+            if (call.IsJump)
+                console.DebugAddTraceLog($"JUMP :@{label.LabelName}:{label.Position.Value.Filename}:{label.Position.Value.LineNo}行目");
+            else
+                console.DebugAddTraceLog($"CALL :@{label.LabelName}:{label.Position.Value.Filename}:{label.Position.Value.LineNo}行目");
+        }
+        if (srcArgs != null)
+        {
+            //引数の値を確定させる
+            direct.SetTransporter(exm);
+            //プライベート変数更新
+            if (call.TopLabel.hasPrivDynamicVar)
+                call.TopLabel.ScopeIn();
+            //更新した変数へ引数を代入
+            ulong kinds = direct.slotKinds;
+            for (int i = 0; i < call.TopLabel.Arg.Length; i++, kinds >>= 2)
+            {
+                switch ((int)(kinds & 3))
+                {
+                    case 1: call.TopLabel.Arg[i].SetValue(srcArgs.TransporterInt[i], exm); break;
+                    case 2: call.TopLabel.Arg[i].SetValue(srcArgs.TransporterStr[i], exm); break;
+                    case 3: ((ReferenceToken)call.TopLabel.Arg[i].Identifier).SetRef(srcArgs.TransporterRef[i]); break;
+                }
+            }
+        }
+        else
+        {
+            //プライベート変数更新
+            if (call.TopLabel.hasPrivDynamicVar)
+                call.TopLabel.ScopeIn();
+        }
+        functionList.Add(call);
+        //sequential = false;
+        currentLine = call.CurrentLabel;
+#if WEB_RUNTIME && ERB_EXECUTION_PROFILE
+        erbExecutionProfiler?.EnterFunction(call.CurrentLabel);
+#endif
+        lineCount++;
+        //ShfitNextLine();
+    }
+#endif // R7 direct-call metadata
 
     #region userdifinedmethod
     public bool IsFunctionMethod
@@ -523,6 +615,9 @@ internal sealed class ProcessState
         {
             console.DebugRemoveTraceLog();
         }
+#if WEB_RUNTIME && ERB_EXECUTION_PROFILE
+        erbExecutionProfiler?.ExitFunction();
+#endif
         //OutはGetValue側で行う
         //functionList[0].TopLabel.Out();
         currentLine = functionList[^1].ReturnAddress;

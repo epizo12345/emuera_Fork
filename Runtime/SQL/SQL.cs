@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
+#if !WEB_RUNTIME
 using Microsoft.Data.Sqlite;
+#endif
 using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Utils;
 #nullable enable
@@ -10,6 +12,26 @@ namespace Runtime.SQL;
 
 static class SQL
 {
+#if WEB_RUNTIME
+    static PlatformNotSupportedException Unsupported() => new("P1A未対応: SQL");
+    static void RequireNoSidecar(string slotPath)
+    {
+        string tempDb = Path.Combine(Config.SavDir, "temp_db");
+        if (Directory.Exists(tempDb) || Directory.Exists(slotPath))
+            throw new PlatformNotSupportedException("P1C3未対応: SQL sidecarを含む通常sav");
+    }
+    public static void ConnectionOpen(string name) => throw Unsupported();
+    public static void SetUpTempDB() => throw Unsupported();
+    public static void Save(string destDirPath) => RequireNoSidecar(destDirPath);
+    public static void Load(string srcDirPath) => RequireNoSidecar(srcDirPath);
+    public static void ExecuteReader(long readerID, string sql) => throw Unsupported();
+    public static T? ExecuteScaler<T>(string sql) => throw Unsupported();
+    public static void ExecuteNonQuery(string sql) => throw Unsupported();
+    public static bool ReaderRead(long readerID) => throw Unsupported();
+    public static long ReaderGetLong(long readerID, int index) => throw Unsupported();
+    public static string ReaderGetString(long readerID, int index) => throw Unsupported();
+    public static bool ReaderIsNull(long readerID, int index) => throw Unsupported();
+#else
     static SqliteConnection? _connection;
     static Dictionary<long, SqliteDataReader> _readers = [];
     static string tempDir { get => Config.SavDir + "temp_db" + Path.DirectorySeparatorChar; }
@@ -156,4 +178,5 @@ static class SQL
 
         return reader.IsDBNull(index);
     }
+#endif
 }

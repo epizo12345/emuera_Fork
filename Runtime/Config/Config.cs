@@ -267,8 +267,8 @@ internal static class Config
         SearchOption option = SearchOption.TopDirectoryOnly;
         if (SearchSubdirectory)
             option = SearchOption.AllDirectories;
-        string[] erbFiles = Directory.GetFiles(Program.ErbDir, "*.ERB", option);
-        string[] csvFiles = Directory.GetFiles(Program.CsvDir, "*.CSV", option);
+        string[] erbFiles = CompatiblePath.GetFiles(Program.ErbDir, "*.ERB", option);
+        string[] csvFiles = CompatiblePath.GetFiles(Program.CsvDir, "*.CSV", option);
         long[] writetimes = new long[erbFiles.Length + csvFiles.Length];
         for (int i = 0; i < erbFiles.Length; i++)
             if (Path.GetExtension(erbFiles[i]).Equals(".ERB", StringComparison.OrdinalIgnoreCase))
@@ -308,11 +308,11 @@ internal static class Config
             else
                 RelativePath = dir[rootdir.Length..];//前方が検索ルートパスと一致するならその部分を切り取る
             if (!RelativePath.EndsWith('\\') && !RelativePath.EndsWith('/'))
-                RelativePath += "\\";//末尾が\又は/で終わるように。後でFile名を直接加算できるようにしておく
+                RelativePath += Path.DirectorySeparatorChar;//末尾を実行OSの区切りにしてFile名を直接加算できるようにする
         }
 
         //filepathsは完全パスである
-        string[] filepaths = Directory.GetFiles(dir, pattern, SearchOption.TopDirectoryOnly);
+        string[] filepaths = CompatiblePath.GetFiles(dir, pattern);
         if (sort)
             Array.Sort(filepaths);
         for (int i = 0; i < filepaths.Length; i++)

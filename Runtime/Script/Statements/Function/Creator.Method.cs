@@ -2479,7 +2479,7 @@ internal static partial class FunctionMethodCreator
             ReturnType = typeof(string);
             argumentTypeArray = [typeof(string)];
             strType = type;
-            CanRestructure = true;
+            CanRestructure = type is StrFormType.Upper or StrFormType.Lower || !OperatingSystem.IsBrowser();
         }
         public override string GetStrValue(ExpressionMediator exm, List<AExpression> arguments)
         {
@@ -2493,12 +2493,95 @@ internal static partial class FunctionMethodCreator
                 case StrFormType.Lower:
                     return str.ToLower(CultureInfo.InvariantCulture);
                 case StrFormType.Half:
+#if WEB_RUNTIME
+                    return ConvertJapaneseWidth(str, narrow: true);
+#else
                     return Microsoft.VisualBasic.Strings.StrConv(str, Microsoft.VisualBasic.VbStrConv.Narrow, Config.Language);
+#endif
                 case StrFormType.Full:
+#if WEB_RUNTIME
+                    return ConvertJapaneseWidth(str, narrow: false);
+#else
                     return Microsoft.VisualBasic.Strings.StrConv(str, Microsoft.VisualBasic.VbStrConv.Wide, Config.Language);
+#endif
             }
             return "";
         }
+
+#if WEB_RUNTIME
+        private const string FullKana = "。「」、・ヲァィゥェォャュョッーアイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワン";
+        private const string HalfKana = "｡｢｣､･ｦｧｨｩｪｫｬｭｮｯｰｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ";
+
+        private static string ConvertJapaneseWidth(string value, bool narrow)
+        {
+            StringBuilder converted = new(value.Length);
+            for (int index = 0; index < value.Length; index++)
+            {
+                char current = value[index];
+                if (narrow)
+                {
+                    if (current == '\u3000') { converted.Append(' '); continue; }
+                    if (current == '\uFFE5') { converted.Append('\\'); continue; }
+                    if (current == '\uFFE4') { converted.Append('|'); continue; }
+                    if (current is >= '\uFF01' and <= '\uFF5E' && current != '\uFF3C')
+                    {
+                        converted.Append((char)(current - 0xFEE0));
+                        continue;
+                    }
+                    int kanaIndex = FullKana.IndexOf(current);
+                    if (kanaIndex >= 0) { converted.Append(HalfKana[kanaIndex]); continue; }
+                    if (current == '\u309B') { converted.Append('\uFF9E'); continue; }
+                    if (current == '\u309C') { converted.Append('\uFF9F'); continue; }
+                    if (current == 'ゔ') { converted.Append("ｳﾞ"); continue; }
+                    if ("ヷヸヹヺ".IndexOf(current) < 0)
+                    {
+                        string decomposed = current.ToString().Normalize(NormalizationForm.FormD);
+                        if (decomposed.Length == 2 && decomposed[1] is '\u3099' or '\u309A')
+                        {
+                            kanaIndex = FullKana.IndexOf(decomposed[0]);
+                            if (kanaIndex >= 0 || decomposed[0] == 'ヽ')
+                            {
+                                converted.Append(kanaIndex >= 0 ? HalfKana[kanaIndex] : decomposed[0]);
+                                converted.Append(decomposed[1] == '\u3099' ? '\uFF9E' : '\uFF9F');
+                                continue;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    if (current == ' ') { converted.Append('\u3000'); continue; }
+                    if (current == 'ヽ' && index + 1 < value.Length && value[index + 1] == '\uFF9E')
+                    {
+                        converted.Append('ヾ');
+                        index++;
+                        continue;
+                    }
+                    if (current is >= '\u0021' and <= '\u007E' && current != '\\')
+                    {
+                        converted.Append((char)(current + 0xFEE0));
+                        continue;
+                    }
+                    int kanaIndex = HalfKana.IndexOf(current);
+                    if (kanaIndex >= 0)
+                    {
+                        char full = FullKana[kanaIndex];
+                        if (index + 1 < value.Length && value[index + 1] is '\uFF9E' or '\uFF9F')
+                        {
+                            char combining = value[++index] == '\uFF9E' ? '\u3099' : '\u309A';
+                            converted.Append(string.Concat(full, combining).Normalize(NormalizationForm.FormC));
+                        }
+                        else converted.Append(full);
+                        continue;
+                    }
+                    if (current == '\uFF9E') { converted.Append('\u309B'); continue; }
+                    if (current == '\uFF9F') { converted.Append('\u309C'); continue; }
+                }
+                converted.Append(current);
+            }
+            return converted.ToString();
+        }
+#endif
     }
 
     private sealed class LineIsEmptyMethod : FunctionMethod
@@ -3427,7 +3510,8 @@ internal static partial class FunctionMethodCreator
                 string filepath = filename;
                 if (!System.IO.Path.IsPathRooted(filepath))
                     filepath = Program.ContentDir + filename;
-                if (!System.IO.File.Exists(filepath))
+                filepath = CompatiblePath.ResolveExistingFile(filepath);
+                if (filepath is null)
                     return 0;
                 img = SKImage.FromEncodedData(filepath);
                 if (img.Width > AbstractImage.MAX_IMAGESIZE || img.Height > AbstractImage.MAX_IMAGESIZE)
@@ -4250,7 +4334,12 @@ internal static partial class FunctionMethodCreator
             var keycode = arguments[0].GetIntValue(exm);
             if (keycode < 0 || keycode > 255)
                 return 0;
-            var s = Windows.Win32.PInvoke.GetKeyState((int)keycode);
+            short s;
+#if WEB_RUNTIME
+            s = exm.Console.GetKeyState((int)keycode);
+#else
+            s = Windows.Win32.PInvoke.GetKeyState((int)keycode);
+#endif
             var toggle = keytoggle[keycode];
             keytoggle[keycode] = (short)((s & 1) + 1);//初期値0、トグル状態に応じて1か2を代入。
             switch (Name)

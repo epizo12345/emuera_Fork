@@ -137,7 +137,12 @@ internal sealed partial class IdentifierDictionary
         nameDic.Add("__DEBUG__", DefinedNameType.Reserved);
         nameDic.Add("__SKIP__", DefinedNameType.Reserved);
         nameDic.Add("_", DefinedNameType.Reserved);
-        instructionDic = FunctionIdentifier.GetInstructionNameDic();
+        instructionDic = new(FunctionIdentifier.GetInstructionNameDic(), Config.StrComper);
+        if (!JSONConfig.Game.UseScopedVariableInstruction)
+        {
+            instructionDic.Remove(nameof(FunctionCode.VARI));
+            instructionDic.Remove(nameof(FunctionCode.VARS));
+        }
 
         varTokenDic = varData.GetVarTokenDicClone();
         localvarTokenDic = varData.GetLocalvarTokenDic();
@@ -413,6 +418,9 @@ internal sealed partial class IdentifierDictionary
     // Config.StrComperの大文字小文字規則を保ったまま、名前一致をdictionary lookupに委ねる。
     Dictionary<string, DefineMacro> macroDic = new(Config.StrComper);
 
+    // Bootstrap diagnostics only: includes built-ins and ERH variables, without initializing LOCAL/ARG state.
+    internal IReadOnlyDictionary<string, VariableToken> GetBootstrapVariableTokens() => varTokenDic;
+
     internal void AddUseDefinedVariable(VariableToken var)
     {
         varTokenDic.Add(var.Name, var);
@@ -544,7 +552,11 @@ internal sealed partial class IdentifierDictionary
         return null;
     }
 
+#if WEB_RUNTIME // R7 direct-call metadata
+    public AExpression GetFunctionMethod(LabelDictionary labelDic, string codeStr, List<AExpression> arguments, bool userDefinedOnly, bool reusableCallsite = true)
+#else // R7 direct-call metadata
     public AExpression GetFunctionMethod(LabelDictionary labelDic, string codeStr, List<AExpression> arguments, bool userDefinedOnly)
+#endif // R7 direct-call metadata
     {
         // if (Config.ICFunction)
         // 	codeStr = codeStr.ToUpper();
@@ -567,7 +579,11 @@ internal sealed partial class IdentifierDictionary
                 }
                 if (func.IsMethod)
                 {
+#if WEB_RUNTIME // R7 direct-call metadata
+                    AExpression ret = UserDefinedMethodTerm.Create(func, arguments, out string errMes, reusableCallsite);
+#else // R7 direct-call metadata
                     AExpression ret = UserDefinedMethodTerm.Create(func, arguments, out string errMes);
+#endif // R7 direct-call metadata
                     if (ret == null)
                         throw new CodeEE(errMes);
                     return ret;

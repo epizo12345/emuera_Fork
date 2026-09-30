@@ -418,11 +418,8 @@ internal sealed partial class FunctionIdentifier
         addFunction(FunctionCode.ENCODETOUNI, argb[FunctionArgType.FORM_STR_NULLABLE], METHOD_SAFE | EXTENDED);//式中関数版を追加。処理が全然違う
         #endregion
 
-        if (JSONConfig.Game.UseScopedVariableInstruction)
-        {
-            addFunction(FunctionCode.VARI, new VARI_Instruction());
-            addFunction(FunctionCode.VARS, new VARS_Instruction());
-        }
+        addFunction(FunctionCode.VARI, new VARI_Instruction());
+        addFunction(FunctionCode.VARS, new VARS_Instruction());
         addFunction(FunctionCode.HTML_PRINT_ISLAND, new HTML_PRINT_ISLAND_Instruction());
         addFunction(FunctionCode.HTML_PRINT_ISLAND_CLEAR, new HTML_PRINT_ISLAND_CLEAR_Instruction());
 

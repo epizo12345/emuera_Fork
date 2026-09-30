@@ -53,7 +53,7 @@ internal sealed partial class EraStreamReader : IDisposable
         //    throw new ExeEE("破棄したオブジェクトを再利用しようとした");
         //if ((reader != null) || (stream != null) || (filepath != null))
         //    throw new ExeEE("使用中のオブジェクトを別用途に再利用しようとした");
-        filepath = path;
+        filepath = CompatiblePath.ResolveExistingFile(path) ?? path;
         filename = name;
         fileId = ScriptFileRegistry.GetId(filename);
         curNo = 0;

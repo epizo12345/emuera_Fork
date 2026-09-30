@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <DefineConstants>$(DefineConstants);WEB_RUNTIME</DefineConstants>
+    <EnableErbExecutionProfiler Condition="'$(EnableErbExecutionProfiler)' == ''">false</EnableErbExecutionProfiler>
+    <DefineConstants Condition="'$(EnableErbExecutionProfiler)' == 'true'">$(DefineConstants);ERB_EXECUTION_PROFILE</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="*.cs" />
+    <Compile Include="..\..\GlobalStatic.cs" Link="Shared\GlobalStatic.cs" />
+    <Compile Include="..\..\Runtime\**\*.cs" Exclude="..\..\Runtime\Utils\Sys.cs" Link="Shared\Runtime\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\..\UI\Framework\LocalizationManager.cs" Link="Shared\UI\Framework\LocalizationManager.cs" />
+    <Compile Include="..\..\UI\Framework\ConsoleLocalization.Designer.cs" Link="Shared\UI\Framework\ConsoleLocalization.Designer.cs" />
+    <Compile Include="..\..\UI\Framework\FormLocalization.Designer.cs" Link="Shared\UI\Framework\FormLocalization.Designer.cs" />
+    <Compile Include="..\..\UI\Game\Image\AppContents.cs" Link="Shared\UI\Game\Image\AppContents.cs" />
+    <Compile Include="..\..\UI\Game\ButtonStringCreator.cs" Link="Shared\UI\Game\ButtonStringCreator.cs" />
+    <EmbeddedResource Include="Fonts\DotGothic16-Regular.ttf" LogicalName="MinorShift.Emuera.Web.Runtime.Fonts.DotGothic16-Regular.ttf" />
+    <EmbeddedResource Include="Fonts\DotGothic16-OFL.txt" LogicalName="MinorShift.Emuera.Web.Runtime.Fonts.DotGothic16-OFL.txt" />
+    <EmbeddedResource Include="..\..\UI\Framework\ConsoleLocalization*.resx" Link="Shared\UI\Framework\%(Filename)%(Extension)" ManifestResourceName="MinorShift.Emuera.UI.Framework.%(Filename)" />
+    <EmbeddedResource Include="..\..\UI\Framework\FormLocalization*.resx" Link="Shared\UI\Framework\%(Filename)%(Extension)" ManifestResourceName="MinorShift.Emuera.UI.Framework.%(Filename)" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="AngleSharp" Version="1.6.0" />
+    <PackageReference Include="Enums.NET" Version="5.0.0" />
+    <PackageReference Include="SkiaSharp" Version="4.150.1" />
+    <PackageReference Include="SkiaSharp.NativeAssets.WebAssembly" Version="4.150.1" />
+    <PackageReference Include="System.IO.Hashing" Version="10.0.10" />
+  </ItemGroup>
+</Project>

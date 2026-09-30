@@ -271,7 +271,7 @@ internal sealed partial class MainWindow : Form
 #endif
     }
 
-    private void CompleteStartup()
+    private async void CompleteStartup()
     {
         // [Emuera改修:START-04]
         // 起動完了時のmanaged memoryが2GiB以上の大規模構成だけ整理する。
@@ -293,7 +293,74 @@ internal sealed partial class MainWindow : Form
         PerformanceMetrics.MarkStartup("InputReady");
         PerformanceMetrics.WriteStartup();
         if (Program.StartupTestMode)
+        {
+            if (!string.IsNullOrEmpty(Program.StartupTestInputFile))
+            {
+                using var trace = new StreamWriter(Program.ExeDir + "startup-test-input.log", false, new System.Text.UTF8Encoding(false)) { AutoFlush = true };
+                int index = 0;
+                foreach (string input in File.ReadAllLines(Program.StartupTestInputFile, System.Text.Encoding.UTF8))
+                {
+                    async Task WaitForTimerAsync()
+                    {
+                        int waitCount = 0;
+                        while (true)
+                        {
+                            console.StartPendingTimerForStartupTest();
+                            if (!console.IsRunningTimer && !console.IsInProcess)
+                                break;
+                            if (waitCount++ % 100 == 0)
+                                trace.WriteLine($"{index}:timer:{console.StartupTestTimerState}");
+                            await Task.Delay(10);
+                        }
+                    }
+
+                    trace.WriteLine($"{index}:wait:timer={console.IsRunningTimer}");
+                    await WaitForTimerAsync();
+                    string actualInput = input;
+                    const string buttonPrefix = "@BUTTON=";
+                    const string untilPrefix = "@ENTER_UNTIL_BUTTON=";
+                    if (input.StartsWith(untilPrefix, StringComparison.Ordinal))
+                    {
+                        string target = input[untilPrefix.Length..];
+                        var timeout = Stopwatch.StartNew();
+                        while (!console.TryGetCurrentButtonInputByText(target, out _))
+                        {
+                            await WaitForTimerAsync();
+                            if (console.TryGetCurrentButtonInputByText(target, out _))
+                                break;
+                            if (!console.IsWaitingEnterKey || timeout.Elapsed > TimeSpan.FromSeconds(120))
+                            {
+                                trace.WriteLine($"{index}:failed:target={target}:{console.StartupTestTimerState}");
+                                Environment.ExitCode = 1;
+                                break;
+                            }
+                            console.PressEnterKey(false, "", false);
+                        }
+                        if (Environment.ExitCode != 0)
+                            break;
+                        trace.WriteLine($"{index}:ready:target={target}");
+                        index++;
+                        continue;
+                    }
+                    if (input.StartsWith(buttonPrefix, StringComparison.Ordinal))
+                    {
+                        string target = input[buttonPrefix.Length..];
+                        if (!console.TryGetCurrentButtonInputByText(target, out actualInput))
+                        {
+                            trace.WriteLine($"{index}:failed:target={target}:{console.StartupTestTimerState}");
+                            Environment.ExitCode = 1;
+                            break;
+                        }
+                    }
+                    trace.WriteLine($"{index}:submit:{Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(actualInput))}");
+                    console.PressEnterKey(false, actualInput, false);
+                    trace.WriteLine($"{index}:done:timer={console.IsRunningTimer}");
+                    index++;
+                }
+                console.OutputLog(Program.ExeDir + "startup-test.log");
+            }
             BeginInvoke(Close);
+        }
     }
 
     /// <summary>

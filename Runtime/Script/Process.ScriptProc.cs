@@ -18,6 +18,11 @@ internal sealed partial class Process
 {
     private void runScriptProc()
     {
+#if WEB_RUNTIME && ERB_EXECUTION_PROFILE
+        erbExecutionProfiler.EnterScriptProc();
+        try
+        {
+#endif
         while (true)
         {
             //bool sequential = state.Sequential;
@@ -26,6 +31,13 @@ internal sealed partial class Process
             if (Config.InfiniteLoopAlertTime > 0 && (state.lineCount % 10000 == 0))
                 checkInfiniteLoop();
             LogicalLine line = state.CurrentLine;
+#if WEB_RUNTIME && ERB_EXECUTION_PROFILE
+            bool profileInstruction = line is InstructionLine;
+            if (profileInstruction)
+                erbExecutionProfiler.BeginInstruction(((InstructionLine)line).FunctionCode);
+            try
+            {
+#endif
             //これがNULLになる様な処理は現状ないはず
             //if (line == null)
             //	throw new ExeEE("Emuera.exeは次に実行する行を見失いました");
@@ -82,12 +94,34 @@ internal sealed partial class Process
                 else
                     throw new CodeEE(line.ErrMes);
             }
+#if WEB_RUNTIME && ERB_EXECUTION_PROFILE
+            }
+            finally
+            {
+                if (profileInstruction)
+                    erbExecutionProfiler.EndInstruction();
+            }
+#endif
             //現在そんなものはない
             //else
             //	throw new ExeEE("定義されていない種類の行です");
+#if WEB_RUNTIME
+            if (methodStack == 0 && globalPersistenceEnabled && persistenceQueue.Count != 0)
+            {
+                console.BeginPersistence();
+                return;
+            }
+#endif
             if (!console.IsRunning || state.ScriptEnd)
                 return;
         }
+#if WEB_RUNTIME && ERB_EXECUTION_PROFILE
+        }
+        finally
+        {
+            erbExecutionProfiler.ExitScriptProc();
+        }
+#endif
     }
 
     public void DoDebugNormalFunction(InstructionLine func, bool munchkin)

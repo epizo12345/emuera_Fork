@@ -1,0 +1,208 @@
+@using System.Text
+
+@if (Part.Kind == BrowserDisplayPartKind.Group)
+{
+    @if (Part.Layout?.Mode == BrowserDisplayMode.Relative)
+    {
+        <span class="game-html-origin @(Part.Layout.ExplicitPosition ? "game-positioned-origin" : string.Empty)"><span class="game-html-group game-part" style="@PartStyle(Part)">
+            @if (NeedsPositionedRows(Part.Children))
+            {
+                @foreach (var row in SplitRows(Part.Children!))
+                {
+                    <span class="game-html-row">
+                        @foreach (BrowserDisplayPart child in row)
+                        {
+                            <BrowserPartView Part="child" OnMouseDown="OnMouseDown" />
+                        }
+                    </span>
+                }
+            }
+            else
+            {
+                @foreach (BrowserDisplayPart child in Part.Children ?? [])
+                {
+                    <BrowserPartView Part="child" OnMouseDown="OnMouseDown" />
+                }
+            }
+        </span></span>
+    }
+    else
+    {
+        <span class="game-html-group game-part" style="@PartStyle(Part)">
+            @if (NeedsPositionedRows(Part.Children))
+            {
+                @foreach (var row in SplitRows(Part.Children!))
+                {
+                    <span class="game-html-row">
+                        @foreach (BrowserDisplayPart child in row)
+                        {
+                            <BrowserPartView Part="child" OnMouseDown="OnMouseDown" />
+                        }
+                    </span>
+                }
+            }
+            else
+            {
+                @foreach (BrowserDisplayPart child in Part.Children ?? [])
+                {
+                    <BrowserPartView Part="child" OnMouseDown="OnMouseDown" />
+                }
+            }
+        </span>
+    }
+}
+else if (Part.Kind == BrowserDisplayPartKind.Button)
+{
+    <button type="button" class="game-button game-part" data-input="@Part.Input" data-input-integer="@Part.IsInteger.ToString().ToLowerInvariant()" data-current-input="@(Part.Activation is not null ? "true" : "false")" data-locked-x="@Part.LockedX" data-game-tooltip="@Part.Tooltip" aria-description="@Part.Tooltip" style="@PartStyle(Part)" @onmousedown="MouseDown" @onmousedown:stopPropagation @onmousedown:preventDefault>
+        @if (Part.Children is { Count: > 0 })
+        {
+            @foreach (BrowserDisplayPart child in Part.Children)
+            {
+                <BrowserPartView Part="child" OnMouseDown="OnMouseDown" />
+            }
+        }
+        else
+        {
+            @Part.Text
+        }
+    </button>
+}
+else if (Part.Kind == BrowserDisplayPartKind.NonButton)
+{
+    <span class="game-nonbutton game-part" data-locked-x="@Part.LockedX" data-game-tooltip="@Part.Tooltip" style="@PartStyle(Part)">
+        @if (Part.Children is { Count: > 0 })
+        {
+            @foreach (BrowserDisplayPart child in Part.Children)
+            {
+                <BrowserPartView Part="child" OnMouseDown="OnMouseDown" />
+            }
+        }
+        else
+        {
+            @Part.Text
+        }
+    </span>
+}
+else if (Part.Kind == BrowserDisplayPartKind.Image && Part.ImageDataUrl is not null)
+{
+    <img class="game-image" src="@Part.ImageDataUrl" alt="@Part.Text" data-game-tooltip="@Part.Tooltip" style="@(PartStyle(Part) + ImageSize(Part))" />
+}
+else if (Part.Kind == BrowserDisplayPartKind.Shape)
+{
+    <span class="game-shape" data-game-tooltip="@Part.Tooltip" style="@ShapeStyle(Part)"></span>
+}
+else if (Part.Kind == BrowserDisplayPartKind.Break)
+{
+    <br />
+}
+else
+{
+    @if (Part.Width > 0)
+    {
+        <span class="game-part" data-game-tooltip="@Part.Tooltip" style="@(PartStyle(Part) + $"display:inline-block;vertical-align:top;width:{Part.Width}px;height:{Part.Height}px;")"><span style="@($"display:inline-block;transform-origin:left top;transform:scaleX({Part.TextPaintScale.ToString(System.Globalization.CultureInfo.InvariantCulture)});")">@Part.Text</span></span>
+    }
+    else
+    {
+        <span class="game-part" data-game-tooltip="@Part.Tooltip" style="@PartStyle(Part)">@Part.Text</span>
+    }
+}
+
+@code {
+#if ERB_EXECUTION_PROFILE
+    public static long UnchangedPartRenders { get; private set; }
+    public static long ChangedPartRenders { get; private set; }
+    public static long SkippedPartRenders { get; private set; }
+#endif
+    BrowserDisplayPart? lastRenderedPart;
+    EventCallback<(BrowserDisplayPart Part, MouseEventArgs Mouse)> lastRenderedCallback;
+    protected override bool ShouldRender()
+    {
+        bool changed = !ReferenceEquals(lastRenderedPart, Part) || !lastRenderedCallback.Equals(OnMouseDown);
+#if ERB_EXECUTION_PROFILE
+        if (!changed) SkippedPartRenders++;
+#endif
+        return changed;
+    }
+    protected override void OnAfterRender(bool firstRender)
+    {
+#if ERB_EXECUTION_PROFILE
+        if (ReferenceEquals(lastRenderedPart, Part)) UnchangedPartRenders++;
+        else ChangedPartRenders++;
+#endif
+        lastRenderedPart = Part;
+        lastRenderedCallback = OnMouseDown;
+    }
+    [Parameter, EditorRequired] public BrowserDisplayPart Part { get; set; } = null!;
+    [Parameter] public EventCallback<(BrowserDisplayPart Part, MouseEventArgs Mouse)> OnMouseDown { get; set; }
+
+    static bool NeedsPositionedRows(IReadOnlyList<BrowserDisplayPart>? parts) =>
+        parts is not null && parts.Any(part => part.Kind == BrowserDisplayPartKind.Break)
+        && parts.Any(part => part.Kind == BrowserDisplayPartKind.Group && part.Layout?.ExplicitPosition == true);
+
+    static IEnumerable<List<BrowserDisplayPart>> SplitRows(IReadOnlyList<BrowserDisplayPart> parts)
+    {
+        var row = new List<BrowserDisplayPart>();
+        foreach (var part in parts)
+        {
+            if (part.Kind == BrowserDisplayPartKind.Break)
+            {
+                yield return row;
+                row = new();
+            }
+            else row.Add(part);
+        }
+        yield return row;
+    }
+
+    Task MouseDown(MouseEventArgs mouse) => OnMouseDown.InvokeAsync((Part, mouse));
+
+    static string ImageSize(BrowserDisplayPart part) =>
+        (part.Width > 0 ? $"width:{part.Width}px;" : string.Empty) + (part.Height > 0 ? $"height:{part.Height}px;" : string.Empty);
+
+    static string ShapeStyle(BrowserDisplayPart part)
+    {
+        BrowserDisplayLayout layout = part.Layout!;
+        BrowserDisplayStyle? style = part.Style;
+        return $"--shape-x:{layout.X}px;--shape-y:{layout.Y}px;--shape-width:{layout.Width}px;--shape-height:{layout.Height}px;--shape-color:{style?.Background ?? "transparent"};--shape-focus-color:{style?.ButtonColor ?? "transparent"};width:{part.Width}px;height:{part.Height}px;";
+    }
+
+    static string PartStyle(BrowserDisplayPart part)
+    {
+        BrowserDisplayStyle? style = part.Style;
+        BrowserDisplayLayout? layout = part.Layout;
+        var css = new StringBuilder();
+        if (style is not null)
+        {
+            css.Append("--normal-color:").Append(style.Foreground).Append(";--button-color:").Append(style.ButtonColor).Append(';');
+            if (style.Background is not null) css.Append("background-color:").Append(style.Background).Append(';');
+            if (style.Bold) css.Append("font-weight:bold;");
+            if (style.Italic) css.Append("font-style:italic;");
+            if (style.Underline || style.Strikeout)
+                css.Append("text-decoration:").Append(style.Underline ? "underline " : string.Empty).Append(style.Strikeout ? "line-through" : string.Empty).Append(';');
+            if (!string.IsNullOrEmpty(style.FontName)) css.Append("font-family:").Append(style.FontName).Append(';');
+            if (style.FontSize > 0) css.Append("font-size:").Append(style.FontSize).Append("px;");
+        }
+        if (layout is not null)
+        {
+            css.Append("--group-padding:").Append(layout.Padding).Append("px;");
+            css.Append("position:").Append(layout.Mode == BrowserDisplayMode.Relative ? "relative" : "absolute").Append(';');
+            css.Append("left:").Append(layout.X).Append("px;");
+            if (layout.Mode == BrowserDisplayMode.AbsoluteLeftBottom)
+                css.Append("top:calc(100% ").Append(layout.Y < 0 ? "- " : "+ ").Append(Math.Abs(layout.Y)).Append("px + var(--game-scroll-top, 0px));");
+            else if (layout.Mode == BrowserDisplayMode.AbsoluteLeftTop)
+                css.Append("top:calc(").Append(layout.Y).Append("px + var(--game-scroll-top, 0px));");
+            else css.Append("top:").Append(layout.Y).Append("px;");
+            if (layout.Width is int width) css.Append("width:").Append(width).Append("px;");
+            if (layout.Height is int height) css.Append("height:").Append(height).Append("px;");
+            if (layout.Padding != 0) css.Append("padding:").Append(layout.Padding).Append("px;");
+            if (layout.BorderWidth is int borderWidth)
+            {
+                // Native Skia treats an explicit zero-width stroke as a one-device-pixel hairline.
+                int stroke = Math.Max(1, borderWidth);
+                css.Append("outline:").Append(stroke).Append("px solid ").Append(layout.BorderColor ?? "#FFFFFF").Append(';');
+                css.Append("outline-offset:").Append((-stroke / 2d).ToString(System.Globalization.CultureInfo.InvariantCulture)).Append("px;");
+            }
+        }
+        return css.ToString();
+    }
+}

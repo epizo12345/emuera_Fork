@@ -36,9 +36,9 @@ static class JSONConfig
     static JsonObject _gameJson;
 
     const string _gameConfigFileName = "setting.json";
-    static string _gameConfigFilePath = Program.ExeDir + _gameConfigFileName;
+    static string _gameConfigFilePath => Program.ExeDir + _gameConfigFileName;
     const string _userConfigFileName = "setting_user.json";
-    static string _userConfigFilePath = Program.ExeDir + _userConfigFileName;
+    static string _userConfigFilePath => Program.ExeDir + _userConfigFileName;
     static readonly Encoding _utf8Bom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: true);
 
     public static SKSamplingOptions SamplingOptions { get; private set; }

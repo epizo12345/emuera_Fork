@@ -94,10 +94,27 @@ internal sealed class ErbLoader
 
     // 複数スレッドから更新するため、読み書きはInterlocked/Volatile経由で行う。
     int hasError;
+    string? firstErrorDiagnostic;
+    public string FirstErrorDiagnostic => Volatile.Read(ref firstErrorDiagnostic) ?? string.Empty;
     public long EnumerationMilliseconds { get; private set; }
     public long PrimaryParseMilliseconds { get; private set; }
     public long LabelSetupMilliseconds { get; private set; }
     public long ScriptParseMilliseconds { get; private set; }
+    ConcurrentDictionary<int, byte>? primaryParseThreadIds;
+    ConcurrentDictionary<int, byte>? scriptParseThreadIds;
+    int captureThreadUsage;
+    public int PrimaryParseThreadCount => primaryParseThreadIds?.Count ?? 0;
+    public int ScriptParseThreadCount => scriptParseThreadIds?.Count ?? 0;
+
+    public void SetThreadUsageCapture(bool enabled)
+    {
+        if (enabled)
+        {
+            primaryParseThreadIds = new();
+            scriptParseThreadIds = new();
+        }
+        Volatile.Write(ref captureThreadUsage, enabled ? 1 : 0);
+    }
     /// <summary>
     /// 複数のファイルを読む
     /// </summary>
@@ -119,6 +136,7 @@ internal sealed class ErbLoader
         PerformanceMetrics.MarkStartup("ErbEnumerated");
         ConcurrentDictionary<string, byte> isOnlyEvent = new(Config.Config.StrComper);
         hasError = 0;
+        firstErrorDiagnostic = null;
         var stageStopwatch = System.Diagnostics.Stopwatch.StartNew();
 #if DEBUG
         var starttime = System.Diagnostics.Stopwatch.StartNew();
@@ -136,6 +154,8 @@ internal sealed class ErbLoader
             var indexedErbFiles = erbFiles.Select((erb, index) => (Erb: erb, FileIndex: index + 1)).ToArray();
             var task = Task.Run(() => Parallel.ForEach(indexedErbFiles, item =>
             {
+                if (Volatile.Read(ref captureThreadUsage) != 0)
+                    primaryParseThreadIds?.TryAdd(Environment.CurrentManagedThreadId, 0);
                 var erb = item.Erb;
                 string filename = erb.Key;
                 string file = erb.Value;
@@ -606,7 +626,7 @@ internal sealed class ErbLoader
         foreach ((FunctionLabelLine label, string text, ScriptPosition position) in pendingSharpLines)
         {
             if (!LogicalLineParser.ParseSharpLine(label, new CharStream(text), position, isOnlyEvent))
-                Interlocked.Exchange(ref hasError, 1);
+                MarkError("LazySharp", position);
         }
 
         foreach ((int line, FunctionLabelLine label) in pendingFunctions)
@@ -857,7 +877,7 @@ internal sealed class ErbLoader
                 bool sharpResult = LogicalLineParser.ParseSharpLine(funcLine, st, position, isOnlyEvent);
                 if (!sharpResult)
                     // 並列中の単純な hasError = 1 は競合し得るので、確実に1を書き込む。
-                    Interlocked.Exchange(ref hasError, 1);
+                    MarkError("Sharp", position);
                 continue;
             }
             if (st.Current == '$' || st.Current == '@')
@@ -874,7 +894,7 @@ internal sealed class ErbLoader
                     lastLabelLine = label;
                     if (label is InvalidLabelLine)
                     {
-                        Interlocked.Exchange(ref hasError, 1);
+                        MarkError("InvalidLabel", position, nextLine.ErrMes);
                         ParserMediator.Warn(nextLine.ErrMes, position, 2);
                         labelDic.AddInvalidLabel(label);
                     }
@@ -904,7 +924,7 @@ internal sealed class ErbLoader
                 }
                 if (nextLine is InvalidLine)
                 {
-                    Interlocked.Exchange(ref hasError, 1);
+                    MarkError("InvalidLine", position, nextLine.ErrMes);
                     ParserMediator.Warn(nextLine.ErrMes, position, 2);
                 }
             }
@@ -931,7 +951,7 @@ internal sealed class ErbLoader
                     continue;
                 if (nextLine is InvalidLine)
                 {
-                    Interlocked.Exchange(ref hasError, 1);
+                    MarkError("InvalidInstruction", position, nextLine.ErrMes);
                     ParserMediator.Warn(nextLine.ErrMes, position, 2);
                 }
                 else if (JSONConfig.Game.UseNewRandom &&
@@ -980,6 +1000,21 @@ internal sealed class ErbLoader
         return nextLine;
     }
 
+    private void MarkError(string kind, ScriptPosition? position, string? detail = null)
+    {
+        Interlocked.Exchange(ref hasError, 1);
+        string location = position.HasValue
+            ? $"{position.Value.Filename}:{position.Value.LineNo}"
+            : "unknown";
+        Interlocked.CompareExchange(ref firstErrorDiagnostic, $"{kind} {location} {detail}".TrimEnd(), null);
+    }
+
+    private void NoteScriptParseThread()
+    {
+        if (Volatile.Read(ref captureThreadUsage) != 0)
+            scriptParseThreadIds?.TryAdd(Environment.CurrentManagedThreadId, 0);
+    }
+
     private bool RegisterFunctionLabel(FunctionLabelLine label, int fileIndex, ScriptPosition? position = null)
     {
         labelDic.AddLabel(label, fileIndex);
@@ -1009,7 +1044,11 @@ internal sealed class ErbLoader
             parentProcess.SetParallelScanning(true);
             try
             {
-                Parallel.ForEach(labelList, ParseLabelWithCatch);
+                Parallel.ForEach(labelList, label =>
+                {
+                    NoteScriptParseThread();
+                    ParseLabelWithCatch(label);
+                });
             }
             finally
             {
@@ -1189,6 +1228,7 @@ internal sealed class ErbLoader
     /// </summary>
     private void ParseScript()
     {
+        NoteScriptParseThread();
         int usedLabelCount = 0;
         int labelDepth = -1;
         List<FunctionLabelLine> labelList = labelDic.GetAllLabels(true);
@@ -1265,7 +1305,11 @@ internal sealed class ErbLoader
                 parentProcess.SetParallelScanning(true);
                 try
                 {
-                    Parallel.ForEach(remainingLabels, ParseFunctionWithCatch);
+                    Parallel.ForEach(remainingLabels, label =>
+                    {
+                        NoteScriptParseThread();
+                        ParseFunctionWithCatch(label);
+                    });
                 }
                 finally
                 {
@@ -1462,7 +1506,9 @@ internal sealed class ErbLoader
                 string errmes = exc is EmueraException ? exc.Message : exc.GetType().ToString() + ":" + exc.Message;
                 ParserMediator.Warn("@" + label.LabelName + " の解析中にエラー:" + errmes, label, 2, true, false, exc is not EmueraException ? exc.StackTrace : null);
                 label.ErrMes = LocalizationManager.Error.CalledFailedFunc;
+#if !WEB_RUNTIME
                 System.Windows.Forms.Application.DoEvents();
+#endif
             }
             finally
             {
@@ -1486,7 +1532,9 @@ internal sealed class ErbLoader
             string errmes = exc is EmueraException ? exc.Message : exc.GetType().ToString() + ":" + exc.Message;
             ParserMediator.Warn("@" + label.LabelName + " の解析中にエラー:" + errmes, label, 2, true, false, exc is not EmueraException ? exc.StackTrace : null);
             label.ErrMes = LocalizationManager.Error.CalledFailedFunc;
+#if !WEB_RUNTIME
             System.Windows.Forms.Application.DoEvents();
+#endif
         }
         finally
         {

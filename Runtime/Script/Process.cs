@@ -1,5 +1,7 @@
 ﻿using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.Runtime.Config;
+using MinorShift.Emuera.Runtime.Config.JSON;
+using MinorShift.Emuera.GameData.Variable;
 using MinorShift.Emuera.Runtime.Script;
 using MinorShift.Emuera.Runtime.Script.Data;
 using MinorShift.Emuera.Runtime.Script.Loader;
@@ -21,14 +23,96 @@ using MinorShift.Emuera.UI.Framework;
 using System.Reflection.Emit;
 using System.Reflection;
 using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace MinorShift.Emuera.GameProc;
+
+#if WEB_RUNTIME
+internal sealed record WebInfiniteLoopPromptInfo(
+    string Title,
+    string Message,
+    string File,
+    int Line,
+    int ExecutedLines,
+    long ElapsedMilliseconds);
+#endif
+
+internal sealed record BootstrapRuntimeSummary(
+    int CsvFileCount,
+    int ErhFileCount,
+    int ErbFileCount,
+    int CharacterTemplateCount,
+    int VariableTokenCount,
+    int LabelCount,
+    string LabelIdentitySha256,
+    int LazyErbFileCount,
+    int LazyErbFallbackFileCount,
+    int DeferredEagerCount,
+    string ConfigurationIdentitySha256,
+    string VariableRegistryScope,
+    int VariableSchemaCount,
+    string VariableSchemaSha256,
+    string VariableSchemaRows,
+    int WarningCount,
+    int WarningKindCount,
+    string WarningIdentitySha256,
+    string WarningKindCounts,
+    string WarningExamples);
+
+internal sealed record GlobalValueSummary(int SavedVariableCount, string ValueSha256, string ValueRows);
+internal sealed record SavedStateValueSummary(
+    int CharacterCount,
+    int SavedVariableCount,
+    int NonDefaultValueCount,
+    string StateSha256,
+    string ValueSha256,
+    string ValueRows);
 
 
 internal sealed partial class Process(EmueraConsole view)
 {
+#if WEB_RUNTIME
+    internal enum WebSaveMutationKind { Put, Delete }
+    internal sealed record WebSaveMutation(string OperationId, string LogicalFilename, WebSaveMutationKind Kind, byte[] Bytes);
+
+    readonly Queue<WebSaveMutation> persistenceQueue = new();
+    readonly string persistenceSessionId = Guid.NewGuid().ToString("N");
+    long nextGlobalPersistenceOperation;
+    bool globalPersistenceEnabled;
+    string persistenceRoot;
+    Exception deferredPersistenceException;
+    LogicalLine deferredPersistenceErrorLine;
+    bool deferredPersistenceSystemProc;
+    Func<WebInfiniteLoopPromptInfo, bool> webInfiniteLoopPrompt;
+
+    internal void SetWebInfiniteLoopPrompt(Func<WebInfiniteLoopPromptInfo, bool> prompt) => webInfiniteLoopPrompt = prompt;
+#endif
+
+    Exception lastRuntimeException;
 
     public LogicalLine getCurrentLine { get { return state.CurrentLine; } }
+    // Diagnostic-only snapshot for browser hosts. Script execution never reads it.
+    public string CurrentFunctionName => state.Scope ?? string.Empty;
+    public string CurrentLabelName => getCurrentLine?.ParentLabelLine?.LabelName ?? string.Empty;
+    public string LastRuntimeExceptionType => lastRuntimeException?.GetType().FullName ?? string.Empty;
+    public string LastRuntimeExceptionMessage => lastRuntimeException?.Message ?? string.Empty;
+    public string LastRuntimeExceptionStack => lastRuntimeException?.StackTrace ?? string.Empty;
+    public string RuntimeCallStack
+    {
+        get
+        {
+            var lines = new List<string>();
+            for (int depth = 0; depth < 256; depth++)
+            {
+                LogicalLine line = state.GetReturnAddressSequensial(depth);
+                if (line is null) break;
+                if (line.Position is not null)
+                    lines.Add($"{line.ParentLabelLine.LabelName} ({line.Position.Value.Filename}:{line.Position.Value.LineNo})");
+            }
+            return string.Join('\n', lines);
+        }
+    }
 
     /// <summary>
     /// @~~と$~~を集めたもの。CALL命令などで使う
@@ -43,6 +127,251 @@ internal sealed partial class Process(EmueraConsole view)
     private VariableEvaluator vEvaluator;
     public VariableEvaluator VEvaluator { get { return vEvaluator; } }
     public int ExecutedLineCount => state?.lineCount ?? 0;
+    internal GlobalValueSummary GetGlobalValueSummary()
+    {
+        IReadOnlyDictionary<string, VariableToken> variables = idDic?.GetBootstrapVariableTokens()
+            ?? throw new InvalidOperationException("GLOBAL values require an initialized IdentifierDictionary.");
+        string[] rows = variables
+            .Where(pair => pair.Value.IsGlobal && pair.Value.IsSavedata && !pair.Value.IsCharacterData)
+            .Select(pair =>
+            {
+                Array values = (Array)pair.Value.GetArray();
+                using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+                foreach (object value in values)
+                {
+                    string encoded = pair.Value.IsInteger
+                        ? $"i:{Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture)}"
+                        : $"s{(value as string)?.Length ?? -1}:{value}";
+                    hash.AppendData(Encoding.UTF8.GetBytes(encoded));
+                    hash.AppendData([0]);
+                }
+                string lengths = string.Join(',', Enumerable.Range(0, values.Rank).Select(values.GetLength));
+                return $"{pair.Key}\t{(pair.Value.IsInteger ? "Int64" : "String")}\t{lengths}\t{Convert.ToHexString(hash.GetHashAndReset())}";
+            })
+            .OrderBy(value => value, StringComparer.Ordinal)
+            .ToArray();
+        string valueRows = string.Join('\n', rows);
+        return new(rows.Length, Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(valueRows))), valueRows);
+    }
+
+    internal SavedStateValueSummary GetSavedStateValueSummary()
+    {
+        VariableData data = vEvaluator.VariableData;
+        var rows = new List<string>();
+        int valueCount = 0;
+        IReadOnlyDictionary<string, VariableToken> variables = idDic?.GetBootstrapVariableTokens()
+            ?? throw new InvalidOperationException("Saved-state values require an initialized IdentifierDictionary.");
+        foreach ((string name, VariableToken token) in variables
+                     .Where(pair => pair.Value.IsSavedata)
+                     .OrderBy(pair => pair.Key, StringComparer.Ordinal))
+        {
+            string encodedName = Convert.ToBase64String(Encoding.UTF8.GetBytes(name));
+            string shape = token.Dimension == 0
+                ? string.Empty
+                : string.Join(',', Enumerable.Range(0, token.Dimension).Select(token.GetLength));
+            rows.Add($"VAR\t{encodedName}\t{(token.IsInteger ? "Int64" : "String")}\t{(token.IsCharacterData ? "Character" : "Global")}\t{shape}");
+            int characterCount = token.IsCharacterData ? data.CharacterList.Count : 1;
+            for (int character = 0; character < characterCount; character++)
+            {
+                if (token.Dimension == 0)
+                {
+                    object value = token.IsInteger
+                        ? token.GetIntValue(exm, token.IsCharacterData ? [character] : [])
+                        : token.GetStrValue(exm, token.IsCharacterData ? [character] : []);
+                    AddValue(value, character, -1);
+                    continue;
+                }
+                Array values = (Array)(token.IsCharacterData ? token.GetArrayChara(character) : token.GetArray());
+                int index = 0;
+                foreach (object value in values)
+                    AddValue(value, character, index++);
+            }
+
+            void AddValue(object value, int character, int index)
+            {
+                if (token.IsInteger)
+                {
+                    long number = Convert.ToInt64(value, System.Globalization.CultureInfo.InvariantCulture);
+                    if (number == 0) return;
+                    rows.Add($"VAL\t{encodedName}\t{(token.IsCharacterData ? character : -1)}\t{index}\tI\t{number.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
+                }
+                else
+                {
+                    string text = value as string ?? string.Empty;
+                    if (text.Length == 0) return;
+                    rows.Add($"VAL\t{encodedName}\t{(token.IsCharacterData ? character : -1)}\t{index}\tS\t{Convert.ToBase64String(Encoding.UTF8.GetBytes(text))}");
+                }
+                valueCount++;
+            }
+        }
+        string valueRows = string.Join('\n', rows);
+        return new(
+            data.CharacterList.Count,
+            rows.Count(row => row.StartsWith("VAR\t", StringComparison.Ordinal)),
+            valueCount,
+            vEvaluator.GetBenchmarkStateHash(),
+            Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(valueRows))),
+            valueRows);
+    }
+#if WEB_RUNTIME
+    internal void EnableGlobalPersistence() => EnableSavePersistence(Config.SavDir);
+    internal void EnableSavePersistence(string preparedSaveRoot)
+    {
+        globalPersistenceEnabled = true;
+        persistenceRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(preparedSaveRoot));
+        vEvaluator.EnableCheckData(persistenceRoot);
+    }
+    internal void EnableCheckData(string preparedSaveRoot) => vEvaluator.EnableCheckData(preparedSaveRoot);
+
+    internal void RequireGlobalPersistence(string feature)
+    {
+        if (!globalPersistenceEnabled)
+            throw new PlatformNotSupportedException($"P1A未対応: {feature}");
+    }
+
+    internal void CaptureGlobalPersistence(string path)
+    {
+        RequireGlobalPersistence("SAVEGLOBAL");
+        string expected = Path.GetFullPath(Path.Combine(Config.SavDir, "global.sav"));
+        if (!string.Equals(Path.GetFullPath(path), expected, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("P1C1の永続保存対象はglobal.savだけです");
+        CaptureSavePut(expected, "SAVEGLOBAL");
+    }
+
+    internal void CaptureSavePut(string path, string feature)
+    {
+        string logicalFilename = RequireSavePersistencePath(feature, path);
+        byte[] snapshot = File.ReadAllBytes(path);
+        persistenceQueue.Enqueue(new($"{persistenceSessionId}-{++nextGlobalPersistenceOperation:D8}", logicalFilename, WebSaveMutationKind.Put, snapshot));
+    }
+
+    internal void CaptureSaveDelete(string path, string feature)
+    {
+        string logicalFilename = RequireSavePersistencePath(feature, path);
+        persistenceQueue.Enqueue(new($"{persistenceSessionId}-{++nextGlobalPersistenceOperation:D8}", logicalFilename, WebSaveMutationKind.Delete, []));
+    }
+
+    internal string RequireSavePersistencePath(string feature, string path)
+    {
+        RequireGlobalPersistence(feature);
+        string fullPath = Path.GetFullPath(path);
+        string directory = Path.TrimEndingDirectorySeparator(Path.GetDirectoryName(fullPath) ?? string.Empty);
+        string logicalFilename = Path.GetFileName(fullPath);
+        bool normal = logicalFilename.StartsWith("save", StringComparison.OrdinalIgnoreCase)
+            && logicalFilename.EndsWith(".sav", StringComparison.OrdinalIgnoreCase)
+            && long.TryParse(logicalFilename.AsSpan(4, logicalFilename.Length - 8), out long index)
+            && index >= 0;
+        if (!string.Equals(directory, persistenceRoot, StringComparison.OrdinalIgnoreCase)
+            || !(string.Equals(logicalFilename, "global.sav", StringComparison.OrdinalIgnoreCase) || normal))
+            throw new InvalidOperationException($"P1C3の保存対象外です: {logicalFilename}");
+        return logicalFilename.ToLowerInvariant();
+    }
+
+    internal int PendingGlobalPersistenceCount => persistenceQueue.Count;
+
+    internal WebSaveMutation GetPendingGlobalPersistence()
+    {
+        if (!persistenceQueue.TryPeek(out var request))
+            return null;
+        return request with { Bytes = (byte[])request.Bytes.Clone() };
+    }
+
+    internal bool AcknowledgeGlobalPersistence(string operationId)
+    {
+        if (!persistenceQueue.TryPeek(out var request)
+            || !string.Equals(request.OperationId, operationId, StringComparison.Ordinal))
+            return false;
+        persistenceQueue.Dequeue();
+        if (persistenceQueue.Count != 0)
+            return true;
+        if (deferredPersistenceException is not null)
+        {
+            Exception exception = deferredPersistenceException;
+            LogicalLine errorLine = deferredPersistenceErrorLine;
+            bool systemProc = deferredPersistenceSystemProc;
+            deferredPersistenceException = null;
+            deferredPersistenceErrorLine = null;
+            if (systemProc)
+                handleExceptionInSystemProc(exception, errorLine, true);
+            else
+                handleException(exception, errorLine, true);
+            return true;
+        }
+        console.CompletePersistence();
+        return true;
+    }
+
+    internal void FailGlobalPersistence(string message)
+    {
+        persistenceQueue.Clear();
+        deferredPersistenceException = null;
+        deferredPersistenceErrorLine = null;
+        console.FailPersistence(message);
+    }
+#endif
+    internal BootstrapRuntimeSummary GetBootstrapRuntimeSummary()
+    {
+        string identity = string.Join('\n', (labelDic?.GetAllLabels(true) ?? [])
+            .Select(label => $"{label.LabelName}\t{label.Position?.Filename.Replace('\\', '/')}\t{label.Position?.LineNo}")
+            .OrderBy(value => value, StringComparer.Ordinal));
+        IReadOnlyDictionary<string, string> configuration = GetBootstrapEffectiveConfiguration();
+        string[] configRows = configuration.Select(pair => $"{pair.Key}\t{pair.Value}").OrderBy(value => value, StringComparer.Ordinal).ToArray();
+        IReadOnlyDictionary<string, VariableToken> variables = idDic?.GetBootstrapVariableTokens()
+            ?? throw new InvalidOperationException("Bootstrap schema requires an initialized IdentifierDictionary.");
+        string[] variableRows = variables.Select(pair =>
+        {
+            VariableToken token = pair.Value;
+            string lengths = string.Join(',', Enumerable.Range(0, token.Dimension).Select(dimension =>
+            {
+                try { return token.GetLength(dimension).ToString(); }
+                catch (Exception ex) { return "!" + ex.GetType().Name; }
+            }));
+            return $"{pair.Key}\t{(token.IsInteger ? "Int64" : "String")}\t{token.Dimension}\t{lengths}\tchara={token.IsCharacterData}\tglobal={token.IsGlobal}\tsavedata={token.IsSavedata}\tprivate={token.IsPrivate}\treference={token.IsReference}";
+        }).OrderBy(value => value, StringComparer.Ordinal).ToArray();
+        ParserMediator.BootstrapWarningSummary warnings = ParserMediator.GetBootstrapWarningSummary();
+        static string Hash(IEnumerable<string> rows) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join('\n', rows))));
+        return new(
+            Config.GetFiles(Program.CsvDir, "*.CSV").Count,
+            Config.GetFiles(Program.ErbDir, "*.ERH").Count,
+            Config.GetFiles(Program.ErbDir, "*.ERB").Count,
+            GlobalStatic.ConstantData?.CharacterTemplateCount ?? 0,
+            vEvaluator?.VariableData.GetVarTokenDic().Count ?? 0,
+            labelDic?.Count ?? 0,
+            Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(identity))),
+            erbLoader?.LazyErbFileCount ?? 0,
+            erbLoader?.LazyErbFallbackFileCount ?? 0,
+            erbLoader?.DeferredEagerCount ?? 0,
+            Hash(configRows),
+            "IdentifierDictionary.varTokenDic (built-ins and ERH user-defined; function private/local excluded)",
+            variableRows.Length,
+            Hash(variableRows),
+            string.Join('\n', variableRows),
+            warnings.Count,
+            warnings.KindCount,
+            warnings.IdentitySha256,
+            warnings.KindCounts,
+            warnings.Examples);
+    }
+
+    internal static IReadOnlyDictionary<string, string> GetBootstrapEffectiveConfiguration() => new SortedDictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["IgnoreCase"] = Config.IgnoreCase.ToString(),
+        ["UseRenameFile"] = Config.UseRenameFile.ToString(),
+        ["UseReplaceFile"] = Config.UseReplaceFile.ToString(),
+        ["SearchSubdirectory"] = Config.SearchSubdirectory.ToString(),
+        ["SortWithFilename"] = Config.SortWithFilename.ToString(),
+        ["SystemSaveInBinary"] = Config.SystemSaveInBinary.ToString(),
+        ["UseSaveFolder"] = Config.UseSaveFolder.ToString(),
+        ["AllowLongInputByMouse"] = Config.AllowLongInputByMouse.ToString(),
+        ["SystemIgnoreTripleSymbol"] = Config.SystemIgnoreTripleSymbol.ToString(),
+        ["SavDirRelative"] = Path.GetRelativePath(Program.ExeDir, Config.SavDir).Replace('\\', '/'),
+        ["SavDirUnderRunRoot"] = Path.GetFullPath(Config.SavDir).StartsWith(Path.GetFullPath(Program.ExeDir), StringComparison.OrdinalIgnoreCase).ToString(),
+        ["UseNewRandom"] = JSONConfig.Game.UseNewRandom.ToString(),
+        ["UseScopedVariableInstruction"] = JSONConfig.Game.UseScopedVariableInstruction.ToString(),
+        ["UseRenameInCharaCSV"] = JSONConfig.Game.UseRenameInCharaCSV.ToString(),
+        ["LazyEnabled"] = JSONConfig.Game.LazyErb.Enabled?.ToString() ?? "null",
+        ["LazyDirectories"] = string.Join('|', JSONConfig.Game.LazyErb.Directories)
+    };
     // [Emuera改修:MEASURE-03]
     // マクロ後の変数状態を保存形式と同じ並びでハッシュ化し、比較試験に使う入口。
     // セーブファイル自体は作成・変更しない。通常プレイからは呼ばれない。
@@ -300,12 +629,19 @@ internal sealed partial class Process(EmueraConsole view)
     bool initialiing;
     public bool inInitializeing { get { return initialiing; } }
 
-    public async Task<bool> Initialize(StreamWriter logWriter)
+    internal ProcessInitializeProfile? InitializeProfile { get; private set; }
+
+    public async Task<bool> Initialize(StreamWriter logWriter, bool captureInitializeProfile = false)
     {
+        InitializeProfile = null;
+        ProcessInitializeProfileCollector profile = captureInitializeProfile ? new() : null;
         var stopWatch = new Stopwatch();
         stopWatch.Start();
         LexicalAnalyzer.UseMacro = false;
         state = new ProcessState(console);
+#if WEB_RUNTIME && ERB_EXECUTION_PROFILE
+        state.AttachErbExecutionProfiler(erbExecutionProfiler);
+#endif
         originalState = state;
         initialiing = true;
         try
@@ -324,6 +660,7 @@ internal sealed partial class Process(EmueraConsole view)
                 }
             }
             logWriter.WriteLine($"Proc:Init:Parser:End {stopWatch.ElapsedMilliseconds}ms");
+            profile?.CompletePhase("parser");
 
             logWriter.WriteLine($"Proc:Init:Image:Start {stopWatch.ElapsedMilliseconds}ms");
             //リソースフォルダ読み込み
@@ -337,6 +674,7 @@ internal sealed partial class Process(EmueraConsole view)
             }
             ParserMediator.FlushWarningList();
             logWriter.WriteLine($"Proc:Init:Image:End {stopWatch.ElapsedMilliseconds}ms");
+            profile?.CompletePhase("resources");
             // [Emuera改修:MEASURE-01] 起動時間を区間別に調べる目印。通常版では空処理。
             PerformanceMetrics.MarkStartup("ResourcesPrepared");
 
@@ -354,6 +692,7 @@ internal sealed partial class Process(EmueraConsole view)
                 }
             }
             logWriter.WriteLine($"Proc:Init:KeyMacro:End {stopWatch.ElapsedMilliseconds}ms");
+            profile?.CompletePhase("key-macro");
 
             logWriter.WriteLine($"Proc:Init:Replace:Start {stopWatch.ElapsedMilliseconds}ms");
             //_replace.csv読み込み
@@ -378,6 +717,7 @@ internal sealed partial class Process(EmueraConsole view)
             Config.SetReplace(ConfigData.Instance);
 
             logWriter.WriteLine($"Proc:Init:Replace:End {stopWatch.ElapsedMilliseconds}ms");
+            profile?.CompletePhase("replace");
 
             //ここでBARを設定すれば、いいことに気づいた予感
             console.setStBar(Config.DrawLineString);
@@ -396,6 +736,7 @@ internal sealed partial class Process(EmueraConsole view)
                     console.PrintError(LocalizationManager.SystemLine.MissingRename);
             }
             logWriter.WriteLine($"Proc:Init:Rename:Load:End {stopWatch.ElapsedMilliseconds}ms");
+            profile?.CompletePhase("rename");
 
             if (!Config.DisplayReport)
             {
@@ -413,6 +754,7 @@ internal sealed partial class Process(EmueraConsole view)
             console.SetWindowTitle(gamebase.ScriptWindowTitle);
             GlobalStatic.GameBaseData = gamebase;
             logWriter.WriteLine($"Proc:Init:MainCSV:End {stopWatch.ElapsedMilliseconds}ms");
+            profile?.CompletePhase("gamebase-csv");
 
             logWriter.WriteLine($"Proc:Init:EtcCSV:Start {stopWatch.ElapsedMilliseconds}ms");
             //前記以外のcsvを全て読み込み
@@ -421,6 +763,7 @@ internal sealed partial class Process(EmueraConsole view)
             GlobalStatic.ConstantData = constant;
             TrainName = constant.GetCsvNameList(VariableCode.TRAINNAME);
             logWriter.WriteLine($"Proc:Init:EtcCSV:End {stopWatch.ElapsedMilliseconds}ms");
+            profile?.CompletePhase("other-csv");
             PerformanceMetrics.MarkStartup("CsvLoaded"); // CSV読込完了の目印
 
 
@@ -435,6 +778,7 @@ internal sealed partial class Process(EmueraConsole view)
 
             exm = new ExpressionMediator(this, vEvaluator, console);
             GlobalStatic.EMediator = exm;
+            profile?.CompletePhase("variable-and-identifier-setup");
 
             logWriter.WriteLine($"Proc:Init:ERH:Start {stopWatch.ElapsedMilliseconds}ms");
 
@@ -453,6 +797,7 @@ internal sealed partial class Process(EmueraConsole view)
             }
             LexicalAnalyzer.UseMacro = idDic.UseMacro();
             logWriter.WriteLine($"Proc:Init:ERH:End {stopWatch.ElapsedMilliseconds}ms");
+            profile?.CompletePhase("erh");
             PerformanceMetrics.MarkStartup("ErhLoaded"); // ERH読込完了の目印
 
 
@@ -461,37 +806,55 @@ internal sealed partial class Process(EmueraConsole view)
             //ERB読込
             logWriter.WriteLine($"Proc:Init:ERB:Start {stopWatch.ElapsedMilliseconds}ms");
             erbLoader = new ErbLoader(console, exm, this);
+            erbLoader.SetThreadUsageCapture(captureInitializeProfile);
             if (Program.AnalysisMode)
                 noError = await erbLoader.LoadErbList(Program.AnalysisFiles, labelDic);
             else
                 noError = await erbLoader.LoadErbDir(Program.ErbDir, Config.DisplayReport, labelDic);
+            erbLoader.SetThreadUsageCapture(false);
             logWriter.WriteLine($"Proc:Init:ERB:Enumeration {erbLoader.EnumerationMilliseconds}ms");
             logWriter.WriteLine($"Proc:Init:ERB:PrimaryParse {erbLoader.PrimaryParseMilliseconds}ms");
             logWriter.WriteLine($"Proc:Init:ERB:LabelSetup {erbLoader.LabelSetupMilliseconds}ms");
             logWriter.WriteLine($"Proc:Init:ERB:ScriptParse {erbLoader.ScriptParseMilliseconds}ms");
             logWriter.WriteLine($"Proc:Init:ERB:LazyErb files={erbLoader.LazyErbFileCount} fallback={erbLoader.LazyErbFallbackFileCount}");
             logWriter.WriteLine($"Proc:Init:ERB:DeferredEager count={erbLoader.DeferredEagerCount}");
+            logWriter.WriteLine($"Proc:Init:ERB:Result success={noError}");
+            if (!noError)
+                logWriter.WriteLine($"Proc:Init:ERB:FirstError {erbLoader.FirstErrorDiagnostic}");
             logWriter.WriteLine($"Proc:Init:ERB:End {stopWatch.ElapsedMilliseconds}ms");
             PerformanceMetrics.MarkStartup("ErbParsed"); // ERB解析完了の目印
 
+            if (!noError)
+                return false;
+
+            profile?.CompletePhase("erb");
+
+#if !WEB_RUNTIME
             SQL.SetUpTempDB();
+#endif
 
             initSystemProcess();
             initialiing = false;
+            profile?.CompletePhase("system-process");
 
             logWriter.WriteLine($"Proc:Init:End {stopWatch.ElapsedMilliseconds}ms");
         }
         catch (Exception e)
         {
+#if WEB_RUNTIME
+            throw new InvalidOperationException("P1A実Runtimeの初期化に失敗しました", e);
+#else
             handleException(e, null, true);
             console.PrintSystemLine(LocalizationManager.Error.InitFatalError);
             return false;
+#endif
         }
         if (labelDic == null)
         {
             return false;
         }
         state.Begin(BeginType.TITLE);
+        InitializeProfile = profile?.Complete(erbLoader);
         return true;
     }
 
@@ -666,6 +1029,9 @@ internal sealed partial class Process(EmueraConsole view)
 
     public void DoScript()
     {
+#if WEB_RUNTIME && ERB_EXECUTION_PROFILE
+        long profileStarted = erbExecutionProfiler.StartDoScript();
+#endif
         startTime.Restart();
         state.lineCount = 0;
         bool systemProcRunning = true;
@@ -685,14 +1051,31 @@ internal sealed partial class Process(EmueraConsole view)
         }
         catch (Exception ec)
         {
+            lastRuntimeException = ec;
             LogicalLine currentLine = state.ErrorLine;
             if (currentLine != null && currentLine is NullLine)
                 currentLine = null;
+#if WEB_RUNTIME
+            if (globalPersistenceEnabled && persistenceQueue.Count != 0)
+            {
+                deferredPersistenceException = ec;
+                deferredPersistenceErrorLine = currentLine;
+                deferredPersistenceSystemProc = systemProcRunning;
+                console.BeginPersistence();
+                return;
+            }
+#endif
             if (systemProcRunning)
                 handleExceptionInSystemProc(ec, currentLine, true);
             else
                 handleException(ec, currentLine, true);
         }
+#if WEB_RUNTIME && ERB_EXECUTION_PROFILE
+        finally
+        {
+            erbExecutionProfiler.EndDoScript(profileStarted);
+        }
+#endif
     }
 
     public void BeginTitle()
@@ -732,7 +1115,20 @@ internal sealed partial class Process(EmueraConsole view)
         var text = string.Format(
             LocalizationManager.MsgBox.TooLongLoop,
             currentLine.Position.Value.Filename, currentLine.Position.Value.LineNo, state.lineCount, elapsedTime);
-        if (Dialog.ShowPrompt(LocalizationManager.MsgBox.InfiniteLoop, text))
+        if (
+#if WEB_RUNTIME
+            (webInfiniteLoopPrompt?.Invoke(new(
+                LocalizationManager.MsgBox.InfiniteLoop,
+                text,
+                currentLine.Position.Value.Filename,
+                currentLine.Position.Value.LineNo,
+                state.lineCount,
+                elapsedTime))
+                ?? Dialog.ShowInfiniteLoopPrompt(LocalizationManager.MsgBox.InfiniteLoop, text))
+#else
+            Dialog.ShowInfiniteLoopPrompt(LocalizationManager.MsgBox.InfiniteLoop, text)
+#endif
+            )
         {
             throw new CodeEE(LocalizationManager.Error.SelectExitInfiniteLoopMB);
         }
@@ -775,6 +1171,39 @@ internal sealed partial class Process(EmueraConsole view)
         }
         return ret;
     }
+#if WEB_RUNTIME // R7 direct-call metadata
+    public SingleTerm GetDirectValue(DirectUserDefinedMethodTerm udmt)
+    {
+        methodStack++;
+        if (methodStack > 100)
+        {
+            //StackOverflowExceptionはcatchできない上に再現性がないので発生前に一定数で打ち切る。
+            //環境によっては100以前にStackOverflowExceptionがでるかも？
+            throw new CodeEE(LocalizationManager.Error.OverflowFuncStack);
+        }
+        SingleTerm ret = null;
+        int temp_current = state.currentMin;
+        state.currentMin = state.functionCount;
+        udmt.Call.updateRetAddress(state.CurrentLine);
+        try
+        {
+            state.IntoDirectFunction(udmt.Call, udmt.Argument, exm, udmt);
+            //do whileの中でthrow されたエラーはここではキャッチされない。
+            //#functionを全て抜けてDoScriptでキャッチされる。
+            runScriptProc();
+            ret = state.MethodReturnValue;
+        }
+        finally
+        {
+            if (udmt.Call.TopLabel.hasPrivDynamicVar)
+                udmt.Call.TopLabel.ScopeOut();
+            //1756beta2+v3:こいつらはここにないとデバッグコンソールで式中関数が事故った時に大事故になる
+            state.currentMin = temp_current;
+            methodStack--;
+        }
+        return ret;
+    }
+#endif // R7 direct-call metadata
 
     public void clearMethodStack()
     {

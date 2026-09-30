@@ -25,6 +25,9 @@ internal sealed class VariableEvaluator : IDisposable
     readonly VariableData varData;
     MTRandom rand = new();
     Random _newRand = new();
+#if WEB_RUNTIME
+    string checkDataRoot;
+#endif
 
     public VariableData VariableData { get { return varData; } }
     internal ConstantData Constant { get { return constant; } }
@@ -1784,6 +1787,25 @@ internal sealed class VariableEvaluator : IDisposable
 
     #region File操作
 
+#if WEB_RUNTIME
+    static void GuardWebPersistence(string feature) => throw new PlatformNotSupportedException($"P1A未対応: {feature}");
+
+    internal void EnableCheckData(string preparedSaveRoot)
+    {
+        checkDataRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(preparedSaveRoot));
+    }
+
+    void GuardCheckData(string filename)
+    {
+        if (checkDataRoot is null)
+            GuardWebPersistence("CHKDATA");
+        string fullPath = Path.GetFullPath(filename);
+        string prefix = checkDataRoot + Path.DirectorySeparatorChar;
+        if (!fullPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("P1C2のCHKDATA対象は準備済みsav領域だけです");
+    }
+#endif
+
 
     private static string getSaveDataPathG() { return Config.Config.SavDir + "global.sav"; }
     private static string getSaveDataPath(int index) { return string.Create(CultureInfo.InvariantCulture, $"{Config.Config.SavDir}save{index:00}.sav"); }
@@ -1815,6 +1837,9 @@ internal sealed class VariableEvaluator : IDisposable
 
     public static List<string> GetDatFiles(bool charadat, string pattern)
     {
+#if WEB_RUNTIME
+        GuardWebPersistence("FIND_CHARADATA");
+#endif
         List<string> files = [];
         if (!Directory.Exists(Program.DatDir))
             return files;
@@ -1888,6 +1913,9 @@ internal sealed class VariableEvaluator : IDisposable
 
     public EraDataResult CheckDataByFilename(string filename, EraSaveFileType type)
     {
+#if WEB_RUNTIME
+        GuardCheckData(filename);
+#endif
         EraDataResult result = new();
         if (!File.Exists(filename))
         {
@@ -2024,6 +2052,9 @@ internal sealed class VariableEvaluator : IDisposable
 
     public void SaveChara(string savename, string savMes, int[] charas)
     {
+#if WEB_RUNTIME
+        GuardWebPersistence("SAVECHARA");
+#endif
         CreateDatFolder();
         CheckDatFilename(savename);
         string filepath = getSaveDataPathC(savename);
@@ -2063,6 +2094,9 @@ internal sealed class VariableEvaluator : IDisposable
 
     public void LoadChara(string savename)
     {
+#if WEB_RUNTIME
+        GuardWebPersistence("LOADCHARA");
+#endif
         string filepath = getSaveDataPathC(savename);
         RESULT = 0;
         if (!File.Exists(filepath))
@@ -2111,6 +2145,9 @@ internal sealed class VariableEvaluator : IDisposable
 
     public void SaveVariable(string savename, string savMes, VariableToken[] vars)
     {
+#if WEB_RUNTIME
+        GuardWebPersistence("SAVEVAR");
+#endif
         CreateDatFolder();
         CheckDatFilename(savename);
         string filepath = getSaveDataPathV(savename);
@@ -2148,6 +2185,9 @@ internal sealed class VariableEvaluator : IDisposable
 
     public void LoadVariable(string savename)
     {
+#if WEB_RUNTIME
+        GuardWebPersistence("LOADVAR");
+#endif
         string filepath = getSaveDataPathV(savename);
         RESULT = 0;
         if (!File.Exists(filepath))
@@ -2264,6 +2304,9 @@ internal sealed class VariableEvaluator : IDisposable
 
     public bool SaveGlobal()
     {
+#if WEB_RUNTIME
+        GlobalStatic.Process.RequireGlobalPersistence("SAVEGLOBAL");
+#endif
         string filepath = getSaveDataPathG();
         try
         {
@@ -2309,11 +2352,17 @@ internal sealed class VariableEvaluator : IDisposable
         //	else if (fs != null)
         //		fs.Close();
         //}
+#if WEB_RUNTIME
+        GlobalStatic.Process.CaptureGlobalPersistence(filepath);
+#endif
         return true;
     }
 
     public bool LoadGlobal()
     {
+#if WEB_RUNTIME
+        GlobalStatic.Process.RequireGlobalPersistence("LOADGLOBAL");
+#endif
         string filepath = getSaveDataPathG();
         if (!File.Exists(filepath))
             return false;
@@ -2444,6 +2493,16 @@ internal sealed class VariableEvaluator : IDisposable
 
     public bool SaveTo(int saveIndex, string saveText)
     {
+        var filepath = getSaveDataPath(saveIndex);
+#if WEB_RUNTIME
+        GlobalStatic.Process.RequireSavePersistencePath("SAVEDATA", filepath);
+        string writePath = filepath + ".pending-" + Guid.NewGuid().ToString("N");
+        FileMode writeMode = FileMode.CreateNew;
+        bool webSaveSucceeded = false;
+#else
+        string writePath = filepath;
+        FileMode writeMode = FileMode.Create;
+#endif
 #if PERFORMANCE_METRICS
         PerformanceMetrics.RecordSaveToCall(saveIndex);
         long saveToStart = PerformanceMetrics.StartDiagnosticTiming();
@@ -2453,8 +2512,6 @@ internal sealed class VariableEvaluator : IDisposable
         int saveCharanum = measureSave ? varData.CharacterList.Count : 0;
         long bytesWritten = 0;
 #endif
-        var filepath = getSaveDataPath(saveIndex);
-
         {
             var fileInfo = new FileInfo(filepath);
             var dbFileDir = fileInfo.Directory;
@@ -2485,7 +2542,7 @@ internal sealed class VariableEvaluator : IDisposable
         try
         {
             Config.Config.CreateSavDir();
-            fs = new FileStream(filepath, FileMode.Create, FileAccess.Write);
+            fs = new FileStream(writePath, writeMode, FileAccess.Write);
 #if PERFORMANCE_METRICS
             long serializerStart = measureSave ? PerformanceMetrics.StartDiagnosticTiming() : 0;
             try
@@ -2514,6 +2571,9 @@ internal sealed class VariableEvaluator : IDisposable
             #if PERFORMANCE_METRICS
             saveSucceeded = true;
             #endif
+#if WEB_RUNTIME
+            webSaveSucceeded = true;
+#endif
             return true;
         }
         catch (Exception)
@@ -2528,6 +2588,15 @@ internal sealed class VariableEvaluator : IDisposable
                 bWriter.Close();
             else if (fs != null)
                 fs.Close();
+#if WEB_RUNTIME
+            if (webSaveSucceeded)
+            {
+                File.Move(writePath, filepath, true);
+                GlobalStatic.Process.CaptureSavePut(filepath, "SAVEDATA");
+            }
+            else if (File.Exists(writePath))
+                File.Delete(writePath);
+#endif
 #if PERFORMANCE_METRICS
             if (measureSave)
             {
@@ -2546,6 +2615,9 @@ internal sealed class VariableEvaluator : IDisposable
     public bool LoadFrom(int dataIndex)
     {
         string filepath = getSaveDataPath(dataIndex);
+#if WEB_RUNTIME
+        GlobalStatic.Process.RequireSavePersistencePath("LOADDATA", filepath);
+#endif
 
         {
             var fileInfo = new FileInfo(filepath);
@@ -2582,6 +2654,9 @@ internal sealed class VariableEvaluator : IDisposable
     public static void DelData(int dataIndex)
     {
         string filepath = getSaveDataPath(dataIndex);
+#if WEB_RUNTIME
+        GlobalStatic.Process.RequireSavePersistencePath("DELDATA", filepath);
+#endif
         if (!File.Exists(filepath))
             return;
         FileAttributes att = File.GetAttributes(filepath);
@@ -2593,6 +2668,9 @@ internal sealed class VariableEvaluator : IDisposable
         //    return;
         //}
         File.Delete(filepath);
+#if WEB_RUNTIME
+        GlobalStatic.Process.CaptureSaveDelete(filepath, "DELDATA");
+#endif
         return;
     }
 

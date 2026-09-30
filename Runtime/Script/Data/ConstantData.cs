@@ -108,6 +108,7 @@ internal sealed class ConstantData
     public ReadOnlyDictionary<string, long> NicknameToTemplateMap => _nicknameToTemplateMap.AsReadOnly();
     public ReadOnlyDictionary<string, long> CallnameToTemplateMap => _callnameToTemplateMap.AsReadOnly();
     public ReadOnlyDictionary<string, long> MasternameToTemplateMap => _masternameToTemplateMap.AsReadOnly();
+    internal int CharacterTemplateCount => CharacterTmplList.Count;
     private EmueraConsole output;
 
     public ConstantData()
@@ -199,6 +200,7 @@ internal sealed class ConstantData
 
     private void loadVariableSizeData(string csvPath, bool disp)
     {
+        csvPath = CompatiblePath.ResolveExistingFile(csvPath) ?? csvPath;
         if (!File.Exists(csvPath))
             return;
         using var eReader = new EraStreamReader(false);
@@ -1340,7 +1342,7 @@ internal sealed class ConstantData
 
     private void loadDataTo(string csvPath, int targetIndex, long[] targetI, bool disp)
     {
-
+        csvPath = CompatiblePath.ResolveExistingFile(csvPath) ?? csvPath;
         if (!File.Exists(csvPath))
             return;
         string[] target = names[targetIndex];

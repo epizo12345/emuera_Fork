@@ -4,6 +4,7 @@ using MinorShift.Emuera.Forms;
 using MinorShift.Emuera.GameProc.Function;
 using MinorShift.Emuera.Runtime;
 using MinorShift.Emuera.Runtime.Config;
+using MinorShift.Emuera.Runtime.Script;
 using MinorShift.Emuera.Runtime.Script.Parser;
 using MinorShift.Emuera.Runtime.Script.Statements;
 using MinorShift.Emuera.Runtime.Script.Statements.Expression;
@@ -340,6 +341,17 @@ internal sealed partial class EmueraConsole : IDisposable
         }
     }
 
+    internal string StartupTestTimerState =>
+        $"state={state},input={inputReq?.InputType},limit={inputReq?.Timelimit},enabled={genericTimer.Enabled},pending={need_settimer},elapsed={_genericTimerStopwatch.ElapsedMilliseconds}";
+
+    internal void StartPendingTimerForStartupTest()
+    {
+        if (!Program.StartupTestMode || !need_settimer)
+            return;
+        need_settimer = false;
+        setTimer();
+    }
+
     internal bool IsWaitingPrimitive
     {
         get
@@ -485,11 +497,160 @@ internal sealed partial class EmueraConsole : IDisposable
             OutputLog(null);
             PrintFlush(false);
             RefreshStrings(true);
-            if (Program.StartupTestMode)
+            if (Program.BootstrapTestMode)
+            {
+                string resultPath = Program.BootstrapTestLog ?? Program.ExeDir + "bootstrap-test-result.txt";
+                File.WriteAllText(resultPath, "Status=Failed\nInitialize=False\nStage=Process.Initialize\nDoScriptCallCount=0\n", new UTF8Encoding(false));
+            }
+            if (Program.StartupTestMode || Program.BootstrapTestMode)
                 window.BeginInvoke(window.Close);
             return;
         }
         logWriter.WriteLine("Process:Initialize:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
+        if (Program.GlobalCodecTestMode)
+        {
+            string resultPath = Program.GlobalCodecTestLog ?? Program.ExeDir + "global-codec-test-result.txt";
+            string globalPath = Path.Combine(Config.SavDir, "global.sav");
+            try
+            {
+                string inputSha256 = File.Exists(globalPath)
+                    ? Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(globalPath)))
+                    : string.Empty;
+                bool loaded = process.VEvaluator.LoadGlobal();
+                var values = process.GetGlobalValueSummary();
+                if (loaded)
+                    process.VEvaluator.SaveGlobal();
+                string outputSha256 = loaded && File.Exists(globalPath)
+                    ? Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(globalPath)))
+                    : string.Empty;
+                string result = string.Join(Environment.NewLine,
+                    "Status=" + (loaded ? "Succeeded" : "Rejected"),
+                    "Initialize=True",
+                    "DoScriptCallCount=0",
+                    $"LoadGlobal={loaded}",
+                    $"InputSha256={inputSha256}",
+                    $"OutputSha256={outputSha256}",
+                    $"SavedVariableCount={values.SavedVariableCount}",
+                    $"ValueSha256={values.ValueSha256}",
+                    $"ValueRowsBase64={Convert.ToBase64String(Encoding.UTF8.GetBytes(values.ValueRows))}");
+                File.WriteAllText(resultPath, result + Environment.NewLine, new UTF8Encoding(false));
+            }
+            catch (Exception ex)
+            {
+                File.WriteAllText(resultPath,
+                    $"Status=Failed{Environment.NewLine}Initialize=True{Environment.NewLine}DoScriptCallCount=0{Environment.NewLine}Error={ex}{Environment.NewLine}",
+                    new UTF8Encoding(false));
+            }
+            logWriter.Flush();
+            window.BeginInvoke(window.Close);
+            return;
+        }
+        if (Program.SaveStateTestMode)
+        {
+            string resultPath = Program.SaveStateTestLog ?? Program.ExeDir + "save-state-test-result.json";
+            string globalPath = Path.Combine(Config.SavDir, "global.sav");
+            string savePath = Path.Combine(Config.SavDir, "save218.sav");
+            try
+            {
+                bool globalLoaded = process.VEvaluator.LoadGlobal();
+                bool saveLoaded = globalLoaded && process.VEvaluator.LoadFrom(218);
+                var values = process.GetSavedStateValueSummary();
+                var data = process.VEvaluator.VariableData;
+                string result = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    Status = saveLoaded ? "Succeeded" : "Rejected",
+                    Initialize = true,
+                    DoScriptCallCount = 0,
+                    PendingPersistenceCount = 0,
+                    GlobalLoaded = globalLoaded,
+                    SaveLoaded = saveLoaded,
+                    Slot = 218,
+                    GlobalInputSha256 = File.Exists(globalPath) ? Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(globalPath))) : string.Empty,
+                    SaveInputSha256 = File.Exists(savePath) ? Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(savePath))) : string.Empty,
+                    values.CharacterCount,
+                    LastLoadVersion = data.LastLoadVersion.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    data.LastLoadText,
+                    values.SavedVariableCount,
+                    values.NonDefaultValueCount,
+                    values.StateSha256,
+                    values.ValueSha256,
+                    values.ValueRows
+                });
+                File.WriteAllText(resultPath, result + Environment.NewLine, new UTF8Encoding(false));
+            }
+            catch (Exception ex)
+            {
+                File.WriteAllText(resultPath, System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    Status = "Failed",
+                    Initialize = true,
+                    DoScriptCallCount = 0,
+                    PendingPersistenceCount = 0,
+                    Error = ex.ToString()
+                }) + Environment.NewLine, new UTF8Encoding(false));
+            }
+            logWriter.Flush();
+            window.BeginInvoke(window.Close);
+            return;
+        }
+        if (Program.BootstrapTestMode)
+        {
+            var summary = process.GetBootstrapRuntimeSummary();
+            string resultPath = Program.BootstrapTestLog ?? Program.ExeDir + "bootstrap-test-result.txt";
+            string result = string.Join(Environment.NewLine,
+                "Status=BootstrapReady",
+                "Initialize=True",
+                "DoScriptCallCount=0",
+                $"ExecutedLineCount={process.ExecutedLineCount}",
+                $"ElapsedMilliseconds={boottimeDebugStopwatch.ElapsedMilliseconds}",
+                $"ManagedMemoryBytes={GC.GetTotalMemory(false)}",
+                $"CsvFileCount={summary.CsvFileCount}",
+                $"ErhFileCount={summary.ErhFileCount}",
+                $"ErbFileCount={summary.ErbFileCount}",
+                $"CharacterTemplateCount={summary.CharacterTemplateCount}",
+                $"VariableTokenCount={summary.VariableTokenCount}",
+                $"LabelCount={summary.LabelCount}",
+                $"LabelIdentitySha256={summary.LabelIdentitySha256}",
+                $"LazyErbFileCount={summary.LazyErbFileCount}",
+                $"LazyErbFallbackFileCount={summary.LazyErbFallbackFileCount}",
+                $"DeferredEagerCount={summary.DeferredEagerCount}",
+                $"ConfigurationIdentitySha256={summary.ConfigurationIdentitySha256}",
+                $"EffectiveConfigurationBase64={Convert.ToBase64String(Encoding.UTF8.GetBytes(string.Join('\n', GameProc.Process.GetBootstrapEffectiveConfiguration().Select(pair => $"{pair.Key}={pair.Value}"))))}",
+                $"VariableRegistryScope={summary.VariableRegistryScope}",
+                $"VariableSchemaCount={summary.VariableSchemaCount}",
+                $"VariableSchemaSha256={summary.VariableSchemaSha256}",
+                $"VariableSchemaRowsBase64={Convert.ToBase64String(Encoding.UTF8.GetBytes(summary.VariableSchemaRows))}",
+                $"WarningCount={summary.WarningCount}",
+                $"WarningKindCount={summary.WarningKindCount}",
+                $"WarningIdentitySha256={summary.WarningIdentitySha256}",
+                $"WarningKindCounts={summary.WarningKindCounts}",
+                $"WarningExamples={Convert.ToBase64String(Encoding.UTF8.GetBytes(summary.WarningExamples))}",
+                $"ResourceParentImageCount={AppContents.ParentImageCount}",
+                $"ResourceSpriteCount={AppContents.SpriteCount}",
+                $"ResourceAnimationCount={AppContents.AnimationCount}",
+                $"ResourceAnimationFrameCount={AppContents.AnimationFrameCount}",
+                $"ResourceParentIdentitySha256={AppContents.ParentIdentitySha256}",
+                $"ResourceSpriteIdentitySha256={AppContents.SpriteIdentitySha256}",
+                $"ResourceSpriteNameSha256={AppContents.SpriteNameSha256}",
+                $"ResourceNonZeroOffsetCount={AppContents.NonZeroSpriteOffsetCount}",
+                $"ResourceWidthTotal={AppContents.SpriteWidthTotal}",
+                $"ResourceHeightTotal={AppContents.SpriteHeightTotal}",
+                $"ResourceOffsetXTotal={AppContents.SpriteOffsetXTotal}",
+                $"ResourceOffsetYTotal={AppContents.SpriteOffsetYTotal}",
+                $"ResourceSourceXTotal={AppContents.SpriteSourceXTotal}",
+                $"ResourceSourceYTotal={AppContents.SpriteSourceYTotal}",
+                $"ResourceAnimationSourceXTotal={AppContents.AnimationSourceXTotal}",
+                $"ResourceAnimationSourceYTotal={AppContents.AnimationSourceYTotal}",
+                $"ResourceAnimationOffsetXTotal={AppContents.AnimationOffsetXTotal}",
+                $"ResourceAnimationOffsetYTotal={AppContents.AnimationOffsetYTotal}",
+                $"ResourceAnimationDelayTotal={AppContents.AnimationDelayTotal}",
+                $"ResourceIdentitySha256={AppContents.BootstrapIdentitySha256}");
+            File.WriteAllText(resultPath, result + Environment.NewLine, new UTF8Encoding(false));
+            logWriter.WriteLine("BootstrapReady: DoScriptCallCount=0");
+            logWriter.Flush();
+            window.BeginInvoke(window.Close);
+            return;
+        }
         logWriter.WriteLine("MacroNames:Start " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
         window.SetMacroGroupNames();
         logWriter.WriteLine("MacroNames:End " + boottimeDebugStopwatch.ElapsedMilliseconds + "ms");
@@ -707,7 +868,7 @@ internal sealed partial class EmueraConsole : IDisposable
     private void Draw()
     {
         //INPUT待ちでないとき、又はタイマー付きINPUT状態の場合はこれ以外の処理に任せる
-        if (state != ConsoleState.WaitInput || genericTimer.Enabled)
+        if (state != ConsoleState.WaitInput || genericTimer.Enabled || window.IsDisposed || !window.IsHandleCreated)
         {
             return;
         }
@@ -1076,10 +1237,10 @@ internal sealed partial class EmueraConsole : IDisposable
                         process.VEvaluator.SeedForBenchmark(benchmarkSeed);
 #endif
                     long expansionStart = PerformanceMetrics.StartTiming();
-                    input = parseInput(new CharStream(input), false);
+                    input = InputMacroSyntax.ExpandText(input);
                     PerformanceMetrics.AddExpansion(expansionStart);
                 }
-                text = input.Split(spliter, StringSplitOptions.None);
+                text = InputMacroSyntax.Split(input);
                 PerformanceMetrics.SetExpandedInputCount(text.Length);
             }
 
@@ -2277,6 +2438,8 @@ internal sealed partial class EmueraConsole : IDisposable
 
     public void Dispose()
     {
+        isRedrawEnabled = false;
+        redrawTimer.Dispose();
         if (genericTimer != null)
             genericTimer.Dispose();
         //timer = null;

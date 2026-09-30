@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Emuera.Web.Runtime\Emuera.Web.Runtime.csproj" />
+    <Content Include="..\Emuera.Web\wwwroot\p1a-fixture\**\*" Link="p1a-fixture\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\Emuera.Web\wwwroot\p1a-r2-fixture\**\*" Link="p1a-r2-fixture\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="p1a-unsupported\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

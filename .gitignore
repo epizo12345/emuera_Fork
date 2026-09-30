@@ -12,3 +12,33 @@ eramegaten_p/
 *.sav
 *.log
 プロジェクト資料/検証記録/
+
+# 旧Windows配布EXEはソース公開対象から外す。
+/配布/Emuera.NET_最終通常版/Emuera.exe
+
+# Web/Packagerのネストしたbuild outputは、sourceと分けて再生成する。
+**/bin/
+**/obj/
+**/artifacts/
+**/runs/
+**/.building-*/
+**/*.previous-*/
+
+# Raw受入ログはローカル保管し、恒久仕様はプロジェクト資料へ昇格する。
+/reports/
+/Web/**/reports/
+
+# ブラウザ状態・ローカルfixture・配信生成物はsourceに含めない。
+**/browser-profiles/
+**/browser-profile/
+**/chrome-profiles/
+**/chrome-profile/
+**/user-data-dir/
+**/local-test-assets/
+/Web/**/wwwroot/_framework/
+/Web/**/wwwroot/p1b-data/
+
+# テストserverの一時出力。
+*.server.log
+*.stdout.log
+*.stderr.log

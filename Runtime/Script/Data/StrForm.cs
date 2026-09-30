@@ -53,6 +53,15 @@ internal sealed class StrForm
         CallnameTarget = new FunctionMethodTerm(formatPercent, [callnametarget, null, null]);
     }
 
+    public static void ReleaseBootstrapReferences()
+    {
+        NameTarget = null;
+        CallnameMaster = null;
+        CallnamePlayer = null;
+        NameAssi = null;
+        CallnameTarget = null;
+    }
+
     public static StrForm FromWordToken(StrFormWord wt)
     {
         StrForm ret = new()

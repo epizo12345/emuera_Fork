@@ -74,6 +74,41 @@ static partial class Program
             Description = "起動完了後に画面ログをstartup-test.logへ保存して自動終了する"
         };
         rootCommand.Options.Add(startupTestOption);
+        var startupTestInputFileOption = new Option<string>(name: "--StartupTestInputFile")
+        {
+            Description = "起動試験で順番に投入するUTF-8入力ファイル"
+        };
+        rootCommand.Options.Add(startupTestInputFileOption);
+        var bootstrapTestOption = new Option<bool>(name: "--BootstrapTest")
+        {
+            Description = "Process.Initialize完了直後、最初のDoScript前に結果を保存して終了する"
+        };
+        rootCommand.Options.Add(bootstrapTestOption);
+        var bootstrapTestLogOption = new Option<string>(name: "--BootstrapTestLog")
+        {
+            Description = "初期化専用試験の結果保存先"
+        };
+        rootCommand.Options.Add(bootstrapTestLogOption);
+        var globalCodecTestOption = new Option<bool>(name: "--GlobalCodecTest")
+        {
+            Description = "Process.Initialize直後にglobal.savを既存codecで読込・再保存して終了する"
+        };
+        rootCommand.Options.Add(globalCodecTestOption);
+        var globalCodecTestLogOption = new Option<string>(name: "--GlobalCodecTestLog")
+        {
+            Description = "GLOBAL codec診断の結果保存先"
+        };
+        rootCommand.Options.Add(globalCodecTestLogOption);
+        var saveStateTestOption = new Option<bool>(name: "--SaveStateTest")
+        {
+            Description = "Process.Initialize直後にglobal.savとsave218.savを読取専用で診断して終了する"
+        };
+        rootCommand.Options.Add(saveStateTestOption);
+        var saveStateTestLogOption = new Option<string>(name: "--SaveStateTestLog")
+        {
+            Description = "通常sav状態診断のJSON保存先"
+        };
+        rootCommand.Options.Add(saveStateTestLogOption);
 
         // --BenchmarkLog は計測版だけが使うJSON Linesの保存先を受け取る。
         var benchmarkLogOption = new Option<string>(name: "--BenchmarkLog")
@@ -149,6 +184,15 @@ static partial class Program
         var debugMode = result.GetValue(debugModeOption);
         DebugMode = debugMode;
         StartupTestMode = result.GetValue(startupTestOption);
+        StartupTestInputFile = result.GetValue(startupTestInputFileOption);
+        BootstrapTestMode = result.GetValue(bootstrapTestOption);
+        BootstrapTestLog = result.GetValue(bootstrapTestLogOption);
+        GlobalCodecTestMode = result.GetValue(globalCodecTestOption);
+        GlobalCodecTestLog = result.GetValue(globalCodecTestLogOption);
+        SaveStateTestMode = result.GetValue(saveStateTestOption);
+        SaveStateTestLog = result.GetValue(saveStateTestLogOption);
+        if (BootstrapTestMode || GlobalCodecTestMode || SaveStateTestMode)
+            ParserMediator.BeginBootstrapDiagnostics();
 
         var fileArgs = result.GetValue(filesArg) ?? [];
         var analysisRequestPaths = fileArgs;
@@ -288,6 +332,13 @@ static partial class Program
     public static bool DebugMode { get; private set; }
 
     public static bool StartupTestMode { get; private set; }
+    public static string? StartupTestInputFile { get; private set; }
+    public static bool BootstrapTestMode { get; private set; }
+    public static string? BootstrapTestLog { get; private set; }
+    public static bool GlobalCodecTestMode { get; private set; }
+    public static string? GlobalCodecTestLog { get; private set; }
+    public static bool SaveStateTestMode { get; private set; }
+    public static string? SaveStateTestLog { get; private set; }
 
     static Program()
     {

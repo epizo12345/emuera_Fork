@@ -1,5 +1,7 @@
 # Emuera.NET 最終通常版
 
+> 過去の配布記録です。記載されたサイズ、SHA-256、ProductVersionは当時のEXEを示します。`Emuera.exe`本体は現在のソースrepoに含まれず、このフォルダはダウンロード用パッケージではありません。
+
 - 更新日: 2026-09-15
 - 基礎: BugFix_Test `7b7dd3bf240eff4fdfc7094f4175de0e014532b7`
 - EXE生成元source commit: `a63b594237825f4b6a9e5335ed13f4ea32175c0a`
