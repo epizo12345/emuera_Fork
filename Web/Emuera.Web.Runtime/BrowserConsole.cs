@@ -36,6 +36,8 @@ internal sealed class EmueraConsole
     ConsoleRedraw redraw = ConsoleRedraw.Normal;
     long displayGeneration;
     long displayStructureGeneration;
+    long scriptOutputGeneration;
+    bool suppressScriptOutputGeneration;
     long nextDisplayLineId = 1;
     long currentDisplayLineId;
     bool lastButtonIsInput = true;
@@ -69,6 +71,7 @@ internal sealed class EmueraConsole
     public int IslandLineCount => htmlIslandLines.Values.Sum(lines => lines.Count);
     public long DisplayGeneration => displayGeneration;
     public long DisplayStructureGeneration => displayStructureGeneration;
+    public long ScriptOutputGeneration => scriptOutputGeneration;
     public long CurrentDisplayLineId => currentDisplayLineId;
     public long LastButtonGeneration => lastButtonGeneration;
     internal BrowserDisplayPerformanceSnapshot DisplayPerformance => new(
@@ -252,6 +255,20 @@ internal sealed class EmueraConsole
             printBuffer.Add((value, style, false));
         printBufferLineEnd = lineEnd;
         emptyDisplayLine = false;
+    }
+    public void PrintInputEcho(string value)
+    {
+        bool wasSuppressed = suppressScriptOutputGeneration;
+        suppressScriptOutputGeneration = true;
+        try
+        {
+            Print(value);
+            PrintFlush(false);
+        }
+        finally
+        {
+            suppressScriptOutputGeneration = wasSuppressed;
+        }
     }
     public void PrintSingleLine(string value) => PrintSingleLine(value, false);
     public void PrintSingleLine(string value, bool temporary)
@@ -522,7 +539,8 @@ internal sealed class EmueraConsole
         var parts = new List<BrowserDisplayPart>();
         void CompleteLine()
         {
-            lines.Add(new("left", parts.ToArray(), LineId: nextDisplayLineId++));
+            if (!suppressScriptOutputGeneration) scriptOutputGeneration++;
+            lines.Add(new("left", parts.ToArray(), LineId: nextDisplayLineId++, IslandFlowOffsetY: lines.Count * Config.LineHeight));
             parts.Clear();
         }
         BrowserHtmlParser.Append(html, HtmlBaseStyle(), AppContents.GetSpriteDataUrl, part => parts.Add(StampButtonGenerations(part)), CompleteLine);
@@ -672,6 +690,7 @@ internal sealed class EmueraConsole
 
     void AddPart(BrowserDisplayPart part)
     {
+        if (!suppressScriptOutputGeneration) scriptOutputGeneration++;
         if (currentDisplayLineId == 0)
             currentDisplayLineId = nextDisplayLineId++;
         currentDisplayParts.Add(StampButtonGenerations(part));

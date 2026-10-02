@@ -63,22 +63,27 @@ internal sealed class SpriteAnime(string name, Size size) : ASprite(name, size)
     internal sealed record Frame(AbstractImage ParentImage, Rectangle SourceRectangle, Point Offset, int Delay);
     readonly List<Frame> frames = [];
     public long totaltime;
+    long? playbackStartTick;
     public int FrameCount => frames.Count;
     internal IReadOnlyList<Frame> BootstrapFrames => frames;
-    internal Frame? CurrentFrame
+    internal Frame? CurrentFrame => GetCurrentFrameAt(Environment.TickCount64);
+    internal Frame? GetCurrentFrameAt(long tickCount)
     {
-        get
+        // Native starts each SpriteAnime on its first frame read, not at process startup.
+        if (frames.Count == 0 || totaltime <= 0) return null;
+        if (playbackStartTick is not long start)
         {
-            // フレームは時間で変わるため、静止SpriteのData URL cacheには載せない。
-            if (frames.Count == 0 || totaltime <= 0) return null;
-            long elapsed = Environment.TickCount64 % totaltime;
-            foreach (Frame frame in frames)
-            {
-                elapsed -= frame.Delay;
-                if (elapsed < 0) return frame;
-            }
-            return frames[^1];
+            playbackStartTick = tickCount;
+            return frames[0];
         }
+
+        long elapsed = (tickCount - start) % totaltime;
+        foreach (Frame frame in frames)
+        {
+            elapsed -= frame.Delay;
+            if (elapsed <= 0) return frame;
+        }
+        return frames[^1];
     }
     public override bool IsCreated => true;
     public bool AddFrame(AbstractImage image, Rectangle rect, Point offset, int delay)
@@ -98,8 +103,8 @@ internal sealed class SpriteAnime(string name, Size size) : ASprite(name, size)
         totaltime += delay;
         return true;
     }
-    public void ResetTime() => throw new UnsupportedRuntimeFeatureException("animated image playback");
-    public override void Dispose() { frames.Clear(); totaltime = 0; }
+    public void ResetTime() => playbackStartTick = null;
+    public override void Dispose() { frames.Clear(); totaltime = 0; playbackStartTick = null; }
 }
 
 internal sealed class GraphicsImage : AbstractImage

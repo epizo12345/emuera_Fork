@@ -44,9 +44,29 @@ public sealed record BrowserDisplayPart(
     IReadOnlyList<BrowserDisplayPart>? Children = null,
     long ButtonGeneration = -1,
     int? LockedX = null,
-    double TextPaintScale = 1);
+    double TextPaintScale = 1)
+{
+    public bool ShouldRenderForNativePaint(bool nativeLinePainted) =>
+        nativeLinePainted || Layout?.ExplicitPosition != true;
+}
 
-public sealed record BrowserDisplayLine(string Alignment, IReadOnlyList<BrowserDisplayPart> Parts, long DisplayGeneration = 0, long LineId = 0, bool IsTemporary = false)
+public static class BrowserPartRenderPolicy
+{
+    public static bool ShouldRender(
+        BrowserDisplayPart? renderedPart,
+        BrowserDisplayPart part,
+        bool callbackChanged,
+        bool? renderedNativeLinePainted,
+        bool nativeLinePainted,
+        int renderedFlowOffsetY,
+        int flowOffsetY) =>
+        !ReferenceEquals(renderedPart, part)
+        || callbackChanged
+        || renderedNativeLinePainted != nativeLinePainted
+        || renderedFlowOffsetY != flowOffsetY;
+}
+
+public sealed record BrowserDisplayLine(string Alignment, IReadOnlyList<BrowserDisplayPart> Parts, long DisplayGeneration = 0, long LineId = 0, bool IsTemporary = false, int IslandFlowOffsetY = 0)
 {
     // Image-only copies retain this creation-time summary; button generations never change on refresh.
     public long MaxButtonGeneration { get; } = MaxGeneration(Parts);

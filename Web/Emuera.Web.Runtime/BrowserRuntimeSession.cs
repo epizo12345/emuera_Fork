@@ -26,6 +26,7 @@ public sealed record BrowserPersistenceAckDiagnostic(long Sequence, DateTimeOffs
 public sealed record GlobalCodecDiagnosticResult(bool LoadSucceeded, int SavedVariableCount, string ValueSha256, string ValueRows, string InputSha256);
 public sealed record SaveCodecDiagnosticResult(bool LoadSucceeded, int Slot, int CharacterCount, long LastLoadVersion, string LastLoadText, string StateSha256, string InputSha256);
 public sealed record SaveStateDiagnosticResult(bool LoadSucceeded, int Slot, int CharacterCount, long LastLoadVersion, string LastLoadText, int SavedVariableCount, int NonDefaultValueCount, string StateSha256, string ValueSha256, string ValueRows, string InputSha256);
+public sealed record BrowserCodecValidationTiming(string Operation, long InputHashMilliseconds, long LoadMilliseconds, long SummaryMilliseconds, long InputBytes, string InputSha256, bool Succeeded);
 public sealed record BrowserDisplayPerformanceSnapshot(
     long PublishCalls,
     long PublishElapsedTicks,
@@ -73,6 +74,8 @@ public sealed class BrowserRuntimeSession
     readonly Process process;
     readonly List<BrowserPersistenceDiagnostic> persistenceDiagnostics = [];
     readonly Queue<BrowserPersistenceAckDiagnostic> persistenceAckTimeline = new();
+    readonly List<BrowserCodecValidationTiming> codecValidationProfile = [];
+    bool captureCodecValidationProfile;
     long persistenceAckSequence;
     Task? persistenceDrain;
     BrowserInfiniteLoopContinuation? infiniteLoopContinuation;
@@ -179,6 +182,7 @@ public sealed class BrowserRuntimeSession
     public long SessionGeneration { get; }
     public long DisplayGeneration => console.DisplayGeneration;
     public long DisplayStructureGeneration => console.DisplayStructureGeneration;
+    public long ScriptOutputGeneration => console.ScriptOutputGeneration;
     public long CurrentDisplayLineId => console.CurrentDisplayLineId;
     public int ClientWidth => console.ClientWidth;
     public int ClientHeight => console.ClientHeight;
@@ -293,6 +297,7 @@ public sealed class BrowserRuntimeSession
     public long PreloadMilliseconds { get; private set; }
     public long ProcessInitializeMilliseconds { get; private set; }
     public ProcessInitializeProfile? ProcessInitializeProfile { get; private set; }
+    public IReadOnlyList<BrowserCodecValidationTiming> CodecValidationProfile => codecValidationProfile;
     public long ManagedMemoryBytes { get; private set; }
     public IReadOnlyDictionary<string, string> EffectiveConfiguration { get; private set; } = new Dictionary<string, string>();
     public BootstrapResourceSummary Resources { get; private set; } = new(0, 0, 0, 0);
@@ -319,9 +324,9 @@ public sealed class BrowserRuntimeSession
         return session;
     }
 
-    public static async Task<BrowserRuntimeSession> StartSavePersistentBootstrapAsync(string fixtureRoot, IReadOnlyDictionary<string, byte[]>? initialFiles)
+    public static async Task<BrowserRuntimeSession> StartSavePersistentBootstrapAsync(string fixtureRoot, IReadOnlyDictionary<string, byte[]>? initialFiles, bool captureProcessInitializeProfile = false)
     {
-        var session = await StartCoreAsync(fixtureRoot, loadConfig: true, enableGlobalPersistence: true, initialSaveFiles: initialFiles, enableCheckData: true);
+        var session = await StartCoreAsync(fixtureRoot, loadConfig: true, enableGlobalPersistence: true, initialSaveFiles: initialFiles, enableCheckData: true, captureProcessInitializeProfile: captureProcessInitializeProfile);
         session.console.MarkBootstrapReady();
         return session;
     }
@@ -430,6 +435,7 @@ public sealed class BrowserRuntimeSession
             }
         }
         var session = new BrowserRuntimeSession();
+        session.captureCodecValidationProfile = captureProcessInitializeProfile;
         session.ConfigLoadMilliseconds = phaseStopwatch.ElapsedMilliseconds;
         phaseStopwatch.Restart();
         Preload.Clear();
@@ -604,8 +610,7 @@ public sealed class BrowserRuntimeSession
                 throw new UnsupportedRuntimeFeatureException($"input type {request.InputType}");
         }
 
-        console.Print(raw);
-        console.PrintFlush(false);
+        console.PrintInputEcho(raw);
         if (request.TimedInputName == "TWAIT")
             console.SetTimeOut(false);
         console.Resume();
@@ -848,11 +853,24 @@ public sealed class BrowserRuntimeSession
         if (Status != BrowserRuntimeStatus.BootstrapReady)
             throw new InvalidOperationException("GLOBAL codec診断はBootstrapReadyでだけ実行できます");
         string path = Path.Combine(Config.SavDir, "global.sav");
-        string inputSha256 = File.Exists(path)
+        long inputHashStarted = captureCodecValidationProfile ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+        bool fileExists = File.Exists(path);
+        long inputBytes = captureCodecValidationProfile && fileExists ? new FileInfo(path).Length : 0;
+        string inputSha256 = fileExists
             ? Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(path)))
             : string.Empty;
+        long inputHashMilliseconds = captureCodecValidationProfile
+            ? (long)System.Diagnostics.Stopwatch.GetElapsedTime(inputHashStarted).TotalMilliseconds : 0;
+        long loadStarted = captureCodecValidationProfile ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
         bool loaded = process.VEvaluator.LoadGlobal();
+        long loadMilliseconds = captureCodecValidationProfile
+            ? (long)System.Diagnostics.Stopwatch.GetElapsedTime(loadStarted).TotalMilliseconds : 0;
+        long summaryStarted = captureCodecValidationProfile ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
         GlobalValueSummary values = process.GetGlobalValueSummary();
+        long summaryMilliseconds = captureCodecValidationProfile
+            ? (long)System.Diagnostics.Stopwatch.GetElapsedTime(summaryStarted).TotalMilliseconds : 0;
+        if (captureCodecValidationProfile)
+            codecValidationProfile.Add(new("LoadGlobal", inputHashMilliseconds, loadMilliseconds, summaryMilliseconds, inputBytes, inputSha256, loaded));
         if (resave && loaded)
         {
             process.VEvaluator.SaveGlobal();
@@ -867,18 +885,45 @@ public sealed class BrowserRuntimeSession
             throw new InvalidOperationException("通常sav codec診断はBootstrapReadyでだけ実行できます");
         string logicalFilename = $"save{slot:00}.sav";
         string path = Path.Combine(Config.SavDir, logicalFilename);
-        string inputSha256 = File.Exists(path)
+        long inputHashStarted = captureCodecValidationProfile ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+        bool fileExists = File.Exists(path);
+        long inputBytes = captureCodecValidationProfile && fileExists ? new FileInfo(path).Length : 0;
+        string inputSha256 = fileExists
             ? Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(path)))
             : string.Empty;
-        bool loaded = process.VEvaluator.LoadFrom(slot);
+        long inputHashMilliseconds = captureCodecValidationProfile
+            ? (long)System.Diagnostics.Stopwatch.GetElapsedTime(inputHashStarted).TotalMilliseconds : 0;
+        long loadStarted = captureCodecValidationProfile ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+        bool loaded;
+        try
+        {
+            loaded = process.VEvaluator.LoadFrom(slot);
+        }
+        catch
+        {
+            if (captureCodecValidationProfile)
+            {
+                long failedLoadMilliseconds = (long)System.Diagnostics.Stopwatch.GetElapsedTime(loadStarted).TotalMilliseconds;
+                codecValidationProfile.Add(new("LoadFrom", inputHashMilliseconds, failedLoadMilliseconds, 0, inputBytes, inputSha256, false));
+            }
+            throw;
+        }
+        long loadMilliseconds = captureCodecValidationProfile
+            ? (long)System.Diagnostics.Stopwatch.GetElapsedTime(loadStarted).TotalMilliseconds : 0;
         var data = process.VEvaluator.VariableData;
+        long summaryStarted = captureCodecValidationProfile ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+        string stateSha256 = process.VEvaluator.GetBenchmarkStateHash();
+        long summaryMilliseconds = captureCodecValidationProfile
+            ? (long)System.Diagnostics.Stopwatch.GetElapsedTime(summaryStarted).TotalMilliseconds : 0;
+        if (captureCodecValidationProfile)
+            codecValidationProfile.Add(new("LoadFrom", inputHashMilliseconds, loadMilliseconds, summaryMilliseconds, inputBytes, inputSha256, loaded));
         return new(
             loaded,
             slot,
             data.CharacterList.Count,
             data.LastLoadVersion,
             data.LastLoadText,
-            process.VEvaluator.GetBenchmarkStateHash(),
+            stateSha256,
             inputSha256);
     }
 

@@ -1,10 +1,14 @@
 # Emuera Web Packager — 開発者向け
 
-現行ソースはversion 1.0.1です。利用者の操作は[使い方](使い方.md)、package形式は[Web版パッケージ仕様](../../プロジェクト資料/Web版/03_ゲームデータパッケージ仕様.md)を参照してください。
+現行ソースはversion 1.0.2です。利用者の操作は[使い方](使い方.md)、package形式は[Web版パッケージ仕様](../../プロジェクト資料/Web版/03_ゲームデータパッケージ仕様.md)を参照してください。
+
+1.0.2は表示・入力・セーブ取込／キャンセル後のタイトル復帰、WARNING、スケールフィットを含むUX16-08-RC3を使用します。Webの配布ビルド条件はRelease / RunAOTCompilation=true / WasmStripILAfterAOT=false / EnableErbExecutionProfiler=falseです。IL保持はAOTの無効化ではなく、IL削除版とのサイズ・速度差は未測定です。SHA出力領域・root-prefix再利用は割当削減のみ確認済みで、速度改善を保証しません。
+
+GUIを開かず同じ生成処理を実行する場合は、ZIPを展開したフォルダで `EmueraWebPackager.exe --package <game-folder> <new-output-folder>` を使用できます。新規出力先のみ受け付け、隣接するsealed runtime-templateを使います。未知の引数・生成失敗は終了コード1となります。
 
 ## Release一式
 
-Packagerの配布はGitHub Releasesへruntime-template付きZIPを添付する方針です。EXE単体では起動できないためZIP全体を使います。ShinEra本体やゲームデータは付属せず、利用者が自分のゲームフォルダを別途選択します。現時点では公開前です。
+Packagerの配布はGitHub Releasesへruntime-template付きZIPを添付する方針です。EXE単体では起動できないためZIP全体を使います。ShinEra本体やゲームデータは付属せず、利用者が自分のゲームフォルダを別途選択します。1.0.2の配布ZIPとチェックサムは準備済みで、GitHub Releaseの公開は保留しています。1.0.1の公開履歴は保持します。
 
 ## 構成
 
@@ -30,12 +34,12 @@ SHAは選択した現在bytesと出力の同一性を確認するための値で
 
 ```powershell
 .\tools\EmueraWebPackager\build.ps1 -Mode Test -Name local-check-01
-.\tools\EmueraWebPackager\build.ps1 -Mode Publish -Name release-1-0-1-check
+.\tools\EmueraWebPackager\build.ps1 -Mode Publish -Name release-1-0-2-check
 ```
 
 省略可能な`-OutputDirectory`と`-ArtifactsPath`で試験結果とMSBuild成果物の保存先を分けられます。コミット済みsourceから隔離buildするときは、どちらもsource export外の新しいタスク専用directoryを指定してください。指定しない場合、従来どおり`artifacts/EmueraWebPackager/<name>/`とrepo内`artifacts/`を使います。PublishはWindows `win-x64` self-contained single-file GUIを生成します。公開・uploadはこのscriptでは行いません。
 
-コミット済みsourceからAOT RuntimeとPackager EXEを作成した後は、`New-ReleaseBundle.ps1`でsealed `runtime-template`、利用手順、ライセンスを含むZIPとSHA256SUMS、Release Notesをまとめます。このscriptもローカル生成だけを行い、GitHubへ接続しません。出力directoryは新規とし、ビルド成果物はsource export外へ指定してください。
+コミット済みsourceからAOT RuntimeとPackager EXEを作成した後は、`New-ReleaseBundle.ps1`でsealed `runtime-template`、利用手順、ライセンスを含むZIPとSHA256SUMS、Release Notesをまとめます。コンパイル入力とビルド条件が一致する受入済み成果物を再利用する場合は、入力ファイルのSHA一覧、元ビルドのsource revision、採用commitとの対応を別途記録します。commitしただけではEXEやWasm内のsource revisionは更新されません。このscriptもローカル生成だけを行い、GitHubへ接続しません。出力directoryは新規とし、ビルド成果物はsource export外へ指定してください。
 
 `PackagerExePath`には`build.ps1 -Mode Publish`の出力、`RuntimeTemplatePath`にはproduction AOT publishの`wwwroot`を指定します。`OutputDirectory`はsource exportの外にある新規directory、`ArtifactsPath`はsource exportの外にある同じビルドの中間・最終出力先、`SourceCommit`は生成元の40桁commit SHAです。Release用ZIP、`SHA256SUMS.txt`、`RELEASE_NOTES.md`が作られます。既存のPackager Core `seal` commandでmanifestを作り、licenseは`license.md`、`licenses/`、runtime-templateのOFL noticeから含めます。
 
@@ -45,7 +49,12 @@ SHAは選択した現在bytesと出力の同一性を確認するための値で
   -RuntimeTemplatePath <isolated-aot-publish>\wwwroot `
   -OutputDirectory <new-release-directory> `
   -ArtifactsPath <isolated-build-artifacts> `
-  -SourceCommit <40-digit-commit-sha>
+  -SourceCommit <40-digit-commit-sha> `
+  -SourceTreeSha256 <64-digit-source-file-table-sha256>
 ```
 
 検証範囲の恒久的な要約は[Web版の検証済み機能](../../プロジェクト資料/Web版/08_検証済み機能.md)を参照してください。個々の実行ログはローカルの受入記録であり、このソース配布には含めていません。
+
+1.0.2では依存のライセンス通知をsealed runtime-templateへ同梱し、生成Webへ引き継ぎます。AOT=true／WasmStripILAfterAOT=falseはIL保持の配布条件で、AOT無効化ではありません。依存監査は確認日時と対象版に限るため公開直前にも確認し、ゲーム・画像・口上の再配布権は別途確認してください。
+
+Windows Packagerのself-contained NETCore／WindowsDesktopとbrowser-wasm実行資材は10.0.12です。SDK 10.0.112／wasm-tools 10.0.112を使用し、SkiaSharp等の版と採用済みレイアウトを維持します。この10.0.12版はLOADと操作、縮小クリック、セーブ入出力後のタイトル復帰、実ドウマン戦のWARNING点滅をユーザーが確認済みです。全ゲーム・全ブラウザの互換性、長時間プレイ、実OS IME、itch上の動作を保証するものではありません。

@@ -160,7 +160,11 @@ internal sealed partial class EraStreamReader : IDisposable
                 st.Reset(line);
             LexicalAnalyzer.SkipWhiteSpace(st);
 
-            if (useRename)
+            // Rename対象のない通常行は元文字列と読取位置を保持し、Substringのコピーを避ける。
+            // 継続開始行とコメントescapeは、後続のTrim/Seek(0)が使う従来の正規化を維持する。
+            if (useRename && (st.Current == '{'
+                || line.AsSpan(0, st.CurrentPosition).Contains(';')
+                || st.SubstringROS().Contains("[[", StringComparison.Ordinal)))
             {
                 line = Rename.RenameString(st.Substring(), new ScriptPosition(fileId, LineNo));
                 st.Reset(line);

@@ -1,10 +1,13 @@
 @using System.Text
 
-@if (Part.Kind == BrowserDisplayPartKind.Group)
+@if (!Part.ShouldRenderForNativePaint(NativeLinePainted))
+{
+}
+else if (Part.Kind == BrowserDisplayPartKind.Group)
 {
     @if (Part.Layout?.Mode == BrowserDisplayMode.Relative)
     {
-        <span class="game-html-origin @(Part.Layout.ExplicitPosition ? "game-positioned-origin" : string.Empty)"><span class="game-html-group game-part" style="@PartStyle(Part)">
+        <span class="game-html-origin @(Part.Layout.ExplicitPosition ? "game-positioned-origin" : string.Empty)" style="@FlowOffsetStyle(Part, FlowOffsetY)"><span class="game-html-group game-part" style="@PartStyle(Part)">
             @if (NeedsPositionedRows(Part.Children))
             {
                 @foreach (var row in SplitRows(Part.Children!))
@@ -12,7 +15,7 @@
                     <span class="game-html-row">
                         @foreach (BrowserDisplayPart child in row)
                         {
-                            <BrowserPartView Part="child" OnMouseDown="OnMouseDown" />
+                            <BrowserPartView Part="child" OnMouseDown="OnMouseDown" NativeLinePainted="NativeLinePainted" />
                         }
                     </span>
                 }
@@ -21,7 +24,7 @@
             {
                 @foreach (BrowserDisplayPart child in Part.Children ?? [])
                 {
-                    <BrowserPartView Part="child" OnMouseDown="OnMouseDown" />
+                    <BrowserPartView Part="child" OnMouseDown="OnMouseDown" NativeLinePainted="NativeLinePainted" />
                 }
             }
         </span></span>
@@ -36,7 +39,7 @@
                     <span class="game-html-row">
                         @foreach (BrowserDisplayPart child in row)
                         {
-                            <BrowserPartView Part="child" OnMouseDown="OnMouseDown" />
+                            <BrowserPartView Part="child" OnMouseDown="OnMouseDown" NativeLinePainted="NativeLinePainted" />
                         }
                     </span>
                 }
@@ -45,7 +48,7 @@
             {
                 @foreach (BrowserDisplayPart child in Part.Children ?? [])
                 {
-                    <BrowserPartView Part="child" OnMouseDown="OnMouseDown" />
+                    <BrowserPartView Part="child" OnMouseDown="OnMouseDown" NativeLinePainted="NativeLinePainted" />
                 }
             }
         </span>
@@ -53,12 +56,12 @@
 }
 else if (Part.Kind == BrowserDisplayPartKind.Button)
 {
-    <button type="button" class="game-button game-part" data-input="@Part.Input" data-input-integer="@Part.IsInteger.ToString().ToLowerInvariant()" data-current-input="@(Part.Activation is not null ? "true" : "false")" data-locked-x="@Part.LockedX" data-game-tooltip="@Part.Tooltip" aria-description="@Part.Tooltip" style="@PartStyle(Part)" @onmousedown="MouseDown" @onmousedown:stopPropagation @onmousedown:preventDefault>
+    <button type="button" class="game-button game-part" data-input="@Part.Input" data-input-integer="@Part.IsInteger.ToString().ToLowerInvariant()" data-current-input="@(Part.Activation is not null ? "true" : "false")" data-locked-x="@Part.LockedX" data-game-tooltip="@Part.Tooltip" aria-description="@Part.Tooltip" style="@(PartStyle(Part) + FlowOffsetStyle(Part, FlowOffsetY))" @onmousedown="MouseDown" @onmousedown:stopPropagation @onmousedown:preventDefault>
         @if (Part.Children is { Count: > 0 })
         {
             @foreach (BrowserDisplayPart child in Part.Children)
             {
-                <BrowserPartView Part="child" OnMouseDown="OnMouseDown" />
+                <BrowserPartView Part="child" OnMouseDown="OnMouseDown" NativeLinePainted="NativeLinePainted" />
             }
         }
         else
@@ -69,12 +72,12 @@ else if (Part.Kind == BrowserDisplayPartKind.Button)
 }
 else if (Part.Kind == BrowserDisplayPartKind.NonButton)
 {
-    <span class="game-nonbutton game-part" data-locked-x="@Part.LockedX" data-game-tooltip="@Part.Tooltip" style="@PartStyle(Part)">
+    <span class="game-nonbutton game-part" data-locked-x="@Part.LockedX" data-game-tooltip="@Part.Tooltip" style="@(PartStyle(Part) + FlowOffsetStyle(Part, FlowOffsetY))">
         @if (Part.Children is { Count: > 0 })
         {
             @foreach (BrowserDisplayPart child in Part.Children)
             {
-                <BrowserPartView Part="child" OnMouseDown="OnMouseDown" />
+                <BrowserPartView Part="child" OnMouseDown="OnMouseDown" NativeLinePainted="NativeLinePainted" />
             }
         }
         else
@@ -85,11 +88,11 @@ else if (Part.Kind == BrowserDisplayPartKind.NonButton)
 }
 else if (Part.Kind == BrowserDisplayPartKind.Image && Part.ImageDataUrl is not null)
 {
-    <img class="game-image" src="@Part.ImageDataUrl" alt="@Part.Text" data-game-tooltip="@Part.Tooltip" style="@(PartStyle(Part) + ImageSize(Part))" />
+    <img class="game-image" src="@Part.ImageDataUrl" alt="@Part.Text" data-game-tooltip="@Part.Tooltip" style="@(PartStyle(Part) + FlowOffsetStyle(Part, FlowOffsetY) + ImageSize(Part))" />
 }
 else if (Part.Kind == BrowserDisplayPartKind.Shape)
 {
-    <span class="game-shape" data-game-tooltip="@Part.Tooltip" style="@ShapeStyle(Part)"></span>
+    <span class="game-shape" data-game-tooltip="@Part.Tooltip" style="@(ShapeStyle(Part) + FlowOffsetStyle(Part, FlowOffsetY))"></span>
 }
 else if (Part.Kind == BrowserDisplayPartKind.Break)
 {
@@ -99,11 +102,11 @@ else
 {
     @if (Part.Width > 0)
     {
-        <span class="game-part" data-game-tooltip="@Part.Tooltip" style="@(PartStyle(Part) + $"display:inline-block;vertical-align:top;width:{Part.Width}px;height:{Part.Height}px;")"><span style="@($"display:inline-block;transform-origin:left top;transform:scaleX({Part.TextPaintScale.ToString(System.Globalization.CultureInfo.InvariantCulture)});")">@Part.Text</span></span>
+        <span class="game-part" data-game-tooltip="@Part.Tooltip" style="@(PartStyle(Part) + FlowOffsetStyle(Part, FlowOffsetY) + $"display:inline-block;vertical-align:top;width:{Part.Width}px;height:{Part.Height}px;")"><span style="@($"display:inline-block;transform-origin:left top;transform:scaleX({Part.TextPaintScale.ToString(System.Globalization.CultureInfo.InvariantCulture)});")">@Part.Text</span></span>
     }
     else
     {
-        <span class="game-part" data-game-tooltip="@Part.Tooltip" style="@PartStyle(Part)">@Part.Text</span>
+        <span class="game-part" data-game-tooltip="@Part.Tooltip" style="@(PartStyle(Part) + FlowOffsetStyle(Part, FlowOffsetY))">@Part.Text</span>
     }
 }
 
@@ -115,9 +118,13 @@ else
 #endif
     BrowserDisplayPart? lastRenderedPart;
     EventCallback<(BrowserDisplayPart Part, MouseEventArgs Mouse)> lastRenderedCallback;
+    bool? lastRenderedNativeLinePainted;
+    int lastRenderedFlowOffsetY;
     protected override bool ShouldRender()
     {
-        bool changed = !ReferenceEquals(lastRenderedPart, Part) || !lastRenderedCallback.Equals(OnMouseDown);
+        bool changed = BrowserPartRenderPolicy.ShouldRender(lastRenderedPart, Part,
+            !lastRenderedCallback.Equals(OnMouseDown), lastRenderedNativeLinePainted,
+            NativeLinePainted, lastRenderedFlowOffsetY, FlowOffsetY);
 #if ERB_EXECUTION_PROFILE
         if (!changed) SkippedPartRenders++;
 #endif
@@ -131,9 +138,13 @@ else
 #endif
         lastRenderedPart = Part;
         lastRenderedCallback = OnMouseDown;
+        lastRenderedNativeLinePainted = NativeLinePainted;
+        lastRenderedFlowOffsetY = FlowOffsetY;
     }
     [Parameter, EditorRequired] public BrowserDisplayPart Part { get; set; } = null!;
     [Parameter] public EventCallback<(BrowserDisplayPart Part, MouseEventArgs Mouse)> OnMouseDown { get; set; }
+    [Parameter] public int FlowOffsetY { get; set; }
+    [Parameter] public bool NativeLinePainted { get; set; } = true;
 
     static bool NeedsPositionedRows(IReadOnlyList<BrowserDisplayPart>? parts) =>
         parts is not null && parts.Any(part => part.Kind == BrowserDisplayPartKind.Break)
@@ -158,6 +169,18 @@ else
 
     static string ImageSize(BrowserDisplayPart part) =>
         (part.Width > 0 ? $"width:{part.Width}px;" : string.Empty) + (part.Height > 0 ? $"height:{part.Height}px;" : string.Empty);
+
+    static string FlowOffsetStyle(BrowserDisplayPart part, int offset)
+    {
+        if (offset == 0) return string.Empty;
+        BrowserDisplayLayout? layout = part.Layout;
+        if (layout is not null && layout.Mode != BrowserDisplayMode.Relative) return string.Empty;
+        if (part.Kind == BrowserDisplayPartKind.Group || part.Kind == BrowserDisplayPartKind.Shape)
+            return $"top:{offset}px;";
+        if (layout is not null)
+            return $"top:{layout.Y + offset}px;";
+        return $"position:relative;top:{offset}px;";
+    }
 
     static string ShapeStyle(BrowserDisplayPart part)
     {

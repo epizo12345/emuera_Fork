@@ -61,6 +61,7 @@ export function attach(elementId) {
   host.addEventListener('scroll', clear, { passive: true });
   window.addEventListener('scroll', clear, { passive: true });
   window.addEventListener('blur', clear);
+  window.addEventListener('resize', clear);
   document.addEventListener('visibilitychange', visibility);
   mutation.observe(host, { childList: true, subtree: true });
   bindings.set(elementId, { host, tip, clear, over, move, out, focus, unfocus, visibility, mutation });
@@ -80,6 +81,7 @@ export function detach(elementId) {
   host.removeEventListener('scroll', clear);
   window.removeEventListener('scroll', clear);
   window.removeEventListener('blur', clear);
+  window.removeEventListener('resize', clear);
   document.removeEventListener('visibilitychange', visibility);
   tip.remove();
   bindings.delete(elementId);

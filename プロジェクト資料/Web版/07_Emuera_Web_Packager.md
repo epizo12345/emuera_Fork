@@ -1,6 +1,6 @@
 # Emuera Web Packager
 
-現行Packagerは1.0.1、同梱Runtime templateはUX16-07です。Packagerのソースは`tools/EmueraWebPackager/`にあります。
+現行Packagerは1.0.2、同梱Runtime templateはUX16-08-RC3です。Windows Packagerとブラウザの実行資材は.NET 10.0.12です。Packagerのソースは`tools/EmueraWebPackager/`にあります。配布ZIPは準備済みで、GitHub Releaseの公開は保留しています。Webのビルド条件はRelease、`RunAOTCompilation=true`、`WasmStripILAfterAOT=false`、`EnableErbExecutionProfiler=false`です。IL保持はAOTの無効化ではなく、IL削除版とのサイズ・速度差は未測定です。
 
 ## 利用者の操作
 

@@ -10,6 +10,431 @@ using SkiaSharp;
 
 try
 {
+if (args is ["save-import-cancel-finalization"])
+{
+    var normalEvents = new List<string>();
+    int normalCommits = 0, normalLoads = 0;
+    SaveImportFinalizationResult normal = await BrowserSaveImportFinalizer.FinishAsync(
+        overwriteDeclined: true,
+        saveManagerMode: false,
+        cleanup: async () => { normalEvents.Add("cleanup"); await Task.Yield(); return true; },
+        beginTitleHandoff: () => { normalEvents.Add("begin-title"); return Task.CompletedTask; },
+        releaseStoreLock: () => { normalEvents.Add("unexpected-release"); return Task.FromResult(true); },
+        navigateToTitle: () => { normalEvents.Add("unexpected-navigation"); return Task.CompletedTask; },
+        startRuntimeTitle: () => { normalEvents.Add("runtime-title"); return Task.CompletedTask; });
+    Equal(SaveImportFinalizationResult.TitleHandoffStarted, normal, "Runtime overwrite decline starts title exactly once after cleanup");
+    Equal("cleanup,begin-title,runtime-title", string.Join(',', normalEvents), "Runtime title start follows completed cleanup without lock handoff");
+    Equal(0, normalCommits, "overwrite decline does not commit imported files");
+    Equal(0, normalLoads, "overwrite decline does not auto-load a save slot");
+
+    var managerEvents = new List<string>();
+    SaveImportFinalizationResult manager = await BrowserSaveImportFinalizer.FinishAsync(
+        overwriteDeclined: true,
+        saveManagerMode: true,
+        cleanup: async () => { managerEvents.Add("cleanup"); await Task.Yield(); return true; },
+        beginTitleHandoff: () => { managerEvents.Add("begin-title"); return Task.CompletedTask; },
+        releaseStoreLock: async () => { managerEvents.Add("release-start"); await Task.Yield(); managerEvents.Add("release-complete"); return true; },
+        navigateToTitle: () => { managerEvents.Add("navigate"); return Task.CompletedTask; },
+        startRuntimeTitle: () => { managerEvents.Add("unexpected-runtime-title"); return Task.CompletedTask; });
+    Equal(SaveImportFinalizationResult.TitleHandoffStarted, manager, "saveManager overwrite decline returns to title exactly once");
+    Equal("cleanup,begin-title,release-start,release-complete,navigate", string.Join(',', managerEvents), "saveManager navigation waits for lock release after cleanup");
+
+    var nonDeclineEvents = new List<string>();
+    SaveImportFinalizationResult nonDecline = await BrowserSaveImportFinalizer.FinishAsync(
+        overwriteDeclined: false,
+        saveManagerMode: true,
+        cleanup: () => { nonDeclineEvents.Add("cleanup"); return Task.FromResult(true); },
+        beginTitleHandoff: () => { nonDeclineEvents.Add("unexpected-begin-title"); return Task.CompletedTask; },
+        releaseStoreLock: () => { nonDeclineEvents.Add("unexpected-release"); return Task.FromResult(true); },
+        navigateToTitle: () => { nonDeclineEvents.Add("unexpected-navigation"); return Task.CompletedTask; },
+        startRuntimeTitle: () => { nonDeclineEvents.Add("unexpected-runtime-title"); return Task.CompletedTask; });
+    Equal(SaveImportFinalizationResult.CleanupCompleted, nonDecline, "ordinary cancellation or completion does not trigger title handoff");
+    Equal("cleanup", string.Join(',', nonDeclineEvents), "non-decline only cleans staged import");
+
+    var cleanupFailureEvents = new List<string>();
+    SaveImportFinalizationResult cleanupFailure = await BrowserSaveImportFinalizer.FinishAsync(
+        overwriteDeclined: true,
+        saveManagerMode: false,
+        cleanup: () => { cleanupFailureEvents.Add("cleanup"); return Task.FromResult(false); },
+        beginTitleHandoff: () => { cleanupFailureEvents.Add("unexpected-begin-title"); return Task.CompletedTask; },
+        releaseStoreLock: () => { cleanupFailureEvents.Add("unexpected-release"); return Task.FromResult(true); },
+        navigateToTitle: () => { cleanupFailureEvents.Add("unexpected-navigation"); return Task.CompletedTask; },
+        startRuntimeTitle: () => { cleanupFailureEvents.Add("unexpected-runtime-title"); return Task.CompletedTask; });
+    Equal(SaveImportFinalizationResult.CleanupFailed, cleanupFailure, "cleanup failure blocks overwrite-cancel return");
+    Equal("cleanup", string.Join(',', cleanupFailureEvents), "cleanup failure does not release or start title");
+
+    var thrownCleanupEvents = new List<string>();
+    bool cleanupExceptionObserved = false;
+    try
+    {
+        _ = await BrowserSaveImportFinalizer.FinishAsync(
+            overwriteDeclined: true,
+            saveManagerMode: false,
+            cleanup: () => { thrownCleanupEvents.Add("cleanup"); return Task.FromException<bool>(new InvalidOperationException("cleanup failed")); },
+            beginTitleHandoff: () => { thrownCleanupEvents.Add("unexpected-begin-title"); return Task.CompletedTask; },
+            releaseStoreLock: () => { thrownCleanupEvents.Add("unexpected-release"); return Task.FromResult(true); },
+            navigateToTitle: () => { thrownCleanupEvents.Add("unexpected-navigation"); return Task.CompletedTask; },
+            startRuntimeTitle: () => { thrownCleanupEvents.Add("unexpected-runtime-title"); return Task.CompletedTask; });
+    }
+    catch (InvalidOperationException ex) when (ex.Message == "cleanup failed")
+    {
+        cleanupExceptionObserved = true;
+    }
+    Equal(true, cleanupExceptionObserved, "cleanup exception is surfaced to the App error handler");
+    Equal("cleanup", string.Join(',', thrownCleanupEvents), "cleanup exception blocks the handoff callbacks");
+
+    var releaseFailureEvents = new List<string>();
+    SaveImportFinalizationResult releaseFailure = await BrowserSaveImportFinalizer.FinishAsync(
+        overwriteDeclined: true,
+        saveManagerMode: true,
+        cleanup: () => { releaseFailureEvents.Add("cleanup"); return Task.FromResult(true); },
+        beginTitleHandoff: () => { releaseFailureEvents.Add("begin-title"); return Task.CompletedTask; },
+        releaseStoreLock: () => { releaseFailureEvents.Add("release"); return Task.FromResult(false); },
+        navigateToTitle: () => { releaseFailureEvents.Add("unexpected-navigation"); return Task.CompletedTask; },
+        startRuntimeTitle: () => { releaseFailureEvents.Add("unexpected-runtime-title"); return Task.CompletedTask; });
+    Equal(SaveImportFinalizationResult.LockReleaseFailed, releaseFailure, "failed lock release blocks saveManager navigation");
+    Equal("cleanup,begin-title,release", string.Join(',', releaseFailureEvents), "saveManager does not navigate before successful release");
+
+    Console.WriteLine("PASS WEB-HOST-IMPORT-CANCEL-RETURN-TO-TITLE finalization flow");
+    return;
+}
+
+if (args is ["vsl-native-paint-range"])
+{
+    BrowserDisplayLine[] lines = Enumerable.Range(1, 1_000).Select(id => new BrowserDisplayLine("left", [], LineId: id)).ToArray();
+    BrowserDisplayWindowState state = new();
+    PropertyInfo startProperty = typeof(BrowserDisplayWindowSlice).GetProperty("NativePaintStart")
+        ?? throw new InvalidOperationException("Native paint range start is missing");
+    PropertyInfo endProperty = typeof(BrowserDisplayWindowSlice).GetProperty("NativePaintEnd")
+        ?? throw new InvalidOperationException("Native paint range end is missing");
+    MethodInfo calculate = typeof(BrowserDisplayWindowState).GetMethods()
+        .Single(method => method.Name == nameof(BrowserDisplayWindowState.Calculate) && method.GetParameters().Length == 4);
+    BrowserDisplayWindowSlice At(double scrollTop, double clientHeight)
+    {
+        state.UpdateScroll(new(scrollTop, clientHeight, false, 0, 0));
+        return (BrowserDisplayWindowSlice)(calculate.Invoke(state, [lines, lines.Length, null, 18])
+            ?? throw new InvalidOperationException("Native paint range slice is missing"));
+    }
+    (int Start, int End) Range(BrowserDisplayWindowSlice slice) =>
+        ((int)startProperty.GetValue(slice)!, (int)endProperty.GetValue(slice)!);
+
+    Equal((0, 45), Range(At(0, 810)), "Native paint range at history top");
+    BrowserDisplayWindowSlice middle = At(180, 810);
+    Equal((9, 55), Range(middle), "Native OnPaint includes one owner row above the visible rows");
+    Equal(true, middle.Start <= 8 && 8 < middle.End, "out-of-paint owner remains in virtualized overscan");
+    Equal(false, Range(middle).Start <= 8 && 8 < Range(middle).End, "overscan owner outside Native paint range is identified");
+    Equal(true, Range(middle).Start <= 9 && 9 < Range(middle).End, "Native edge owner remains paintable");
+    Equal((10, 56), Range(At(180, 824)), "Native paint range uses exact viewport/line-height formula");
+    Equal((9, 55), Range(At(185, 810)), "fractional browser scroll preserves native logical-row range");
+    Equal((954, 1_000), Range(At((1_000 - 45) * 18, 810)), "Native paint range at history tail");
+    Console.WriteLine("PASS WEB-RUNTIME-VIEWPORT-AND-SKILL-LABEL native owner-row range");
+    return;
+}
+
+if (args is ["vvr-resume-follow-tail"])
+{
+    BrowserDisplayPart positioned = new(BrowserDisplayPartKind.Group, Layout: new(BrowserDisplayMode.Absolute, ExplicitPosition: true));
+    BrowserDisplayLine[] lines = Enumerable.Range(1, 1_000).Select(id => new BrowserDisplayLine("left", [positioned], LineId: id)).ToArray();
+    BrowserDisplayWindowState state = new();
+    foreach (double viewportHeight in new[] { 810d, 824d })
+    {
+        state.UpdateScroll(new(0, viewportHeight, false, 1, 0));
+        state.ResumeFollowTail();
+        BrowserDisplayWindowSlice slice = state.Calculate(lines, lines.Length, displayLineHeight: 18);
+        Equal((954, 1_000), (slice.NativePaintStart, slice.NativePaintEnd), $"resume-tail Native owners at {viewportHeight}px before JS scroll notification");
+        bool nativeLinePainted = 999 >= slice.NativePaintStart && 999 < slice.NativePaintEnd;
+        Equal(true, positioned.ShouldRenderForNativePaint(nativeLinePainted), $"tail positioned owner paints at {viewportHeight}px");
+        Equal(0d, state.ScrollState.ScrollTop, "tail resume does not wait for a JS scroll update");
+    }
+    Console.WriteLine("PASS WEB-RUNTIME-VIEWPORT-VISIBILITY ResumeFollowTail owner range");
+    return;
+}
+
+if (args is ["vvr-append-follow-tail"])
+{
+    BrowserDisplayPart positioned = new(BrowserDisplayPartKind.Group, Layout: new(BrowserDisplayMode.Absolute, ExplicitPosition: true));
+    BrowserDisplayLine[] before = Enumerable.Range(1, 100).Select(id => new BrowserDisplayLine("left", [positioned], LineId: id)).ToArray();
+    BrowserDisplayLine[] after = Enumerable.Range(1, 200).Select(id => new BrowserDisplayLine("left", [positioned], LineId: id)).ToArray();
+    BrowserDisplayWindowState state = new();
+    state.UpdateScroll(new(990, 810, true, 100, 0));
+    _ = state.Calculate(before, before.Length, structureGeneration: 1, displayLineHeight: 18);
+    BrowserDisplayWindowSlice slice = state.Calculate(after, after.Length, structureGeneration: 2, displayLineHeight: 18);
+    Equal((154, 200), (slice.NativePaintStart, slice.NativePaintEnd), "appended tail rows paint before JS viewport notification");
+    Equal(true, positioned.ShouldRenderForNativePaint(199 >= slice.NativePaintStart && 199 < slice.NativePaintEnd), "new tail owner remains paintable");
+    Console.WriteLine("PASS WEB-RUNTIME-VIEWPORT-VISIBILITY appended tail owner range");
+    return;
+}
+
+if (args is ["vvr-replaced-screen"])
+{
+    BrowserDisplayPart positioned = new(BrowserDisplayPartKind.Group, Layout: new(BrowserDisplayMode.Absolute, ExplicitPosition: true));
+    BrowserDisplayLine[] previous = Enumerable.Range(1, 20).Select(id => new BrowserDisplayLine("left", [positioned], LineId: id)).ToArray();
+    BrowserDisplayLine[] replacement = Enumerable.Range(21, 1_000).Select(id => new BrowserDisplayLine("left", [positioned], LineId: id)).ToArray();
+    BrowserDisplayWindowState state = new();
+    state.UpdateScroll(new(0, 824, true, 1, 0));
+    _ = state.Calculate(previous, previous.Length, structureGeneration: 9, displayLineHeight: 18);
+    BrowserDisplayWindowSlice current = state.Calculate(replacement, replacement.Length, structureGeneration: 10, displayLineHeight: 18);
+    Equal((954, 1_000), (current.NativePaintStart, current.NativePaintEnd), "new long screen paints its tail despite prior short-screen ScrollTop");
+    Equal(true, positioned.ShouldRenderForNativePaint(999 >= current.NativePaintStart && 999 < current.NativePaintEnd), "replacement screen tail owner remains paintable");
+
+    BrowserRuntimeSession runtime = await BrowserRuntimeSession.StartTitleBootstrapAsync(CreateGlobalFixture("@SYSTEM_TITLE\nWAIT\nQUIT\n"), null);
+    runtime.StartTitle();
+    object console = typeof(BrowserRuntimeSession).GetField("console", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(runtime)!;
+    long previousGeneration = runtime.DisplayStructureGeneration;
+    console.GetType().GetMethod("ClearText")!.Invoke(console, null);
+    MethodInfo printLine = console.GetType().GetMethod("PrintSystemLine")!;
+    for (int index = 0; index < 1_000; index++) printLine.Invoke(console, [$"REPLACEMENT_{index}"]);
+    Equal(true, runtime.DisplayStructureGeneration > previousGeneration, "ClearText replacement advances the structure generation");
+    Equal(runtime.RetainedDisplayLines.Count, runtime.DisplayLines.Count, "activated rendering preserves retained row count and index mapping");
+    for (int index = 0; index < runtime.RetainedDisplayLines.Count; index++)
+        Equal(runtime.RetainedDisplayLines[index].LineId, runtime.DisplayLines[index].LineId, $"owner index {index} remains paired with the same LineId");
+    BrowserDisplayWindowState afterClear = new();
+    afterClear.UpdateScroll(new(0, 824, true, 1, 0));
+    BrowserDisplayWindowSlice cleared = afterClear.Calculate(runtime.RetainedDisplayLines, structureGeneration: runtime.DisplayStructureGeneration, displayLineHeight: runtime.DisplayLineHeight);
+    int expectedTailStart = 999 - ((824 - runtime.DisplayLineHeight) / runtime.DisplayLineHeight + 1);
+    Equal((expectedTailStart, 1_000), (cleared.NativePaintStart, cleared.NativePaintEnd), "actual ClearText output uses its current line-height tail before another viewport update");
+    Equal(true, cleared.IsNativeLinePainted(999), "actual replacement output passes its latest owner row to Razor");
+    afterClear.UpdateScroll(new(17_000, 824, false, runtime.RetainedDisplayLines[950].LineId, 0));
+    console.GetType().GetMethod("deleteLine")!.Invoke(console, [900]);
+    BrowserDisplayWindowSlice afterDelete = afterClear.Calculate(runtime.RetainedDisplayLines, structureGeneration: runtime.DisplayStructureGeneration, displayLineHeight: runtime.DisplayLineHeight);
+    Equal(100, runtime.RetainedDisplayLines.Count, "deleteLine removes the intended rows");
+    int expectedDeletedTailStart = 99 - ((824 - runtime.DisplayLineHeight) / runtime.DisplayLineHeight + 1);
+    Equal((expectedDeletedTailStart, 100), (afterDelete.NativePaintStart, afterDelete.NativePaintEnd), "deleteLine with a stale high ScrollTop keeps the current tail owner paintable");
+    Equal(true, afterDelete.IsNativeLinePainted(99), "latest row after deleteLine reaches the Razor owner parameter");
+    Console.WriteLine($"INFO replacement viewport=824px lineHeight={runtime.DisplayLineHeight}px tail=[{cleared.NativePaintStart},{cleared.NativePaintEnd}) deleteLine=[{afterDelete.NativePaintStart},{afterDelete.NativePaintEnd})");
+    Console.WriteLine("PASS WEB-RUNTIME-VIEWPORT-VISIBILITY replacement screen owner range");
+    return;
+}
+
+if (args is ["vvr-backlog-island-owners"])
+{
+    BrowserDisplayPart positioned = new(BrowserDisplayPartKind.Group, Layout: new(BrowserDisplayMode.Absolute, ExplicitPosition: true));
+    BrowserDisplayPart relative = new(BrowserDisplayPartKind.Group, Layout: new(BrowserDisplayMode.Relative));
+    BrowserDisplayLine[] lines = Enumerable.Range(1, 102)
+        .Select(id => new BrowserDisplayLine("left", [id <= 100 ? positioned : relative], LineId: id))
+        .ToArray();
+    BrowserDisplayWindowState state = new();
+    state.UpdateScroll(new(180, 810, false, 11, -3));
+    BrowserDisplayWindowSlice slice = state.Calculate(lines, mainLineCount: 100, structureGeneration: 11, displayLineHeight: 18);
+    Equal((9, 55), (slice.NativePaintStart, slice.NativePaintEnd), "manual backlog retains Native paint interval");
+    Equal(true, slice.Start <= 8 && 8 < slice.End, "old positioned owner remains in layout overscan");
+    Equal(false, positioned.ShouldRenderForNativePaint(8 >= slice.NativePaintStart && 8 < slice.NativePaintEnd), "stale positioned owner outside Native paint stays hidden");
+    Equal(true, positioned.ShouldRenderForNativePaint(9 >= slice.NativePaintStart && 9 < slice.NativePaintEnd), "valid positioned owner remains visible");
+    Equal(true, relative.ShouldRenderForNativePaint(false), "ordinary relative flow is not owner-gated");
+    Equal(true, slice.End <= 100, "main virtual window excludes independent HTML island rows");
+    Equal(true, relative.ShouldRenderForNativePaint(true), "HTML island layer's default paint permission remains independent");
+    state.ApplyMeasurements(Enumerable.Range(1, 100).Select(id => new BrowserDisplayLineMeasurement(id, 20)).ToArray());
+    state.UpdateScroll(new(200, 810, false, 11, -3));
+    BrowserDisplayWindowSlice measured = state.Calculate(lines, mainLineCount: 100, structureGeneration: 12, displayLineHeight: 18);
+    Equal((9, 55), (measured.NativePaintStart, measured.NativePaintEnd), "physical ScrollTop maps through measured row heights before Native owner gating");
+    Console.WriteLine("PASS WEB-RUNTIME-VIEWPORT-VISIBILITY backlog and island owner policy");
+    return;
+}
+
+if (args is ["vvr-generation-aware-scroll"])
+{
+    MethodInfo? update = typeof(BrowserDisplayWindowState).GetMethod(nameof(BrowserDisplayWindowState.UpdateScroll), [typeof(BrowserDisplayScrollState), typeof(long), typeof(long)]);
+    Equal(true, update is not null, "display viewport update exposes generation-aware overload");
+    if (update is null) return;
+    BrowserDisplayWindowState state = new();
+    update.Invoke(state, [new BrowserDisplayScrollState(180, 810, false, 20, 0), 7L, 7L]);
+    BrowserDisplayScrollState before = state.ScrollState;
+    bool acceptedStale = (bool)update.Invoke(state, [new BrowserDisplayScrollState(0, 810, true, 200, 0), 6L, 7L])!;
+    Equal(false, acceptedStale, "stale viewport generation is rejected");
+    Equal(before, state.ScrollState, "stale viewport cannot overwrite current scroll state");
+    bool acceptedCurrent = (bool)update.Invoke(state, [new BrowserDisplayScrollState(0, 810, true, 200, 0), 7L, 7L])!;
+    Equal(true, acceptedCurrent, "current display viewport generation is applied");
+    Equal(true, state.FollowTail, "current near-bottom viewport can enable follow-tail");
+    Console.WriteLine("PASS WEB-RUNTIME-VIEWPORT-VISIBILITY viewport generation guard");
+    return;
+}
+
+if (args is ["vvr-render-membership"])
+{
+    MethodInfo? paints = typeof(BrowserDisplayWindowSlice).GetMethod("IsNativeLinePainted", [typeof(int)]);
+    Equal(true, paints is not null, "slice exposes the owner-render parameter used by Razor");
+    if (paints is null) return;
+    BrowserDisplayWindowSlice slice = new(20, 40, 0, 0, false, 25, 35);
+    Equal(false, (bool)paints.Invoke(slice, [24])!, "owner before Native paint range is not passed as rendered");
+    Equal(true, (bool)paints.Invoke(slice, [25])!, "first Native owner is passed as rendered");
+    Equal(true, (bool)paints.Invoke(slice, [34])!, "last Native owner is passed as rendered");
+    Equal(false, (bool)paints.Invoke(slice, [35])!, "owner after Native paint range is not passed as rendered");
+    Console.WriteLine("PASS WEB-RUNTIME-VIEWPORT-VISIBILITY slice render membership");
+    return;
+}
+
+if (args is ["vpr-part-render-refresh"])
+{
+    Type? policyType = typeof(BrowserDisplayPart).Assembly.GetType("MinorShift.Emuera.Web.Runtime.BrowserPartRenderPolicy");
+    Equal(true, policyType is not null, "BrowserPartView render-input policy is exposed to the existing Runtime test project");
+    if (policyType is null) return;
+    MethodInfo shouldRender = policyType.GetMethod("ShouldRender", BindingFlags.Public | BindingFlags.Static)
+        ?? throw new InvalidOperationException("BrowserPart render policy method missing");
+    bool Changed(BrowserDisplayPart samePart, bool? previousOwner, bool currentOwner, int previousFlow = 0, int currentFlow = 0, bool callbackChanged = false)
+        => (bool)shouldRender.Invoke(null, [samePart, samePart, callbackChanged, previousOwner, currentOwner, previousFlow, currentFlow])!;
+
+    BrowserDisplayPart image = new(BrowserDisplayPartKind.Image, ImageDataUrl: "data:image/png;base64,AA==", Layout: new(BrowserDisplayMode.Absolute, ExplicitPosition: true));
+    BrowserDisplayPart caption = new(BrowserDisplayPartKind.NonButton, Text: "shop line", Layout: new(BrowserDisplayMode.AbsoluteLeftBottom, ExplicitPosition: true));
+    BrowserDisplayPart button = new(BrowserDisplayPartKind.Button, Text: "old choice", Input: "OLD", Layout: new(BrowserDisplayMode.Absolute, ExplicitPosition: true));
+    BrowserDisplayPart nested = new(BrowserDisplayPartKind.Group, Layout: new(BrowserDisplayMode.AbsoluteLeftBottom, ExplicitPosition: true), Children: [
+        new(BrowserDisplayPartKind.Group, Layout: new(BrowserDisplayMode.Relative), Children: [image, caption, button])
+    ]);
+
+    foreach (BrowserDisplayPart part in new[] { nested, image, caption, button })
+    {
+        Equal(true, Changed(part, true, false), $"same {part.Kind} instance rerenders true-to-false owner visibility");
+        Equal(false, part.ShouldRenderForNativePaint(false), $"hidden {part.Kind} is omitted from its rendered subtree");
+        Equal(true, Changed(part, false, true), $"same {part.Kind} instance rerenders false-to-true owner visibility");
+        Equal(true, part.ShouldRenderForNativePaint(true), $"visible {part.Kind} is restored");
+        Equal(false, Changed(part, true, true), $"unchanged {part.Kind} render inputs preserve the skip optimization");
+    }
+    Equal(true, Changed(nested, true, true, 0, 12), "changed island-flow offset invalidates rendered style");
+    Equal(true, Changed(nested, true, true, callbackChanged: true), "changed event callback invalidates the rendered part");
+    Console.WriteLine("PASS WEB-RUNTIME-POSITIONED-PART-REFRESH component render-input decision");
+    return;
+}
+
+if (args is ["vsl-skill-label-div-flow"])
+{
+    BrowserRuntimeSession runtime = await BrowserRuntimeSession.StartTitleBootstrapAsync(CreateGlobalFixture("@SYSTEM_TITLE\nWAIT\nQUIT\n"), null);
+    object console = typeof(BrowserRuntimeSession).GetField("console", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(runtime)!;
+    const string html = "<div display='absolute-leftbottom'><div width='6000' height='1000' border_width='20'>EXPLANATION</div><div xpos='-0' ypos='-200'><div width='1200' height='200' border_width='20'>SKILL_LABEL</div></div></div>";
+    console.GetType().GetMethod("PrintHTMLIsland")!.Invoke(console, [html, 3]);
+    BrowserDisplayPart outer = runtime.DisplayLines.Last().Parts.Single(part => part.Kind == BrowserDisplayPartKind.Group);
+    BrowserDisplayPart explanation = outer.Children!.Single(part => Flatten([part]).Any(child => child.Text == "EXPLANATION"));
+    BrowserDisplayPart label = outer.Children!.Single(part => Flatten([part]).Any(child => child.Text == "SKILL_LABEL"));
+    Equal(BrowserDisplayMode.AbsoluteLeftBottom, outer.Layout!.Mode, "skill explanation outer island uses Native screen origin");
+    Equal(1_080, explanation.Layout!.Width, "explanation keeps its explicit Native width after Emuera size conversion");
+    Equal(0, explanation.Width, "Native ConsoleDivElement flow width remains zero for the fixed-width window");
+    Equal(0, label.Layout!.X, "skill label keeps game-authored xpos");
+    Equal(-36, label.Layout.Y, "skill label keeps game-authored ypos after Emuera size conversion");
+    Equal(0, label.Width, "Native ConsoleDivElement does not advance its parent flow width");
+    MethodInfo renderForNativePaint = typeof(BrowserDisplayPart).GetMethod("ShouldRenderForNativePaint")
+        ?? throw new InvalidOperationException("Native owner-line render policy is missing");
+    bool CanRender(BrowserDisplayPart part, bool nativeLinePainted)
+        => (bool)renderForNativePaint.Invoke(part, [nativeLinePainted])!;
+    Equal(false, CanRender(label, false), "explicitly positioned skill overlay needs its owner line in Native paint range");
+    Equal(true, CanRender(label, true), "positioned overlay on a Native-painted line remains visible");
+    Equal(true, CanRender(explanation.Children!.First(), false), "ordinary overscan flow content stays rendered");
+
+    string css = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "app.css"));
+    int ruleStart = css.IndexOf(".game-html-origin {", StringComparison.Ordinal);
+    int ruleEnd = ruleStart < 0 ? -1 : css.IndexOf('}', ruleStart);
+    string originRule = ruleStart < 0 || ruleEnd < 0 ? string.Empty : css[ruleStart..ruleEnd];
+    Contains("width: 0;", originRule, "HTML DIV origin must not consume sibling flow width like Native ConsoleDivElement");
+    Contains(".game-html-origin > .game-html-group { width: max-content;", css, "visible HTML group retains its intrinsic drawing width");
+    Console.WriteLine("PASS WEB-RUNTIME-VIEWPORT-AND-SKILL-LABEL Native DIV sibling flow");
+    return;
+}
+
+if (args is ["warning-animation-timebase", var evidencePath])
+{
+    var script = new StringBuilder("@SYSTEM_TITLE\nGCREATE 902,180,180\nSPRITEANIMECREATE \"WARNING_TIMEBASE\",180,180\n");
+    for (int frame = 0; frame < 64; frame++)
+        script.AppendLine($"SPRITEANIMEADDFRAME \"WARNING_TIMEBASE\",902,0,0,1,1,{frame},0,125");
+    script.AppendLine("SPRITEANIMEADDFRAME \"WARNING_TIMEBASE\",902,0,0,1,1,64,0,86400000");
+    script.AppendLine("SPRITEANIMECREATE \"WARNING_RECREATED\",180,180\nSPRITEANIMEADDFRAME \"WARNING_RECREATED\",902,0,0,1,1,0,0,125\nSPRITEANIMEADDFRAME \"WARNING_RECREATED\",902,0,0,1,1,1,0,86400000");
+    script.AppendLine("GCREATE 903,2,2\nGCLEAR 903,0xFFFF0000\nGCREATE 904,2,2\nGCLEAR 904,0x00000000");
+    script.AppendLine("SPRITEANIMECREATE \"WARNING_ALPHA\",2,2\nSPRITEANIMEADDFRAME \"WARNING_ALPHA\",903,0,0,2,2,0,0,250\nSPRITEANIMEADDFRAME \"WARNING_ALPHA\",904,0,0,2,2,0,0,250");
+    script.AppendLine("SETANIMETIMER 20\nPRINT_IMG \"WARNING_TIMEBASE\"\nWAIT\nQUIT");
+    script.Replace("PRINT_IMG \"WARNING_TIMEBASE\"", "PRINT_IMG \"WARNING_TIMEBASE\"\nPRINT_IMG \"WARNING_ALPHA\"");
+    BrowserRuntimeSession runtime = await BrowserRuntimeSession.StartTitleBootstrapAsync(CreateGlobalFixture(script.ToString()), null);
+    runtime.StartTitle();
+    const BindingFlags flags = BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+    Type contents = typeof(BrowserRuntimeSession).Assembly.GetType("MinorShift.Emuera.UI.Game.Image.AppContents")
+        ?? throw new InvalidOperationException("WARNING timebase AppContents missing");
+    object sprite = contents.GetMethod("GetSprite", flags)!.Invoke(null, ["WARNING_TIMEBASE"])
+        ?? throw new InvalidOperationException("WARNING timebase sprite missing");
+    PropertyInfo currentFrameProperty = sprite.GetType().GetProperty("CurrentFrame", flags)
+        ?? throw new InvalidOperationException("WARNING CurrentFrame missing");
+    System.Drawing.Point FrameOffset(object current)
+        => (System.Drawing.Point)(current.GetType().GetProperty("Offset", flags)?.GetValue(current)
+            ?? throw new InvalidOperationException("WARNING frame offset missing"));
+    long tick = Environment.TickCount64;
+    long total = (long)sprite.GetType().GetField("totaltime", flags)!.GetValue(sprite)!;
+    object selectedFrame = currentFrameProperty.GetValue(sprite) ?? throw new InvalidOperationException("WARNING frame missing");
+    int selectedDelay = (int)(selectedFrame.GetType().GetProperty("Delay", flags)?.GetValue(selectedFrame)
+        ?? throw new InvalidOperationException("WARNING frame delay missing"));
+    int selectedIndex = FrameOffset(selectedFrame).X;
+    var red = new
+    {
+        tickCount64 = tick,
+        totalDurationMs = total,
+        processUptimeModuloMs = tick % total,
+        shortAnimationDurationMs = 64 * 125,
+        expectedInitialDelayMs = 125,
+        observedInitialDelayMs = selectedDelay,
+        observedInitialFrameOffsetX = selectedIndex,
+        reproducedStaticTerminalFrameAtInitialRead = selectedDelay == 86400000
+    };
+    File.WriteAllText(evidencePath, JsonSerializer.Serialize(red, new JsonSerializerOptions { WriteIndented = true }));
+
+    MethodInfo frameAtMethod = sprite.GetType().GetMethod("GetCurrentFrameAt", flags)
+        ?? throw new InvalidOperationException("WARNING deterministic frame clock missing");
+    MethodInfo resetMethod = sprite.GetType().GetMethod("ResetTime", flags)
+        ?? throw new InvalidOperationException("WARNING ResetTime missing");
+    object At(object target, long now) => frameAtMethod.Invoke(target, [now])
+        ?? throw new InvalidOperationException("WARNING deterministic frame missing");
+    void AtIndex(object target, long now, int expected, string name)
+        => Equal(expected, FrameOffset(At(target, now)).X, name);
+
+    resetMethod.Invoke(sprite, null);
+    const long origin = 3_600_000_000;
+    AtIndex(sprite, origin, 0, "WARNING new playback starts at first frame regardless of uptime");
+    AtIndex(sprite, origin + 124, 0, "WARNING before first delay keeps frame zero");
+    AtIndex(sprite, origin + 125, 0, "WARNING exact frame boundary matches Native inclusive boundary");
+    AtIndex(sprite, origin + 126, 1, "WARNING advances after first frame boundary");
+    AtIndex(sprite, origin + 7999, 63, "WARNING last short frame before terminal hold");
+    AtIndex(sprite, origin + 8000, 63, "WARNING 8-second Native boundary remains on last short frame");
+    AtIndex(sprite, origin + 8001, 64, "WARNING enters 24-hour terminal hold after four blink cycles");
+    AtIndex(sprite, origin + 86407999, 64, "WARNING remains on terminal frame through its hold");
+    AtIndex(sprite, origin + 86408000, 0, "WARNING wraps only after total Native duration");
+    resetMethod.Invoke(sprite, null);
+    AtIndex(sprite, origin + 900000, 0, "WARNING ResetTime restarts at frame zero");
+    AtIndex(sprite, origin + 900126, 1, "WARNING ResetTime uses a fresh per-sprite origin");
+    object recreated = contents.GetMethod("GetSprite", flags)!.Invoke(null, ["WARNING_RECREATED"])
+        ?? throw new InvalidOperationException("WARNING recreated sprite missing");
+    AtIndex(recreated, origin + 500000, 0, "WARNING recreated instance has independent playback origin");
+    Equal(true, ReferenceEquals(sprite, contents.GetMethod("GetSprite", flags)!.Invoke(null, ["WARNING_TIMEBASE"])), "WARNING multiple references share one SpriteAnime instance");
+
+    resetMethod.Invoke(sprite, null);
+    _ = currentFrameProperty.GetValue(sprite);
+    BrowserDisplayPart alphaPart = Flatten(runtime.DisplayLines.SelectMany(line => line.Parts)).Single(part => part.Text == "WARNING_ALPHA");
+    string alphaFirstUrl = alphaPart.ImageDataUrl ?? throw new InvalidOperationException("WARNING alpha first URL missing");
+    string alphaFirstHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(alphaFirstUrl)));
+    SKBitmap Decode(string url)
+    {
+        const string prefix = "data:image/png;base64,";
+        if (!url.StartsWith(prefix, StringComparison.Ordinal)) throw new InvalidOperationException("WARNING frame URL is not PNG data");
+        return SKBitmap.Decode(Convert.FromBase64String(url[prefix.Length..]))
+            ?? throw new InvalidOperationException("WARNING frame PNG decode failed");
+    }
+    int AlphaPixels(string url)
+    {
+        using SKBitmap bitmap = Decode(url);
+        int count = 0;
+        for (int y = 0; y < bitmap.Height; y++)
+        for (int x = 0; x < bitmap.Width; x++)
+            if (bitmap.GetPixel(x, y).Alpha != 0) count++;
+        return count;
+    }
+    var alphaHashes = new HashSet<string>(StringComparer.Ordinal) { alphaFirstHash };
+    var alphaPixels = new HashSet<int> { AlphaPixels(alphaFirstUrl) };
+    for (int sample = 0; sample < 12; sample++)
+    {
+        await Task.Delay(50);
+        runtime.RefreshAnimations();
+        BrowserDisplayPart sampled = Flatten(runtime.DisplayLines.SelectMany(line => line.Parts)).Single(part => part.Text == "WARNING_ALPHA");
+        string url = sampled.ImageDataUrl ?? throw new InvalidOperationException("WARNING alpha sample URL missing");
+        alphaHashes.Add(Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(url))));
+        alphaPixels.Add(AlphaPixels(url));
+    }
+    Equal(true, alphaHashes.Count >= 2, "WARNING alpha frames produce different PNG data");
+    Equal(true, alphaPixels.Count >= 2, "WARNING alpha frames have different visible alpha pixels");
+    File.WriteAllText(evidencePath, JsonSerializer.Serialize(new { red, deterministic = new { initialIndex = 0, beforeBoundary = 0, exactBoundary = 0, afterBoundary = 1, lastShort = 63, at8000Ms = 63, after8000Ms = 64, beforeTotal = 64, atTotal = 0, reset = 1, recreated = 0, sameInstanceShared = true }, alphaFrames = new { distinctPngHashes = alphaHashes.Count, distinctAlphaPixelCounts = alphaPixels.Count, values = alphaPixels.Order().ToArray(), samplingDurationMs = 600 }, nativeContract = "first frame on first read; elapsed from per-sprite start; <= frame boundary; modulo total; ResetTime restarts" }, new JsonSerializerOptions { WriteIndented = true }));
+    Console.WriteLine("PASS WARNING animation timebase");
+    return;
+}
 if (args is ["ux16r5-animation-window", var animationWindowPath])
 {
     async Task<object> Observe(BrowserRuntimeSession runtime, int first, int end)
@@ -574,6 +999,34 @@ QUIT
     return;
 }
 
+if (args is ["save-import-bootstrap-profile"])
+{
+    string root = CreateGlobalFixture("@SYSTEM_TITLE\nWAIT\nQUIT\n");
+    var files = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
+    BrowserRuntimeSession profiled = await BrowserRuntimeSession.StartSavePersistentBootstrapAsync(
+        root, files, captureProcessInitializeProfile: true);
+    Equal(BrowserRuntimeStatus.BootstrapReady, profiled.Status, "save validator bootstrap remains ready");
+    Equal(true, profiled.ProcessInitializeProfile is not null, "save validator captures Process.Initialize profile");
+    _ = profiled.RunGlobalCodecDiagnostic(resave: false);
+    bool absentSaveRejected = false;
+    try { _ = profiled.RunSaveCodecDiagnostic(219); }
+    catch (Exception ex) when (ex.GetType().Name == "ExeEE") { absentSaveRejected = true; }
+    Equal(true, absentSaveRejected, "missing save remains rejected by the existing loader");
+    Equal(2, profiled.CodecValidationProfile.Count, "diagnostic records one LoadGlobal and one LoadFrom timing");
+    Equal("LoadGlobal", profiled.CodecValidationProfile[0].Operation, "first codec timing is LoadGlobal");
+    Equal("LoadFrom", profiled.CodecValidationProfile[1].Operation, "second codec timing is LoadFrom");
+    Equal(true, profiled.CodecValidationProfile.All(item => item.LoadMilliseconds >= 0 && item.InputHashMilliseconds >= 0), "codec durations are monotonic nonnegative values");
+    Equal(false, profiled.CodecValidationProfile[1].Succeeded, "failed LoadFrom is timed but remains a failed validation");
+
+    BrowserRuntimeSession unprofiled = await BrowserRuntimeSession.StartSavePersistentBootstrapAsync(
+        CreateGlobalFixture("@SYSTEM_TITLE\nWAIT\nQUIT\n"), files);
+    Equal(null, unprofiled.ProcessInitializeProfile, "profile is disabled by default");
+    _ = unprofiled.RunGlobalCodecDiagnostic(resave: false);
+    Equal(0, unprofiled.CodecValidationProfile.Count, "codec timing is disabled by default");
+    Console.WriteLine("PASS WEB save import bootstrap profile is opt-in");
+    return;
+}
+
 if (args is ["p1c6-getkey"])
 {
     BrowserRuntimeSession runtime = await BrowserRuntimeSession.StartTitleBootstrapAsync(CreateGlobalFixture("""
@@ -692,6 +1145,142 @@ if (args is ["perf-gate-01c-window-state"])
     Equal(0, afterClear.Start, "window new LineId after ClearText starts at zero");
     Equal(1, afterClear.End, "window new LineId after ClearText renders one row");
     Console.WriteLine("PASS WEB-PERF-GATE-01C display window state");
+    return;
+}
+
+if (args is ["ux16-08-follow-tail"])
+{
+    BrowserDisplayWindowState state = new();
+    state.UpdateScroll(new(420, 360, false, 25, -4));
+    Equal(false, state.FollowTail, "manual backlog scroll disables tail follow");
+    BrowserDisplayLine[] lines = Enumerable.Range(1, 200)
+        .Select(id => new BrowserDisplayLine("left", [], LineId: id))
+        .ToArray();
+    BrowserDisplayWindowSlice backlog = state.Calculate(lines, structureGeneration: 1);
+    Equal(false, backlog.End == lines.Length, "manual backlog slice remains before retained tail");
+
+    BrowserRuntimeSession noOutput = await BrowserRuntimeSession.StartTitleBootstrapAsync(CreateGlobalFixture("""
+@SYSTEM_TITLE
+PRINTL [1] CURRENT
+INPUT
+INPUT
+WAIT
+QUIT
+"""), null);
+    noOutput.StartTitle();
+    long unchangedOutput = noOutput.ScriptOutputGeneration;
+    long noOutputRequest = noOutput.PendingInput!.RequestId;
+    BrowserDisplayPart noOutputChoice = Flatten(noOutput.DisplayLines.SelectMany(line => line.Parts)).Single(part => part.Input == "1");
+    Equal(true, noOutputChoice.Activation is not null, "current choice has accepted activation");
+    Equal(true, noOutput.SubmitDisplay(noOutputChoice), "current choice advances to the next input");
+    Equal(noOutputRequest + 1, noOutput.PendingInput!.RequestId, "output-free transition reaches a new input request");
+    Equal(unchangedOutput, noOutput.ScriptOutputGeneration, "input echo alone is not new script output");
+
+    BrowserRuntimeSession newOutput = await BrowserRuntimeSession.StartTitleBootstrapAsync(CreateGlobalFixture("""
+@SYSTEM_TITLE
+PRINTL [1] CURRENT
+INPUT
+PRINTL NEW_OUTPUT
+INPUT
+WAIT
+QUIT
+"""), null);
+    newOutput.StartTitle();
+    long outputBefore = newOutput.ScriptOutputGeneration;
+    long outputRequest = newOutput.PendingInput!.RequestId;
+    BrowserDisplayPart outputChoice = Flatten(newOutput.DisplayLines.SelectMany(line => line.Parts)).Single(part => part.Input == "1");
+    Equal(true, newOutput.SubmitDisplay(outputChoice), "current choice emits output before the next input");
+    Equal(outputRequest + 1, newOutput.PendingInput!.RequestId, "output transition reaches a new input request");
+    Equal(true, newOutput.ScriptOutputGeneration > outputBefore, "new script output has its own monotonic generation");
+
+    var resume = typeof(BrowserDisplayWindowState).GetMethod("ResumeFollowTail", BindingFlags.Instance | BindingFlags.Public);
+    Equal(true, resume is not null, "accepted current button with new output and next input can explicitly resume tail follow");
+    if (resume is null) return;
+    Equal(true, (bool)resume.Invoke(state, null)!, "explicit tail resume changes state after qualifying click transition");
+    Equal(true, state.FollowTail, "explicit tail resume enables follow state");
+    Equal(true, state.ScrollState.NearBottom, "explicit tail resume updates scroll state consistently");
+    Equal(lines.Length, state.Calculate(lines, structureGeneration: 1).End, "resumed window includes retained tail");
+
+    state.UpdateScroll(new(420, 360, false, 25, -4));
+    Equal(false, state.FollowTail, "manual backlog scroll remains anchored until a qualifying accepted click transition");
+    Equal(true, state.Calculate(lines).Start < lines.Length - 1, "manual backlog window does not jump to newest line");
+    Console.WriteLine("PASS UX16-08 explicit tail-follow state");
+    return;
+}
+
+if (args is ["ux16-08-island-flow"])
+{
+    var flowOffset = typeof(BrowserDisplayLine).GetProperty("IslandFlowOffsetY", BindingFlags.Instance | BindingFlags.Public);
+    Equal(true, flowOffset is not null, "island rows carry their native per-depth flow offset");
+    if (flowOffset is null) return;
+
+    BrowserRuntimeSession runtime = await BrowserRuntimeSession.StartTitleBootstrapAsync(CreateGlobalFixture("@SYSTEM_TITLE\nWAIT\nQUIT\n"), null);
+    runtime.StartTitle();
+    long islandOutputBefore = runtime.ScriptOutputGeneration;
+    object console = typeof(BrowserRuntimeSession).GetField("console", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(runtime)!;
+    var printIsland = console.GetType().GetMethod("PrintHTMLIsland")!;
+    printIsland.Invoke(console, ["<div>A</div><br><div>B</div><br><div>C</div>", 3]);
+    printIsland.Invoke(console, ["<div>D</div><br><div>E</div>", 2]);
+    Equal(true, runtime.ScriptOutputGeneration > islandOutputBefore, "HTML island rows count as new game output");
+    BrowserDisplayLine[] islandLines = runtime.DisplayLines.TakeLast(runtime.IslandLineCount).ToArray();
+    int Offset(string text) => (int)flowOffset.GetValue(islandLines.Single(line => Flatten(line.Parts).Any(part => part.Text == text)))!;
+    Equal(0, Offset("D"), "island depth 2 begins at native origin");
+    Equal(runtime.DisplayLineHeight, Offset("E"), "island depth 2 advances one native display line");
+    Equal(0, Offset("A"), "island depth 3 owns an independent native origin");
+    Equal(runtime.DisplayLineHeight, Offset("B"), "island depth 3 advances one native display line");
+    Equal(runtime.DisplayLineHeight * 2, Offset("C"), "island depth 3 advances two native display lines");
+
+    console.GetType().GetMethod("ClearHTMLIsland", [typeof(int)])!.Invoke(console, [2]);
+    printIsland.Invoke(console, ["<div>F</div>", 2]);
+    islandLines = runtime.DisplayLines.TakeLast(runtime.IslandLineCount).ToArray();
+    Equal(0, (int)flowOffset.GetValue(islandLines.Single(line => Flatten(line.Parts).Any(part => part.Text == "F")))!, "cleared depth restarts at native origin");
+
+    printIsland.Invoke(console, ["<div>A<br><div>B</div><br>C</div>", 4]);
+    BrowserDisplayPart nested = runtime.DisplayLines.Last().Parts.Single(part => part.Kind == BrowserDisplayPartKind.Group);
+    BrowserDisplayPart[] nestedChildren = nested.Children!.ToArray();
+    Equal(3, nestedChildren.Count(part => part.Kind is BrowserDisplayPartKind.Text or BrowserDisplayPartKind.Group), "nested flow retains text and group rows");
+    Equal(2, nestedChildren.Count(part => part.Kind == BrowserDisplayPartKind.Break), "nested BR boundaries are retained");
+    printIsland.Invoke(console, ["<button value='7'>A<br>B</button><nonbutton>A<br>B</nonbutton>", 5]);
+    BrowserDisplayPart[] buttons = Flatten(runtime.DisplayLines.Last().Parts).ToArray();
+    Equal(true, buttons.Where(part => part.Kind is BrowserDisplayPartKind.Button or BrowserDisplayPartKind.NonButton).All(part => Flatten(part.Children ?? []).Any(child => child.Kind == BrowserDisplayPartKind.Break)), "button and nonbutton BR content remains nested");
+    printIsland.Invoke(console, ["<div><div xpos='10' ypos='10'>P1</div><br><div xpos='20' ypos='30'>P2</div></div>", 6]);
+    BrowserDisplayPart positioned = runtime.DisplayLines.Last().Parts.Single(part => part.Kind == BrowserDisplayPartKind.Group);
+    Equal(2, positioned.Children!.Count(part => part.Layout is { Mode: BrowserDisplayMode.Relative, ExplicitPosition: true }), "positioned siblings keep their independent coordinates");
+    Console.WriteLine("PASS UX16-08 HTML island per-depth flow model and nested BR contract");
+    return;
+}
+
+if (args is ["ux16-08-oneinput"])
+{
+    const string erb = """
+@SYSTEM_TITLE
+ONEINPUTS
+PRINTFORML ONE=[%RESULTS%]
+INPUTS
+PRINTFORML INPUTS=[%RESULTS%]
+TONEINPUTS 100, "", 0, ""
+WAIT
+QUIT
+""";
+    BrowserRuntimeSession runtime = await BrowserRuntimeSession.StartPersistentBootstrapAsync(CreateGlobalFixture(erb), null);
+    runtime.StartTitle();
+    BrowserInputPrompt oneInput = runtime.PendingInput!;
+    Equal(BrowserInputKind.String, oneInput.Kind, "dungeon-style ONEINPUTS is a string prompt");
+    Equal(true, oneInput.OneInput, "ONEINPUTS retains its one-character semantics");
+    Equal(true, runtime.Submit(new(oneInput.RequestId, "abc", SessionGeneration: runtime.SessionGeneration, DisplayGeneration: runtime.DisplayGeneration)), "plain text form input accepted");
+    Contains("ONE=[a]", runtime.Output, "multi-character nonmacro input keeps existing one-character truncation");
+    BrowserInputPrompt inputs = runtime.PendingInput!;
+    Equal(false, inputs.OneInput, "ordinary INPUTS remains distinct");
+    Equal(true, runtime.Submit(new(inputs.RequestId, "abc", SessionGeneration: runtime.SessionGeneration, DisplayGeneration: runtime.DisplayGeneration)), "ordinary INPUTS accepts full text");
+    Contains("INPUTS=[abc]", runtime.Output, "ordinary INPUTS keeps full string");
+    Equal("TONEINPUTS", runtime.PendingInput?.TimedInputName, "timed OneInput remains a separate boundary");
+    Equal(true, runtime.PendingInput?.OneInput, "timed OneInput semantics remain unchanged");
+    InputMacroToken[] macro = InputMacroSyntax.Expand("(H\\e\\d\\e)*10").ToArray();
+    Equal(21, macro.Length, "macro UI can reuse the established parser expansion");
+    Equal(true, macro.Take(20).All(token => token.MessageSkip), "macro escape markers retain skip-after-token semantics");
+    Equal(false, macro[^1].MessageSkip, "macro keeps its compatible trailing empty input");
+    Equal("HdHdHdHdHdHdHdHdHdHd", string.Concat(macro.Select(token => token.Value)), "macro token order remains native-compatible");
+    Console.WriteLine("PASS UX16-08 OneInput semantics and macro token contract");
     return;
 }
 

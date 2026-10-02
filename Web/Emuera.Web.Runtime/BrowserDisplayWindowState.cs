@@ -14,7 +14,12 @@ public sealed record BrowserDisplayWindowSlice(
     int End,
     double TopSpacerPx,
     double BottomSpacerPx,
-    bool FollowTail);
+    bool FollowTail,
+    int NativePaintStart = 0,
+    int NativePaintEnd = 0)
+{
+    public bool IsNativeLinePainted(int lineIndex) => lineIndex >= NativePaintStart && lineIndex < NativePaintEnd;
+}
 
 public sealed class BrowserDisplayWindowState
 {
@@ -27,6 +32,7 @@ public sealed class BrowserDisplayWindowState
     IReadOnlyList<BrowserDisplayLine>? cachedLines;
     long? cachedStructureGeneration;
     int cachedCount;
+    int cachedDisplayLineHeight;
     BrowserDisplayWindowSlice? cachedSlice;
 
     public int MeasurementCount => measurements.Count;
@@ -59,6 +65,18 @@ public sealed class BrowserDisplayWindowState
         return changed;
     }
 
+    public bool UpdateScroll(BrowserDisplayScrollState state, long eventDisplayStructureGeneration, long currentDisplayStructureGeneration) =>
+        eventDisplayStructureGeneration == currentDisplayStructureGeneration && UpdateScroll(state);
+
+    public bool ResumeFollowTail()
+    {
+        bool changed = !followTail || !scrollState.NearBottom;
+        followTail = true;
+        scrollState = scrollState with { NearBottom = true };
+        if (changed) cachedLines = null;
+        return changed;
+    }
+
     public bool ApplyMeasurements(IReadOnlyList<BrowserDisplayLineMeasurement> values)
     {
         bool changed = false;
@@ -78,20 +96,22 @@ public sealed class BrowserDisplayWindowState
         return changed;
     }
 
-    public BrowserDisplayWindowSlice Calculate(IReadOnlyList<BrowserDisplayLine> lines, int? mainLineCount = null, long? structureGeneration = null)
+    public BrowserDisplayWindowSlice Calculate(IReadOnlyList<BrowserDisplayLine> lines, int? mainLineCount = null, long? structureGeneration = null, int? displayLineHeight = null)
     {
         int count = mainLineCount ?? lines.Count;
         if (count < 0 || count > lines.Count) throw new ArgumentOutOfRangeException(nameof(mainLineCount));
+        int nativeLineHeight = Math.Max(1, displayLineHeight ?? (int)InitialEstimatedLineHeight);
         // Visual image changes do not alter row geometry. Measurements and scroll
         // explicitly invalidate this cache; callers without a revision always recalculate.
         if (structureGeneration.HasValue && ReferenceEquals(cachedLines, lines)
-            && cachedStructureGeneration == structureGeneration && cachedCount == count)
+            && cachedStructureGeneration == structureGeneration && cachedCount == count
+            && cachedDisplayLineHeight == nativeLineHeight)
             return cachedSlice!;
         if (count == 0)
         {
             measurements.Clear();
             cachedLines = null;
-            return new(0, 0, 0, 0, followTail);
+            return new(0, 0, 0, 0, followTail, 0, 0);
         }
 
         Prune(lines, count);
@@ -101,6 +121,7 @@ public sealed class BrowserDisplayWindowState
         int overscan = Math.Max(32, visibleCount * 2);
         int start;
         int end;
+        int target = count - 1;
 
         if (followTail)
         {
@@ -109,25 +130,41 @@ public sealed class BrowserDisplayWindowState
         }
         else
         {
-            int target = Math.Clamp((int)Math.Floor(Math.Max(0, scrollState.ScrollTop) / estimate), 0, count - 1);
+            target = Math.Clamp((int)Math.Floor(Math.Max(0, scrollState.ScrollTop) / estimate), 0, count - 1);
             for (int attempt = 0; attempt < 3; attempt++)
                 target = Locate(lines, count, Math.Max(0, scrollState.ScrollTop), estimate, target);
             start = Math.Max(0, target - overscan);
             end = Math.Min(count, target + visibleCount + overscan);
         }
 
+        (int nativePaintStart, int nativePaintEnd) = NativePaintRange(count, nativeLineHeight, target, scrollState.ClientHeight, followTail);
         double top = Offset(lines, start, estimate);
         double total = Offset(lines, count, estimate);
         double bottom = Math.Max(0, total - Offset(lines, end, estimate));
-        var slice = new BrowserDisplayWindowSlice(start, end, Math.Max(0, top), bottom, followTail);
+        var slice = new BrowserDisplayWindowSlice(start, end, Math.Max(0, top), bottom, followTail, nativePaintStart, nativePaintEnd);
         if (structureGeneration.HasValue)
         {
             cachedLines = lines;
             cachedStructureGeneration = structureGeneration;
             cachedCount = count;
+            cachedDisplayLineHeight = nativeLineHeight;
             cachedSlice = slice;
         }
         return slice;
+    }
+
+    static (int Start, int End) NativePaintRange(int lineCount, int lineHeight, int visibleTop, double clientHeight, bool followTail)
+    {
+        if (lineCount == 0) return (0, 0);
+        if (clientHeight <= 0 || clientHeight >= (double)lineCount * lineHeight) return (0, lineCount);
+
+        int pixelHeight = (int)clientHeight;
+        int visibleRows = Math.Max(1, (int)Math.Ceiling(clientHeight / lineHeight));
+        int bottomLineNo = followTail ? lineCount - 1 : Math.Min(lineCount - 1, visibleTop + visibleRows - 1);
+        // Mirrors EmueraConsole.OnPaint: the first painted owner row may sit
+        // above the viewport, but its AbsoluteLeftBottom children still draw.
+        int topLineNo = bottomLineNo - ((pixelHeight - lineHeight) / lineHeight + 1);
+        return (Math.Max(0, topLineNo), bottomLineNo + 1);
     }
 
     void Prune(IReadOnlyList<BrowserDisplayLine> lines, int count)

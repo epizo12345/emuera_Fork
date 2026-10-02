@@ -2,7 +2,8 @@ param(
     [Parameter(Mandatory)][ValidateSet('Test', 'Publish')][string]$Mode,
     [Parameter(Mandatory)][ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._-]*$')][string]$Name,
     [string]$OutputDirectory,
-    [string]$ArtifactsPath
+    [string]$ArtifactsPath,
+    [string]$NuGetConfig
 )
 
 $ErrorActionPreference = 'Stop'
@@ -26,6 +27,12 @@ $processCliHome = Join-Path $processTemp 'dotnet-home'
 New-Item -ItemType Directory -Path $processAppData,$processLocalAppData,$processCliHome | Out-Null
 
 function Invoke-Dotnet([string[]]$Arguments) {
+    if ($NuGetConfig) {
+        $option = "-p:RestoreConfigFile=$([System.IO.Path]::GetFullPath($NuGetConfig))"
+        $separator = [Array]::IndexOf($Arguments, '--')
+        if ($separator -ge 0) { $Arguments = @($Arguments[0..($separator - 1)]) + $option + @($Arguments[$separator..($Arguments.Length - 1)]) }
+        else { $Arguments += $option }
+    }
     & dotnet @Arguments
     if ($LASTEXITCODE -ne 0) { throw "dotnet exited with code ${LASTEXITCODE}: dotnet $($Arguments -join ' ')" }
 }

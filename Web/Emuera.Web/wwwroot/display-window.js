@@ -1,3 +1,4 @@
+import { displayScale } from './scale-fit.js';
 const bindings = new Map();
 
 function element(elementId) {
@@ -13,7 +14,7 @@ function anchor(host) {
   if (!row) return { anchorLineId: 0, anchorOffsetPx: 0 };
   return {
     anchorLineId: Number(row.dataset.lineId),
-    anchorOffsetPx: row.getBoundingClientRect().top - hostTop
+    anchorOffsetPx: (row.getBoundingClientRect().top - hostTop) / displayScale(host)
   };
 }
 
@@ -30,9 +31,13 @@ export function readViewport(elementId) {
 
 function schedule(binding) {
   if (binding.frame) return;
+  const displayStructureGeneration = Number(element(binding.elementId).dataset.displayStructureGeneration || 0);
   binding.frame = requestAnimationFrame(() => {
     binding.frame = 0;
-    binding.dotNetRef.invokeMethodAsync('OnDisplayWindowScroll', readViewport(binding.elementId));
+    binding.dotNetRef.invokeMethodAsync('OnDisplayWindowScroll', {
+      ...readViewport(binding.elementId),
+      displayStructureGeneration
+    });
   });
 }
 
@@ -48,9 +53,11 @@ export function attach(elementId, dotNetRef) {
 export function measureRendered(elementId, lineIds) {
   if (!Array.isArray(lineIds) || lineIds.length === 0) return [];
   const requested = new Set(lineIds);
-  return Array.from(element(elementId).querySelectorAll('.game-line[data-line-id]'))
+  const host = element(elementId);
+  const scale = displayScale(host);
+  return Array.from(host.querySelectorAll('.game-line[data-line-id]'))
     .filter(row => requested.has(Number(row.dataset.lineId)))
-    .map(row => ({ lineId: Number(row.dataset.lineId), height: row.getBoundingClientRect().height }))
+    .map(row => ({ lineId: Number(row.dataset.lineId), height: row.getBoundingClientRect().height / scale }))
     .filter(value => Number.isFinite(value.lineId) && Number.isFinite(value.height));
 }
 
@@ -100,7 +107,7 @@ export function restoreAnchor(elementId, lineId, offsetPx) {
   const host = element(elementId);
   const row = Array.from(host.querySelectorAll('.game-line[data-line-id]'))
     .find(value => Number(value.dataset.lineId) === lineId);
-  if (row) host.scrollTop += row.getBoundingClientRect().top - host.getBoundingClientRect().top - offsetPx;
+  if (row) host.scrollTop += (row.getBoundingClientRect().top - host.getBoundingClientRect().top) / displayScale(host) - offsetPx;
 }
 
 export function detach(elementId) {

@@ -19,6 +19,10 @@
         {
             <pre id="warm-startup-metrics" hidden>@JsonSerializer.Serialize(new { phases = startupPhases, durations = startupDurations, runtime = session is null ? null : new { configMs = session.ConfigLoadMilliseconds, preloadMs = session.PreloadMilliseconds, processInitializeMs = session.ProcessInitializeMilliseconds, bootstrapMs = session.BootstrapElapsedMilliseconds, titleDoScriptMs = session.DoScriptElapsedMilliseconds }, processInitialize = session?.ProcessInitializeProfile })</pre>
         }
+        @if (startupImportProfileEnabled)
+        {
+            <pre id="startup-import-profile-json" data-warning="@startupImportProfileWarning" hidden>@startupImportProfileJson</pre>
+        }
         @if (error is not null)
         {
             <p class="error" role="alert" data-p1c2-error>@error</p>
@@ -29,31 +33,50 @@
                     <pre>@JsonSerializer.Serialize(runtimeFailureDiagnostic)</pre>
                 </details>
             }
+            @if (startupErrorDetails is not null)
+            {
+                <details id="startup-error-diagnostic">
+                    <summary>起動診断情報</summary>
+                    <pre>@startupErrorDetails</pre>
+                </details>
+            }
         }
         @if (isP1C3 && !isP1C3Integration && !isP1C4Small)
         {
             <section id="host-toolbar" class="host-toolbar" aria-label="ゲーム操作">
                 <span class="host-title">ShinEraTenseiP</span>
+                <span id="host-status" class="host-status @(hostStatusBusy ? "is-busy" : hostStatusError ? "is-error" : "is-idle")" role="status" aria-live="polite" title="@hostStatus" hidden="@string.IsNullOrEmpty(hostStatus)">
+                    @if (hostStatusBusy)
+                    {
+                        <span class="host-status-spinner" aria-hidden="true"></span>
+                    }
+                    <span class="host-status-text">@hostStatus</span>
+                    @if (hostStatusBusy)
+                    {
+                        <span class="host-status-progress" aria-hidden="true"></span>
+                    }
+                </span>
                 <button id="return-title" type="button" disabled="@(importInProgress || (session is null && !saveManagerMode))" @onclick="ReturnToTitle">タイトルに戻る</button>
                 <details id="p1c3-save-manager" class="save-manager">
                     <summary>セーブ管理</summary>
                     <div class="save-manager-panel">
-                    <button id="close-save-panel" type="button" @onclick="CloseSavePanel">閉じる</button>
+                    <button id="close-save-panel" type="button" disabled="@importInProgress" @onclick="CloseSavePanel">閉じる</button>
                     @if (!saveManagerMode && !saveImportReadProbe)
                     {
-                        <p>管理画面への移動・取り込みでは、未保存の進行が失われます。確認後、タイトルから再開します。</p>
-                        <button id="open-save-manager" type="button" disabled="@importInProgress" @onclick="OpenSaveManager">セーブ管理画面を開く</button>
-                        <label for="p1c3-active-import">実行中のセーブを取り込む</label>
+                        <p>保存済みデータの一覧です。実行中Runtimeの未保存状態は含まれません。</p>
+                        <p>PCからの取込では安全な検証のためゲームを停止して再読込します。未保存の進行は失われます。選択後に確認します。</p>
+                        <label for="p1c3-active-import">PCからセーブを取り込む</label>
                         <input id="p1c3-active-import" type="file" multiple disabled="@importInProgress" accept=".sav,application/octet-stream" @onchange="StageActiveImport" />
                     }
                     else
                     {
-                    <label for="p1c3-import">セーブを取り込む</label>
+                    <p>保存済みデータの一覧です。実行中Runtimeの未保存状態は含まれません。</p>
+                    <label for="p1c3-import">PCからセーブを取り込む</label>
                     <InputFile id="p1c3-import" multiple disabled="@importInProgress" accept=".sav,application/octet-stream" OnChange="ImportP1C3Files" />
                     }
                     @if (importInProgress)
                     {
-                        <p id="p1c2-import-busy" aria-live="polite">GLOBALと通常savを検証して保存中です…</p>
+                        <p id="p1c2-import-busy" aria-live="polite">@hostStatus</p>
                     }
                     @if (!string.IsNullOrEmpty(saveManagementMessage))
                     {
@@ -64,7 +87,7 @@
                         {
                             <li data-save-name="@file.LogicalFilename" data-save-revision="@file.Revision" data-save-size="@(file.Bytes?.Length ?? 0)">
                                 @file.LogicalFilename (@(file.Bytes?.Length ?? 0) bytes)
-                                <button type="button" @onclick="() => ExportSave(file.LogicalFilename)">書き出し</button>
+                                <button type="button" disabled="@importInProgress" @onclick="() => ExportSave(file.LogicalFilename)">書き出し</button>
                             </li>
                         }
                     </ul>
@@ -88,7 +111,7 @@
                 {
                     <li data-save-name="@file.LogicalFilename" data-save-revision="@file.Revision" data-save-size="@(file.Bytes?.Length ?? 0)">
                         @file.LogicalFilename (@(file.Bytes?.Length ?? 0) bytes)
-                        <button type="button" @onclick="() => ExportSave(file.LogicalFilename)">export</button>
+                        <button type="button" disabled="@importInProgress" @onclick="() => ExportSave(file.LogicalFilename)">書き出し</button>
                     </li>
                 }
             </ul>
@@ -123,9 +146,11 @@
         {
             <pre id="runtime-output">@session?.Output</pre>
         }
+        <div id="game-fit-viewport" class="game-fit-viewport">
+        <div id="game-fit-slot" class="game-fit-slot">
         <div class="game-frame">
         <div class="game-surface">
-        <div id="game-screen" class="@(IsDisplayWindowMode ? "game-windowed" : string.Empty)" style="background-color:@(session?.BackgroundColor ?? "#000000")" tabindex="0" data-one-input="@(session?.PendingInput is { Kind: BrowserInputKind.String or BrowserInputKind.Integer, OneInput: true } ? "true" : "false")" data-tooltip-delay="@(session?.TooltipDelayMilliseconds ?? 500)" data-tooltip-duration="@(session?.TooltipDurationMilliseconds ?? 0)" data-tooltip-foreground="@(session?.TooltipForeground ?? "#000000")" data-tooltip-background="@(session?.TooltipBackground ?? "#FFFFFF")" @onkeydown="SubmitPrimitiveKey" @onkeydown:preventDefault="@(session?.PendingInput is { Kind: BrowserInputKind.Enter or BrowserInputKind.AnyKey })" @onkeyup="KeyReleaseHandler" @onblur="ResetPrimitiveKeys" @onmousedown="SubmitPrimitivePointer" @onclick="SubmitGameAreaClick" @oncontextmenu:preventDefault>
+        <div id="game-screen" class="@(IsDisplayWindowMode ? "game-windowed" : string.Empty)" style="background-color:@(session?.BackgroundColor ?? "#000000")" tabindex="0" data-display-structure-generation="@(session?.DisplayStructureGeneration ?? 0)" data-one-input="@(session?.PendingInput is { Kind: BrowserInputKind.String or BrowserInputKind.Integer, OneInput: true } ? "true" : "false")" data-tooltip-delay="@(session?.TooltipDelayMilliseconds ?? 500)" data-tooltip-duration="@(session?.TooltipDurationMilliseconds ?? 0)" data-tooltip-foreground="@(session?.TooltipForeground ?? "#000000")" data-tooltip-background="@(session?.TooltipBackground ?? "#FFFFFF")" @onkeydown="SubmitPrimitiveKey" @onkeydown:preventDefault="@(session?.PendingInput is { Kind: BrowserInputKind.Enter or BrowserInputKind.AnyKey })" @onkeyup="KeyReleaseHandler" @onblur="ResetPrimitiveKeys" @onmousedown="SubmitPrimitivePointer" @onclick="SubmitGameAreaClick" @oncontextmenu:preventDefault>
         @if (session is not null)
         {
 #if ERB_EXECUTION_PROFILE
@@ -134,17 +159,18 @@
             <div class="game-log-lines" style="--game-line-height:@(session.DisplayLineHeight)px;padding-left:@(session.DrawingPositionShift)px;">
             @if (IsDisplayWindowMode)
             {
-                BrowserDisplayWindowSlice slice = displayWindow.Calculate(session.RetainedDisplayLines, session.RetainedDisplayLines.Count - session.IslandLineCount, session.DisplayStructureGeneration);
+                BrowserDisplayWindowSlice slice = displayWindow.Calculate(session.RetainedDisplayLines, session.RetainedDisplayLines.Count - session.IslandLineCount, session.DisplayStructureGeneration, session.DisplayLineHeight);
                 animationFirstLine = slice.Start;
                 animationEndLine = slice.End;
                 <div class="game-window-spacer" aria-hidden="true" style="@SpacerStyle(slice.TopSpacerPx)"></div>
                 @for (int lineIndex = slice.Start; lineIndex < slice.End; lineIndex++)
                 {
                     BrowserDisplayLine line = session.DisplayLines[lineIndex];
+                    bool nativeLinePainted = slice.IsNativeLinePainted(lineIndex);
                     <div @key="line.LineId" class="game-line align-@line.Alignment" data-line-id="@line.LineId">
                         @foreach (BrowserDisplayPart part in line.Parts)
                         {
-                            <BrowserPartView Part="part" OnMouseDown="SubmitDisplay" />
+                            <BrowserPartView Part="part" OnMouseDown="SubmitDisplay" NativeLinePainted="nativeLinePainted" />
                         }
                     </div>
                 }
@@ -177,7 +203,7 @@
                     <div @key="line.LineId" class="game-line align-@line.Alignment" data-line-id="@line.LineId">
                         @foreach (BrowserDisplayPart part in line.Parts)
                         {
-                            <BrowserPartView Part="part" OnMouseDown="SubmitDisplay" />
+                            <BrowserPartView Part="part" OnMouseDown="SubmitDisplay" FlowOffsetY="line.IslandFlowOffsetY" />
                         }
                     </div>
                 }
@@ -185,20 +211,26 @@
         }
         </div>
         <div class="game-input-slot">
-        @if (isP1C3 && !isP1C3Integration && !isP1C4Small && session?.PendingInput is { Kind: BrowserInputKind.Integer or BrowserInputKind.String, OneInput: false } valuePrompt)
+        @if (isP1C3 && !isP1C3Integration && !isP1C4Small
+            && session?.PendingInput is BrowserInputPrompt valuePrompt
+            && (valuePrompt.Kind == BrowserInputKind.Integer || valuePrompt.Kind == BrowserInputKind.String)
+            && (!valuePrompt.OneInput || (valuePrompt.Kind == BrowserInputKind.String
+                && valuePrompt.TimeLimit <= 0 && string.IsNullOrEmpty(valuePrompt.TimedInputName))))
         {
             <form class="game-input-form" @onsubmit="SubmitP1C2Form" @onsubmit:preventDefault>
-                <label class="game-input-label" for="runtime-input">@InputLabel(valuePrompt)</label>
-                <input @key="valuePrompt.RequestId" id="runtime-input" type="text" data-request-id="@valuePrompt.RequestId" inputmode="@(valuePrompt.Kind == BrowserInputKind.Integer ? "numeric" : "text")" @bind="input" @bind:event="oninput" autocomplete="off" />
+                <label class="game-input-label" for="runtime-input">@InputLabel(valuePrompt)@(valuePrompt.OneInput ? "（操作マクロ可）" : string.Empty)</label>
+                <input @key="valuePrompt.RequestId" id="runtime-input" type="text" data-request-id="@valuePrompt.RequestId" data-one-input="@valuePrompt.OneInput.ToString().ToLowerInvariant()" inputmode="@(valuePrompt.Kind == BrowserInputKind.Integer ? "numeric" : "text")" @bind="input" @bind:event="oninput" autocomplete="off" />
                 <button id="runtime-submit" type="submit" aria-label="入力を確定">↵</button>
             </form>
         }
         </div>
         </div>
+        </div>
+        </div>
         @if (IsDisplayWindowMode && session is not null)
         {
-            BrowserDisplayWindowSlice diagnosticSlice = displayWindow.Calculate(session.RetainedDisplayLines, session.RetainedDisplayLines.Count - session.IslandLineCount, session.DisplayStructureGeneration);
-            <p id="perf-gate-01c-window" hidden data-dom-window-mode="@domWindowMode" data-retained-lines="@session.DisplayLines.Count" data-rendered-lines="@(diagnosticSlice.End - diagnosticSlice.Start)" data-window-start="@diagnosticSlice.Start" data-window-end="@diagnosticSlice.End" data-top-spacer="@diagnosticSlice.TopSpacerPx" data-bottom-spacer="@diagnosticSlice.BottomSpacerPx" data-follow-tail="@diagnosticSlice.FollowTail.ToString().ToLowerInvariant()" data-measurement-cache="@displayWindow.MeasurementCount" data-scroll-count="@displayWindowScrollCount" data-measure-count="@displayWindowMeasureCount" data-recalculate-count="@displayWindowRecalculateCount" data-correction-count="@displayWindowCorrectionCount" data-correction-limit-count="@displayWindowCorrectionLimitCount"></p>
+            BrowserDisplayWindowSlice diagnosticSlice = displayWindow.Calculate(session.RetainedDisplayLines, session.RetainedDisplayLines.Count - session.IslandLineCount, session.DisplayStructureGeneration, session.DisplayLineHeight);
+            <p id="perf-gate-01c-window" hidden data-dom-window-mode="@domWindowMode" data-retained-lines="@session.DisplayLines.Count" data-rendered-lines="@(diagnosticSlice.End - diagnosticSlice.Start)" data-window-start="@diagnosticSlice.Start" data-window-end="@diagnosticSlice.End" data-native-paint-start="@diagnosticSlice.NativePaintStart" data-native-paint-end="@diagnosticSlice.NativePaintEnd" data-top-spacer="@diagnosticSlice.TopSpacerPx" data-bottom-spacer="@diagnosticSlice.BottomSpacerPx" data-follow-tail="@diagnosticSlice.FollowTail.ToString().ToLowerInvariant()" data-measurement-cache="@displayWindow.MeasurementCount" data-scroll-count="@displayWindowScrollCount" data-measure-count="@displayWindowMeasureCount" data-recalculate-count="@displayWindowRecalculateCount" data-correction-count="@displayWindowCorrectionCount" data-correction-limit-count="@displayWindowCorrectionLimitCount"></p>
         }
         @if (session is not null && (!isP1C3 || isP1C3Integration || isP1C4Small))
         {
@@ -302,8 +334,15 @@
     BrowserRuntimeSession? session;
     string input = string.Empty;
     string? error;
+    string? startupErrorDetails;
     BrowserRuntimeFailureDiagnostic? runtimeFailureDiagnostic;
     string? saveManagementMessage;
+    string hostStatus = string.Empty;
+    bool hostStatusBusy;
+    bool hostStatusError;
+    bool saveImportTitlePending;
+    bool saveImportHandoffPending;
+    bool saveImportCancellationHandoffPending;
     string progress = "実Runtimeを読み込み中です…";
     bool isP1B;
     bool isP1C1;
@@ -365,6 +404,8 @@
     IJSObjectReference? storeModule;
     IJSObjectReference? packageCacheModule;
     IJSObjectReference? displayWindowModule;
+    IJSObjectReference? scaleFitModule;
+    bool scaleFitAttached;
     IJSObjectReference? tooltipModule;
     bool tooltipAttached;
     bool inputGuardAttached;
@@ -400,6 +441,14 @@
     bool packageCachePersistent;
     string packageCacheState = "none";
     bool warmStartupProfile;
+    bool startupImportProfileEnabled;
+    bool dataPrepBreakdownEnabled;
+    List<object>? dataPrepPackBreakdown;
+    long dataPreparationAllocatedBytes;
+    bool startupImportProfileFinished;
+    string startupImportProfileJson = string.Empty;
+    string? startupImportProfileWarning;
+    IJSObjectReference? startupImportProfileModule;
     bool erbExecutionProfile;
 #if ERB_EXECUTION_PROFILE
     string? erbProfileMode;
@@ -461,6 +510,20 @@
         public int Height { get; set; }
     }
 
+    sealed class StagedImportCapture
+    {
+        public string? Nonce { get; set; }
+        public int Count { get; set; }
+        public long Bytes { get; set; }
+        public List<StagedImportFile> Files { get; set; } = [];
+    }
+
+    sealed class StagedImportFile
+    {
+        public string Name { get; set; } = string.Empty;
+        public long Size { get; set; }
+    }
+
     sealed class PointerContext
     {
         public int X { get; set; }
@@ -484,6 +547,7 @@
         public bool NearBottom { get; set; }
         public long AnchorLineId { get; set; }
         public double AnchorOffsetPx { get; set; }
+        public long DisplayStructureGeneration { get; set; }
     }
 
     sealed class DisplayWindowMeasurement
@@ -497,7 +561,9 @@
         try
         {
             string query = Navigation.ToAbsoluteUri(Navigation.Uri).Query;
-            warmStartupProfile = QueryValue(query, "warmStartupProfile") == "1";
+            startupImportProfileEnabled = QueryValue(query, "startupImportProfile") == "1";
+            dataPrepBreakdownEnabled = startupImportProfileEnabled && QueryValue(query, "dataPrepBreakdown") == "1";
+            warmStartupProfile = QueryValue(query, "warmStartupProfile") == "1" || startupImportProfileEnabled;
             string? requestedErbProfileMode = QueryValue(query, "erbProfile");
             erbExecutionProfile = requestedErbProfileMode is not null && BrowserRuntimeSession.SupportsErbExecutionProfiler;
 #if ERB_EXECUTION_PROFILE
@@ -571,12 +637,49 @@
         {
             if (isP1C1)
                 SetDiagnosticStage("component-error");
-            error = ex.ToString();
+            if (isP1C3)
+            {
+                startupErrorDetails = ex.ToString();
+                if (saveImportTitlePending)
+                {
+                    bool wasCancellationHandoff = saveImportCancellationHandoffPending;
+                    if (wasCancellationHandoff)
+                    {
+                        error = "セーブ取込はキャンセル済みですが、タイトル起動に失敗しました。既存の保存データは変更していません。";
+                        saveManagementMessage = "取込はキャンセル済みです。既存セーブは維持されています。タイトル起動のみ失敗しました。";
+                    }
+                    else
+                    {
+                        error = "セーブ取込は完了しましたが、ゲーム起動に失敗しました。保存済みデータは残っています。再取込せず、詳細を確認してください。";
+                        saveManagementMessage = "セーブの保存は完了しています。タイトル起動のみ失敗しました。取込を再実行しないでください。";
+                    }
+                    saveImportTitlePending = false;
+                    ClearSaveImportHandoff();
+                    await SetHostStatusAsync(wasCancellationHandoff
+                        ? "取込はキャンセル済みですが、タイトル起動に失敗しました。"
+                        : "セーブ取込は完了しましたが、ゲーム起動に失敗しました。", busy: false, isError: true);
+                }
+                else
+                {
+                    error = "起動を続けられませんでした。詳細は「起動診断情報」を確認してください。";
+                    await SetHostStatusAsync("起動できませんでした。画面の実行診断を確認してください。", busy: false, isError: true);
+                }
+            }
+            else
+                error = ex.ToString();
+            if (startupImportProfileEnabled && !p1c2Ready)
+                await FinishStartupImportProfileAsync("startup-failed");
         }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (isP1C3 && !scaleFitAttached)
+        {
+            scaleFitModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./scale-fit.js");
+            await scaleFitModule.InvokeVoidAsync("attach");
+            scaleFitAttached = true;
+        }
 #if ERB_EXECUTION_PROFILE
         TraceGameplayStage("after-render-begin");
 #endif
@@ -603,14 +706,21 @@
             && storeModule is not null && storeHandle is not null)
         {
             stagedImportApplied = true;
+            var stagedImportApply = startupImportProfileEnabled ? System.Diagnostics.Stopwatch.StartNew() : null;
             try { await storeModule.InvokeAsync<int>("applyStagedImport", storeHandle, pendingStagedImportNonce, "p1c3-import"); }
             catch (Exception ex)
             {
+                await RecordStartupProfilePhaseAsync("cache-staged-import-apply", stagedImportApply, new { outcome = "failed" });
                 persistenceState = "validation-refused";
                 saveManagementMessage = "取込準備に失敗しました: " + ex.Message;
-                await storeModule.InvokeVoidAsync("clearStagedImport", pendingStagedImportNonce);
-                StateHasChanged();
+                await SetHostStatusAsync("セーブ取込を開始できませんでした。既存の保存済みデータは変更されていません。", busy: false, isError: true);
+                try { await storeModule.InvokeVoidAsync("clearStagedImport", pendingStagedImportNonce); }
+                catch (Exception clearError) { saveManagementMessage += " 一時データを消去できません: " + clearError.Message; }
+                await FinishStartupImportProfileAsync("staged-import-apply-failed");
+                await InvokeAsync(StateHasChanged);
             }
+            if (stagedImportApply?.IsRunning == true)
+                await RecordStartupProfilePhaseAsync("cache-staged-import-apply", stagedImportApply, new { outcome = "completed" });
         }
         if (session?.PendingInput is { TimedInputName: "TWAIT" or "TINPUT" or "TINPUTS" or "TONEINPUT" or "TONEINPUTS", TimeLimit: > 0 } prompt
             && !session.MessageSkip.Active
@@ -635,7 +745,10 @@
             {
                 focusSessionGeneration = session.SessionGeneration;
                 focusRequestId = focusPrompt.RequestId;
-                if (target == "runtime-input") await storeModule.InvokeVoidAsync("installInputCompositionGuard", target);
+                if (target == "runtime-input"
+                    || (focusPrompt.Kind == BrowserInputKind.String && focusPrompt.OneInput
+                        && focusPrompt.TimeLimit <= 0 && string.IsNullOrEmpty(focusPrompt.TimedInputName)))
+                    await storeModule.InvokeVoidAsync("installInputCompositionGuard", "runtime-input");
                 await storeModule.InvokeVoidAsync("focusElement", target);
             }
         }
@@ -664,6 +777,8 @@
             await SubmitP1C2Macro(erbProfileMacro);
         }
 #endif
+        if (startupImportProfileEnabled && !startupImportProfileFinished && p1c2Ready && startupImportProfileModule is not null)
+            await CompleteStartupImportProfileAsync();
     }
 
     async Task UpdateDisplayWindowAsync()
@@ -694,7 +809,7 @@
         if (lastCurrentDisplayLineId > 0 && lastCurrentDisplayLineId != currentLineId)
             displayWindow.RemoveMeasurement(lastCurrentDisplayLineId);
         lastCurrentDisplayLineId = currentLineId;
-        BrowserDisplayWindowSlice before = displayWindow.Calculate(lines, lines.Count - session.IslandLineCount, session.DisplayStructureGeneration);
+        BrowserDisplayWindowSlice before = displayWindow.Calculate(lines, lines.Count - session.IslandLineCount, session.DisplayStructureGeneration, session.DisplayLineHeight);
         var requested = new HashSet<long>();
         bool currentVisible = false;
         for (int lineIndex = before.Start; lineIndex < before.End; lineIndex++)
@@ -720,7 +835,7 @@
             }
             if (displayWindow.ApplyMeasurements(values.Select(value => new BrowserDisplayLineMeasurement(value.LineId, value.Height)).ToArray()))
             {
-                BrowserDisplayWindowSlice after = displayWindow.Calculate(lines, lines.Count - session.IslandLineCount, session.DisplayStructureGeneration);
+                BrowserDisplayWindowSlice after = displayWindow.Calculate(lines, lines.Count - session.IslandLineCount, session.DisplayStructureGeneration, session.DisplayLineHeight);
                 if (SliceChanged(before, after))
                 {
                     if (displayWindowCorrectionCount++ < 2)
@@ -747,11 +862,11 @@
     public async Task OnDisplayWindowScroll(DisplayWindowScrollEvent value)
     {
         if (!IsDisplayWindowMode || session is null) return;
-        BrowserDisplayWindowSlice before = displayWindow.Calculate(session.RetainedDisplayLines, session.RetainedDisplayLines.Count - session.IslandLineCount, session.DisplayStructureGeneration);
+        BrowserDisplayWindowSlice before = displayWindow.Calculate(session.RetainedDisplayLines, session.RetainedDisplayLines.Count - session.IslandLineCount, session.DisplayStructureGeneration, session.DisplayLineHeight);
         displayWindowScrollCount++;
         displayWindowCorrectionCount = 0;
-        if (!displayWindow.UpdateScroll(new(value.ScrollTop, value.ClientHeight, value.NearBottom, value.AnchorLineId, value.AnchorOffsetPx))) return;
-        BrowserDisplayWindowSlice after = displayWindow.Calculate(session.RetainedDisplayLines, session.RetainedDisplayLines.Count - session.IslandLineCount, session.DisplayStructureGeneration);
+        if (!displayWindow.UpdateScroll(new(value.ScrollTop, value.ClientHeight, value.NearBottom, value.AnchorLineId, value.AnchorOffsetPx), value.DisplayStructureGeneration, session.DisplayStructureGeneration)) return;
+        BrowserDisplayWindowSlice after = displayWindow.Calculate(session.RetainedDisplayLines, session.RetainedDisplayLines.Count - session.IslandLineCount, session.DisplayStructureGeneration, session.DisplayLineHeight);
         if (!SliceChanged(before, after)) return;
         session.RefreshAnimations(after.Start, after.End);
         displayWindowRecalculateCount++;
@@ -760,6 +875,7 @@
 
     static bool SliceChanged(BrowserDisplayWindowSlice before, BrowserDisplayWindowSlice after) =>
         before.Start != after.Start || before.End != after.End || before.FollowTail != after.FollowTail
+        || before.NativePaintStart != after.NativePaintStart || before.NativePaintEnd != after.NativePaintEnd
         || Math.Abs(before.TopSpacerPx - after.TopSpacerPx) > 0.5 || Math.Abs(before.BottomSpacerPx - after.BottomSpacerPx) > 0.5;
 
     static string SpacerStyle(double height) => "height:" + Math.Max(0, height).ToString(System.Globalization.CultureInfo.InvariantCulture) + "px";
@@ -769,6 +885,34 @@
         diagnosticStage = stage;
         diagnosticStages.Add(stage);
         if (warmStartupProfile) startupPhases[stage] = startupStopwatch.ElapsedMilliseconds;
+    }
+
+    async Task SetHostStatusAsync(string status, bool busy = true, bool isError = false)
+    {
+        hostStatus = status;
+        hostStatusBusy = status.Length != 0 && busy;
+        hostStatusError = status.Length != 0 && isError;
+        await InvokeAsync(StateHasChanged);
+        if (status.Length != 0 && storeModule is not null)
+            await storeModule.InvokeVoidAsync("waitForPaint");
+    }
+
+    Task SetSaveImportStatusAsync(string status) => SetHostStatusAsync("セーブ取込中：" + status);
+
+    string BuildNormalTitleUri(bool importCompleted, bool importCancelled = false) => Navigation.GetUriWithQueryParameters(new Dictionary<string, object?>
+    {
+        ["saveManager"] = null,
+        ["stagedImport"] = null,
+        ["saveImportDone"] = importCompleted ? "1" : null,
+        ["saveImportCancelled"] = importCancelled ? "1" : null
+    });
+
+    void ClearSaveImportHandoff()
+    {
+        if (!saveImportHandoffPending && !saveImportCancellationHandoffPending) return;
+        saveImportHandoffPending = false;
+        saveImportCancellationHandoffPending = false;
+        Navigation.NavigateTo(BuildNormalTitleUri(importCompleted: false), replace: true);
     }
 
     void SetSaveImportStage(string stage)
@@ -788,6 +932,120 @@
         if (!warmStartupProfile) return;
         startupDurations.TryGetValue(name, out long elapsed);
         startupDurations[name] = elapsed + milliseconds;
+    }
+
+    async Task RecordStartupProfilePhaseAsync(string name, System.Diagnostics.Stopwatch? timer, object? detail = null, string classification = "application")
+    {
+        if (timer is null) return;
+        timer.Stop();
+        if (!startupImportProfileEnabled || startupImportProfileModule is null) return;
+        try
+        {
+            await startupImportProfileModule.InvokeVoidAsync("recordStartupProfilePhase", name,
+                timer.Elapsed.TotalMilliseconds, detail, classification);
+        }
+        catch (Exception ex) { startupImportProfileWarning = ex.GetType().Name; }
+    }
+
+    async Task RecordStartupProfileEventAsync(string name, object? detail = null)
+    {
+        if (!startupImportProfileEnabled || startupImportProfileModule is null) return;
+        try { await startupImportProfileModule.InvokeVoidAsync("recordStartupProfileEvent", name, detail); }
+        catch (Exception ex) { startupImportProfileWarning = ex.GetType().Name; }
+    }
+
+    async Task BeginStartupImportProfileAsync(string scenario, object? input)
+    {
+        if (!startupImportProfileEnabled || startupImportProfileModule is null) return;
+        try { await startupImportProfileModule.InvokeAsync<string>("beginStartupProfileImport", scenario, input); }
+        catch (Exception ex) { startupImportProfileWarning = ex.GetType().Name; }
+    }
+
+    async Task MarkStartupProfileNavigationAsync(string name, object? detail = null)
+    {
+        if (!startupImportProfileEnabled || startupImportProfileModule is null) return;
+        try { await startupImportProfileModule.InvokeVoidAsync("markStartupProfileNavigation", name, detail); }
+        catch (Exception ex) { startupImportProfileWarning = ex.GetType().Name; }
+    }
+
+    async Task SetStartupProfileInputFilesAsync(IEnumerable<object> files, bool persistedGlobalExists)
+    {
+        if (!startupImportProfileEnabled || startupImportProfileModule is null) return;
+        try { await startupImportProfileModule.InvokeVoidAsync("setStartupProfileInputFiles", files, persistedGlobalExists); }
+        catch (Exception ex) { startupImportProfileWarning = ex.GetType().Name; }
+    }
+
+    object BuildStartupProfilePageSummary() => new
+    {
+        saveManagerMode,
+        dataReady,
+        runRoot = p1c1Root,
+        startupPhaseOffsetsMs = startupPhases,
+        startupDurationsMs = startupDurations,
+        dataPreparationAllocatedBytes,
+        dataPrepBreakdown = dataPrepPackBreakdown,
+        persistedFiles = new
+        {
+            count = persistedFiles.Count(file => !file.Deleted),
+            bytes = persistedFiles.Where(file => !file.Deleted).Sum(file => (long)(file.Bytes?.Length ?? 0)),
+            globalExists = persistedFiles.Any(file => !file.Deleted && string.Equals(file.LogicalFilename, "global.sav", StringComparison.OrdinalIgnoreCase))
+        },
+        package = new
+        {
+            cacheState = packageCacheState,
+            cacheHits = packageCacheHits,
+            cacheMisses = packageCacheMisses,
+            httpRequests,
+            transferBytes,
+            downloadMilliseconds,
+            extractMilliseconds,
+            extractedBytes,
+            packageFiles,
+            packageLookups
+        },
+        runtime = session is null ? null : new
+        {
+            session.ConfigLoadMilliseconds,
+            session.PreloadMilliseconds,
+            session.ProcessInitializeMilliseconds,
+            session.BootstrapElapsedMilliseconds,
+            session.DoScriptElapsedMilliseconds,
+            processInitialize = session.ProcessInitializeProfile,
+            codecValidation = session.CodecValidationProfile
+        }
+    };
+
+    async Task SaveStartupProfilePageSummaryAsync()
+    {
+        if (!startupImportProfileEnabled || startupImportProfileModule is null) return;
+        try { await startupImportProfileModule.InvokeVoidAsync("setStartupProfilePageSummary", BuildStartupProfilePageSummary()); }
+        catch (Exception ex) { startupImportProfileWarning = ex.GetType().Name; }
+    }
+
+    async Task CompleteStartupImportProfileAsync()
+    {
+        startupImportProfileFinished = true;
+        try
+        {
+            await RecordStartupProfileEventAsync("title-input-ready", new { pendingKind = session?.PendingInput?.Kind.ToString(), physicalPaintGuaranteed = false });
+            await startupImportProfileModule!.InvokeVoidAsync("finishStartupProfile", "title-input-ready", BuildStartupProfilePageSummary());
+            startupImportProfileJson = await startupImportProfileModule!.InvokeAsync<string>("getStartupProfileJson");
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex) { startupImportProfileWarning = ex.GetType().Name; }
+    }
+
+    async Task FinishStartupImportProfileAsync(string completion)
+    {
+        if (!startupImportProfileEnabled || startupImportProfileModule is null || startupImportProfileFinished) return;
+        startupImportProfileFinished = true;
+        try
+        {
+            await startupImportProfileModule.InvokeVoidAsync("finishStartupProfile", completion, BuildStartupProfilePageSummary());
+            startupImportProfileJson = await startupImportProfileModule.InvokeAsync<string>("getStartupProfileJson");
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex) { startupImportProfileWarning = ex.GetType().Name; }
     }
 
     async Task StartP1C1(string query)
@@ -929,45 +1187,109 @@
 
     async Task StartP1C3(string query)
     {
+        saveManagerMode = QueryValue(query, "saveManager") == "1";
+        saveImportHandoffPending = QueryValue(query, "saveImportDone") == "1" && !saveManagerMode;
+        saveImportCancellationHandoffPending = QueryValue(query, "saveImportCancelled") == "1" && !saveManagerMode;
+        saveImportTitlePending = saveImportHandoffPending || saveImportCancellationHandoffPending;
+        await SetHostStatusAsync("起動中：保存領域を確認しています…");
         string profile = QueryValue(query, "profile") ?? "default";
         if (profile.Length is < 1 or > 64 || profile.Any(character => !char.IsAsciiLetterOrDigit(character) && character is not '.' and not '_' and not '-'))
             throw new InvalidDataException("profileIdが不正です");
         importMode = QueryValue(query, "import") == "1";
         saveImportReadProbe = QueryValue(query, "saveImportProbe") == "1";
-        saveManagerMode = QueryValue(query, "saveManager") == "1";
         pendingStagedImportNonce = QueryValue(query, "stagedImport");
         diagnosticContinuation = false;
         SetDiagnosticStage("js-module-import-start");
         storeModule = await JS.InvokeAsync<IJSObjectReference>("import", "./global-persistence.js");
-        longRunningModule = await JS.InvokeAsync<IJSInProcessObjectReference>("import", "./long-running-prompt.js");
+        if (!saveManagerMode)
+            longRunningModule = await JS.InvokeAsync<IJSInProcessObjectReference>("import", "./long-running-prompt.js");
+        if (startupImportProfileEnabled)
+        {
+            var profileModuleImport = System.Diagnostics.Stopwatch.StartNew();
+            try
+            {
+                startupImportProfileModule = await JS.InvokeAsync<IJSObjectReference>("import", "./startup-import-profile.js");
+                string profilePage = saveManagerMode
+                    ? pendingStagedImportNonce is null ? "save-manager" : "save-manager-staged-import"
+                    : saveImportTitlePending ? "title-after-import" : "normal-startup";
+                await startupImportProfileModule.InvokeVoidAsync("beginStartupProfilePage", profilePage, new
+                {
+                    gameId = "shin-era-tensei-p",
+                    profileId = profile,
+                    appPath = Navigation.ToAbsoluteUri(Navigation.Uri).AbsolutePath,
+                    candidateLabel = QueryValue(query, "startupProfileLabel")
+                });
+                await RecordStartupProfilePhaseAsync("profile-module-load-and-page-start", profileModuleImport, classification: "instrumentation");
+            }
+            catch (Exception ex)
+            {
+                startupImportProfileWarning = ex.GetType().Name;
+                startupImportProfileModule = null;
+            }
+        }
         SetDiagnosticStage("js-module-import-end");
         SetDiagnosticStage("web-lock-acquire-start");
+        var lockAcquireTimer = startupImportProfileEnabled ? System.Diagnostics.Stopwatch.StartNew() : null;
         StoreLockResult lockResult = await storeModule.InvokeAsync<StoreLockResult>("acquire", "shin-era-tensei-p", profile);
+        await RecordStartupProfilePhaseAsync("web-lock-acquire", lockAcquireTimer, new { acquired = lockResult.Acquired });
         SetDiagnosticStage("web-lock-acquire-end");
         if (!lockResult.Acquired || string.IsNullOrEmpty(lockResult.HandleId))
             throw new InvalidOperationException(lockResult.Reason ?? "この保存領域は別タブで使用中です");
         storeHandle = lockResult.HandleId;
         SetDiagnosticStage("indexeddb-prepare-start");
+        var prepareTimer = startupImportProfileEnabled ? System.Diagnostics.Stopwatch.StartNew() : null;
         StorePreparedFilesResult prepared = await storeModule.InvokeAsync<StorePreparedFilesResult>("prepareFiles", storeHandle, string.Empty);
+        await RecordStartupProfilePhaseAsync("indexeddb-prepare-and-existing-save-read", prepareTimer, new
+        {
+            count = prepared.Files.Count(file => !file.Deleted),
+            bytes = prepared.Files.Where(file => !file.Deleted).Sum(file => (long)(file.Bytes?.Length ?? 0))
+        });
         SetDiagnosticStage("indexeddb-prepare-end");
         persistedFiles.Clear();
         persistedFiles.AddRange(prepared.Files);
         loadSource = persistedFiles.Any(file => !file.Deleted) ? "indexeddb" : "absent";
         p1c1Root = "/p1c3-runtime-" + profile;
-        SetDiagnosticStage("data-prepare-start");
-        await PrepareP1C1Data(p1c1Root, real: true, fixtureCase: "default");
-        SetDiagnosticStage("data-prepare-end");
-        dataReady = true;
-
         importFormReady = true;
         if (saveManagerMode)
         {
             if (QueryValue(query, "saveImportDone") == "1")
-                saveManagementMessage = "保存ファイルを取り込みました。タイトルに戻れます。";
-            progress = "セーブを選択してください";
+                saveManagementMessage = "保存ファイルを取り込みました。タイトルのLOAD GAMEから選択できます。";
+            await SetHostStatusAsync(pendingStagedImportNonce is null ? string.Empty : "セーブ取込中：ファイルを確認しています…",
+                busy: pendingStagedImportNonce is not null);
+            progress = "保存済みセーブの一覧を表示しています";
             SetDiagnosticStage("save-manager-ready");
+            await SaveStartupProfilePageSummaryAsync();
             return;
         }
+        if (saveImportHandoffPending)
+        {
+            saveManagementMessage = "保存ファイルを取り込みました。タイトルのLOAD GAMEから選択してください。";
+            await SetHostStatusAsync("取込完了：ゲームを起動しています…");
+        }
+        else if (saveImportCancellationHandoffPending)
+        {
+            saveManagementMessage = "上書き確認をキャンセルしました。既存の保存データを維持してタイトルへ戻ります。";
+            await SetHostStatusAsync("取込をキャンセルしました。タイトルを起動しています…");
+        }
+        await SetHostStatusAsync("起動中：ゲームデータを準備しています…");
+        SetDiagnosticStage("data-prepare-start");
+        var packagePrepareTimer = startupImportProfileEnabled ? System.Diagnostics.Stopwatch.StartNew() : null;
+        await PrepareP1C1Data(p1c1Root, real: true, fixtureCase: "default");
+        await RecordStartupProfilePhaseAsync("package-data-preparation-inclusive", packagePrepareTimer, new
+        {
+            packageCacheState,
+            packageCacheHits,
+            packageCacheMisses,
+            httpRequests,
+            transferBytes,
+            extractMilliseconds,
+            extractedBytes,
+            packageFiles,
+            packageLookups
+        }, "inclusive");
+        SetDiagnosticStage("data-prepare-end");
+        dataReady = true;
+        await SaveStartupProfilePageSummaryAsync();
         await StartP1C3Title(CurrentSaveFiles());
     }
 
@@ -1255,15 +1577,29 @@
         displayWindowSession = null;
         session = null;
         await Task.Yield();
+        var outgoingReleaseTimer = startupImportProfileEnabled ? System.Diagnostics.Stopwatch.StartNew() : null;
         if (replacing)
         {
             BrowserRuntimeSession.ReleaseBootstrapResources();
             // The replacement bootstrap allocates another full real-data graph before AOT GC would reclaim the old one.
             _ = GC.GetTotalMemory(forceFullCollection: true);
         }
+        await RecordStartupProfilePhaseAsync("outgoing-runtime-release-and-existing-gc", outgoingReleaseTimer,
+            new { replacingRuntime = replacing, forcedCollection = replacing });
         progress = "実SYSTEM_TITLEを実行中です…";
+        await SetHostStatusAsync("起動中：ゲームを初期化しています…");
         SetDiagnosticStage("runtime-bootstrap-start");
-        session = await BrowserRuntimeSession.StartSavePersistentBootstrapAsync(p1c1Root, files);
+        var runtimeBootstrapTimer = startupImportProfileEnabled ? System.Diagnostics.Stopwatch.StartNew() : null;
+        session = await BrowserRuntimeSession.StartSavePersistentBootstrapAsync(p1c1Root, files,
+            captureProcessInitializeProfile: startupImportProfileEnabled);
+        await RecordStartupProfilePhaseAsync("title-runtime-bootstrap-inclusive", runtimeBootstrapTimer, new
+        {
+            session.ConfigLoadMilliseconds,
+            session.PreloadMilliseconds,
+            session.ProcessInitializeMilliseconds,
+            session.BootstrapElapsedMilliseconds,
+            processInitialize = session.ProcessInitializeProfile
+        }, "inclusive");
 #if ERB_EXECUTION_PROFILE
         if (QueryValue(new Uri(Navigation.Uri).Query, "ux16r5Trace") == "1") session.GameplayTrace = TraceGameplayStage;
 #endif
@@ -1276,13 +1612,21 @@
             throw new InvalidOperationException("ゲーム画面の実寸を取得できません");
         ConfigureTextMeasurement();
         session.SetViewport(viewport.Width, viewport.Height);
+        await SetHostStatusAsync("起動中：タイトルを準備しています…");
         SetDiagnosticStage("title-script-start");
         titleBootstrapInProgress = true;
+        var titleScriptTimer = startupImportProfileEnabled ? System.Diagnostics.Stopwatch.StartNew() : null;
         session.StartTitle();
+        await RecordStartupProfilePhaseAsync("title-script-execution", titleScriptTimer,
+            new { calls = session.DoScriptCallCount, elapsedDoScriptMilliseconds = session.DoScriptElapsedMilliseconds }, "inclusive");
         if (captureR3R3RawHtml)
             session.EnableR3R3RawHtmlCapture();
         SetDiagnosticStage("title-script-end");
+        var inputReadyTimer = startupImportProfileEnabled ? System.Diagnostics.Stopwatch.StartNew() : null;
         await AdvanceP1C2();
+        await RecordStartupProfilePhaseAsync("title-input-ready-state-transition", inputReadyTimer,
+            new { titleInputReady = p1c2Ready, physicalPaintGuaranteed = false });
+        await SaveStartupProfilePageSummaryAsync();
     }
 
     void ConfigureTextMeasurement()
@@ -1367,7 +1711,31 @@
             titleBootstrapInProgress = false;
             titleReturnPending = false;
             runtimeFailureDiagnostic = session.FailureDiagnostic;
-            error = "実SYSTEM_TITLEがエラー停止しました。詳細は実行診断情報を開いて確認してください。";
+            if (saveImportTitlePending)
+            {
+                bool wasCancellationHandoff = saveImportCancellationHandoffPending;
+                if (wasCancellationHandoff)
+                {
+                    error = "セーブ取込はキャンセル済みですが、タイトル起動に失敗しました。既存の保存データは変更していません。";
+                    saveManagementMessage = "取込はキャンセル済みです。既存セーブは維持されています。タイトル起動のみ失敗しました。";
+                }
+                else
+                {
+                    error = "セーブ取込は完了しましたが、ゲーム起動に失敗しました。保存済みデータは残っています。再取込せず、詳細を確認してください。";
+                    saveManagementMessage = "セーブの保存は完了しています。タイトル起動のみ失敗しました。取込を再実行しないでください。";
+                    persistenceState = "committed";
+                }
+                saveImportTitlePending = false;
+                ClearSaveImportHandoff();
+                await SetHostStatusAsync(wasCancellationHandoff
+                    ? "取込はキャンセル済みですが、タイトル起動に失敗しました。"
+                    : "セーブ取込は完了しましたが、ゲーム起動に失敗しました。", busy: false, isError: true);
+            }
+            else
+            {
+                error = "実SYSTEM_TITLEがエラー停止しました。詳細は実行診断情報を開いて確認してください。";
+                await SetHostStatusAsync("起動に失敗しました。実行診断を確認してください。", busy: false, isError: true);
+            }
             progress = "タイトル実行失敗";
             SetDiagnosticStage("runtime-failed");
             return;
@@ -1376,6 +1744,18 @@
             && FlattenDisplay(session.DisplayLines.SelectMany(line => line.Parts)).Any(part => part.Kind == BrowserDisplayPartKind.Image)
             && FlattenDisplay(session.DisplayLines.SelectMany(line => line.Parts)).Any(part => part.Kind == BrowserDisplayPartKind.Button && part.Input == "0");
         progress = p1c2Ready ? "実タイトル表示・入力待ちへ到達" : $"実Runtime: {session.Status}";
+        if (p1c2Ready)
+        {
+            await SetHostStatusAsync(string.Empty, busy: false);
+            if (saveImportTitlePending)
+            {
+                saveImportTitlePending = false;
+                saveManagementMessage = saveImportCancellationHandoffPending
+                    ? "取込をキャンセルしました。既存の保存データを維持しています。"
+                    : "セーブを取り込みました。タイトルのLOAD GAMEからプレイするデータを選択してください。";
+                ClearSaveImportHandoff();
+            }
+        }
         if (p1c2Ready) SetDiagnosticStage("title-input-ready");
         if (p1c2Ready) titleBootstrapInProgress = false;
         if (p1c2Ready && titleReturnPending)
@@ -1534,13 +1914,16 @@
         // click event on game-screen submits the captured current WAIT instead.
         if (prompt.Kind is BrowserInputKind.Enter or BrowserInputKind.AnyKey) return;
         if (part.Input is null) return;
-        PointerContext pointer = await ReadPointerContext(mouse.ClientX, mouse.ClientY);
-        bool currentMouseKeyButton = part.Activation is { } activation
-            && activation.RequestId == prompt.RequestId
+        long previousRequestId = prompt.RequestId;
+        long previousStructureGeneration = activeSession.DisplayStructureGeneration;
+        long previousOutputGeneration = activeSession.ScriptOutputGeneration;
+        bool currentActiveButton = part.Activation is { } activation
+            && activation.RequestId == previousRequestId
             && activation.SessionGeneration == activeSession.SessionGeneration
-            && activation.DisplayGeneration == activeSession.DisplayStructureGeneration;
+            && activation.DisplayGeneration == previousStructureGeneration;
+        PointerContext pointer = await ReadPointerContext(mouse.ClientX, mouse.ClientY);
         // A historical button is only a pointer target during primitive waits; its stale value belongs to another request.
-        bool accepted = prompt.Kind == BrowserInputKind.MouseKey && !currentMouseKeyButton
+        bool accepted = prompt.Kind == BrowserInputKind.MouseKey && !currentActiveButton
             ? activeSession.SubmitPrimitive(new(prompt.RequestId, BrowserPrimitiveInputKind.Click,
                 Code: MouseCode(mouse.Button), X: pointer.X, Y: pointer.Y, ButtonIsInteger: false,
                 SessionGeneration: activeSession.SessionGeneration, DisplayGeneration: activeSession.DisplayGeneration))
@@ -1548,6 +1931,11 @@
         if (!accepted) return;
         SetDiagnosticStage(prompt.Kind == BrowserInputKind.MouseKey ? "mousekey-click" : "button-input");
         await AdvanceP1C2();
+        if (IsDisplayWindowMode && currentActiveButton && ReferenceEquals(activeSession, session)
+            && activeSession.ScriptOutputGeneration > previousOutputGeneration
+            && activeSession.DisplayStructureGeneration != previousStructureGeneration
+            && session?.PendingInput is { } nextPrompt && nextPrompt.RequestId != previousRequestId)
+            displayWindow.ResumeFollowTail();
     }
 
     Task SubmitP1C2Text() => SubmitP1C2TextCore(startMessageSkip: false);
@@ -1569,6 +1957,7 @@
 #endif
         IReadOnlyList<InputMacroToken> tokens = InputMacroSyntax.Expand(macroText);
         if (tokens.Count == 0) return;
+        input = string.Empty;
 #if ERB_EXECUTION_PROFILE
         if (erbExecutionProfile)
             session?.BeginErbExecutionProfile(erbProfileMode!, macroStarted);
@@ -1915,27 +2304,14 @@
         primitiveTimer?.Cancel();
         animationTimer?.Cancel();
         if (session?.Status == BrowserRuntimeStatus.Persisting)
+        {
+            var drainTimer = startupImportProfileEnabled ? System.Diagnostics.Stopwatch.StartNew() : null;
             await AdvanceP1C2();
+            await RecordStartupProfilePhaseAsync("pending-persistence-drain", drainTimer,
+                new { pendingCountAfterDrain = session?.PendingPersistenceCount ?? 0 });
+        }
         if (session?.IsFailed == true || persistenceState == "failed")
             throw new InvalidOperationException("保存処理に失敗したため画面を移動できません");
-    }
-
-    async Task OpenSaveManager()
-    {
-        if (!isP1C3 || isP1C3Integration || isP1C4Small || importInProgress || storeModule is null || storeHandle is null)
-            return;
-        try
-        {
-            if (!await JS.InvokeAsync<bool>("confirm", "保存管理画面へ移動すると、未保存のゲーム進行は失われます。移動前に確定済みの保存処理を完了します。続けますか？"))
-                return;
-            await StopAndDrainForTitleTransition("save-manager-open");
-            if (session?.PendingPersistenceCount != 0)
-                throw new InvalidOperationException("保存処理が完了していません");
-            await storeModule.InvokeVoidAsync("release", storeHandle);
-            storeHandle = null;
-            Navigation.NavigateTo(Navigation.GetUriWithQueryParameter("saveManager", "1"), forceLoad: true, replace: true);
-        }
-        catch (Exception ex) { saveManagementMessage = "保存管理画面へ移動できません: " + ex.Message; }
     }
 
     async Task CloseSavePanel()
@@ -1954,33 +2330,98 @@
         if (!isP1C3 || isP1C3Integration || isP1C4Small || session is null || storeModule is null || storeHandle is null || importInProgress)
             return;
         importInProgress = true;
+        saveManagementMessage = null;
         string? nonce = null;
         try
         {
-            nonce = await storeModule.InvokeAsync<string>("stageImportFiles", storeHandle, "p1c3-active-import");
+            await BeginStartupImportProfileAsync("runtime-import-to-title", new { entry = "active-runtime-file-selection" });
+            await RecordStartupProfileEventAsync("active-runtime-at-import-start", new
+            {
+                runtimeInitialized = session is not null,
+                saveDataPrepared = dataReady,
+                packageCacheHitsBeforeMeasurement = packageCacheHits,
+                packageCacheMissesBeforeMeasurement = packageCacheMisses
+            });
+            await SetSaveImportStatusAsync("ファイルを確認しています…");
+            var stageTimer = startupImportProfileEnabled ? System.Diagnostics.Stopwatch.StartNew() : null;
+            JsonElement stageResult = await storeModule.InvokeAsync<JsonElement>("stageImportFiles", storeHandle,
+                "p1c3-active-import", startupImportProfileEnabled);
+            await RecordStartupProfilePhaseAsync("cache-stage-import-files", stageTimer);
+            if (stageResult.ValueKind == JsonValueKind.Null)
+            {
+                await FinishStartupImportProfileAsync("file-selection-empty");
+                await SetHostStatusAsync(string.Empty, busy: false);
+                saveManagementMessage = "ファイル選択を取り消しました。保存済みデータは変更されていません。";
+                return;
+            }
+            if (stageResult.ValueKind == JsonValueKind.String)
+                nonce = stageResult.GetString();
+            else
+            {
+                nonce = stageResult.GetProperty("nonce").GetString();
+                object[] stagedFiles = stageResult.GetProperty("files").EnumerateArray().Select(file => (object)new
+                {
+                    logicalFilename = file.GetProperty("name").GetString(),
+                    bytes = file.GetProperty("size").GetInt64(),
+                    sha256 = (string?)null
+                }).ToArray();
+                bool persistedGlobalExists = persistedFiles.Any(file => !file.Deleted
+                    && string.Equals(file.LogicalFilename, "global.sav", StringComparison.OrdinalIgnoreCase));
+                await SetStartupProfileInputFilesAsync(stagedFiles, persistedGlobalExists);
+            }
+            if (string.IsNullOrEmpty(nonce)) throw new InvalidDataException("取込用一時領域の識別子を取得できません");
             SetSaveImportStage("active-import-file-captured");
-            if (!await JS.InvokeAsync<bool>("confirm", "保存ファイルを取得しました。保存管理画面へ移動すると、未保存のゲーム進行は失われます。移動前に確定済みの保存処理を完了します。続けますか？"))
+            await SetSaveImportStatusAsync("未保存の進行と保存処理を確認しています…");
+            var userDecisionTimer = startupImportProfileEnabled ? System.Diagnostics.Stopwatch.StartNew() : null;
+            bool continueImport = await JS.InvokeAsync<bool>("confirm", "保存ファイルを取得しました。保存管理画面へ移動すると、未保存のゲーム進行は失われます。移動前に確定済みの保存処理を完了します。続けますか？");
+            await RecordStartupProfilePhaseAsync("active-import-unsaved-progress-confirmation", userDecisionTimer,
+                new { accepted = continueImport }, "user-decision");
+            if (!continueImport)
             {
                 await storeModule.InvokeVoidAsync("clearStagedImport", nonce);
                 nonce = null;
+                await FinishStartupImportProfileAsync("active-import-confirmation-cancelled");
+                await SetHostStatusAsync(string.Empty, busy: false);
                 saveManagementMessage = "セーブ取込を取り消しました。";
                 return;
             }
+            await SetSaveImportStatusAsync("確定済み保存処理を完了しています…");
+            var stopTimer = startupImportProfileEnabled ? System.Diagnostics.Stopwatch.StartNew() : null;
             await StopAndDrainForTitleTransition("save-import");
-            if (session.PendingPersistenceCount != 0)
+            int pendingAfterDrain = session?.PendingPersistenceCount ?? -1;
+            await RecordStartupProfilePhaseAsync("runtime-stop-and-persistence-drain-inclusive", stopTimer,
+                new { pendingPersistenceCount = pendingAfterDrain }, "inclusive");
+            if (pendingAfterDrain != 0)
                 throw new InvalidOperationException("保存処理が完了していません");
-            await storeModule.InvokeVoidAsync("release", storeHandle);
+            var releaseTimer = startupImportProfileEnabled ? System.Diagnostics.Stopwatch.StartNew() : null;
+            bool released = await storeModule.InvokeAsync<bool>("release", storeHandle);
+            await RecordStartupProfilePhaseAsync("web-lock-release-before-validation", releaseTimer, new { released });
+            if (!released)
+                throw new InvalidOperationException("保存領域lockの解放を確認できませんでした");
             storeHandle = null;
+            await SetSaveImportStatusAsync("検証用画面を準備しています…");
+            await MarkStartupProfileNavigationAsync("runtime-to-save-manager-navigation", new { stagedImport = true });
             Navigation.NavigateTo(Navigation.GetUriWithQueryParameters(new Dictionary<string, object?>
             {
                 ["saveManager"] = "1",
-                ["stagedImport"] = nonce
+                ["stagedImport"] = nonce,
+                ["saveImportDone"] = null,
+                ["saveImportCancelled"] = null
             }), forceLoad: true, replace: true);
         }
         catch (Exception ex)
         {
-            if (nonce is not null) await storeModule.InvokeVoidAsync("clearStagedImport", nonce);
+            bool stagingCleared = true;
+            if (nonce is not null)
+            {
+                try { stagingCleared = await storeModule.InvokeAsync<bool>("clearStagedImport", nonce); }
+                catch { stagingCleared = false; }
+            }
+            await SetHostStatusAsync("セーブ取込を開始できませんでした。既存の保存済みデータは変更されていません。", busy: false, isError: true);
             saveManagementMessage = "セーブ取込を開始できません: " + ex.Message;
+            await FinishStartupImportProfileAsync("active-import-staging-or-handoff-failed");
+            if (!stagingCleared)
+                saveManagementMessage += " 取込用一時データを消去できませんでした。再読込後に再確認してください。";
         }
         finally { importInProgress = false; }
     }
@@ -1989,17 +2430,14 @@
     {
         if (storeModule is not null && storeHandle is not null)
         {
-            await storeModule.InvokeVoidAsync("release", storeHandle);
+            if (!await storeModule.InvokeAsync<bool>("release", storeHandle))
+                throw new InvalidOperationException("保存領域lockの解放を確認できませんでした");
             storeHandle = null;
         }
         if (pendingStagedImportNonce is not null && storeModule is not null)
             await storeModule.InvokeVoidAsync("clearStagedImport", pendingStagedImportNonce);
-        Navigation.NavigateTo(Navigation.GetUriWithQueryParameters(new Dictionary<string, object?>
-        {
-            ["saveManager"] = null,
-            ["saveImportDone"] = null,
-            ["stagedImport"] = null
-        }), forceLoad: true, replace: true);
+        pendingStagedImportNonce = null;
+        Navigation.NavigateTo(BuildNormalTitleUri(importCompleted: false), forceLoad: true, replace: true);
     }
 
     async Task ReturnToTitle()
@@ -2066,6 +2504,13 @@
         }
     }
 
+    async Task EnsureP1C3DataPreparedForSaveImportAsync()
+    {
+        if (dataReady) return;
+        await PrepareP1C1Data(p1c1Root, real: true, fixtureCase: "default");
+        dataReady = true;
+    }
+
     async Task ImportP1C3Files(InputFileChangeEventArgs change)
     {
         const long maxFileBytes = 256L * 1024 * 1024;
@@ -2075,48 +2520,111 @@
         importInProgress = true;
         persistenceState = "validating";
         error = null;
+        saveManagementMessage = null;
         saveImportSelectedCount = 0;
         saveImportBytesRead = 0;
         saveImportTrace.Clear();
+        BrowserRuntimeSession? validator = null;
+        bool importCommitted = false;
+        bool startTitleAfterImport = false;
+        bool navigateToTitleAfterImport = false;
+        bool returnToTitleAfterOverwriteCancellation = false;
+        bool stagedImportCleanupSucceeded = true;
+        bool startupProfileNavigationRequested = false;
+        bool persistedGlobalExistsBeforeImport = persistedFiles.Any(file => !file.Deleted
+            && string.Equals(file.LogicalFilename, "global.sav", StringComparison.OrdinalIgnoreCase));
+        var importedInputHashes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        async Task RecordCodecTimingAsync(BrowserRuntimeSession runtime, string logicalFilename,
+            System.Diagnostics.Stopwatch? timer, string? inputSha256 = null)
+        {
+            BrowserCodecValidationTiming? timing = runtime.CodecValidationProfile.LastOrDefault();
+            await RecordStartupProfilePhaseAsync("codec-validation-" + (timing?.Operation ?? "failed"), timer, new
+            {
+                logicalFilename,
+                inputBytes = timing?.InputBytes ?? 0,
+                inputHashMilliseconds = timing?.InputHashMilliseconds ?? 0,
+                loadMilliseconds = timing?.LoadMilliseconds ?? 0,
+                summaryMilliseconds = timing?.SummaryMilliseconds ?? 0,
+                succeeded = timing?.Succeeded ?? false,
+                inputSha256 = inputSha256 ?? timing?.InputSha256
+            }, "inclusive");
+        }
         SetSaveImportStage("save-import-event-enter");
         try
         {
+            await BeginStartupImportProfileAsync(saveManagerMode ? "save-manager-import-to-title" : "runtime-import-to-title",
+                new { entry = "selected-file-change-event" });
+            await SetSaveImportStatusAsync("ファイルを確認しています…");
             SetSaveImportStage("save-import-file-list-start");
+            var fileListTimer = startupImportProfileEnabled ? System.Diagnostics.Stopwatch.StartNew() : null;
             IReadOnlyList<IBrowserFile> selected = change.GetMultipleFiles(64);
+            await RecordStartupProfilePhaseAsync("selected-file-list-validation", fileListTimer, new { count = selected.Count });
             saveImportSelectedCount = selected.Count;
             SetSaveImportStage("save-import-file-list-end");
-            if (selected.Count == 0 || selected.Sum(file => file.Size) > maxTotalBytes)
+            if (selected.Count == 0)
+            {
+                persistenceState = "cancelled";
+                await FinishStartupImportProfileAsync("file-selection-empty");
+                await SetHostStatusAsync(string.Empty, busy: false);
+                saveManagementMessage = "ファイル選択を取り消しました。保存済みデータは変更されていません。";
+                return;
+            }
+            if (selected.Sum(file => file.Size) > maxTotalBytes)
                 throw new InvalidDataException("import件数または総量が不正です");
             var imported = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
-            foreach (IBrowserFile file in selected)
+            var fileReadTimer = startupImportProfileEnabled ? System.Diagnostics.Stopwatch.StartNew() : null;
+            try
             {
-                string logicalFilename = NormalizeImportedSaveFilename(file.Name);
-                if (!imported.TryAdd(logicalFilename, []))
-                    throw new InvalidDataException($"同じ保存番号が重複しています: {logicalFilename}");
-                if (file.Size is <= 0 or > maxFileBytes)
-                    throw new InvalidDataException($"保存ファイルのサイズが不正です: {logicalFilename}");
-                SetSaveImportStage("save-import-open-stream-start");
-                using Stream inputStream = file.OpenReadStream(maxFileBytes);
-                SetSaveImportStage("save-import-open-stream-end");
-                using var memory = new MemoryStream((int)file.Size);
-                SetSaveImportStage("save-import-copy-start");
-                await inputStream.CopyToAsync(memory);
-                saveImportBytesRead += memory.Length;
-                SetSaveImportStage("save-import-copy-end");
-                imported[logicalFilename] = memory.ToArray();
+                foreach (IBrowserFile file in selected)
+                {
+                    string logicalFilename = NormalizeImportedSaveFilename(file.Name);
+                    if (!imported.TryAdd(logicalFilename, []))
+                        throw new InvalidDataException($"同じ保存番号が重複しています: {logicalFilename}");
+                    if (file.Size is <= 0 or > maxFileBytes)
+                        throw new InvalidDataException($"保存ファイルのサイズが不正です: {logicalFilename}");
+                    SetSaveImportStage("save-import-open-stream-start");
+                    using Stream inputStream = file.OpenReadStream(maxFileBytes);
+                    SetSaveImportStage("save-import-open-stream-end");
+                    using var memory = new MemoryStream((int)file.Size);
+                    SetSaveImportStage("save-import-copy-start");
+                    await inputStream.CopyToAsync(memory);
+                    saveImportBytesRead += memory.Length;
+                    SetSaveImportStage("save-import-copy-end");
+                    imported[logicalFilename] = memory.ToArray();
+                }
+            }
+            finally
+            {
+                await RecordStartupProfilePhaseAsync("selected-file-read-and-managed-copy", fileReadTimer, new
+                {
+                    selectedCount = selected.Count,
+                    completedCount = imported.Count,
+                    bytesRead = saveImportBytesRead
+                });
             }
             SetSaveImportStage("save-import-file-read-complete");
+            await SetStartupProfileInputFilesAsync(imported.Select(pair => (object)new
+            {
+                logicalFilename = pair.Key,
+                bytes = pair.Value.LongLength,
+                sha256 = (string?)null
+            }), persistedGlobalExistsBeforeImport);
             if (saveImportReadProbe)
             {
                 persistenceState = "read-probe-complete";
                 saveManagementMessage = $"{imported.Count}件の保存ファイルを読み取りました。";
+                await FinishStartupImportProfileAsync("read-probe-complete");
+                await SetHostStatusAsync(string.Empty, busy: false);
                 return;
             }
 
             if (!saveManagerMode)
             {
                 SetSaveImportStage("save-import-session-stop-start");
+                var runtimeStopTimer = startupImportProfileEnabled ? System.Diagnostics.Stopwatch.StartNew() : null;
                 await StopAndDrainForTitleTransition("save-import");
+                await RecordStartupProfilePhaseAsync("runtime-stop-and-persistence-drain-inclusive", runtimeStopTimer,
+                    new { pendingPersistenceCount = session?.PendingPersistenceCount ?? 0 }, "inclusive");
                 session = null;
                 BrowserRuntimeSession.ReleaseBootstrapResources();
                 SetSaveImportStage("save-import-session-stop-end");
@@ -2126,11 +2634,64 @@
             foreach ((string name, byte[] bytes) in imported) staged[name] = bytes;
             if (!staged.ContainsKey("global.sav"))
                 throw new InvalidDataException("global.savも選択してください");
+
+            string[] overwriteNames = imported.Keys.Where(name => persistedFiles.Any(file => !file.Deleted
+                && string.Equals(file.LogicalFilename, name, StringComparison.OrdinalIgnoreCase))).ToArray();
+            if (overwriteNames.Length > 0)
+            {
+                await SetSaveImportStatusAsync("既存ファイルの上書きを確認しています…");
+                var overwriteDecisionTimer = startupImportProfileEnabled ? System.Diagnostics.Stopwatch.StartNew() : null;
+                bool overwriteAccepted = await JS.InvokeAsync<bool>("confirm", $"次の保存ファイルを上書きします。よろしいですか？\n{string.Join("\n", overwriteNames)}");
+                await RecordStartupProfilePhaseAsync("overwrite-confirmation", overwriteDecisionTimer,
+                    new { accepted = overwriteAccepted, fileCount = overwriteNames.Length }, "user-decision");
+                if (!overwriteAccepted)
+                {
+                    persistenceState = "cancelled";
+                    returnToTitleAfterOverwriteCancellation = true;
+                    await SetHostStatusAsync("取込をキャンセルしました。タイトルを起動する準備をしています…");
+                    saveManagementMessage = "上書きを取り消しました。既存の保存データは変更されていません。";
+                    return;
+                }
+            }
+
+        if (!dataReady)
+        {
+            await SetSaveImportStatusAsync("検証用データを準備しています…");
+            var validationPackageTimer = startupImportProfileEnabled ? System.Diagnostics.Stopwatch.StartNew() : null;
+            await EnsureP1C3DataPreparedForSaveImportAsync();
+            await RecordStartupProfilePhaseAsync("validation-game-data-preparation-inclusive", validationPackageTimer, new
+            {
+                packageCacheState,
+                packageCacheHits,
+                packageCacheMisses,
+                httpRequests,
+                transferBytes,
+                extractMilliseconds,
+                extractedBytes,
+                packageFiles,
+                packageLookups
+            }, "inclusive");
+        }
+            await SetSaveImportStatusAsync("セーブ形式を検証しています…");
             SetSaveImportStage("save-import-validator-start");
-            BrowserRuntimeSession validator = await BrowserRuntimeSession.StartSavePersistentBootstrapAsync(p1c1Root, staged);
+            var validatorBootstrapTimer = startupImportProfileEnabled ? System.Diagnostics.Stopwatch.StartNew() : null;
+            validator = await BrowserRuntimeSession.StartSavePersistentBootstrapAsync(p1c1Root, staged,
+                captureProcessInitializeProfile: startupImportProfileEnabled);
+            await RecordStartupProfilePhaseAsync("validation-runtime-bootstrap-inclusive", validatorBootstrapTimer, new
+            {
+                validator.ConfigLoadMilliseconds,
+                validator.PreloadMilliseconds,
+                validator.ProcessInitializeMilliseconds,
+                validator.BootstrapElapsedMilliseconds,
+                processInitialize = validator.ProcessInitializeProfile
+            }, "inclusive");
             SetSaveImportStage("save-import-validator-ready");
             SetSaveImportStage("save-import-codec-start");
-            GlobalCodecDiagnosticResult global = validator.RunGlobalCodecDiagnostic(resave: false);
+            GlobalCodecDiagnosticResult global;
+            var globalCodecTimer = startupImportProfileEnabled ? System.Diagnostics.Stopwatch.StartNew() : null;
+            try { global = validator.RunGlobalCodecDiagnostic(resave: false); }
+            finally { await RecordCodecTimingAsync(validator, "global.sav", globalCodecTimer); }
+            if (imported.ContainsKey("global.sav")) importedInputHashes["global.sav"] = global.InputSha256;
             SetSaveImportStage("save-import-codec-end");
             if (!global.LoadSucceeded)
                 throw new InvalidDataException("既存LoadGlobalがglobal.savを拒否しました");
@@ -2144,75 +2705,282 @@
                 if (validator.DoScriptCallCount != 0 || validator.PendingPersistenceCount != 0)
                     throw new InvalidOperationException("P1C4状態診断で実行または保存が発生しました");
                 session = validator;
+                validator = null;
                 persistenceState = "read-only";
                 loadSource = "file-import-read-only";
                 importFormReady = false;
                 progress = "P1C4戦闘後状態を読取専用で読み込みました";
+                await SetHostStatusAsync(string.Empty, busy: false);
                 SetDiagnosticStage("p1c4-state-ready");
                 return;
             }
             foreach (string name in imported.Keys.Where(name => name != "global.sav"))
             {
                 int slot = ParseSaveSlot(name);
-                SaveCodecDiagnosticResult diagnostic = validator.RunSaveCodecDiagnostic(slot);
+                SaveCodecDiagnosticResult diagnostic;
+                var saveCodecTimer = startupImportProfileEnabled ? System.Diagnostics.Stopwatch.StartNew() : null;
+                try { diagnostic = validator.RunSaveCodecDiagnostic(slot); }
+                finally { await RecordCodecTimingAsync(validator, name, saveCodecTimer); }
+                importedInputHashes[name] = diagnostic.InputSha256;
                 if (!diagnostic.LoadSucceeded)
                     throw new InvalidDataException($"既存LoadFromが{name}を拒否しました");
             }
+            await SetStartupProfileInputFilesAsync(imported.Select(pair => (object)new
+            {
+                logicalFilename = pair.Key,
+                bytes = pair.Value.LongLength,
+                sha256 = importedInputHashes.GetValueOrDefault(pair.Key)
+            }), persistedGlobalExistsBeforeImport);
             if (validator.DoScriptCallCount != 0 || validator.PendingPersistenceCount != 0)
                 throw new InvalidOperationException("sav import検証で実行または保存が発生しました");
-            validator = null!;
+            validator = null;
             BrowserRuntimeSession.ReleaseBootstrapResources();
             SetSaveImportStage("save-import-validator-released");
 
             SaveMutation[] mutations = imported.Select(pair => new SaveMutation(
                 "import-" + Guid.NewGuid().ToString("N"), pair.Key, SaveMutationKind.Put, pair.Value)).ToArray();
+            await SetSaveImportStatusAsync("検証済みファイルを保存しています…");
             SetSaveImportStage("save-import-commit-start");
+            var commitTimer = startupImportProfileEnabled ? System.Diagnostics.Stopwatch.StartNew() : null;
             StoreMutationBatchResult committed = await storeModule.InvokeAsync<StoreMutationBatchResult>(
                 "commitMutations", storeHandle, mutations, string.Empty);
+            await RecordStartupProfilePhaseAsync("indexeddb-import-commit", commitTimer, new
+            {
+                fileCount = mutations.Length,
+                bytes = imported.Values.Sum(bytes => (long)bytes.Length),
+                durability = committed.Durability
+            });
             SetSaveImportStage("save-import-commit-end");
             foreach (StoreMutationResult result in committed.Files)
                 UpsertPersisted(result, imported[result.LogicalFilename]);
+            importCommitted = true;
             durability = committed.Durability;
             persistenceState = "committed";
             loadSource = "file-import";
-            saveManagementMessage = $"{imported.Count}件の保存ファイルを取り込みました。タイトルを再開しています。";
+            saveManagementMessage = $"{imported.Count}件の保存ファイルを取り込みました。タイトルのLOAD GAMEから選択できます。";
             runtimeFailureDiagnostic = null;
-            SetSaveImportStage("save-import-runtime-restart-start");
-            if (saveManagerMode)
+            navigateToTitleAfterImport = saveManagerMode;
+            startTitleAfterImport = !saveManagerMode;
+        }
+        catch (InvalidDataException ex) when (ex.Message == "global.savも選択してください")
+        {
+            persistenceState = "validation-refused";
+            error = null;
+            await SetHostStatusAsync(ex.Message, busy: false, isError: true);
+            saveManagementMessage = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            persistenceState = importCommitted ? "committed" : "failed";
+            if (importCommitted)
             {
-                await storeModule.InvokeVoidAsync("release", storeHandle);
-                storeHandle = null;
-                Navigation.NavigateTo(Navigation.GetUriWithQueryParameters(new Dictionary<string, object?>
-                {
-                    ["saveImportDone"] = "1",
-                    ["stagedImport"] = null
-                }), forceLoad: true, replace: true);
-                return;
+                error = null;
+                saveManagementMessage = "セーブの保存は完了しましたが、タイトル起動を開始できませんでした。保存済みデータは残っています。取込を再実行しないでください。";
+                await SetHostStatusAsync("保存済みですが、ゲーム起動に失敗しました。", busy: false, isError: true);
             }
+            else if (saveManagerMode)
+            {
+                error = null;
+                saveManagementMessage = "通常sav import失敗: " + ex.Message;
+                await SetHostStatusAsync("セーブ取込に失敗しました。保存済みデータは変更されていません。", busy: false, isError: true);
+            }
+            else
+            {
+                error = "通常sav import失敗: " + ex.Message;
+                await SetHostStatusAsync("セーブ取込に失敗しました。保存済みデータは変更されていません。", busy: false, isError: true);
+            }
+        }
+        finally
+        {
+            if (validator is not null)
+                BrowserRuntimeSession.ReleaseBootstrapResources();
+
+            async Task<bool> CleanupStagedImportAsync()
+            {
+                var cleanupTimer = startupImportProfileEnabled ? System.Diagnostics.Stopwatch.StartNew() : null;
+                bool cleanupSucceeded = true;
+                try
+                {
+                    if (pendingStagedImportNonce is null) return true;
+                    if (storeModule is null)
+                    {
+                        stagedImportCleanupSucceeded = false;
+                        cleanupSucceeded = false;
+                        await SetHostStatusAsync(importCommitted
+                            ? "保存済みですが、一時データを消去できず起動を保留しています。"
+                            : "取込一時データを消去できませんでした。画面の結果を確認してください。", busy: false, isError: true);
+                        saveManagementMessage = (saveManagementMessage ?? string.Empty) + " 一時データを消去できません: 保存領域を利用できません。";
+                        return false;
+                    }
+                    // clearStagedImport returns false when applyStagedImport already consumed the stage;
+                    // InvokeVoidAsync intentionally treats that idempotent result as a completed cleanup.
+                    await storeModule.InvokeVoidAsync("clearStagedImport", pendingStagedImportNonce);
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    stagedImportCleanupSucceeded = false;
+                    cleanupSucceeded = false;
+                    await SetHostStatusAsync(importCommitted
+                        ? "保存済みですが、一時データを消去できず起動を保留しています。"
+                        : "取込一時データを消去できませんでした。画面の結果を確認してください。", busy: false, isError: true);
+                    saveManagementMessage = (saveManagementMessage ?? string.Empty) + " 一時データを消去できません: " + ex.Message;
+                    return false;
+                }
+                finally
+                {
+                    pendingStagedImportNonce = null;
+                    await RecordStartupProfilePhaseAsync("cache-staged-import-cleanup", cleanupTimer, new { cleanupSucceeded });
+                }
+            }
+
+            async Task BeginOverwriteCancellationHandoffAsync()
+            {
+                importInProgress = true;
+                saveImportTitlePending = true;
+                saveImportCancellationHandoffPending = true;
+                await SetHostStatusAsync("取込をキャンセルしました。タイトルを起動しています…");
+            }
+
+            async Task<bool> ReleaseStoreLockForCancellationAsync()
+            {
+                if (storeModule is null || storeHandle is null)
+                    return false;
+                var lockTimer = startupImportProfileEnabled ? System.Diagnostics.Stopwatch.StartNew() : null;
+                bool released = await storeModule.InvokeAsync<bool>("release", storeHandle);
+                await RecordStartupProfilePhaseAsync("web-lock-release-after-overwrite-cancel", lockTimer, new { released });
+                if (released)
+                    storeHandle = null;
+                return released;
+            }
+
+            async Task NavigateToNormalTitleAfterCancellationAsync()
+            {
+                SetSaveImportStage("save-import-cancel-return-start");
+                await MarkStartupProfileNavigationAsync("overwrite-cancel-title-navigation");
+                startupProfileNavigationRequested = true;
+                Navigation.NavigateTo(BuildNormalTitleUri(importCompleted: false, importCancelled: true),
+                    forceLoad: true, replace: true);
+            }
+
+            async Task StartRuntimeTitleAfterCancellationAsync()
+            {
+                SetSaveImportStage("save-import-cancel-return-start");
+                await RecordStartupProfileEventAsync("overwrite-cancel-same-page-title-start");
+                await StartP1C3Title(CurrentSaveFiles());
+                SetSaveImportStage("save-import-cancel-return-end");
+            }
+
+            try
+            {
+                SaveImportFinalizationResult finalization = await BrowserSaveImportFinalizer.FinishAsync(
+                    returnToTitleAfterOverwriteCancellation,
+                    saveManagerMode,
+                    CleanupStagedImportAsync,
+                    BeginOverwriteCancellationHandoffAsync,
+                    ReleaseStoreLockForCancellationAsync,
+                    NavigateToNormalTitleAfterCancellationAsync,
+                    StartRuntimeTitleAfterCancellationAsync);
+                stagedImportCleanupSucceeded = finalization != SaveImportFinalizationResult.CleanupFailed;
+                if (finalization == SaveImportFinalizationResult.CleanupFailed
+                    && returnToTitleAfterOverwriteCancellation)
+                    saveManagementMessage = (saveManagementMessage ?? string.Empty) + " タイトル復帰は保留しました。一時取込データの後始末を確認してください。";
+                else if (finalization == SaveImportFinalizationResult.LockReleaseFailed)
+                    await ShowOverwriteCancellationHandoffFailure("キャンセル後の保存領域lock解放を確認できませんでした。");
+            }
+            catch (Exception ex)
+            {
+                if (returnToTitleAfterOverwriteCancellation)
+                    await ShowOverwriteCancellationHandoffFailure(ex.Message);
+                else
+                {
+                    stagedImportCleanupSucceeded = false;
+                    await SetHostStatusAsync(importCommitted
+                        ? "保存済みですが、一時データを消去できず起動を保留しています。"
+                        : "取込一時データを消去できませんでした。画面の結果を確認してください。", busy: false, isError: true);
+                    saveManagementMessage = (saveManagementMessage ?? string.Empty) + " 取込の後始末に失敗しました: " + ex.Message;
+                }
+            }
+            finally
+            {
+                importInProgress = false;
+            }
+        }
+        if (!importCommitted || (!startTitleAfterImport && !navigateToTitleAfterImport))
+        {
+            if (!startupProfileNavigationRequested)
+                await FinishStartupImportProfileAsync(returnToTitleAfterOverwriteCancellation
+                    ? "overwrite-cancelled-title-handoff-incomplete" : persistenceState);
+            return;
+        }
+        if (!stagedImportCleanupSucceeded)
+        {
+            saveManagementMessage = (saveManagementMessage ?? string.Empty) + " 保存は完了しています。取込一時データの後始末を確認してからタイトルへ移動してください。";
+            return;
+        }
+
+        importInProgress = true;
+        saveImportTitlePending = true;
+        await SetHostStatusAsync("取込完了：ゲームを起動しています…");
+        if (navigateToTitleAfterImport)
+        {
+            try
+            {
+                SetSaveImportStage("save-import-runtime-restart-start");
+                var lockTimer = startupImportProfileEnabled ? System.Diagnostics.Stopwatch.StartNew() : null;
+                bool released = await storeModule.InvokeAsync<bool>("release", storeHandle);
+                await RecordStartupProfilePhaseAsync("web-lock-release-before-title-navigation", lockTimer, new { released });
+                if (!released)
+                    throw new InvalidOperationException("保存領域lockの解放を確認できませんでした");
+                storeHandle = null;
+                await MarkStartupProfileNavigationAsync("import-success-title-navigation");
+                startupProfileNavigationRequested = true;
+                Navigation.NavigateTo(BuildNormalTitleUri(importCompleted: true), forceLoad: true, replace: true);
+            }
+            catch (Exception ex)
+            {
+                importInProgress = false;
+                saveImportTitlePending = false;
+                saveManagementMessage = "セーブの保存は完了しましたが、通常起動へ移動できませんでした。保存済みデータは残っています。取込を再実行しないでください。" + " " + ex.Message;
+                await SetHostStatusAsync("保存済みですが、ゲーム起動に失敗しました。", busy: false, isError: true);
+            }
+            return;
+        }
+
+        try
+        {
+            SetSaveImportStage("save-import-runtime-restart-start");
             await StartP1C3Title(CurrentSaveFiles());
             SetSaveImportStage("save-import-runtime-restart-end");
             if (isP1C3Integration && error is null)
                 SetDiagnosticStage("integration-import-ready");
         }
-        catch (InvalidDataException ex) when (ex.Message == "global.savも選択してください")
-        {
-            persistenceState = saveManagerMode ? "validation-refused" : "committed";
-            error = null;
-            saveManagementMessage = ex.Message;
-            if (!saveManagerMode)
-                await StartP1C3Title(CurrentSaveFiles());
-        }
         catch (Exception ex)
         {
-            persistenceState = "failed";
-            error = "通常sav import失敗: " + ex.Message;
+            persistenceState = "committed";
+            error = "セーブ取込は完了しましたが、ゲーム起動に失敗しました。保存済みデータは残っています。再取込せず、詳細を確認してください。";
+            startupErrorDetails = ex.ToString();
+                saveManagementMessage = "セーブの保存は完了しています。タイトル起動のみ失敗しました。取込を再実行しないでください。";
+                saveImportTitlePending = false;
+                await SetHostStatusAsync("セーブ取込は完了しましたが、ゲーム起動に失敗しました。", busy: false, isError: true);
+                await FinishStartupImportProfileAsync("import-saved-title-navigation-failed");
         }
         finally
         {
-            if (pendingStagedImportNonce is not null && storeModule is not null)
-                await storeModule.InvokeVoidAsync("clearStagedImport", pendingStagedImportNonce);
             importInProgress = false;
+            await InvokeAsync(StateHasChanged);
         }
+    }
+
+    async Task ShowOverwriteCancellationHandoffFailure(string detail)
+    {
+        importInProgress = false;
+        saveImportTitlePending = false;
+        saveImportCancellationHandoffPending = false;
+        error = "セーブ取込はキャンセル済みですが、タイトル起動に失敗しました。既存の保存データは変更していません。";
+        saveManagementMessage = error + " " + detail;
+        await SetHostStatusAsync("取込キャンセル済み・タイトル起動失敗。既存セーブは変更されていません。",
+            busy: false, isError: true);
     }
 
     async Task ImportGlobal(InputFileChangeEventArgs change)
@@ -2421,6 +3189,8 @@
 
     async Task InstallP1BData(string root)
     {
+        long allocationStart = startupImportProfileEnabled ? GC.GetTotalAllocatedBytes() : 0;
+        dataPrepPackBreakdown = dataPrepBreakdownEnabled ? new() : null;
         httpRequests = 0;
         packageFiles = 0;
         transferBytes = 0;
@@ -2442,8 +3212,10 @@
         var manifestFetch = System.Diagnostics.Stopwatch.StartNew();
         string manifestJson = await Http.GetStringAsync("p1b-data/manifest.json");
         AddStartupDuration("manifestFetch", manifestFetch.ElapsedMilliseconds);
+        var manifestDeserialize = warmStartupProfile ? System.Diagnostics.Stopwatch.StartNew() : null;
         DataPackageManifest manifest = JsonSerializer.Deserialize<DataPackageManifest>(manifestJson, jsonOptions)
             ?? throw new InvalidDataException("manifest.jsonを読めません");
+        if (manifestDeserialize is not null) AddStartupDuration("manifestDeserialize", manifestDeserialize.ElapsedMilliseconds);
         httpRequests++;
         transferBytes += Encoding.UTF8.GetByteCount(manifestJson);
         packageFiles = manifest.Files.Count;
@@ -2459,7 +3231,9 @@
 
         foreach (string pack in manifest.Files.Select(file => file.Pack).Distinct(StringComparer.Ordinal))
         {
+            var identityTimer = warmStartupProfile ? System.Diagnostics.Stopwatch.StartNew() : null;
             string identity = PackageIdentity(manifest, pack);
+            if (identityTimer is not null) AddStartupDuration("packageIdentity", identityTimer.ElapsedMilliseconds);
             string archivePath = Path.Combine(downloads, pack);
             bool extracted = false;
             for (int attempt = 0; attempt < 2 && !extracted; attempt++)
@@ -2493,7 +3267,9 @@
                     progress = $"{pack}を展開中です…";
                     var extract = System.Diagnostics.Stopwatch.StartNew();
                     await using FileStream archive = File.OpenRead(archivePath);
-                    DataPackageExtractionResult result = await DataPackageExtractor.ExtractPackAsync(archive, pack, root, packageIndex, manifest.TotalSize, extractedBytes);
+                    var diagnostics = dataPrepBreakdownEnabled ? new DataPackageExtractionDiagnostics() : null;
+                    DataPackageExtractionResult result = await DataPackageExtractor.ExtractPackAsync(archive, pack, root, packageIndex, manifest.TotalSize, extractedBytes, diagnostics: diagnostics);
+                    if (diagnostics is not null) dataPrepPackBreakdown!.Add(new { pack, diagnostics });
                     extractedBytes += result.BytesWritten;
                     packageLookups += result.LookupCount;
                     extractMilliseconds += extract.ElapsedMilliseconds;
@@ -2507,7 +3283,9 @@
                 }
                 finally
                 {
+                    var cleanupTimer = warmStartupProfile ? System.Diagnostics.Stopwatch.StartNew() : null;
                     if (File.Exists(archivePath)) File.Delete(archivePath);
+                    if (cleanupTimer is not null) AddStartupDuration("runtimeTempZipCleanup", cleanupTimer.ElapsedMilliseconds);
                 }
             }
             if (!extracted)
@@ -2523,6 +3301,7 @@
         packageCacheUsage = reconciled.Usage;
         packageCacheQuota = reconciled.Quota;
         if (packageCachePersistent) packageCacheState = reconciled.Persisted ? "ready-protected" : "ready";
+        if (startupImportProfileEnabled) dataPreparationAllocatedBytes = GC.GetTotalAllocatedBytes() - allocationStart;
     }
 
     static string PackageIdentity(DataPackageManifest manifest, string pack)
@@ -2573,6 +3352,11 @@
 
     public async ValueTask DisposeAsync()
     {
+        if (scaleFitModule is not null)
+        {
+            try { await scaleFitModule.InvokeVoidAsync("detach"); await scaleFitModule.DisposeAsync(); }
+            catch (JSDisconnectedException) { }
+        }
         primitiveTimer?.Cancel();
         primitiveTimer?.Dispose();
         animationTimer?.Cancel();
@@ -2592,7 +3376,7 @@
         if (displayWindowModule is not null)
             try { await displayWindowModule.DisposeAsync(); } catch (JSDisconnectedException) { }
         if (storeModule is not null && storeHandle is not null)
-            try { await storeModule.InvokeVoidAsync("release", storeHandle); } catch (JSDisconnectedException) { }
+            try { await storeModule.InvokeAsync<bool>("release", storeHandle); } catch (JSDisconnectedException) { }
         if (storeModule is not null)
             try { await storeModule.DisposeAsync(); } catch (JSDisconnectedException) { }
         longRunningModule?.Dispose();

@@ -7,6 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Emuera.Web.Runtime\Emuera.Web.Runtime.csproj" />
+    <Content Include="..\Emuera.Web\wwwroot\app.css" Link="app.css" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\Emuera.Web\wwwroot\p1a-fixture\**\*" Link="p1a-fixture\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\Emuera.Web\wwwroot\p1a-r2-fixture\**\*" Link="p1a-r2-fixture\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="p1a-unsupported\**\*" CopyToOutputDirectory="PreserveNewest" />

@@ -3,7 +3,8 @@ param(
     [Parameter(Mandatory)][string]$RuntimeTemplatePath,
     [Parameter(Mandatory)][string]$OutputDirectory,
     [Parameter(Mandatory)][string]$ArtifactsPath,
-    [Parameter(Mandatory)][ValidatePattern('^[0-9a-fA-F]{40}$')][string]$SourceCommit
+    [Parameter(Mandatory)][ValidatePattern('^[0-9a-fA-F]{40}$')][string]$SourceCommit,
+    [Parameter(Mandatory)][ValidatePattern('^[0-9a-fA-F]{64}$')][string]$SourceTreeSha256
 )
 
 $ErrorActionPreference = 'Stop'
@@ -14,7 +15,7 @@ $licenseSource = Join-Path $repoRoot 'license.md'
 $notesSource = Join-Path $PSScriptRoot 'RELEASE_NOTES.md'
 $output = [System.IO.Path]::GetFullPath($OutputDirectory)
 $buildArtifacts = [System.IO.Path]::GetFullPath($ArtifactsPath)
-$zipName = 'EmueraWebPackager-1.0.1-win-x64.zip'
+$zipName = 'EmueraWebPackager-1.0.2-win-x64.zip'
 $tempBase = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
 $tempRoot = [System.IO.Path]::GetFullPath((Join-Path $tempBase "EmueraWebPackager-Release-$([guid]::NewGuid().ToString('N'))"))
 $outputParent = Split-Path -Parent $output
@@ -34,7 +35,7 @@ if ((Test-PathWithin $output $buildArtifacts) -or (Test-PathWithin $buildArtifac
 if (Test-PathWithin $output (Split-Path -Parent $packagerExe)) { throw "出力先はPackager実行ファイルのbuild output外を指定してください: $output" }
 if (!(Test-Path -LiteralPath (Join-Path $runtimeSource 'index.html')) -or !(Test-Path -LiteralPath (Join-Path $runtimeSource '_framework') -PathType Container)) { throw 'Runtime publishにはindex.htmlと_frameworkが必要です。' }
 if (!(Test-Path -LiteralPath $licenseSource -PathType Leaf) -or !(Test-Path -LiteralPath $notesSource -PathType Leaf) -or !(Test-Path -LiteralPath (Join-Path $PSScriptRoot '使い方.md') -PathType Leaf)) { throw 'Packager license、使い方、またはRELEASE_NOTES.mdがありません。' }
-foreach ($requiredLicense in @('licenses/DOTNET-LICENSE.txt', 'licenses/DOTNET-THIRD-PARTY-NOTICES.txt')) {
+foreach ($requiredLicense in @('licenses/DOTNET-LICENSE.txt', 'licenses/DOTNET-THIRD-PARTY-NOTICES.txt', 'licenses/DOTNET-RUNTIME-THIRD-PARTY-NOTICES.txt', 'licenses/DOTNET-WINX64-RUNTIME-THIRD-PARTY-NOTICES.txt', 'licenses/DOTNET-WINDOWSDESKTOP-LICENSE.txt', 'licenses/AngleSharp-MIT.txt', 'licenses/System.IO.Hashing-MIT.txt', 'licenses/SkiaSharp-THIRD-PARTY-NOTICES.txt')) {
     if (!(Test-Path -LiteralPath (Join-Path $PSScriptRoot $requiredLicense) -PathType Leaf)) { throw "Packager配布に必要なライセンスがありません: $requiredLicense" }
 }
 if (!(Test-Path -LiteralPath (Join-Path $runtimeSource 'fonts/DotGothic16-OFL.txt') -PathType Leaf)) { throw 'runtime-templateにDotGothic16 OFL noticeがありません。' }
@@ -65,7 +66,7 @@ try {
     if ($versionProcess.ExitCode -ne 0) { throw "Packager --versionに失敗しました (exit $($versionProcess.ExitCode)): $versionError" }
 }
 finally { $versionProcess.Dispose() }
-if ($version -ne 'Emuera Web Packager 1.0.1 / Runtime UX16-07') { throw "Packager/Runtime versionが想定外です: $version" }
+if ($version -ne 'Emuera Web Packager 1.0.2 / Runtime UX16-08-RC3') { throw "Packager/Runtime versionが想定外です: $version" }
 
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $output) | Out-Null
 try {
@@ -84,6 +85,14 @@ try {
         $target = Join-Path $runtimeTarget $relative
         New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target) | Out-Null
         Copy-Item -LiteralPath $file.FullName -Destination $target
+    }
+
+    # ゲーム入りWeb出力にも通知を引き継ぐため、seal前にtemplateへ同梱する。
+    Copy-Item -LiteralPath $licenseSource -Destination (Join-Path $runtimeTarget 'LICENSE.md')
+    $runtimeLicenseTarget = Join-Path $runtimeTarget 'licenses'
+    New-Item -ItemType Directory -Force -Path $runtimeLicenseTarget | Out-Null
+    foreach ($notice in Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'licenses') -File) {
+        Copy-Item -LiteralPath $notice.FullName -Destination (Join-Path $runtimeLicenseTarget $notice.Name) -Force
     }
 
     # 既存Packager CoreのSealTemplateを利用し、形式を二重実装しない。
@@ -117,9 +126,10 @@ try {
     finally { $archive.Dispose() }
 
     [pscustomobject]@{
-        version = '1.0.1'
-        runtime = 'UX16-07'
+        version = '1.0.2'
+        runtime = 'UX16-08-RC3'
         sourceCommit = $SourceCommit.ToLowerInvariant()
+        sourceTreeSha256 = $SourceTreeSha256.ToUpperInvariant()
         zip = $zipName
         zipBytes = (Get-Item -LiteralPath $zipPath).Length
         zipSha256 = $sha

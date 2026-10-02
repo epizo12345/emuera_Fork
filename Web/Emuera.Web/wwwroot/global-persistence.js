@@ -1,3 +1,4 @@
+import { displayScale } from './scale-fit.js';
 const DB_NAME = 'emuera-web-saves-v1';
 const STORE_NAME = 'files';
 const handles = new Map();
@@ -42,6 +43,10 @@ export function focusElement(elementId) {
   if (elementId === 'runtime-input') ensureFocusedInputVisible();
 }
 
+export function waitForPaint() {
+  return new Promise(resolve => requestAnimationFrame(() => resolve()));
+}
+
 export function positionLockedButtons(elementId) {
   const root = document.getElementById(elementId);
   if (!root) return;
@@ -51,7 +56,7 @@ export function positionLockedButtons(elementId) {
     const target = Number(part.dataset.lockedX);
     if (!Number.isFinite(target)) continue;
     part.style.marginLeft = '0px';
-    const current = part.getBoundingClientRect().left - line.getBoundingClientRect().left;
+    const current = (part.getBoundingClientRect().left - line.getBoundingClientRect().left) / displayScale(root);
     part.style.marginLeft = `${target - current}px`;
   }
 }
@@ -178,10 +183,11 @@ const stagedCapture = () => {
   catch { return null; }
 };
 
-export async function stageImportFiles(handleId, elementId) {
+export async function stageImportFiles(handleId, elementId, includeCaptureMetadata = false) {
   requireHandle(handleId);
   const files = [...(document.getElementById(elementId)?.files ?? [])];
-  if (files.length < 1 || files.length > 64) throw new Error('import件数が不正です');
+  if (files.length === 0) return null;
+  if (files.length > 64) throw new Error('import件数が不正です');
   const names = files.map(file => normalizeFilename(file.name));
   if (new Set(names).size !== names.length || files.some(file => file.size < 1 || file.size > 256 * 1024 * 1024)
     || files.reduce((sum, file) => sum + file.size, 0) > 512 * 1024 * 1024)
@@ -199,7 +205,7 @@ export async function stageImportFiles(handleId, elementId) {
     const bytes = files.reduce((sum, file) => sum + file.size, 0);
     sessionStorage.setItem('emuera-active-import-capture', JSON.stringify({ nonce, count: files.length, bytes, at: performance.timeOrigin + performance.now(), createdAt }));
     diagnostic('active-import-captured', { count: files.length, bytes });
-    return nonce;
+    return includeCaptureMetadata ? { nonce, count: files.length, bytes, files: names.map((name, index) => ({ name, size: files[index].size })) } : nonce;
   } catch (error) {
     await caches.delete(importStageName(nonce));
     throw error;
@@ -312,20 +318,22 @@ export async function acquire(gameId, profileId) {
   if (!navigator.locks) throw new Error('Web Locksを利用できません');
   const id = crypto.randomUUID();
   let release;
+  let lockRequest;
   const released = new Promise(resolve => { release = resolve; });
   const acquired = new Promise((resolve, reject) => {
-    navigator.locks.request(`emuera:${gameId}:${profileId}`, { mode: 'exclusive', ifAvailable: true }, async lock => {
+    lockRequest = navigator.locks.request(`emuera:${gameId}:${profileId}`, { mode: 'exclusive', ifAvailable: true }, async lock => {
       if (!lock) {
         diagnostic('web-lock-unavailable');
         resolve({ acquired: false, reason: 'この保存領域は別タブで使用中です' });
         return;
       }
       diagnostic('web-lock-acquired');
-      handles.set(id, { gameId, profileId, revisions: new Map(), release });
+      handles.set(id, { gameId, profileId, revisions: new Map(), release, lockRequest: () => lockRequest });
       resolve({ acquired: true, handleId: id });
       await released;
       handles.delete(id);
-    }).catch(reject);
+    });
+    lockRequest.catch(reject);
   });
   return acquired;
 }
@@ -498,10 +506,11 @@ export async function downloadCommitted(handleId, filename = 'global.sav') {
   return { revision: state.revision, byteLength: state.bytes.byteLength };
 }
 
-export function release(handleId) {
+export async function release(handleId) {
   const handle = handles.get(handleId);
   if (!handle) return false;
   handle.release();
+  await handle.lockRequest();
   return true;
 }
 
@@ -516,14 +525,15 @@ export function inputContext(id, clientX = null, clientY = null) {
   if (!element) throw new Error(`element not found: ${id}`);
   const point = clientX === null || clientY === null ? lastPointer : { x: clientX, y: clientY };
   const rect = element.getBoundingClientRect();
+  const scale = displayScale(element);
   const width = element.clientWidth, height = element.clientHeight;
   if (!point) return { x: 0, y: height, width, height, buttonValue: null, buttonIsInteger: true };
   lastPointer = point;
   const target = document.elementFromPoint(point.x, point.y)?.closest('[data-input]');
   const ownsTarget = target && (element.contains(target) || document.getElementById('game-island-layer')?.contains(target));
   return {
-    x: Math.trunc(point.x - rect.left - element.clientLeft),
-    y: Math.trunc(point.y - rect.top - element.clientTop),
+    x: Math.trunc((point.x - rect.left) / scale - element.clientLeft),
+    y: Math.trunc((point.y - rect.top) / scale - element.clientTop),
     width, height,
     buttonValue: ownsTarget ? target.dataset.input : null,
     buttonIsInteger: ownsTarget ? target.dataset.inputInteger === 'true' : true
