@@ -737,6 +737,8 @@ internal sealed partial class EmueraConsole : IDisposable
 
 
     System.Timers.Timer genericTimer = new();
+    // 描画中のDoEventsで10ms通知が入れ子になっても、timer本体は同時に1件だけ処理する。
+    bool timerTickInProgress;
     Int64 timerID = -1;
     readonly Stopwatch _genericTimerStopwatch = new();//現在のタイマーを開始した時のミリ秒数（WinmmTimer.TickCount基準）
     Int64 timer_endTime;//現在のタイマーを終了する時のTickCountミリ秒数
@@ -762,32 +764,45 @@ internal sealed partial class EmueraConsole : IDisposable
     {
         isTimeout = false;
         timerID = inputReq.ID;
-        genericTimer.Enabled = true;
+        // 前の入力の配送済み通知と新しい入力を区別するため、入力ごとにtimer instanceを替える。
+        genericTimer.Enabled = false;
+        genericTimer.Dispose();
+        genericTimer = new() { Interval = 10, SynchronizingObject = window };
+        genericTimer.Elapsed += tickTimer;
         _genericTimerStopwatch.Restart();
         timer_endTime = inputReq.Timelimit;
+        genericTimer.Enabled = true;
     }
 
     //汎用
     private void tickTimer(object sender, EventArgs e)
     {
-        if (!genericTimer.Enabled)
+        if (!ReferenceEquals(sender, genericTimer) || !genericTimer.Enabled || timerTickInProgress)
             return;
-        if (state != ConsoleState.WaitInput || inputReq.Timelimit <= 0 || timerID != inputReq.ID)
+        timerTickInProgress = true;
+        try
         {
-            stopTimer();
-            return;
-        }
-        var elapsedMs = _genericTimerStopwatch.ElapsedMilliseconds;
-        if (elapsedMs >= timer_endTime)
-        {
-            endTimer();
-            return;
-        }
+            if (state != ConsoleState.WaitInput || inputReq.Timelimit <= 0 || timerID != inputReq.ID)
+            {
+                stopTimer();
+                return;
+            }
+            var elapsedMs = _genericTimerStopwatch.ElapsedMilliseconds;
+            if (elapsedMs >= timer_endTime)
+            {
+                endTimer();
+                return;
+            }
 
-        if (inputReq.DisplayTime)
+            if (inputReq.DisplayTime)
+            {
+                var remainingMs = inputReq.Timelimit - _genericTimerStopwatch.ElapsedMilliseconds;
+                window.Invoke(() => changeLastLine($"{LocalizationManager.SystemLine.Remaining} {remainingMs / 1000.0f:0.0}"));
+            }
+        }
+        finally
         {
-            var remainingMs = inputReq.Timelimit - _genericTimerStopwatch.ElapsedMilliseconds;
-            window.Invoke(() => changeLastLine($"{LocalizationManager.SystemLine.Remaining} {remainingMs / 1000.0f:0.0}"));
+            timerTickInProgress = false;
         }
     }
 
@@ -2006,13 +2021,11 @@ internal sealed partial class EmueraConsole : IDisposable
             {
                 foreach (var button in elem.Buttons)
                 {
-                    foreach (var part in button.StrArray)
+                    // findButtonはbutton内の全StrArrayを調べるため、部品ごとには繰り返さない。
+                    pointing = findButton(pointX, pointY, button, null);
+                    if (pointing != null)
                     {
-                        pointing = findButton(pointX, pointY, button, null);
-                        if (pointing != null)
-                        {
-                            return pointing;
-                        }
+                        return pointing;
                     }
 
                 }

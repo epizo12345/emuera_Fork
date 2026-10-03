@@ -3827,7 +3827,9 @@ internal static partial class FunctionMethodCreator
             if (src.Width != mask.Width || src.Height != mask.Height)
                 return 0;
             Point destPoint = ReadPoint(Name, exm, arguments, 3);
-            if (destPoint.X + src.Width > dest.Width || destPoint.Y + src.Height > dest.Height)
+            // 加算overflowを避け、範囲外は既存契約どおり0を返す。
+            if (destPoint.X < 0 || destPoint.Y < 0 ||
+                src.Width > dest.Width - destPoint.X || src.Height > dest.Height - destPoint.Y)
                 return 0;
             dest.GDrawGWithMask(src, mask, destPoint);
             return 1;

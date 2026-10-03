@@ -15,10 +15,15 @@ using MinorShift.Emuera;
 using MinorShift.Emuera.Forms;
 using MinorShift.Emuera.GameProc.Function;
 using MinorShift.Emuera.GameView;
+using MinorShift.Emuera.Runtime;
 using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Config.JSON;
 using MinorShift.Emuera.Runtime.Utils;
+using MinorShift.Emuera.UI;
 using MinorShift.Emuera.UI.Framework;
+using MinorShift.Emuera.UI.Game;
+using MinorShift.Emuera.UI.Game.Image;
+using SkiaSharp;
 using RuntimeConfig = MinorShift.Emuera.Runtime.Config.Config;
 
 namespace Emuera.ConfigRegressionTests;
@@ -38,7 +43,17 @@ internal static class Program
     {
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         Run("dark mode config defaults to YES, round-trips YES/NO, and preserves display colors and other settings", DarkModeConfigRoundTrips);
+        Run("non-square vertical flip preserves four corners in three sprite paths", IntegratedVerticalFlip);
+        Run("non-identity color matrix swaps red and blue channels", IntegratedColorMatrix);
+        Run("mask rejects out-of-range coordinates without changing pixels", IntegratedMaskBounds);
+        Run("mask composes alpha at offset and preserves outside pixels", IntegratedMaskAlpha);
+        Run("file-backed mask output survives PNG save and load", IntegratedMaskFileBacked);
+        Run("nonuniform self mask keeps four source pixels", IntegratedMaskSelf);
         Run("missing game block persists disabled-empty default and retains unknown properties", MissingGameBlockDefault);
+        Run("HTML island preserves first, last, nested, and tooltip-only hit targets", IntegratedIslandHits);
+        Run("timer tick cannot reenter through drawing DoEvents", TimerTickDoesNotReenter);
+        Run("stale timer callback cannot stop the next timed input", StaleTimerCannotStopNextInput);
+        Run("two distinct image frames render during timed input and after transition", AnimatedFramesContinueAcrossTimedInput);
         Run("valid existing game block is unchanged by load", ExistingGameBlockIsNotRewritten);
         Run("new user file does not gain a LazyERB override", NewUserFileHasNoOverride);
         Run("absent user block uses the complete game value", MissingUserUsesGameValue);
@@ -80,6 +95,134 @@ internal static class Program
 
         Console.WriteLine($"RESULT: {TotalCases - Failures.Count - SkippedCases}/{TotalCases} passed; {Failures.Count} failed; {SkippedCases} skipped.");
         return Failures.Count == 0 ? 0 : 1;
+    }
+
+    private static void TimerTickDoesNotReenter()
+    {
+        using var window = new MainWindow([]);
+        var console = (EmueraConsole)typeof(MainWindow)
+            .GetField("console", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window)!;
+        _ = window.Handle;
+        var request = new InputRequest { InputType = InputType.IntValue, Timelimit = 10000 };
+        console.WaitInput(request);
+        request.DisplayTime = true;
+        var consoleType = typeof(EmueraConsole);
+        consoleType.GetField("need_settimer", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(console, false);
+        consoleType.GetMethod("setTimer", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(console, null);
+        var timer = (System.Timers.Timer)consoleType.GetField("genericTimer", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(console)!;
+        timer.Interval = 100000;
+        var tick = consoleType.GetMethod("tickTimer", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        int maxDepth = 0;
+        int queuedCallbacks = 0;
+        void QueueNestedTick()
+        {
+            window.BeginInvoke((Action)(() =>
+            {
+                queuedCallbacks++;
+                int depth = new StackTrace().GetFrames()!
+                    .Count(frame => frame.GetMethod()?.Name == "tickTimer");
+                maxDepth = Math.Max(maxDepth, depth);
+                if (queuedCallbacks < 3) QueueNestedTick();
+                tick.Invoke(console, [timer, EventArgs.Empty]);
+            }));
+        }
+        QueueNestedTick();
+        tick.Invoke(console, [timer, EventArgs.Empty]);
+        Application.DoEvents();
+        timer.Enabled = false;
+        Equal(3, queuedCallbacks, "three queued timer notifications were delivered");
+        True(maxDepth <= 1, $"timer body must not nest; observed depth={maxDepth}");
+        Console.WriteLine($"TIMER_NESTED_CALLBACKS={queuedCallbacks} MAX_TICK_DEPTH={maxDepth}");
+    }
+
+    private static void StaleTimerCannotStopNextInput()
+    {
+        using var window = new MainWindow([]);
+        var console = (EmueraConsole)typeof(MainWindow)
+            .GetField("console", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window)!;
+        _ = window.Handle;
+        var consoleType = typeof(EmueraConsole);
+        var timerField = consoleType.GetField("genericTimer", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var oldTimer = (System.Timers.Timer)timerField.GetValue(console)!;
+        var request = new InputRequest { InputType = InputType.IntValue, Timelimit = 1 };
+        console.WaitInput(request);
+        consoleType.GetField("need_settimer", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(console, false);
+        consoleType.GetMethod("setTimer", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(console, null);
+        var currentTimer = (System.Timers.Timer)timerField.GetValue(console)!;
+        currentTimer.Interval = 100000;
+        System.Threading.Thread.Sleep(5);
+        consoleType.GetMethod("tickTimer", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .Invoke(console, [oldTimer, EventArgs.Empty]);
+        True(currentTimer.Enabled, "old queued callback must not end current timed input");
+        currentTimer.Enabled = false;
+    }
+
+    private static void AnimatedFramesContinueAcrossTimedInput()
+    {
+        using var window = new MainWindow([]);
+        var init = typeof(MainWindow).GetMethod("Init", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        window.Shown -= (EventHandler)Delegate.CreateDelegate(typeof(EventHandler), window, init);
+        window.ShowInTaskbar = false;
+        window.Show();
+        var console = (EmueraConsole)typeof(MainWindow)
+            .GetField("console", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window)!;
+        using var red = new GraphicsImage();
+        using var blue = new GraphicsImage();
+        red.GCreate(32, 32, false);
+        blue.GCreate(32, 32, false);
+        red.GClear(Color.Red);
+        blue.GClear(Color.Blue);
+        using var animation = new SpriteAnime("TEST_FRAMES", new Size(32, 32));
+        True(animation.AddFrame(red, new Rectangle(0, 0, 32, 32), Point.Empty, 120), "red frame added");
+        True(animation.AddFrame(blue, new Rectangle(0, 0, 32, 32), Point.Empty, 120), "blue frame added");
+        True(console.CBG_SetImage(animation, 40, 0, 1), "animated image added to actual paint path");
+        var timedColors = new List<SKColor>();
+        var ordinaryColors = new List<SKColor>();
+        bool timedPhase = true;
+        window.MainPicBox.PaintSurface += (_, e) =>
+        {
+            using var image = e.Surface.Snapshot();
+            using var bitmap = SKBitmap.FromImage(image);
+            if (bitmap.Width > 48 && bitmap.Height > 16)
+            {
+                SKColor color = bitmap.GetPixel(48, bitmap.Height - 16);
+                (timedPhase ? timedColors : ordinaryColors).Add(color);
+            }
+        };
+        var consoleType = typeof(EmueraConsole);
+        var timedRequest = new InputRequest { InputType = InputType.IntValue, Timelimit = 5000 };
+        console.WaitInput(timedRequest);
+        timedRequest.DisplayTime = true;
+        consoleType.GetField("need_settimer", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(console, false);
+        consoleType.GetMethod("setTimer", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(console, null);
+        console.setRedrawTimer(50);
+        window.Refresh();
+        PumpWindowFor(1100);
+        consoleType.GetMethod("stopTimer", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(console, null);
+        timedPhase = false;
+        console.WaitInput(new InputRequest { InputType = InputType.IntValue });
+        PumpWindowFor(800);
+        console.setRedrawTimer(0);
+        // 試験用窓を破棄する前に非同期redraw loopを終了させ、残ったInvokeを処理する。
+        ((System.Threading.PeriodicTimer)consoleType.GetField("redrawTimer", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(console)!).Dispose();
+        PumpWindowFor(150);
+        True(HasRedAndBlue(timedColors), $"timed input frames: paints={timedColors.Count}, red={timedColors.Count(IsRed)}, blue={timedColors.Count(IsBlue)}");
+        True(HasRedAndBlue(ordinaryColors), $"ordinary input frames: paints={ordinaryColors.Count}, red={ordinaryColors.Count(IsRed)}, blue={ordinaryColors.Count(IsBlue)}");
+        Console.WriteLine($"ANIM_TIMED_PAINTS={timedColors.Count} RED={timedColors.Count(IsRed)} BLUE={timedColors.Count(IsBlue)}; ANIM_AFTER_PAINTS={ordinaryColors.Count} RED={ordinaryColors.Count(IsRed)} BLUE={ordinaryColors.Count(IsBlue)}");
+
+        static bool IsRed(SKColor color) => color.Red > 180 && color.Green < 80 && color.Blue < 80;
+        static bool IsBlue(SKColor color) => color.Blue > 180 && color.Green < 80 && color.Red < 80;
+        static bool HasRedAndBlue(List<SKColor> colors) => colors.Any(IsRed) && colors.Any(IsBlue);
+    }
+
+    private static void PumpWindowFor(int milliseconds)
+    {
+        var clock = Stopwatch.StartNew();
+        while (clock.ElapsedMilliseconds < milliseconds)
+        {
+            Application.DoEvents();
+            System.Threading.Thread.Sleep(10);
+        }
     }
 
     private static void DarkModeConfigRoundTrips()
@@ -133,6 +276,185 @@ internal static class Program
             exeDir.GetSetMethod(nonPublic: true)!.Invoke(null, [oldExeDir]);
             csvDir.GetSetMethod(nonPublic: true)!.Invoke(null, [oldCsvDir]);
         }
+    }
+
+    private static void IntegratedVerticalFlip()
+    {
+        using var source = new GraphicsImage();
+        source.GCreate(80, 120, false);
+        for (int y = 0; y < 120; y++)
+            for (int x = 0; x < 80; x++)
+                source.Bitmap.SetPixel(x, y, y < 60
+                    ? (x < 40 ? SKColors.Red : SKColors.Green)
+                    : (x < 40 ? SKColors.Blue : SKColors.Yellow));
+        using var sprite = new SpriteG("flip", source, new Rectangle(0, 0, 80, 120));
+        using var target = new SKBitmap(200, 200);
+        using var canvas = new SKCanvas(target);
+        using SKImage snapshot = SKImage.FromBitmap(source.Bitmap);
+        for (int path = 0; path < 3; path++)
+        {
+            target.Erase(SKColors.Transparent);
+            Rectangle destination = new(20, 150, 80, -120);
+            if (path == 0) sprite.GraphicsDraw(canvas, destination);
+            else if (path == 1) sprite.GraphicsDraw(canvas, destination, null!);
+            else sprite.GraphicsDrawFromSnapshot(canvas, destination, snapshot);
+            Equal(SKColors.Blue, target.GetPixel(30, 40), $"path {path} upper-left");
+            Equal(SKColors.Yellow, target.GetPixel(90, 40), $"path {path} upper-right");
+            Equal(SKColors.Red, target.GetPixel(30, 140), $"path {path} lower-left");
+            Equal(SKColors.Green, target.GetPixel(90, 140), $"path {path} lower-right");
+        }
+    }
+
+    private static void IntegratedIslandHits()
+    {
+        using var window = new MainWindow([]);
+        var console = (EmueraConsole)typeof(MainWindow)
+            .GetField("console", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window)!;
+        var style = new StringStyle(Color.White, FontStyle.Regular, "Consolas");
+        AConsoleDisplayNode[] parts = Enumerable.Range(0, 80).Select(index =>
+            (AConsoleDisplayNode)new ConsoleStyledString("X", style)
+            { Point = new SKPoint(index * 12, 0), Size = new SKSize(10, 10) }).ToArray();
+        var button = new ConsoleButtonString(console, parts, 7) { Title = "help" };
+        var islands = (SortedDictionary<int, List<ConsoleDisplayLine>>)typeof(EmueraConsole)
+            .GetField("_htmlElementListDict", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(console)!;
+        islands.Add(0, [new ConsoleDisplayLine([button], true, false)]);
+        True(console.FindButton(9999, 9999) is null, "miss remains a miss");
+        True(ReferenceEquals(button, console.FindButton(5, 5)), "first part hit");
+        True(ReferenceEquals(button, console.FindButton(79 * 12 + 5, 5)), "last part hit");
+        var tooltipPart = new ConsoleStyledString("T", style)
+        { Point = new SKPoint(980, 0), Size = new SKSize(10, 10) };
+        var tooltip = new ConsoleButtonString(console, [tooltipPart]) { Title = "tooltip without input" };
+        True(!tooltip.IsButton, "tooltip target has no input value");
+        islands.Add(1, [new ConsoleDisplayLine([tooltip], true, false)]);
+        True(ReferenceEquals(tooltip, console.FindButton(985, 5)), "tooltip-only target hit");
+        var nested = new ConsoleStyledString("N", style)
+        { Point = new SKPoint(5, 0), Size = new SKSize(10, 10) };
+        var nestedButton = new ConsoleButtonString(console, [nested], 13);
+        var wrapper = new ConsoleButtonString(console,
+            [new ConsoleDivElement([nestedButton], SKColors.Transparent)]);
+        islands.Add(2, [new ConsoleDisplayLine([wrapper], true, false)]);
+        True(ReferenceEquals(nestedButton, console.FindButton(5, 5)), "higher nested hit wins");
+    }
+
+    private static void IntegratedColorMatrix()
+    {
+        using var source = new GraphicsImage();
+        using var destination = new GraphicsImage();
+        source.GCreate(1, 1, false);
+        destination.GCreate(1, 1, false);
+        source.Bitmap.Erase(new SKColor(10, 20, 30, 255));
+        float[][] swapRedBlue =
+        [
+            [0, 0, 1, 0, 0], [0, 1, 0, 0, 0], [1, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0], [0, 0, 0, 0, 1]
+        ];
+        destination.GDrawG(source, new Rectangle(0, 0, 1, 1), new Rectangle(0, 0, 1, 1), swapRedBlue);
+        Equal(new SKColor(30, 20, 10, 255), destination.Bitmap.GetPixel(0, 0), "non-identity matrix changes channels");
+    }
+
+    private static void IntegratedMaskBounds()
+    {
+        using var source = new GraphicsImage();
+        using var mask = new GraphicsImage();
+        using var destination = new GraphicsImage();
+        source.GCreate(1, 1, false);
+        mask.GCreate(1, 1, false);
+        destination.GCreate(2, 2, false);
+        source.Bitmap.Erase(SKColors.Crimson);
+        mask.Bitmap.Erase(SKColors.White);
+        foreach (Point invalid in new[]
+        {
+            new Point(-1, 0), new Point(-1, 1), new Point(0, -1),
+            new Point(2, 0), new Point(0, 2), new Point(int.MaxValue, 0)
+        })
+        {
+            destination.Bitmap.Erase(SKColors.Blue);
+            bool rejected = false;
+            try { destination.GDrawGWithMask(source, mask, invalid); }
+            catch (ArgumentOutOfRangeException) { rejected = true; }
+            True(rejected, $"invalid {invalid} is rejected before writing");
+            for (int y = 0; y < 2; y++)
+                for (int x = 0; x < 2; x++)
+                    Equal(SKColors.Blue, destination.Bitmap.GetPixel(x, y), $"invalid {invalid} leaves ({x},{y})");
+        }
+        foreach (Point edge in new[] { new Point(0, 0), new Point(1, 0), new Point(0, 1), new Point(1, 1) })
+        {
+            destination.Bitmap.Erase(SKColors.Blue);
+            destination.GDrawGWithMask(source, mask, edge);
+            for (int y = 0; y < 2; y++)
+                for (int x = 0; x < 2; x++)
+                    Equal(x == edge.X && y == edge.Y ? SKColors.Crimson : SKColors.Blue,
+                        destination.Bitmap.GetPixel(x, y), $"edge {edge} pixel ({x},{y})");
+        }
+    }
+
+    private static void IntegratedMaskAlpha()
+    {
+        using var source = new GraphicsImage();
+        using var mask = new GraphicsImage();
+        using var destination = new GraphicsImage();
+        source.GCreate(1, 1, false);
+        mask.GCreate(1, 1, false);
+        destination.GCreate(3, 3, false);
+        source.Bitmap.Erase(new SKColor(200, 100, 50, 128));
+        mask.Bitmap.Erase(new SKColor(0, 255, 128, 255));
+        destination.Bitmap.Erase(new SKColor(20, 40, 60, 64));
+        SKColor outside = destination.Bitmap.GetPixel(0, 0);
+        destination.GDrawGWithMask(source, mask, new Point(1, 1));
+        Equal(new SKColor(109, 69, 53, 96), destination.Bitmap.GetPixel(1, 1), "legacy blue-weight and premultiplied-alpha result");
+        for (int y = 0; y < 3; y++)
+            for (int x = 0; x < 3; x++)
+                if (x != 1 || y != 1) Equal(outside, destination.Bitmap.GetPixel(x, y), $"outside ({x},{y})");
+    }
+
+    private static void IntegratedMaskFileBacked()
+    {
+        using var srcBitmap = new SKBitmap(1, 1);
+        using var maskBitmap = new SKBitmap(1, 1);
+        using var destBitmap = new SKBitmap(3, 3);
+        srcBitmap.Erase(SKColors.Crimson);
+        maskBitmap.Erase(SKColors.White);
+        destBitmap.Erase(SKColors.Blue);
+        using var source = new GraphicsImage();
+        using var mask = new GraphicsImage();
+        using var destination = new GraphicsImage();
+        source.GCreateFromF(SKImage.FromBitmap(srcBitmap), false);
+        mask.GCreateFromF(SKImage.FromBitmap(maskBitmap), false);
+        destination.GCreateFromF(SKImage.FromBitmap(destBitmap), false);
+        bool rejected = false;
+        try { destination.GDrawGWithMask(source, mask, new Point(-1, 1)); }
+        catch (ArgumentOutOfRangeException) { rejected = true; }
+        True(rejected, "file-backed invalid offset is rejected");
+        True(destination.Bitmap is null, "rejection does not materialize destination");
+        destination.GDrawGWithMask(source, mask, new Point(1, 1));
+        string path = Path.Combine(Path.GetTempPath(), "integrated-mask-" + Guid.NewGuid().ToString("N") + ".png");
+        try
+        {
+            destination.SavePng(path);
+            using SKBitmap saved = SKBitmap.Decode(path);
+            Equal(SKColors.Crimson, saved.GetPixel(1, 1), "saved target");
+            Equal(SKColors.Blue, saved.GetPixel(0, 0), "saved outside");
+        }
+        finally { if (File.Exists(path)) File.Delete(path); }
+    }
+
+    private static void IntegratedMaskSelf()
+    {
+        using var image = new GraphicsImage();
+        using var mask = new GraphicsImage();
+        image.GCreate(2, 2, false);
+        mask.GCreate(2, 2, false);
+        SKColor[] colors = [SKColors.Red, SKColors.Green, SKColors.Blue, SKColors.Yellow];
+        image.Bitmap.SetPixel(0, 0, colors[0]);
+        image.Bitmap.SetPixel(1, 0, colors[1]);
+        image.Bitmap.SetPixel(0, 1, colors[2]);
+        image.Bitmap.SetPixel(1, 1, colors[3]);
+        mask.Bitmap.Erase(SKColors.White);
+        image.GDrawGWithMask(image, mask, Point.Empty);
+        Equal(colors[0], image.Bitmap.GetPixel(0, 0), "self top-left");
+        Equal(colors[1], image.Bitmap.GetPixel(1, 0), "self top-right");
+        Equal(colors[2], image.Bitmap.GetPixel(0, 1), "self bottom-left");
+        Equal(colors[3], image.Bitmap.GetPixel(1, 1), "self bottom-right");
     }
 
     private static void MissingGameBlockDefault()

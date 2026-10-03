@@ -118,7 +118,7 @@ internal abstract class ASpriteSingle : ASprite
             }
             if (sy < 0)
             {
-                point.Offset(0, -flipedBitmap.Width);
+                point.Offset(0, -flipedBitmap.Height);
             }
 
             g.DrawBitmap(flipedBitmap, point);
@@ -155,7 +155,7 @@ internal abstract class ASpriteSingle : ASprite
             if (sx < 0)
                 point.Offset(-flippedBitmap.Width, 0);
             if (sy < 0)
-                point.Offset(0, -flippedBitmap.Width);
+                point.Offset(0, -flippedBitmap.Height);
             if (attr == null)
                 g.DrawBitmap(flippedBitmap, point, JSONConfig.SamplingOptions);
             else
@@ -201,7 +201,7 @@ internal abstract class ASpriteSingle : ASprite
             }
             if (sy < 0)
             {
-                point.Offset(0, -flipedBitmap.Width);
+                point.Offset(0, -flipedBitmap.Height);
             }
 
             g.DrawBitmap(flipedBitmap, point, paint);

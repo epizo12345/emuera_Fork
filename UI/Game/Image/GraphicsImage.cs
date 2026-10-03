@@ -282,9 +282,7 @@ internal sealed class GraphicsImage : AbstractImage
     public void GDrawG(GraphicsImage srcGra, Rectangle destRect, Rectangle srcRect, float[][] cm)
     {
         EnsureWritable();
-        ImageAttributes imageAttributes = new();
-        ColorMatrix colorMatrix = new(cm);
-        imageAttributes.SetColorMatrix(colorMatrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
+        // System.Drawing側の未使用ImageAttributesは生成しない。描画は下のSkia filterだけで行う。
         //g.DrawImage(img.Bitmap, destRect, srcRect, GraphicsUnit.Pixel, imageAttributes);なんでこのパターンないのさ
         //canvas.DrawImage(src.ToBitmap(), destRect, srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height, GraphicsUnit.Pixel, imageAttributes);
         float[] skiaCM = [
@@ -309,6 +307,10 @@ internal sealed class GraphicsImage : AbstractImage
     /// </summary>
     public void GDrawGWithMask(GraphicsImage srcGra, GraphicsImage maskGra, Point destPoint)
     {
+        // 負座標は線形indexで別行へ回り込む。合成前に拒否して部分更新を防ぐ。
+        if (destPoint.X < 0 || destPoint.Y < 0 ||
+            srcGra.Width > Width - destPoint.X || srcGra.Height > Height - destPoint.Y)
+            throw new ArgumentOutOfRangeException(nameof(destPoint));
         EnsureWritable();
         SKBitmap srcBitmap = srcGra.GetReadableBitmap(out bool disposeSrc);
         SKBitmap maskBitmap = maskGra.GetReadableBitmap(out bool disposeMask);
@@ -369,6 +371,10 @@ internal sealed class GraphicsImage : AbstractImage
         {
             destImg.UnlockBits(bmpData);
         }
+        // 一時Bitmapで完成した結果を元のSkia Gへ書き戻す。
+        using SKImage composedImage = destImg.ToSKImage();
+        using var replacePaint = new SKPaint { BlendMode = SKBlendMode.Src };
+        canvas.DrawImage(composedImage, 0, 0, replacePaint);
     }
 
     public void GDrawText(string text, SKPoint point)
