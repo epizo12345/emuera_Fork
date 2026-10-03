@@ -1,19 +1,21 @@
 # Emuera.NET 最終通常版
 
-- 更新日: 2026-09-24
+- 更新日: 2026-10-04
 - 基礎: BugFix_Test `7b7dd3bf240eff4fdfc7094f4175de0e014532b7`
-- EXE生成元source commit: `5984742aeece293a2136540a093632e979872d65`
+- EXE生成元source commit: `aa701ae78e82b938d7adf020b05c0ee5580931c2`（配布資料の更新commitとは別）
 - 対象OS: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
 - `Emuera.exe` サイズ: 24,696,554バイト（約23.55 MiB）
-- `Emuera.exe` SHA-256: `81D20180E0798E871ED1D477DA790DB885918F4930A1E5BB3EB206A448A3BB10`
-- `Emuera.exe` ProductVersion: `0.2.6.0+5984742aeece293a2136540a093632e979872d65`（suffixはEXEを生成したsource commit）
+- `Emuera.exe` SHA-256: `1FBD43093255857345716EA136ED4135DEB7919ED82EEBF28FCC121AE2BBE1B4`
+- `Emuera.exe` ProductVersion: `0.2.6.0+aa701ae78e82b938d7adf020b05c0ee5580931c2`（suffixはEXEを生成したsource commit）
 - `Emuera.exe` FileVersion: `0.2.6.0`
 - publish条件: Release / win-x64 / framework-dependent / self-contained false / PublishSingleFile=true
 - publish時の計測: `PERFORMANCE_METRICS`無効
 - source revision検証: PASS（ProductVersion suffixが上記source commitのfull SHAと一致）
-- startup smoke: 3/3 PASS、`Init:End`到達、Lv2 warning 0
+- 配布フォルダからの短い起動確認: 専用コピーで1/1 PASS、`Init:End`到達、応答あり、Lv2 warning 0。実ERBマスクの正常・拒否も確認
+- 関連回帰試験: 48/48 PASS。配布用EXEで180秒`TINPUT`が完走し、時間切れ1回と次の通常入力受理を確認
+- 非正方形画像の縦反転位置とマスク合成の範囲判定・画素書戻しを修正しました。HTML Islandの重複探索と未使用`ImageAttributes`生成を除去し、`TINPUT`のタイマー再入と旧通知による誤動作を防ぎます。GPU使用率やゲーム全体の速度の改善率は未確定です。
 - 設定画面の「表示」タブからWinForms UIのダークモードをON/OFFできます。既定値ONで従来互換、ONは`SystemColorMode.Dark`、OFFは`SystemColorMode.Classic`です。変更は再起動後に反映され、ゲーム本文の文字色・背景色等とは独立しています。
 - LazyERB設定UIを正式採用。`setting.json`をゲーム推奨値、`setting_user.json`をプレイヤー上書きとして分離し、未知property保持、安全なERBサブフォルダ選択、次回起動時反映に対応
 - LazyERB設定UIの性能改善量は測定していません

@@ -29,6 +29,7 @@ https://gitlab.com/alnatiyan/EmueraDotNet/-/tree/BugFix_Test?ref_type=heads
 『WinRT.Runtime』だけをEXE内へ残して、配布サイズを抑えています。
 
 # 主な修正
+- 非正方形画像の縦反転位置とマスク合成の範囲判定・画素書戻しを修正しました。`TINPUT`ではタイマー通知の再入による強制終了と、古い通知の次入力への干渉を防ぎます。HTML Islandの重複探索と未使用`ImageAttributes`生成も除去しました。GPU使用率やゲーム全体の速度の改善率は未確定です。
 - 設定画面の「表示」タブからWinForms UIのダークモード／通常表示を切り替えられます。既定値はONで従来互換、変更は再起動後に反映されます。ゲーム本文の色設定とは独立しています。
 - LazyERBのゲーム推奨設定とプレイヤー設定を分けました。設定画面の「起動」タブから安全な対象フォルダを変更でき、ゲーム推奨設定へ戻すこともできます。未知の設定項目を通常保存で保持し、変更は次回起動後に反映されます。
 - Phase 13R39で`Data\ERB\口上\口上まとめ\`配下だけをLazy ERB Hydration化しました。起動時は関数stub／metadataを登録し、本文は初回実行直前にERBファイル単位でhydrateします。KOJO startup Managedは`1,762,740,872`から`1,174,959,288 bytes`へ実測削減（-33.34%）。通常ERB、AnalysisMode、DebugModeは従来どおりeagerです。
@@ -59,15 +60,15 @@ https://gitlab.com/alnatiyan/EmueraDotNet/-/tree/BugFix_Test?ref_type=heads
 - `InstructionLine`のSET左辺専用slotを既存`auxiliaryData`へ統合し、retained shallow sizeを120 bytesから112 bytesへ削減
 
 # 配布フォルダについて
-『配布/Emuera.NET_最終通常版』には、2026-09-24更新のLazyERB設定UI・ダークモード切り替え対応.NET 10正式single-file EXEを置いています。
+『配布/Emuera.NET_最終通常版』には、2026-10-04更新の描画・時限入力修正を含む.NET 10正式single-file EXEを置いています。LazyERB設定UI・ダークモード切り替えも引き続き含まれます。
 
 - 対象: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 形式: フレームワーク依存・単一EXE
-- EXE生成元source commit: `5984742aeece293a2136540a093632e979872d65`
-- 『Emuera.exe』: 配布用実行ファイル（24,696,554バイト、SHA-256 `81D20180E0798E871ED1D477DA790DB885918F4930A1E5BB3EB206A448A3BB10`、ProductVersion `0.2.6.0+5984742aeece293a2136540a093632e979872d65`、FileVersion `0.2.6.0`）
+- EXE生成元source commit: `aa701ae78e82b938d7adf020b05c0ee5580931c2`（後続の配布資料更新commitとは別）
+- 『Emuera.exe』: 配布用実行ファイル（24,696,554バイト、SHA-256 `1FBD43093255857345716EA136ED4135DEB7919ED82EEBF28FCC121AE2BBE1B4`、ProductVersion `0.2.6.0+aa701ae78e82b938d7adf020b05c0ee5580931c2`、FileVersion `0.2.6.0`）
 - publish条件: Release / win-x64 / framework-dependent / self-contained false / PublishSingleFile=true、`PERFORMANCE_METRICS`無効
-- startup smoke: 3/3 PASS、`Init:End`到達、Lv2 warning 0
+- 配布フォルダからの短い起動確認: 専用コピーで1/1 PASS、`Init:End`到達、応答あり、Lv2 warning 0
 - 『README.md』: 導入方法と採用機能
 - 『SHA256SUMS.txt』: 配布物の改ざん確認用ハッシュ
 
