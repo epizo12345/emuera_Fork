@@ -90,7 +90,7 @@ eraMegaten Discordサーバー（https://discord.gg/yQRYkNMuWr） にて、epizo
 
 Web版は選択したゲームデータの現在のbytesをPackagerで検証してWeb packageへまとめ、ブラウザ内のWebAssembly Runtimeで実行します。通常はERB / ERH / CSV / 画像をWeb専用に改変する必要はなく、公式配布物と一致するSHAを要求しません。SHA-256は入力と生成物の同一性確認に使います。
 
-現行ソースはWeb Runtime UX16-08-RC3-MacroStop、Packager 1.0.3です。受入済みマクロ入力・スキップ互換性と上部停止UIを含みます。Windows Packagerとブラウザの実行資材は.NET 10.0.12を使用します。既存1.0.2の配布物は保持し、[1.0.3 Release](https://github.com/epizo12345/emuera_Fork/releases/tag/web-packager-v1.0.3)を別版として提供します。Packagerはゲームフォルダと出力先を選んでWeb出力を作り、必要に応じてitch.io用ZIPも生成します。入力ゲームフォルダは読み取り専用です。
+現行ソースはWeb Runtime UX16-08-RC3-MacroStop、Packager 1.0.4です（ローカル配布準備、公開未実施）。受入済みマクロ入力・スキップ互換性と上部停止UIを含みます。Windows Packagerとブラウザの実行資材は.NET 10.0.12を使用します。既存1.0.2の配布物は保持し、[1.0.3 Release](https://github.com/epizo12345/emuera_Fork/releases/tag/web-packager-v1.0.3)を別版として提供します。Packagerはゲームフォルダと出力先を選んでWeb出力を作り、必要に応じてitch.io用ZIPも生成します。入力ゲームフォルダは読み取り専用です。
 
 確認済み範囲にはNEW GAME / LOAD / SAVE、IndexedDB永続化、ブラウザ再起動後のLOAD、ダンジョン、戦闘、右クリック、代表的な入力待ち、HTML、画像、GLOBAL保存、Packagerのpackage検証が含まれます。検証は主にShinEraTenseiPを対象にしたもので、全ゲームの完全互換を意味しません。
 
@@ -100,3 +100,5 @@ Web版は選択したゲームデータの現在のbytesをPackagerで検証し�
 
 Web Runtime、Packager、package形式の継続的な設計資料は[プロジェクト資料/Web版](プロジェクト資料/Web版/README.md)にあります。Runtime templateはソースから生成し、ゲーム本体、save、raw試験成果は通常のengine source repositoryへ含めません。
 
+
+Web Packager 1.0.4では、連続PRINTC系の物理行配置、説明付きnonbutton／HTML Islandのtooltip、QUIT後の正常終了案内とタイトル復帰を修正しました。公開済み1.0.3は保持し、ゲーム原本・保存形式は変更しません。

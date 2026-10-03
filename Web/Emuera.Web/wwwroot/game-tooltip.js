@@ -41,8 +41,11 @@ export function attach(elementId) {
       state.hideTimer = setTimeout(() => { tip.hidden = true; }, duration);
     }, delay);
   };
-  const targetOf = value => value instanceof Element && host.contains(value)
-    ? value.closest('[data-game-tooltip]') : null;
+  const targetOf = value => {
+    if (!(value instanceof Element) || !host.contains(value)) return null;
+    const target = value.closest('[data-game-tooltip]:not([data-game-tooltip=""])');
+    return target && host.contains(target) ? target : null;
+  };
   const over = event => start(targetOf(event.target), event.clientX, event.clientY);
   const move = event => { if (state.target) { state.x = event.clientX; state.y = event.clientY; if (!tip.hidden) position(); } };
   const out = event => { if (state.target && !state.target.contains(event.relatedTarget)) clear(); };
@@ -58,7 +61,8 @@ export function attach(elementId) {
   host.addEventListener('pointerout', out);
   host.addEventListener('focusin', focus);
   host.addEventListener('focusout', unfocus);
-  host.addEventListener('scroll', clear, { passive: true });
+  // The scrollable game-screen is a child of the stable surface host.
+  host.addEventListener('scroll', clear, { passive: true, capture: true });
   window.addEventListener('scroll', clear, { passive: true });
   window.addEventListener('blur', clear);
   window.addEventListener('resize', clear);
@@ -78,7 +82,7 @@ export function detach(elementId) {
   host.removeEventListener('pointerout', out);
   host.removeEventListener('focusin', focus);
   host.removeEventListener('focusout', unfocus);
-  host.removeEventListener('scroll', clear);
+  host.removeEventListener('scroll', clear, true);
   window.removeEventListener('scroll', clear);
   window.removeEventListener('blur', clear);
   window.removeEventListener('resize', clear);

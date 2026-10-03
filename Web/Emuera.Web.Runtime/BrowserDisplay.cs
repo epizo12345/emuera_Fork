@@ -66,7 +66,7 @@ public static class BrowserPartRenderPolicy
         || renderedFlowOffsetY != flowOffsetY;
 }
 
-public sealed record BrowserDisplayLine(string Alignment, IReadOnlyList<BrowserDisplayPart> Parts, long DisplayGeneration = 0, long LineId = 0, bool IsTemporary = false, int IslandFlowOffsetY = 0)
+public sealed record BrowserDisplayLine(string Alignment, IReadOnlyList<BrowserDisplayPart> Parts, long DisplayGeneration = 0, long LineId = 0, bool IsTemporary = false, int IslandFlowOffsetY = 0, bool IsLogicalLine = true)
 {
     // Image-only copies retain this creation-time summary; button generations never change on refresh.
     public long MaxButtonGeneration { get; } = MaxGeneration(Parts);

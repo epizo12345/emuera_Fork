@@ -10,6 +10,139 @@ using SkiaSharp;
 
 try
 {
+if (args is ["qpt-quit", var quitCase])
+{
+    string root = CreateGlobalFixture("@SYSTEM_TITLE\nPRINTL QPT_TITLE\nINPUT\nIF RESULT == 1\nSAVEGLOBAL\nSAVEDATA 400, \"suspend\"\nENDIF\nPRINTW BEFORE_QUIT_1\nPRINTW BEFORE_QUIT_2\nPRINTW BEFORE_QUIT_3\nQUIT\n");
+    var runtime = await BrowserRuntimeSession.StartPersistentBootstrapAsync(root, null);
+    runtime.StartTitle();
+    object process = typeof(BrowserRuntimeSession).GetField("process", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(runtime)!;
+    long oldRequest = runtime.PendingInput!.RequestId;
+    Equal(true, runtime.Submit(new(oldRequest, quitCase == "normal" ? "0" : "1")), "title input accepted once");
+    if (quitCase != "normal")
+    {
+        Equal(BrowserRuntimeStatus.Persisting, runtime.Status, "SAVE pauses until transaction ACK");
+        Equal(false, runtime.AcknowledgePersistence("stale"), "old ACK rejected");
+        bool blocked = false;
+        try { runtime.ReturnToTitle(); } catch (InvalidOperationException) { blocked = true; }
+        Equal(true, blocked, "cannot return before persistence completes");
+        if (quitCase == "failure")
+        {
+            try { await runtime.DrainPersistenceAsync(_ => Task.FromException(new IOException("fixture transaction failed"))); } catch (IOException) { }
+            Equal(0, runtime.PendingPersistenceCount, "failure also empties the queue");
+            Equal(BrowserRuntimeStatus.Failed, runtime.Status, "failure is not normal QUIT");
+            blocked = false;
+            try { runtime.ReturnToTitle(); } catch (InvalidOperationException) { blocked = true; }
+            Equal(true, blocked, "Failed cannot be reset as normal termination");
+            Equal(true, !string.IsNullOrEmpty(runtime.PersistenceError), "save error remains available");
+            Console.WriteLine("PASS qpt-quit failure"); return;
+        }
+        var committed = new List<string>();
+        var transactionCompleted = new TaskCompletionSource();
+        Task drain = runtime.DrainPersistenceAsync(mutation => { committed.Add(mutation.LogicalFilename); return mutation.LogicalFilename == "global.sav" ? transactionCompleted.Task : Task.CompletedTask; });
+        Equal(false, drain.IsCompleted, "delayed transaction has not completed");
+        Equal(BrowserRuntimeStatus.Persisting, runtime.Status, "delayed transaction cannot expose a completed game");
+        transactionCompleted.SetResult();
+        await drain;
+        Equal("global.sav,save400.sav", string.Join(',', committed), "both operations acknowledged in order");
+        Equal(false, runtime.AcknowledgePersistence("stale"), "late ACK cannot advance PRINTW");
+    }
+    for (int i = 1; i <= 3; i++)
+    {
+        Equal(BrowserRuntimeStatus.WaitingForInput, runtime.Status, "PRINTW still requires input before QUIT");
+        Equal(BrowserInputKind.Enter, runtime.PendingInput?.Kind, "PRINTW is an Enter wait");
+        Equal(true, runtime.Submit(new(runtime.PendingInput!.RequestId, "")), "advance PRINTW once");
+    }
+    Equal(BrowserRuntimeStatus.Succeeded, runtime.Status, "normal QUIT");
+    Equal(null, runtime.PendingInput, "QUIT has no pending input");
+    string? suspendFile = quitCase == "normal" ? null : Directory.GetFiles(root, "save400.sav", SearchOption.AllDirectories).Single();
+    string? suspendBefore = suspendFile is null ? null : Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(suspendFile)));
+    runtime.ReturnToTitle();
+    Equal(BrowserRuntimeStatus.WaitingForInput, runtime.Status, "terminal return reaches interactive title");
+    Equal(BrowserInputKind.Integer, runtime.PendingInput?.Kind, "manual title selection; no automatic LOAD");
+    Equal(true, ReferenceEquals(process, typeof(BrowserRuntimeSession).GetField("process", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(runtime)), "same AOT Process reused");
+    Equal(false, runtime.Submit(new(oldRequest, "1")), "old request cannot resume after title return");
+    Equal(false, runtime.AcknowledgePersistence("stale"), "old ACK cannot resume after title return");
+    Equal(0, runtime.PendingPersistenceCount, "title return does not delete or load save400");
+    if (suspendBefore is not null) Equal(suspendBefore, Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(suspendFile!))), "save400 bytes remain unchanged by title return");
+    Console.WriteLine("PASS qpt-quit " + quitCase); return;
+}
+if (args is ["qpt-printc"])
+{
+    string erb = "@SYSTEM_TITLE\nLOCAL:0 = LINECOUNT\n" + string.Concat(Enumerable.Range(1, 13).Select(i => $"PRINTFORMLC [{i}] ITEM{i}\n"))
+        + "PRINTL\nPRINTFORML LOGICAL={LINECOUNT - LOCAL:0}\nSETCOLOR 255,128,64\nPRINTL NEXT_HEADING\nDRAWLINE\nPRINTL [0] BACK\nINPUT\nCLEARLINE 6\nPRINTL AFTER_CLEAR\nINPUT\nQUIT\n";
+    string root = CreateGlobalFixture(erb);
+    File.AppendAllText(Path.Combine(root, "emuera.config"), "\nボタンの途中で行を折りかえさない:YES\n", Encoding.GetEncoding(932));
+    var runtime = await BrowserRuntimeSession.StartPersistentBootstrapAsync(root, null);
+    runtime.TextWidthMeasurer = (text, _, _) => text.Sum(c => c <= 127 ? 8d : 16d);
+    runtime.SetViewport(600, 824);
+    runtime.StartTitle();
+    var rows = runtime.DisplayLines;
+    int[] rowIndex = Enumerable.Range(1, 13).Select(i => Enumerable.Range(0, rows.Count).Single(r => Flatten(rows[r].Parts).Any(p => p.Input == i.ToString()))).ToArray();
+    Equal(true, rowIndex.Distinct().Count() >= 3, "13 PRINTLC choices occupy distinct physical rows");
+    Equal(true, rowIndex[0] != rowIndex[6] && rowIndex[6] != rowIndex[12], "separate membership, not two Any matches on one row");
+    Contains("LOGICAL=1", runtime.Output, "wrapping does not inflate logical LINECOUNT");
+    Equal(true, rows.Select(l => l.LineId).Distinct().Count() == rows.Count, "physical rows have unique DOM identities");
+    Equal(true, runtime.Submit(new(runtime.PendingInput!.RequestId, "1")), "wrapped button remains accepted");
+    Equal(false, Flatten(runtime.DisplayLines.SelectMany(l => l.Parts)).Any(p => int.TryParse(p.Input, out int n) && n >= 1 && n <= 13), "CLEARLINE removes the whole logical PRINTLC row including continuation rows");
+    Console.WriteLine("PASS qpt-printc"); return;
+}
+if (args is ["qpt-tooltip"])
+{
+    var runtime = await BrowserRuntimeSession.StartPersistentBootstrapAsync(CreateGlobalFixture("@SYSTEM_TITLE\nHTML_PRINT \"<div xpos='30px'><nonbutton title='image description'><img src='missing' height='40px'></nonbutton><button value='3' title='normal description'>NORMAL</button></div>\"\nHTML_PRINT_ISLAND \"<div display='absolute-lefttop' xpos='200px' ypos='100px'><button value='7' title='skill description&lt;br&gt;second line'>SKILL</button></div>\", 2\nINPUT\nHTML_PRINT_ISLAND_CLEAR 2\nWAIT\nQUIT\n"), null);
+    runtime.StartTitle();
+    var parts = Flatten(runtime.DisplayLines.SelectMany(l => l.Parts)).ToArray();
+    Equal(true, parts.Any(p => p.Kind == BrowserDisplayPartKind.NonButton && p.Tooltip == "image description" && p.Input is null && p.Activation is null), "input-less description preserved independently from activation");
+    var skill = parts.Single(p => p.Input == "7");
+    Equal("skill description\nsecond line", skill.Tooltip, "depth2 tooltip reaches DTO with line break");
+    Equal(true, skill.Activation is not null && runtime.IslandLineCount > 0, "Island button remains active");
+    Equal(true, runtime.Submit(new(runtime.PendingInput!.RequestId, "7")), "skill selection still accepted");
+    Equal(0, runtime.IslandLineCount, "Island is removed after selection");
+    Console.WriteLine("PASS qpt-tooltip DTO and input contracts"); return;
+}
+if (args is ["qpt-browser-fixture", var fixtureOutput])
+{
+    string erb = """
+@SYSTEM_TITLE
+GCREATE 910,40,40
+SPRITECREATE "TIPIMG",910,0,0,40,40
+PRINTL QPT FIXTURE MENU
+HTML_PRINT "<div display='absolute-lefttop' xpos='40px' ypos='100px' width='150px' height='70px'><nonbutton title='Image description&lt;br&gt;second line'><img src='TIPIMG'></nonbutton><nonbutton title='Text description'>TEXT TIP</nonbutton></div>"
+HTML_PRINT_ISLAND "<div display='absolute-lefttop' xpos='300px' ypos='120px' width='200px' height='40px'><button value='7' title='Island skill description&lt;br&gt;second line'>SKILL TIP</button></div>", 2
+PRINTL [0] ROWS   [1] SAVE AND QUIT   [2] NORMAL QUIT
+INPUT
+HTML_PRINT_ISLAND_CLEAR 2
+IF RESULT == 0
+CALL QPT_ROWS
+ELSEIF RESULT == 1
+SAVEGLOBAL
+SAVEDATA 400, "QPT suspend fixture"
+PRINTW BEFORE_QUIT_1
+PRINTW BEFORE_QUIT_2
+PRINTW BEFORE_QUIT_3
+ENDIF
+QUIT
+
+@QPT_ROWS
+PRINTL ROWS_BEGIN
+""" + "\n" + string.Concat(Enumerable.Range(1, 13).Select(i => $"PRINTFORMLC [{i}] 選択肢{i}\n")) + "PRINTL\nSETCOLOR 0xff8000\nPRINTL COLORED_HEADING\nRESETCOLOR\nDRAWLINE\nPRINTL [0] BACK\nINPUT\nRETURN\n";
+    string root = CreateGlobalFixture(erb);
+    File.AppendAllText(Path.Combine(root, "emuera.config"), "\nウィンドウ幅:1512\nウィンドウ高さ:882\n一行の高さ:18\nPRINTCの文字数:50\nボタンの途中で行を折りかえさない:YES\n", Encoding.GetEncoding(932));
+    Directory.CreateDirectory(fixtureOutput);
+    string data = Path.Combine(fixtureOutput, "data"), package = Path.Combine(fixtureOutput, "package");
+    Directory.CreateDirectory(data); Directory.CreateDirectory(package);
+    var files = new List<DataPackageFile>();
+    using (var zip = ZipFile.Open(Path.Combine(package, "qpt-fixture.zip"), ZipArchiveMode.Create))
+        foreach (string source in Directory.GetFiles(root, "*", SearchOption.AllDirectories))
+        {
+            string name = Relative(root, source); string destination = Path.Combine(data, name);
+            Directory.CreateDirectory(Path.GetDirectoryName(destination)!); File.Copy(source, destination, false);
+            zip.CreateEntryFromFile(source, name);
+            byte[] bytes = File.ReadAllBytes(source);
+            files.Add(new(name, bytes.LongLength, Convert.ToHexString(SHA256.HashData(bytes)), "qpt-fixture.zip"));
+        }
+    File.WriteAllText(Path.Combine(package, "manifest.json"), JsonSerializer.Serialize(new DataPackageManifest(1, files.Sum(f => f.Size), files), new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
+    Console.WriteLine("PASS emitted task-only UTF8-BOM fixture and verified-input manifest");return;
+}
 if (args is ["save-import-cancel-finalization"])
 {
     var normalEvents = new List<string>();
@@ -2036,8 +2169,10 @@ if (args is ["ux15-layout-primitive", var ux15FixtureRoot])
     string[] ux15Lines = ux15Session.DisplayLines.Select(line => string.Concat(Flatten(line.Parts).Where(part => part.Children is null).Select(part => part.Text))).ToArray();
     foreach (string line in ux15Lines) Console.WriteLine("UX15_LINE=" + line);
     Equal(BrowserRuntimeStatus.WaitingForInput, ux15Session.Status, "UX15 fixture reaches WAIT");
-    Equal(true, ux15Lines.Any(line => line.Contains("[1] FIRST") && line.Contains("[2] SECOND") && line.Contains("[3] THIRD")), "PRINTFORMLC first row");
-    Equal(true, ux15Lines.Any(line => line.Contains("[4] FOURTH") && line.Contains("[5] FIFTH") && line.Contains("[6] SIXTH")), "PRINTFORMLC second row");
+    int firstRow = Array.FindIndex(ux15Lines, line => line.Contains("[1] FIRST") && line.Contains("[2] SECOND") && line.Contains("[3] THIRD"));
+    int secondRow = Array.FindIndex(ux15Lines, line => line.Contains("[4] FOURTH") && line.Contains("[5] FIFTH") && line.Contains("[6] SIXTH"));
+    Equal(true, firstRow >= 0 && secondRow >= 0 && firstRow != secondRow, "PRINTFORMLC has two distinct physical row indices");
+    Equal(false, ux15Lines[firstRow].Contains("[4] FOURTH") || ux15Lines[secondRow].Contains("[1] FIRST"), "PRINTFORMLC rows have nonoverlapping membership");
     Equal(true, ux15Lines.Any(line => line.Contains("C_COUNTS=9,11", StringComparison.Ordinal)), "Windows LINECOUNT after PRINTC and HTML");
     Console.WriteLine("PASS UX15 layout primitive");
     return;

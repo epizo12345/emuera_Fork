@@ -1,40 +1,29 @@
-# Emuera Web Packager 1.0.3 — Release Notes
+# Emuera Web Packager 1.0.4 — Release Notes
 
-マクロ入力・待機互換性と停止UIを改善した1.0.3リリースです。
+ローカル正式化・配布準備版です。GitGud／GitHubへのpush、タグ、Release公開、itchアップロードは未実施です。
 
-- Windows x64向けself-contained single-file Packagerと、Web Runtime UX16-08-RC3-MacroStopのsealed runtime-templateを同梱します。
-- Packagerは利用者が選んだゲームフォルダを読み取り、ブラウザ配布用のWeb packageを生成します。
-- ShinEra本体、ゲームデータ、セーブデータは含まれません。利用者が使用権を持つゲームフォルダを別途指定してください。
-- ZIP全体を展開して利用してください。EXE単体配布ではありません。
+- Windows x64 self-contained PackagerとUX16-08-RC3-Compat104のsealed runtime-templateを同梱します。実同梱.NETCore／WindowsDesktopとbrowser-wasmは10.0.12です。
 - 生成元source commit: `{{SOURCE_COMMIT}}`
 
-## 1.0.3の変更
+## 1.0.4の変更
 
-- マクロの受理入力・時限入力・INPUTMOUSEKEYの消費を実機との比較結果に合わせ、マクロのメッセージスキップ中だけ対象の強制待機を進めます。通常操作とスキップなしマクロの強制待機、StopMesskip、保存完了待ちを維持します。
-- ゲーム内入力欄が隠れていても上部に赤い「マクロ停止」を表示し、縮小画面でも利用できます。残り入力を破棄し、古いtimer/保存ACKで再開しません。
-- 診断seed・固定時刻・詳細比較ログ・legacy/①/②切替は含みません。通常の保守用診断は保持します。
-- AOT05候補の通常操作、停止ボタン表示・クリック停止・停止後の通常操作をユーザーが受入済みです。この1.0.3生成物の検証範囲は別の出自記録に記載します。性能改善率や全ゲーム互換性は保証しません。
-- 確定したsource commitからツールとAOT Runtimeを再ビルドし、sealed templateから生成したWebを検証しています。1.0.2の配布物とタグは履歴として保持します。
+- 連続PRINTC／PRINTLCの選択肢を物理表示行へ分割し、次の見出し・罫線への重なりを修正。論理LINECOUNTとCLEARLINEの契約は維持します。
+- 説明付きnonbuttonの文字・画像へhoverできるようにし、HTML Island内のtooltipも表示します。配置用の空領域全体やクリック権限は広げません。
+- QUITを正常終了として案内し、保存が正常完了した後に「タイトルに戻る」が使えるように修正。保存失敗と正常終了を区別し、transaction／ACK、既存Process再利用、二重復帰防止を維持します。セーブ400の自動LOAD／削除は行いません。
+- タイトル画像のキャラ情報、習得予定スキル説明、日記帳／悪魔調教典、中断セーブ後の復帰をユーザーが実ゲームで受入済みです。ゲームオーバー／エンディングの終了選択は未到達・未確認です。
 
-## 維持する1.0.2の変更
+## 維持する動作とビルド条件
 
-- 会話枠・SHOP/PARTY表示、履歴中の位置指定部品の更新、スキル名枠、HTML islandを維持。
-- 入力・マクロ・IME保護、起動／取込状況表示、取込成功／上書きキャンセル後の通常タイトル復帰を維持。セーブ自動LOADは行いません。
-- WARNING1画像を収録できる従来の全画像収集と、アニメ開始時刻修正を維持。
-- 小さいPCブラウザ窓へゲーム枠を一様に縮小し、論理座標とクリック位置を維持。
-- 配布EXEの `--package <game-folder> <new-output-folder>` でGUIと同じ生成処理を実行できます。
-- Webの配布ビルド条件はRelease / RunAOTCompilation=true / WasmStripILAfterAOT=false / EnableErbExecutionProfiler=falseです。IL保持はAOTの無効化ではありません。既定IL-strip後処理の失敗を避ける条件を維持し、IL削除版とのサイズ・速度差は未測定です。
-- 解析済みIR・MEMFS低水準move試作は含みません。SHA/root-prefixの割当削減は含みますが、起動時間の改善は未確認です。
-- この1.0.3は確定commitから新規ビルドした成果物です。source一覧、実ProductVersion、template seal、release-bundle.jsonで出自を関連付け、旧候補のチェックサムは流用しません。
-- 公開前監査でSkia／.NET Runtimeの通知を補い、生成WebにもLICENSE.mdとlicenses/を同梱する経路を修正しました。この通知修正時にはRuntime・ゲームpackage・レイアウトを変更していません。
-- この.NET 10.0.12版でLOADと操作、スキル名枠、縮小クリック、セーブ書き出し／取込とタイトル復帰、実ドウマン戦のWARNING点滅をユーザーが確認済みです。長時間プレイ、実OS IME、itch公開後の動作は未確認です。全ゲーム・全ブラウザの互換性や起動時間の改善を保証しません。
+- 1.0.3のマクロ入力・待機互換性、赤いマクロ停止、通常操作への復帰を維持。通常操作とスキップなしマクロの強制待機、StopMesskip、保存完了待ち、Web Locksは省略しません。
+- 1.0.2の表示・セーブ入出力とタイトル復帰、WARNING、スケールフィットを維持。等倍上限・上寄せのレイアウトを維持します。
+- Release / RunAOTCompilation=true / WasmStripILAfterAOT=false / EnableErbExecutionProfiler=false。IL保持AOTであり、IL削除版との速度・サイズ差は未測定です。
+- SHA／root-prefix再利用は割当削減として含みます。速度改善率は主張しません。IR復元・MEMFS move試作、固定seed／時刻、比較policy、試験専用ログは含みません。通常の保守用診断は維持します。
+- 確定commitからEXE・AOTを生成し、ProductVersion、source一覧、seal、release-bundle.jsonで対応を記録します。旧チェックサムは流用しません。
 
-Windows Packagerのself-contained NETCore／WindowsDesktopとbrowser-wasm実行資材を10.0.12へ更新しました。SDK 10.0.112／wasm-tools 10.0.112を使用し、SkiaSharp等の依存と採用済みレイアウトは維持しています。
+## 使い方・制限
 
-## 使い方と注意
+1. `EmueraWebPackager-1.0.4-win-x64.zip`と同じ配布一式の`SHA256SUMS.txt`を照合し、ZIP全体を展開します。EXE単体では使えません。
+2. `EmueraWebPackager.exe`で使用権のあるゲームフォルダと新しい出力先を指定します。`--package <game-folder> <new-output-folder>`も利用できます。
+3. 生成ゲームWebをローカル確認し、利用者自身がゲーム用ZIPをitch.ioへアップロードします。ツールZIPをゲームとしてアップロードしないでください。
 
-1. `EmueraWebPackager-1.0.3-win-x64.zip`と`SHA256SUMS.txt`を取得し、ZIPのSHA-256を確認して全体を展開します。
-2. `EmueraWebPackager.exe`を起動し、使用権のあるゲームフォルダと新規出力先を選びます。itch.io用ZIPを必要に応じて作成します。
-3. 生成Webをローカルで確認してから、生成したゲーム用ZIPを利用者自身がitch.ioへアップロードします。ツールZIPをゲームとしてアップロードしないでください。
-
-RuntimeのgameId／save namespaceにはShinEra向けの制約があるため、別ゲームは別origin／itchページで配信してください。ゲーム・画像・フォント等の再配布許諾は技術検証とは別に確認してください。ツールZIPにゲーム素材、セーブ、試験ログは含みません。
+ツールZIPにゲーム本体・素材・セーブ・試験証跡は含みません。通知をtool→template→生成Webへ引き継ぎます。技術検証はゲーム等の再配布許諾を保証しません。gameId／save namespaceの制約があるため、別ゲームは別origin／itchページで配信してください。全ゲーム・全ブラウザ、長時間プレイ、実OS IME、itch公開後の動作は未確認です。旧1.0.3と1.0.2の配布物・タグは保持します。

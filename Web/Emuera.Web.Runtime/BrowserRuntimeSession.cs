@@ -498,10 +498,11 @@ public sealed class BrowserRuntimeSession
 
     public void ReturnToTitle()
     {
-        if (Status != BrowserRuntimeStatus.WaitingForInput || PendingPersistenceCount != 0)
+        if (Status is not (BrowserRuntimeStatus.WaitingForInput or BrowserRuntimeStatus.Succeeded)
+            || PendingPersistenceCount != 0 || PersistenceError is not null)
             throw new InvalidOperationException("入力待ちと保存完了後にだけタイトルへ戻れます");
         StopMessageSkip("title-return");
-        console.Resume();
+        console.RestartForTitle();
         console.ClearKeyStates();
         console.ClearText();
         console.ResetStyle();

@@ -194,6 +194,15 @@ internal sealed class EmueraConsole
             Status = BrowserRuntimeStatus.Running;
     }
 
+    public void RestartForTitle()
+    {
+        if (Status is not (BrowserRuntimeStatus.WaitingForInput or BrowserRuntimeStatus.Succeeded)
+            || PersistenceError is not null)
+            throw new InvalidOperationException("正常終了または入力待ちからだけタイトルを開始できます");
+        PendingInput = null;
+        Status = BrowserRuntimeStatus.Running;
+    }
+
     public void SetTimeOut(bool value) => isTimeOut = value;
 
     public void MarkBootstrapReady()
@@ -277,7 +286,7 @@ internal sealed class EmueraConsole
         PrintFlush(false);
         TextPrinted?.Invoke(value + "\n");
         AddPlainOrButtons(value, CurrentStyle());
-        CompleteDisplayLine(temporary);
+        CompleteDisplayLine(temporary, wrap: false);
         emptyDisplayLine = true;
         lineCount++;
     }
@@ -294,10 +303,11 @@ internal sealed class EmueraConsole
     }
     public void PrintFlush(bool force)
     {
+        bool hadParts = bufferedDisplayParts;
         bufferedDisplayParts = false;
-        if (!force && printBuffer.Count == 0)
+        if (!force && printBuffer.Count == 0 && !hadParts)
             return;
-        if (force && printBuffer.Count == 0)
+        if (force && printBuffer.Count == 0 && currentDisplayParts.Count == 0)
         {
             printBuffer.Add((" ", CurrentStyle(), false));
             printBufferLineEnd = true;
@@ -492,15 +502,28 @@ internal sealed class EmueraConsole
             currentDisplayIsHtml = false;
             remaining--;
         }
-        int remove = Math.Min(remaining, displayLines.Count);
-        if (remove > 0)
-            displayLines.RemoveLast(remove);
-        lineCount = Math.Max(0, lineCount - remove);
+        while (remaining > 0 && displayLines.Count > 0)
+        {
+            bool logical = displayLines[^1].IsLogicalLine;
+            displayLines.RemoveLast(1);
+            if (logical) { remaining--; lineCount = Math.Max(0, lineCount - 1); }
+        }
         emptyDisplayLine = displayLines.Count == 0;
         RefreshStrings(false);
     }
     public void PrintTemporaryLine(string value) => PrintSingleLine(value, true);
-    public void PrintC(string value, bool alignmentRight) => Print(CreateTypeCString(value, alignmentRight), true);
+    public void PrintC(string value, bool alignmentRight)
+    {
+        // Native's force_button isolates each PRINTC from the next call.
+        TextPrinted?.Invoke(string.Concat(printBuffer.Select(part => part.Text)));
+        FlushBufferedParts();
+        printBuffer.Clear();
+        Print(CreateTypeCString(value, alignmentRight), true);
+        TextPrinted?.Invoke(string.Concat(printBuffer.Select(part => part.Text)));
+        FlushBufferedParts();
+        printBuffer.Clear();
+        bufferedDisplayParts = true;
+    }
     internal void PrintButton(string value, string input) => AddButton(value, input, false);
     internal void PrintButton(string value, long input) => AddButton(value, input.ToString(System.Globalization.CultureInfo.InvariantCulture), true);
     internal void PrintButtonC(string value, string input, bool isRight) => AddButton(CreateTypeCString(value, isRight), input, false);
@@ -741,17 +764,48 @@ internal sealed class EmueraConsole
     static string ToCss(Color color) => $"#{color.R:X2}{color.G:X2}{color.B:X2}";
     static string ToCss(SKColor color) => $"#{color.Red:X2}{color.Green:X2}{color.Blue:X2}";
 
-    void CompleteDisplayLine(bool temporary = false)
+    void CompleteDisplayLine(bool temporary = false, bool wrap = true)
     {
         if (LastLineIsTemporary)
         {
-            displayLines.RemoveLast(1);
+            bool logical;
+            do
+            {
+                logical = displayLines[^1].IsLogicalLine;
+                displayLines.RemoveLast(1);
+            } while (!logical && displayLines.Count > 0);
             lineCount = Math.Max(0, lineCount - 1);
         }
         long lineId = currentDisplayLineId == 0 ? nextDisplayLineId++ : currentDisplayLineId;
-        displayLines.Add(new(currentDisplayIsHtml ? "left" : alignment.ToString().ToLowerInvariant(), currentDisplayParts.ToArray(), LineId: lineId, IsTemporary: temporary));
-        if (displayLines.Count > Config.MaxLog)
-            displayLines.RemoveFirst();
+        IReadOnlyList<IReadOnlyList<BrowserDisplayPart>> rows = [currentDisplayParts.ToArray()];
+        if (wrap && !currentDisplayIsHtml)
+        {
+            var fonts = new Dictionary<(string, int, bool, bool), SKFont>();
+            try
+            {
+                double Measure(BrowserDisplayPart part, string text)
+                {
+                    var style = part.Style ?? CurrentStyle();
+                    string name = style.FontName ?? Config.FontName;
+                    int size = style.FontSize > 0 ? style.FontSize : Config.FontSize;
+                    if (TextWidthMeasurer is not null) return TextWidthMeasurer(text, name, size) * part.TextPaintScale;
+                    var key = (name, size, style.Bold, style.Italic);
+                    if (!fonts.TryGetValue(key, out var font))
+                    {
+                        using var typeface = SKTypeface.FromFamilyName(name, new SKFontStyle(style.Bold ? SKFontStyleWeight.Bold : SKFontStyleWeight.Normal, SKFontStyleWidth.Normal, style.Italic ? SKFontStyleSlant.Italic : SKFontStyleSlant.Upright));
+                        fonts[key] = font = new SKFont(typeface, size);
+                    }
+                    return font.MeasureText(text) * part.TextPaintScale;
+                }
+                rows = BrowserPhysicalLines.Wrap(currentDisplayParts, Math.Max(1, Math.Min(Config.DrawableWidth, ClientWidth)), Measure, Config.ButtonWrap, Config.CompatiLinefeedAs1739);
+            }
+            finally { foreach (var font in fonts.Values) font.Dispose(); }
+        }
+        for (int i = 0; i < rows.Count; i++)
+        {
+            displayLines.Add(new(currentDisplayIsHtml ? "left" : alignment.ToString().ToLowerInvariant(), rows[i], LineId: i == 0 ? lineId : nextDisplayLineId++, IsTemporary: temporary, IsLogicalLine: i == 0));
+            if (displayLines.Count > Config.MaxLog) displayLines.RemoveFirst();
+        }
         currentDisplayParts.Clear();
         currentDisplayIsHtml = false;
         currentDisplayLineId = 0;

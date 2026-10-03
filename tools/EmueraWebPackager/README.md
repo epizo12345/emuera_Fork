@@ -1,6 +1,8 @@
 # Emuera Web Packager — 開発者向け
 
-現行ソースはversion 1.0.3です。利用者の操作は[使い方](使い方.md)、package形式は[Web版パッケージ仕様](../../プロジェクト資料/Web版/03_ゲームデータパッケージ仕様.md)を参照してください。
+現行ソースはversion 1.0.4です。ローカル配布準備済み、公開は未実施です。利用者の操作は[使い方](使い方.md)、package形式は[Web版パッケージ仕様](../../プロジェクト資料/Web版/03_ゲームデータパッケージ仕様.md)を参照してください。
+
+1.0.4はQUIT後の正常終了・タイトル復帰、連続PRINTC系の物理行配置、説明付きnonbuttonとHTML Islandのtooltipを改善しています。4実ゲームケースをユーザー受入済みです。ゲームオーバー／エンディング等の未確認経路は別に記録します。
 
 1.0.3は、受入済みマクロ入力・スキップ互換性と上部のマクロ停止UIを含むUX16-08-RC3-MacroStopを使用します。通常操作とスキップなしマクロの強制待機、StopMesskip、保存・ロック待ちは維持します。診断seed・固定時刻・比較policyは含みません。
 
@@ -36,7 +38,7 @@ SHAは選択した現在bytesと出力の同一性を確認するための値で
 
 ```powershell
 .\tools\EmueraWebPackager\build.ps1 -Mode Test -Name local-check-01
-.\tools\EmueraWebPackager\build.ps1 -Mode Publish -Name release-1-0-2-check
+.\tools\EmueraWebPackager\build.ps1 -Mode Publish -Name release-1-0-4-check
 ```
 
 省略可能な`-OutputDirectory`と`-ArtifactsPath`で試験結果とMSBuild成果物の保存先を分けられます。コミット済みsourceから隔離buildするときは、どちらもsource export外の新しいタスク専用directoryを指定してください。指定しない場合、従来どおり`artifacts/EmueraWebPackager/<name>/`とrepo内`artifacts/`を使います。PublishはWindows `win-x64` self-contained single-file GUIを生成します。公開・uploadはこのscriptでは行いません。

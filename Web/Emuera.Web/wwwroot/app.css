@@ -25,6 +25,7 @@ input { flex: 1; min-width: 12rem; }
 .game-html-group { display: inline-block; box-sizing: border-box; }
 #game-screen .game-html-group { pointer-events: none; }
 #game-screen .game-html-group .game-button { pointer-events: auto; }
+#game-screen .game-html-group .game-nonbutton[data-game-tooltip]:not([data-game-tooltip=""]) { pointer-events: auto; }
 #game-screen .game-html-group > span.game-part:not(.game-html-group, .game-nonbutton) { pointer-events: auto; }
 .game-html-origin > .game-html-group { width: max-content; max-width: none; height: auto; white-space: pre; }
 .game-line:has(> .game-html-origin ~ .game-html-origin) { position: relative; }
