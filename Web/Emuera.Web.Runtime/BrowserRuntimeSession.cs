@@ -556,7 +556,28 @@ public sealed class BrowserRuntimeSession
 
     public bool SubmitWithMessageSkip(InputEnvelope envelope, bool holdAtTimedPrimitive = false) => SubmitCore(envelope, startMessageSkip: true, holdAtTimedPrimitive);
 
-    bool SubmitCore(InputEnvelope envelope, bool startMessageSkip, bool holdAtTimedPrimitive = false)
+    // Macro input: Native raw primitive input does not synthesize RESULT mouse/key values.
+    public bool SubmitMacro(InputEnvelope envelope, bool messageSkip)
+    {
+        if (Status != BrowserRuntimeStatus.WaitingForInput || console.PendingInput is not { } request
+            || request.ID != envelope.RequestId || request.StopMesskip || request.InputType == InputType.Void)
+            return false;
+        if (request.InputType != InputType.PrimitiveMouseKey)
+            return SubmitCore(envelope, messageSkip, holdAtTimedPrimitive: true, useTimedDefault: false);
+        if ((envelope.SessionGeneration != 0 && envelope.SessionGeneration != SessionGeneration)
+            || (envelope.DisplayGeneration != 0 && envelope.DisplayGeneration != console.DisplayGeneration)
+            || !gate.TryConsume(request.ID, envelope, out _)) return false;
+        if (messageSkip) StartMessageSkip(request.ID);
+        else StopMessageSkip("macro-value-without-skip");
+        console.PrintInputEcho(envelope.RawValue ?? string.Empty);
+        console.SetTimeOut(false);
+        console.Resume();
+        RunScript();
+        StopMessageSkipAtBoundary(holdAtTimedPrimitive: true);
+        return true;
+    }
+
+    bool SubmitCore(InputEnvelope envelope, bool startMessageSkip, bool holdAtTimedPrimitive = false, bool useTimedDefault = true)
     {
         if (Status != BrowserRuntimeStatus.WaitingForInput)
             return false;
@@ -570,7 +591,7 @@ public sealed class BrowserRuntimeSession
             return false;
 
         string raw = envelope.RawValue ?? string.Empty;
-        bool usesDefault = raw.Length == 0 && request.HasDefValue;
+        bool usesDefault = raw.Length == 0 && request.HasDefValue && (useTimedDefault || request.Timelimit <= 0);
         if (usesDefault)
             raw = request.InputType == InputType.IntValue ? request.DefIntValue.ToString(CultureInfo.InvariantCulture) : request.DefStrValue;
         else if (request.OneInput && raw.Length > 1
@@ -619,7 +640,7 @@ public sealed class BrowserRuntimeSession
         return true;
     }
 
-    public bool ContinueMessageSkip(bool holdAtTimedPrimitive = false)
+    public bool ContinueMessageSkip(bool holdAtTimedPrimitive = false, bool allowForcedTwait = true)
     {
         if (!messageSkip.Active)
             return false;
@@ -636,6 +657,7 @@ public sealed class BrowserRuntimeSession
             StopMessageSkip(Status == BrowserRuntimeStatus.Succeeded ? "complete" : Status == BrowserRuntimeStatus.Failed ? "failed" : "not-waiting");
             return false;
         }
+        if (!allowForcedTwait && request.InputType == InputType.Void) return false;
         if (holdAtTimedPrimitive && request.InputType == InputType.PrimitiveMouseKey && request.Timelimit > 0)
             return false;
         if (request.NeedValue || request.StopMesskip)
@@ -989,3 +1011,4 @@ public sealed class BrowserRuntimeSession
 
     static string WithSeparator(string path) => Path.GetFullPath(path) + Path.DirectorySeparatorChar;
 }
+

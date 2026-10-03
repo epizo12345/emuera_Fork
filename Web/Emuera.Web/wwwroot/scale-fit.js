@@ -21,7 +21,7 @@ export function attach() {
     if (toolbar && status) {
       const rect = toolbar.getBoundingClientRect();
       const title = toolbar.querySelector('.host-title').getBoundingClientRect();
-      const right = toolbar.querySelector('#return-title').getBoundingClientRect();
+      const right = toolbar.querySelector('.host-macro-control, #return-title').getBoundingClientRect();
       status.style.setProperty('--host-status-width', `${Math.max(0, rect.width - 2 * Math.max(title.right - rect.left, rect.right - right.left) - 16)}px`);
     }
   };

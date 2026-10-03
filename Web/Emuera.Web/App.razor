@@ -56,6 +56,16 @@
                         <span class="host-status-progress" aria-hidden="true"></span>
                     }
                 </span>
+                <span class="host-macro-control" aria-live="polite">
+                    @if (macroActive)
+                    {
+                        <button id="host-macro-stop" class="host-macro-stop" type="button" @onclick="StopHostMacro" @onclick:stopPropagation @onmousedown:stopPropagation>マクロ停止</button>
+                    }
+                    else if (session?.MessageSkip.Active == true)
+                    {
+                        <button id="host-message-skip-stop" type="button" @onclick="StopMessageSkip" @onclick:stopPropagation @onmousedown:stopPropagation>送りを停止</button>
+                    }
+                </span>
                 <button id="return-title" type="button" disabled="@(importInProgress || (session is null && !saveManagerMode))" @onclick="ReturnToTitle">タイトルに戻る</button>
                 <details id="p1c3-save-manager" class="save-manager">
                     <summary>セーブ管理</summary>
@@ -556,6 +566,8 @@
         public double Height { get; set; }
     }
 
+    bool AllowMacroForcedWait => macroActive;
+
     protected override async Task OnInitializedAsync()
     {
         try
@@ -723,7 +735,7 @@
                 await RecordStartupProfilePhaseAsync("cache-staged-import-apply", stagedImportApply, new { outcome = "completed" });
         }
         if (session?.PendingInput is { TimedInputName: "TWAIT" or "TINPUT" or "TINPUTS" or "TONEINPUT" or "TONEINPUTS", TimeLimit: > 0 } prompt
-            && !session.MessageSkip.Active
+            && (!session.MessageSkip.Active || (prompt.Kind == BrowserInputKind.TimedVoid && !AllowMacroForcedWait))
             && scheduledTwaitRequestId != prompt.RequestId)
             ScheduleTwaitTimeout(prompt);
         if (session?.PendingInput is { Kind: BrowserInputKind.Integer or BrowserInputKind.String, TimeLimit: > 0, DisplayTime: true } timedPrompt
@@ -1502,7 +1514,7 @@
     async Task StartP1C2Host(string query)
     {
         string fixtureCase = QueryValue(query, "case") ?? "display-a";
-        if (fixtureCase is not ("display-a" or "display-b" or "display-c" or "input" or "long-running" or "tooltip" or "mousekey-stale"))
+        if (fixtureCase is not ("display-a" or "display-b" or "display-c" or "input" or "long-running" or "tooltip" or "mousekey-stale" or "macro-contract"))
             throw new InvalidDataException("host completion fixture caseが不正です");
         storeModule = await JS.InvokeAsync<IJSObjectReference>("import", "./global-persistence.js");
         longRunningModule = await JS.InvokeAsync<IJSInProcessObjectReference>("import", "./long-running-prompt.js");
@@ -1686,12 +1698,12 @@
             }
             if (!session.MessageSkip.Active) break;
             if (macroActive && session.PendingInput is { } macroPrompt
-                && (macroPrompt.Kind == BrowserInputKind.TimedVoid || !string.IsNullOrEmpty(macroPrompt.TimedInputName)))
+                && macroPrompt.Kind == BrowserInputKind.TimedVoid && !AllowMacroForcedWait)
             {
-                session.StopMessageSkip("macro-boundary");
                 SetDiagnosticStage("macro-boundary-stop");
                 break;
             }
+            if (session.PendingInput is { Kind: BrowserInputKind.TimedVoid } && !AllowMacroForcedWait) break;
             if (macroActive && session.PendingInput is { Kind: BrowserInputKind.MouseKey, TimeLimit: > 0 })
                 break;
             long batchStarted = System.Diagnostics.Stopwatch.GetTimestamp();
@@ -1699,7 +1711,7 @@
             while (session.MessageSkip.Active && resumed < p1c5SkipBatchSize
                 && System.Diagnostics.Stopwatch.GetElapsedTime(batchStarted).TotalMilliseconds < 8)
             {
-                if (!session.ContinueMessageSkip(holdAtTimedPrimitive: macroActive)) break;
+                if (!session.ContinueMessageSkip(holdAtTimedPrimitive: macroActive, allowForcedTwait: AllowMacroForcedWait)) break;
                 resumed++;
                 if (session.Status == BrowserRuntimeStatus.Persisting) break;
             }
@@ -1840,6 +1852,7 @@
             {
                 await InvokeAsync(() =>
                 {
+                    if (token.IsCancellationRequested || session?.SessionGeneration != sessionGeneration) return;
                     error = "INPUTMOUSEKEY timer失敗: " + ex.Message;
                     SetDiagnosticStage("mousekey-timer-failed");
                     StateHasChanged();
@@ -1884,6 +1897,7 @@
             {
                 await InvokeAsync(() =>
                 {
+                    if (token.IsCancellationRequested || session?.SessionGeneration != sessionGeneration) return;
                     error = (prompt.TimedInputName == "TWAIT" ? "TWAIT" : prompt.TimedInputName) + " timer失敗: " + ex.Message;
                     twaitTimerState = "failed";
                     SetDiagnosticStage("twait-timer-failed");
@@ -1952,6 +1966,7 @@
 
     async Task SubmitP1C2Macro(string macroText)
     {
+        if (macroActive || macroDraining || session?.PendingInput is null or { Kind: BrowserInputKind.TimedVoid } or { StopMessageSkip: true }) return;
 #if ERB_EXECUTION_PROFILE
         long macroStarted = erbExecutionProfile ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
 #endif
@@ -1967,78 +1982,49 @@
         macroTotalTokenCount = tokens.Count;
         macroConsumedTokenCount = 0;
         macroActive = true;
+        StateHasChanged();
+        if (storeModule is not null) await storeModule.InvokeVoidAsync("waitForPaint");
         await DrainMacroQueue();
     }
 
     async Task DrainMacroQueue()
     {
         if (macroDraining || macroQueue is null) return;
-        Queue<InputMacroToken> queue = macroQueue;
-        long operationId = macroOperationId;
+        var queue = macroQueue;
+        var active = session;
+        long operation = macroOperationId;
+        long generation = active?.SessionGeneration ?? 0;
         macroDraining = true;
         try
         {
-            while (macroActive && macroOperationId == operationId && queue.Count > 0)
+            while (macroActive && operation == macroOperationId && ReferenceEquals(active, session)
+                && active?.SessionGeneration == generation && queue.Count > 0)
             {
-                if (!dataReady || session?.PendingInput is not { } pending)
-                {
-                    StopMacroQueue();
-                    return;
-                }
-                if (pending.Kind == BrowserInputKind.TimedVoid || !string.IsNullOrEmpty(pending.TimedInputName))
-                    return;
-                if (pending.StopMessageSkip)
-                {
-                    StopMacroQueue();
-                    return;
-                }
-                if (pending.Kind is BrowserInputKind.Enter or BrowserInputKind.AnyKey)
-                {
-                    var skipEnvelope = new InputEnvelope(pending.RequestId, string.Empty, BrowserInputSource.Keyboard, session!.SessionGeneration, session.DisplayGeneration);
-                    if (!session.SubmitWithMessageSkip(skipEnvelope))
-                    {
-                        StopMacroQueue("macro-input-rejected");
-                        return;
-                    }
-                    SetDiagnosticStage("macro-wait-resume");
-                    await AdvanceP1C2();
-                    continue;
-                }
-                if (pending.Kind == BrowserInputKind.MouseKey)
-                    return;
-                if (pending.Kind != BrowserInputKind.String)
-                {
-                    StopMacroQueue();
-                    return;
-                }
-                InputMacroToken token = queue.Dequeue();
-                macroConsumedTokenCount++;
+                if (!dataReady || active.PendingInput is not { } pending) { StopMacroQueue(); return; }
+                if (pending.StopMessageSkip) { StopMacroQueue("macro-stop-messkip"); return; }
+                if (pending.Kind == BrowserInputKind.TimedVoid) return;
+                var token = queue.Peek();
                 await RefreshViewport();
-                var envelope = new InputEnvelope(pending.RequestId, token.Value, BrowserInputSource.Keyboard, session!.SessionGeneration, session.DisplayGeneration);
-                bool accepted = token.MessageSkip ? session.SubmitWithMessageSkip(envelope, holdAtTimedPrimitive: true) : session.Submit(envelope);
-                if (!accepted)
-                {
-                    StopMacroQueue("macro-input-rejected");
-                    return;
-                }
+                if (!macroActive || operation != macroOperationId || !ReferenceEquals(active, session)
+                    || active.SessionGeneration != generation) return;
+                if (active.PendingInput?.RequestId != pending.RequestId) continue;
+                var envelope = new InputEnvelope(pending.RequestId, token.Value, BrowserInputSource.Keyboard,
+                    generation, active.DisplayGeneration);
+                if (!active.SubmitMacro(envelope, token.MessageSkip)) { StopMacroQueue("macro-input-rejected"); return; }
+                queue.Dequeue(); // Consume only after the request gate accepted exactly once.
+                macroConsumedTokenCount++;
                 input = string.Empty;
                 SetDiagnosticStage("macro-token");
-                await AdvanceP1C2();
+                await AdvanceP1C2(); // Includes persistence acknowledgement before any continuation.
             }
-            if (macroOperationId == operationId)
+            if (operation == macroOperationId && macroActive && queue.Count == 0)
             {
                 macroQueue = null;
                 macroActive = false;
                 SetDiagnosticStage("macro-complete");
-                if (erbExecutionProfile && session is not null)
-                    await JS.InvokeVoidAsync("console.info", "WEB_ERB_EXECUTION_PROFILE", session.FinishErbExecutionProfile());
             }
         }
-        finally
-        {
-            macroDraining = false;
-            StateHasChanged();
-        }
+        finally { macroDraining = false; StateHasChanged(); }
     }
 
     void StopMacroQueue(string stage = "macro-boundary-stop")
@@ -2065,6 +2051,14 @@
         input = string.Empty;
         SetDiagnosticStage(startMessageSkip ? "message-skip-start" : "text-input");
         await AdvanceP1C2();
+    }
+
+    void StopHostMacro()
+    {
+        if (!macroActive) return;
+        StopMacroQueue("macro-user-stop");
+        session?.StopMessageSkip("macro-user-stop");
+        StateHasChanged();
     }
 
     void StopMessageSkip()
@@ -3454,3 +3448,6 @@
         _ => "キー入力待ち"
     };
 }
+
+
+

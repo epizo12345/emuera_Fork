@@ -1,6 +1,6 @@
 # Emuera Web Packager
 
-現行Packagerは1.0.2、同梱Runtime templateはUX16-08-RC3です。Windows Packagerとブラウザの実行資材は.NET 10.0.12です。Packagerのソースは`tools/EmueraWebPackager/`にあります。配布ZIPは準備済みで、GitHub Releaseの公開は保留しています。Webのビルド条件はRelease、`RunAOTCompilation=true`、`WasmStripILAfterAOT=false`、`EnableErbExecutionProfiler=false`です。IL保持はAOTの無効化ではなく、IL削除版とのサイズ・速度差は未測定です。
+現行Packagerは1.0.3、同梱Runtime templateはUX16-08-RC3-MacroStopです。マクロ入力・スキップ互換性と上部停止UIを含み、通常操作の待機・保存保護を維持します。既存1.0.2の配布物とタグは保持します。Windows Packagerとブラウザの実行資材は.NET 10.0.12です。Packagerのソースは`tools/EmueraWebPackager/`にあります。[1.0.3 Release](https://github.com/epizo12345/emuera_Fork/releases/tag/web-packager-v1.0.3)ではゲームなしのツールZIPとチェックサムを配布します。Webのビルド条件はRelease、`RunAOTCompilation=true`、`WasmStripILAfterAOT=false`、`EnableErbExecutionProfiler=false`です。IL保持はAOTの無効化ではなく、IL削除版とのサイズ・速度差は未測定です。
 
 ## 利用者の操作
 
@@ -21,3 +21,4 @@
 出力を作る前に入力snapshotと`.template-manifest.json`を検証し、別の`.building-*`へ生成してarchive bytesを再検証します。最後に出力を昇格します。既存の未知出力は上書きせず、置換時の前版は`.previous-*`へ保持します。itch ZIPはWeb出力のroot内容とentryごとのbytesを比較します。Archiveの非圧縮入力上限はpack単位128 MiBです。
 
 詳しいパッケージ境界は[仕様](03_ゲームデータパッケージ仕様.md)、日常の操作は[利用者向け説明](../../tools/EmueraWebPackager/使い方.md)を参照してください。
+

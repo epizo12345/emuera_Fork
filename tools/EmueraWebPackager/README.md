@@ -1,6 +1,8 @@
 # Emuera Web Packager — 開発者向け
 
-現行ソースはversion 1.0.2です。利用者の操作は[使い方](使い方.md)、package形式は[Web版パッケージ仕様](../../プロジェクト資料/Web版/03_ゲームデータパッケージ仕様.md)を参照してください。
+現行ソースはversion 1.0.3です。利用者の操作は[使い方](使い方.md)、package形式は[Web版パッケージ仕様](../../プロジェクト資料/Web版/03_ゲームデータパッケージ仕様.md)を参照してください。
+
+1.0.3は、受入済みマクロ入力・スキップ互換性と上部のマクロ停止UIを含むUX16-08-RC3-MacroStopを使用します。通常操作とスキップなしマクロの強制待機、StopMesskip、保存・ロック待ちは維持します。診断seed・固定時刻・比較policyは含みません。
 
 1.0.2は表示・入力・セーブ取込／キャンセル後のタイトル復帰、WARNING、スケールフィットを含むUX16-08-RC3を使用します。Webの配布ビルド条件はRelease / RunAOTCompilation=true / WasmStripILAfterAOT=false / EnableErbExecutionProfiler=falseです。IL保持はAOTの無効化ではなく、IL削除版とのサイズ・速度差は未測定です。SHA出力領域・root-prefix再利用は割当削減のみ確認済みで、速度改善を保証しません。
 
@@ -8,7 +10,7 @@ GUIを開かず同じ生成処理を実行する場合は、ZIPを展開した�
 
 ## Release一式
 
-Packagerの配布はGitHub Releasesへruntime-template付きZIPを添付する方針です。EXE単体では起動できないためZIP全体を使います。ShinEra本体やゲームデータは付属せず、利用者が自分のゲームフォルダを別途選択します。1.0.2の配布ZIPとチェックサムは準備済みで、GitHub Releaseの公開は保留しています。1.0.1の公開履歴は保持します。
+Packagerの配布はGitHub Releasesへruntime-template付きZIPを添付する方針です。EXE単体では起動できないためZIP全体を使います。ShinEra本体やゲームデータは付属せず、利用者が自分のゲームフォルダを別途選択します。既存1.0.2の配布ZIPとチェックサムは保持し、[1.0.3 Release](https://github.com/epizo12345/emuera_Fork/releases/tag/web-packager-v1.0.3)を別版として配布します。1.0.1の公開履歴は保持します。
 
 ## 構成
 
@@ -58,3 +60,4 @@ SHAは選択した現在bytesと出力の同一性を確認するための値で
 1.0.2では依存のライセンス通知をsealed runtime-templateへ同梱し、生成Webへ引き継ぎます。AOT=true／WasmStripILAfterAOT=falseはIL保持の配布条件で、AOT無効化ではありません。依存監査は確認日時と対象版に限るため公開直前にも確認し、ゲーム・画像・口上の再配布権は別途確認してください。
 
 Windows Packagerのself-contained NETCore／WindowsDesktopとbrowser-wasm実行資材は10.0.12です。SDK 10.0.112／wasm-tools 10.0.112を使用し、SkiaSharp等の版と採用済みレイアウトを維持します。この10.0.12版はLOADと操作、縮小クリック、セーブ入出力後のタイトル復帰、実ドウマン戦のWARNING点滅をユーザーが確認済みです。全ゲーム・全ブラウザの互換性、長時間プレイ、実OS IME、itch上の動作を保証するものではありません。
+
