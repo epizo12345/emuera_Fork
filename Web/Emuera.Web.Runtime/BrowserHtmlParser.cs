@@ -12,7 +12,7 @@ internal static class BrowserHtmlParser
 
     internal static string PlainText(string html) => Parser.ParseDocument($"<body>{html}</body>").Body?.TextContent ?? string.Empty;
 
-    internal static void Append(
+    internal static bool Append(
         string html,
         BrowserDisplayStyle baseStyle,
         Func<string, string?> imageResolver,
@@ -21,6 +21,9 @@ internal static class BrowserHtmlParser
     {
         IDocument document = Parser.ParseDocument($"<body>{html.ReplaceLineEndings("<br>")}</body>");
         ParseNodes(document.Body?.ChildNodes ?? throw new InvalidDataException("HTML body is missing"), baseStyle, null, imageResolver, add, lineBreak);
+        // Native's NOBR disables automatic wrapping for the whole HTML_PRINT,
+        // while explicit BR nodes still produce physical lines.
+        return document.QuerySelector("nobr") is not null;
     }
 
     static void ParseNodes(

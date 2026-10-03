@@ -10,6 +10,118 @@ using SkiaSharp;
 
 try
 {
+if (args is ["html-flow-string"])
+{
+    string text = string.Concat(Enumerable.Repeat("文字😀", 180));
+    string root = CreateGlobalFixture("@SYSTEM_TITLE\nHTML_PRINT \"<button value='TEXT_VALUE' title='説明&amp;安全'>" + text + "</button>\"\nINPUTS\nPRINTFORML GOT=%RESULTS%\nINPUTS\nQUIT\n");
+    File.AppendAllText(Path.Combine(root, "emuera.config"), "\nウィンドウ幅:1512\n", Encoding.GetEncoding(932));
+    var runtime = await BrowserRuntimeSession.StartPersistentBootstrapAsync(root, null);
+    runtime.TextWidthMeasurer = (s, _, _) => s.Length * 9;
+    runtime.StartTitle();
+    var parts = runtime.DisplayLines.SelectMany(l => l.Parts).Where(p => p.Input == "TEXT_VALUE").ToArray();
+    Equal(true, parts.Length > 1, "long string-input button splits");
+    Equal(text, string.Concat(parts.SelectMany(p => p.Children!).Select(p => p.Text)), "unicode remains complete and ordered");
+    Equal(true, parts.All(p => !p.IsInteger && p.Tooltip == "説明&安全" && p.Activation is not null), "string input and escaped tooltip preserved");
+    Equal(true, parts.SelectMany(p => p.Children!).All(p => p.Text.Length == 0 || !char.IsHighSurrogate(p.Text[^1]) && !char.IsLowSurrogate(p.Text[0])), "no surrogate split boundary");
+    Equal(true, runtime.SubmitDisplay(parts[^1]), "string continuation selectable");
+    Contains("GOT=TEXT_VALUE", runtime.Output, "one accepted string value");
+    Equal(false, runtime.SubmitDisplay(parts[^1]), "old fragment cannot be consumed twice");
+    Console.WriteLine("PASS html-flow-string"); return;
+}
+if (args is ["html-flow-contract", var htmlFlowMode])
+{
+    string a = new('A', 160), b = new('B', 160), c = new('C', 160);
+    string erb = "@SYSTEM_TITLE\nLOCAL:0 = LINECOUNT\n"
+        + $"HTML_PRINT \"<button value='1' title='LONG'><font color='red'>{a}</font><b>{b}</b><font size='200'>{c}</font></button>\"\n"
+        + $"HTML_PRINT \"<nobr><button value='2' title='NOBR'>{a}{b}{c}</button><br>NOBR_SECOND</nobr>\"\n"
+        + $"HTML_PRINT \"<div display='absolute-leftbottom' xpos='20px'><button value='3' title='POSITION'>{a}{b}{c}</button></div>\"\n"
+        + $"HTML_PRINT_ISLAND \"<button value='4' title='ISLAND'>{a}{b}{c}</button>\", 2\n"
+        + "HTML_PRINT \"<button value='5'>BEFORE_BR</button><br>AFTER_BR\"\n"
+        + "HTML_PRINT \"<nonbutton title='NONBUTTON'><font color='green'>" + a + b + c + "</font></nonbutton>\"\n"
+        + "HTML_PRINT \"<button value='7' title='IMAGE'><img src='missing' width='30px' height='18px'>" + a + b + c + "</button>\"\n"
+        + "PRINTFORML CONTRACT_LOGICAL={LINECOUNT - LOCAL:0}\nINPUT\nCLEARLINE 8\nPRINTL CLEARED\nINPUT\nQUIT\n";
+    string root = CreateGlobalFixture(erb);
+    File.AppendAllText(Path.Combine(root, "emuera.config"), "\nウィンドウ幅:1512\nフォントサイズ:18\nボタンの途中で行を折りかえさない:" + (htmlFlowMode == "split" ? "NO" : "YES") + "\n", Encoding.GetEncoding(932));
+    var runtime = await BrowserRuntimeSession.StartPersistentBootstrapAsync(root, null);
+    runtime.TextWidthMeasurer = (text, _, size) => text.Length * size / 2d;
+    runtime.SetViewport(1512, 824);
+    runtime.StartTitle();
+    var rows = runtime.DisplayLines.ToArray();
+    var fragments = rows.SelectMany(l => l.Parts).Where(p => p.Input == "1").ToArray();
+    Equal(true, fragments.Length >= 4, "long styled button physically splits");
+    Equal(a + b + c, string.Concat(fragments.SelectMany(p => p.Children!).Select(p => p.Text)), "all styled text retained exactly once");
+    foreach (var p in fragments)
+    {
+        Equal("LONG", p.Tooltip, "split preserves tooltip");
+        Equal(true, p.IsInteger && p.Activation is not null, "split preserves input activation");
+        Equal(fragments[0].ButtonGeneration, p.ButtonGeneration, "split keeps button generation");
+    }
+    var leaves = fragments.SelectMany(p => p.Children!).ToArray();
+    Equal(true, leaves.Where(p => p.Text.Contains('A')).All(p => p.Style?.Foreground == "#FF0000"), "red child style");
+    Equal(true, leaves.Where(p => p.Text.Contains('B')).All(p => p.Style?.Bold == true), "bold child style");
+    Equal(true, leaves.Where(p => p.Text.Contains('C')).All(p => p.Style?.FontSize == 36), "size child style");
+    Equal(1, rows.Count(l => l.Parts.Any(p => p.Input == "2")), "NOBR excludes auto wrap");
+    Equal(1, rows.Count(l => Flatten(l.Parts).Any(p => p.Input == "3")), "positioned DIV remains intact");
+    Equal(1, rows.Count(l => l.Parts.Any(p => p.Input == "4")), "independent Island remains intact");
+    int before = Array.FindIndex(rows, l => l.Parts.Any(p => p.Input == "5"));
+    int after = Array.FindIndex(rows, l => l.Parts.Any(p => p.Text == "AFTER_BR"));
+    Equal(before + 1, after, "explicit BR creates a physical continuation");
+    Equal(true, rows[before].IsLogicalLine && !rows[after].IsLogicalLine, "Native HTML BR stays in the same logical line");
+    Equal(true, rows.Count(l => l.Parts.Any(p => p.Tooltip == "NONBUTTON")) > 1, "styled nonbutton wraps without activation");
+    Equal(1, Flatten(rows.SelectMany(l => l.Parts)).Count(p => p.Kind == BrowserDisplayPartKind.Image), "image is an indivisible child, retained once");
+    var imageParts = rows.SelectMany(l => l.Parts).Where(p => p.Input == "7").ToArray();
+    Equal(a + b + c, string.Concat(imageParts.SelectMany(p => p.Children!).Where(p => p.Kind == BrowserDisplayPartKind.Text).Select(p => p.Text)), "image button text retained across continuations");
+    Contains("CONTRACT_LOGICAL=6", runtime.Output, "HTML BR does not inflate LINECOUNT; island independent");
+    Equal(true, runtime.SubmitDisplay(fragments[^1]), "long button continuation is clickable");
+    Equal(false, Flatten(runtime.RetainedDisplayLines.SelectMany(l => l.Parts)).Any(p => p.Tooltip is "LONG" or "NOBR" or "POSITION"), "CLEARLINE removes whole HTML logical groups");
+    Equal(true, Flatten(runtime.DisplayLines.SelectMany(l => l.Parts)).Any(p => p.Tooltip == "ISLAND"), "CLEARLINE does not remove island");
+    Console.WriteLine("PASS html-flow-contract " + htmlFlowMode); return;
+}
+if (args is ["html-flow-lists", var countsText])
+{
+    int[] counts = countsText.Split(',').Select(int.Parse).ToArray();
+    string Item(int n) => $"[{n}] TITLE_{n:D3}".PadRight(27);
+    int offset = 0;
+    string html = string.Concat(counts.Select(count => {
+        string block = string.Concat(Enumerable.Range(offset + 1, count).Select(i => $"<button value='{i}' title='DESCRIPTION_{i}'><font color='#ff8000'>{Item(i)}</font></button>"));
+        offset += count; return $"HTML_PRINT \"{block}\"\n";
+    }));
+    string root = CreateGlobalFixture("@SYSTEM_TITLE\nLOCAL:0 = LINECOUNT\n" + html
+        + "PRINTFORML FLOW_LOGICAL={LINECOUNT - LOCAL:0}\nDRAWLINE\nPRINTL [0] BACK\nINPUT\nCLEARLINE " + (counts.Length + 4) + "\nPRINTL AFTER_CLEAR\nINPUT\nQUIT\n");
+    File.AppendAllText(Path.Combine(root, "emuera.config"), "\nウィンドウ幅:1512\nフォントサイズ:18\n一行の高さ:18\nボタンの途中で行を折りかえさない:YES\n", Encoding.GetEncoding(932));
+    var runtime = await BrowserRuntimeSession.StartPersistentBootstrapAsync(root, null);
+    runtime.TextWidthMeasurer = (text, _, size) => text.Length * size / 2d;
+    runtime.SetViewport(1512, 824);
+    runtime.StartTitle();
+    IReadOnlyList<BrowserDisplayLine> rows = runtime.DisplayLines.ToArray();
+    var buttons = rows.SelectMany(l => l.Parts).Where(p => p.Input != null && p.Input != "0").ToArray();
+    Equal(offset, buttons.Length, "no missing or duplicated title items");
+    int start = 1;
+    foreach (int count in counts)
+    {
+        int[] owners = Enumerable.Range(start, count).Select(n => Enumerable.Range(0, rows.Count).Single(r => rows[r].Parts.Any(p => p.Input == n.ToString()))).ToArray();
+        Equal(true, count <= 6 ? owners.Distinct().Count() == 1 : owners.Distinct().Count() > 1, "title list physically wraps; small list remains one row");
+        start += count;
+    }
+    foreach (var b in buttons)
+    {
+        int n = int.Parse(b.Input!);
+        Equal(Item(n), string.Concat(Flatten(b.Children ?? []).Where(p => p.Children is null).Select(p => p.Text)), "child text and padding preserved");
+        Equal("DESCRIPTION_" + n, b.Tooltip, "tooltip retained");
+        Equal("#FF8000", b.Children![0].Style?.Foreground, "child formatting retained");
+        Equal(true, b.IsInteger && b.Activation is not null && b.ButtonGeneration >= 0, "input selection and generation retained");
+    }
+    Contains("FLOW_LOGICAL=" + counts.Length, runtime.Output, "HTML wrapping counts one logical line per HTML_PRINT");
+    Equal(rows.Count, rows.Select(l => l.LineId).Distinct().Count(), "physical rows have independent IDs");
+    foreach (var row in rows.Where(l => l.Parts.Any(p => p.Tooltip?.StartsWith("DESCRIPTION_") == true)))
+        Equal(true, Flatten(row.Parts).Where(p => p.Children is null).Sum(p => p.Text.Length * (p.Style?.FontSize ?? 18) / 2d) <= 1512, "children occupy one physical row, no browser-only overflow");
+    int lastOwner = Enumerable.Range(0, rows.Count).Last(r => rows[r].Parts.Any(p => p.Input != null && p.Input != "0"));
+    Equal(true, lastOwner < Enumerable.Range(0, rows.Count).Single(r => Flatten(rows[r].Parts).Any(p => p.Text.Contains("FLOW_LOGICAL="))), "subsequent heading/rule/back rows follow title continuations");
+    Equal(true, runtime.SubmitDisplay(buttons[^1]), "last wrapped button accepts exactly one input");
+    Equal(false, runtime.SubmitDisplay(buttons[^1]), "old button generation rejected");
+    Equal(false, Flatten(runtime.DisplayLines.SelectMany(l => l.Parts)).Any(p => p.Tooltip?.StartsWith("DESCRIPTION_") == true), "CLEARLINE removes all logical HTML continuations");
+    Console.WriteLine("PASS html-flow-lists " + countsText + " physicalRows=" + rows.Count); return;
+}
 if (args is ["qpt-quit", var quitCase])
 {
     string root = CreateGlobalFixture("@SYSTEM_TITLE\nPRINTL QPT_TITLE\nINPUT\nIF RESULT == 1\nSAVEGLOBAL\nSAVEDATA 400, \"suspend\"\nENDIF\nPRINTW BEFORE_QUIT_1\nPRINTW BEFORE_QUIT_2\nPRINTW BEFORE_QUIT_3\nQUIT\n");

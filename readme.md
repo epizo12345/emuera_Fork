@@ -101,4 +101,4 @@ Web版は選択したゲームデータの現在のbytesをPackagerで検証し�
 Web Runtime、Packager、package形式の継続的な設計資料は[プロジェクト資料/Web版](プロジェクト資料/Web版/README.md)にあります。Runtime templateはソースから生成し、ゲーム本体、save、raw試験成果は通常のengine source repositoryへ含めません。
 
 
-Web Packager 1.0.4では、連続PRINTC系の物理行配置、説明付きnonbutton／HTML Islandのtooltip、QUIT後の正常終了案内とタイトル復帰を修正しました。公開済み1.0.3は保持し、ゲーム原本・保存形式は変更しません。
+Web Packager 1.0.4では、連続PRINTC系の物理行配置、通常フローのHTMLボタン折返し、説明付きnonbutton／HTML Islandのtooltip、QUIT後の正常終了案内とタイトル復帰を修正しました。日記帳の称号一覧／一覧2／一覧3／EXの折返しはユーザー実ゲーム受入済みです。公開済み1.0.3は保持し、ゲーム原本・保存形式は変更しません。

@@ -26,6 +26,7 @@ internal sealed class EmueraConsole
     readonly List<BrowserDisplayLine> publishedLines = [];
     readonly List<BrowserDisplayPart> currentDisplayParts = [];
     bool currentDisplayIsHtml;
+    bool currentDisplayNoWrap;
     readonly SortedDictionary<int, List<BrowserDisplayLine>> htmlIslandLines = [];
     bool printBufferLineEnd = true;
     readonly bool[] keyDown = new bool[256];
@@ -484,6 +485,7 @@ internal sealed class EmueraConsole
         currentDisplayParts.Clear();
         currentDisplayLineId = 0;
         currentDisplayIsHtml = false;
+        currentDisplayNoWrap = false;
         displayLines.Clear();
         publishedLines.Clear();
         htmlIslandLines.Clear();
@@ -500,6 +502,7 @@ internal sealed class EmueraConsole
             currentDisplayParts.Clear();
             currentDisplayLineId = 0;
             currentDisplayIsHtml = false;
+            currentDisplayNoWrap = false;
             remaining--;
         }
         while (remaining > 0 && displayLines.Count > 0)
@@ -545,7 +548,8 @@ internal sealed class EmueraConsole
         if (string.IsNullOrEmpty(value)) return;
         CaptureR3R3RawHtml("html", value, lineEnd);
         currentDisplayIsHtml = true;
-        BrowserHtmlParser.Append(value, HtmlBaseStyle(), AppContents.GetSpriteDataUrl, AddPart, CompleteHtmlLine);
+        currentDisplayNoWrap |= BrowserHtmlParser.Append(value, HtmlBaseStyle(), AppContents.GetSpriteDataUrl, AddPart,
+            () => AddPart(new(BrowserDisplayPartKind.Break)));
         TextPrinted?.Invoke(BrowserHtmlParser.PlainText(value) + (lineEnd ? "\n" : string.Empty));
         if (lineEnd)
         {
@@ -778,7 +782,7 @@ internal sealed class EmueraConsole
         }
         long lineId = currentDisplayLineId == 0 ? nextDisplayLineId++ : currentDisplayLineId;
         IReadOnlyList<IReadOnlyList<BrowserDisplayPart>> rows = [currentDisplayParts.ToArray()];
-        if (wrap && !currentDisplayIsHtml)
+        if (wrap)
         {
             var fonts = new Dictionary<(string, int, bool, bool), SKFont>();
             try
@@ -797,7 +801,7 @@ internal sealed class EmueraConsole
                     }
                     return font.MeasureText(text) * part.TextPaintScale;
                 }
-                rows = BrowserPhysicalLines.Wrap(currentDisplayParts, Math.Max(1, Math.Min(Config.DrawableWidth, ClientWidth)), Measure, Config.ButtonWrap, Config.CompatiLinefeedAs1739);
+                rows = BrowserPhysicalLines.Wrap(currentDisplayParts, Math.Max(1, Math.Min(Config.DrawableWidth, ClientWidth)), Measure, Config.ButtonWrap, Config.CompatiLinefeedAs1739, currentDisplayNoWrap);
             }
             finally { foreach (var font in fonts.Values) font.Dispose(); }
         }
@@ -808,14 +812,9 @@ internal sealed class EmueraConsole
         }
         currentDisplayParts.Clear();
         currentDisplayIsHtml = false;
+        currentDisplayNoWrap = false;
         currentDisplayLineId = 0;
         RefreshStrings(false);
-    }
-
-    void CompleteHtmlLine()
-    {
-        lineCount++;
-        CompleteDisplayLine();
     }
 
     void Publish(bool imagesOnly = false)
