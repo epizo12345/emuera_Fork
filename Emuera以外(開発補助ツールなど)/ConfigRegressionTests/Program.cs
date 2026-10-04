@@ -44,6 +44,12 @@ internal static class Program
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         Run("dark mode config defaults to YES, round-trips YES/NO, and preserves display colors and other settings", DarkModeConfigRoundTrips);
         Run("non-square vertical flip preserves four corners in three sprite paths", IntegratedVerticalFlip);
+        Run("animated color matrix uses the selected source rectangle", AnimatedColorMatrixUsesSelectedRectangle);
+        Run("animated color matrix keeps both frames and transparent pixels", AnimatedColorMatrixKeepsFrames);
+        Run("negative animation offsets clip the matching source pixels", AnimatedNegativeOffsetsClipSource);
+        Run("file-backed animation crop uses non-identity color matrix", AnimationCandidateRegression.FileBackedColorCrop);
+        Run("file-backed crop and negative offset match original-placement clipping", AnimationCandidateRegression.FileBackedNegativeOffset);
+        Run("edge-touching animation frames draw no pixels", AnimationCandidateRegression.EdgeTouchDrawsNothing);
         Run("non-identity color matrix swaps red and blue channels", IntegratedColorMatrix);
         Run("mask rejects out-of-range coordinates without changing pixels", IntegratedMaskBounds);
         Run("mask composes alpha at offset and preserves outside pixels", IntegratedMaskAlpha);
@@ -765,6 +771,132 @@ internal static class Program
             Equal(SKColors.Red, target.GetPixel(30, 140), $"path {path} lower-left");
             Equal(SKColors.Green, target.GetPixel(90, 140), $"path {path} lower-right");
         }
+    }
+
+    private static void AnimatedColorMatrixUsesSelectedRectangle()
+    {
+        using var source = new GraphicsImage();
+        source.GCreate(9, 6, false);
+        source.Bitmap.Erase(SKColors.Magenta);
+        for (int y = 2; y < 4; y++)
+            for (int x = 4; x < 7; x++)
+                source.Bitmap.SetPixel(x, y, x == 5 && y == 2 ? SKColors.Transparent :
+                    new SKColor((byte)(x * 25), (byte)(y * 60), 30, 255));
+        using var sprite = new SpriteAnime("crop", new Size(3, 2));
+        True(sprite.AddFrame(source, new Rectangle(4, 2, 3, 2), Point.Empty, 1000), "cropped frame added");
+        using var plain = new SKBitmap(6, 4);
+        using var corrected = new SKBitmap(6, 4);
+        using var plainCanvas = new SKCanvas(plain);
+        using var correctedCanvas = new SKCanvas(corrected);
+        plain.Erase(SKColors.Transparent);
+        corrected.Erase(SKColors.Transparent);
+        using var identity = SKColorFilter.CreateColorMatrix([
+            1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0]);
+        sprite.GraphicsDraw(plainCanvas, new Rectangle(0, 0, 6, 4));
+        sprite.GraphicsDraw(correctedCanvas, new Rectangle(0, 0, 6, 4), identity);
+        for (int y = 0; y < 4; y++)
+            for (int x = 0; x < 6; x++)
+                Equal(plain.GetPixel(x, y), corrected.GetPixel(x, y), $"cropped identity pixel ({x},{y})");
+    }
+
+    private static void AnimatedNegativeOffsetsClipSource()
+    {
+        using var source = new GraphicsImage();
+        source.GCreate(4, 4, false);
+        using var identity = SKColorFilter.CreateColorMatrix([
+            1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0]);
+        for (int y = 0; y < 4; y++)
+            for (int x = 0; x < 4; x++)
+                source.Bitmap.SetPixel(x, y, new SKColor((byte)(40 + x * 40), (byte)(30 + y * 40), 10));
+        foreach (Point offset in new[] { new Point(-2, 0), new Point(0, -2), new Point(-2, -2),
+                     new Point(4, 0), new Point(0, 3), new Point(-5, 0) })
+        {
+            using var sprite = new SpriteAnime("offset", new Size(5, 5));
+            True(sprite.AddFrame(source, new Rectangle(0, 0, 4, 4), offset, 1000), $"offset {offset} added");
+            using var actual = new SKBitmap(5, 5);
+            using var expected = new SKBitmap(5, 5);
+            using var actualCanvas = new SKCanvas(actual);
+            using var expectedCanvas = new SKCanvas(expected);
+            actual.Erase(SKColors.Transparent);
+            expected.Erase(SKColors.Transparent);
+            sprite.GraphicsDraw(actualCanvas, Point.Empty);
+            expectedCanvas.ClipRect(SKRect.Create(0, 0, 5, 5));
+            source.Draw(expectedCanvas, SKRect.Create(0, 0, 4, 4), SKRect.Create(offset.X, offset.Y, 4, 4));
+            for (int y = 0; y < 5; y++)
+                for (int x = 0; x < 5; x++)
+                    Equal(expected.GetPixel(x, y), actual.GetPixel(x, y), $"offset {offset} pixel ({x},{y})");
+
+            using var scaled = new SKBitmap(10, 10);
+            using var scaledFiltered = new SKBitmap(10, 10);
+            using var scaledExpected = new SKBitmap(10, 10);
+            using var scaledCanvas = new SKCanvas(scaled);
+            using var filteredCanvas = new SKCanvas(scaledFiltered);
+            using var referenceCanvas = new SKCanvas(scaledExpected);
+            scaled.Erase(SKColors.Transparent);
+            scaledFiltered.Erase(SKColors.Transparent);
+            scaledExpected.Erase(SKColors.Transparent);
+            sprite.GraphicsDraw(scaledCanvas, new Rectangle(0, 0, 10, 10));
+            sprite.GraphicsDraw(filteredCanvas, new Rectangle(0, 0, 10, 10), identity);
+            referenceCanvas.ClipRect(SKRect.Create(0, 0, 10, 10));
+            source.Draw(referenceCanvas, SKRect.Create(0, 0, 4, 4), SKRect.Create(offset.X * 2, offset.Y * 2, 8, 8));
+            for (int y = 0; y < 10; y++)
+                for (int x = 0; x < 10; x++)
+                {
+                    SKColor expectedPixel = scaledExpected.GetPixel(x, y);
+                    Equal(expectedPixel, scaled.GetPixel(x, y), $"scaled offset {offset} pixel ({x},{y})");
+                    Equal(expectedPixel, scaledFiltered.GetPixel(x, y), $"filtered offset {offset} pixel ({x},{y})");
+                }
+        }
+    }
+
+    private static void AnimatedColorMatrixKeepsFrames()
+    {
+        using var source = new GraphicsImage();
+        source.GCreate(6, 2, false);
+        source.Bitmap.Erase(SKColors.Red);
+        for (int y = 0; y < 2; y++)
+            for (int x = 3; x < 6; x++)
+                source.Bitmap.SetPixel(x, y, SKColors.Blue);
+        source.Bitmap.SetPixel(4, 0, SKColors.Transparent);
+        using var sprite = new SpriteAnime("two frames", new Size(3, 2));
+        True(sprite.AddFrame(source, new Rectangle(0, 0, 3, 2), Point.Empty, 60000), "first frame added");
+        True(sprite.AddFrame(source, new Rectangle(3, 0, 3, 2), Point.Empty, 60000), "second frame added");
+        using var identity = SKColorFilter.CreateColorMatrix([
+            1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0]);
+        using var plain = new SKBitmap(3, 2);
+        using var corrected = new SKBitmap(3, 2);
+        using var plainCanvas = new SKCanvas(plain);
+        using var correctedCanvas = new SKCanvas(corrected);
+        var lastFrameField = typeof(SpriteAnime).GetField("lastFrame", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var startTimeField = typeof(SpriteAnime).GetField("StartTime", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var lastFrameTimeField = typeof(SpriteAnime).GetField("lastFrameTime", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        sprite.ResetTime();
+        sprite.GraphicsDraw(plainCanvas, new Rectangle(0, 0, 3, 2));
+        Equal(0, (int)lastFrameField.GetValue(sprite)!, "plain draw selected first frame");
+        sprite.ResetTime();
+        sprite.GraphicsDraw(correctedCanvas, new Rectangle(0, 0, 3, 2), identity);
+        Equal(0, (int)lastFrameField.GetValue(sprite)!, "filtered draw selected first frame");
+        Equal(SKColors.Red, plain.GetPixel(0, 0), "first frame selected");
+        Equal(plain.GetPixel(0, 0), corrected.GetPixel(0, 0), "first frame color path");
+
+        plain.Erase(SKColors.Transparent);
+        corrected.Erase(SKColors.Transparent);
+        // 試験側だけで2枚目の時間帯の中央へ置き、各描画後に選択フレームも検査する。
+        lastFrameField.SetValue(sprite, 0);
+        lastFrameTimeField.SetValue(sprite, DateTime.MinValue);
+        startTimeField.SetValue(sprite, DateTime.Now.AddSeconds(-90));
+        sprite.GraphicsDraw(plainCanvas, new Rectangle(0, 0, 3, 2));
+        Equal(1, (int)lastFrameField.GetValue(sprite)!, "plain draw selected second frame");
+        lastFrameField.SetValue(sprite, 0);
+        lastFrameTimeField.SetValue(sprite, DateTime.MinValue);
+        startTimeField.SetValue(sprite, DateTime.Now.AddSeconds(-90));
+        sprite.GraphicsDraw(correctedCanvas, new Rectangle(0, 0, 3, 2), identity);
+        Equal(1, (int)lastFrameField.GetValue(sprite)!, "filtered draw selected second frame");
+        Equal(SKColors.Blue, plain.GetPixel(0, 0), "second frame selected");
+        Equal((byte)0, plain.GetPixel(1, 0).Alpha, "transparent frame pixel");
+        for (int y = 0; y < 2; y++)
+            for (int x = 0; x < 3; x++)
+                Equal(plain.GetPixel(x, y), corrected.GetPixel(x, y), $"second frame pixel ({x},{y})");
     }
 
     private static void IntegratedIslandHits()

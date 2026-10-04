@@ -265,6 +265,8 @@ internal sealed class SpriteAnime : ASprite
                 BaseImage = null;
                 return;
             }
+            SrcRectangle.X += rect.X - Offset.X;
+            SrcRectangle.Y += rect.Y - Offset.Y;
             Offset.X = rect.X;
             Offset.Y = rect.Y;
             SrcRectangle.Width = rect.Width;
@@ -426,7 +428,7 @@ internal sealed class SpriteAnime : ASprite
 
         using (var paint = new SKPaint() { ColorFilter = attr })
         {
-            frame.BaseImage.Draw(g, destRect.ToSKRect(), paint);
+            frame.BaseImage.Draw(g, frame.SrcRectangle.ToSKRect(), destRect.ToSKRect(), paint);
         }
     }
 
