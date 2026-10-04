@@ -42,6 +42,16 @@ internal static class Program
     private static int Main()
     {
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        if (Environment.GetEnvironmentVariable("GCLEAR_ONLY") == "1")
+        {
+            try { GraphicsClearRegression.Verify(); return 0; }
+            catch (Exception error) { Console.Error.WriteLine(error); return 1; }
+        }
+        if (Environment.GetEnvironmentVariable("REFRESH_ONLY") == "1")
+        {
+            try { RefreshScopeRegression.Verify(); return 0; }
+            catch (Exception error) { Console.Error.WriteLine(error); return 1; }
+        }
         Run("dark mode config defaults to YES, round-trips YES/NO, and preserves display colors and other settings", DarkModeConfigRoundTrips);
         Run("CSV omitted rectangle reload with Image storage", () => CsvReloadComparison.CheckReload(false, false));
         Run("CSV explicit rectangle reload with Image storage", () => CsvReloadComparison.CheckReload(true, false));
@@ -121,6 +131,8 @@ internal static class Program
         Run("cancel returns no selected-folder result", FolderDialogCancelReturnsNoSelection);
         Run("settings dialog exposes LazyERB startup tab without saving radio edits", ConfigDialogLazyErbTabDoesNotSaveUntilConfirmation);
         RunReparsePointCase();
+        Run("file-backed GCLEAR keeps all pixels and drawing state across three colors", GraphicsClearRegression.Verify);
+        Run("animation refresh repaints only the game surface", RefreshScopeRegression.Verify);
 
         if (_themeConfigDirectory is not null && Directory.Exists(_themeConfigDirectory))
             Directory.Delete(_themeConfigDirectory, recursive: true);

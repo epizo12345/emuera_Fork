@@ -711,7 +711,8 @@ internal sealed partial class EmueraConsole : IDisposable
         {
             return;
         }
-        window.Invoke(window.Refresh);//OnPaint発行
+        // アニメ更新ではゲーム描画面だけを同期再描画する。入力欄やメニューの更新経路は変えない。
+        window.Invoke(window.MainPicBox.Refresh);//OnPaint発行
     }
 
     /// <summary>

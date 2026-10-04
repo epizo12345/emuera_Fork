@@ -81,11 +81,13 @@ internal sealed class GraphicsImage : AbstractImage
     // [Emuera改修:MEM-14A 2026-08-26]
     // file-backed Gは読み取り・描画中はSKImageのまま保持し、pixelを初めて変更する時だけ
     // writable SKBitmapへ一度だけ移行して、元画像とSpriteから見える内容を一致させる。
-    void EnsureWritable()
+    void EnsureWritable(SKColor? clearColor = null)
     {
         if (Bitmap != null)
         {
             canvas ??= new SKCanvas(Bitmap);
+            if (clearColor is SKColor existingColor)
+                canvas.Clear(existingColor);
             return;
         }
         if (Image == null)
@@ -98,7 +100,11 @@ internal sealed class GraphicsImage : AbstractImage
         {
             bitmap = new SKBitmap(oldImage.Width, oldImage.Height);
             newCanvas = new SKCanvas(bitmap);
-            newCanvas.DrawImage(oldImage, new SKPoint(0, 0), SKSamplingOptions.Default, null);
+            // GCLEARは全画素を置き換える。消去が成功するまで旧backingを保持し、旧画素のコピーを省く。
+            if (clearColor is SKColor newColor)
+                newCanvas.Clear(newColor);
+            else
+                newCanvas.DrawImage(oldImage, new SKPoint(0, 0), SKSamplingOptions.Default, null);
         }
         catch
         {
@@ -121,8 +127,7 @@ internal sealed class GraphicsImage : AbstractImage
     /// </summary>
     public void GClear(Color c)
     {
-        EnsureWritable();
-        canvas.Clear(c.ToSKColor());
+        EnsureWritable(c.ToSKColor());
     }
 
     /// <summary>
