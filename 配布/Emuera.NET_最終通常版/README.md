@@ -1,19 +1,20 @@
 # Emuera.NET 最終通常版
 
-- 更新日: 2026-10-04
+- 更新日: 2026-10-05
 - 基礎: BugFix_Test `7b7dd3bf240eff4fdfc7094f4175de0e014532b7`
-- EXE生成元source commit: `7b670631f6353c377fe5a0a30acf7eadb53f7590`（配布資料の更新commitとは別）
+- EXE生成元source commit: `d20d551eaed13fed77c0c91acf2d018389640fd2`（配布資料の更新commitとは別）
 - 対象OS: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
 - `Emuera.exe` サイズ: 24,700,650バイト（約23.56 MiB）
-- `Emuera.exe` SHA-256: `FE05D50675667267A338A02A711B7F6967405FDDCDD34847C5C6AF42A0B5B796`
-- `Emuera.exe` ProductVersion: `0.2.6.0+7b670631f6353c377fe5a0a30acf7eadb53f7590`（suffixはEXEを生成したsource commit）
+- `Emuera.exe` SHA-256: `63F9D762CEC4B69B80CC7A00A674033EA1CD420E689F7498A8E8E727FA084AA5`
+- `Emuera.exe` ProductVersion: `0.2.6.0+d20d551eaed13fed77c0c91acf2d018389640fd2`（suffixはEXEを生成したsource commit）
 - `Emuera.exe` FileVersion: `0.2.6.0`
 - publish条件: Release / win-x64 / framework-dependent / self-contained false / PublishSingleFile=true
 - publish時の計測: `PERFORMANCE_METRICS`無効
 - source revision検証: PASS（ProductVersion suffixが上記source commitのfull SHAと一致）
-- 関連回帰試験: EXE生成元source commitの`ConfigRegressionTests` 80/80 PASS、失敗0・skip 0。今回の配布EXEから作った専用コピーで`Init:End`、最小ERB到達、応答を確認。CSVの正しさの主な根拠は同じソースの実`LoadContents`回帰と同一条件の再読み込み比較であり、起動確認だけでCSV全体を検証した扱いにはしません。従来のDIV focused 22/22、180秒`TINPUT`完走、短い連続入力は以前の検証記録として区別
+- 関連回帰試験: EXE生成元source commitの`ConfigRegressionTests` 82/82 PASS、失敗0・skip 0。専用fixtureで短い`TINPUT`・次入力受理を確認。旧候補の180秒`TINPUT`完走と、今回の短い確認は区別します。CSVの正しさは実`LoadContents`回帰が主な根拠であり、短い起動確認だけでCSV全体を検証した扱いにはしません。
+- ファイル由来G画像の`GCLEAR`では、全消去する旧画素を新しいBitmapへコピーする処理を省きました。部分書換え時の旧画素保持と描画状態は維持します。アニメーション更新時はゲーム描画面だけを再描画し、周辺UIの不要な再描画を減らしました。ゲーム全体の速度・GPU使用率の改善率は未測定です。
 - 同じCSV画像の並列読み込みで親画像が重複生成される問題と、Bitmap化後の画像再読み込みで例外になる問題を修正しました。メモリ削減量・速度・GPU負荷の改善率は未測定です。
 - 色補正付きアニメの切り出し範囲と、負オフセット時の表示範囲を修正しました。速度やGPU負荷の改善率は測定していません。
 - 残り時間を表示しない`TINPUT`中にも画像アニメーションを更新します。背景未指定DIVの不要な`SKPaint`生成と透明矩形描画を省き、代替フォント使用時の文字分割・折返し・表示幅とクリック範囲の整合を改善しました。
