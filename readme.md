@@ -60,19 +60,19 @@ https://gitlab.com/alnatiyan/EmueraDotNet/-/tree/BugFix_Test?ref_type=heads
 - `InstructionLine`のSET左辺専用slotを既存`auxiliaryData`へ統合し、retained shallow sizeを120 bytesから112 bytesへ削減
 
 # 配布フォルダについて
-『配布/Emuera.NET_最終通常版』には、2026-10-04更新の描画・時限入力・DIV・代替フォント修正を含む.NET 10正式single-file EXEを置いています。LazyERB設定UI・ダークモード切り替えも引き続き含まれます。
+『配布/Emuera.NET_最終通常版』には、2026-10-04更新のアニメ切り出し・描画・時限入力・DIV・代替フォント修正を含む.NET 10正式single-file EXEを置いています。LazyERB設定UI・ダークモード切り替えも引き続き含まれます。
 
 - 対象: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 形式: フレームワーク依存・単一EXE
-- EXE生成元source commit: `5e7f62e463f30f057f65d19617a1491368e7e4fb`（後続の配布資料更新commitとは別）
-- 『Emuera.exe』: 配布用実行ファイル（24,700,650バイト、SHA-256 `B3EE2D4D0BF454AFF95E42323AB5DAD80B942F475C211E4EE32815BFD63756A3`、ProductVersion `0.2.6.0+5e7f62e463f30f057f65d19617a1491368e7e4fb`、FileVersion `0.2.6.0`）
+- EXE生成元source commit: `efb5c34d150c587fdccb3c65b3a1e7a252edce64`（後続の配布資料更新commitとは別）
+- 『Emuera.exe』: 配布用実行ファイル（24,700,650バイト、SHA-256 `6127CFF59B1ACD5BEC3AD18207AA6FE5615ACD354455294496461D315C9761D2`、ProductVersion `0.2.6.0+efb5c34d150c587fdccb3c65b3a1e7a252edce64`、FileVersion `0.2.6.0`）
 - publish条件: Release / win-x64 / framework-dependent / self-contained false / PublishSingleFile=true、`PERFORMANCE_METRICS`無効
-- 配布フォルダからの短い起動確認: 新しい専用ERBコピーで1/1 PASS、`Init:End`到達、応答あり
+- 配布フォルダからの短い起動確認: 新しい専用ERBコピーで1/1 PASS、`Init:End`、色補正描画・アニメ設定への到達、応答あり
 - 『README.md』: 導入方法と採用機能
 - 『SHA256SUMS.txt』: 配布物の改ざん確認用ハッシュ
 
-変更の流れは[更新履歴](更新履歴.md)、現行正式版の変更理由と検証結果は`プロジェクト資料/修正履歴/#今回の修正説明_2026-10-04_TINPUT_DIV_代替フォント.md`を参照してください。
+変更の流れは[更新履歴](更新履歴.md)、現行正式版の変更理由と検証結果は`プロジェクト資料/修正履歴/#今回の修正説明_2026-10-04_アニメ切り出し.md`を参照してください。
 
 ## 起動後メモリ整理
 

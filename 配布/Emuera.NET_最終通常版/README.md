@@ -2,18 +2,19 @@
 
 - 更新日: 2026-10-04
 - 基礎: BugFix_Test `7b7dd3bf240eff4fdfc7094f4175de0e014532b7`
-- EXE生成元source commit: `5e7f62e463f30f057f65d19617a1491368e7e4fb`（配布資料の更新commitとは別）
+- EXE生成元source commit: `efb5c34d150c587fdccb3c65b3a1e7a252edce64`（配布資料の更新commitとは別）
 - 対象OS: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
 - `Emuera.exe` サイズ: 24,700,650バイト（約23.56 MiB）
-- `Emuera.exe` SHA-256: `B3EE2D4D0BF454AFF95E42323AB5DAD80B942F475C211E4EE32815BFD63756A3`
-- `Emuera.exe` ProductVersion: `0.2.6.0+5e7f62e463f30f057f65d19617a1491368e7e4fb`（suffixはEXEを生成したsource commit）
+- `Emuera.exe` SHA-256: `6127CFF59B1ACD5BEC3AD18207AA6FE5615ACD354455294496461D315C9761D2`
+- `Emuera.exe` ProductVersion: `0.2.6.0+efb5c34d150c587fdccb3c65b3a1e7a252edce64`（suffixはEXEを生成したsource commit）
 - `Emuera.exe` FileVersion: `0.2.6.0`
 - publish条件: Release / win-x64 / framework-dependent / self-contained false / PublishSingleFile=true
 - publish時の計測: `PERFORMANCE_METRICS`無効
 - source revision検証: PASS（ProductVersion suffixが上記source commitのfull SHAと一致）
-- 関連回帰試験: `ConfigRegressionTests` 60/60 PASS、DIV focused 22/22 PASS。今回の配布EXEは専用ERBコピーで`Init:End`到達・応答を確認。180秒`TINPUT`完走は前回のtimer単独候補、短い連続入力は統合候補の記録として区別
+- 関連回帰試験: 最終ソースの`ConfigRegressionTests` 66/66 PASS、失敗0・skip 0。今回の配布EXEは専用ERBコピーで`Init:End`、色補正描画・アニメ設定への到達と応答を確認。従来のDIV focused 22/22、180秒`TINPUT`完走、短い連続入力は以前の検証記録として区別
+- 色補正付きアニメの切り出し範囲と、負オフセット時の表示範囲を修正しました。速度やGPU負荷の改善率は測定していません。
 - 残り時間を表示しない`TINPUT`中にも画像アニメーションを更新します。背景未指定DIVの不要な`SKPaint`生成と透明矩形描画を省き、代替フォント使用時の文字分割・折返し・表示幅とクリック範囲の整合を改善しました。
 - 非正方形画像の縦反転位置とマスク合成の範囲判定・画素書戻しを修正しました。HTML Islandの重複探索と未使用`ImageAttributes`生成を除去し、`TINPUT`のタイマー再入と旧通知による誤動作を防ぎます。GPU使用率やゲーム全体の速度の改善率は未確定です。
 - 設定画面の「表示」タブからWinForms UIのダークモードをON/OFFできます。既定値ONで従来互換、ONは`SystemColorMode.Dark`、OFFは`SystemColorMode.Classic`です。変更は再起動後に反映され、ゲーム本文の文字色・背景色等とは独立しています。
