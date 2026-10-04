@@ -55,8 +55,6 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
             _texts = [];
             foreach (var rune in Text.EnumerateRunes())
             {
-                builder.Append(rune);
-
                 SKTypeface typeface;
                 if (Font.ContainsGlyph(rune.Value))
                 {
@@ -71,11 +69,15 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
                     typeface = fontManager.MatchCharacter(rune.Value);
                 }
 
-                if (typeface != nowTypeFace)
+                typeface ??= Font.Typeface;
+                // [Emuera改修:FONT-01] 境界文字を前の書体へ混ぜず、前runを確定してから追加する。
+                if (builder.Length > 0 && typeface != nowTypeFace)
                 {
-                    _texts.Add(CreateTextWithFont(typeface, builder.ToString()));
+                    _texts.Add(CreateTextWithFont(nowTypeFace, builder.ToString()));
                     builder.Clear();
                 }
+                builder.Append(rune);
+                nowTypeFace = typeface;
             }
 
             if (builder.Length > 0)
@@ -96,6 +98,9 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
         {
             var font = new SKFont(typeface, Font.Size);
             font.Size *= Font.Size / font.Spacing;
+            // [Emuera改修:FONT-01] 補完文字も設定画面で選んだHinting/Edgingで描画する。
+            font.Hinting = Font.Hinting;
+            font.Edging = Font.Edging;
             if (StringStyle.FontStyle.HasFlag(FontStyle.Italic))
             {
                 font.SkewX = -0.3f;
@@ -115,6 +120,33 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
     public SKFont Font { get; private set; }
     List<TextsWithFont> _texts;//フォントフォールバック用
     public StringStyle StringStyle { get; private set; }
+    internal int BreakText(float widthLimit)
+    {
+        if (_texts == null)
+        {
+            int length = Font.BreakText(Text, widthLimit);
+            if (length > 0 && length < Text.Length && char.IsHighSurrogate(Text[length - 1]) && char.IsLowSurrogate(Text[length]))
+                length--;
+            return length;
+        }
+
+        // [Emuera改修:FONT-01] 折返しも描画runの書体・文字幅で判定し、補助文字を分断しない。
+        float width = 0;
+        int utf16Length = 0;
+        foreach (TextsWithFont run in _texts)
+        {
+            foreach (var rune in run.Text.EnumerateRunes())
+            {
+                float advance = run.Font.GetGlyphWidths(rune.ToString()).Sum();
+                if (width + advance > widthLimit)
+                    return utf16Length;
+                width += advance;
+                utf16Length += rune.Utf16SequenceLength;
+            }
+        }
+        return utf16Length;
+    }
+
     public override bool CanDivide
     {
         get { return true; }
@@ -137,6 +169,11 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
     {
         if (index <= 0 || index > Text.Length || Error)
             return null;
+        // [Emuera改修:FONT-01] UTF-16の分割指定が補助文字の途中なら、その文字の前へ寄せる。
+        if (index < Text.Length && char.IsHighSurrogate(Text[index - 1]) && char.IsLowSurrogate(Text[index]))
+            index--;
+        if (index == 0)
+            return null;
         string str = Text[index..];
         Text = Text[..index];
         ConsoleStyledString ret = new()
@@ -149,6 +186,34 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
             StringStyle = StringStyle,
             XsubPixel = XsubPixel
         };
+        if (_texts != null)
+        {
+            // [Emuera改修:FONT-01] 文字列を分けた後も、各断片の補完書体と文字を同じ側へ残す。
+            List<TextsWithFont> leftRuns = [];
+            List<TextsWithFont> rightRuns = [];
+            int remaining = index;
+            foreach (TextsWithFont run in _texts)
+            {
+                if (remaining <= 0)
+                {
+                    rightRuns.Add(run);
+                    continue;
+                }
+                if (remaining >= run.Text.Length)
+                {
+                    leftRuns.Add(run);
+                    remaining -= run.Text.Length;
+                    continue;
+                }
+                string leftText = run.Text[..remaining];
+                string rightText = run.Text[remaining..];
+                leftRuns.Add(run with { Text = leftText, Width = run.Font.GetGlyphWidths(leftText).Sum() });
+                rightRuns.Add(run with { Text = rightText, Width = run.Font.GetGlyphWidths(rightText).Sum() });
+                remaining = 0;
+            }
+            _texts = leftRuns;
+            ret._texts = rightRuns;
+        }
         return ret;
     }
 

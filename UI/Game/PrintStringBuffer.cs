@@ -516,10 +516,7 @@ internal sealed class PrintStringBuffer
         if (part == null)
             return -1;
         int widthLimit = Config.DrawableWidth - css.PointX;
-        string str = css.Text;
-        var font = css.Font;
-
-        return font.BreakText(str, widthLimit);
+        return css.BreakText(widthLimit);
     }
     #endregion
 

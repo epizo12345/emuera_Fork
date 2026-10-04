@@ -53,7 +53,19 @@ internal static class Program
         Run("HTML island preserves first, last, nested, and tooltip-only hit targets", IntegratedIslandHits);
         Run("timer tick cannot reenter through drawing DoEvents", TimerTickDoesNotReenter);
         Run("stale timer callback cannot stop the next timed input", StaleTimerCannotStopNextInput);
-        Run("two distinct image frames render during timed input and after transition", AnimatedFramesContinueAcrossTimedInput);
+        Run("two distinct image frames render during timed input and after transition", () => AnimatedFramesContinueAcrossTimedInput(true));
+        Run("two distinct image frames render during timed input without remaining text", () => AnimatedFramesContinueAcrossTimedInput(false));
+        Run("fallback font runs and split fragments retain each Unicode scalar exactly once", FontFallbackRunsAndSplits);
+        Run("fallback font retains the selected hinting and edging settings", FontFallbackKeepsAntialiasSettings);
+        Run("PrintStringBuffer wraps at the fallback glyph's drawn advance", PrintBufferWrapsAtFallbackAdvance);
+        Run("AAAA emoji stays on the first line while following BBBB wraps", EmojiBoundaryWrapsBeforeB);
+        Run("splitting inside a surrogate pair keeps the whole fallback rune", SplitInsideSurrogateKeepsRune);
+        Run("wrapped fallback buttons keep text, positions, hit ranges, and selected color", WrappedFallbackButtonsDrawAndHit);
+        Run("backlog color changes without losing fallback runs", FontBacklogColorAndRuns);
+        Run("large fallback font wraps by the drawn advance", LargeFallbackFontWrapsByDrawnAdvance);
+        Run("splitting at the final code unit leaves an empty suffix", FontTailSplitHasEmptySuffix);
+        Run("repeated splits preserve every fallback run", FontRepeatedSplitsPreserveRuns);
+        Run("integer width bounds fractional run advances", FontIntegerWidthBoundsFractionalAdvance);
         Run("valid existing game block is unchanged by load", ExistingGameBlockIsNotRewritten);
         Run("new user file does not gain a LazyERB override", NewUserFileHasNoOverride);
         Run("absent user block uses the complete game value", MissingUserUsesGameValue);
@@ -95,6 +107,447 @@ internal static class Program
 
         Console.WriteLine($"RESULT: {TotalCases - Failures.Count - SkippedCases}/{TotalCases} passed; {Failures.Count} failed; {SkippedCases} skipped.");
         return Failures.Count == 0 ? 0 : 1;
+    }
+
+    private static void FontFallbackRunsAndSplits()
+    {
+        var style = new StringStyle(Color.White, FontStyle.Bold | FontStyle.Italic, "Consolas");
+        SKFont baseFont = FontFactory.GetFont(style);
+        int codepoint = new[] { 0x1F600, 0x10348, 0x1F9EA, 0x4E2D }
+            .FirstOrDefault(value => !baseFont.ContainsGlyph(value) &&
+                SKFontManager.Default.MatchCharacter(value) is SKTypeface matched && matched != baseFont.Typeface);
+        if (codepoint == 0)
+            throw new TestUnavailableException("no actual fallback font for the tested Unicode scalars");
+
+        string fallback = char.ConvertFromUtf32(codepoint);
+        string source = "AAAA" + fallback + "BBBB";
+        var styled = new ConsoleStyledString(source, style);
+        var field = typeof(ConsoleStyledString).GetField("_texts", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var runs = (List<TextsWithFont>)field.GetValue(styled)!;
+        Console.WriteLine($"FONT_FALLBACK_CP=U+{codepoint:X} FAMILY={runs[1].Font.Typeface.FamilyName} RUNS={runs.Count}");
+        SequenceEqual(new[] { "AAAA", fallback, "BBBB" }, runs.Select(run => run.Text), "A-fallback-A run boundaries");
+        True(runs[1].Font.Typeface != baseFont.Typeface, "middle run uses an actual fallback typeface");
+
+        ConsoleStyledString suffix = styled.DivideAt(4)!;
+        ConsoleStyledString trailing = suffix.DivideAt(fallback.Length)!;
+        SequenceEqual(new[] { "AAAA", fallback, "BBBB" }, new[] { styled.Text, suffix.Text, trailing.Text },
+            "split text keeps the source exactly once");
+        foreach (var fragment in new[] { styled, suffix, trailing })
+        {
+            var fragmentRuns = (List<TextsWithFont>)field.GetValue(fragment)!;
+            Equal(fragment.Text, string.Concat(fragmentRuns.Select(run => run.Text)), "split retains fallback drawing runs");
+        }
+    }
+
+    private static void EmojiBoundaryWrapsBeforeB()
+    {
+        var style = new StringStyle(Color.White, FontStyle.Regular, "Consolas") { FontSize = 36 };
+        var styled = new ConsoleStyledString("AAAA😀BBBB", style);
+        var runs = (List<TextsWithFont>)typeof(ConsoleStyledString)
+            .GetField("_texts", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(styled)!;
+        if (runs.Count != 3 || runs[1].Text != "😀" || runs[0].Font.Typeface == runs[1].Font.Typeface)
+            throw new TestUnavailableException("emoji fallback did not occur with the installed fonts");
+
+        float prefixWidth = runs[0].Font.GetGlyphWidths(runs[0].Text).Sum() +
+            runs[1].Font.GetGlyphWidths(runs[1].Text).Sum();
+        float nextWidth = runs[2].Font.GetGlyphWidths("B").Sum();
+        int limit = Enumerable.Range(20, 900).FirstOrDefault(width =>
+            prefixWidth <= width - 1 && prefixWidth + nextWidth > width - 1);
+        if (limit == 0)
+            throw new TestUnavailableException("no integer drawable width separates emoji from the following B");
+
+        PropertyInfo widthProperty = typeof(RuntimeConfig).GetProperty("DrawableWidth", BindingFlags.Static | BindingFlags.Public)!;
+        int previousWidth = (int)widthProperty.GetValue(null)!;
+        try
+        {
+            widthProperty.GetSetMethod(true)!.Invoke(null, [limit]);
+            using var window = new MainWindow([]);
+            var console = (EmueraConsole)typeof(MainWindow)
+                .GetField("console", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window)!;
+            var buffer = new PrintStringBuffer(console);
+            buffer.AppendButton("AAAA😀BBBB", style, 1L);
+            ConsoleDisplayLine[] lines = buffer.Flush(null!, false);
+            Equal(2, lines.Length, "boundary produces two display lines");
+            Equal("AAAA😀", lines[0].ToString(), "emoji remains entirely on the first line");
+            Equal("BBBB", lines[1].ToString(), "the following B begins the second line");
+            Console.WriteLine($"FONT_EMOJI_BOUNDARY_LIMIT={limit} PREFIX_WIDTH={prefixWidth:F3} NEXT_B_WIDTH={nextWidth:F3}");
+        }
+        finally { widthProperty.GetSetMethod(true)!.Invoke(null, [previousWidth]); }
+    }
+
+    private static void FontFallbackKeepsAntialiasSettings()
+    {
+        FontAntialias previous = JSONConfig.Game.FontAntialias;
+        try
+        {
+            foreach (FontAntialias setting in new[] { FontAntialias.None, FontAntialias.Full })
+            {
+                JSONConfig.Game.FontAntialias = setting;
+                var style = new StringStyle(Color.White, FontStyle.Bold | FontStyle.Italic, "Consolas")
+                {
+                    FontSize = 67 + (int)setting
+                };
+                SKFont baseFont = FontFactory.GetFont(style);
+                int codepoint = new[] { 0x1F600, 0x10348, 0x1F9EA, 0x4E2D }
+                    .FirstOrDefault(value => !baseFont.ContainsGlyph(value) &&
+                        SKFontManager.Default.MatchCharacter(value) is SKTypeface matched && matched != baseFont.Typeface);
+                if (codepoint == 0)
+                    throw new TestUnavailableException("no actual fallback font for the anti-alias test");
+                var styled = new ConsoleStyledString("A" + char.ConvertFromUtf32(codepoint) + "A", style);
+                var runs = (List<TextsWithFont>)typeof(ConsoleStyledString)
+                    .GetField("_texts", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(styled)!;
+                SKFont fallbackFont = runs[1].Font;
+                Console.WriteLine($"FONT_AA={setting} BASE={baseFont.Hinting}/{baseFont.Edging} " +
+                    $"FALLBACK={fallbackFont.Hinting}/{fallbackFont.Edging} " +
+                    $"BASE_SIZE={baseFont.Size:F2} FALLBACK_SIZE={fallbackFont.Size:F2}");
+                Equal(baseFont.Hinting, fallbackFont.Hinting, "fallback hinting follows the selected setting");
+                Equal(baseFont.Edging, fallbackFont.Edging, "fallback edging follows the selected setting");
+                Equal(baseFont.SkewX, fallbackFont.SkewX, "italic skew survives fallback");
+            }
+        }
+        finally
+        {
+            JSONConfig.Game.FontAntialias = previous;
+        }
+    }
+
+    private static void PrintBufferWrapsAtFallbackAdvance()
+    {
+        var style = new StringStyle(Color.White, FontStyle.Regular, "Consolas") { FontSize = 36 };
+        SKFont baseFont = FontFactory.GetFont(style);
+        int codepoint = new[] { 0x1F600, 0x10348, 0x1F9EA, 0x4E2D }
+            .FirstOrDefault(value => !baseFont.ContainsGlyph(value) &&
+                SKFontManager.Default.MatchCharacter(value) is SKTypeface matched && matched != baseFont.Typeface);
+        if (codepoint == 0)
+            throw new TestUnavailableException("no actual fallback font for the wrap test");
+
+        string source = "AAAA" + char.ConvertFromUtf32(codepoint) + "BBBB";
+        var styled = new ConsoleStyledString(source, style);
+        var runs = (List<TextsWithFont>)typeof(ConsoleStyledString)
+            .GetField("_texts", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(styled)!;
+        var runeAdvances = runs.SelectMany(run => run.Text.EnumerateRunes()
+            .Select(rune => (Utf16Length: rune.Utf16SequenceLength,
+                Advance: run.Font.GetGlyphWidths(rune.ToString()).Sum()))).ToArray();
+        int limit = -1;
+        int expectedIndex = -1;
+        int baseBreak = -1;
+        for (int candidateLimit = 20; candidateLimit < 350; candidateLimit++)
+        {
+            float advance = 0;
+            int index = 0;
+            foreach (var glyph in runeAdvances)
+            {
+                if (advance + glyph.Advance > candidateLimit - 1)
+                    break;
+                advance += glyph.Advance;
+                index += glyph.Utf16Length;
+            }
+            int wrongBreak = baseFont.BreakText(source, candidateLimit);
+            if (index > 0 && index < source.Length && wrongBreak != index)
+            {
+                limit = candidateLimit;
+                expectedIndex = index;
+                baseBreak = wrongBreak;
+                break;
+            }
+        }
+        if (limit < 0)
+            throw new TestUnavailableException("installed fallback widths do not expose a wrap mismatch");
+        Console.WriteLine($"FONT_WRAP_LIMIT={limit} ACTUAL_PREFIX={expectedIndex} BASE_BREAK={baseBreak} " +
+            $"FALLBACK_FAMILY={runs[1].Font.Typeface.FamilyName}");
+
+        PropertyInfo widthProperty = typeof(RuntimeConfig).GetProperty("DrawableWidth", BindingFlags.Static | BindingFlags.Public)!;
+        PropertyInfo wrapProperty = typeof(RuntimeConfig).GetProperty("ButtonWrap", BindingFlags.Static | BindingFlags.Public)!;
+        int oldWidth = (int)widthProperty.GetValue(null)!;
+        bool oldButtonWrap = (bool)wrapProperty.GetValue(null)!;
+        try
+        {
+            widthProperty.GetSetMethod(nonPublic: true)!.Invoke(null, [limit]);
+            wrapProperty.GetSetMethod(nonPublic: true)!.Invoke(null, [false]);
+            using var window = new MainWindow([]);
+            var console = (EmueraConsole)typeof(MainWindow)
+                .GetField("console", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window)!;
+            var buffer = new PrintStringBuffer(console);
+            buffer.AppendButton(source, style, 1L);
+            ConsoleDisplayLine[] lines = buffer.Flush(null!, false);
+            True(lines.Length >= 2, "fallback text reaches the real wrap path");
+            Equal(source[..expectedIndex], lines[0].ToString(), "first line ends at the fallback glyph's measured boundary");
+            Equal(source, string.Concat(lines.Select(line => line.ToString())), "wrap keeps every Unicode scalar exactly once");
+        }
+        finally
+        {
+            widthProperty.GetSetMethod(nonPublic: true)!.Invoke(null, [oldWidth]);
+            wrapProperty.GetSetMethod(nonPublic: true)!.Invoke(null, [oldButtonWrap]);
+        }
+    }
+
+    private static void SplitInsideSurrogateKeepsRune()
+    {
+        var style = new StringStyle(Color.White, FontStyle.Regular, "Consolas");
+        var styled = new ConsoleStyledString("A😀B", style);
+        ConsoleStyledString? suffix = styled.DivideAt(2); // 高位・低位サロゲートの間を指定する。
+        True(suffix is not null, "a safe split point exists before the supplementary rune");
+        Equal("A", styled.Text, "left fragment stops before the complete rune");
+        Equal("😀B", suffix!.Text, "right fragment starts with the complete rune");
+        Equal("A😀B", styled.Text + suffix.Text, "split preserves the source text");
+    }
+
+    private static void WrappedFallbackButtonsDrawAndHit()
+    {
+        var style = new StringStyle(Color.White, false, Color.Lime,
+            FontStyle.Bold | FontStyle.Italic, "Consolas") { FontSize = 34 };
+        SKFont baseFont = FontFactory.GetFont(style);
+        int codepoint = new[] { 0x1F600, 0x10348, 0x1F9EA, 0x4E2D }
+            .FirstOrDefault(value => !baseFont.ContainsGlyph(value) &&
+                SKFontManager.Default.MatchCharacter(value) is SKTypeface matched && matched != baseFont.Typeface);
+        if (codepoint == 0)
+            throw new TestUnavailableException("no actual fallback font for the wrapped-button test");
+        string firstText = new string('A', 90) + char.ConvertFromUtf32(codepoint) + new string('B', 90);
+        const string secondText = " 日本語 SECOND_BUTTON";
+        var secondStyle = new StringStyle(Color.White, FontStyle.Regular, "Consolas") { FontSize = 24 };
+        using var window = new MainWindow([]);
+        var console = (EmueraConsole)typeof(MainWindow)
+            .GetField("console", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window)!;
+        var buffer = new PrintStringBuffer(console);
+        buffer.AppendButton(firstText, style, 1L);
+        buffer.AppendButton(secondText, secondStyle, 2L);
+        ConsoleDisplayLine[] lines = buffer.Flush(null!, false);
+        True(lines.Length > 1, "the real buffer wraps the long fallback button");
+        Equal(firstText + secondText, string.Concat(lines.Select(line => line.ToString())), "wrap keeps both buttons' text");
+
+        using var bitmap = new SKBitmap(1600, Math.Max(100, lines.Length * Math.Max(40, RuntimeConfig.LineHeight)));
+        using var canvas = new SKCanvas(bitmap);
+        bitmap.Erase(SKColors.Black);
+        var displayLines = (DisplayLineBuffer)typeof(EmueraConsole)
+            .GetField("displayLineList", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(console)!;
+        foreach (ConsoleDisplayLine line in lines)
+            displayLines.Add(line);
+        window.ScrollBar.Maximum = lines.Length;
+        window.ScrollBar.Value = lines.Length;
+        int renderedFragments = 0;
+        int actualFallbackFragments = 0;
+        for (int lineIndex = 0; lineIndex < lines.Length; lineIndex++)
+            lines[lineIndex].DrawTo(canvas, lineIndex * Math.Max(40, RuntimeConfig.LineHeight), false, false,
+                RuntimeConfig.TextDrawingMode);
+
+        for (int lineIndex = 0; lineIndex < lines.Length; lineIndex++)
+        {
+            foreach (ConsoleButtonString button in lines[lineIndex].Buttons)
+            {
+                if (!button.IsButton || button.StrArray.Length == 0)
+                    continue;
+                foreach (AConsoleDisplayNode node in button.StrArray)
+                {
+                    if (node is ConsoleStyledString styled)
+                    {
+                        var runs = (List<TextsWithFont>?)typeof(ConsoleStyledString)
+                            .GetField("_texts", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(styled);
+                        if (runs is not null && runs.Any(run => run.Font.Typeface != baseFont.Typeface))
+                            actualFallbackFragments++;
+                    }
+                    for (int i = 0; i < node.Text.Length; i++)
+                    {
+                        if (char.IsHighSurrogate(node.Text[i]))
+                            True(i + 1 < node.Text.Length && char.IsLowSurrogate(node.Text[i + 1]), "high surrogate remains paired");
+                        if (char.IsLowSurrogate(node.Text[i]))
+                            True(i > 0 && char.IsHighSurrogate(node.Text[i - 1]), "low surrogate remains paired");
+                    }
+                }
+                var first = button.StrArray.First(node => node.Size.Width > 2);
+                var last = button.StrArray.Last(node => node.Size.Width > 2);
+                Console.WriteLine($"FONT_HIT_PROBE line={lineIndex} input={button.Input} first={first.Point} " +
+                    $"size={first.Size} result={console.FindButton((int)first.Point.X + 1, (int)first.Point.Y + 1)?.Input} " +
+                    $"pictureHeight={window.MainPicBox.Height} scroll={window.ScrollBar.Value}/{window.ScrollBar.Maximum}");
+                True(ReferenceEquals(button, console.FindButton((int)first.Point.X + 1, (int)first.Point.Y + 1)),
+                    "inside point hits the drawn button fragment");
+                True(ReferenceEquals(button, console.FindButton((int)(last.Point.X + last.Size.Width) - 2,
+                    (int)last.Point.Y + 1)), "right inside point hits the drawn fragment");
+                True(!ReferenceEquals(button, console.FindButton((int)(last.Point.X + last.Size.Width) + 2,
+                    (int)last.Point.Y + 1)), "outside point does not hit the same fragment");
+                renderedFragments++;
+            }
+        }
+        True(renderedFragments >= 2 && actualFallbackFragments > 0,
+            "multiple button fragments were drawn with an actual fallback run");
+
+        string DrawColorHash(bool selected)
+        {
+            using var image = new SKBitmap(500, 100);
+            using var graph = new SKCanvas(image);
+            image.Erase(SKColors.Black);
+            var text = new ConsoleStyledString("A" + char.ConvertFromUtf32(codepoint) + "B", style);
+            text.SetWidth(null!, 0);
+            text.DrawTo(graph, new SKPoint(10, 10), selected, false, RuntimeConfig.TextDrawingMode);
+            graph.Flush();
+            return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(image.Bytes));
+        }
+        string normalHash = DrawColorHash(false);
+        string selectedHash = DrawColorHash(true);
+        True(normalHash != selectedHash, "selection color changes the rendered fallback text");
+        Console.WriteLine($"FONT_BUFFER_LINES={lines.Length} BUTTON_FRAGMENTS={renderedFragments} " +
+            $"FALLBACK_FRAGMENTS={actualFallbackFragments} NORMAL={normalHash} SELECTED={selectedHash}");
+    }
+
+    private static int AvailableFallbackScalar(SKFont baseFont)
+    {
+        int codepoint = new[] { 0x1F600, 0x10348, 0x1F9EA, 0x4E2D }
+            .FirstOrDefault(value => !baseFont.ContainsGlyph(value) &&
+                SKFontManager.Default.MatchCharacter(value) is SKTypeface matched && matched != baseFont.Typeface);
+        if (codepoint == 0)
+            throw new TestUnavailableException("no actual fallback font for this test");
+        return codepoint;
+    }
+
+    private static List<TextsWithFont> DrawingRuns(ConsoleStyledString text) =>
+        (List<TextsWithFont>?)typeof(ConsoleStyledString)
+            .GetField("_texts", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(text)
+        ?? throw new InvalidOperationException("test text did not use a fallback font");
+
+    private static void FontBacklogColorAndRuns()
+    {
+        PropertyInfo fore = typeof(RuntimeConfig).GetProperty("ForeColor", BindingFlags.Static | BindingFlags.Public)!;
+        PropertyInfo log = typeof(RuntimeConfig).GetProperty("LogColor", BindingFlags.Static | BindingFlags.Public)!;
+        object? oldFore = fore.GetValue(null);
+        object? oldLog = log.GetValue(null);
+        try
+        {
+            fore.GetSetMethod(true)!.Invoke(null, [Color.White]);
+            log.GetSetMethod(true)!.Invoke(null, [Color.Cyan]);
+            var style = new StringStyle(Color.White, false, Color.Lime, FontStyle.Bold | FontStyle.Italic, "Consolas")
+                { FontSize = 36 };
+            string glyph = char.ConvertFromUtf32(AvailableFallbackScalar(FontFactory.GetFont(style)));
+            var styled = new ConsoleStyledString("A" + glyph + "B", style);
+            styled.SetWidth(null!, 0);
+            string Render(bool backLog)
+            {
+                using var image = new SKBitmap(400, 100);
+                using var canvas = new SKCanvas(image);
+                image.Erase(SKColors.Black);
+                styled.DrawTo(canvas, new SKPoint(10, 10), false, backLog, RuntimeConfig.TextDrawingMode);
+                canvas.Flush();
+                return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(image.Bytes));
+            }
+            string normal = Render(false);
+            string backlog = Render(true);
+            True(normal != backlog, "backlog uses the configured log color for fallback text");
+            Equal("A" + glyph + "B", string.Concat(DrawingRuns(styled).Select(run => run.Text)),
+                "backlog drawing keeps every run's text");
+            Console.WriteLine($"FONT_BACKLOG_NORMAL={normal} BACKLOG={backlog} GLYPH={glyph}");
+        }
+        finally
+        {
+            fore.GetSetMethod(true)!.Invoke(null, [oldFore]);
+            log.GetSetMethod(true)!.Invoke(null, [oldLog]);
+        }
+    }
+
+    private static void LargeFallbackFontWrapsByDrawnAdvance()
+    {
+        var style = new StringStyle(Color.White, FontStyle.Regular, "Consolas") { FontSize = 96 };
+        SKFont baseFont = FontFactory.GetFont(style);
+        int scalar = AvailableFallbackScalar(baseFont);
+        string glyph = char.ConvertFromUtf32(scalar);
+        string source = "AAAA" + glyph + "BBBB";
+        SKTypeface fallbackTypeface = SKFontManager.Default.MatchCharacter(scalar)!;
+        // 実描画runは元書体も補完書体も高さを揃えてから幅を測る。元Fontの96px幅は期待値に使わない。
+        using var normalizedBase = new SKFont(baseFont.Typeface, baseFont.Size);
+        normalizedBase.Size *= baseFont.Size / normalizedBase.Spacing;
+        using var fallback = new SKFont(fallbackTypeface, baseFont.Size);
+        fallback.Size *= baseFont.Size / fallback.Spacing;
+        float baseAdvance = normalizedBase.GetGlyphWidths("A")[0];
+        float fallbackAdvance = fallback.GetGlyphWidths(glyph).Sum();
+        int limit = -1;
+        int expectedIndex = -1;
+        for (int candidateLimit = 20; candidateLimit < 900; candidateLimit++)
+        {
+            float width = 0;
+            int index = 0;
+            for (int runeIndex = 0; runeIndex < source.EnumerateRunes().Count(); runeIndex++)
+            {
+                float advance = runeIndex == 4 ? fallbackAdvance : baseAdvance;
+                int length = runeIndex == 4 ? glyph.Length : 1;
+                if (width + advance > candidateLimit - 1) break;
+                width += advance;
+                index += length;
+            }
+            if (index > 0 && index < source.Length && baseFont.BreakText(source, candidateLimit) != index)
+            {
+                limit = candidateLimit;
+                expectedIndex = index;
+                break;
+            }
+        }
+        if (limit < 0)
+            throw new TestUnavailableException("installed fonts do not expose a large-size wrap mismatch");
+        PropertyInfo widthProperty = typeof(RuntimeConfig).GetProperty("DrawableWidth", BindingFlags.Static | BindingFlags.Public)!;
+        int oldWidth = (int)widthProperty.GetValue(null)!;
+        try
+        {
+            widthProperty.GetSetMethod(true)!.Invoke(null, [limit]);
+            using var window = new MainWindow([]);
+            var console = (EmueraConsole)typeof(MainWindow)
+                .GetField("console", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window)!;
+            var buffer = new PrintStringBuffer(console);
+            buffer.AppendButton(source, style, 1L);
+            ConsoleDisplayLine[] lines = buffer.Flush(null!, false);
+            True(lines.Length > 1, "large fallback font actually wraps");
+            Equal(source[..expectedIndex], lines[0].ToString(), "large fallback wrap uses drawn advance");
+            Equal(source, string.Concat(lines.Select(line => line.ToString())), "large wrap keeps all text");
+            Console.WriteLine($"FONT_LARGE_WRAP_SIZE={style.FontSize} LIMIT={limit} EXPECTED={expectedIndex} " +
+                $"BASE_BREAK={baseFont.BreakText(source, limit)} FALLBACK={fallbackTypeface.FamilyName}");
+        }
+        finally { widthProperty.GetSetMethod(true)!.Invoke(null, [oldWidth]); }
+    }
+
+    private static void FontTailSplitHasEmptySuffix()
+    {
+        var style = new StringStyle(Color.White, FontStyle.Regular, "Consolas");
+        string glyph = char.ConvertFromUtf32(AvailableFallbackScalar(FontFactory.GetFont(style)));
+        string source = "AA" + glyph;
+        var first = new ConsoleStyledString(source, style);
+        ConsoleStyledString suffix = first.DivideAt(source.Length)!;
+        Equal(source, first.Text, "tail split leaves source intact");
+        Equal("", suffix.Text, "tail split produces an empty suffix");
+        suffix.SetWidth(null!, 0);
+        Equal(0, suffix.Width, "empty suffix has zero width");
+        True(suffix.DivideAt(0) is null, "empty suffix cannot split further");
+    }
+
+    private static void FontRepeatedSplitsPreserveRuns()
+    {
+        var style = new StringStyle(Color.White, FontStyle.Bold | FontStyle.Italic, "Consolas");
+        SKFont baseFont = FontFactory.GetFont(style);
+        string glyph = char.ConvertFromUtf32(AvailableFallbackScalar(baseFont));
+        string source = "AA" + glyph + "BB" + glyph + "CC";
+        var a = new ConsoleStyledString(source, style);
+        var b = a.DivideAt(2)!;
+        var c = b.DivideAt(glyph.Length)!;
+        var d = c.DivideAt(2)!;
+        var e = d.DivideAt(glyph.Length)!;
+        var fragments = new[] { a, b, c, d, e };
+        SequenceEqual(new[] { "AA", glyph, "BB", glyph, "CC" }, fragments.Select(part => part.Text),
+            "repeated splits preserve exact Unicode scalars");
+        foreach (var part in fragments)
+            Equal(part.Text, string.Concat(DrawingRuns(part).Select(run => run.Text)),
+                "fragment drawing run matches its text");
+        True(DrawingRuns(b)[0].Font.Typeface != baseFont.Typeface,
+            "first fallback fragment still uses a fallback typeface");
+        True(DrawingRuns(d)[0].Font.Typeface != baseFont.Typeface,
+            "second fallback fragment still uses a fallback typeface");
+    }
+
+    private static void FontIntegerWidthBoundsFractionalAdvance()
+    {
+        var style = new StringStyle(Color.White, FontStyle.Regular, "Consolas") { FontSize = 47 };
+        string glyph = char.ConvertFromUtf32(AvailableFallbackScalar(FontFactory.GetFont(style)));
+        var text = new ConsoleStyledString("A" + glyph + "B", style);
+        text.SetWidth(null!, 0);
+        float drawnAdvance = DrawingRuns(text).Sum(run => run.Width);
+        Equal((int)drawnAdvance, text.Width, "click and wrap width follows the existing integer truncation");
+        True(drawnAdvance - text.Width >= 0 && drawnAdvance - text.Width < 1,
+            "float drawing advance exceeds integer width by less than one pixel");
+        Console.WriteLine($"FONT_INTEGER_WIDTH={text.Width} DRAWN_ADVANCE={drawnAdvance:F4} " +
+            $"FRACTION={drawnAdvance - text.Width:F4}");
     }
 
     private static void TimerTickDoesNotReenter()
@@ -157,7 +610,7 @@ internal static class Program
         currentTimer.Enabled = false;
     }
 
-    private static void AnimatedFramesContinueAcrossTimedInput()
+    private static void AnimatedFramesContinueAcrossTimedInput(bool displayTime)
     {
         using var window = new MainWindow([]);
         var init = typeof(MainWindow).GetMethod("Init", BindingFlags.Instance | BindingFlags.NonPublic)!;
@@ -192,15 +645,24 @@ internal static class Program
         var consoleType = typeof(EmueraConsole);
         var timedRequest = new InputRequest { InputType = InputType.IntValue, Timelimit = 5000 };
         console.WaitInput(timedRequest);
-        timedRequest.DisplayTime = true;
+        timedRequest.DisplayTime = displayTime;
         consoleType.GetField("need_settimer", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(console, false);
         consoleType.GetMethod("setTimer", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(console, null);
         console.setRedrawTimer(50);
         window.Refresh();
         PumpWindowFor(1100);
+        if (!displayTime)
+        {
+            console.setRedrawTimer(0);
+            PumpWindowFor(150);
+            int paintsAtStop = timedColors.Count;
+            PumpWindowFor(400);
+            Equal(paintsAtStop, timedColors.Count, "stopped animation timer does not request periodic paints during TINPUT");
+        }
         consoleType.GetMethod("stopTimer", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(console, null);
         timedPhase = false;
         console.WaitInput(new InputRequest { InputType = InputType.IntValue });
+        if (!displayTime) console.setRedrawTimer(50);
         PumpWindowFor(800);
         console.setRedrawTimer(0);
         // 試験用窓を破棄する前に非同期redraw loopを終了させ、残ったInvokeを処理する。
@@ -208,7 +670,7 @@ internal static class Program
         PumpWindowFor(150);
         True(HasRedAndBlue(timedColors), $"timed input frames: paints={timedColors.Count}, red={timedColors.Count(IsRed)}, blue={timedColors.Count(IsBlue)}");
         True(HasRedAndBlue(ordinaryColors), $"ordinary input frames: paints={ordinaryColors.Count}, red={ordinaryColors.Count(IsRed)}, blue={ordinaryColors.Count(IsBlue)}");
-        Console.WriteLine($"ANIM_TIMED_PAINTS={timedColors.Count} RED={timedColors.Count(IsRed)} BLUE={timedColors.Count(IsBlue)}; ANIM_AFTER_PAINTS={ordinaryColors.Count} RED={ordinaryColors.Count(IsRed)} BLUE={ordinaryColors.Count(IsBlue)}");
+        Console.WriteLine($"ANIM_DISPLAY_TIME={displayTime}; ANIM_TIMED_PAINTS={timedColors.Count} RED={timedColors.Count(IsRed)} BLUE={timedColors.Count(IsBlue)}; ANIM_AFTER_PAINTS={ordinaryColors.Count} RED={ordinaryColors.Count(IsRed)} BLUE={ordinaryColors.Count(IsBlue)}");
 
         static bool IsRed(SKColor color) => color.Red > 180 && color.Green < 80 && color.Blue < 80;
         static bool IsBlue(SKColor color) => color.Blue > 180 && color.Green < 80 && color.Red < 80;
@@ -1374,6 +1836,8 @@ internal static class Program
     private static JsonObject ReadObject(string path)
         => JsonNode.Parse(File.ReadAllText(path))!.AsObject();
 
+    private sealed class TestUnavailableException(string message) : Exception(message);
+
     private static void Run(string name, Action test)
     {
         TotalCases++;
@@ -1381,6 +1845,11 @@ internal static class Program
         {
             test();
             Console.WriteLine($"PASS: {name}");
+        }
+        catch (TestUnavailableException exception)
+        {
+            SkippedCases++;
+            Console.WriteLine($"SKIP/UNAVAILABLE: {name} — {exception.Message}");
         }
         catch (Exception exception)
         {

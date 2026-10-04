@@ -706,8 +706,8 @@ internal sealed partial class EmueraConsole : IDisposable
 
     private void Draw()
     {
-        //INPUT待ちでないとき、又はタイマー付きINPUT状態の場合はこれ以外の処理に任せる
-        if (state != ConsoleState.WaitInput || genericTimer.Enabled)
+        // 残り時間を表示するTINPUTはその更新で描画する。非表示時はアニメ用の描画を止めない。
+        if (state != ConsoleState.WaitInput || (genericTimer.Enabled && inputReq.DisplayTime))
         {
             return;
         }

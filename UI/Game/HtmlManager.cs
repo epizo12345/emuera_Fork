@@ -526,7 +526,8 @@ internal static partial class HtmlManager
                                     }
                                 }
 
-                                var backcolor = SKColor.Empty;
+                                // 背景未指定のDIVでは透明矩形の描画とSKPaint生成を行わない。
+                                SKColor? backcolor = null;
                                 {
                                     var backcolorStr = elem.GetAttribute("background_color");
                                     if (!string.IsNullOrEmpty(backcolorStr))
