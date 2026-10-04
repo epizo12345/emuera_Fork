@@ -18,6 +18,12 @@ internal sealed class EmueraConsole
     public BrowserRuntimeStatus Status { get; private set; } = BrowserRuntimeStatus.Running;
     public bool IsRunning => Status == BrowserRuntimeStatus.Running;
     public InputRequest? PendingInput { get; private set; }
+    internal BrowserAwaitRequest? PendingAwait { get; private set; }
+    long nextAwaitRequestId;
+    long awaitStarted;
+    internal TimeSpan RemainingAwaitTime => PendingAwait is { } request
+        ? TimeSpan.FromMilliseconds(Math.Max(0, request.DelayMilliseconds - System.Diagnostics.Stopwatch.GetElapsedTime(awaitStarted).TotalMilliseconds))
+        : TimeSpan.Zero;
     public event Action<string>? TextPrinted;
     string windowTitle = string.Empty;
     string statusBar = "-";
@@ -197,10 +203,11 @@ internal sealed class EmueraConsole
 
     public void RestartForTitle()
     {
-        if (Status is not (BrowserRuntimeStatus.WaitingForInput or BrowserRuntimeStatus.Succeeded)
+        if (Status is not (BrowserRuntimeStatus.WaitingForInput or BrowserRuntimeStatus.Succeeded or BrowserRuntimeStatus.AwaitingHost)
             || PersistenceError is not null)
             throw new InvalidOperationException("正常終了または入力待ちからだけタイトルを開始できます");
         PendingInput = null;
+        CancelAwait();
         Status = BrowserRuntimeStatus.Running;
     }
 
@@ -228,6 +235,7 @@ internal sealed class EmueraConsole
 
     public void FailPersistence(string message)
     {
+        CancelAwait();
         PrintFlush(false);
         PendingInput = null;
         PersistenceError = "永続保存失敗: " + message;
@@ -236,6 +244,7 @@ internal sealed class EmueraConsole
 
     public void Quit()
     {
+        CancelAwait();
         // Webではウィンドウを閉じられないため、QUITをこのRuntime sessionの正常終了として表す。
         PrintFlush(false);
         PendingInput = null;
@@ -455,7 +464,30 @@ internal sealed class EmueraConsole
         return image == part.ImageDataUrl && ReferenceEquals(children, part.Children)
             ? part : part with { ImageDataUrl = image, Children = children };
     }
-    public void Await(int time) => throw Unsupported("AWAIT");
+    public void Await(int time)
+    {
+        if (Status != BrowserRuntimeStatus.Running) throw new InvalidOperationException("AWAIT requires a running script");
+        // The shared instruction validates explicit arguments; -1 is its omitted-argument sentinel.
+        if (time is < -1 or > 10000) throw new ArgumentOutOfRangeException(nameof(time));
+        PrintFlush(false);
+        RefreshStrings(true);
+        awaitStarted = System.Diagnostics.Stopwatch.GetTimestamp();
+        PendingAwait = new(++nextAwaitRequestId, 0, Math.Max(0, time));
+        PendingInput = null;
+        Status = BrowserRuntimeStatus.AwaitingHost;
+        GlobalStatic.Process.UpdateCheckInfiniteLoopState();
+    }
+
+    internal bool CompleteAwait(long requestId)
+    {
+        if (Status != BrowserRuntimeStatus.AwaitingHost || PendingAwait?.RequestId != requestId
+            || RemainingAwaitTime > TimeSpan.Zero) return false;
+        PendingAwait = null;
+        Status = BrowserRuntimeStatus.Running;
+        return true;
+    }
+
+    internal void CancelAwait() => PendingAwait = null;
 
     public void SetWindowTitle(string value) => windowTitle = value;
     public string GetWindowTitle() => windowTitle;
@@ -664,6 +696,7 @@ internal sealed class EmueraConsole
 
     void Fail()
     {
+        CancelAwait();
         PrintFlush(false);
         PendingInput = null;
         Status = BrowserRuntimeStatus.Failed;

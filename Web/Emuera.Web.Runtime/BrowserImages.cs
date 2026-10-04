@@ -158,8 +158,22 @@ internal sealed class GraphicsImage : AbstractImage
         using var paint = new SKPaint { ColorFilter = filter };
         DrawSprite(image, rect, paint);
     }
-    public void GDrawG(GraphicsImage source, Rectangle destination, Rectangle sourceRect) => throw Unsupported();
-    public void GDrawG(GraphicsImage source, Rectangle destination, Rectangle sourceRect, float[][] matrix) => throw Unsupported();
+    public void GDrawG(GraphicsImage source, Rectangle destination, Rectangle sourceRect)
+        => DrawGraphics(source, destination, sourceRect, null);
+    public void GDrawG(GraphicsImage source, Rectangle destination, Rectangle sourceRect, float[][] matrix)
+    {
+        // Native GDRAWGの行列対応を維持する（共有命令が5x5と256固定小数点を検査）。
+        float[] values =
+        [
+            matrix[0][0], matrix[1][0], matrix[2][0], matrix[3][0], matrix[0][4],
+            matrix[0][1], matrix[1][1], matrix[2][1], matrix[3][1], matrix[1][4],
+            matrix[0][2], matrix[1][2], matrix[2][2], matrix[3][2], matrix[2][4],
+            matrix[0][3], matrix[1][3], matrix[2][3], matrix[3][3], matrix[3][4]
+        ];
+        using SKColorFilter filter = SKColorFilter.CreateColorMatrix(values);
+        using var paint = new SKPaint { ColorFilter = filter };
+        DrawGraphics(source, destination, sourceRect, paint);
+    }
     public void GDrawGWithMask(GraphicsImage source, GraphicsImage mask, Point destination) => throw Unsupported();
     public void GDrawText(string text, SKPoint point)
     {
@@ -227,6 +241,24 @@ internal sealed class GraphicsImage : AbstractImage
         SKImage replacement = surface.Snapshot();
         Image.Dispose();
         Image = replacement;
+        MarkContentChanged();
+    }
+
+    void DrawGraphics(GraphicsImage source, Rectangle destination, Rectangle sourceRectangle, SKPaint? paint)
+    {
+        SKImage current = Image ?? throw new NullReferenceException();
+        SKImage input = source.Image ?? throw new NullReferenceException();
+        using SKSurface surface = SKSurface.Create(new SKImageInfo(current.Width, current.Height, SKColorType.Rgba8888, SKAlphaType.Premul));
+        surface.Canvas.DrawImage(current, 0, 0);
+        // SKImageは不変。自己コピーも更新前のinputを最後まで読み、snapshot成功後にのみ旧destinationを破棄。
+        // Native AImage.DrawのGDRAWG経路は設定補間ではなくDefault samplingを使用する。
+        surface.Canvas.DrawImage(input,
+            new SKRect(sourceRectangle.Left, sourceRectangle.Top, sourceRectangle.Right, sourceRectangle.Bottom),
+            new SKRect(destination.Left, destination.Top, destination.Right, destination.Bottom),
+            SKSamplingOptions.Default, paint);
+        SKImage replacement = surface.Snapshot();
+        Image = replacement;
+        current.Dispose();
         MarkContentChanged();
     }
 

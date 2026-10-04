@@ -10,6 +10,168 @@ using SkiaSharp;
 
 try
 {
+if (args is ["gdrawg-contract"] or ["gdrawg-red"] or ["gdrawg-case", _, _, _])
+{
+    await GDrawGProbe.Run(args);
+    return;
+}
+if (args is ["await-contract", var awaitCase, var awaitEvidence])
+{
+    int delay = awaitCase switch { "one" => 1, "positive" or "title-cancel" => 80, "timer" => 40, "upper" => 10000, _ => 0 };
+    string command = awaitCase == "omitted" ? "AWAIT" : $"AWAIT {delay}";
+    string script = awaitCase switch
+    {
+        "negative" => "AWAIT -1\nPRINTL BAD_AFTER\nINPUT",
+        "too-high" => "AWAIT 10001\nPRINTL BAD_AFTER\nINPUT",
+        "render" => "PRINTL TEXT_BEFORE\nHTML_PRINT \"<button value='4'>HTML_BEFORE</button>\"\nHTML_PRINT_ISLAND \"<div display='absolute-lefttop' xpos='10px' ypos='20px'>ISLAND_BEFORE</div>\", 2\nAWAIT 0\nPRINTL AFTER_AWAIT\nINPUT",
+        "sequence" => "INPUT\nPRINTFORML FIRST={RESULT}\nAWAIT 0\nPRINTL MIDDLE\nAWAIT 0\nPRINTL AFTER_AWAIT\nINPUT",
+        "macro" => "INPUT\nAWAIT 0\nWAIT\nPRINTL AFTER_AWAIT\nINPUT",
+        "timer" => "TINPUT 1000, 0\nAWAIT 40\nPRINTL AFTER_AWAIT\nINPUT",
+        "save-failure" => "SAVEDATA 7, \"AWAIT_TEST\"\nAWAIT 0\nPRINTL BAD_AFTER\nINPUT",
+        "save-ack" or "load" => "SAVEDATA 7, \"AWAIT_TEST\"\nAWAIT 0\n" + (awaitCase == "load" ? "LOADDATA 7\n" : "") + "PRINTL AFTER_AWAIT\nINPUT",
+        "quit" => "AWAIT 0\nQUIT",
+        _ => "PRINTL BEFORE_AWAIT\n" + command + "\nPRINTL AFTER_AWAIT\nINPUT"
+    };
+    string root = CreateGlobalFixture("@SYSTEM_TITLE\n" + script + "\nQUIT\n" +
+        (awaitCase == "load" ? "\n@EVENTLOAD\nPRINTL LOADED_FRESH_INPUT\nINPUT\nQUIT\n" : ""));
+    var runtime = await BrowserRuntimeSession.StartSavePersistentBootstrapAsync(root, null);
+    runtime.SetViewport(1512, 864);
+    long started = System.Diagnostics.Stopwatch.GetTimestamp();
+    runtime.StartTitle();
+    var observations = new List<string>();
+    if (awaitCase == "save-failure")
+    {
+        Equal(BrowserRuntimeStatus.Persisting, runtime.Status, "save starts before AWAIT");
+        string operation = runtime.PendingPersistence!.OperationId;
+        try { await runtime.DrainPersistenceAsync(_ => Task.FromException(new IOException("test transaction failed"))); }
+        catch (IOException) { observations.Add("injected transaction failure retained"); }
+        Equal(BrowserRuntimeStatus.Failed, runtime.Status, "save failure not converted to AWAIT success");
+        Equal(true, runtime.PersistenceError is not null, "save error retained");
+        Equal(true, runtime.PendingAwait is null, "failed transaction never reaches AWAIT");
+        Equal(false, runtime.AcknowledgePersistence(operation), "late ACK cannot revive failed save");
+        Equal(false, runtime.CompleteAwait(1, runtime.SessionGeneration), "host completion cannot bypass failed save");
+        Equal(false, runtime.Output.Contains("BAD_AFTER", StringComparison.Ordinal), "no continuation after failure");
+    }
+    else if (awaitCase is "negative" or "too-high")
+    {
+        Equal(BrowserRuntimeStatus.Failed, runtime.Status, "shared range check rejects explicit argument");
+        Equal(true, runtime.PendingAwait is null, "range failure creates no continuation");
+        Equal(false, runtime.Output.Contains("BAD_AFTER", StringComparison.Ordinal), "range failure stops later commands");
+    }
+    else
+    {
+        if (awaitCase is "sequence" or "macro")
+        {
+            var prompt = runtime.PendingInput!;
+            Equal(true, runtime.SubmitMacro(new(prompt.RequestId, "3", BrowserInputSource.Keyboard, runtime.SessionGeneration), awaitCase == "macro"), "initial input accepted once");
+            started = System.Diagnostics.Stopwatch.GetTimestamp();
+        }
+        if (awaitCase == "timer")
+        {
+            var timed = runtime.PendingInput!;
+            Equal(true, runtime.Submit(new(timed.RequestId, "2", SessionGeneration: runtime.SessionGeneration)), "timed input accepted once");
+            Equal(false, runtime.SubmitTimeout(timed.RequestId, runtime.SessionGeneration), "old input timer cannot finish AWAIT");
+            started = System.Diagnostics.Stopwatch.GetTimestamp();
+        }
+        if (awaitCase is "save-ack" or "load")
+        {
+            Equal(BrowserRuntimeStatus.Persisting, runtime.Status, "save blocks before AWAIT");
+            Equal(true, runtime.PendingAwait is null, "no AWAIT before matching ACK");
+            Equal(false, runtime.CompleteAwait(1, runtime.SessionGeneration), "host continuation cannot bypass save ACK");
+            string operation = runtime.PendingPersistence!.OperationId;
+            Equal(false, runtime.AcknowledgePersistence("stale"), "stale save ACK rejected");
+            await Task.Delay(20);
+            Equal(BrowserRuntimeStatus.Persisting, runtime.Status, "delayed ACK still blocks");
+            Equal(true, runtime.AcknowledgePersistence(operation), "matching ACK reaches AWAIT");
+            Equal(false, runtime.AcknowledgePersistence(operation), "duplicate ACK rejected during AWAIT");
+            started = System.Diagnostics.Stopwatch.GetTimestamp();
+            observations.Add("save -> matching ACK -> AWAIT; stale/duplicate ACK rejected");
+        }
+        Equal(BrowserRuntimeStatus.AwaitingHost, runtime.Status, "AWAIT separate non-input suspension");
+        var request = runtime.PendingAwait!;
+        Equal(delay, request.DelayMilliseconds, "omitted/zero/positive duration contract");
+        Equal(true, runtime.PendingInput is null, "no input prompt while host waits");
+        Equal(false, runtime.Output.Contains("AFTER_AWAIT", StringComparison.Ordinal), "later command not executed early");
+        Equal(false, runtime.Submit(new(request.RequestId, "9")), "ordinary input not accepted at AWAIT");
+        Equal(false, runtime.SubmitMacro(new(request.RequestId, "9"), true), "macro token not accepted or consumed at AWAIT");
+        Equal(false, runtime.SubmitTimeout(request.RequestId, runtime.SessionGeneration), "input timer cannot finish AWAIT");
+        Equal(false, runtime.CompleteAwait(request.RequestId + 1, runtime.SessionGeneration), "wrong request rejected");
+        Equal(false, runtime.CompleteAwait(request.RequestId, runtime.SessionGeneration + 1), "wrong runtime generation rejected");
+        if (awaitCase == "render")
+        {
+            string text = string.Join("|", Flatten(runtime.DisplayLines.SelectMany(l => l.Parts)).Select(p => p.Text));
+            Contains("TEXT_BEFORE", text, "text published before host continuation");
+            Contains("HTML_BEFORE", text, "HTML published before host continuation");
+            Contains("ISLAND_BEFORE", text, "Island published before host continuation");
+        }
+        if (awaitCase == "macro")
+        {
+            Equal(true, runtime.MessageSkip.Active, "skip retained at non-input AWAIT");
+            Equal(false, runtime.ContinueMessageSkip(), "skip cannot bypass AWAIT");
+            runtime.StopMessageSkip("macro-user-stop");
+        }
+        if (awaitCase == "title-cancel")
+        {
+            runtime.CancelAwait();
+            Equal(false, runtime.CompleteAwait(request.RequestId, request.SessionGeneration), "cancelled callback rejected");
+            runtime.ReturnToTitle();
+            Equal(false, runtime.CompleteAwait(request.RequestId, request.SessionGeneration), "old callback cannot advance replacement title");
+            Equal(true, runtime.PendingAwait!.RequestId > request.RequestId, "same Process has fresh request identity");
+            while (runtime.RemainingAwaitTime > TimeSpan.Zero)
+                await Task.Delay(TimeSpan.FromMilliseconds(Math.Max(1, Math.Ceiling(runtime.RemainingAwaitTime.TotalMilliseconds))));
+            Equal(false, runtime.CompleteAwait(request.RequestId, request.SessionGeneration), "expired old timer cannot advance replacement");
+            Equal(true, runtime.CompleteAwait(runtime.PendingAwait.RequestId, runtime.SessionGeneration), "replacement title advances once");
+        }
+        else
+        {
+            if (awaitCase == "upper") Equal(false, runtime.CompleteAwait(request.RequestId, request.SessionGeneration), "10000ms cannot complete early");
+            while (runtime.RemainingAwaitTime > TimeSpan.Zero)
+                await Task.Delay(TimeSpan.FromMilliseconds(Math.Max(1, Math.Ceiling(runtime.RemainingAwaitTime.TotalMilliseconds))));
+            Equal(true, runtime.CompleteAwait(request.RequestId, request.SessionGeneration), "host continuation accepted exactly once");
+            Equal(false, runtime.CompleteAwait(request.RequestId, request.SessionGeneration), "duplicate/old completion rejected");
+            if (awaitCase == "sequence")
+            {
+                Contains("FIRST=3", runtime.Output, "input value retained across AWAIT");
+                Contains("MIDDLE", runtime.Output, "first continuation reaches second AWAIT");
+                Equal(BrowserRuntimeStatus.AwaitingHost, runtime.Status, "continuous AWAIT not skipped");
+                var second = runtime.PendingAwait!;
+                Equal(true, second.RequestId > request.RequestId, "unique sequential requests");
+                Equal(true, runtime.CompleteAwait(second.RequestId, second.SessionGeneration), "second continuation accepted");
+                Equal(1, runtime.Output.Split("MIDDLE", StringSplitOptions.None).Length - 1, "middle command executed once");
+            }
+            if (awaitCase == "macro")
+            {
+                Equal(false, runtime.MessageSkip.Active, "stop not undone by AWAIT completion");
+                Equal(BrowserInputKind.Enter, runtime.PendingInput!.Kind, "manual WAIT preserved after stop");
+                Equal(true, runtime.Submit(new(runtime.PendingInput.RequestId, "")), "manual operation works after stop");
+            }
+        }
+        Equal(awaitCase == "quit" ? BrowserRuntimeStatus.Succeeded : BrowserRuntimeStatus.WaitingForInput, runtime.Status, "correct final state");
+        if (awaitCase == "load")
+        {
+            Contains("LOADED_FRESH_INPUT", runtime.Output, "LOADDATA enters EVENTLOAD instead of resuming old script");
+            Equal(false, runtime.Output.Contains("AFTER_AWAIT", StringComparison.Ordinal), "old script not continued after LOAD");
+            Equal(true, runtime.PendingAwait is null, "no old AWAIT retained after LOAD");
+            Equal(false, runtime.CompleteAwait(request.RequestId, request.SessionGeneration), "old callback cannot advance loaded input");
+        }
+        else if (awaitCase != "quit") Equal(1, runtime.Output.Split("AFTER_AWAIT", StringSplitOptions.None).Length - 1, "following command executed once");
+        if (delay > 0) Equal(true, System.Diagnostics.Stopwatch.GetElapsedTime(started).TotalMilliseconds >= delay, "requested positive delay not shortened");
+    }
+    double elapsed = System.Diagnostics.Stopwatch.GetElapsedTime(started).TotalMilliseconds;
+    Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(awaitEvidence))!);
+    File.WriteAllText(awaitEvidence, JsonSerializer.Serialize(new { @case = awaitCase, requestedMilliseconds = delay, elapsedWallMilliseconds = elapsed, earlyToleranceMilliseconds = 0, status = runtime.Status.ToString(), runtime.CurrentErbPosition, runtime.DoScriptCallCount, runtime.Output, observations, fixtureRoot = root, assertion = true }));
+    Console.WriteLine($"PASS await-contract {awaitCase} elapsed={elapsed:F3}ms requested={delay}ms"); return;
+}
+if (args is ["await-red"])
+{
+    var runtime = await BrowserRuntimeSession.StartPersistentBootstrapAsync(CreateGlobalFixture("@SYSTEM_TITLE\nPRINTL BEFORE_AWAIT\nAWAIT 0\nPRINTL AFTER_AWAIT\nINPUT\nQUIT\n"), null);
+    runtime.StartTitle();
+    Equal("AwaitingHost", runtime.Status.ToString(), "AWAIT suspends without unsupported failure");
+    Contains("BEFORE_AWAIT", runtime.Output, "before AWAIT output published");
+    Equal(false, runtime.Output.Contains("AFTER_AWAIT", StringComparison.Ordinal), "later command not executed before host continuation");
+    Equal(true, runtime.PendingInput is null, "AWAIT is not INPUT");
+    Console.WriteLine("PASS await-red"); return;
+}
 if (args is ["html-tagsplit-unit", var casesPath])
 {
     var split = typeof(BrowserRuntimeSession).Assembly.GetType("MinorShift.Emuera.UI.Game.HtmlManager")!

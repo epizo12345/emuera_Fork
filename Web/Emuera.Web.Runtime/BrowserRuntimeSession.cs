@@ -14,7 +14,8 @@ using System.Text;
 namespace MinorShift.Emuera.Web.Runtime;
 
 public enum BrowserInputKind { Integer, String, Enter, AnyKey, MouseKey, TimedVoid }
-public enum BrowserRuntimeStatus { Running, WaitingForInput, Persisting, BootstrapReady, Succeeded, Failed }
+public enum BrowserRuntimeStatus { Running, WaitingForInput, Persisting, BootstrapReady, Succeeded, Failed, AwaitingHost }
+public sealed record BrowserAwaitRequest(long RequestId, long SessionGeneration, int DelayMilliseconds);
 
 public sealed record BrowserInputPrompt(long RequestId, BrowserInputKind Kind, bool OneInput, long TimeLimit = -1, string? TimedInputName = null, bool StopMessageSkip = false, bool DisplayTime = false, string? TimeUpMessage = null);
 public sealed record BrowserMessageSkipState(bool Active, long OperationId, long StartRequestId, int Continuations, long ElapsedMilliseconds, string StopReason);
@@ -180,6 +181,21 @@ public sealed class BrowserRuntimeSession
         return activated ?? parts;
     }
     public long SessionGeneration { get; }
+    public BrowserAwaitRequest? PendingAwait => console.PendingAwait is { } request
+        ? request with { SessionGeneration = SessionGeneration } : null;
+    public TimeSpan RemainingAwaitTime => console.RemainingAwaitTime;
+
+    public bool CompleteAwait(long requestId, long sessionGeneration)
+    {
+        if (sessionGeneration != SessionGeneration || PendingPersistenceCount != 0 || PersistenceError is not null
+            || !console.CompleteAwait(requestId)) return false;
+        RunScript();
+        StopMessageSkipAtBoundary(holdAtTimedPrimitive: true);
+        return true;
+    }
+
+    // Abandon a host continuation only for a transition/disposal. Do not resume this graph afterwards.
+    public void CancelAwait() => console.CancelAwait();
     public long DisplayGeneration => console.DisplayGeneration;
     public long DisplayStructureGeneration => console.DisplayStructureGeneration;
     public long ScriptOutputGeneration => console.ScriptOutputGeneration;
@@ -498,7 +514,7 @@ public sealed class BrowserRuntimeSession
 
     public void ReturnToTitle()
     {
-        if (Status is not (BrowserRuntimeStatus.WaitingForInput or BrowserRuntimeStatus.Succeeded)
+        if (Status is not (BrowserRuntimeStatus.WaitingForInput or BrowserRuntimeStatus.Succeeded or BrowserRuntimeStatus.AwaitingHost)
             || PendingPersistenceCount != 0 || PersistenceError is not null)
             throw new InvalidOperationException("入力待ちと保存完了後にだけタイトルへ戻れます");
         StopMessageSkip("title-return");
@@ -650,7 +666,7 @@ public sealed class BrowserRuntimeSession
             StopMessageSkip("limit");
             return false;
         }
-        if (Status == BrowserRuntimeStatus.Persisting)
+        if (Status is BrowserRuntimeStatus.Persisting or BrowserRuntimeStatus.AwaitingHost)
             return false;
         InputRequest? request = console.PendingInput;
         if (Status != BrowserRuntimeStatus.WaitingForInput || request is null)
@@ -706,7 +722,7 @@ public sealed class BrowserRuntimeSession
 
     void StopMessageSkipAtBoundary(bool holdAtTimedPrimitive = false)
     {
-        if (!messageSkip.Active || Status == BrowserRuntimeStatus.Persisting)
+        if (!messageSkip.Active || Status is BrowserRuntimeStatus.Persisting or BrowserRuntimeStatus.AwaitingHost)
             return;
         InputRequest? request = console.PendingInput;
         if (holdAtTimedPrimitive && Status == BrowserRuntimeStatus.WaitingForInput

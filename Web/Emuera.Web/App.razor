@@ -380,6 +380,9 @@
     bool diagnosticContinuation;
     CancellationTokenSource? primitiveTimer;
     CancellationTokenSource? animationTimer;
+    CancellationTokenSource? awaitTimer;
+    long scheduledAwaitRequestId = -1;
+    BrowserRuntimeSession? scheduledAwaitSession;
     long? scheduledTwaitRequestId;
     long scheduledTwaitSessionGeneration;
     long? scheduledCountdownRequestId;
@@ -686,6 +689,16 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (session is { PendingAwait: { } hostAwait } awaitingSession
+            && (!ReferenceEquals(scheduledAwaitSession, awaitingSession) || scheduledAwaitRequestId != hostAwait.RequestId))
+        {
+            awaitTimer?.Cancel();
+            awaitTimer?.Dispose();
+            awaitTimer = new CancellationTokenSource();
+            scheduledAwaitSession = awaitingSession;
+            scheduledAwaitRequestId = hostAwait.RequestId;
+            _ = CompleteHostAwaitAsync(awaitingSession, hostAwait, awaitTimer.Token, macroOperationId);
+        }
         if (isP1C3 && !scaleFitAttached)
         {
             scaleFitModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./scale-fit.js");
@@ -1661,7 +1674,7 @@
     async Task AdvanceP1C2()
     {
         if (session is null || storeModule is null || storeHandle is null) return;
-        if (session.Status == BrowserRuntimeStatus.Persisting || session.IsFailed || session.MessageSkip.Active || macroActive)
+        if (session.Status is BrowserRuntimeStatus.Persisting or BrowserRuntimeStatus.AwaitingHost || session.IsFailed || session.MessageSkip.Active || macroActive)
             keyboardInput.Clear();
         else keyboardInput.Revalidate(session.PendingInput, session.SessionGeneration);
         primitiveTimer?.Cancel();
@@ -1696,7 +1709,7 @@
                 SetDiagnosticStage("persistence-failed");
                 return;
             }
-            if (!session.MessageSkip.Active) break;
+            if (session.Status == BrowserRuntimeStatus.AwaitingHost || !session.MessageSkip.Active) break;
             if (macroActive && session.PendingInput is { } macroPrompt
                 && macroPrompt.Kind == BrowserInputKind.TimedVoid && !AllowMacroForcedWait)
             {
@@ -1803,6 +1816,44 @@
         long sessionGeneration = session.SessionGeneration;
         int interval = session.AnimationIntervalMilliseconds;
         _ = RefreshAnimationLoop(sessionGeneration, interval, token);
+    }
+
+    async Task CompleteHostAwaitAsync(BrowserRuntimeSession active, BrowserAwaitRequest request,
+        CancellationToken token, long macroOperation)
+    {
+        try
+        {
+            // After-render/rAF gives the browser an update opportunity, not a physical-paint guarantee.
+            if (storeModule is not null) await storeModule.InvokeVoidAsync("waitForPaint");
+            else await Task.Yield();
+            while (!token.IsCancellationRequested && ReferenceEquals(active, session)
+                && active.PendingAwait?.RequestId == request.RequestId)
+            {
+                double remaining = active.RemainingAwaitTime.TotalMilliseconds;
+                if (remaining > 0) await Task.Delay(TimeSpan.FromMilliseconds(Math.Ceiling(remaining)), token);
+                if (token.IsCancellationRequested || !ReferenceEquals(active, session)) return;
+                if (!active.CompleteAwait(request.RequestId, request.SessionGeneration))
+                {
+                    if (active.RemainingAwaitTime > TimeSpan.Zero) continue;
+                    return;
+                }
+                await AdvanceP1C2();
+                if (macroActive && macroOperation == macroOperationId) await DrainMacroQueue();
+                StateHasChanged();
+                return;
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            if (token.IsCancellationRequested || !ReferenceEquals(active, session)) return;
+            active.CancelAwait();
+            StopMacroQueue("await-failed");
+            active.StopMessageSkip("await-failed");
+            error = "AWAIT継続に失敗しました: " + ex.Message;
+            await SetHostStatusAsync(error, busy: false, isError: true);
+            StateHasChanged();
+        }
     }
 
     async Task RefreshAnimationLoop(long sessionGeneration, int interval, CancellationToken token)
@@ -2011,6 +2062,7 @@
             while (macroActive && operation == macroOperationId && ReferenceEquals(active, session)
                 && active?.SessionGeneration == generation && queue.Count > 0)
             {
+                if (active.Status == BrowserRuntimeStatus.AwaitingHost) return;
                 if (!dataReady || active.PendingInput is not { } pending) { StopMacroQueue(); return; }
                 if (pending.StopMessageSkip) { StopMacroQueue("macro-stop-messkip"); return; }
                 if (pending.Kind == BrowserInputKind.TimedVoid) return;
@@ -2302,6 +2354,8 @@
 
     async Task StopAndDrainForTitleTransition(string stage)
     {
+        awaitTimer?.Cancel();
+        session?.CancelAwait();
         keyboardTransition = true;
         keyboardInput.Clear();
         StopMacroQueue(stage + "-macro-stop");
@@ -3368,6 +3422,9 @@
 
     public async ValueTask DisposeAsync()
     {
+        awaitTimer?.Cancel();
+        awaitTimer?.Dispose();
+        session?.CancelAwait();
         if (scaleFitModule is not null)
         {
             try { await scaleFitModule.InvokeVoidAsync("detach"); await scaleFitModule.DisposeAsync(); }

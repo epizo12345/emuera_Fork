@@ -12,8 +12,8 @@ public sealed record PackageResult(string Output, int FileCount, long Bytes, str
 
 public static class Packager
 {
-    public const string Version = "1.0.5";
-    public const string RuntimeVersion = "UX16-08-RC3-Compat105";
+    public const string Version = "1.0.6";
+    public const string RuntimeVersion = "UX16-08-RC3-Compat106";
     const string Owner = "EmueraWebPackager";
     const long PackLimit = 128L * 1024 * 1024;
     static readonly JsonSerializerOptions Json = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, PropertyNameCaseInsensitive = true, WriteIndented = true };

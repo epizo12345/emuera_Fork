@@ -1,34 +1,33 @@
-# Emuera Web Packager 1.0.5 — Release Notes
+# Emuera Web Packager 1.0.6 — Release Notes
 
-Web Packager 1.0.5の正式配布資料です。旧1.0.4とその配布物は保持します。ゲーム入りZIPのitchアップロードは利用者が行います。
+採用ソースcommitから生成した1.0.6配布候補の資料です。公開・アップロードは別工程で、旧1.0.5を保持します。
 
-## 1.0.5の変更
+## 変更内容
 
-- 位置指定DIV／HTML Islandで実機が行わない自動折返しを抑え、ターンエンド確認の質問・はい／いいえが枠外へ出る問題を修正。通常文章や日記帳の称号一覧の物理行折返しは維持します。
-- 入れ子のabsolute-lefttop／absolute-leftbottomを実機と同じゲーム画面基準で配置し、神格習合のカード位置ずれを修正。relative配置は親を基準とする従来動作を維持します。
-- 論理描画領域を1512×864pxへ揃え、神格習合の下部「決定／戻る」を表示・操作できるようにしました。CLIENTHEIGHT、絶対配置、Scale Fit、独自マウス入力座標の基準を一致させています。小窓では論理解像度を削らず一様に縮小します。
-- NGOイベントで停止していたHTML_TAGSPLITをNative互換で実装。文字・空白・引用符・エンティティ表記を保持し、引用符内でも最初の「>」で区切ります。不完全なタグは失敗とし、RESULT=-1と出力配列未変更の既存契約を維持します。
+- AWAITに対応。通常入力を消費せず描画を反映してホストへ制御を返し、指定された待機の後に継続します。省略／0へ固定待ち時間を追加せず、正値の待機中もUIを応答可能にします。Runtime世代・要求IDを照合し、古い／重複完了、保存ACK前の続行を拒否します。
+- GDRAWGの通常版と色補正版に対応。画像間コピー、切り出し、拡大縮小、透明度合成、色行列、重なった自己コピーを扱い、親画像の更新を表示済みSpriteGへ反映します。
+- .NET10.0.12、既存のマクロ停止・保存保護・Scale Fit・1512×864描画領域を維持します。
 
-## 確認済みと既知の制約
+## 確認範囲と残件
 
-- ターンエンド確認、神格習合のカード・下部ボタン・戻る操作はユーザーが実ゲームで確認済みです。
-- NGOは実ゲームで表示復帰を確認済みです。上端約2行の見切れは既知の許容制約で、864pxを維持します。NGOの実ゲームでの後続進行全体は確認済みとはしていません。短いfixtureでは右クリック後の次入力まで確認しています。
-- 1.0.4のPRINTC／PRINTLCとHTMLボタン折返し、tooltip、QUIT後のタイトル復帰、1.0.3の赤いマクロ停止、保存ACK／Web Locks／Scale Fitを維持します。
-- 全ゲーム・全ブラウザ、長時間プレイ、実OS IME、未到達ゲームオーバー／エンディング、itch公開後の動作は保証しません。速度改善率は主張しません。
+- AWAITは逆引き合体でユーザー確認済み。他6実ゲーム経路を全て確認済みとはしていません。GDRAWGはユーザーのブラウザ確認で問題なし。具体的キャラ・操作経路は未指定です。
+- 最小fixtureでGDRAWG16画像1464画素のNative照合、SpriteG更新、AWAIT継続、マクロ停止後の手動操作、保存ACKを検証します。fixtureの成功を全ゲーム動作保証に置き換えません。
+- GDRAWGWITHMASKなど他の未実装は残ります。色行列の添字なしCM指定に共有処理の例外が残り、明示CM:0:0を試験しています。
+- NGO上端約2行の見切れは許容済み制約です。実ゲームでのNGO後続進行全体、全ブラウザ、長時間プレイ、OS IME、itch公開後の動作は未確認です。
+- 全命令対応済みや未測定の速度改善を宣伝する更新ではありません。
 
 ## 配布条件と出自
 
-- Windows x64 self-contained Packager 1.0.5とsealed Runtime UX16-08-RC3-Compat105を同梱。.NETCore／WindowsDesktop／browser-wasm実行資材は10.0.12です。
-- Web: Release / RunAOTCompilation=true / WasmStripILAfterAOT=false / EnableErbExecutionProfiler=false。IL削除版との速度・サイズ差は未測定です。
-- 生成元の採用source commit: `{{SOURCE_COMMIT}}`
-- 最終source一覧SHA-256: `{{SOURCE_TREE_SHA256}}`
-- 採用commitから再生成した成果物を使用し、EXEの埋込みrevisionとソース一覧SHAを照合します。tool→sealed template→生成Webにbuild-provenance.jsonを引き継ぎます。
-- MAIN側の描画・TINPUT・フォント変更、IR復元、MEMFS move試作、固定seed／時刻、比較policyは含みません。通常の保守用診断は維持します。
+- Windows x64 self-contained Packager1.0.6、sealed Runtime UX16-08-RC3-Compat106。.NETCore／WindowsDesktop／browser-wasm10.0.12。
+- Release / RunAOTCompilation=true / WasmStripILAfterAOT=false / EnableErbExecutionProfiler=false。
+- ソースcommit: `{{SOURCE_COMMIT}}`
+- ソース一覧SHA-256: `{{SOURCE_TREE_SHA256}}`
+- 採用commitからEXE／AOTを再生成し、tool→sealed template→生成Webへbuild-provenanceを継承します。
 
-## 使い方
+## 利用方法
 
-1. `EmueraWebPackager-1.0.5-win-x64.zip`と同じ配布一式の`SHA256SUMS.txt`を照合し、ZIP全体を新しいフォルダへ展開します。
-2. `EmueraWebPackager.exe`で使用権のあるゲームフォルダと新しい出力先を指定します。`--package <game-folder> <new-output-folder>`も使用できます。
-3. 生成Webをローカル確認し、利用者自身が生成したゲーム用ZIPをitch.ioへアップロードします。ツールZIPをゲームとしてアップロードしないでください。
+1. EmueraWebPackager-1.0.6-win-x64.zipとSHA256SUMS.txtを照合し、ZIP全体を新規フォルダへ展開します。
+2. 展開したEmueraWebPackager.exeで使用権のあるゲーム入力と新規出力先を選びます。CLIは `--package <game-folder> <new-output-folder>`。
+3. ゲーム用ZIPは利用者がitchへアップロードします。ツールZIPとは別のファイルです。
 
-ツールZIPにゲーム本体・素材・個人セーブ・試験証跡は含みません。LICENSEと依存・フォントの通知をtool→template→生成Webへ継承します。技術検証はゲーム等の再配布許諾を保証しません。別ゲームは別origin／itchページで配信してください。
+ゲーム本体・素材・個人セーブ・試験証跡をツールZIPへ含めません。ライセンス／通知はtool→template→生成Webへ継承します。技術検証はゲーム素材等の再配布許諾を保証しません。
