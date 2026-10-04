@@ -15,7 +15,7 @@ $licenseSource = Join-Path $repoRoot 'license.md'
 $notesSource = Join-Path $PSScriptRoot 'RELEASE_NOTES.md'
 $output = [System.IO.Path]::GetFullPath($OutputDirectory)
 $buildArtifacts = [System.IO.Path]::GetFullPath($ArtifactsPath)
-$zipName = 'EmueraWebPackager-1.0.4-win-x64.zip'
+$zipName = 'EmueraWebPackager-1.0.5-win-x64.zip'
 $tempBase = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
 $tempRoot = [System.IO.Path]::GetFullPath((Join-Path $tempBase "EmueraWebPackager-Release-$([guid]::NewGuid().ToString('N'))"))
 $outputParent = Split-Path -Parent $output
@@ -66,7 +66,7 @@ try {
     if ($versionProcess.ExitCode -ne 0) { throw "Packager --versionに失敗しました (exit $($versionProcess.ExitCode)): $versionError" }
 }
 finally { $versionProcess.Dispose() }
-if ($version -ne 'Emuera Web Packager 1.0.4 / Runtime UX16-08-RC3-Compat104') { throw "Packager/Runtime versionが想定外です: $version" }
+if ($version -ne 'Emuera Web Packager 1.0.5 / Runtime UX16-08-RC3-Compat105') { throw "Packager/Runtime versionが想定外です: $version" }
 
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $output) | Out-Null
 try {
@@ -95,6 +95,21 @@ try {
         Copy-Item -LiteralPath $notice.FullName -Destination (Join-Path $runtimeLicenseTarget $notice.Name) -Force
     }
 
+    # Record the committed build revision and the exact source file table.
+    $provenance = [ordered]@{
+        packagerVersion = '1.0.5'
+        runtimeTemplateVersion = 'UX16-08-RC3-Compat105'
+        sourceCommit = $SourceCommit.ToLowerInvariant()
+        sourceTreeSha256 = $SourceTreeSha256.ToUpperInvariant()
+        sourceState = 'committed'
+        sourceIdentity = 'committed source revision and source file table SHA-256'
+    } | ConvertTo-Json
+    Set-Content -LiteralPath (Join-Path $bundle 'build-provenance.json') -Value $provenance -Encoding utf8
+    Set-Content -LiteralPath (Join-Path $runtimeTarget 'build-provenance.json') -Value $provenance -Encoding utf8
+    $notes = (Get-Content -LiteralPath $notesSource -Raw).Replace('{{SOURCE_COMMIT}}', $SourceCommit.ToLowerInvariant()).Replace('{{SOURCE_TREE_SHA256}}', $SourceTreeSha256.ToUpperInvariant())
+    Set-Content -LiteralPath (Join-Path $bundle 'RELEASE_NOTES.md') -Value $notes -Encoding utf8
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'CHANGELOG.md') -Destination (Join-Path $bundle 'CHANGELOG.md')
+
     # 既存Packager CoreのSealTemplateを利用し、形式を二重実装しない。
     $sealProject = Join-Path $PSScriptRoot 'Tests/EmueraWebPackager.Tests.csproj'
     $sealAssembly = Join-Path $buildArtifacts 'bin/EmueraWebPackager.Tests/release/EmueraWebPackager.Tests.dll'
@@ -108,7 +123,6 @@ try {
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     $zipPath = Join-Path $outputStage $zipName
     [System.IO.Compression.ZipFile]::CreateFromDirectory($tempRoot, $zipPath, [System.IO.Compression.CompressionLevel]::Optimal, $false)
-    $notes = (Get-Content -LiteralPath $notesSource -Raw).Replace('{{SOURCE_COMMIT}}', $SourceCommit.ToLowerInvariant())
     Set-Content -LiteralPath (Join-Path $outputStage 'RELEASE_NOTES.md') -Value $notes -Encoding utf8
     $sha = (Get-FileHash -Algorithm SHA256 -LiteralPath $zipPath).Hash
     Set-Content -LiteralPath (Join-Path $outputStage 'SHA256SUMS.txt') -Value "$sha  $zipName" -Encoding ascii
@@ -126,8 +140,8 @@ try {
     finally { $archive.Dispose() }
 
     [pscustomobject]@{
-        version = '1.0.4'
-        runtime = 'UX16-08-RC3-Compat104'
+        version = '1.0.5'
+        runtime = 'UX16-08-RC3-Compat105'
         sourceCommit = $SourceCommit.ToLowerInvariant()
         sourceTreeSha256 = $SourceTreeSha256.ToUpperInvariant()
         zip = $zipName

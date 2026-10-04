@@ -1,6 +1,6 @@
 # Emuera Web Packager
 
-現行Packagerは1.0.4、同梱Runtime templateはUX16-08-RC3-Compat104です。ローカル配布準備版で公開は未実施です。連続PRINTC系の物理行配置、説明付きnonbutton／Islandのtooltip、QUIT後の正常終了案内とタイトル復帰を修正し、該当4実ゲームケースはユーザー受入済みです。マクロ入力・スキップ互換性と上部停止UIを含み、通常操作の待機・保存保護を維持します。既存1.0.2の配布物とタグは保持します。Windows Packagerとブラウザの実行資材は.NET 10.0.12です。Packagerのソースは`tools/EmueraWebPackager/`にあります。[1.0.3 Release](https://github.com/epizo12345/emuera_Fork/releases/tag/web-packager-v1.0.3)ではゲームなしのツールZIPとチェックサムを配布します。Webのビルド条件はRelease、`RunAOTCompilation=true`、`WasmStripILAfterAOT=false`、`EnableErbExecutionProfiler=false`です。IL保持はAOTの無効化ではなく、IL削除版とのサイズ・速度差は未測定です。
+現行Packagerは1.0.5、同梱Runtime templateはUX16-08-RC3-Compat105です。正式配布物は採用commitから生成し、出自情報を同梱します。DIV／Islandのnowrap、入れ子absoluteの画面基準配置、論理描画領域1512×864、Native互換HTML_TAGSPLITを追加しています。表示・神格習合の戻る・NGO表示復帰はユーザー確認済みです。NGO上端約2行の見切れは許容制約、実ゲームの後続進行は未確認です。連続PRINTC系の物理行配置、説明付きnonbutton／Islandのtooltip、QUIT後の正常終了案内とタイトル復帰を修正し、該当4実ゲームケースはユーザー受入済みです。マクロ入力・スキップ互換性と上部停止UIを含み、通常操作の待機・保存保護を維持します。公開済み1.0.4および旧版の配布物とタグは保持します。Windows Packagerとブラウザの実行資材は.NET 10.0.12です。Packagerのソースは`tools/EmueraWebPackager/`にあります。[1.0.5 Release](https://github.com/epizo12345/emuera_Fork/releases/tag/web-packager-v1.0.5)ではゲームなしのツールZIPとチェックサムを配布します。Webのビルド条件はRelease、`RunAOTCompilation=true`、`WasmStripILAfterAOT=false`、`EnableErbExecutionProfiler=false`です。IL保持はAOTの無効化ではなく、IL削除版とのサイズ・速度差は未測定です。
 
 ## 利用者の操作
 

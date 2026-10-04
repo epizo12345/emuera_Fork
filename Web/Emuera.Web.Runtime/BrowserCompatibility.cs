@@ -115,7 +115,32 @@ namespace MinorShift.Emuera.UI.Game
 
     internal static class HtmlManager
     {
-        public static string[] HtmlTagSplit(string value) => throw new UnsupportedRuntimeFeatureException("HTML");
+        public static string[] HtmlTagSplit(string value)
+        {
+            // Native splits at the first '>', even inside a quoted attribute.
+            List<string> parts = [];
+            var stream = new MinorShift.Emuera.Runtime.Utils.CharStream(value);
+            while (!stream.EOS)
+            {
+                int found = stream.Find('<');
+                if (found < 0)
+                {
+                    parts.Add(stream.Substring());
+                    break;
+                }
+                if (found > 0)
+                {
+                    parts.Add(stream.Substring(stream.CurrentPosition, found));
+                    stream.CurrentPosition += found;
+                }
+                found = stream.Find('>');
+                if (found < 0) return null;
+                found++;
+                parts.Add(stream.Substring(stream.CurrentPosition, found));
+                stream.CurrentPosition += found;
+            }
+            return parts.ToArray();
+        }
         public static string DisplayLine2Html(ConsoleDisplayLine[] lines, bool needPandN)
         {
             if (lines.Length == 0) return string.Empty;

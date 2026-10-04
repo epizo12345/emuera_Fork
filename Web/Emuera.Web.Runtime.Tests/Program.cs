@@ -10,6 +10,84 @@ using SkiaSharp;
 
 try
 {
+if (args is ["html-tagsplit-unit", var casesPath])
+{
+    var split = typeof(BrowserRuntimeSession).Assembly.GetType("MinorShift.Emuera.UI.Game.HtmlManager")!
+        .GetMethod("HtmlTagSplit", BindingFlags.Public | BindingFlags.Static)!;
+    using var cases = JsonDocument.Parse(File.ReadAllText(casesPath));
+    foreach (var row in cases.RootElement.EnumerateArray())
+    {
+        string? input = row.GetProperty("input").GetString();
+        string[]? actual = (string[]?)split.Invoke(null, [input]);
+        string[]? expected = row.GetProperty("expected").ValueKind == JsonValueKind.Null ? null
+            : row.GetProperty("expected").EnumerateArray().Select(v => v.GetString()!).ToArray();
+        Equal(JsonSerializer.Serialize(expected), JsonSerializer.Serialize(actual), "Native split " + row.GetProperty("name").GetString());
+    }
+    Console.WriteLine("PASS html-tagsplit-unit exact Native segments"); return;
+}
+if (args is ["html-tagsplit-command"])
+{
+    string root = CreateGlobalFixture("""
+@SYSTEM_TITLE
+#DIMS SHORT, 2
+#DIMS LONG, 8
+RESULTS:0 = KEEP0
+RESULTS:1 = KEEP1
+RESULTS:2 = KEEP2
+HTML_TAGSPLIT "a<b>c</b>"
+PRINTFORML FULL={RESULT}:[%RESULTS:0%]|[%RESULTS:1%]|[%RESULTS:2%]|[%RESULTS:3%]
+RESULTS:0 = KEEP0
+RESULTS:1 = KEEP1
+RESULTS:2 = KEEP2
+HTML_TAGSPLIT "a<b>c<broken"
+PRINTFORML BAD={RESULT}:[%RESULTS:0%]|[%RESULTS:1%]|[%RESULTS:2%]
+HTML_TAGSPLIT ""
+PRINTFORML EMPTY={RESULT}:[%RESULTS:0%]|[%RESULTS:1%]|[%RESULTS:2%]
+HTML_TAGSPLIT "a<b>c</b>", SHORT
+PRINTFORML SHORT={RESULT}:[%SHORT:0%]|[%SHORT:1%]
+VARSET LONG, "TAIL"
+RESULT = 123
+HTML_TAGSPLIT "<b>x</b>", LONG, LOCAL
+PRINTFORML LONG={LOCAL}:[%LONG:0%]|[%LONG:1%]|[%LONG:2%]|[%LONG:3%]|[%LONG:7%],RESULT={RESULT}
+HTML_TAGSPLIT "<a title='x>y'>z</a>"
+PRINTFORML QUOTED={RESULT}:[%RESULTS:0%]|[%RESULTS:1%]|[%RESULTS:2%]
+INPUT
+QUIT
+""");
+    var runtime = await BrowserRuntimeSession.StartPersistentBootstrapAsync(root, null);
+    runtime.SetViewport(1512, 864); runtime.StartTitle();
+    if (runtime.Status == BrowserRuntimeStatus.Failed) Console.WriteLine(JsonSerializer.Serialize(runtime.FailureDiagnostic));
+    Equal(BrowserRuntimeStatus.WaitingForInput, runtime.Status, "actual instruction reaches input");
+    Contains("FULL=4:[a]|[<b>]|[c]|[</b>]", runtime.Output, "default RESULT/RESULTS copy");
+    Contains("BAD=-1:[KEEP0]|[KEEP1]|[KEEP2]", runtime.Output, "failure has no partial write");
+    Contains("EMPTY=0:[KEEP0]|[KEEP1]|[KEEP2]", runtime.Output, "empty preserves output");
+    Contains("SHORT=4:[a]|[<b>]", runtime.Output, "full count even when output short");
+    Contains("LONG=3:[<b>]|[x]|[</b>]|[TAIL]|[TAIL],RESULT=123", runtime.Output, "tail and custom count contract");
+    Contains("QUOTED=3:[<a title='x>]|[y'>z]|[</a>]", runtime.Output, "first > even inside quotes");
+    Console.WriteLine(runtime.Output);
+    Console.WriteLine("PASS html-tagsplit-command actual shared instruction"); return;
+}
+if (args is ["html-tagsplit-ngo", var fixturePath])
+{
+    string root = CreateGlobalFixture(File.ReadAllText(fixturePath));
+    var runtime = await BrowserRuntimeSession.StartPersistentBootstrapAsync(root, null);
+    runtime.SetViewport(1512, 864); runtime.StartTitle();
+    if (runtime.Status == BrowserRuntimeStatus.Failed) Console.WriteLine(JsonSerializer.Serialize(runtime.FailureDiagnostic));
+    Equal(BrowserRuntimeStatus.WaitingForInput, runtime.Status, "NGO display reaches input");
+    Equal(BrowserInputKind.MouseKey, runtime.PendingInput?.Kind, "NGO primitive input wait");
+    var parts = Flatten(runtime.DisplayLines.SelectMany(l => l.Parts)).ToArray();
+    Equal(true, parts.Any(p => p.Text.Contains("  /\\  ", StringComparison.Ordinal)), "AA spacing preserved");
+    Equal(true, parts.Any(p => p.Text.Contains("視聴者コメント", StringComparison.Ordinal)), "comment display reached");
+    Equal(true, parts.Any(p => p.Text.Contains("既存色", StringComparison.Ordinal) && p.Style?.Foreground == "#FF0000"), "existing font color preserved");
+    Equal(true, parts.Any(p => p.Text.Contains("通常", StringComparison.Ordinal) && p.Style?.Foreground == "#00AAFF"), "untagged comment colored");
+    var prompt = runtime.PendingInput!;
+    Equal(true, runtime.SubmitPrimitive(new(prompt.RequestId, BrowserPrimitiveInputKind.Click, Code: 0x200000,
+        X: 20, Y: 200, SessionGeneration: runtime.SessionGeneration, DisplayGeneration: runtime.DisplayGeneration)), "right click accepted");
+    Contains("NGO-RIGHT=1,2097152", runtime.Output, "right mouse code reaches script");
+    Equal(BrowserInputKind.Integer, runtime.PendingInput?.Kind, "following manual input reached");
+    Console.WriteLine(runtime.Output);
+    Console.WriteLine("PASS html-tagsplit-ngo Runtime display and right-click progression"); return;
+}
 if (args is ["html-flow-string"])
 {
     string text = string.Concat(Enumerable.Repeat("文字😀", 180));

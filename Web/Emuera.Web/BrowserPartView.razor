@@ -208,12 +208,16 @@ else
         if (layout is not null)
         {
             css.Append("--group-padding:").Append(layout.Padding).Append("px;");
-            css.Append("position:").Append(layout.Mode == BrowserDisplayMode.Relative ? "relative" : "absolute").Append(';');
+            // Native absolute-left modes ignore the parent DIV's origin. The
+            // game surface establishes their fixed containing block, including
+            // through nested relative/absolute DIVs and the scrollable log.
+            bool screenPosition = layout.Mode is BrowserDisplayMode.AbsoluteLeftTop or BrowserDisplayMode.AbsoluteLeftBottom;
+            css.Append("position:").Append(screenPosition ? "fixed" : layout.Mode == BrowserDisplayMode.Relative ? "relative" : "absolute").Append(';');
             css.Append("left:").Append(layout.X).Append("px;");
             if (layout.Mode == BrowserDisplayMode.AbsoluteLeftBottom)
-                css.Append("top:calc(100% ").Append(layout.Y < 0 ? "- " : "+ ").Append(Math.Abs(layout.Y)).Append("px + var(--game-scroll-top, 0px));");
+                css.Append("top:calc(100% ").Append(layout.Y < 0 ? "- " : "+ ").Append(Math.Abs(layout.Y)).Append("px);");
             else if (layout.Mode == BrowserDisplayMode.AbsoluteLeftTop)
-                css.Append("top:calc(").Append(layout.Y).Append("px + var(--game-scroll-top, 0px));");
+                css.Append("top:").Append(layout.Y).Append("px;");
             else css.Append("top:").Append(layout.Y).Append("px;");
             if (layout.Width is int width) css.Append("width:").Append(width).Append("px;");
             if (layout.Height is int height) css.Append("height:").Append(height).Append("px;");

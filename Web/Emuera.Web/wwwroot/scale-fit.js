@@ -10,12 +10,18 @@ export function attach() {
   detach();
   const viewport = document.getElementById('game-fit-viewport');
   const slot = document.getElementById('game-fit-slot');
-  if (!viewport || !slot) return;
+  const frame = document.querySelector('.game-frame');
+  if (!viewport || !slot || !frame) return;
   const update = () => {
-    const scale = Math.max(0, Math.min(1, viewport.clientWidth / 1512, viewport.clientHeight / 850));
+    // CSS defines the logical surface plus input area. offset sizes exclude
+    // the display transform; toolbar space is already excluded by the viewport.
+    const width = frame.offsetWidth;
+    const height = frame.offsetHeight;
+    if (width <= 0 || height <= 0) return;
+    const scale = Math.max(0, Math.min(1, viewport.clientWidth / width, viewport.clientHeight / height));
     slot.style.setProperty('--game-scale', String(scale));
-    slot.style.width = `${1512 * scale}px`;
-    slot.style.height = `${850 * scale}px`;
+    slot.style.width = `${width * scale}px`;
+    slot.style.height = `${height * scale}px`;
     const toolbar = document.getElementById('host-toolbar');
     const status = document.getElementById('host-status');
     if (toolbar && status) {

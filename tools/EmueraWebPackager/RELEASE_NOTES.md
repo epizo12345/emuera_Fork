@@ -1,31 +1,34 @@
-# Emuera Web Packager 1.0.4 — Release Notes
+# Emuera Web Packager 1.0.5 — Release Notes
 
-ローカル正式化・配布準備版です。GitGud／GitHubへのpush、タグ、Release公開、itchアップロードは未実施です。
+Web Packager 1.0.5の正式配布資料です。旧1.0.4とその配布物は保持します。ゲーム入りZIPのitchアップロードは利用者が行います。
 
-- Windows x64 self-contained PackagerとUX16-08-RC3-Compat104のsealed runtime-templateを同梱します。実同梱.NETCore／WindowsDesktopとbrowser-wasmは10.0.12です。
-- 生成元source commit: `{{SOURCE_COMMIT}}`
+## 1.0.5の変更
 
-## 1.0.4の変更
+- 位置指定DIV／HTML Islandで実機が行わない自動折返しを抑え、ターンエンド確認の質問・はい／いいえが枠外へ出る問題を修正。通常文章や日記帳の称号一覧の物理行折返しは維持します。
+- 入れ子のabsolute-lefttop／absolute-leftbottomを実機と同じゲーム画面基準で配置し、神格習合のカード位置ずれを修正。relative配置は親を基準とする従来動作を維持します。
+- 論理描画領域を1512×864pxへ揃え、神格習合の下部「決定／戻る」を表示・操作できるようにしました。CLIENTHEIGHT、絶対配置、Scale Fit、独自マウス入力座標の基準を一致させています。小窓では論理解像度を削らず一様に縮小します。
+- NGOイベントで停止していたHTML_TAGSPLITをNative互換で実装。文字・空白・引用符・エンティティ表記を保持し、引用符内でも最初の「>」で区切ります。不完全なタグは失敗とし、RESULT=-1と出力配列未変更の既存契約を維持します。
 
-- 連続PRINTC／PRINTLCの選択肢を物理表示行へ分割し、次の見出し・罫線への重なりを修正。論理LINECOUNTとCLEARLINEの契約は維持します。
-- 通常フローのHTML_PRINTで連結した説明付きボタンを、子テキストの書式とボタン境界に沿って物理行へ折り返します。後続の見出し・罫線との重なりを修正し、入力値・説明・ボタン世代を保持します。位置指定DIV、HTML Island、NOBRは従来の配置契約を維持します。
-- 説明付きnonbuttonの文字・画像へhoverできるようにし、HTML Island内のtooltipも表示します。配置用の空領域全体やクリック権限は広げません。
-- QUITを正常終了として案内し、保存が正常完了した後に「タイトルに戻る」が使えるように修正。保存失敗と正常終了を区別し、transaction／ACK、既存Process再利用、二重復帰防止を維持します。セーブ400の自動LOAD／削除は行いません。
-- タイトル画像のキャラ情報、習得予定スキル説明、日記帳／悪魔調教典、中断セーブ後の復帰をユーザーが実ゲームで受入済みです。ゲームオーバー／エンディングの終了選択は未到達・未確認です。
-- 日記帳の称号一覧／称号一覧2／称号一覧3／称号一覧EXのHTML折返しも、ユーザーが実ゲームで受入済みです。任意のHTML構造すべての互換性を保証するものではありません。
+## 確認済みと既知の制約
 
-## 維持する動作とビルド条件
+- ターンエンド確認、神格習合のカード・下部ボタン・戻る操作はユーザーが実ゲームで確認済みです。
+- NGOは実ゲームで表示復帰を確認済みです。上端約2行の見切れは既知の許容制約で、864pxを維持します。NGOの実ゲームでの後続進行全体は確認済みとはしていません。短いfixtureでは右クリック後の次入力まで確認しています。
+- 1.0.4のPRINTC／PRINTLCとHTMLボタン折返し、tooltip、QUIT後のタイトル復帰、1.0.3の赤いマクロ停止、保存ACK／Web Locks／Scale Fitを維持します。
+- 全ゲーム・全ブラウザ、長時間プレイ、実OS IME、未到達ゲームオーバー／エンディング、itch公開後の動作は保証しません。速度改善率は主張しません。
 
-- 1.0.3のマクロ入力・待機互換性、赤いマクロ停止、通常操作への復帰を維持。通常操作とスキップなしマクロの強制待機、StopMesskip、保存完了待ち、Web Locksは省略しません。
-- 1.0.2の表示・セーブ入出力とタイトル復帰、WARNING、スケールフィットを維持。等倍上限・上寄せのレイアウトを維持します。
-- Release / RunAOTCompilation=true / WasmStripILAfterAOT=false / EnableErbExecutionProfiler=false。IL保持AOTであり、IL削除版との速度・サイズ差は未測定です。
-- SHA／root-prefix再利用は割当削減として含みます。速度改善率は主張しません。IR復元・MEMFS move試作、固定seed／時刻、比較policy、試験専用ログは含みません。通常の保守用診断は維持します。
-- 確定commitからEXE・AOTを生成し、ProductVersion、source一覧、seal、release-bundle.jsonで対応を記録します。旧チェックサムは流用しません。
+## 配布条件と出自
 
-## 使い方・制限
+- Windows x64 self-contained Packager 1.0.5とsealed Runtime UX16-08-RC3-Compat105を同梱。.NETCore／WindowsDesktop／browser-wasm実行資材は10.0.12です。
+- Web: Release / RunAOTCompilation=true / WasmStripILAfterAOT=false / EnableErbExecutionProfiler=false。IL削除版との速度・サイズ差は未測定です。
+- 生成元の採用source commit: `{{SOURCE_COMMIT}}`
+- 最終source一覧SHA-256: `{{SOURCE_TREE_SHA256}}`
+- 採用commitから再生成した成果物を使用し、EXEの埋込みrevisionとソース一覧SHAを照合します。tool→sealed template→生成Webにbuild-provenance.jsonを引き継ぎます。
+- MAIN側の描画・TINPUT・フォント変更、IR復元、MEMFS move試作、固定seed／時刻、比較policyは含みません。通常の保守用診断は維持します。
 
-1. `EmueraWebPackager-1.0.4-win-x64.zip`と同じ配布一式の`SHA256SUMS.txt`を照合し、ZIP全体を展開します。EXE単体では使えません。
-2. `EmueraWebPackager.exe`で使用権のあるゲームフォルダと新しい出力先を指定します。`--package <game-folder> <new-output-folder>`も利用できます。
-3. 生成ゲームWebをローカル確認し、利用者自身がゲーム用ZIPをitch.ioへアップロードします。ツールZIPをゲームとしてアップロードしないでください。
+## 使い方
 
-ツールZIPにゲーム本体・素材・セーブ・試験証跡は含みません。通知をtool→template→生成Webへ引き継ぎます。技術検証はゲーム等の再配布許諾を保証しません。gameId／save namespaceの制約があるため、別ゲームは別origin／itchページで配信してください。全ゲーム・全ブラウザ、長時間プレイ、実OS IME、itch公開後の動作は未確認です。旧1.0.3と1.0.2の配布物・タグは保持します。
+1. `EmueraWebPackager-1.0.5-win-x64.zip`と同じ配布一式の`SHA256SUMS.txt`を照合し、ZIP全体を新しいフォルダへ展開します。
+2. `EmueraWebPackager.exe`で使用権のあるゲームフォルダと新しい出力先を指定します。`--package <game-folder> <new-output-folder>`も使用できます。
+3. 生成Webをローカル確認し、利用者自身が生成したゲーム用ZIPをitch.ioへアップロードします。ツールZIPをゲームとしてアップロードしないでください。
+
+ツールZIPにゲーム本体・素材・個人セーブ・試験証跡は含みません。LICENSEと依存・フォントの通知をtool→template→生成Webへ継承します。技術検証はゲーム等の再配布許諾を保証しません。別ゲームは別origin／itchページで配信してください。

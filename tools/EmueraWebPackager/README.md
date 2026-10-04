@@ -1,6 +1,8 @@
 # Emuera Web Packager — 開発者向け
 
-現行ソースはversion 1.0.4です。ローカル配布準備済み、公開は未実施です。利用者の操作は[使い方](使い方.md)、package形式は[Web版パッケージ仕様](../../プロジェクト資料/Web版/03_ゲームデータパッケージ仕様.md)を参照してください。
+現行ソースはversion 1.0.5です。利用者の操作は[使い方](使い方.md)、package形式は[Web版パッケージ仕様](../../プロジェクト資料/Web版/03_ゲームデータパッケージ仕様.md)を参照してください。
+
+1.0.5は位置指定DIV／HTML Islandの不要な自動折返し、入れ子absolute DIVの画面基準配置、1512×864の論理描画領域、Native互換HTML_TAGSPLITを含みます。ターンエンド確認、神格習合のカード・決定／戻る・戻る操作、NGOの実ゲーム表示復帰はユーザー確認済みです。NGO上端約2行の見切れは既知の許容制約で、864pxを維持します。NGOの後続進行は実ゲーム受入済みとはしません。短いfixtureでは右クリック後の次入力まで確認しています。正式成果物の出自は生成元の採用commitとソース一覧SHAで識別します。
 
 1.0.4はQUIT後の正常終了・タイトル復帰、連続PRINTC系の物理行配置、通常フローのHTMLボタン折返し、説明付きnonbuttonとHTML Islandのtooltipを改善しています。従来の4実ゲームケースに加え、日記帳の称号一覧／一覧2／一覧3／EXをユーザー受入済みです。ゲームオーバー／エンディング等の未確認経路は別に記録します。
 
@@ -12,7 +14,7 @@ GUIを開かず同じ生成処理を実行する場合は、ZIPを展開した�
 
 ## Release一式
 
-Packagerの配布はGitHub Releasesへruntime-template付きZIPを添付する方針です。EXE単体では起動できないためZIP全体を使います。ShinEra本体やゲームデータは付属せず、利用者が自分のゲームフォルダを別途選択します。既存1.0.2の配布ZIPとチェックサムは保持し、[1.0.3 Release](https://github.com/epizo12345/emuera_Fork/releases/tag/web-packager-v1.0.3)を別版として配布します。1.0.1の公開履歴は保持します。
+Packagerの配布はGitHub Releasesへruntime-template付きZIPを添付する方針です。EXE単体では起動できないためZIP全体を使います。ShinEra本体やゲームデータは付属せず、利用者が自分のゲームフォルダを別途選択します。公開済み[1.0.4 Release](https://github.com/epizo12345/emuera_Fork/releases/tag/web-packager-v1.0.4)と旧版の配布ZIP・チェックサムを保持します。[1.0.5 Release](https://github.com/epizo12345/emuera_Fork/releases/tag/web-packager-v1.0.5)でゲームなしのツールZIPとチェックサムを配布します。1.0.1の公開履歴は保持します。
 
 ## 構成
 
@@ -38,7 +40,7 @@ SHAは選択した現在bytesと出力の同一性を確認するための値で
 
 ```powershell
 .\tools\EmueraWebPackager\build.ps1 -Mode Test -Name local-check-01
-.\tools\EmueraWebPackager\build.ps1 -Mode Publish -Name release-1-0-4-check
+.\tools\EmueraWebPackager\build.ps1 -Mode Publish -Name release-1-0-5-check
 ```
 
 省略可能な`-OutputDirectory`と`-ArtifactsPath`で試験結果とMSBuild成果物の保存先を分けられます。コミット済みsourceから隔離buildするときは、どちらもsource export外の新しいタスク専用directoryを指定してください。指定しない場合、従来どおり`artifacts/EmueraWebPackager/<name>/`とrepo内`artifacts/`を使います。PublishはWindows `win-x64` self-contained single-file GUIを生成します。公開・uploadはこのscriptでは行いません。
