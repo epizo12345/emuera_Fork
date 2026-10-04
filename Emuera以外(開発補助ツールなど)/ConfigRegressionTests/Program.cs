@@ -43,6 +43,20 @@ internal static class Program
     {
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         Run("dark mode config defaults to YES, round-trips YES/NO, and preserves display colors and other settings", DarkModeConfigRoundTrips);
+        Run("CSV omitted rectangle reload with Image storage", () => CsvReloadComparison.CheckReload(false, false));
+        Run("CSV explicit rectangle reload with Image storage", () => CsvReloadComparison.CheckReload(true, false));
+        Run("CSV omitted rectangle reload after Bitmap conversion", () => CsvReloadComparison.CheckReload(false, true));
+        Run("CSV explicit rectangle reload after Bitmap conversion", () => CsvReloadComparison.CheckReload(true, true));
+        Run("parallel CSV sprites share one accepted parent image", CsvCacheRegression.ParallelParentsShareOneImage);
+        Run("CSV sprite reload works after parent bitmap conversion", CsvCacheRegression.ReloadAfterBitmapConversion);
+        Run("CSV image missing and corrupt paths can be retried", CsvCacheRegression.FailedPathsCanBeRetried);
+        Run("CSV cache evaluates one winning decoder and keeps different paths independent", CsvCacheRegression.OneDecoderPerPath);
+        Run("slow CSV decode does not block a different image path", CsvCacheRegression.DifferentPathsDoNotBlock);
+        Run("CSV cache retries exceptions without deleting a later success", CsvCacheRegression.ExceptionRetryKeepsSuccess);
+        Run("stale CSV failure cleanup cannot erase a newer successful parent", CsvCacheRegression.StaleFailureCannotEraseSuccess);
+        Run("distinct failed CSV paths do not accumulate cache entries", CsvCacheRegression.FailedPathsDoNotAccumulate);
+        Run("CSV LoadContents keeps a shared parent across sprite disposal and reload", CsvCacheRegression.LoadContentsRetainsSharedParent);
+        Run("forty parallel CSV files retain exactly one accepted parent", CsvCacheRegression.FortyCsvFilesShareOneParent);
         Run("non-square vertical flip preserves four corners in three sprite paths", IntegratedVerticalFlip);
         Run("animated color matrix uses the selected source rectangle", AnimatedColorMatrixUsesSelectedRectangle);
         Run("animated color matrix keeps both frames and transparent pixels", AnimatedColorMatrixKeepsFrames);

@@ -4,16 +4,19 @@ using SkiaSharp;
 using SkiaSharp.Views.Desktop;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using MinorShift.Emuera.UI.Framework;
 
 namespace MinorShift.Emuera.UI.Game.Image;
 
 static class AppContents
 {
-    static readonly ConcurrentDictionary<string, AbstractImage> resourceDic = new(Config.StrComper);
+    // 同じCSV親画像の初回並列読込みでは、辞書に採用されたLazyだけを評価する。
+    static readonly ConcurrentDictionary<string, Lazy<ConstImage>> resourceDic = new(Config.StrComper);
     static readonly ConcurrentDictionary<string, ASprite> imageDictionary = new(Config.StrComper);
     static readonly ConcurrentDictionary<long, GraphicsImage> gList = [];
 
@@ -177,12 +180,10 @@ static class AppContents
         string parentName = dir + arg2;
 
 
-        //親画像のロードConstImage
-        if (!resourceDic.TryGetValue(parentName, out AbstractImage value))
+        // 親画像はsprite間で共有する。spriteの破棄では親をDisposeしない。
+        ConstImage parentImage = GetOrLoadParentImage(parentName, () =>
         {
-            string filepath = parentName;
-
-            var skImage = SKImage.FromEncodedData(filepath);
+            var skImage = SKImage.FromEncodedData(parentName);
             if (skImage == null)
             {
                 ParserMediator.Warn(string.Format(LocalizationManager.Error.FailedLoadFile, arg2), sp, 1);
@@ -196,23 +197,23 @@ static class AppContents
                 ParserMediator.Warn(string.Format(LocalizationManager.Error.TooLargeImageFile, AbstractImage.MAX_IMAGESIZE.ToString(), arg2), sp, 1);
                 //return null;
             }
-            ConstImage img = new(parentName);
-            img.CreateFrom(skImage);
-            if (!img.IsCreated)
+            ConstImage image = new(parentName);
+            image.CreateFrom(skImage);
+            if (!image.IsCreated)
             {
                 ParserMediator.Warn(string.Format(LocalizationManager.Error.FailedCreateResource, arg2), sp, 1);
                 return null;
             }
-
-            value = img;
-            resourceDic.TryAdd(parentName, value);
-        }
-        if (value is not ConstImage parentImage || !parentImage.IsCreated)
+            return image;
+        });
+        if (parentImage == null)
+            return null; // 画像のロード失敗は採用されたLazy側ですでに警告済み。
+        if (!parentImage.IsCreated)
         {
             ParserMediator.Warn(string.Format(LocalizationManager.Error.SpriteCreateFromFailedResource, arg2), sp, 1);
             return null;
         }
-        var rect = new Rectangle(new Point(0, 0), new Size(parentImage.Image.Width, parentImage.Image.Height));
+        var rect = new Rectangle(new Point(0, 0), new Size(parentImage.PixelWidth, parentImage.PixelHeight));
         Point pos = new();
         int delay = 1000;
         //name,parentname, x,y,w,h ,offset_x,offset_y, delayTime
@@ -230,7 +231,7 @@ static class AppContents
                     ParserMediator.Warn(string.Format(LocalizationManager.Error.SpriteSizeIsNegatibe, name), sp, 1);
                     return null;
                 }
-                if (!rect.IntersectsWith(new Rectangle(0, 0, parentImage.Image.Width, parentImage.Image.Height)))
+                if (!rect.IntersectsWith(new Rectangle(0, 0, parentImage.PixelWidth, parentImage.PixelHeight)))
                 {
                     ParserMediator.Warn(string.Format(LocalizationManager.Error.OoRParentImage, name), sp, 1);
                     return null;
@@ -268,6 +269,33 @@ static class AppContents
         //新規スプライト定義
         ASprite image = new SpriteF(name, parentImage, rect, pos);
         return image;
+    }
+
+    private static ConstImage GetOrLoadParentImage(string parentName, Func<ConstImage> load)
+    {
+        // GetOrAddのfactoryは競合時に複数回呼ばれ得るため、画像生成はLazy.Valueまで遅らせる。
+        Lazy<ConstImage> accepted = resourceDic.GetOrAdd(parentName,
+            _ => new Lazy<ConstImage>(load, LazyThreadSafetyMode.ExecutionAndPublication));
+        try
+        {
+            ConstImage image = accepted.Value;
+            if (image != null)
+                return image;
+        }
+        catch
+        {
+            // 失敗したLazyだけを取り除き、後の正常な登録を古い失敗処理で消さない。
+            RemoveFailedParentImage(parentName, accepted);
+            throw;
+        }
+        RemoveFailedParentImage(parentName, accepted);
+        return null;
+    }
+
+    private static void RemoveFailedParentImage(string parentName, Lazy<ConstImage> failed)
+    {
+        ((ICollection<KeyValuePair<string, Lazy<ConstImage>>>)resourceDic)
+            .Remove(new KeyValuePair<string, Lazy<ConstImage>>(parentName, failed));
     }
 
 
