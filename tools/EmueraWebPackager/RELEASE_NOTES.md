@@ -1,33 +1,34 @@
-# Emuera Web Packager 1.0.6 — Release Notes
+# Emuera Web Packager 1.0.7 — Release Notes
 
-採用ソースcommitから生成した1.0.6配布候補の資料です。公開・アップロードは別工程で、旧1.0.5を保持します。
+採用ソースcommitから生成したローカル配布候補です。公開・アップロードは別工程で、旧1.0.6を保持します。
 
 ## 変更内容
 
-- AWAITに対応。通常入力を消費せず描画を反映してホストへ制御を返し、指定された待機の後に継続します。省略／0へ固定待ち時間を追加せず、正値の待機中もUIを応答可能にします。Runtime世代・要求IDを照合し、古い／重複完了、保存ACK前の続行を拒否します。
-- GDRAWGの通常版と色補正版に対応。画像間コピー、切り出し、拡大縮小、透明度合成、色行列、重なった自己コピーを扱い、親画像の更新を表示済みSpriteGへ反映します。
-- .NET10.0.12、既存のマクロ停止・保存保護・Scale Fit・1512×864描画領域を維持します。
+- F1～F12の呼出、Shift＋Fの登録、Ctrl＋数字の10グループ切替、上部の代替マクロ操作UI。
+- 実機互換macro.txtのCP932入出力。読込は全体検証・確認後に全置換、書出はCP932／BOMなし／CRLF、表現不可内容は拒否。
+- ブラウザ内保存、移行とセーブデータの分離。通常入力・ゲームキー優先・赤い停止・保存ACKの保護を維持。
 
-## 確認範囲と残件
+## Fキーとmacro.txt
 
-- AWAITは逆引き合体でユーザー確認済み。他6実ゲーム経路を全て確認済みとはしていません。GDRAWGはユーザーのブラウザ確認で問題なし。具体的キャラ・操作経路は未指定です。
-- 最小fixtureでGDRAWG16画像1464画素のNative照合、SpriteG更新、AWAIT継続、マクロ停止後の手動操作、保存ACKを検証します。fixtureの成功を全ゲーム動作保証に置き換えません。
-- GDRAWGWITHMASKなど他の未実装は残ります。色行列の添字なしCM指定に共有処理の例外が残り、明示CM:0:0を試験しています。
-- NGO上端約2行の見切れは許容済み制約です。実ゲームでのNGO後続進行全体、全ブラウザ、長時間プレイ、OS IME、itch公開後の動作は未確認です。
-- 全命令対応済みや未測定の速度改善を宣伝する更新ではありません。
+- ゲームのタブがアクティブでページ／ゲーム入力へフォーカスがある間、F1～F12で選択グループのマクロを入力欄へ呼び出し、Shift＋F1～F12で非空の入力内容を登録します。Ctrl＋0～9で10グループを切り替えます。通常INPUTでは呼出後にEnterで実行します。ONEINPUT／AnyKey、ゲーム側キー入力待ちでは実機の入力契約が優先されます。
+- ブラウザがFキーやCtrl＋数字を使う場合は、上部「マクロ操作」からグループ選択・呼出・登録を行えます。設定や編集欄、IME変換中、別タブには誤発火しない設計です。全ブラウザ／OS IME／itchでの動作は保証していません。
+- 「macro.txtを読み込む」は全内容の検証とプレビュー後、確認して全10グループ・120スロットを置換します。未指定スロットは空、未指定グループ名は初期名。選択中グループは維持し、取消・不正・保存失敗では既存の登録を維持します。上限1MiB、不正行・重複・範囲外は全体拒否です。
+- 「macro.txtを書き出す」は実機形式のCP932／BOMなし／CRLFでダウンロードします。CP932に表現できない内容、往復で別文字になる内容、改行等は拒否し、黙って?に置換しません。読込・書出だけでは実行しません。
+- 通常登録はブラウザのlocalStorageへ自動保存し、origin・gameId・profileIdごとに分かれます。失敗時は未保存を表示します。ブラウザ間や公開先の移動にはmacro.txtの書出・読込を使えます。
+- **セーブデータの書き出しにはマクロは含まれません。** セーブ管理とは別にmacro.txtを保存してください。個人macro.txt・セーブ・登録内容を配布物へ含めないでください。Packagerの既存入力収集はData/macro.txtを含め得るため、配布用ゲーム入力には個人ファイルを置かないでください。
 
-## 配布条件と出自
+## 確認範囲と制約
 
-- Windows x64 self-contained Packager1.0.6、sealed Runtime UX16-08-RC3-Compat106。.NETCore／WindowsDesktop／browser-wasm10.0.12。
-- Release / RunAOTCompilation=true / WasmStripILAfterAOT=false / EnableErbExecutionProfiler=false。
+port63187の候補でFキー操作・上部操作・CP932入出力・物理キーをユーザー確認済み。ブラウザ名／版はユーザーから未指定であり、全ブラウザ・OS IME・itchへ一般化しません。新しいツールから生成した最終候補の短いユーザー確認は別に行います。GDRAWGWITHMASK等の未実装、NGO上端約2行の許容済み見切れは維持。全命令対応や未測定の速度改善率は主張しません。
+
+## ビルドと出自
+
+- Packager1.0.7／Runtime UX16-08-RC3-Compat107。.NETCore／WindowsDesktop／browser-wasm10.0.12、Skia4.150.1。
+- Release／RunAOTCompilation=true／WasmStripILAfterAOT=false／EnableErbExecutionProfiler=false。
 - ソースcommit: `{{SOURCE_COMMIT}}`
-- ソース一覧SHA-256: `{{SOURCE_TREE_SHA256}}`
-- 採用commitからEXE／AOTを再生成し、tool→sealed template→生成Webへbuild-provenanceを継承します。
+- ソース一覧SHA256: `{{SOURCE_TREE_SHA256}}`
+- 同commitのEXE／AOT／sealed templateから実配布EXEで生成。通知・ライセンスを継承。
 
-## 利用方法
+## 利用
 
-1. EmueraWebPackager-1.0.6-win-x64.zipとSHA256SUMS.txtを照合し、ZIP全体を新規フォルダへ展開します。
-2. 展開したEmueraWebPackager.exeで使用権のあるゲーム入力と新規出力先を選びます。CLIは `--package <game-folder> <new-output-folder>`。
-3. ゲーム用ZIPは利用者がitchへアップロードします。ツールZIPとは別のファイルです。
-
-ゲーム本体・素材・個人セーブ・試験証跡をツールZIPへ含めません。ライセンス／通知はtool→template→生成Webへ継承します。技術検証はゲーム素材等の再配布許諾を保証しません。
+EmueraWebPackager-1.0.7-win-x64.zipとSHA256SUMS.txtを照合し、ZIP全体を新規フォルダへ展開します。実EXEで使用権のあるゲーム入力と新規出力先を選択します。CLIは `--package <game-folder> <new-output-folder>`。ゲームZIPは利用者がitchへアップロードし、ツールZIPとは別です。技術検証はゲーム素材の再配布許諾を保証しません。

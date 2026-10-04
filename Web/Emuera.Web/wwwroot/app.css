@@ -74,6 +74,13 @@ input { flex: 1; min-width: 12rem; }
   .host-status-progress::before { transform: none; left: 0; width: 42%; }
 }
 .save-manager { position: relative; }
+.host-key-macros { position: relative; }
+.host-key-macros > summary { cursor: pointer; white-space: nowrap; }
+.host-key-macros-panel { position: absolute; top: 100%; right: 0; z-index: 30; box-sizing: border-box; width: min(34rem, calc(100vw - 1rem)); max-height: min(75vh, 40rem); overflow: auto; padding: .5rem; border: 1px solid #666; background: #171717; }
+.host-key-macros-panel p { margin: .35rem 0; }
+.host-key-macros-panel textarea { box-sizing: border-box; width: 100%; }
+.key-macro-slot { display: grid; grid-template-columns: 2.2rem minmax(0, 1fr) auto auto; align-items: center; gap: .3rem; margin: .2rem 0; }
+.key-macro-slot code { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .save-manager > summary { cursor: pointer; }
 .save-manager-panel { position: absolute; top: 100%; right: 0; z-index: 30; box-sizing: border-box; width: min(28rem, calc(100vw - 1rem)); max-height: min(70vh, 36rem); overflow: auto; padding: .5rem; border: 1px solid #444; background: #171717; }
 .save-manager-panel input { box-sizing: border-box; max-width: 100%; min-width: 0; }
@@ -98,6 +105,9 @@ input { flex: 1; min-width: 12rem; }
 .production-shell #timed-input-remaining { flex: 0 0 auto; padding: 0 3px; font: 12px/18px "ＭＳ ゴシック", "MS Gothic", monospace; }
 .production-shell:has(#p1c2-status[data-stage="title-input-ready"]) #game-screen:has(.game-button[data-input="9"]) .game-button[data-input="999"] { transform: translateX(20px); }
 .production-shell .host-status { max-width: min(34rem, var(--host-status-width, calc(100% - 24rem))); }
+.host-key-macros-panel fieldset { min-width: 0; }
+.host-key-macros-panel input[type="file"] { max-width: 100%; }
+#key-macro-file-preview { max-height: 12rem; overflow: auto; white-space: pre; }
 @media (max-width: 600px) {
   .production-shell .host-toolbar { height: auto; flex-wrap: wrap; }
   .production-shell .host-status:not([hidden]) { position: relative; order: 1; left: auto; top: auto; transform: none; width: 100%; max-width: 100%; }

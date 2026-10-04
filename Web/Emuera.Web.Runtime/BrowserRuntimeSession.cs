@@ -234,6 +234,7 @@ public sealed class BrowserRuntimeSession
     public IReadOnlyCollection<BrowserPersistenceAckDiagnostic> PersistenceAckTimeline => persistenceAckTimeline;
     public string? PersistenceError => console.PersistenceError;
     public BrowserRuntimeStatus Status => console.Status;
+    public bool KeyMacrosEnabled { get; private set; }
     public bool IsComplete => Status == BrowserRuntimeStatus.Succeeded;
     public bool IsFailed => Status == BrowserRuntimeStatus.Failed;
     public int DoScriptCallCount { get; private set; }
@@ -451,6 +452,7 @@ public sealed class BrowserRuntimeSession
             }
         }
         var session = new BrowserRuntimeSession();
+        session.KeyMacrosEnabled = Config.UseKeyMacro;
         session.captureCodecValidationProfile = captureProcessInitializeProfile;
         session.ConfigLoadMilliseconds = phaseStopwatch.ElapsedMilliseconds;
         phaseStopwatch.Restart();

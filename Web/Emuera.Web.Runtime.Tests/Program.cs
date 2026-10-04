@@ -10,6 +10,93 @@ using SkiaSharp;
 
 try
 {
+if (args is ["macro-file-red"])
+{
+    Equal(true, typeof(BrowserKeyMacros).Assembly.GetType("MinorShift.Emuera.Web.Runtime.BrowserMacroFile") is not null, "Native macro.txt codec connected to Web Runtime");
+    return;
+}
+if (args is ["macro-file-contract", var inputFile, var exportFile])
+{
+    var supplied = BrowserMacroFile.Decode(File.ReadAllBytes(inputFile));
+    File.WriteAllBytes(exportFile, BrowserMacroFile.Encode(supplied.GroupNames, supplied.Slots));
+    var copy = BrowserMacroFile.Decode(File.ReadAllBytes(exportFile));
+    Equal(string.Join("\0", supplied.GroupNames), string.Join("\0", copy.GroupNames), "all supplied Native group names roundtrip");
+    Equal(string.Join("\0", supplied.Slots), string.Join("\0", copy.Slots), "all supplied Native 120 slots roundtrip");
+    string[] names = Enumerable.Range(0, 10).Select(g => $"日本語グループ {g}:名称").ToArray();
+    string[] slots = Enumerable.Repeat("", 120).ToArray();
+    foreach (int index in new[] { 0, 11, 12, 119 }) slots[index] = $"  日本語:{index} (H\\e\\nd\\e\\n)*10 \\t \\w  ";
+    var nativeBytes = BrowserMacroFile.Encode(names, slots);
+    var roundtrip = BrowserMacroFile.Decode(nativeBytes);
+    Equal(string.Join("\0", names), string.Join("\0", roundtrip.GroupNames), "names exact");
+    Equal(string.Join("\0", slots), string.Join("\0", roundtrip.Slots), "Japanese colons slash whitespace exact");
+    Equal(120, roundtrip.DefinedSlots, "empty slots emitted too");
+    File.WriteAllBytes(exportFile + ".extended.txt", nativeBytes);
+    var encoding = Encoding.GetEncoding(932, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
+    void Reject(byte[] bytes, string label) { bool failed = false; try { BrowserMacroFile.Decode(bytes); } catch (FormatException) { failed = true; } Equal(true, failed, label); }
+    foreach (string text in new[] { "マクロキーF1:a\nG0:マクロキーF1:b", "グループ0:abc\nグループ0:def", "G10:マクロキーF1:x", "マクロキーF13:x", "bad", " グループ0:abc", "グループ0:ab", "マクロキーF1:x\0" }) Reject(encoding.GetBytes(text), "malformed or duplicate rejected wholesale");
+    Reject([0x81], "invalid CP932"); Reject(new byte[BrowserMacroFile.MaxBytes + 1], "oversize");
+    foreach (Encoding unicode in new Encoding[] { new UTF8Encoding(true, true), new UnicodeEncoding(false, true, true), new UnicodeEncoding(true, true, true), new UTF32Encoding(false, true, true) })
+    {
+        var bytes = unicode.GetPreamble().Concat(unicode.GetBytes("マクロキーF12:日本語: \\e  ")).ToArray();
+        Equal("日本語: \\e  ", BrowserMacroFile.Decode(bytes).Slots[11], "Native BOM detected without conversion");
+    }
+    Equal("", BrowserMacroFile.Decode(encoding.GetBytes("マクロキーF1:only")).Slots[119], "missing slots blank fresh bank");
+    Equal(0, BrowserMacroFile.Decode([]).DefinedSlots, "empty whole replacement valid");
+    foreach (string invalid in new[] { "😀", "line\nline", "\0", "¥" })
+    {
+        slots[1] = invalid; bool refused = false;
+        try { BrowserMacroFile.Encode(names, slots); } catch (FormatException) { refused = true; }
+        Equal(true, refused, "no lossy export " + invalid);
+    }
+    var bank = new BrowserKeyMacros(); bank.Register(0,"OLD");
+    bool rejected = false; try { bank.Restore(0, roundtrip.Slots, ["bad"]); } catch (ArgumentException) { rejected = true; }
+    Equal(true, rejected, "bank validates names before applying"); Equal("OLD", bank.Get(0), "failed restore retains bank");
+    Console.WriteLine("PASS_MACRO_FILE_CP932_120_SLOTS_STRICT_VALIDATION_LOSSLESS_EXPORT"); return;
+}
+if (args is ["key-macro-contract"])
+{
+    var bank = new BrowserKeyMacros();
+    for (int g = 0; g < 10; g++)
+    {
+        bank.SelectGroup(g);
+        for (int f = 0; f < 12; f++) Equal(true, bank.Register(f, $"G{g}/F{f + 1}"), "slot registration");
+    }
+    for (int g = 0; g < 10; g++)
+    {
+        bank.SelectGroup(g);
+        for (int f = 0; f < 12; f++) Equal($"G{g}/F{f + 1}", bank.Get(f), "all 120 independent slots");
+    }
+    Equal(false, bank.Register(0, ""), "empty Native registration ignored");
+    Equal("G9/F1", bank.Get(0), "empty register does not erase");
+    string[] snapshot = (string[])bank.Slots.Clone();
+    bank.Restore(2, snapshot); snapshot[24] = "CHANGED";
+    Equal("G2/F1", bank.Get(0), "restored settings are independently owned");
+    bool rejected = false;try { bank.Restore(0, new string[12]); } catch (ArgumentException) { rejected = true; }
+    Equal(true, rejected, "malformed settings rejected before applying");
+    Equal(2, bank.Group, "malformed settings preserve group");
+    var regular = new BrowserInputPrompt(1, BrowserInputKind.String, false);
+    Equal(false, BrowserKeyMacros.SubmitOnRecall("", "(x\\e)*2", regular), "normal recall is not execution");
+    Equal(true, BrowserKeyMacros.SubmitOnRecall("", "A", regular with { OneInput = true }), "Native ONEINPUT text growth");
+    Equal(false, BrowserKeyMacros.SubmitOnRecall("AA", "B", regular with { OneInput = true }), "shorter replacement not autosubmitted");
+    Equal(true, BrowserKeyMacros.SubmitOnRecall("", "A", regular with { Kind = BrowserInputKind.AnyKey }), "Native AnyKey text growth");
+    Equal(false, BrowserKeyMacros.SubmitOnRecall("", "", regular with { OneInput = true }), "empty recall no execution");
+    Equal("", BrowserKeyMacros.RecallInput("", "(7\\e)*9", regular with { Kind = BrowserInputKind.AnyKey }), "AnyKey clears text before Enter and never expands recalled macro");
+    Equal("XYZ", BrowserKeyMacros.RecallInput("ABC", "ABCXYZ", regular with { OneInput = true }), "ONEINPUT discards existing text prefix before Enter");
+    var runtime = await BrowserRuntimeSession.StartPersistentAsync(CreateGlobalFixture("@SYSTEM_TITLE\nFOR LOCAL,0,12\nINPUTMOUSEKEY\nPRINTFORML KEY={RESULT:0},{RESULT:1},{RESULT:2}\nNEXT\nINPUT\nQUIT\n"), null);
+    for (int f = 1; f <= 12; f++)
+    {
+        var key = BrowserInputMapping.MapKey("F" + f, "F" + f, f == 2, f == 3, false)!;
+        Equal(111 + f, key.Code, "Windows F key code");
+        var prompt = runtime.PendingInput!;
+        Equal(true, runtime.SubmitPrimitive(new(prompt.RequestId, BrowserPrimitiveInputKind.Key, "", key.Code, key.KeyData, SessionGeneration: runtime.SessionGeneration)), "F key accepted as game input exactly once");
+        Equal(false, runtime.SubmitPrimitive(new(prompt.RequestId, BrowserPrimitiveInputKind.Key, "", key.Code, key.KeyData, SessionGeneration: runtime.SessionGeneration)), "old F event rejected");
+        Contains($"KEY=3,{key.Code},{key.KeyData}", runtime.Output, "actual command writes Windows RESULT tuple");
+    }
+    Equal(new BrowserKeyInput(96, 131168), BrowserInputMapping.MapKey("Numpad0", "0", true, false, false), "Ctrl numpad uses Native VK_NUMPAD0");
+    Equal(new BrowserKeyInput(45,45), BrowserInputMapping.MapKey("Insert", "Insert", false,false,false), "Insert code");
+    Equal(null, BrowserInputMapping.MapKey("", "", false,false,false), "empty code safe");
+    Console.WriteLine("PASS_KEY_MACRO_120_SLOTS_TIMING_AND_REAL_PRIMITIVE_KEYS");return;
+}
 if (args is ["gdrawg-contract"] or ["gdrawg-red"] or ["gdrawg-case", _, _, _])
 {
     await GDrawGProbe.Run(args);

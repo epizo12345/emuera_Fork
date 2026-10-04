@@ -12,7 +12,7 @@
     <h1 class="app-heading">@(isP1C3 ? "ShinEraTenseiP" : isP1C2 ? "Emuera WEB-P1C2" : isP1C1 ? "Emuera WEB-P1C1" : isP1B ? "Emuera WEB-P1B" : "Emuera WEB-P1A")</h1>
         @if (isP1C2)
     {
-        <p id="p1c2-status" data-stage="@diagnosticStage" data-data-ready="@dataReady.ToString().ToLowerInvariant()" data-title-ready="@p1c2Ready.ToString().ToLowerInvariant()" data-status="@(session?.Status.ToString().ToLowerInvariant() ?? "starting")" data-persistence="@persistenceState" data-pending-persistence-count="@(session?.PendingPersistenceCount ?? 0)" data-load-source="@loadSource" data-revision="@revision" data-pending-kind="@(session?.PendingInput?.Kind.ToString().ToLowerInvariant() ?? "none")" data-request-id="@(session?.PendingInput?.RequestId.ToString() ?? string.Empty)" data-time-limit="@(session?.PendingInput?.TimeLimit ?? -1)" data-timed-input-name="@(session?.PendingInput?.TimedInputName ?? string.Empty)" data-session-generation="@(session?.SessionGeneration ?? 0)" data-display-generation="@(session?.DisplayGeneration ?? 0)" data-twait-timer-state="@twaitTimerState" data-twait-scheduled-request-id="@(scheduledTwaitRequestId?.ToString() ?? string.Empty)" data-twait-scheduled-session-generation="@scheduledTwaitSessionGeneration" data-twait-schedule-count="@twaitScheduleCount" data-twait-callback-count="@twaitCallbackCount" data-primitive-timer-schedule-count="@primitiveTimerScheduleCount" data-primitive-timer-callback-count="@primitiveTimerCallbackCount" data-run-root="@p1c1Root" data-display-lines="@(session?.DisplayLines.Count ?? 0)" data-display-images="@DisplayDiagnosticCount(BrowserDisplayPartKind.Image)" data-display-buttons="@DisplayDiagnosticCount(BrowserDisplayPartKind.Button)" data-diagnostic-continuation="@diagnosticContinuation.ToString().ToLowerInvariant()" data-diagnostic-warning-limit="@BrowserInfiniteLoopContinuation.WarningLimit" data-diagnostic-elapsed-limit-ms="@BrowserInfiniteLoopContinuation.ElapsedLimitMilliseconds" data-diagnostic-warning-count="@(session?.InfiniteLoopContinuation?.WarningCount ?? 0)" data-diagnostic-elapsed-ms="@(session?.InfiniteLoopContinuation?.ElapsedMilliseconds ?? 0)" data-diagnostic-erb-position="@(session?.InfiniteLoopContinuation?.Events.LastOrDefault()?.ErbPosition ?? string.Empty)" data-long-running-mode="@(diagnosticContinuation ? "diagnostic" : "interactive")" data-long-running-event-count="@(session?.LongRunningPrompt?.Events.Count ?? 0)" data-long-running-reason="@(session?.LongRunningPrompt?.Events.LastOrDefault()?.Reason ?? string.Empty)" data-message-skip-active="@(session?.MessageSkip.Active.ToString().ToLowerInvariant() ?? "false")" data-message-skip-operation="@(session?.MessageSkip.OperationId ?? 0)" data-message-skip-continuations="@(session?.MessageSkip.Continuations ?? 0)" data-message-skip-reason="@(session?.MessageSkip.StopReason ?? string.Empty)" data-macro-active="@macroActive.ToString().ToLowerInvariant()" data-macro-pending-count="@(macroQueue?.Count ?? 0)" data-macro-total-token-count="@macroTotalTokenCount" data-macro-consumed-token-count="@macroConsumedTokenCount" data-doscript-count="@(session?.DoScriptCallCount ?? 0)" data-doscript-ms="@(session?.DoScriptElapsedMilliseconds ?? 0)" data-managed-memory-bytes="@(perfGate01b ? session?.CurrentManagedMemoryBytes ?? 0 : (long?)null)" data-output-length="@(session?.OutputLength ?? 0)" data-island-lines="@(session?.IslandLineCount ?? 0)" data-gc-collections="@(perfGate01b ? string.Join(",", Enumerable.Range(0, GC.MaxGeneration + 1).Select(GC.CollectionCount)) : null)" data-display-projection-count="@(session?.DisplayProjectionCount ?? 0)" data-erb-position="@(session?.CurrentErbPosition ?? string.Empty)" data-save-import-selected-count="@saveImportSelectedCount" data-save-import-bytes-read="@saveImportBytesRead">@progress</p>
+        <p id="p1c2-status" data-stage="@diagnosticStage" data-data-ready="@dataReady.ToString().ToLowerInvariant()" data-title-ready="@p1c2Ready.ToString().ToLowerInvariant()" data-status="@(session?.Status.ToString().ToLowerInvariant() ?? "starting")" data-persistence="@persistenceState" data-pending-persistence-count="@(session?.PendingPersistenceCount ?? 0)" data-key-macro-enabled="@(session?.KeyMacrosEnabled == true ? "true" : "false")" data-key-macro-ready="@(keyMacrosLoaded && !keyboardTransition && !importInProgress && !macroFileBusy && session is not null ? "true" : "false")" data-load-source="@loadSource" data-revision="@revision" data-pending-kind="@(session?.PendingInput?.Kind.ToString().ToLowerInvariant() ?? "none")" data-request-id="@(session?.PendingInput?.RequestId.ToString() ?? string.Empty)" data-time-limit="@(session?.PendingInput?.TimeLimit ?? -1)" data-timed-input-name="@(session?.PendingInput?.TimedInputName ?? string.Empty)" data-session-generation="@(session?.SessionGeneration ?? 0)" data-display-generation="@(session?.DisplayGeneration ?? 0)" data-twait-timer-state="@twaitTimerState" data-twait-scheduled-request-id="@(scheduledTwaitRequestId?.ToString() ?? string.Empty)" data-twait-scheduled-session-generation="@scheduledTwaitSessionGeneration" data-twait-schedule-count="@twaitScheduleCount" data-twait-callback-count="@twaitCallbackCount" data-primitive-timer-schedule-count="@primitiveTimerScheduleCount" data-primitive-timer-callback-count="@primitiveTimerCallbackCount" data-run-root="@p1c1Root" data-display-lines="@(session?.DisplayLines.Count ?? 0)" data-display-images="@DisplayDiagnosticCount(BrowserDisplayPartKind.Image)" data-display-buttons="@DisplayDiagnosticCount(BrowserDisplayPartKind.Button)" data-diagnostic-continuation="@diagnosticContinuation.ToString().ToLowerInvariant()" data-diagnostic-warning-limit="@BrowserInfiniteLoopContinuation.WarningLimit" data-diagnostic-elapsed-limit-ms="@BrowserInfiniteLoopContinuation.ElapsedLimitMilliseconds" data-diagnostic-warning-count="@(session?.InfiniteLoopContinuation?.WarningCount ?? 0)" data-diagnostic-elapsed-ms="@(session?.InfiniteLoopContinuation?.ElapsedMilliseconds ?? 0)" data-diagnostic-erb-position="@(session?.InfiniteLoopContinuation?.Events.LastOrDefault()?.ErbPosition ?? string.Empty)" data-long-running-mode="@(diagnosticContinuation ? "diagnostic" : "interactive")" data-long-running-event-count="@(session?.LongRunningPrompt?.Events.Count ?? 0)" data-long-running-reason="@(session?.LongRunningPrompt?.Events.LastOrDefault()?.Reason ?? string.Empty)" data-message-skip-active="@(session?.MessageSkip.Active.ToString().ToLowerInvariant() ?? "false")" data-message-skip-operation="@(session?.MessageSkip.OperationId ?? 0)" data-message-skip-continuations="@(session?.MessageSkip.Continuations ?? 0)" data-message-skip-reason="@(session?.MessageSkip.StopReason ?? string.Empty)" data-macro-active="@macroActive.ToString().ToLowerInvariant()" data-macro-pending-count="@(macroQueue?.Count ?? 0)" data-macro-total-token-count="@macroTotalTokenCount" data-macro-consumed-token-count="@macroConsumedTokenCount" data-doscript-count="@(session?.DoScriptCallCount ?? 0)" data-doscript-ms="@(session?.DoScriptElapsedMilliseconds ?? 0)" data-managed-memory-bytes="@(perfGate01b ? session?.CurrentManagedMemoryBytes ?? 0 : (long?)null)" data-output-length="@(session?.OutputLength ?? 0)" data-island-lines="@(session?.IslandLineCount ?? 0)" data-gc-collections="@(perfGate01b ? string.Join(",", Enumerable.Range(0, GC.MaxGeneration + 1).Select(GC.CollectionCount)) : null)" data-display-projection-count="@(session?.DisplayProjectionCount ?? 0)" data-erb-position="@(session?.CurrentErbPosition ?? string.Empty)" data-save-import-selected-count="@saveImportSelectedCount" data-save-import-bytes-read="@saveImportBytesRead">@progress</p>
         <pre id="save-import-trace" hidden>@JsonSerializer.Serialize(saveImportTrace)</pre>
         <p id="package-cache-metrics" hidden data-state="@packageCacheState" data-hits="@packageCacheHits" data-misses="@packageCacheMisses" data-recovered-packs="@packageCacheRecoveredPacks" data-cleaned-packs="@packageCacheCleanedPacks" data-persisted="@packageCachePersistent.ToString().ToLowerInvariant()" data-usage="@packageCacheUsage" data-quota="@packageCacheQuota" data-network-bytes="@transferBytes" data-download-ms="@downloadMilliseconds" data-extract-ms="@extractMilliseconds" data-extracted-bytes="@extractedBytes" data-package-lookups="@packageLookups"></p>
         @if (warmStartupProfile)
@@ -66,6 +66,44 @@
                         <button id="host-message-skip-stop" type="button" @onclick="StopMessageSkip" @onclick:stopPropagation @onmousedown:stopPropagation>送りを停止</button>
                     }
                 </span>
+                <details id="host-key-macros" class="host-key-macros" @onkeydown:stopPropagation @onmousedown:stopPropagation @onclick:stopPropagation>
+                    <summary>マクロ操作</summary>
+                    <div class="host-key-macros-panel">
+                        <button type="button" @onclick="CloseKeyMacroPanel">閉じる</button>
+                        <label>グループ <select id="key-macro-group" value="@keyMacros.Group" disabled="@(!CanUseKeyMacros)" @onchange="ChangeKeyMacroGroup">
+                            @for (int g = 0; g < 10; g++) { <option value="@g">@(g): @keyMacros.GroupNames[g]</option> }
+                        </select></label>
+                        <p>F1～F12で呼出、Shift＋Fで登録、Ctrl＋数字でグループ切替。ブラウザがキーを使う場合は下のボタンを使えます。</p>
+                        <label for="key-macro-draft">入力欄の内容（登録する文字列）</label>
+                        <textarea id="key-macro-draft" rows="2" @bind="input" @bind:event="oninput"></textarea>
+                        <p>空欄の登録は既存スロットを変更しません。通常INPUTでは呼出後にEnterで実行します。ONEINPUT／AnyKeyでは実機同様、文字数が増える呼出が入力へ進む場合があります。</p>
+                        @if (session?.PendingInput?.Kind == BrowserInputKind.MouseKey) { <p>キー入力待ち中はFキーもゲームへ送ります。マクロ呼出・登録は通常入力に戻ってから使えます。</p> }
+                        <div class="key-macro-slots">
+                            @for (int f = 0; f < 12; f++)
+                            {
+                                int slot = f;
+                                <div class="key-macro-slot" data-slot="@slot">
+                                    <span>F@(slot + 1)</span><code title="@keyMacros.Get(slot)">@(keyMacros.Get(slot).Length == 0 ? "（空）" : keyMacros.Get(slot))</code>
+                                    <button type="button" data-macro-action="recall" disabled="@(!CanRecallKeyMacros)" @onclick='() => ApplyKeyMacro("recall", slot)'>呼出</button>
+                                    <button type="button" data-macro-action="register" disabled="@(!CanRecallKeyMacros)" @onclick='() => ApplyKeyMacro("register", slot)'>登録</button>
+                                </div>
+                            }
+                        </div>
+                        <fieldset disabled="@(!CanTransferMacroFile)">
+                            <legend>実機と共通のmacro.txt（セーブとは別）</legend>
+                            <label>macro.txtを読み込む <InputFile id="key-macro-file" OnChange="PreviewMacroFile" accept=".txt" /></label>
+                            <button id="key-macro-export" type="button" @onclick="ExportMacroFile">macro.txtを書き出す（CP932）</button>
+                        </fieldset>
+                        @if (macroFilePreview is not null)
+                        {
+                            <p>読み込み文字コード: @macroFilePreview.EncodingName。@macroFilePreview.DefinedSlots / 120スロットの定義。現在の全10グループ・120スロットを置き換えます。ファイルにないスロットは空欄、グループ名は実機の初期名になります。選択中グループは維持します。マクロは実行しません。</p>
+                            <pre id="key-macro-file-preview">@MacroPreviewText()</pre>
+                            <button id="key-macro-import-confirm" disabled="@(!CanTransferMacroFile)" type="button" @onclick="ConfirmMacroFile">確認して全体を置換</button>
+                            <button id="key-macro-import-cancel" disabled="@macroFileBusy" type="button" @onclick="CancelMacroFile">キャンセル</button>
+                        }
+                        <p id="key-macro-message" role="status">@keyMacroMessage</p>
+                    </div>
+                </details>
                 <button id="return-title" type="button" disabled="@(importInProgress || keyboardTransition || titleBootstrapInProgress || (session is null && !saveManagerMode))" @onclick="ReturnToTitle">タイトルに戻る</button>
                 <details id="p1c3-save-manager" class="save-manager">
                     <summary>セーブ管理</summary>
@@ -160,7 +198,7 @@
         <div id="game-fit-slot" class="game-fit-slot">
         <div class="game-frame">
         <div id="game-surface" class="game-surface" data-tooltip-delay="@(session?.TooltipDelayMilliseconds ?? 500)" data-tooltip-duration="@(session?.TooltipDurationMilliseconds ?? 0)" data-tooltip-foreground="@(session?.TooltipForeground ?? "#000000")" data-tooltip-background="@(session?.TooltipBackground ?? "#FFFFFF")">
-        <div id="game-screen" class="@(IsDisplayWindowMode ? "game-windowed" : string.Empty)" style="background-color:@(session?.BackgroundColor ?? "#000000")" tabindex="0" data-display-structure-generation="@(session?.DisplayStructureGeneration ?? 0)" data-one-input="@(session?.PendingInput is { Kind: BrowserInputKind.String or BrowserInputKind.Integer, OneInput: true } ? "true" : "false")" data-tooltip-delay="@(session?.TooltipDelayMilliseconds ?? 500)" data-tooltip-duration="@(session?.TooltipDurationMilliseconds ?? 0)" data-tooltip-foreground="@(session?.TooltipForeground ?? "#000000")" data-tooltip-background="@(session?.TooltipBackground ?? "#FFFFFF")" @onkeydown="SubmitPrimitiveKey" @onkeydown:preventDefault="@(session?.PendingInput is { Kind: BrowserInputKind.Enter or BrowserInputKind.AnyKey })" @onkeyup="KeyReleaseHandler" @onblur="ResetPrimitiveKeys" @onmousedown="SubmitPrimitivePointer" @onclick="SubmitGameAreaClick" @oncontextmenu:preventDefault>
+        <div id="game-screen" class="@(IsDisplayWindowMode ? "game-windowed" : string.Empty)" style="background-color:@(session?.BackgroundColor ?? "#000000")" tabindex="0" data-display-structure-generation="@(session?.DisplayStructureGeneration ?? 0)" data-one-input="@(session?.PendingInput is { Kind: BrowserInputKind.String or BrowserInputKind.Integer, OneInput: true } ? "true" : "false")" data-tooltip-delay="@(session?.TooltipDelayMilliseconds ?? 500)" data-tooltip-duration="@(session?.TooltipDurationMilliseconds ?? 0)" data-tooltip-foreground="@(session?.TooltipForeground ?? "#000000")" data-tooltip-background="@(session?.TooltipBackground ?? "#FFFFFF")" @onkeydown="SubmitPrimitiveKey" @onkeyup="KeyReleaseHandler" @onblur="ResetPrimitiveKeys" @onmousedown="SubmitPrimitivePointer" @onclick="SubmitGameAreaClick" @oncontextmenu:preventDefault>
         @if (session is not null)
         {
 #if ERB_EXECUTION_PROFILE
@@ -365,6 +403,15 @@
     bool isP1C4State;
     bool isP1C5;
     bool isP1C6;
+    readonly BrowserKeyMacros keyMacros = new();
+    IJSObjectReference? keyMacroModule;
+    bool keyMacrosAttached, keyMacrosLoaded;
+    string keyMacroMessage = string.Empty;
+    BrowserMacroFileData? macroFilePreview;
+    bool macroFileBusy;
+    bool CanUseKeyMacros => keyMacrosLoaded && session?.KeyMacrosEnabled == true && !keyboardTransition && !importInProgress && !macroFileBusy;
+    bool CanTransferMacroFile => CanUseKeyMacros && !macroActive && !macroDraining && session?.Status != BrowserRuntimeStatus.Persisting && storeHandle is not null && keyMacroModule is not null;
+    bool CanRecallKeyMacros => CanUseKeyMacros && session?.PendingInput?.Kind != BrowserInputKind.MouseKey;
     readonly BrowserKeyboardInputState keyboardInput = new();
     bool keyboardTransition;
     bool perfGate01b;
@@ -708,6 +755,25 @@
 #if ERB_EXECUTION_PROFILE
         TraceGameplayStage("after-render-begin");
 #endif
+        if (isP1C2 && storeModule is not null && storeHandle is not null && !keyMacrosLoaded)
+        {
+            try
+            {
+                var saved = await storeModule.InvokeAsync<KeyMacroSettings>("loadKeyMacros", storeHandle);
+                keyMacros.Restore(saved.Group, saved.Slots, saved.GroupNames);
+                keyMacroMessage = saved.Message;
+            }
+            catch (Exception ex) { keyMacroMessage = "設定を読めません。このページ内でのみ使用します: " + ex.Message; }
+            keyMacrosLoaded = true;
+            await InvokeAsync(StateHasChanged);
+        }
+        if (isP1C2 && storeModule is not null && !keyMacrosAttached)
+        {
+            displayWindowReference ??= DotNetObjectReference.Create(this);
+            keyMacroModule = await JS.InvokeAsync<IJSObjectReference>("import", "./host-key-macros.js");
+            await keyMacroModule.InvokeVoidAsync("attach", displayWindowReference);
+            keyMacrosAttached = true;
+        }
         if (isP1C2 && storeModule is not null && !inputGuardAttached)
         {
             displayWindowReference ??= DotNetObjectReference.Create(this);
@@ -2132,6 +2198,124 @@
         StateHasChanged();
     }
 
+    sealed class KeyMacroSettings
+    {
+        public int Group { get; set; }
+        public string[] Slots { get; set; } = [];
+        public string[] GroupNames { get; set; } = BrowserMacroFile.DefaultGroupNames();
+        public string Message { get; set; } = string.Empty;
+    }
+    async Task CloseKeyMacroPanel()
+    {
+        if (storeModule is not null) await storeModule.InvokeVoidAsync("closeSavePanel", "host-key-macros");
+    }
+    async Task ChangeKeyMacroGroup(ChangeEventArgs args)
+    {
+        if (int.TryParse(args.Value?.ToString(), out int group)) await ApplyKeyMacro("group", group);
+    }
+    async Task ApplyKeyMacro(string action, int index, string? capturedText = null)
+    {
+        if (!CanUseKeyMacros || action != "group" && !CanRecallKeyMacros) return;
+        if (action == "group") keyMacros.SelectGroup(index);
+        else if (action == "register")
+        {
+            if (!keyMacros.Register(index, capturedText ?? input)) { keyMacroMessage = "空欄は登録しません（既存スロットは維持）"; return; }
+        }
+        else if (action == "recall")
+        {
+            string before = capturedText ?? input;
+            input = keyMacros.Get(index);
+            // Native TextChanged submits only when nonempty text grew at ONEINPUT/AnyKey.
+            if (!macroActive && session?.Status == BrowserRuntimeStatus.WaitingForInput
+                && BrowserKeyMacros.SubmitOnRecall(before, input, session.PendingInput))
+            {
+                input = BrowserKeyMacros.RecallInput(before, input, session.PendingInput!);
+                await SubmitP1C2Text();
+            }
+            else
+            {
+                StateHasChanged();
+                if (session?.PendingInput?.Kind is BrowserInputKind.String or BrowserInputKind.Integer)
+                {
+                    await CloseKeyMacroPanel();
+                    if (keyMacroModule is not null) await keyMacroModule.InvokeVoidAsync("focusInput");
+                }
+            }
+            return;
+        }
+        else return;
+        try { keyMacroMessage = await storeModule!.InvokeAsync<string>("saveKeyMacros", storeHandle, keyMacros.Group, keyMacros.Slots, keyMacros.GroupNames); }
+        catch (Exception ex) { keyMacroMessage = "未保存: このページ内では使用できます。" + ex.Message; }
+    }
+    async Task PreviewMacroFile(InputFileChangeEventArgs args)
+    {
+        if (!CanTransferMacroFile) return;
+        macroFilePreview = null; macroFileBusy = true;
+        try
+        {
+            await using var source = args.File.OpenReadStream(BrowserMacroFile.MaxBytes);
+            using var bytes = new MemoryStream(); await source.CopyToAsync(bytes);
+            macroFilePreview = BrowserMacroFile.Decode(bytes.ToArray());
+            keyMacroMessage = "検証済み。内容を確認してください。まだ登録内容は変更していません。";
+        }
+        catch (Exception ex) { keyMacroMessage = "読み込みを中止しました。既存の登録は維持しています。" + ex.Message; }
+        finally { macroFileBusy = false; }
+    }
+    string MacroPreviewText()
+    {
+        if (macroFilePreview is not { } value) return string.Empty;
+        var text = new System.Text.StringBuilder();
+        for (int g = 0; g < 10; g++)
+        {
+            text.AppendLine($"グループ{g}: {value.GroupNames[g]}");
+            for (int f = 0; f < 12; f++) text.AppendLine($"  F{f + 1}: {(value.Slots[g * 12 + f].Length == 0 ? "（空）" : value.Slots[g * 12 + f])}");
+        }
+        return text.ToString();
+    }
+    void CancelMacroFile() { macroFilePreview = null; keyMacroMessage = "キャンセルしました。既存の登録は維持しています。"; }
+    sealed class MacroSaveResult { public bool Saved { get; set; } public string Message { get; set; } = string.Empty; }
+    async Task ConfirmMacroFile()
+    {
+        if (!CanTransferMacroFile || macroFilePreview is not { } value) return;
+        macroFileBusy = true;
+        try
+        {
+            if (!await JS.InvokeAsync<bool>("confirm", "現在の全10グループ・120スロットを読み込み内容に置き換えます。未指定スロットは空になります。よろしいですか？")) return;
+            // Persist before applying: a failed atomic localStorage write leaves the old bank intact.
+            var result = await storeModule!.InvokeAsync<MacroSaveResult>("replaceKeyMacros", storeHandle, keyMacros.Group, value.Slots, value.GroupNames);
+            if (!result.Saved) { keyMacroMessage = result.Message + " 既存の登録は維持しています。"; return; }
+            keyMacros.Restore(keyMacros.Group, value.Slots, value.GroupNames);
+            macroFilePreview = null; keyMacroMessage = "全体置換とブラウザ内保存が完了しました（マクロは実行していません）。";
+        }
+        catch (Exception ex) { keyMacroMessage = "このページの登録は変更していません。保存結果を確認できなかったため、再読込後の内容を確認してください。" + ex.Message; }
+        finally { macroFileBusy = false; }
+    }
+    async Task ExportMacroFile()
+    {
+        if (!CanTransferMacroFile) return;
+        try
+        {
+            var bytes = BrowserMacroFile.Encode(keyMacros.GroupNames, keyMacros.Slots);
+            await keyMacroModule!.InvokeVoidAsync("downloadMacro", bytes);
+            keyMacroMessage = "CP932のmacro.txtダウンロードを開始しました。全10グループ・120スロットを含みます。";
+        }
+        catch (Exception ex) { keyMacroMessage = "書き出しを中止しました。" + ex.Message; }
+    }
+    [JSInvokable]
+    public async Task DispatchHostKey(string code, string key, bool ctrl, bool shift, bool alt, bool meta, bool repeat,
+        string action, int index, string text, long requestId, long generation, long token)
+    {
+        if (keyMacroModule is null || !await keyMacroModule.InvokeAsync<bool>("current", token)
+            || session is null || session.SessionGeneration != generation || (session.PendingInput?.RequestId ?? 0) != requestId
+            || keyboardTransition || importInProgress || macroFileBusy) return;
+        if (action == "game") await SubmitPrimitiveKey(new KeyboardEventArgs { Code = code, Key = key, CtrlKey = ctrl, ShiftKey = shift, AltKey = alt, MetaKey = meta, Repeat = repeat });
+        else if (!repeat) await ApplyKeyMacro(action, index, text);
+        await InvokeAsync(StateHasChanged);
+    }
+    [JSInvokable]
+    public void ReleaseHostKey(string code, string key, bool ctrl, bool shift, bool alt) =>
+        ReleasePrimitiveKey(new KeyboardEventArgs { Code = code, Key = key, CtrlKey = ctrl, ShiftKey = shift, AltKey = alt });
+
     async Task SubmitPrimitiveKey(KeyboardEventArgs keyboard)
     {
 #if ERB_EXECUTION_PROFILE
@@ -2142,8 +2326,8 @@
         long? startSession = active?.SessionGeneration;
         string reason;
         (string Code, string Key)? deferred = null;
-        if (keyboard.MetaKey || ((keyboard.CtrlKey || keyboard.AltKey) && !ModifierOnly(keyboard.Code))
-            || keyboard.Code is "Tab" or "Backspace") reason = "modifier";
+        if (keyboard.MetaKey || (pending?.Kind != BrowserInputKind.MouseKey &&
+            (((keyboard.CtrlKey || keyboard.AltKey) && !ModifierOnly(keyboard.Code)) || keyboard.Code is "Tab" or "Backspace"))) reason = "modifier";
         else
         {
             BrowserKeyInput? mapped = BrowserInputMapping.MapKey(keyboard.Code, keyboard.Key, keyboard.CtrlKey, keyboard.ShiftKey, keyboard.AltKey);
@@ -3445,6 +3629,10 @@
         }
         if (displayWindowAttached && displayWindowModule is not null)
             try { await displayWindowModule.InvokeVoidAsync("detach", "game-screen"); } catch (JSDisconnectedException) { }
+        if (keyMacroModule is not null)
+        {
+            try { await keyMacroModule.InvokeVoidAsync("detach"); await keyMacroModule.DisposeAsync(); } catch (JSDisconnectedException) { }
+        }
         displayWindowReference?.Dispose();
         if (displayWindowModule is not null)
             try { await displayWindowModule.DisposeAsync(); } catch (JSDisconnectedException) { }

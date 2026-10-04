@@ -1,6 +1,19 @@
 import { displayScale } from './scale-fit.js';
+import { load as loadMacros, save as saveMacros, replace as replaceMacros } from './host-key-macros.js';
 const DB_NAME = 'emuera-web-saves-v1';
 const STORE_NAME = 'files';
+export function loadKeyMacros(handleId) {
+  const h = requireHandle(handleId);
+  return loadMacros(h.gameId, h.profileId);
+}
+export function saveKeyMacros(handleId, group, slots, groupNames) {
+  const h = requireHandle(handleId);
+  return saveMacros(h.gameId, h.profileId, group, slots, null, groupNames);
+}
+export function replaceKeyMacros(handleId, group, slots, groupNames) {
+  const h = requireHandle(handleId);
+  return replaceMacros(h.gameId, h.profileId, group, slots, groupNames);
+}
 const handles = new Map();
 const gameAreaClicks = new WeakMap();
 const diagnostics = globalThis.emueraPersistenceDiagnostics ??= [];
@@ -98,8 +111,6 @@ export function installOneInputGuard(elementId, keyboardHost = null) {
   const screen = document.getElementById(elementId);
   if (!screen || screen.dataset.oneInputGuard === 'true') return;
   screen.dataset.oneInputGuard = 'true';
-  if (elementId === 'game-screen' && keyboardHost)
-    globalThis.addEventListener('blur', () => keyboardHost.invokeMethodAsync('ClearKeyboardFocus'));
   if (elementId === 'game-screen')
     screen.addEventListener('mousedown', event => {
       if (event.button === 0 && event.detail >= 2) event.preventDefault();
@@ -141,7 +152,7 @@ export function installOneInputGuard(elementId, keyboardHost = null) {
     press = null;
   }, { capture: true });
   screen.addEventListener('keydown', event => {
-      if (event.isComposing || /^F(?:[1-9]|1[0-2])$/.test(event.code)) { event.stopPropagation(); return; }
+    if (event.isComposing) { event.stopPropagation(); return; }
     const pendingKind = document.querySelector('#p1c2-status')?.dataset.pendingKind;
     if (elementId === 'game-screen' && event.key === 'Enter'
       && (pendingKind === 'enter' || pendingKind === 'anykey'))
