@@ -11,7 +11,7 @@
 - 仮想表示する部分をsurface基準で描画し、小数倍率と履歴変化に伴う文字の画素位置・行間の揺れを抑制。履歴閲覧と末尾追従を維持。
 
 - 通常セーブ／globalとキャラdatは別の保存対象です。通常セーブの書き出しにdatやmacroは含まれません。必要なものを各パネルから書き出してください。
-- 保存先はorigin・gameId・profileIdごと。DB schema2へ更新した同じoriginを、旧schema1のWeb版で開くとVersionErrorになる場合があります。旧版確認は別origin/profileで行い、更新前に必要なファイルをバックアップしてください。
+- 保存先はorigin・gameId・profileIdごと。DB schema2へ更新した同じoriginを、旧schema1のWeb版で開くとVersionErrorになる場合があります。旧版の確認は別origin、または別のブラウザプロファイルで行ってください。URLの ?profile を変えるだけでは、旧版とのIndexedDB形式の互換問題を回避できません。同一originではDB名が共通で、profileIdは保存レコードの区分です。更新前に必要なファイルをバックアップしてください。
 - HTML履歴は画像／図形等の検証済み範囲のみ。Group/DIV/Island、特殊寸法などの完全再構成は未対応・保留です。
 - surface下端の1px背景帯に微小なRGB差が残ります。文字領域の安定と画面全体の完全一致は区別します。
 - ユーザー受入は今回環境の冬眠dat・入力/HTML・文字上端・ダンジョン移動。全ブラウザ・DPR/zoom・長時間動作を保証しません。NGO上端約2行の許容済み見切れ、GDRAWGWITHMASK等の残件も維持。
