@@ -60,19 +60,19 @@ https://gitlab.com/alnatiyan/EmueraDotNet/-/tree/BugFix_Test?ref_type=heads
 - `InstructionLine`のSET左辺専用slotを既存`auxiliaryData`へ統合し、retained shallow sizeを120 bytesから112 bytesへ削減
 
 # 配布フォルダについて
-『配布/Emuera.NET_最終通常版』には、2026-10-05更新のGCLEAR旧画素コピー省略・アニメ再描画範囲の限定に加え、従来のCSV画像・描画・時限入力・DIV・代替フォント修正を含む.NET 10正式single-file EXEを置いています。LazyERB設定UI・ダークモード切り替えも引き続き含まれます。
+『配布/Emuera.NET_最終通常版』には、2026-10-05更新の遅延tooltipの対象・本文整合性、同番号での対象置換、終了時の安全性改善に加え、従来のGCLEAR・CSV画像・描画・時限入力・DIV・代替フォント修正を含む.NET 10正式single-file EXEを置いています。LazyERB設定UI・ダークモード切り替えも引き続き含まれます。通常操作で古いボタン値が誤送信されたとは確認されておらず、その不具合の修正とは説明しません。性能・GPU改善率は未測定です。
 
 - 対象: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 形式: フレームワーク依存・単一EXE
-- EXE生成元source commit: `d20d551eaed13fed77c0c91acf2d018389640fd2`（後続の配布資料更新commitとは別）
-- 『Emuera.exe』: 配布用実行ファイル（24,700,650バイト、SHA-256 `63F9D762CEC4B69B80CC7A00A674033EA1CD420E689F7498A8E8E727FA084AA5`、ProductVersion `0.2.6.0+d20d551eaed13fed77c0c91acf2d018389640fd2`、FileVersion `0.2.6.0`）
+- EXE生成元source commit: `7691c6c27d30212870d571df6197d07d510fe0df`（後続の配布資料更新commitとは別）
+- 『Emuera.exe』: 配布用実行ファイル（24,700,650バイト、SHA-256 `51AEDCE457CCEB93F83D3602AA65FB8ED2062ACB91343F05C9C11A1A771906EB`、ProductVersion `0.2.6.0+7691c6c27d30212870d571df6197d07d510fe0df`、FileVersion `0.2.6.0`）
 - publish条件: Release / win-x64 / framework-dependent / self-contained false / PublishSingleFile=true、`PERFORMANCE_METRICS`無効
-- 配布フォルダからの短い起動確認: EXEの専用コピーで`Init:End`、最小ERB到達、応答を確認。CSVの正しさは実`LoadContents`を含む回帰82/82件を主な根拠とする
+- 配布フォルダからの短い起動確認: EXE単体の専用コピーで`Init:End`と通常入力404／505を確認。同じSHAの正式生成元EXEで旧→新tooltipの表示を確認。生成元source commitの回帰は85/85（既存82＋tooltip3件）、入力matrixは15/15（旧基準3・正式ソース12）。CSVの正しさは実`LoadContents`回帰が主な根拠
 - 『README.md』: 導入方法と採用機能
 - 『SHA256SUMS.txt』: 配布物の改ざん確認用ハッシュ
 
-変更の流れは[更新履歴](更新履歴.md)、現行正式版の変更理由と検証結果は`プロジェクト資料/修正履歴/#今回の修正説明_2026-10-05_GCLEARとアニメ再描画.md`を参照してください。
+変更の流れは[更新履歴](更新履歴.md)、現行正式版の変更理由と検証結果は`プロジェクト資料/修正履歴/#今回の修正説明_2026-10-05_遅延tooltip.md`を参照してください。従来のGCLEAR修正説明も過去の検証記録として保持しています。
 
 ## 起動後メモリ整理
 
