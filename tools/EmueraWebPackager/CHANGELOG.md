@@ -1,5 +1,12 @@
 # Emuera Web Packager — 更新履歴
 
+## 1.0.9 — GETKEY互換性修正
+
+- GETKEYが普通の入力欄からの押下、左右別の修飾キー、マウスボタン状態を参照できるようにし、GETKEY照会では状態を消費しません。
+- ゲーム入力DOMの更新では押下状態を維持し、実際のfocus loss／IME開始時には解除します。
+- 1.0.8の機能と配布条件を維持。GETKEYTRIGGERED、ブラウザ予約キー、X1/Back競合、VK6の物理操作、全ブラウザ／IME保証は対象外です。
+- Runtime UX16-08-RC3-Compat109。.NET 10.0.12／SkiaSharp 4.150.1を維持します。
+
 ## 1.0.8 — 2026-10-05（配布候補）
 
 - 冬眠装置向けSAVECHARA／LOADCHARA／FIND_CHARADATA／CHKCHARADATAと、上部「キャラdat」の一覧・メモ・取り込み・書き出し。再読込時にもコミット済みdatを復元。

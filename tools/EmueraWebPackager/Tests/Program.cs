@@ -105,7 +105,7 @@ try
     }
     if (args is ["negative-exit"]) throw new InvalidOperationException("Intentional known failing check (exception/stack/nonzero contract)");
     string root = Path.GetFullPath(args.ElementAtOrDefault(1) ?? "reports/WEB-PACKAGER-01/focused");
-    Check(Packager.Version == "1.0.8" && Packager.RuntimeVersion == "UX16-08-RC3-Compat108", "integration version identity");
+    Check(Packager.Version == "1.0.9" && Packager.RuntimeVersion == "UX16-08-RC3-Compat109", "integration version identity");
     if (Directory.Exists(root)) throw new IOException("新しい試験directoryを指定してください");
     Directory.CreateDirectory(root); string game = Path.Combine(root, "game"), template = Path.Combine(root, "template"), web = Path.Combine(root, "web");
     System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);

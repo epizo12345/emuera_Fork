@@ -1,8 +1,8 @@
 # Emuera Web Packager — 開発者向け
 
-現行ソースはversion 1.0.8です。ローカル配布候補で、公開は別工程です。利用者の操作は[使い方](使い方.md)、package形式は[Web版パッケージ仕様](../../プロジェクト資料/Web版/03_ゲームデータパッケージ仕様.md)を参照してください。
+現行ソースはversion 1.0.9です。GETKEYの受入済み入力状態修正を、commit 9a1e09430bef2706c54ebf5b24b5bb069127f98dから新規AOT生成したRuntimeへ反映します。利用者の操作は[使い方](使い方.md)、package形式は[Web版パッケージ仕様](../../プロジェクト資料/Web版/03_ゲームデータパッケージ仕様.md)を参照してください。
 
-1.0.8は受入済みのキャラdat、入力欄消去、HTML履歴、focus枠、surface基準描画を統合し、Runtime UX16-08-RC3-Compat108を同梱します。既存1.0.7のFキー／macro.txt／マクロ停止と保存保護を維持します。
+1.0.9はRuntime UX16-08-RC3-Compat109を同梱します。1.0.8の機能を維持し、普通の入力欄でのキー状態、左右修飾キー、マウスボタン、DOM更新時の押下状態、実フォーカス喪失／IME開始時の解除を修正します。GETKEYTRIGGEREDのlow-bit/toggle、予約キー、X1のブラウザBack競合、VK6の物理操作は対象外です。
 
 - 冬眠装置向けSAVECHARA／LOADCHARA／FIND_CHARADATA／CHKCHARADATAと、上部「キャラdat」の一覧・メモ・取り込み・書き出し。再読込時にもコミット済みdatを復元。
 - CLEARTEXTBOXを入力欄だけの消去へ修正し、表示履歴・Island・LINECOUNTを保持。
@@ -12,6 +12,7 @@
 
 - 通常セーブ／globalとキャラdatは別の保存対象です。通常セーブの書き出しにdatやmacroは含まれません。必要なものを各パネルから書き出してください。
 - 保存先はorigin・gameId・profileIdごと。DB schema2へ更新した同じoriginを、旧schema1のWeb版で開くとVersionErrorになる場合があります。旧版の確認は別origin、または別のブラウザプロファイルで行ってください。URLの ?profile を変えるだけでは、旧版とのIndexedDB形式の互換問題を回避できません。同一originではDB名が共通で、profileIdは保存レコードの区分です。更新前に必要なファイルをバックアップしてください。
+- GETKEYは押下中のキー／マウスボタンと左右別の修飾キーを返します。実際のフォーカス喪失やIME開始で状態を解除します。GETKEYTRIGGEREDやブラウザ予約キー等は別契約・未対応です。詳細と環境上の制約はRELEASE_NOTES.mdを参照してください。
 - HTML履歴は画像／図形等の検証済み範囲のみ。Group/DIV/Island、特殊寸法などの完全再構成は未対応・保留です。
 - surface下端の1px背景帯に微小なRGB差が残ります。文字領域の安定と画面全体の完全一致は区別します。
 - ユーザー受入は今回環境の冬眠dat・入力/HTML・文字上端・ダンジョン移動。全ブラウザ・DPR/zoom・長時間動作を保証しません。NGO上端約2行の許容済み見切れ、GDRAWGWITHMASK等の残件も維持。
@@ -92,4 +93,3 @@ SHAは選択した現在bytesと出力の同一性を確認するための値で
 1.0.2では依存のライセンス通知をsealed runtime-templateへ同梱し、生成Webへ引き継ぎます。AOT=true／WasmStripILAfterAOT=falseはIL保持の配布条件で、AOT無効化ではありません。依存監査は確認日時と対象版に限るため公開直前にも確認し、ゲーム・画像・口上の再配布権は別途確認してください。
 
 Windows Packagerのself-contained NETCore／WindowsDesktopとbrowser-wasm実行資材は10.0.12です。SDK 10.0.112／wasm-tools 10.0.112を使用し、SkiaSharp等の版と採用済みレイアウトを維持します。この10.0.12版はLOADと操作、縮小クリック、セーブ入出力後のタイトル復帰、実ドウマン戦のWARNING点滅をユーザーが確認済みです。全ゲーム・全ブラウザの互換性、長時間プレイ、実OS IME、itch上の動作を保証するものではありません。
-

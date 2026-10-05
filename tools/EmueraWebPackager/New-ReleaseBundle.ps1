@@ -4,7 +4,9 @@ param(
     [Parameter(Mandatory)][string]$OutputDirectory,
     [Parameter(Mandatory)][string]$ArtifactsPath,
     [Parameter(Mandatory)][ValidatePattern('^[0-9a-fA-F]{40}$')][string]$SourceCommit,
-    [Parameter(Mandatory)][ValidatePattern('^[0-9a-fA-F]{64}$')][string]$SourceTreeSha256
+    [Parameter(Mandatory)][ValidatePattern('^[0-9a-fA-F]{64}$')][string]$SourceTreeSha256,
+    [Parameter(Mandatory)][ValidatePattern('^[0-9a-fA-F]{40}$')][string]$PackagerCommit,
+    [Parameter(Mandatory)][ValidatePattern('^[0-9a-fA-F]{64}$')][string]$PackagerSourceTreeSha256
 )
 
 $ErrorActionPreference = 'Stop'
@@ -15,7 +17,7 @@ $licenseSource = Join-Path $repoRoot 'license.md'
 $notesSource = Join-Path $PSScriptRoot 'RELEASE_NOTES.md'
 $output = [System.IO.Path]::GetFullPath($OutputDirectory)
 $buildArtifacts = [System.IO.Path]::GetFullPath($ArtifactsPath)
-$zipName = 'EmueraWebPackager-1.0.8-win-x64.zip'
+$zipName = 'EmueraWebPackager-1.0.9-win-x64.zip'
 $tempBase = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
 $tempRoot = [System.IO.Path]::GetFullPath((Join-Path $tempBase "EmueraWebPackager-Release-$([guid]::NewGuid().ToString('N'))"))
 $outputParent = Split-Path -Parent $output
@@ -66,7 +68,7 @@ try {
     if ($versionProcess.ExitCode -ne 0) { throw "Packager --versionに失敗しました (exit $($versionProcess.ExitCode)): $versionError" }
 }
 finally { $versionProcess.Dispose() }
-if ($version -ne 'Emuera Web Packager 1.0.8 / Runtime UX16-08-RC3-Compat108') { throw "Packager/Runtime versionが想定外です: $version" }
+if ($version -ne 'Emuera Web Packager 1.0.9 / Runtime UX16-08-RC3-Compat109') { throw "Packager/Runtime versionが想定外です: $version" }
 
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $output) | Out-Null
 try {
@@ -97,16 +99,18 @@ try {
 
     # Record the committed build revision and the exact source file table.
     $provenance = [ordered]@{
-        packagerVersion = '1.0.8'
-        runtimeTemplateVersion = 'UX16-08-RC3-Compat108'
-        sourceCommit = $SourceCommit.ToLowerInvariant()
-        sourceTreeSha256 = $SourceTreeSha256.ToUpperInvariant()
+        packagerVersion = '1.0.9'
+        runtimeTemplateVersion = 'UX16-08-RC3-Compat109'
+        runtimeSourceCommit = $SourceCommit.ToLowerInvariant()
+        runtimeSourceTreeSha256 = $SourceTreeSha256.ToUpperInvariant()
+        packagerSourceCommit = $PackagerCommit.ToLowerInvariant()
+        packagerSourceTreeSha256 = $PackagerSourceTreeSha256.ToUpperInvariant()
         sourceState = 'committed'
-        sourceIdentity = 'committed source revision and source file table SHA-256'
+        sourceIdentity = 'runtime AOT source and Packager version/documentation source are recorded separately'
     } | ConvertTo-Json
     Set-Content -LiteralPath (Join-Path $bundle 'build-provenance.json') -Value $provenance -Encoding utf8
     Set-Content -LiteralPath (Join-Path $runtimeTarget 'build-provenance.json') -Value $provenance -Encoding utf8
-    $notes = (Get-Content -LiteralPath $notesSource -Raw).Replace('{{SOURCE_COMMIT}}', $SourceCommit.ToLowerInvariant()).Replace('{{SOURCE_TREE_SHA256}}', $SourceTreeSha256.ToUpperInvariant())
+    $notes = (Get-Content -LiteralPath $notesSource -Raw).Replace('{{SOURCE_COMMIT}}', $SourceCommit.ToLowerInvariant()).Replace('{{SOURCE_TREE_SHA256}}', $SourceTreeSha256.ToUpperInvariant()).Replace('{{PACKAGER_COMMIT}}', $PackagerCommit.ToLowerInvariant()).Replace('{{PACKAGER_SOURCE_TREE_SHA256}}', $PackagerSourceTreeSha256.ToUpperInvariant())
     Set-Content -LiteralPath (Join-Path $bundle 'RELEASE_NOTES.md') -Value $notes -Encoding utf8
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'CHANGELOG.md') -Destination (Join-Path $bundle 'CHANGELOG.md')
 
@@ -140,10 +144,12 @@ try {
     finally { $archive.Dispose() }
 
     [pscustomobject]@{
-        version = '1.0.8'
-        runtime = 'UX16-08-RC3-Compat108'
-        sourceCommit = $SourceCommit.ToLowerInvariant()
-        sourceTreeSha256 = $SourceTreeSha256.ToUpperInvariant()
+        version = '1.0.9'
+        runtime = 'UX16-08-RC3-Compat109'
+        runtimeSourceCommit = $SourceCommit.ToLowerInvariant()
+        runtimeSourceTreeSha256 = $SourceTreeSha256.ToUpperInvariant()
+        packagerSourceCommit = $PackagerCommit.ToLowerInvariant()
+        packagerSourceTreeSha256 = $PackagerSourceTreeSha256.ToUpperInvariant()
         zip = $zipName
         zipBytes = (Get-Item -LiteralPath $zipPath).Length
         zipSha256 = $sha
