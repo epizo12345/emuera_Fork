@@ -769,7 +769,8 @@ internal sealed class CharacterData : IDisposable
                 int elem2 = (int)(elem64 & 0x7FFFFFFF);
                 if (elem1 < 0 || elem1 >= array.GetLength(0) || elem2 < 0 || elem2 >= array.GetLength(1))
                     throw new CodeEE(LocalizationManager.Error.OoRSortKey);
-                temp_SortKey = array[elem1, elem2];
+                // [Emuera改修:SORT-01] 2次元の未代入文字列も、1次元・スカラーと同じ空文字キーで比較する。
+                temp_SortKey = array[elem1, elem2] ?? "";
             }
             else if (sortkey.IsArray1D)
             {
