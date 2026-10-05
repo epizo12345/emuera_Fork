@@ -7,12 +7,11 @@
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>Emuera.ConfigRegressionTests</AssemblyName>
     <Nullable>enable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <EnablePerformanceMetrics>false</EnablePerformanceMetrics>
   </PropertyGroup>
   <ItemGroup>
-    <!-- A〜D固有試験は別のentry pointで実行し、既存の回帰85件へ混在させない。 -->
-    <Compile Remove="StartupStudy\**\*.cs" />
-    <!-- 終了寿命のWindows UI試験は別hostで実行する。 -->
-    <Compile Remove="ShutdownStudy\**\*.cs" />
-    <ProjectReference Include="..\..\Emuera.csproj" />
+    <Compile Include="Program.cs" />
+    <ProjectReference Include="..\..\..\Emuera.csproj" />
   </ItemGroup>
 </Project>

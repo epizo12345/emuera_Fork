@@ -17,6 +17,9 @@ namespace MinorShift.Emuera.Forms
         /// <param name="disposing">マネージ リソースが破棄される場合 true、破棄されない場合は false です。</param>
         protected override void Dispose(bool disposing)
         {
+            // [Emuera改修:DRAW-05] FormClosedを通らない直接Disposeでも、先に描画の配送を止める。
+            if (disposing)
+                console?.Dispose();
             if (disposing && (components != null))
             {
                 components.Dispose();

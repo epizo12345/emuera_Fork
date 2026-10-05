@@ -785,8 +785,14 @@ internal sealed partial class MainWindow : Form
             //ほっとしても勝手に閉じるが、その場合はDebugDialogのClosingイベントが発生しない
             if (Program.DebugMode && (console.DebugDialog != null) && console.DebugDialog.Created)
                 console.DebugDialog.Close();
-            console.Dispose();
         }
+    }
+
+    protected override void OnFormClosed(FormClosedEventArgs e)
+    {
+        // [Emuera改修:DRAW-05] FormClosingがキャンセルされた場合はアニメと時限入力を止めない。
+        console?.Dispose();
+        base.OnFormClosed(e);
     }
 
     private async void フォルダを読み直すFToolStripMenuItem_Click(object sender, EventArgs e)

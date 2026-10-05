@@ -90,22 +90,6 @@ internal sealed partial class EmueraConsole : IDisposable
         CBG_Clear();//文字列描画用ダミー追加
 
         redrawTimer = new(TimeSpan.FromMilliseconds(10));
-        redrawTask = new Task(
-            async () =>
-            {
-                while (await redrawTimer.WaitForNextTickAsync())
-                {
-                    if (isRedrawEnabled)
-                    {
-                        //描画が重いと入力が処理できないので、描画毎に入力を捌く
-                        Application.DoEvents();
-
-                        //画面再描画(アニメーション処理)
-                        Draw();
-                    }
-                }
-            }
-        );
     }
     #region 1823 cbg関連
     private readonly List<ClientBackGroundImage> cbgList = [];
@@ -713,13 +697,57 @@ internal sealed partial class EmueraConsole : IDisposable
     /// INPUT中のアニメーション用タイマー
     /// </summary>
     PeriodicTimer redrawTimer;
-    bool isRedrawEnabled;
+    volatile bool isRedrawEnabled;
     Task redrawTask;
+    readonly CancellationTokenSource redrawCancellation = new();
+    int disposed;
+
+    // [Emuera改修:DRAW-05] async voidをTask(Action)へ渡さず、実ループの終了を追跡する。
+    // UIへの配送を1件ずつawaitし、終了時は配送待ちも取り消す。UIでWait/Resultは使わない。
+    private async Task RunRedrawLoopAsync(CancellationToken token)
+    {
+        try
+        {
+            while (await redrawTimer.WaitForNextTickAsync(token))
+            {
+                if (!isRedrawEnabled)
+                    continue;
+                try
+                {
+                    await window.InvokeAsync(() =>
+                    {
+                        // 配送後に停止・破棄された場合も、古い描画要求を受理しない。
+                        if (Volatile.Read(ref disposed) == 0 && isRedrawEnabled)
+                            Draw();
+                    }, token);
+                }
+                catch (InvalidOperationException) when (token.IsCancellationRequested &&
+                    (window.IsDisposed || window.Disposing || !window.IsHandleCreated))
+                {
+                    // 終了とハンドル破棄が配送と競合した場合だけ受理する。通常の描画例外は隠さない。
+                    break;
+                }
+            }
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            // Disposeによる待機・配送の取り消し。
+        }
+    }
+
+    private async void StartRedrawLoop()
+    {
+        // worker開始前にDisposeが来ても、破棄済みsourceからTokenを取り出さない。
+        CancellationToken token = redrawCancellation.Token;
+        redrawTask = Task.Run(() => RunRedrawLoopAsync(token));
+        // 実Taskを保持したまま、通常動作中の予期しない例外はUIの例外経路へ返す。
+        await redrawTask;
+    }
 
     private void Draw()
     {
         // 残り時間を表示するTINPUTはその更新で描画する。非表示時はアニメ用の描画を止めない。
-        if (state != ConsoleState.WaitInput || (genericTimer.Enabled && inputReq.DisplayTime))
+        if (Volatile.Read(ref disposed) != 0 || state != ConsoleState.WaitInput || (genericTimer.Enabled && inputReq.DisplayTime))
         {
             return;
         }
@@ -732,19 +760,18 @@ internal sealed partial class EmueraConsole : IDisposable
     /// </summary>
     public void setRedrawTimer(int tickcount)
     {
+        if (Volatile.Read(ref disposed) != 0)
+            return;
         if (tickcount <= 0)
         {
             isRedrawEnabled = false;
             return;
         }
 
-        if (redrawTask.Status == TaskStatus.Created)
-        {
-            redrawTask.Start();
-        }
-
         isRedrawEnabled = true;
         redrawTimer.Period = TimeSpan.FromMilliseconds(tickcount);
+        if (redrawTask == null)
+            StartRedrawLoop();
     }
 
 
@@ -790,7 +817,7 @@ internal sealed partial class EmueraConsole : IDisposable
     //汎用
     private void tickTimer(object sender, EventArgs e)
     {
-        if (!ReferenceEquals(sender, genericTimer) || !genericTimer.Enabled || timerTickInProgress)
+        if (Volatile.Read(ref disposed) != 0 || !ReferenceEquals(sender, genericTimer) || !genericTimer.Enabled || timerTickInProgress)
             return;
         timerTickInProgress = true;
         try
@@ -2310,6 +2337,14 @@ internal sealed partial class EmueraConsole : IDisposable
 
     public void Dispose()
     {
+        // [Emuera改修:DRAW-05] 終了確定・直接Disposeの両経路から呼べるよう、後始末を一度だけ行う。
+        if (Interlocked.Exchange(ref disposed, 1) != 0)
+            return;
+        isRedrawEnabled = false;
+        need_settimer = false;
+        redrawCancellation.Cancel();
+        redrawTimer.Dispose();
+        redrawCancellation.Dispose();
         if (genericTimer != null)
             genericTimer.Dispose();
         //timer = null;
