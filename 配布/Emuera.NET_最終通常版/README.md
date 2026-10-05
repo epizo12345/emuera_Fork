@@ -2,20 +2,22 @@
 
 - 更新日: 2026-10-05
 - 基礎: BugFix_Test `7b7dd3bf240eff4fdfc7094f4175de0e014532b7`
-- EXE生成元source commit: `7d5892c4c72ab892773b296999b232460cbabae8`（配布資料の更新commitとは別）
+- EXE生成元source commit: `e1b3850416a9dd9eb0862ced3f3d5b468b5c8b52`（配布資料の更新commitとは別）
 - 対象OS: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
-- `Emuera.exe` サイズ: 24,700,650バイト（約23.56 MiB）
-- `Emuera.exe` SHA-256: `24CCE6607FFC40BDF5E3F2A10CEB7A559AA2B74B8C65149433649CA210484077`
-- `Emuera.exe` ProductVersion: `0.2.6.0+7d5892c4c72ab892773b296999b232460cbabae8`（suffixはEXEを生成したsource commit）
+- `Emuera.exe` サイズ: 24,704,746バイト（約23.56 MiB）
+- `Emuera.exe` SHA-256: `FDC4BB28DFEE7ED0EE6C89369FC6C667C09510832BF7AFCD1391DA63326ADB62`
+- `Emuera.exe` ProductVersion: `0.2.6.0+e1b3850416a9dd9eb0862ced3f3d5b468b5c8b52`（suffixはEXEを生成したsource commit）
 - `Emuera.exe` FileVersion: `0.2.6.0`
 - publish条件: Release / win-x64 / framework-dependent / self-contained false / PublishSingleFile=true
 - publish時の計測: `PERFORMANCE_METRICS`無効
 - source revision検証: PASS（ProductVersion suffixが上記source commitのfull SHAと一致）
-- 関連回帰試験: EXE生成元source commitの`ConfigRegressionTests` 85/85、固有試験A81/81・C66/66・D111/111 PASS、いずれも失敗0・skip 0。正式単一EXEでBの通常／逆順／並列解析／実Lazy、ARG／ARGS互換、Cの実Lazyを確認しました。旧版の入力matrix15/15、tooltip切替・404／505入力・赤青アニメ、180秒`TINPUT`完走は過去の別証拠であり、今回再実行した扱いにはしません。CSVの正しさは実`LoadContents`回帰が主な根拠です。
+- 終了時のアニメ再描画による例外終了、および終了キャンセル後の時限入力の不具合を修正しました。実ループを追跡・キャンセルし、終了確定後と直接Disposeで停止します。タイマー周期・期限・依存版・GC設定は維持し、速度・メモリ・GPU改善率は未測定です。
+- 今回の正式EXE単体で、自然終了3回、TINPUT表示ON/OFFの早期入力・次の期限・通常入力、アニメ停止再開、時限入力中の終了、実終了メニューのキャンセル後の入力、再起動を専用fixtureで確認しました。試験中のEXE SHAは上記配布値と同じです。
+- 関連回帰試験: EXE生成元source commitの通常Releaseで既存85/85・終了寿命追加9/9 PASS、失敗0・skip 0。追加9試験のWindows対話desktop/OpenGL条件と順序固定hostの区別はShutdownStudy/README.mdを参照。旧A〜D版の固有A81・C66・D111、旧入力matrix・180秒TINPUTは過去の別証拠であり今回再実行した扱いにしません。
 - ファイル読込時に行数分の配列へ直接格納し、一時リストとコピーを省きました。明示的な`LOCAL@関数`／`LOCALS@関数`の未作成tokenでは、確定した参照先関数のサイズを使用します。`ARG`／`ARGS`は変更しません。定数文字列整理時の一時割当と、不要な整数1次元セーブ配列を読み捨てる際の確保も削減しました。評価順序・保存形式・他次元の処理は維持します。ゲーム全体の速度・ピーク／常駐メモリ・GPU改善率は未測定です。
-- 同じSHAの正式生成元EXEで、専用ゲームコピーのタイトル→LOAD219→ステータス画面→通常終了（exit code 0）を確認しました。配布先EXEも専用Dataで`Init:End`とARG互換の入力結果を短く確認しました。Dのnull読み捨てが実save219で通ったかは未計測で、固有stream試験を根拠とします。
+- 旧A〜D版では、当時の正式生成元EXEで、専用ゲームコピーのタイトル→LOAD219→ステータス画面→通常終了（exit code 0）を確認しました。配布先EXEも専用Dataで`Init:End`とARG互換の入力結果を短く確認しました。Dのnull読み捨てが実save219で通ったかは未計測で、固有stream試験を根拠とします。
 - 遅延tooltipの対象・本文の整合性、同番号での対象置換、終了時の安全性を改善しました。現在対象の正しい説明を表示し、破棄済みウィンドウの遅延処理を受理しません。通常操作で古いボタン値が誤送信されたとは確認されていません。`ClearDisplay`後・最初の再描画前の旧hover入力は通常経路の到達可能性をコードで確認したもので、実行試験PASSとは区別します。性能・GPU改善率は未測定です。
 - ファイル由来G画像の`GCLEAR`では、全消去する旧画素を新しいBitmapへコピーする処理を省きました。部分書換え時の旧画素保持と描画状態は維持します。アニメーション更新時はゲーム描画面だけを再描画し、周辺UIの不要な再描画を減らしました。ゲーム全体の速度・GPU使用率の改善率は未測定です。
 - 同じCSV画像の並列読み込みで親画像が重複生成される問題と、Bitmap化後の画像再読み込みで例外になる問題を修正しました。メモリ削減量・速度・GPU負荷の改善率は未測定です。

@@ -60,16 +60,16 @@ https://gitlab.com/alnatiyan/EmueraDotNet/-/tree/BugFix_Test?ref_type=heads
 - `InstructionLine`のSET左辺専用slotを既存`auxiliaryData`へ統合し、retained shallow sizeを120 bytesから112 bytesへ削減
 
 # 配布フォルダについて
-『配布/Emuera.NET_最終通常版』には、2026-10-05に採用したファイル読込時の一時コピー削減、明示LOCAL／LOCALSの限定的なサイズ参照修正、定数文字列整理と不要な整数1Dセーブ配列読み捨ての一時割当削減を含む.NET 10正式single-file EXEを置いています。遅延tooltip、GCLEAR、CSV画像、描画、時限入力、DIV、代替フォント、LazyERB設定UI、ダークモード切り替えも引き続き含まれます。ARG／ARGS・保存形式・他次元は変更しません。ゲーム全体の速度・常駐メモリ・GPU改善率は未測定です。
+『配布/Emuera.NET_最終通常版』には、2026-10-05に採用した終了時のアニメ再描画による例外終了と、終了キャンセル後の時限入力の不具合修正を含む.NET 10正式single-file EXEを置いています。従来のA〜D、tooltip、GCLEAR、CSV画像、描画、TINPUT、DIV、代替フォント、LazyERB設定UI、ダークモード切り替えも維持しています。速度・メモリ・GPU改善率は付けません。A〜Dの実ゲーム起動・LOAD比較では、全体の安定した時間・メモリ改善は確認できませんでした。
 
 - 対象: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 形式: フレームワーク依存・単一EXE
-- EXE生成元source commit: `7d5892c4c72ab892773b296999b232460cbabae8`（後続の配布資料更新commitとは別）
-- 『Emuera.exe』: 配布用実行ファイル（24,700,650バイト、SHA-256 `24CCE6607FFC40BDF5E3F2A10CEB7A559AA2B74B8C65149433649CA210484077`、ProductVersion `0.2.6.0+7d5892c4c72ab892773b296999b232460cbabae8`、FileVersion `0.2.6.0`）
+- EXE生成元source commit: `e1b3850416a9dd9eb0862ced3f3d5b468b5c8b52`（後続の配布資料更新commitとは別）
+- 『Emuera.exe』: 配布用実行ファイル（24,704,746バイト、SHA-256 `FDC4BB28DFEE7ED0EE6C89369FC6C667C09510832BF7AFCD1391DA63326ADB62`、ProductVersion `0.2.6.0+e1b3850416a9dd9eb0862ced3f3d5b468b5c8b52`、FileVersion `0.2.6.0`）
 - publish条件: Release / win-x64 / framework-dependent / self-contained false / PublishSingleFile=true、`PERFORMANCE_METRICS`無効
-- 生成元source commitの回帰: 既存85/85、固有A81/81・C66/66・D111/111、失敗0・skip 0。正式単一EXEでBの通常／逆順／並列解析／実Lazy、ARG／ARGS互換、C実Lazyを確認。過去のtooltip入力matrix・長時間TINPUTは別証拠として保持
-- 起動・LOAD確認: 同じSHAの正式生成元EXEで、専用ゲームコピーのタイトル→LOAD219→ステータス画面→通常終了を確認。配布先EXEでも専用Dataの初期化・応答・ARG互換結果を確認。元ゲーム・セーブは変更しない
+- 生成元source commitの回帰: 既存85/85・終了寿命追加9/9 PASS、失敗0・skip 0。Windows UI条件はShutdownStudyのREADMEを参照。旧A〜D固有・tooltip matrix・長時間TINPUTの記録は過去の証拠として保持
+- 正式EXE確認: 専用fixtureで初期化、自然終了、TINPUT表示ON/OFF・アニメ停止再開、終了キャンセル後の入力、再起動を確認。旧A〜D版のタイトル→LOAD219→ステータス→通常終了は当時の別証拠。元ゲーム・セーブは変更しない
 - 『README.md』: 導入方法と採用機能
 - 『SHA256SUMS.txt』: 配布物の改ざん確認用ハッシュ
 
