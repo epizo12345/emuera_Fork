@@ -97,7 +97,9 @@ internal sealed class EmueraConsole
     internal void EnableDisplayPerformanceMetrics() => displayPerformanceMetricsEnabled = true;
 
     internal bool IsActive => true;
-    internal short GetKeyState(int keycode) => keycode is >= 0 and < 256 && keyDown[keycode] ? unchecked((short)0x8000) : (short)0;
+    internal Func<int, short>? KeyStateReader { get; set; }
+    internal short GetKeyState(int keycode) => keycode is < 0 or >= 256 ? (short)0
+        : KeyStateReader?.Invoke(keycode) ?? (keyDown[keycode] ? unchecked((short)0x8000) : (short)0);
     internal void SetKeyState(int keycode, bool down)
     {
         if (keycode is >= 0 and < 256) keyDown[keycode] = down;

@@ -10,6 +10,41 @@ using SkiaSharp;
 
 try
 {
+if (args is ["getkey-state-contract"])
+{
+    var runtime = await BrowserRuntimeSession.StartSavePersistentAsync(CreateGlobalFixture("""
+@SYSTEM_TITLE
+INPUT
+PRINTFORML DOWN={GETKEY(0x12)},{GETKEY(0x12)},{GETKEY(0x05)},{GETKEY(0xA4)},{GETKEY(0xA5)} INVALID={GETKEY(-1)},{GETKEY(256)}
+INPUT
+PRINTFORML UP={GETKEY(0x12)},{GETKEY(0x05)},{GETKEY(0xA4)},{GETKEY(0xA5)}
+INPUT
+PRINTFORML AGAIN={GETKEY(0x12)},{GETKEY(0x12)}
+WAIT
+QUIT
+"""), null);
+    var raw = new short[256];
+    var queried = new List<int>();
+    runtime.SetKeyStateReader(code => { queried.Add(code); return raw[code]; });
+    raw[18] = unchecked((short)0x8001); // low toggle bit does not change GETKEY's boolean return
+    raw[5] = raw[164] = unchecked((short)0x8000);
+    Equal(true, runtime.Submit(new(runtime.PendingInput!.RequestId, "1")), "down input accepted");
+    Contains("DOWN=1,1,1,1,0 INVALID=0,0", runtime.Output, "real GETKEY reads raw state without consuming it");
+    Equal(false, queried.Any(code => code < 0 || code > 255), "invalid code does not reach host reader");
+    Array.Clear(raw); raw[18] = 1;
+    Equal(true, runtime.Submit(new(runtime.PendingInput!.RequestId, "1")), "release input accepted");
+    Contains("UP=0,0,0,0", runtime.Output, "released or low-bit-only state is not down");
+    raw[18] = unchecked((short)0x8000);
+    Equal(true, runtime.Submit(new(runtime.PendingInput!.RequestId, "1")), "fresh press input accepted");
+    Contains("AGAIN=1,1", runtime.Output, "new press and repeated query remain down");
+    runtime.SetKeyStateReader(null);
+    runtime.SetKeyState(18, false);
+    runtime.ReturnToTitle();
+    runtime.SetKeyState(18, true);
+    Equal(true, runtime.Submit(new(runtime.PendingInput!.RequestId, "1")), "legacy host state remains usable");
+    Contains("DOWN=1,1,0,0,0", runtime.Output, "host .NET fallback remains unchanged");
+    Console.WriteLine("PASS_GETKEY_RAW_HIGH_LOW_REPEAT_RELEASE_INVALID_AND_LEGACY_HOST"); return;
+}
 if (args is ["clear-textbox-contract"])
 {
     var runtime = await BrowserRuntimeSession.StartSavePersistentAsync(CreateGlobalFixture("""

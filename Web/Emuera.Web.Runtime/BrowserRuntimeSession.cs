@@ -556,6 +556,7 @@ public sealed class BrowserRuntimeSession
     public int IslandLineCount => console.IslandLineCount;
     public void SetMousePosition(int x, int y) => console.SetMousePosition(x, y);
     public void SetKeyState(int keycode, bool down) => console.SetKeyState(keycode, down);
+    public void SetKeyStateReader(Func<int, short>? reader) => console.KeyStateReader = reader;
     public void ClearKeyStates() => console.ClearKeyStates();
 
     public bool SubmitDisplay(BrowserDisplayPart part)

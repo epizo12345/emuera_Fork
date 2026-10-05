@@ -463,6 +463,7 @@
     int twaitCallbackCount;
     string twaitTimerState = "none";
     string? acceptedPrimitiveModifier;
+    BrowserRuntimeSession? keyStateReaderSession;
     string p1c5PersistenceFault = string.Empty;
     int p1c5CommitDelayMilliseconds;
     int p1c5SkipBatchSize = 16;
@@ -820,6 +821,12 @@
             keyMacroModule = await JS.InvokeAsync<IJSObjectReference>("import", "./host-key-macros.js");
             await keyMacroModule.InvokeVoidAsync("attach", displayWindowReference);
             keyMacrosAttached = true;
+        }
+        if (session is not null && !ReferenceEquals(session, keyStateReaderSession)
+            && keyMacroModule is IJSInProcessObjectReference keyStateModule)
+        {
+            session.SetKeyStateReader(code => unchecked((short)keyStateModule.Invoke<int>("getKeyState", code)));
+            keyStateReaderSession = session;
         }
         if (isP1C2 && storeModule is not null && !inputGuardAttached)
         {
@@ -3828,4 +3835,3 @@
         _ => "キー入力待ち"
     };
 }
-

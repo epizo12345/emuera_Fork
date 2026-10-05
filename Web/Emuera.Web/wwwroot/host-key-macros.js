@@ -2,6 +2,47 @@
 let dispose;
 let epoch = 0;
 let composing = false;
+const heldKeys = new Map();
+let mouseButtons = 0;
+let modifiers = { shift: false, control: false, alt: false };
+function clearKeyState() {
+  heldKeys.clear(); mouseButtons = 0;
+  modifiers = { shift: false, control: false, alt: false };
+}
+function modifierState(event) {
+  modifiers = { shift: !!event.shiftKey, control: !!event.ctrlKey, alt: !!event.altKey };
+}
+const modifierCodes = { ShiftLeft: 160, ShiftRight: 161, ControlLeft: 162, ControlRight: 163, AltLeft: 164, AltRight: 165 };
+function recordKey(event, down) {
+  if (!down) heldKeys.delete(event.code);
+  if (!current(epoch) || event.isComposing || event.keyCode === 229) return;
+  // A repeat delivered after blur is not a new physical press.
+  if (down && event.repeat && !heldKeys.has(event.code)) return;
+  modifierState(event);
+  const value = modifierCodes[event.code] ?? event.keyCode;
+  if (down && value > 0 && value < 256) heldKeys.set(event.code, value);
+}
+function recordMouse(event) {
+  if (event.type === 'mouseup') mouseButtons &= event.buttons;
+  if (!document.hidden && document.hasFocus() && !composing && event.target?.closest?.('#game-surface')) {
+    mouseButtons = event.buttons;
+    modifierState(event);
+  }
+}
+// Native GETKEY reads the current state without consuming it. No game input is sent here.
+export function getKeyState(keycode) {
+  if (!current(epoch)) { clearKeyState(); return 0; }
+  if (!Number.isInteger(keycode) || keycode < 0 || keycode > 255) return 0;
+  const mouseMask = { 1: 1, 2: 2, 4: 4, 5: 8, 6: 16 }[keycode];
+  let down = mouseMask !== undefined && !!(mouseButtons & mouseMask);
+  for (const value of heldKeys.values())
+    if (value === keycode || keycode === 16 && (value === 160 || value === 161)
+      || keycode === 17 && (value === 162 || value === 163) || keycode === 18 && (value === 164 || value === 165)) down = true;
+  if (keycode === 16) down ||= modifiers.shift;
+  if (keycode === 17) down ||= modifiers.control;
+  if (keycode === 18) down ||= modifiers.alt;
+  return down ? 0x8000 : 0;
+}
 export function shortcut(event) {
   if (event.metaKey || event.altKey) return null;
   const f = /^F([1-9]|1[0-2])$/.exec(event.code);
@@ -14,7 +55,7 @@ export function gameKey(event) {
 }
 function activeTarget(target) {
   if (!target || target === document.body) return true;
-  if (target.id === 'runtime-input') return true;
+  if (target.id === 'runtime-input' || target.id === 'runtime-submit') return true;
   if (target.closest?.('input,textarea,select,[contenteditable="true"],#host-toolbar')) return false;
   return !!target.closest?.('#game-surface');
 }
@@ -23,8 +64,9 @@ export function current(token) {
 }
 export function attach(host) {
   detach();
-  const clear = () => { epoch++; composing = false; host.invokeMethodAsync('ClearKeyboardFocus').catch(() => {}); };
+  const clear = (keepKeys = false) => { epoch++; composing = false; if (!keepKeys) clearKeyState(); host.invokeMethodAsync('ClearKeyboardFocus').catch(() => {}); };
   const keydown = event => {
+    recordKey(event, true);
     if (!current(epoch) || event.isComposing || event.keyCode === 229) return;
     const state = document.querySelector('#p1c2-status')?.dataset;
     if (!state || state.keyMacroReady !== 'true') return;
@@ -49,9 +91,11 @@ export function attach(host) {
       primitive ? -1 : command.index, document.getElementById('runtime-input')?.value ?? '',
       Number(state.requestId || 0), Number(state.sessionGeneration || 0), token).catch(() => {});
   };
-  const keyup = event => host.invokeMethodAsync('ReleaseHostKey', event.code, event.key, event.ctrlKey, event.shiftKey, event.altKey).catch(() => {});
-  const focus = () => clear();
-  const start = () => { composing = true; epoch++; };
+  const keyup = event => { recordKey(event, false); host.invokeMethodAsync('ReleaseHostKey', event.code, event.key, event.ctrlKey, event.shiftKey, event.altKey).catch(() => {}); };
+  // Removing/replacing the game input can focus BODY without leaving the page.
+  // Real window/tab loss still clears held state via blur/visibilitychange.
+  const focus = event => clear(activeTarget(event.relatedTarget ?? event.target));
+  const start = () => { composing = true; epoch++; clearKeyState(); };
   const end = () => { composing = false; };
   const visibility = () => { if (document.hidden) clear(); };
   document.addEventListener('keydown', keydown, true);
@@ -60,12 +104,18 @@ export function attach(host) {
   document.addEventListener('compositionstart', start, true);
   document.addEventListener('compositionend', end, true);
   document.addEventListener('visibilitychange', visibility);
-  window.addEventListener('blur', clear);
+  const blur = () => clear();
+  document.addEventListener('mousedown', recordMouse, true);
+  document.addEventListener('mouseup', recordMouse, true);
+  document.addEventListener('click', recordMouse, true);
+  window.addEventListener('blur', blur);
   dispose = () => {
     document.removeEventListener('keydown', keydown, true); document.removeEventListener('keyup', keyup, true);
     document.removeEventListener('focusout', focus, true); document.removeEventListener('compositionstart', start, true);
     document.removeEventListener('compositionend', end, true); document.removeEventListener('visibilitychange', visibility);
-    window.removeEventListener('blur', clear); clear();
+    document.removeEventListener('mousedown', recordMouse, true); document.removeEventListener('mouseup', recordMouse, true);
+    document.removeEventListener('click', recordMouse, true);
+    window.removeEventListener('blur', blur); clear();
   };
 }
 export function detach() { dispose?.(); dispose = null; epoch++; }
