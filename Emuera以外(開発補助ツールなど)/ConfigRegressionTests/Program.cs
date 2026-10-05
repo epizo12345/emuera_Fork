@@ -133,6 +133,9 @@ internal static class Program
         RunReparsePointCase();
         Run("file-backed GCLEAR keeps all pixels and drawing state across three colors", GraphicsClearRegression.Verify);
         Run("animation refresh repaints only the game surface", RefreshScopeRegression.Verify);
+        Run("same-number CBG replacement uses the new target tooltip", TooltipRegression.SameNumberReplacementUsesNewTitle);
+        Run("disposed window rejects its delayed tooltip callback", TooltipRegression.DisposedWindowRejectsCallback);
+        Run("tooltip callback does not pump a queued window close", TooltipRegression.CallbackDoesNotPumpQueuedClose);
 
         if (_themeConfigDirectory is not null && Directory.Exists(_themeConfigDirectory))
             Directory.Delete(_themeConfigDirectory, recursive: true);

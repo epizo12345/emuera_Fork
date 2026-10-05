@@ -112,6 +112,18 @@ internal sealed partial class EmueraConsole : IDisposable
     private GraphicsImage cbgButtonMap;
     private int selectingCBGButtonInt = -1;
     private int lastSelectingCBGButtonInt = -1;
+    // [Emuera改修:TOOLTIP-01] 同じ番号の別CBGへ古い説明の予約を引き継がないよう、対象も照合する。
+    private ClientBackGroundImage lastPointingCbg;
+
+    private ClientBackGroundImage GetPointingCbg()
+    {
+        if (pointingString != null || selectingCBGButtonInt <= 0)
+            return null;
+        foreach (var cbg in cbgList)
+            if (cbg.isButton && cbg.buttonValue == selectingCBGButtonInt && !string.IsNullOrEmpty(cbg.tooltipString))
+                return cbg;
+        return null;
+    }
     //ConsoleButtonString selectingButton = null;
     //ConsoleButtonString lastSelectingButton = null;
 
@@ -1593,25 +1605,17 @@ internal sealed partial class EmueraConsole : IDisposable
         }
 
         //ToolTip描画
-        if (lastPointingString != pointingString || lastSelectingCBGButtonInt != selectingCBGButtonInt)
+        ClientBackGroundImage pointingCbg = GetPointingCbg();
+        if (lastPointingString != pointingString || lastSelectingCBGButtonInt != selectingCBGButtonInt ||
+            lastPointingCbg != pointingCbg)
         {
             if (tooltipUsed)
                 window.ToolTip.RemoveAll();
             string title = null;
             if (pointingString != null)
                 title = pointingString.Title;
-            else if (selectingCBGButtonInt > 0)
-            {
-                foreach (var cbg in cbgList)
-                {
-                    if (!cbg.isButton || cbg.buttonValue != selectingCBGButtonInt)
-                        continue;
-                    if (string.IsNullOrEmpty(cbg.tooltipString))
-                        continue;
-                    title = cbg.tooltipString;
-                    break;
-                }
-            }
+            else
+                title = pointingCbg?.tooltipString;
             if (!string.IsNullOrEmpty(title))
             {
                 if (tooltip_duration == 0)
@@ -1628,16 +1632,30 @@ internal sealed partial class EmueraConsole : IDisposable
                     else
                     {
                         System.Threading.SynchronizationContext context = System.Threading.SynchronizationContext.Current;
+                        // [Emuera改修:TOOLTIP-01] 本文・対象・待ち時間をUI上で同時に確定し、別画面の対象を拾わない。
+                        ConsoleButtonString savedPointingString = pointingString;
+                        int savedCbgButton = selectingCBGButtonInt;
+                        ClientBackGroundImage savedPointingCbg = pointingCbg;
+                        int savedDelay = window.ToolTip.InitialDelay;
                         System.Threading.Tasks.Task.Run(async () =>
                         {
-                            ConsoleButtonString savedPointingString = pointingString;
-                            await System.Threading.Tasks.Task.Delay(window.ToolTip.InitialDelay);
+                            await System.Threading.Tasks.Task.Delay(savedDelay);
                             context.Post((state) =>
                             {
-                                MoveMouse(GetMousePosition());
-                                if (lastPointingString == savedPointingString)
+                                if (window.IsDisposed || !window.Created)
+                                    return;
+                                // MoveMouseは左上基準。ERB用の左下基準GetMousePositionはここへ渡さない。
+                                Point mousePos = window.MainPicBox.PointToClient(MainWindow.MousePosition);
+                                if (MoveMouse(mousePos))
+                                    // hoverだけの更新でDoEventsへ再入し、途中で終了処理を受理しない。
+                                    // 入力可否・世代はMoveMouseで照合済み。内容やレイアウトは変更しない。
+                                    window.MainPicBox.Refresh();
+                                if (window.IsDisposed || !window.Created)
+                                    return;
+                                if (pointingString == savedPointingString && lastPointingString == savedPointingString &&
+                                    selectingCBGButtonInt == savedCbgButton && lastSelectingCBGButtonInt == savedCbgButton &&
+                                    GetPointingCbg() == savedPointingCbg && lastPointingCbg == savedPointingCbg)
                                 {
-                                    Point mousePos = window.MainPicBox.PointToClient(MainWindow.MousePosition);
                                     window.ToolTip.Show(title, window.MainPicBox, new Point(mousePos.X, mousePos.Y + 18), tooltip_duration);
                                 }
                             }, null);
@@ -1648,6 +1666,7 @@ internal sealed partial class EmueraConsole : IDisposable
             }
             lastPointingString = pointingString;
             lastSelectingCBGButtonInt = selectingCBGButtonInt;
+            lastPointingCbg = pointingCbg;
         }
         if (isBackLog)
             lastDrawnLineNo = -1;
