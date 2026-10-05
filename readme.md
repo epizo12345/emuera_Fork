@@ -60,19 +60,20 @@ https://gitlab.com/alnatiyan/EmueraDotNet/-/tree/BugFix_Test?ref_type=heads
 - `InstructionLine`のSET左辺専用slotを既存`auxiliaryData`へ統合し、retained shallow sizeを120 bytesから112 bytesへ削減
 
 # 配布フォルダについて
-『配布/Emuera.NET_最終通常版』には、2026-10-05更新の遅延tooltipの対象・本文整合性、同番号での対象置換、終了時の安全性改善に加え、従来のGCLEAR・CSV画像・描画・時限入力・DIV・代替フォント修正を含む.NET 10正式single-file EXEを置いています。LazyERB設定UI・ダークモード切り替えも引き続き含まれます。通常操作で古いボタン値が誤送信されたとは確認されておらず、その不具合の修正とは説明しません。性能・GPU改善率は未測定です。
+『配布/Emuera.NET_最終通常版』には、2026-10-05に採用したファイル読込時の一時コピー削減、明示LOCAL／LOCALSの限定的なサイズ参照修正、定数文字列整理と不要な整数1Dセーブ配列読み捨ての一時割当削減を含む.NET 10正式single-file EXEを置いています。遅延tooltip、GCLEAR、CSV画像、描画、時限入力、DIV、代替フォント、LazyERB設定UI、ダークモード切り替えも引き続き含まれます。ARG／ARGS・保存形式・他次元は変更しません。ゲーム全体の速度・常駐メモリ・GPU改善率は未測定です。
 
 - 対象: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 形式: フレームワーク依存・単一EXE
-- EXE生成元source commit: `7691c6c27d30212870d571df6197d07d510fe0df`（後続の配布資料更新commitとは別）
-- 『Emuera.exe』: 配布用実行ファイル（24,700,650バイト、SHA-256 `51AEDCE457CCEB93F83D3602AA65FB8ED2062ACB91343F05C9C11A1A771906EB`、ProductVersion `0.2.6.0+7691c6c27d30212870d571df6197d07d510fe0df`、FileVersion `0.2.6.0`）
+- EXE生成元source commit: `7d5892c4c72ab892773b296999b232460cbabae8`（後続の配布資料更新commitとは別）
+- 『Emuera.exe』: 配布用実行ファイル（24,700,650バイト、SHA-256 `24CCE6607FFC40BDF5E3F2A10CEB7A559AA2B74B8C65149433649CA210484077`、ProductVersion `0.2.6.0+7d5892c4c72ab892773b296999b232460cbabae8`、FileVersion `0.2.6.0`）
 - publish条件: Release / win-x64 / framework-dependent / self-contained false / PublishSingleFile=true、`PERFORMANCE_METRICS`無効
-- 配布フォルダからの短い起動確認: EXE単体の専用コピーで`Init:End`と通常入力404／505を確認。同じSHAの正式生成元EXEで旧→新tooltipの表示を確認。生成元source commitの回帰は85/85（既存82＋tooltip3件）、入力matrixは15/15（旧基準3・正式ソース12）。CSVの正しさは実`LoadContents`回帰が主な根拠
+- 生成元source commitの回帰: 既存85/85、固有A81/81・C66/66・D111/111、失敗0・skip 0。正式単一EXEでBの通常／逆順／並列解析／実Lazy、ARG／ARGS互換、C実Lazyを確認。過去のtooltip入力matrix・長時間TINPUTは別証拠として保持
+- 起動・LOAD確認: 同じSHAの正式生成元EXEで、専用ゲームコピーのタイトル→LOAD219→ステータス画面→通常終了を確認。配布先EXEでも専用Dataの初期化・応答・ARG互換結果を確認。元ゲーム・セーブは変更しない
 - 『README.md』: 導入方法と採用機能
 - 『SHA256SUMS.txt』: 配布物の改ざん確認用ハッシュ
 
-変更の流れは[更新履歴](更新履歴.md)、現行正式版の変更理由と検証結果は`プロジェクト資料/修正履歴/#今回の修正説明_2026-10-05_遅延tooltip.md`を参照してください。従来のGCLEAR修正説明も過去の検証記録として保持しています。
+変更の流れは[更新履歴](更新履歴.md)、現行正式版の変更理由と検証結果は`プロジェクト資料/修正履歴/#今回の修正説明_2026-10-05_起動・変数参照・文字列整理・セーブ読込.md`を参照してください。従来のtooltip・GCLEAR修正説明も過去の検証記録として保持しています。
 
 ## 起動後メモリ整理
 
