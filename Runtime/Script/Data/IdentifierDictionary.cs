@@ -474,6 +474,7 @@ internal sealed partial class IdentifierDictionary
                 throw new CodeEE(string.Format(LocalizationManager.Error.UsedProhibitedVar, key));
             }
             LogicalLine line = GlobalStatic.Process.GetScaningLine();
+            bool explicitOwner = !string.IsNullOrEmpty(subKey);
             if (string.IsNullOrEmpty(subKey))
             {
                 //システムの入力待ち中にデバッグコマンドからLOCALを呼んだとき。
@@ -488,7 +489,16 @@ internal sealed partial class IdentifierDictionary
                 // 	subKey = subKey.ToUpper();
             }
             LocalVariableToken retLocal = value.GetExistLocalVariableToken(subKey);
-            retLocal ??= value.GetNewLocalVariableToken(subKey, line.ParentLabelLine);
+            // [Emuera改修:LOCAL-B候補]
+            // 確定済みの別関数のLOCAL/LOCALSを明示参照する場合、keyとサイズの所有関数を一致させる。
+            // 宣言解析中や未定義名は従来の解決を維持し、仕様が未確定の経路へ広げない。
+            if (retLocal == null)
+            {
+                bool declaredLocal = Config.StrComper.Equals(key, "LOCAL") || Config.StrComper.Equals(key, "LOCALS");
+                FunctionLabelLine owner = explicitOwner && declaredLocal && GlobalStatic.LabelDictionary?.Initialized == true
+                    ? GlobalStatic.LabelDictionary.GetNonEventLabel(subKey) : null;
+                retLocal = value.GetNewLocalVariableToken(subKey, owner ?? line.ParentLabelLine);
+            }
             return retLocal;
         }
         if (varTokenDic.TryGetValue(key, out ret))

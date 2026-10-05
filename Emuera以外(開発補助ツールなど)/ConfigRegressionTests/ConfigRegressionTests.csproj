@@ -9,6 +9,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <!-- A〜D固有試験は別のentry pointで実行し、既存の回帰85件へ混在させない。 -->
+    <Compile Remove="StartupStudy\**\*.cs" />
     <ProjectReference Include="..\..\Emuera.csproj" />
   </ItemGroup>
 </Project>

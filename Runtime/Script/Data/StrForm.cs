@@ -173,32 +173,48 @@ internal sealed class StrForm
     {
         if (strs.Length == 1)
             return;
-        bool canRestructure = false;
+        int constantCount = 0;
         for (int i = 0; i < terms.Length; i++)
         {
             terms[i] = terms[i].Restructure(exm);
             if (terms[i] is SingleTerm)
             {
-                canRestructure = true;
+                constantCount++;
             }
         }
-        if (!canRestructure)
+        if (constantCount == 0)
             return;
-        List<string> strList = [.. strs];
-        List<AExpression> termList = [.. terms];
-        for (int i = 0; i < termList.Count; i++)
+        // [Emuera改修:STR-C候補]
+        // 全Restructure→定数の値取得という評価順を維持し、連続定数だけをまとめる。
+        // 最後まで成功するまで元の配列を置換せず、例外時の部分更新も従来と同じにする。
+        AExpression[] remainingTerms = constantCount == terms.Length ? [] : new AExpression[terms.Length - constantCount];
+        string[] remainingStrings = new string[remainingTerms.Length + 1];
+        int outputIndex = 0;
+        string text = strs[0];
+        StringBuilder builder = null;
+        for (int i = 0; i < terms.Length; i++)
         {
-            if (termList[i] is SingleTerm)
+            if (terms[i] is SingleTerm)
             {
-                string str = termList[i].GetStrValue(exm);
-                strList[i] = strList[i] + str + strList[i + 1];
-                termList.RemoveAt(i);
-                strList.RemoveAt(i + 1);
-                i--;
+                string value = terms[i].GetStrValue(exm);
+                if (builder != null)
+                    builder.Append(value).Append(strs[i + 1]);
+                else if (i + 1 < terms.Length && terms[i + 1] is SingleTerm)
+                    builder = new StringBuilder().Append(text).Append(value).Append(strs[i + 1]);
+                else
+                    text = text + value + strs[i + 1];
+            }
+            else
+            {
+                remainingStrings[outputIndex] = builder?.ToString() ?? text;
+                builder = null;
+                remainingTerms[outputIndex++] = terms[i];
+                text = strs[i + 1];
             }
         }
-        strs = [.. strList];
-        terms = [.. termList];
+        remainingStrings[outputIndex] = builder?.ToString() ?? text;
+        strs = remainingStrings;
+        terms = remainingTerms;
         return;
     }
     public string GetString(ExpressionMediator exm)

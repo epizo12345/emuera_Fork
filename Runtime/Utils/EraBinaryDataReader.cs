@@ -211,7 +211,10 @@ internal abstract class EraBinaryDataReader : IDisposable
             int x = 0;
             int saveLength0 = reader.ReadInt32();
             if (refArray == null)//読み捨て。レアケースのはず
-                refArray = new long[saveLength0];
+            {
+                DiscardIntArray(saveLength0, needInit);
+                return;
+            }
 
             int length0 = refArray.Length;
 
@@ -260,6 +263,42 @@ internal abstract class EraBinaryDataReader : IDisposable
             }
             return;
         }
+        // [Emuera改修:LOAD-D候補]
+        // 整数1Dの読み捨てだけを配列なしで処理する。値の読取り順と旧配列の範囲検査を保つ。
+        // needInit=falseのゼロ連続は従来どおり書込み検査をせず、形式を新たに厳格化しない。
+        private void DiscardIntArray(int length, bool needInit)
+        {
+            // 構造上作れない長さはCLR自身へ従来と同じ検査を依頼し、例外文言も変えない。
+            // この分岐は負の長さ/最大配列長超過だけで、正常な読み捨て配列は確保しない。
+            if (length < 0 || length > Array.MaxLength)
+                _ = new long[length];
+            int index = 0;
+            while (true)
+            {
+                byte marker = reader.ReadByte();
+                if (marker == Ebdb.EoD)
+                    break;
+                if (marker == Ebdb.Zero)
+                {
+                    int count = (int)m_ReadInt();
+                    if (needInit && count > 0 && ((uint)index >= (uint)length || count > length - index))
+                        throw new IndexOutOfRangeException();
+                    index = unchecked(index + count);
+                    continue;
+                }
+                if (marker <= Ebdb.Byte) { }
+                else if (marker == Ebdb.Int16) reader.ReadInt16();
+                else if (marker == Ebdb.Int32) reader.ReadInt32();
+                else if (marker == Ebdb.Int64) reader.ReadInt64();
+                else throw new FileEE(LocalizationManager.Error.AbnormalBinaryData);
+                if ((uint)index >= (uint)length)
+                    throw new IndexOutOfRangeException();
+                index = unchecked(index + 1);
+            }
+            if (needInit && index < length && index < 0)
+                throw new IndexOutOfRangeException();
+        }
+
         public override void ReadIntArray2D(long[,] refArray, bool needInit)
         {
             long[,] oriArray = null;

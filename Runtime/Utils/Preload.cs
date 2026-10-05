@@ -62,17 +62,20 @@ static partial class Preload
             if (value == n)
                 lineCount++;
         }
-        var lines = new List<string>(lineCount);
+        // [Emuera改修:START-A候補] 数えた行数へ直接格納し、Listのbackingと返却時コピーを省く。
+        // 空行・末尾改行・CR除去と、文字コード／警告の処理順序は変えない。
+        var lines = new string[lineCount];
+        int lineIndex = 0;
         foreach (var range in ((ReadOnlySpan<byte>)bytes[..]).Split(n))
         {
             if (bytes[range].IsEmpty)
-                lines.Add("");
+                lines[lineIndex++] = "";
             else if (bytes[range].EndsWith([(byte)'\r']))
-                lines.Add(encoding.GetString(bytes[range.Start..(range.End.Value - 1)]));
+                lines[lineIndex++] = encoding.GetString(bytes[range.Start..(range.End.Value - 1)]);
             else
-                lines.Add(encoding.GetString(bytes[range]));
+                lines[lineIndex++] = encoding.GetString(bytes[range]);
         }
-        return [.. lines];
+        return lines;
     }
 
     public static async Task Load(string path)

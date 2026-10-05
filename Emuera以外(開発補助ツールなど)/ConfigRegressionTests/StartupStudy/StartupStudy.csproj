@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+		<UseWindowsForms>true</UseWindowsForms>
+		<AssemblyName>Emuera.ConfigRegressionTests</AssemblyName>
+		<ServerGarbageCollection>true</ServerGarbageCollection>
+		<EnablePerformanceMetrics>false</EnablePerformanceMetrics>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+	</PropertyGroup>
+	<ItemGroup><ProjectReference Include="../../../Emuera.csproj" /></ItemGroup>
+</Project>
