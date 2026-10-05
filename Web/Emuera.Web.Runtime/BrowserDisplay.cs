@@ -44,7 +44,8 @@ public sealed record BrowserDisplayPart(
     IReadOnlyList<BrowserDisplayPart>? Children = null,
     long ButtonGeneration = -1,
     int? LockedX = null,
-    double TextPaintScale = 1)
+    double TextPaintScale = 1,
+    string? HistoryHtml = null)
 {
     public bool ShouldRenderForNativePaint(bool nativeLinePainted) =>
         nativeLinePainted || Layout?.ExplicitPosition != true;

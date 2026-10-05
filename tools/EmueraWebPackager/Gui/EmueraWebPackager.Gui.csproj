@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType><TargetFramework>net10.0-windows</TargetFramework><UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><AssemblyName>EmueraWebPackager</AssemblyName>
-    <RuntimeFrameworkVersion>10.0.12</RuntimeFrameworkVersion><Version>1.0.7</Version>
+    <RuntimeFrameworkVersion>10.0.12</RuntimeFrameworkVersion><Version>1.0.8</Version>
   </PropertyGroup>
   <ItemGroup><ProjectReference Include="../Core/EmueraWebPackager.Core.csproj" /></ItemGroup>
 </Project>

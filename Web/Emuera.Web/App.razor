@@ -105,6 +105,26 @@
                     </div>
                 </details>
                 <button id="return-title" type="button" disabled="@(importInProgress || keyboardTransition || titleBootstrapInProgress || (session is null && !saveManagerMode))" @onclick="ReturnToTitle">タイトルに戻る</button>
+                <details id="chara-dat-manager" class="save-manager">
+                    <summary>キャラdat</summary>
+                    <div class="save-manager-panel">
+                        <p>冬眠などで保存したキャラdatです。通常のセーブ・globalとは別に保存します。</p>
+                        <p>NativeのDAT/chara_*.datを取り込めます。メモと全キャラを検証し、確認後に同名ファイルを置き換えます。ゲームのキャラ復元はゲーム内の解凍操作で行います。</p>
+                        <label for="chara-dat-import">キャラdatを取り込む（通常の入力待ちで使用）</label>
+                        <InputFile @key="characterFileSelectionVersion" id="chara-dat-import" disabled="@(!CanImportCharacterFile)" accept=".dat,application/octet-stream" OnChange="ImportCharacterFile" />
+                        <p id="chara-dat-result" role="status">@characterFileMessage</p>
+                        <ul id="chara-dat-files">
+                            @foreach (var file in characterFiles.Where(f => !f.Deleted))
+                            {
+                                <li data-chara-name="@file.LogicalFilename">
+                                    @file.LogicalFilename[4..] (@(file.Bytes?.Length ?? 0) bytes)
+                                    <span>@characterMemos.GetValueOrDefault(file.LogicalFilename, "メモ確認待ち")</span>
+                                    <button type="button" disabled="@importInProgress" @onclick="() => ExportSave(file.LogicalFilename)">書き出し</button>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </details>
                 <details id="p1c3-save-manager" class="save-manager">
                     <summary>セーブ管理</summary>
                     <div class="save-manager-panel">
@@ -211,6 +231,8 @@
                 animationFirstLine = slice.Start;
                 animationEndLine = slice.End;
                 <div class="game-window-spacer" aria-hidden="true" style="@SpacerStyle(slice.TopSpacerPx)"></div>
+                <div class="game-window-paint-slot" data-follow-tail="@(slice.FollowTail ? "true" : "false")">
+                <div class="game-window-paint">
                 @for (int lineIndex = slice.Start; lineIndex < slice.End; lineIndex++)
                 {
                     BrowserDisplayLine line = session.DisplayLines[lineIndex];
@@ -222,6 +244,8 @@
                         }
                     </div>
                 }
+                </div>
+                </div>
                 <div class="game-window-spacer" aria-hidden="true" style="@SpacerStyle(slice.BottomSpacerPx)"></div>
             }
             else
@@ -381,6 +405,7 @@
 @code {
     BrowserRuntimeSession? session;
     string input = string.Empty;
+    long textBoxClearSession = -1, appliedTextBoxClearSequence;
     string? error;
     string? startupErrorDetails;
     BrowserRuntimeFailureDiagnostic? runtimeFailureDiagnostic;
@@ -485,6 +510,14 @@
     long lastMeasuredCurrentDisplayGeneration = -1;
     string? storeHandle;
     readonly List<StorePreparedFile> persistedFiles = [];
+    readonly List<StorePreparedFile> characterFiles = [];
+    readonly Dictionary<string, string> characterMemos = new(StringComparer.OrdinalIgnoreCase);
+    string characterFileMessage = string.Empty;
+    int characterFileSelectionVersion;
+    bool CanImportCharacterFile => storeHandle is not null && session?.Status == BrowserRuntimeStatus.WaitingForInput
+        && session.PendingInput?.Kind is BrowserInputKind.Integer or BrowserInputKind.String or BrowserInputKind.MouseKey
+        && session.PendingInput.TimeLimit < 0 && !importInProgress && !keyboardTransition
+        && !titleBootstrapInProgress && !macroActive && !macroDraining;
     int httpRequests;
     int packageFiles;
     long transferBytes;
@@ -736,6 +769,20 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (session is { } clearSession)
+        {
+            if (textBoxClearSession != clearSession.SessionGeneration)
+            {
+                textBoxClearSession = clearSession.SessionGeneration;
+                appliedTextBoxClearSequence = 0;
+            }
+            if (appliedTextBoxClearSequence != clearSession.TextBoxClearSequence)
+            {
+                appliedTextBoxClearSequence = clearSession.TextBoxClearSequence;
+                input = string.Empty;
+                StateHasChanged();
+            }
+        }
         if (session is { PendingAwait: { } hostAwait } awaitingSession
             && (!ReferenceEquals(scheduledAwaitSession, awaitingSession) || scheduledAwaitRequestId != hostAwait.RequestId))
         {
@@ -1338,6 +1385,7 @@
         SetDiagnosticStage("indexeddb-prepare-end");
         persistedFiles.Clear();
         persistedFiles.AddRange(prepared.Files);
+        await PrepareCharacterFiles();
         loadSource = persistedFiles.Any(file => !file.Deleted) ? "indexeddb" : "absent";
         p1c1Root = "/p1c3-runtime-" + profile;
         importFormReady = true;
@@ -1411,6 +1459,7 @@
         SetDiagnosticStage("indexeddb-prepare-end");
         persistedFiles.Clear();
         persistedFiles.AddRange(prepared.Files);
+        await PrepareCharacterFiles();
         loadSource = persistedFiles.Any(file => !file.Deleted) ? "indexeddb" : "absent";
         p1c1Root = "/p1c3-r1-runtime-" + profile;
         SetDiagnosticStage("data-prepare-start");
@@ -1457,6 +1506,7 @@
         StorePreparedFilesResult prepared = await storeModule.InvokeAsync<StorePreparedFilesResult>("prepareFiles", storeHandle, string.Empty);
         persistedFiles.Clear();
         persistedFiles.AddRange(prepared.Files);
+        await PrepareCharacterFiles();
         p1c1Root = (isP1C6 ? "/p1c6-macro-runtime-" : isP1C5 ? "/p1c5-skip-runtime-" : "/p1c4-twait-runtime-") + profile;
         await PrepareP1C4TwaitData(fixtureCase);
         dataReady = true;
@@ -1682,7 +1732,8 @@
         SetDiagnosticStage("runtime-bootstrap-start");
         var runtimeBootstrapTimer = startupImportProfileEnabled ? System.Diagnostics.Stopwatch.StartNew() : null;
         session = await BrowserRuntimeSession.StartSavePersistentBootstrapAsync(p1c1Root, files,
-            captureProcessInitializeProfile: startupImportProfileEnabled);
+            captureProcessInitializeProfile: startupImportProfileEnabled, initialCharacterFiles: CurrentCharacterFiles());
+        RefreshCharacterMemos();
         await RecordStartupProfilePhaseAsync("title-runtime-bootstrap-inclusive", runtimeBootstrapTimer, new
         {
             session.ConfigLoadMilliseconds,
@@ -3329,6 +3380,62 @@
         .Where(file => !file.Deleted && file.Bytes is not null)
         .ToDictionary(file => file.LogicalFilename, file => file.Bytes!, StringComparer.OrdinalIgnoreCase);
 
+    Dictionary<string, byte[]> CurrentCharacterFiles() => characterFiles
+        .Where(file => !file.Deleted && file.Bytes is not null)
+        .ToDictionary(file => file.LogicalFilename[4..], file => file.Bytes!, StringComparer.OrdinalIgnoreCase);
+
+    async Task PrepareCharacterFiles()
+    {
+        var prepared = await storeModule!.InvokeAsync<StorePreparedFilesResult>("prepareCharacterFiles", storeHandle);
+        characterFiles.Clear(); characterFiles.AddRange(prepared.Files);
+        characterMemos.Clear();
+    }
+
+    void RefreshCharacterMemos()
+    {
+        if (session is null) return;
+        foreach (var file in characterFiles.Where(f => !f.Deleted && f.Bytes is not null))
+        {
+            try
+            {
+                var info = session.InspectCharacterFile(file.LogicalFilename[4..], file.Bytes!);
+                characterMemos[file.LogicalFilename] = info.State == 0 ? $"{info.Memo}（{info.CharacterCount}キャラ）" : $"ゲーム・version不一致 ({info.State})";
+            }
+            catch (Exception ex) { characterMemos[file.LogicalFilename] = "読込不可：" + ex.Message; }
+        }
+    }
+
+    async Task ImportCharacterFile(InputFileChangeEventArgs change)
+    {
+        if (!CanImportCharacterFile || session is not { } active) return;
+        importInProgress = true;
+        characterFileMessage = "検証中です（ゲームのキャラは変更しません）";
+        try
+        {
+            string filename = BrowserCharacterFiles.NormalizeFilename(change.File.Name);
+            filename = characterFiles.FirstOrDefault(f => string.Equals(f.LogicalFilename, "dat/" + filename, StringComparison.OrdinalIgnoreCase))?.LogicalFilename[4..] ?? filename;
+            using var stream = change.File.OpenReadStream(BrowserCharacterFiles.MaximumFileBytes);
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer);
+            byte[] bytes = buffer.ToArray();
+            var info = active.InspectCharacterFile(filename, bytes);
+            if (info.State != 0) throw new InvalidDataException($"ゲーム・versionが一致しません ({info.State})");
+            if (!await JS.InvokeAsync<bool>("confirm", $"{filename}\n{info.CharacterCount}キャラ\nメモ：{info.Memo}\n同名のキャラdatがあれば置き換えます。ゲームのキャラは追加しません。取り込みますか？"))
+            { characterFileMessage = "キャンセルしました。既存のキャラdatは変更していません。"; return; }
+            if (!ReferenceEquals(active, session)) throw new InvalidOperationException("ゲームが切り替わったため取り込みませんでした");
+            var request = new SaveMutation("chara-import-" + Guid.NewGuid().ToString("N"), "dat/" + filename, SaveMutationKind.Put, bytes);
+            await CommitMutation(request, string.Empty);
+            active.InstallCommittedCharacterFile(filename, bytes);
+            characterMemos[request.LogicalFilename] = $"{info.Memo}（{info.CharacterCount}キャラ）";
+            characterFileMessage = "検証・永続保存が完了しました。ゲーム内の一覧・解凍から利用できます。";
+        }
+        catch (Exception ex)
+        {
+            characterFileMessage = "取り込みが完了していません：" + ex.Message + " 保存結果を確認できない場合は、再読み込み後のキャラdat一覧で確認してください。";
+        }
+        finally { importInProgress = false; characterFileSelectionVersion++; }
+    }
+
     Dictionary<string, object> IntegrationPersistedSnapshot() => persistedFiles
         .OrderBy(file => file.LogicalFilename, StringComparer.OrdinalIgnoreCase)
         .ToDictionary(file => file.LogicalFilename, file => (object)new
@@ -3394,8 +3501,9 @@
 
     void UpsertPersisted(StoreMutationResult result, byte[]? bytes)
     {
-        persistedFiles.RemoveAll(file => string.Equals(file.LogicalFilename, result.LogicalFilename, StringComparison.OrdinalIgnoreCase));
-        persistedFiles.Add(new()
+        var files = result.LogicalFilename.StartsWith("dat/", StringComparison.Ordinal) ? characterFiles : persistedFiles;
+        files.RemoveAll(file => string.Equals(file.LogicalFilename, result.LogicalFilename, StringComparison.OrdinalIgnoreCase));
+        files.Add(new()
         {
             LogicalFilename = result.LogicalFilename,
             Deleted = result.Deleted,
@@ -3404,6 +3512,11 @@
             LastOperationId = result.LastOperationId
         });
         if (result.LogicalFilename == "global.sav") revision = result.Revision;
+        if (result.LogicalFilename.StartsWith("dat/", StringComparison.Ordinal) && bytes is not null && session is not null)
+        {
+            var info = session.InspectCharacterFile(result.LogicalFilename[4..], bytes);
+            characterMemos[result.LogicalFilename] = $"{info.Memo}（{info.CharacterCount}キャラ）";
+        }
     }
 
     async Task StartP1B()
@@ -3715,6 +3828,4 @@
         _ => "キー入力待ち"
     };
 }
-
-
 

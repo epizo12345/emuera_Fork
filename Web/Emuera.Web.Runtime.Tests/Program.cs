@@ -10,6 +10,88 @@ using SkiaSharp;
 
 try
 {
+if (args is ["clear-textbox-contract"])
+{
+    var runtime = await BrowserRuntimeSession.StartSavePersistentAsync(CreateGlobalFixture("""
+@SYSTEM_TITLE
+PRINTL KEEP_HISTORY
+HTML_PRINT_ISLAND "<div display='absolute-lefttop' xpos='20px' ypos='30px'>KEEP_ISLAND</div>",2
+INPUT
+LOCAL = LINECOUNT
+CLEARTEXTBOX
+PRINTFORML CLEAR_COUNT={LOCAL},{LINECOUNT}
+INPUT
+QUIT
+"""), null);
+    long count = runtime.DisplayLines.Count;
+    int islands = runtime.IslandLineCount;
+    Equal(true, runtime.Submit(new(runtime.PendingInput!.RequestId,"7")), "initial input accepted");
+    Equal(BrowserRuntimeStatus.WaitingForInput,runtime.Status,"clear continues to next input");
+    Equal(true,runtime.DisplayLines.Any(l=>l.Parts.Any(p=>p.Text.Contains("KEEP_HISTORY"))),"CLEARTEXTBOX retains history");
+    Equal(islands,runtime.IslandLineCount,"CLEARTEXTBOX retains Island");
+    var clearedCount = System.Text.RegularExpressions.Regex.Match(runtime.Output, @"CLEAR_COUNT=(\d+),(\d+)");
+    Equal(true,clearedCount.Success && clearedCount.Groups[1].Value == clearedCount.Groups[2].Value,"CLEARTEXTBOX preserves LINECOUNT");
+    Equal(1L,(long)typeof(BrowserRuntimeSession).GetProperty("TextBoxClearSequence")!.GetValue(runtime)!,"one host clear request");
+    Equal(true,runtime.DisplayLines.Count>=count,"history not reset");
+    runtime.ReturnToTitle();
+    Equal(1,runtime.DisplayLines.Count(l=>l.Parts.Any(p=>p.Text.Contains("KEEP_HISTORY"))),"title return independently resets display");
+    Console.WriteLine("PASS_CLEARTEXTBOX_INPUT_ONLY_HISTORY_ISLAND_LINECOUNT_AND_TITLE_RESET");return;
+}
+if (args is ["html-history-media-contract"])
+{
+    var runtime=await BrowserRuntimeSession.StartSavePersistentAsync(CreateGlobalFixture("""
+@SYSTEM_TITLE
+GCREATE 901,12,6
+SPRITECREATE "HISTORY_IMG",901,0,0,12,6
+PRINT_IMG "HISTORY_IMG"
+PRINT_RECT 100
+PRINTL TEXT_END
+RESULTS '= HTML_GETPRINTEDSTR(0)
+PRINTFORML GET=[%RESULTS%]
+PRINT_IMG "HISTORY_IMG"
+PRINT_RECT 100
+RESULTS '= HTML_POPPRINTINGSTR()
+PRINTFORML POP=[%RESULTS%]
+RESULTS '= HTML_POPPRINTINGSTR()
+PRINTFORML EMPTY=[%RESULTS%]
+HTML_PRINT "<button value='7' title='日本語&amp;説明'><img src='HISTORY_IMG' srcb='SELECTED_IMG' height='200' width='300' ypos='20'><shape type='rect' param='0,0,100,100' color='#123456' bcolor='#654321'><font color='#123456'><s>STYLE</s></font></button>"
+RESULTS '= HTML_GETPRINTEDSTR(0)
+PRINTFORML ATTR=[%RESULTS%]
+HTML_PRINT RESULTS
+PRINTL AFTER_REDISPLAY
+INPUT
+QUIT
+"""),null);
+    Equal(BrowserRuntimeStatus.WaitingForInput,runtime.Status,"image/shape history commands do not throw");
+    Contains("GET=[<p",runtime.Output,"GET wrapper");
+    Contains("<img src='HISTORY_IMG'",runtime.Output,"image resource retained");
+    Contains("<shape type='rect' param='100'",runtime.Output,"shape original units retained");
+    Contains("POP=[<img",runtime.Output,"POP returns pending media");
+    Contains("EMPTY=[]",runtime.Output,"POP consumes pending buffer once");
+    Contains("srcb='SELECTED_IMG'",runtime.Output,"alternate resource name retained");
+    Contains("param='0, 0, 100, 100' color='#123456' bcolor='#654321'",runtime.Output,"shape color and source units retained");
+    Contains("title='日本語&amp;説明'",runtime.Output,"tooltip safely escaped");
+    Contains("<s>STYLE</s>",runtime.Output,"strikeout retained");
+    Contains("AFTER_REDISPLAY",runtime.Output,"serialized media accepted by actual HTML_PRINT");
+    var wrapped=await BrowserRuntimeSession.StartSavePersistentBootstrapAsync(CreateGlobalFixture("@SYSTEM_TITLE\nPRINTL ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\nRESULTS '= HTML_GETPRINTEDSTR(0)\nPRINTFORML WRAPPED=[%RESULTS%]\nINPUT\nQUIT\n"),null);
+    wrapped.SetViewport(45,864); wrapped.StartTitle();
+    Contains("<br>",wrapped.Output,"GET includes all physical continuations of one logical line");
+    Contains("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",System.Text.RegularExpressions.Regex.Replace(wrapped.Output,"<[^>]*>",""),"wrapped history content order retained");
+    Console.WriteLine("PASS_HTML_HISTORY_MEDIA_GET_POP_AND_EMPTY");return;
+}
+if (args.Length > 0 && args[0] == "chara-dat-contract")
+{
+    await CharaDatProbe.Run(args.Length > 1 ? args[1] : null);
+    return;
+}
+if (args is ["chara-dat-red"])
+{
+    var runtime = await BrowserRuntimeSession.StartSavePersistentAsync(CreateGlobalFixture("@SYSTEM_TITLE\nADDVOIDCHARA\nNAME:0 = 冬眠試験\nSAVECHARA \"winter\", \"メモ\", 0\nPRINTL AFTER_DAT_ACK\nWAIT\n"), null);
+    Console.WriteLine(runtime.Output);
+    Equal(BrowserRuntimeStatus.Persisting, runtime.Status, "SAVECHARA must suspend before next instruction until durable ACK");
+    Equal(false, runtime.Output.Contains("AFTER_DAT_ACK"), "SAVECHARA next instruction not run before ACK");
+    return;
+}
 if (args is ["macro-file-red"])
 {
     Equal(true, typeof(BrowserKeyMacros).Assembly.GetType("MinorShift.Emuera.Web.Runtime.BrowserMacroFile") is not null, "Native macro.txt codec connected to Web Runtime");
@@ -2375,7 +2457,7 @@ WAIT
 CLEARLINE 2
 PRINTL PG01A_AFTER_DELETE
 WAIT
-CLEARTEXTBOX
+CLEARLINE 500
 PRINTL PG01A_AFTER_CLEAR
 WAIT
 QUIT
@@ -2391,8 +2473,8 @@ QUIT
         Equal(false, mutation.DisplayLines.Any(line => LineText(line).Contains("PG01A_MUTATION_501", StringComparison.Ordinal)), "PG01A deleteLine removes newest row 501 after wrap");
         Contains("PG01A_AFTER_DELETE", LineText(mutation.DisplayLines[^1]), "PG01A append after wrapped delete");
         Equal(true, mutation.Submit(new(mutation.PendingInput!.RequestId, string.Empty)), "PG01A resume wrapped clear fixture");
-        Equal(1, mutation.DisplayLines.Count, "PG01A ClearText resets ring");
-        Contains("PG01A_AFTER_CLEAR", LineText(mutation.DisplayLines[0]), "PG01A append after ClearText");
+        Equal(1, mutation.DisplayLines.Count, "PG01A CLEARLINE removes retained ring rows");
+        Contains("PG01A_AFTER_CLEAR", LineText(mutation.DisplayLines[0]), "PG01A append after CLEARLINE");
     }
 
     Console.WriteLine($"PASS WEB-PERF-GATE-01A Config.MaxLog={maxLog} ring semantics");

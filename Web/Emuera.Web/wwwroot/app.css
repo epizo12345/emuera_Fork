@@ -18,6 +18,12 @@ input { flex: 1; min-width: 12rem; }
 .game-log-lines { box-sizing: border-box; width: 100%; overflow: clip; flex-shrink: 0; }
 .game-log-lines > .game-line { pointer-events: none; }
 .game-log-lines > .game-line > * { isolation: isolate; pointer-events: auto; }
+.game-window-paint > .game-line { pointer-events: none; }
+.game-window-paint > .game-line > * { isolation: isolate; pointer-events: auto; }
+/* Native scrolling retains the complete virtual height. Only the rendered
+   window paints from the surface origin, avoiding two independently snapped
+   large coordinates when an outer Scale Fit transform is fractional. */
+.game-window-paint.is-surface-positioned { position: fixed; pointer-events: none; }
 .game-part { color: var(--normal-color, inherit); }
 .game-html-origin { position: relative; display: inline-block; width: 0; height: 0; vertical-align: top; }
 .game-line > .game-html-origin.game-positioned-origin { width: 0; }
@@ -95,7 +101,9 @@ input { flex: 1; min-width: 12rem; }
 .production-shell #game-screen > :first-child { margin-top: auto; }
 .production-shell #game-screen > .game-line, .production-shell #game-screen > .game-window-spacer { flex-shrink: 0; }
 .production-shell #game-screen:focus { outline: none; }
-.production-shell #game-screen:focus-visible { outline: 1px solid #666; outline-offset: 2px; }
+/* Keep the focus ring outside the transformed scrolling content. An outline on
+   the scroller changes glyph raster edges as its scroll offset grows in Chrome. */
+.production-shell .game-surface:has(> #game-screen:focus-visible) { outline: 1px solid #666; outline-offset: 2px; }
 .production-shell .game-island-layer { inset: 0; }
 .production-shell .game-input-slot { box-sizing: border-box; flex: 0 0 var(--game-input-height); width: 100%; margin-top: var(--game-input-gap); overflow: hidden; }
 .production-shell .game-input-form { display: flex; align-items: center; box-sizing: border-box; width: 100%; height: 18px; gap: 0; margin: 0; }

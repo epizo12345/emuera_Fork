@@ -157,7 +157,30 @@ internal static class BrowserHtmlParser
             Width: ParseSize(element.GetAttribute("width"), 0),
             Style: style,
             Layout: MergeLayout(layout, element),
-            Tooltip: element.GetAttribute("title"));
+            Tooltip: element.GetAttribute("title"),
+            HistoryHtml: ImageHistoryHtml(source, element.GetAttribute("srcb"),
+                ParseSize(element.GetAttribute("height"), Config.FontSize),
+                ParseSize(element.GetAttribute("width"), 0), ParseSize(element.GetAttribute("ypos"), 0)));
+    }
+
+    // Match Native ConsoleImagePart.AltText. It serializes calculated pixel sizes as
+    // bare numbers; the Native round-trip size-unit quirk is intentionally retained.
+    internal static string ImageHistoryHtml(string name, string? selected, int height, int width, int ypos)
+    {
+        var sprite = MinorShift.Emuera.UI.Game.Image.AppContents.GetSprite(name);
+        if (sprite is null) { height = Config.FontSize; width = ypos = 0; }
+        else
+        {
+            if (height == 0) height = Config.FontSize;
+            if (width == 0 && sprite.DestBaseSize.Height != 0)
+                width = sprite.DestBaseSize.Width * height / sprite.DestBaseSize.Height;
+        }
+        var html = new System.Text.StringBuilder("<img src='").Append(WebUtility.HtmlEncode(name));
+        if (selected is not null) html.Append("' srcb='").Append(WebUtility.HtmlEncode(selected));
+        if (height != 0) html.Append("' height='").Append(Math.Abs(height));
+        if (width != 0) html.Append("' width='").Append(Math.Abs(width));
+        if (ypos != 0) html.Append("' ypos='").Append(ypos);
+        return html.Append("'>").ToString();
     }
 
     static BrowserDisplayPart ShapePart(IElement element, BrowserDisplayStyle style)
@@ -187,6 +210,11 @@ internal static class BrowserHtmlParser
 
     static BrowserDisplayPart CreateShapePart(string type, int[] values, BrowserDisplayStyle style, string fallback, string? color = null, string? buttonColor = null)
     {
+        string historyHtml = ShapeFallback(type, values, style with
+        {
+            Foreground = ParseColor(color, style.Foreground),
+            ButtonColor = ParseColor(buttonColor, style.ButtonColor)
+        });
         // Native validates source units before integer drawing dimensions are truncated.
         bool validRect = values is [var oneUnit] && oneUnit > 0
             || values is [var leftUnit, _, var widthUnit, var heightUnit] && leftUnit >= 0 && widthUnit > 0 && heightUnit > 0;
@@ -236,7 +264,8 @@ internal static class BrowserHtmlParser
             Height: lineBottom - lineTop,
             Style: shapeStyle,
             Layout: new(BrowserDisplayMode.Relative, x, y - lineTop, width, height),
-            Tooltip: fallback);
+            Tooltip: fallback,
+            HistoryHtml: historyHtml);
     }
 
     static string ShapeFallback(string type, int[] parameters, BrowserDisplayStyle style)

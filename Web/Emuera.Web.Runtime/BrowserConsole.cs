@@ -510,7 +510,10 @@ internal sealed class EmueraConsole
     public void PrintBar() => Print(getStBar(statusBar));
     public void printCustomBar(string value, bool isConst) => Print(isConst ? value : getStBar(value));
 
-    public void ClearText()
+    internal long TextBoxClearSequence { get; private set; }
+    public void ClearText() => TextBoxClearSequence++;
+
+    internal void ResetDisplay()
     {
         bufferedDisplayParts = false;
         printBuffer.Clear();
@@ -640,7 +643,16 @@ internal sealed class EmueraConsole
     public ConsoleDisplayLine[]? GetDisplayLines(long lineNo)
     {
         if (lineNo < 0 || lineNo >= displayLines.Count) return null;
-        return [new ConsoleDisplayLine(displayLines[displayLines.Count - 1 - (int)lineNo])];
+        long logicalIndex = 0;
+        List<ConsoleDisplayLine> result = [];
+        for (int index = displayLines.Count - 1; index >= 0; index--)
+        {
+            BrowserDisplayLine line = displayLines[index];
+            if (logicalIndex == lineNo) result.Insert(0, new ConsoleDisplayLine(line));
+            if (line.IsLogicalLine) logicalIndex++;
+            if (logicalIndex > lineNo) break;
+        }
+        return result.Count == 0 ? null : result.ToArray();
     }
 
     public ConsoleDisplayLine[]? PopDisplayingLines()
@@ -662,6 +674,8 @@ internal sealed class EmueraConsole
         printBuffer.Clear();
         currentDisplayParts.Clear();
         currentDisplayLineId = 0;
+        currentDisplayIsHtml = false;
+        currentDisplayNoWrap = false;
         return [new ConsoleDisplayLine(new(alignment.ToString().ToLowerInvariant(), parts.Select(NormalizeDisplayText).ToArray()))];
     }
 
@@ -743,7 +757,8 @@ internal sealed class EmueraConsole
     void AddImage(string name, int height)
     {
         string? data = AppContents.GetSpriteDataUrl(name);
-        AddPart(new(BrowserDisplayPartKind.Image, name, ImageDataUrl: data, Height: height, Style: CurrentStyle()));
+        AddPart(new(BrowserDisplayPartKind.Image, name, ImageDataUrl: data, Height: height, Style: CurrentStyle(),
+            HistoryHtml: BrowserHtmlParser.ImageHistoryHtml(name, null, height, 0, 0)));
         bufferedDisplayParts = true;
         emptyDisplayLine = false;
     }

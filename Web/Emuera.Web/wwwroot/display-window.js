@@ -1,6 +1,30 @@
 import { displayScale } from './scale-fit.js';
 const bindings = new Map();
 
+function positionPaint(binding, followTail = false) {
+  const host = element(binding.elementId);
+  const slot = host.querySelector('.game-window-paint-slot');
+  const paint = slot?.querySelector(':scope > .game-window-paint');
+  const surface = host.closest('.game-surface');
+  if (!paint || !surface) return;
+  if (binding.paint !== paint) {
+    if (binding.paint) binding.resizeObserver?.unobserve(binding.paint);
+    binding.paint = paint;
+    binding.resizeObserver?.observe(paint);
+  }
+  // The placeholder keeps native scroll geometry. Fixed descendants still use
+  // the existing transformed surface; this node introduces no transform.
+  const height = paint.offsetHeight;
+  const heightStyle = `${height}px`;
+  if (slot.style.height !== heightStyle) slot.style.height = heightStyle;
+  if (followTail) host.scrollTop = host.scrollHeight;
+  const scale = displayScale(host), rect = slot.getBoundingClientRect(), origin = surface.getBoundingClientRect();
+  paint.style.top = `${(rect.top - origin.top) / scale}px`;
+  paint.style.left = `${(rect.left - origin.left) / scale}px`;
+  paint.style.width = `${slot.offsetWidth}px`;
+  paint.classList.add('is-surface-positioned');
+}
+
 function element(elementId) {
   const value = document.getElementById(elementId);
   if (!value) throw new Error(`display window element not found: ${elementId}`);
@@ -43,14 +67,48 @@ function schedule(binding) {
 
 export function attach(elementId, dotNetRef) {
   detach(elementId);
-  const binding = { elementId, dotNetRef, frame: 0 };
-  binding.listener = () => schedule(binding);
+  const host = element(elementId);
+  const binding = { elementId, dotNetRef, frame: 0, followTail: host.querySelector('.game-window-paint-slot')?.dataset.followTail === 'true' };
+  binding.listener = () => {
+    binding.followTail = host.scrollHeight - host.clientHeight - host.scrollTop <= 32;
+    positionPaint(binding);
+    schedule(binding);
+  };
+  binding.wheel = event => {
+    // A surface-fixed descendant is outside the browser's native scroll chain.
+    // Preserve the same scroller/units; blank space still uses native default
+    // scrolling. Ctrl+wheel belongs to browser zoom.
+    if (event.ctrlKey || event.defaultPrevented || !event.cancelable || !event.target.closest?.('.game-window-paint.is-surface-positioned')) return;
+    const factor = event.deltaMode === 2 ? host.clientHeight : event.deltaMode === 1
+      ? parseFloat(getComputedStyle(host.querySelector('.game-line') || host).lineHeight) || 18 : 1;
+    const top = host.scrollTop, left = host.scrollLeft;
+    host.scrollTop += event.deltaY * factor;
+    host.scrollLeft += event.deltaX * factor;
+    if (host.scrollTop !== top || host.scrollLeft !== left) {
+      event.preventDefault();
+      binding.listener();
+    }
+  };
   element(elementId).addEventListener('scroll', binding.listener, { passive: true });
+  host.addEventListener('wheel', binding.wheel, { passive: false });
+  binding.observer = new MutationObserver(records => {
+    // Ignore our own placeholder/paint style writes; no update loop.
+    if (!records.some(r => r.type === 'childList' || r.target.classList?.contains('game-window-spacer') || r.attributeName === 'data-follow-tail')) return;
+    const slot = host.querySelector('.game-window-paint-slot');
+    if (records.some(r => r.attributeName === 'data-follow-tail')) binding.followTail = slot?.dataset.followTail === 'true';
+    positionPaint(binding, binding.followTail);
+  });
+  binding.observer.observe(host, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'data-follow-tail'] });
+  binding.resizeObserver = new ResizeObserver(() => positionPaint(binding, binding.followTail));
+  binding.resizeObserver.observe(host);
   bindings.set(elementId, binding);
+  positionPaint(binding, binding.followTail);
   schedule(binding);
 }
 
 export function measureRendered(elementId, lineIds) {
+  const binding = bindings.get(elementId);
+  if (binding) positionPaint(binding);
   if (!Array.isArray(lineIds) || lineIds.length === 0) return [];
   const requested = new Set(lineIds);
   const host = element(elementId);
@@ -64,6 +122,8 @@ export function measureRendered(elementId, lineIds) {
 export function scrollToBottom(elementId) {
   const host = element(elementId);
   host.scrollTop = host.scrollHeight;
+  const binding = bindings.get(elementId);
+  if (binding) { binding.followTail = true; positionPaint(binding, true); }
 }
 
 let oneInputFrame;
@@ -107,13 +167,20 @@ export function restoreAnchor(elementId, lineId, offsetPx) {
   const host = element(elementId);
   const row = Array.from(host.querySelectorAll('.game-line[data-line-id]'))
     .find(value => Number(value.dataset.lineId) === lineId);
-  if (row) host.scrollTop += (row.getBoundingClientRect().top - host.getBoundingClientRect().top) / displayScale(host) - offsetPx;
+  if (row) {
+    host.scrollTop += (row.getBoundingClientRect().top - host.getBoundingClientRect().top) / displayScale(host) - offsetPx;
+    const binding = bindings.get(elementId);
+    if (binding) positionPaint(binding);
+  }
 }
 
 export function detach(elementId) {
   const binding = bindings.get(elementId);
   if (!binding) return;
   element(elementId).removeEventListener('scroll', binding.listener);
+  element(elementId).removeEventListener('wheel', binding.wheel);
+  binding.observer.disconnect();
+  binding.resizeObserver.disconnect();
   if (binding.frame) cancelAnimationFrame(binding.frame);
   bindings.delete(elementId);
 }

@@ -1,6 +1,21 @@
 # Emuera Web Packager
 
-現行Packagerは1.0.7、同梱Runtime templateはUX16-08-RC3-Compat107です。1.0.7はローカル配布候補で、公開は別工程です。Fキー・上部マクロ操作・実機互換CP932 macro.txt入出力を追加し、既存1.0.6の機能を維持します。AWAITの非入力待機とGDRAWGの通常／色補正画像コピー・SpriteG更新を追加します。AWAITの受入は逆引き合体のみ、GDRAWGの具体的ユーザー操作経路は未指定です。GDRAWGWITHMASK等の未実装と添字なしCMの共有例外は残ります。全命令対応・速度改善は主張しません。正式配布物は採用commitから生成し、出自情報を同梱します。DIV／Islandのnowrap、入れ子absoluteの画面基準配置、論理描画領域1512×864、Native互換HTML_TAGSPLITを追加しています。表示・神格習合の戻る・NGO表示復帰はユーザー確認済みです。NGO上端約2行の見切れは許容制約、実ゲームの後続進行は未確認です。連続PRINTC系の物理行配置、説明付きnonbutton／Islandのtooltip、QUIT後の正常終了案内とタイトル復帰を修正し、該当4実ゲームケースはユーザー受入済みです。マクロ入力・スキップ互換性と上部停止UIを含み、通常操作の待機・保存保護を維持します。公開済み1.0.4および旧版の配布物とタグは保持します。Windows Packagerとブラウザの実行資材は.NET 10.0.12です。Packagerのソースは`tools/EmueraWebPackager/`にあります。[1.0.5 Release](https://github.com/epizo12345/emuera_Fork/releases/tag/web-packager-v1.0.5)ではゲームなしのツールZIPとチェックサムを配布します。Webのビルド条件はRelease、`RunAOTCompilation=true`、`WasmStripILAfterAOT=false`、`EnableErbExecutionProfiler=false`です。IL保持はAOTの無効化ではなく、IL削除版とのサイズ・速度差は未測定です。
+現行Packagerは1.0.8、同梱Runtime templateはUX16-08-RC3-Compat108です。今回の範囲は採用commit由来のローカル配布候補まで。既存1.0.7の機能と.NET10.0.12／Release／AOT=true／WasmStripILAfterAOT=false／EnableErbExecutionProfiler=falseを維持します。
+
+- 冬眠装置向けSAVECHARA／LOADCHARA／FIND_CHARADATA／CHKCHARADATAと、上部「キャラdat」の一覧・メモ・取り込み・書き出し。再読込時にもコミット済みdatを復元。
+- CLEARTEXTBOXを入力欄だけの消去へ修正し、表示履歴・Island・LINECOUNTを保持。
+- HTML_GETPRINTEDSTR／HTML_POPPRINTINGSTRで検証済みの画像・図形・書式情報を保持。全HTML形式の再構成対応ではありません。
+- フォーカス枠をゲーム表示の外側へ配置し、文字上端の薄さを解消。
+- 仮想表示する部分をsurface基準で描画し、小数倍率と履歴変化に伴う文字の画素位置・行間の揺れを抑制。履歴閲覧と末尾追従を維持。
+
+- 通常セーブ／globalとキャラdatは別の保存対象です。通常セーブの書き出しにdatやmacroは含まれません。必要なものを各パネルから書き出してください。
+- 保存先はorigin・gameId・profileIdごと。DB schema2へ更新した同じoriginを、旧schema1のWeb版で開くとVersionErrorになる場合があります。旧版確認は別origin/profileで行い、更新前に必要なファイルをバックアップしてください。
+- HTML履歴は画像／図形等の検証済み範囲のみ。Group/DIV/Island、特殊寸法などの完全再構成は未対応・保留です。
+- surface下端の1px背景帯に微小なRGB差が残ります。文字領域の安定と画面全体の完全一致は区別します。
+- ユーザー受入は今回環境の冬眠dat・入力/HTML・文字上端・ダンジョン移動。全ブラウザ・DPR/zoom・長時間動作を保証しません。NGO上端約2行の許容済み見切れ、GDRAWGWITHMASK等の残件も維持。
+- キャラdatはNative binary形式。Web資源上限は64MiB/ファイル、256キャラ、起動時4096ファイル/512MiB、portable leaf200文字。同期式関数内のSAVECHARAは安全に中断できないため保存前に拒否します。
+- 配布入力には個人macro.txt、セーブ、キャラdat、ログを置かないでください。Packagerがすべて自動除外する保証はありません。利用権のあるクリーンな配布用コピーを用意します。
+
 
 ## 利用者の操作
 

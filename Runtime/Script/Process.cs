@@ -1,4 +1,4 @@
-﻿using MinorShift.Emuera.GameView;
+using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Config.JSON;
 using MinorShift.Emuera.GameData.Variable;
@@ -81,6 +81,7 @@ internal sealed partial class Process(EmueraConsole view)
     long nextGlobalPersistenceOperation;
     bool globalPersistenceEnabled;
     string persistenceRoot;
+    string characterPersistenceRoot;
     Exception deferredPersistenceException;
     LogicalLine deferredPersistenceErrorLine;
     bool deferredPersistenceSystemProc;
@@ -219,6 +220,7 @@ internal sealed partial class Process(EmueraConsole view)
     {
         globalPersistenceEnabled = true;
         persistenceRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(preparedSaveRoot));
+        characterPersistenceRoot = Path.GetFullPath(Program.DatDir);
         vEvaluator.EnableCheckData(persistenceRoot);
     }
     internal void EnableCheckData(string preparedSaveRoot) => vEvaluator.EnableCheckData(preparedSaveRoot);
@@ -251,6 +253,20 @@ internal sealed partial class Process(EmueraConsole view)
         persistenceQueue.Enqueue(new($"{persistenceSessionId}-{++nextGlobalPersistenceOperation:D8}", logicalFilename, WebSaveMutationKind.Delete, []));
     }
 
+    internal string RequireCharacterPersistencePath(string feature, string name)
+    {
+        RequireGlobalPersistence(feature);
+        return MinorShift.Emuera.Web.Runtime.BrowserCharacterFiles.PathForName(characterPersistenceRoot, name);
+    }
+
+    internal void CaptureCharacterPut(string path, byte[] bytes)
+    {
+        RequireGlobalPersistence("SAVECHARA");
+        string filename = MinorShift.Emuera.Web.Runtime.BrowserCharacterFiles.NormalizeFilename(Path.GetFileName(path));
+        persistenceQueue.Enqueue(new($"{persistenceSessionId}-{++nextGlobalPersistenceOperation:D8}",
+            "dat/" + filename, WebSaveMutationKind.Put, bytes));
+    }
+
     internal string RequireSavePersistencePath(string feature, string path)
     {
         RequireGlobalPersistence(feature);
@@ -281,6 +297,10 @@ internal sealed partial class Process(EmueraConsole view)
         if (!persistenceQueue.TryPeek(out var request)
             || !string.Equals(request.OperationId, operationId, StringComparison.Ordinal))
             return false;
+        // Only expose character data in MEMFS after the matching durable transaction ACK.
+        if (request.LogicalFilename.StartsWith("dat/", StringComparison.Ordinal))
+            MinorShift.Emuera.Web.Runtime.BrowserCharacterFiles.WriteAtomic(
+                Path.Combine(characterPersistenceRoot, request.LogicalFilename[4..]), request.Bytes);
         persistenceQueue.Dequeue();
         if (persistenceQueue.Count != 0)
             return true;

@@ -1,8 +1,23 @@
 # Emuera Web Packager — 開発者向け
 
-現行ソースはversion 1.0.7です。配布候補をローカル検証中で、公開は別工程です。利用者の操作は[使い方](使い方.md)、package形式は[Web版パッケージ仕様](../../プロジェクト資料/Web版/03_ゲームデータパッケージ仕様.md)を参照してください。
+現行ソースはversion 1.0.8です。ローカル配布候補で、公開は別工程です。利用者の操作は[使い方](使い方.md)、package形式は[Web版パッケージ仕様](../../プロジェクト資料/Web版/03_ゲームデータパッケージ仕様.md)を参照してください。
 
-1.0.7はFキー／上部マクロ操作とCP932 macro.txtの入出力を追加し、Runtime UX16-08-RC3-Compat107を同梱します。ユーザーはport63187の候補で物理キーも確認済みですが、全ブラウザ・OS IME・itchの受入には一般化しません。
+1.0.8は受入済みのキャラdat、入力欄消去、HTML履歴、focus枠、surface基準描画を統合し、Runtime UX16-08-RC3-Compat108を同梱します。既存1.0.7のFキー／macro.txt／マクロ停止と保存保護を維持します。
+
+- 冬眠装置向けSAVECHARA／LOADCHARA／FIND_CHARADATA／CHKCHARADATAと、上部「キャラdat」の一覧・メモ・取り込み・書き出し。再読込時にもコミット済みdatを復元。
+- CLEARTEXTBOXを入力欄だけの消去へ修正し、表示履歴・Island・LINECOUNTを保持。
+- HTML_GETPRINTEDSTR／HTML_POPPRINTINGSTRで検証済みの画像・図形・書式情報を保持。全HTML形式の再構成対応ではありません。
+- フォーカス枠をゲーム表示の外側へ配置し、文字上端の薄さを解消。
+- 仮想表示する部分をsurface基準で描画し、小数倍率と履歴変化に伴う文字の画素位置・行間の揺れを抑制。履歴閲覧と末尾追従を維持。
+
+- 通常セーブ／globalとキャラdatは別の保存対象です。通常セーブの書き出しにdatやmacroは含まれません。必要なものを各パネルから書き出してください。
+- 保存先はorigin・gameId・profileIdごと。DB schema2へ更新した同じoriginを、旧schema1のWeb版で開くとVersionErrorになる場合があります。旧版確認は別origin/profileで行い、更新前に必要なファイルをバックアップしてください。
+- HTML履歴は画像／図形等の検証済み範囲のみ。Group/DIV/Island、特殊寸法などの完全再構成は未対応・保留です。
+- surface下端の1px背景帯に微小なRGB差が残ります。文字領域の安定と画面全体の完全一致は区別します。
+- ユーザー受入は今回環境の冬眠dat・入力/HTML・文字上端・ダンジョン移動。全ブラウザ・DPR/zoom・長時間動作を保証しません。NGO上端約2行の許容済み見切れ、GDRAWGWITHMASK等の残件も維持。
+- キャラdatはNative binary形式。Web資源上限は64MiB/ファイル、256キャラ、起動時4096ファイル/512MiB、portable leaf200文字。同期式関数内のSAVECHARAは安全に中断できないため保存前に拒否します。
+- 配布入力には個人macro.txt、セーブ、キャラdat、ログを置かないでください。Packagerがすべて自動除外する保証はありません。利用権のあるクリーンな配布用コピーを用意します。
+
 
 既存1.0.6はAWAITの非入力待機とGDRAWGの通常／色補正画像コピーを追加し、Runtime UX16-08-RC3-Compat106を同梱します。AWAITは逆引き合体でユーザー確認済み。GDRAWGはブラウザで問題なしとの確認済みですが具体的操作経路は未指定です。他の実ゲーム全経路・全命令への対応や速度改善は主張しません。GDRAWGWITHMASKと添字なし色行列CMの共有処理例外は保守残件です。
 
@@ -53,7 +68,7 @@ SHAは選択した現在bytesと出力の同一性を確認するための値で
 
 ```powershell
 .\tools\EmueraWebPackager\build.ps1 -Mode Test -Name local-check-01
-.\tools\EmueraWebPackager\build.ps1 -Mode Publish -Name release-1-0-7-check
+.\tools\EmueraWebPackager\build.ps1 -Mode Publish -Name release-1-0-8-check
 ```
 
 省略可能な`-OutputDirectory`と`-ArtifactsPath`で試験結果とMSBuild成果物の保存先を分けられます。コミット済みsourceから隔離buildするときは、どちらもsource export外の新しいタスク専用directoryを指定してください。指定しない場合、従来どおり`artifacts/EmueraWebPackager/<name>/`とrepo内`artifacts/`を使います。PublishはWindows `win-x64` self-contained single-file GUIを生成します。公開・uploadはこのscriptでは行いません。

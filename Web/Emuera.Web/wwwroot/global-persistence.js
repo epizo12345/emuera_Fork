@@ -2,6 +2,7 @@ import { displayScale } from './scale-fit.js';
 import { load as loadMacros, save as saveMacros, replace as replaceMacros } from './host-key-macros.js';
 const DB_NAME = 'emuera-web-saves-v1';
 const STORE_NAME = 'files';
+const CHARA_STORE_NAME = 'characterFiles';
 export function loadKeyMacros(handleId) {
   const h = requireHandle(handleId);
   return loadMacros(h.gameId, h.profileId);
@@ -304,10 +305,13 @@ function openDatabase(fault) {
   diagnostic('openDatabase-start');
   if (fault === 'open') throw new Error('fault injection: IndexedDB open');
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
-    request.onupgradeneeded = () => request.result.createObjectStore(STORE_NAME, {
-      keyPath: ['gameId', 'profileId', 'logicalFilename']
-    });
+    const request = indexedDB.open(DB_NAME, 2);
+    request.onupgradeneeded = () => {
+      for (const name of [STORE_NAME, CHARA_STORE_NAME])
+        if (!request.result.objectStoreNames.contains(name)) request.result.createObjectStore(name, {
+          keyPath: ['gameId', 'profileId', name === CHARA_STORE_NAME ? 'keyFilename' : 'logicalFilename']
+        });
+    };
     request.onsuccess = () => {
       diagnostic('openDatabase-success');
       resolve(request.result);
@@ -349,8 +353,18 @@ export async function acquire(gameId, profileId) {
   return acquired;
 }
 
+function storageKey(name) { return name.startsWith('dat/') ? name.toLowerCase() : name; }
+
 function normalizeFilename(value) {
   if (typeof value !== 'string') throw new Error('保存ファイル名が不正です');
+  if (value.startsWith('dat/')) {
+    const leaf = value.slice(4);
+    if (!/^chara_.+\.dat$/i.test(leaf)) throw new Error('キャラdatファイル名が不正です');
+    const name = leaf.slice(6, -4);
+    if (name.length > 200 || name === '.' || name === '..' || /[<>:"/\\|*?\x00-\x1f]/.test(name) || /[ .]$/.test(name))
+      throw new Error('キャラdat名にパスまたは不正な文字を含めることはできません');
+    return 'dat/chara_' + leaf.slice(6, -4) + '.dat';
+  }
   if (/^global\.sav$/i.test(value)) return 'global.sav';
   const match = /^save([0-9]+)\.sav$/i.exec(value);
   if (!match) throw new Error(`保存ファイル名が不正です: ${value}`);
@@ -362,21 +376,23 @@ function normalizeFilename(value) {
   return canonical;
 }
 
-export async function prepareFiles(handleId, fault = '') {
+export async function prepareFiles(handleId, fault = '', characterFiles = false) {
   const handle = requireHandle(handleId);
   const database = await openDatabase(fault);
   try {
-    const transaction = database.transaction(STORE_NAME, 'readonly');
+    const storeName = characterFiles ? CHARA_STORE_NAME : STORE_NAME;
+    const transaction = database.transaction(storeName, 'readonly');
     const done = transactionDone(transaction, 'prepare-files');
     diagnostic('prepare-transaction-start');
-    const records = await requestResult(transaction.objectStore(STORE_NAME).getAll(), 'prepare-files-get-all');
+    const records = await requestResult(transaction.objectStore(storeName).getAll(), 'prepare-files-get-all');
     await done;
-    handle.revisions.clear();
+    for (const name of handle.revisions.keys())
+      if (name.startsWith('dat/') === characterFiles) handle.revisions.delete(name);
     const files = records
       .filter(record => record.gameId === handle.gameId && record.profileId === handle.profileId)
       .map(record => {
         const logicalFilename = normalizeFilename(record.logicalFilename);
-        handle.revisions.set(logicalFilename, record.revision ?? null);
+        handle.revisions.set(storageKey(logicalFilename), record.revision ?? null);
         return {
           logicalFilename,
           deleted: record.deleted === true,
@@ -389,6 +405,10 @@ export async function prepareFiles(handleId, fault = '') {
   } finally {
     database.close();
   }
+}
+
+export async function prepareCharacterFiles(handleId) {
+  return prepareFiles(handleId, '', true);
 }
 
 export async function prepare(handleId, fault = '') {
@@ -412,26 +432,30 @@ export async function commitMutations(handleId, mutations, fault = '') {
     const remove = mutation.kind === 1 || /^delete$/i.test(String(mutation.kind));
     if (!put && !remove) throw new Error('保存mutation種別が不正です');
     const bytes = put ? new Uint8Array(mutation.bytes) : null;
-    if (put && bytes.byteLength === 0) throw new Error(`空の保存データはcommitできません: ${logicalFilename}`);
+    if (put && (bytes.byteLength === 0 || (logicalFilename.startsWith('dat/') && bytes.byteLength > 64 * 1024 * 1024)))
+      throw new Error(`保存データのサイズが不正です: ${logicalFilename}`);
     return { logicalFilename, put, bytes, operationId: mutation.operationId };
   });
+  const storeName = batch[0].logicalFilename.startsWith('dat/') ? CHARA_STORE_NAME : STORE_NAME;
+  if (batch.some(m => m.logicalFilename.startsWith('dat/') !== (storeName === CHARA_STORE_NAME)))
+    throw new Error('通常saveとキャラdatを同じbatchへ混在させることはできません');
   const database = await openDatabase(fault);
   let transaction;
   try {
     try {
-      transaction = database.transaction(STORE_NAME, 'readwrite', { durability: 'strict' });
+      transaction = database.transaction(storeName, 'readwrite', { durability: 'strict' });
     } catch {
-      transaction = database.transaction(STORE_NAME, 'readwrite');
+      transaction = database.transaction(storeName, 'readwrite');
     }
-    const store = transaction.objectStore(STORE_NAME);
+    const store = transaction.objectStore(storeName);
     const transactionDetail = { operations: batch.map(({ operationId, logicalFilename }) => ({ operationId, logicalFilename })) };
     const done = transactionDone(transaction, 'commit', transactionDetail);
     diagnostic('commit-transaction-start', transactionDetail);
     const currentByName = new Map();
     for (const logicalFilename of new Set(batch.map(mutation => mutation.logicalFilename))) {
-      const current = await requestResult(store.get([handle.gameId, handle.profileId, logicalFilename]), `commit-get-${logicalFilename}`);
+      const current = await requestResult(store.get([handle.gameId, handle.profileId, storageKey(logicalFilename)]), `commit-get-${logicalFilename}`);
       currentByName.set(logicalFilename, current);
-      const expected = fault === 'conflict' ? 'fault-stale-revision' : (handle.revisions.get(logicalFilename) ?? null);
+      const expected = fault === 'conflict' ? 'fault-stale-revision' : (handle.revisions.get(storageKey(logicalFilename)) ?? null);
       if ((current?.revision ?? null) !== expected) {
         transaction.abort();
         try { await done; } catch { }
@@ -454,11 +478,13 @@ export async function commitMutations(handleId, mutations, fault = '') {
         gameId: handle.gameId,
         profileId: handle.profileId,
         logicalFilename: mutation.logicalFilename,
+        keyFilename: storageKey(mutation.logicalFilename),
         ...(mutation.put ? { bytes: mutation.bytes, deleted: false } : { deleted: true }),
         revision,
         lastOperationId: mutation.operationId
       });
-      results.push({ logicalFilename: mutation.logicalFilename, revision, deleted: !mutation.put, byteLength: mutation.bytes?.byteLength ?? 0, lastOperationId: mutation.operationId });
+      results.push({ logicalFilename: mutation.logicalFilename,
+        keyFilename: storageKey(mutation.logicalFilename), revision, deleted: !mutation.put, byteLength: mutation.bytes?.byteLength ?? 0, lastOperationId: mutation.operationId });
     }
     if (fault === 'abort-after-put') {
       transaction.abort();
@@ -466,7 +492,7 @@ export async function commitMutations(handleId, mutations, fault = '') {
     }
     const durability = transaction.durability ?? 'default';
     await done;
-    for (const result of results) handle.revisions.set(result.logicalFilename, result.revision);
+    for (const result of results) handle.revisions.set(storageKey(result.logicalFilename), result.revision);
     return { files: results, durability };
   } finally {
     database.close();
@@ -482,13 +508,14 @@ export async function commit(handleId, bytes, operationId, fault = '') {
 export async function readCommitted(handleId, logicalFilename) {
   const handle = requireHandle(handleId);
   const name = normalizeFilename(logicalFilename);
+  const storeName = name.startsWith('dat/') ? CHARA_STORE_NAME : STORE_NAME;
   const database = await openDatabase('');
   try {
-    const transaction = database.transaction(STORE_NAME, 'readonly');
+    const transaction = database.transaction(storeName, 'readonly');
     const done = transactionDone(transaction, 'read-committed');
-    const record = await requestResult(transaction.objectStore(STORE_NAME).get([handle.gameId, handle.profileId, name]), `read-${name}`);
+    const record = await requestResult(transaction.objectStore(storeName).get([handle.gameId, handle.profileId, storageKey(name)]), `read-${name}`);
     await done;
-    handle.revisions.set(name, record?.revision ?? null);
+    handle.revisions.set(storageKey(name), record?.revision ?? null);
     return {
       exists: !!record && record.deleted !== true,
       deleted: record?.deleted === true,
@@ -509,7 +536,7 @@ export async function downloadCommitted(handleId, filename = 'global.sav') {
   try {
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = logicalFilename;
+    anchor.download = logicalFilename.startsWith('dat/') ? logicalFilename.slice(4) : logicalFilename;
     anchor.click();
   } finally {
     setTimeout(() => URL.revokeObjectURL(url), 0);

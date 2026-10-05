@@ -158,7 +158,12 @@ namespace MinorShift.Emuera.UI.Game
         static void AppendPart(System.Text.StringBuilder html, BrowserDisplayPart part)
         {
             if (part.Kind is BrowserDisplayPartKind.Image or BrowserDisplayPartKind.Shape)
-                throw new UnsupportedRuntimeFeatureException("HTML display history image/shape");
+            {
+                if (part.HistoryHtml is null)
+                    throw new UnsupportedRuntimeFeatureException("HTML display history media metadata missing");
+                html.Append(part.HistoryHtml);
+                return;
+            }
             if (part.Kind == BrowserDisplayPartKind.Break) { html.Append("<br>"); return; }
             bool button = part.Kind == BrowserDisplayPartKind.Button;
             bool nonbutton = part.Kind == BrowserDisplayPartKind.NonButton;
@@ -167,12 +172,21 @@ namespace MinorShift.Emuera.UI.Game
                 html.Append(button ? "<button" : "<nonbutton");
                 if (button) html.Append(" value='").Append(Escape(part.Input ?? string.Empty)).Append("'");
                 if (part.Tooltip is not null) html.Append(" title='").Append(Escape(part.Tooltip)).Append("'");
+                if (part.LockedX is { } x) html.Append(" pos='").Append(x * 100 / Math.Max(1, MinorShift.Emuera.Runtime.Config.Config.FontSize)).Append("'");
                 html.Append('>');
             }
             if (part.Children is not null)
                 foreach (BrowserDisplayPart child in part.Children) AppendPart(html, child);
             else
             {
+                bool font = part.Style is { } style && (style.Foreground is not null || style.FontName is not null);
+                if (font)
+                {
+                    html.Append("<font color='").Append(Escape(part.Style!.Foreground)).Append("' bcolor='").Append(Escape(part.Style.ButtonColor)).Append("'");
+                    if (part.Style.FontName is not null) html.Append(" face='").Append(Escape(part.Style.FontName)).Append("'");
+                    html.Append('>');
+                }
+                if (part.Style?.Strikeout == true) html.Append("<s>");
                 if (part.Style?.Bold == true) html.Append("<b>");
                 if (part.Style?.Italic == true) html.Append("<i>");
                 if (part.Style?.Underline == true) html.Append("<u>");
@@ -180,6 +194,8 @@ namespace MinorShift.Emuera.UI.Game
                 if (part.Style?.Underline == true) html.Append("</u>");
                 if (part.Style?.Italic == true) html.Append("</i>");
                 if (part.Style?.Bold == true) html.Append("</b>");
+                if (part.Style?.Strikeout == true) html.Append("</s>");
+                if (font) html.Append("</font>");
             }
             if (button || nonbutton) html.Append(button ? "</button>" : "</nonbutton>");
         }

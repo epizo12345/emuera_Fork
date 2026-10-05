@@ -124,6 +124,7 @@ public sealed class BrowserRuntimeSession
     }
 
     public string Output => output.ToString();
+    public long TextBoxClearSequence => console.TextBoxClearSequence;
     public IReadOnlyList<BrowserDisplayLine> RetainedDisplayLines => console.DisplayLines;
     public IReadOnlyList<BrowserDisplayLine> DisplayLines
     {
@@ -334,16 +335,16 @@ public sealed class BrowserRuntimeSession
         return session;
     }
 
-    public static async Task<BrowserRuntimeSession> StartSavePersistentAsync(string fixtureRoot, IReadOnlyDictionary<string, byte[]>? initialFiles)
+    public static async Task<BrowserRuntimeSession> StartSavePersistentAsync(string fixtureRoot, IReadOnlyDictionary<string, byte[]>? initialFiles, IReadOnlyDictionary<string, byte[]>? initialCharacterFiles = null)
     {
-        var session = await StartCoreAsync(fixtureRoot, loadConfig: true, enableGlobalPersistence: true, initialSaveFiles: initialFiles);
+        var session = await StartCoreAsync(fixtureRoot, loadConfig: true, enableGlobalPersistence: true, initialSaveFiles: initialFiles, initialCharacterFiles: initialCharacterFiles);
         session.RunScript();
         return session;
     }
 
-    public static async Task<BrowserRuntimeSession> StartSavePersistentBootstrapAsync(string fixtureRoot, IReadOnlyDictionary<string, byte[]>? initialFiles, bool captureProcessInitializeProfile = false)
+    public static async Task<BrowserRuntimeSession> StartSavePersistentBootstrapAsync(string fixtureRoot, IReadOnlyDictionary<string, byte[]>? initialFiles, bool captureProcessInitializeProfile = false, IReadOnlyDictionary<string, byte[]>? initialCharacterFiles = null)
     {
-        var session = await StartCoreAsync(fixtureRoot, loadConfig: true, enableGlobalPersistence: true, initialSaveFiles: initialFiles, enableCheckData: true, captureProcessInitializeProfile: captureProcessInitializeProfile);
+        var session = await StartCoreAsync(fixtureRoot, loadConfig: true, enableGlobalPersistence: true, initialSaveFiles: initialFiles, enableCheckData: true, captureProcessInitializeProfile: captureProcessInitializeProfile, initialCharacterFiles: initialCharacterFiles);
         session.console.MarkBootstrapReady();
         return session;
     }
@@ -386,7 +387,7 @@ public sealed class BrowserRuntimeSession
         process.SetWebInfiniteLoopPrompt(longRunningPrompt.ShouldAbort);
     }
 
-    static async Task<BrowserRuntimeSession> StartCoreAsync(string fixtureRoot, bool loadConfig, bool enableGlobalPersistence = false, byte[]? initialGlobalBytes = null, bool enableCheckData = false, IReadOnlyDictionary<string, byte[]>? initialSaveFiles = null, bool captureProcessInitializeProfile = false)
+    static async Task<BrowserRuntimeSession> StartCoreAsync(string fixtureRoot, bool loadConfig, bool enableGlobalPersistence = false, byte[]? initialGlobalBytes = null, bool enableCheckData = false, IReadOnlyDictionary<string, byte[]>? initialSaveFiles = null, bool captureProcessInitializeProfile = false, IReadOnlyDictionary<string, byte[]>? initialCharacterFiles = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fixtureRoot);
         fixtureRoot = Path.GetFullPath(fixtureRoot);
@@ -425,6 +426,22 @@ public sealed class BrowserRuntimeSession
         }
         if (enableGlobalPersistence)
         {
+            Directory.CreateDirectory(Program.DatDir);
+            // A bootstrap replaces the page's temporary DAT view with committed records only.
+            foreach (string path in Directory.GetFiles(Program.DatDir, "chara_*.dat")) File.Delete(path);
+            if (initialCharacterFiles is not null)
+            {
+                if (initialCharacterFiles.Count > 4096 || initialCharacterFiles.Sum(p => (long)p.Value.Length) > 512L * 1024 * 1024)
+                    throw new InvalidDataException("復元するキャラdatの総量が上限を超えています");
+                HashSet<string> names = new(StringComparer.OrdinalIgnoreCase);
+                foreach (var pair in initialCharacterFiles)
+                {
+                    string filename = BrowserCharacterFiles.NormalizeFilename(pair.Key);
+                    if (!names.Add(filename) || pair.Value.Length is <= 0 or > BrowserCharacterFiles.MaximumFileBytes)
+                        throw new InvalidDataException("復元するキャラdatの名前またはサイズが不正です");
+                    BrowserCharacterFiles.WriteAtomic(Path.Combine(Program.DatDir, filename), pair.Value);
+                }
+            }
             string effectiveSavDirectory = Path.GetFullPath(Config.SavDir);
             if (!effectiveSavDirectory.StartsWith(WithSeparator(fixtureRoot), StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("P1C1の保存先がrun root外です");
@@ -522,6 +539,7 @@ public sealed class BrowserRuntimeSession
         StopMessageSkip("title-return");
         console.RestartForTitle();
         console.ClearKeyStates();
+        console.ResetDisplay();
         console.ClearText();
         console.ResetStyle();
         console.SetTimeOut(false);
@@ -828,7 +846,7 @@ public sealed class BrowserRuntimeSession
     {
         // IndexedDB transaction完了後のoperationIdだけを受け入れ、古いACKで同期スクリプトを再開させない。
         long sequence = ++persistenceAckSequence;
-        if (Status != BrowserRuntimeStatus.Persisting || !process.AcknowledgeGlobalPersistence(operationId))
+        if (!ReferenceEquals(GlobalStatic.Process, process) || Status != BrowserRuntimeStatus.Persisting || !process.AcknowledgeGlobalPersistence(operationId))
         {
             SaveMutation? head = PendingPersistence;
             if (persistenceAckTimeline.Count == 64) persistenceAckTimeline.Dequeue();
@@ -874,6 +892,32 @@ public sealed class BrowserRuntimeSession
                 request.Bytes?.Length ?? 0, commitMilliseconds,
                 (long)System.Diagnostics.Stopwatch.GetElapsedTime(ackStarted).TotalMilliseconds));
         }
+    }
+
+    public BrowserCharacterFileInfo InspectCharacterFile(string filename, byte[] bytes)
+    {
+        if (!ReferenceEquals(GlobalStatic.Process, process)) throw new InvalidOperationException("古いRuntimeのキャラdat操作は実行できません");
+        filename = BrowserCharacterFiles.NormalizeFilename(filename);
+        if (bytes.Length is <= 0 or > BrowserCharacterFiles.MaximumFileBytes)
+            throw new InvalidDataException("キャラdatのサイズが不正です");
+        string temporary = Path.Combine(Program.DatDir, "inspect-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Program.DatDir);
+        try
+        {
+            File.WriteAllBytes(temporary, bytes);
+            var characters = process.VEvaluator.ReadWebCharacterFile(temporary, out string memo, out int state);
+            try { return new(filename, state, memo, characters.Count); }
+            finally { foreach (var character in characters) character.Dispose(); }
+        }
+        finally { if (File.Exists(temporary)) File.Delete(temporary); }
+    }
+
+    public void InstallCommittedCharacterFile(string filename, byte[] bytes)
+    {
+        // Caller commits to durable storage first; validation has no variable/character side effects.
+        var info = InspectCharacterFile(filename, bytes);
+        if (info.State != 0) throw new InvalidDataException($"キャラdatのゲーム・versionが違います: {info.State}");
+        BrowserCharacterFiles.WriteAtomic(BrowserCharacterFiles.PathForName(Program.DatDir, info.Filename[6..^4]), bytes);
     }
 
     static string NormalizeSaveFilename(string logicalFilename)
@@ -1030,4 +1074,3 @@ public sealed class BrowserRuntimeSession
 
     static string WithSeparator(string path) => Path.GetFullPath(path) + Path.DirectorySeparatorChar;
 }
-

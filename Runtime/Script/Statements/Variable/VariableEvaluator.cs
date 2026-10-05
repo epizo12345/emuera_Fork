@@ -1,4 +1,4 @@
-﻿using MinorShift.Emuera.GameData.Variable;
+using MinorShift.Emuera.GameData.Variable;
 using MinorShift.Emuera.GameView;
 using MinorShift.Emuera.Runtime.Config;
 using MinorShift.Emuera.Runtime.Config.JSON;
@@ -1800,6 +1800,12 @@ internal sealed class VariableEvaluator : IDisposable
         if (checkDataRoot is null)
             GuardWebPersistence("CHKDATA");
         string fullPath = Path.GetFullPath(filename);
+        if (string.Equals(Path.TrimEndingDirectorySeparator(Path.GetDirectoryName(fullPath)), Path.TrimEndingDirectorySeparator(Path.GetFullPath(Program.DatDir)), StringComparison.OrdinalIgnoreCase)
+            && Path.GetFileName(fullPath).StartsWith("chara_", StringComparison.OrdinalIgnoreCase))
+        {
+            MinorShift.Emuera.Web.Runtime.BrowserCharacterFiles.NormalizeFilename(Path.GetFileName(fullPath));
+            return;
+        }
         string prefix = checkDataRoot + Path.DirectorySeparatorChar;
         if (!fullPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("P1C2のCHKDATA対象は準備済みsav領域だけです");
@@ -1814,7 +1820,13 @@ internal sealed class VariableEvaluator : IDisposable
     private static string getSaveDataPathV(int index) { return Program.DatDir + string.Format("var_{0:00}.dat", index); }
     private static string getSaveDataPathC(int index) { return Program.DatDir + string.Format("chara_{0:00}.dat", index); }
     private static string getSaveDataPathV(string s) { return Program.DatDir + "var_" + s + ".dat"; }
-    private static string getSaveDataPathC(string s) { return Program.DatDir + "chara_" + s + ".dat"; }
+    private static string getSaveDataPathC(string s) {
+#if WEB_RUNTIME
+        return MinorShift.Emuera.Web.Runtime.BrowserCharacterFiles.PathForName(Program.DatDir, s);
+#else
+        return Program.DatDir + "chara_" + s + ".dat";
+#endif
+    }
 
     /// <summary>
     /// DatFolderが存在せず、かつ作成に失敗したらエラーを投げる
@@ -1838,7 +1850,9 @@ internal sealed class VariableEvaluator : IDisposable
     public static List<string> GetDatFiles(bool charadat, string pattern)
     {
 #if WEB_RUNTIME
-        GuardWebPersistence("FIND_CHARADATA");
+        if (!charadat) GuardWebPersistence("FIND_VARDATA");
+        GlobalStatic.Process.RequireGlobalPersistence("FIND_CHARADATA");
+        MinorShift.Emuera.Web.Runtime.BrowserCharacterFiles.ValidateName(pattern, pattern: true);
 #endif
         List<string> files = [];
         if (!Directory.Exists(Program.DatDir))
@@ -1846,7 +1860,12 @@ internal sealed class VariableEvaluator : IDisposable
         string searchPattern = "var_" + pattern + ".dat";
         if (charadat)
             searchPattern = "chara_" + pattern + ".dat";
+#if WEB_RUNTIME
+        string[] pathes = Directory.GetFiles(Program.DatDir)
+            .Where(path => System.IO.Enumeration.FileSystemName.MatchesWin32Expression(searchPattern, Path.GetFileName(path), ignoreCase: true)).ToArray();
+#else
         string[] pathes = Directory.GetFiles(Program.DatDir, searchPattern, SearchOption.TopDirectoryOnly);
+#endif
         foreach (string path in pathes)
         {
             if (!Path.GetExtension(path).Equals(".dat", StringComparison.OrdinalIgnoreCase))
@@ -1930,6 +1949,19 @@ internal sealed class VariableEvaluator : IDisposable
         try
         {
             fs = new FileStream(filename, FileMode.Open, FileAccess.Read);
+#if WEB_RUNTIME
+            if (type == EraSaveFileType.CharVar)
+            {
+                if (fs.Length < 16 || fs.Length > MinorShift.Emuera.Web.Runtime.BrowserCharacterFiles.MaximumFileBytes)
+                    throw new InvalidDataException("キャラdatのサイズが不正です");
+                using var header = new BinaryReader(fs, Encoding.Unicode, leaveOpen: true);
+                _ = header.ReadUInt64(); _ = header.ReadUInt32();
+                uint metadataCount = header.ReadUInt32();
+                if (metadataCount > 4096 || 16L + 4L * metadataCount > fs.Length)
+                    throw new InvalidDataException("キャラdatのheader件数が不正です");
+                fs.Position = 0;
+            }
+#endif
             bReader = EraBinaryDataReader.CreateReader(fs);
             if (bReader == null)//eramaker形式
             {
@@ -2053,8 +2085,32 @@ internal sealed class VariableEvaluator : IDisposable
     public void SaveChara(string savename, string savMes, int[] charas)
     {
 #if WEB_RUNTIME
-        GuardWebPersistence("SAVECHARA");
-#endif
+        string destination = GlobalStatic.Process.RequireCharacterPersistencePath("SAVECHARA", savename);
+        if (GlobalStatic.Process.MethodStack() != 0)
+            throw new CodeEE("WebのSAVECHARAは式関数内では保存完了待ちできません。通常のCALL経路で実行してください");
+        if (charas.Length > MinorShift.Emuera.Web.Runtime.BrowserCharacterFiles.MaximumCharacters)
+            throw new CodeEE("キャラdatのキャラ数上限は256です");
+        string temporary = destination + ".pending-" + Guid.NewGuid().ToString("N");
+        Directory.CreateDirectory(Program.DatDir);
+        try
+        {
+            using (var writer = new EraBinaryDataWriter(new MinorShift.Emuera.Web.Runtime.BoundedCharacterStream(temporary)))
+            {
+                writer.WriteHeader();
+                writer.WriteFileType(EraSaveFileType.CharVar);
+                writer.WriteInt64(gamebase.ScriptUniqueCode);
+                writer.WriteInt64(gamebase.ScriptVersion);
+                writer.WriteString(savMes);
+                writer.WriteInt64(charas.Length);
+                foreach (int character in charas) varData.CharacterList[character].SaveToStreamBinary(writer, varData);
+                writer.WriteEOF();
+            }
+            if (new FileInfo(temporary).Length > MinorShift.Emuera.Web.Runtime.BrowserCharacterFiles.MaximumFileBytes)
+                throw new CodeEE("キャラdatのサイズ上限は64MiBです");
+            GlobalStatic.Process.CaptureCharacterPut(destination, File.ReadAllBytes(temporary));
+        }
+        finally { if (File.Exists(temporary)) File.Delete(temporary); }
+#else
         CreateDatFolder();
         CheckDatFilename(savename);
         string filepath = getSaveDataPathC(savename);
@@ -2090,13 +2146,20 @@ internal sealed class VariableEvaluator : IDisposable
             else if (fs != null)
                 fs.Close();
         }
+#endif
     }
 
     public void LoadChara(string savename)
     {
 #if WEB_RUNTIME
-        GuardWebPersistence("LOADCHARA");
-#endif
+        string source = GlobalStatic.Process.RequireCharacterPersistencePath("LOADCHARA", savename);
+        RESULT = 0;
+        if (!File.Exists(source)) return;
+        var loaded = ReadWebCharacterFile(source, out _, out int state);
+        if (state != 0) return;
+        varData.CharacterList.AddRange(loaded);
+        RESULT = 1;
+#else
         string filepath = getSaveDataPathC(savename);
         RESULT = 0;
         if (!File.Exists(filepath))
@@ -2141,7 +2204,61 @@ internal sealed class VariableEvaluator : IDisposable
             else if (fs != null)
                 fs.Close();
         }
+#endif
     }
+
+#if WEB_RUNTIME
+    internal List<CharacterData> ReadWebCharacterFile(string path, out string memo, out int state)
+    {
+        memo = "";
+        state = (int)EraDataState.ETC_ERROR;
+        List<CharacterData> characters = [];
+        try
+        {
+            using var file = File.OpenRead(path);
+            if (file.Length < 42 || file.Length > MinorShift.Emuera.Web.Runtime.BrowserCharacterFiles.MaximumFileBytes)
+                throw new InvalidDataException("キャラdatのサイズが不正です");
+            // CreateReader's metadata allocation is bounded before it is allowed to allocate.
+            using (var header = new BinaryReader(file, Encoding.Unicode, leaveOpen: true))
+            {
+                _ = header.ReadUInt64(); _ = header.ReadUInt32();
+                uint metadataCount = header.ReadUInt32();
+                if (metadataCount > 4096 || 16L + 4L * metadataCount > file.Length)
+                    throw new InvalidDataException("キャラdatのheader件数が不正です");
+            }
+            file.Position = 0;
+            using var reader = EraBinaryDataReader.CreateReader(file) ?? throw new InvalidDataException("キャラdatのheaderが不正です");
+            if (reader.ReadFileType() != EraSaveFileType.CharVar) throw new InvalidDataException("キャラdatではありません");
+            long game = reader.ReadInt64(); long version = reader.ReadInt64();
+            if (!gamebase.UniqueCodeEqualTo(game)) { state = (int)EraDataState.GAME_ERROR; return characters; }
+            if (!gamebase.CheckVersion(version)) { state = (int)EraDataState.VIRSION_ERROR; return characters; }
+            memo = reader.ReadString();
+            long count = reader.ReadInt64();
+            if (count < 0 || count > MinorShift.Emuera.Web.Runtime.BrowserCharacterFiles.MaximumCharacters || count > file.Length)
+                throw new InvalidDataException("キャラdatのキャラ数が不正です");
+            for (int i = 0; i < count; i++)
+            {
+                var character = new CharacterData(constant, varData);
+                characters.Add(character);
+                character.LoadFromStreamBinary(reader);
+                // CharacterData accepts EOF as EOC; a dat character must actually end in EOC.
+                long afterCharacter = file.Position;
+                file.Position = afterCharacter - 1;
+                if (file.ReadByte() != (byte)EraSaveDataType.EOC) throw new InvalidDataException("キャラdatのキャラ終端が不正です");
+                file.Position = afterCharacter;
+            }
+            if (reader.ReadVariableCode().Value != EraSaveDataType.EOF || file.Position != file.Length)
+                throw new InvalidDataException("キャラdatのファイル終端が不正です");
+            state = 0;
+            return characters;
+        }
+        catch
+        {
+            foreach (var character in characters) character.Dispose();
+            throw;
+        }
+    }
+#endif
 
     public void SaveVariable(string savename, string savMes, VariableToken[] vars)
     {
