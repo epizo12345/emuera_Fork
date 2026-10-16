@@ -1,8 +1,8 @@
 # Emuera Web Packager — 開発者向け
 
-現行ソースはversion 1.0.9です。GETKEYの受入済み入力状態修正を、commit 9a1e09430bef2706c54ebf5b24b5bb069127f98dから新規AOT生成したRuntimeへ反映します。利用者の操作は[使い方](使い方.md)、package形式は[Web版パッケージ仕様](../../プロジェクト資料/Web版/03_ゲームデータパッケージ仕様.md)を参照してください。
+現行ソースはversion 1.0.10です。ローカルフォント（ＭＳ ゴシック）がない環境やBraveのフィンガープリント対策下でも表示幅が崩れないよう、等幅Webフォントを同梱します。利用者の操作は[使い方](使い方.md)、package形式は[Web版パッケージ仕様](../../プロジェクト資料/Web版/03_ゲームデータパッケージ仕様.md)を参照してください。
 
-1.0.9はRuntime UX16-08-RC3-Compat109を同梱します。1.0.8の機能を維持し、普通の入力欄でのキー状態、左右修飾キー、マウスボタン、DOM更新時の押下状態、実フォーカス喪失／IME開始時の解除を修正します。GETKEYTRIGGEREDのlow-bit/toggle、予約キー、X1のブラウザBack競合、VK6の物理操作は対象外です。
+1.0.10はRuntime UX16-08-RC3-Compat110を同梱します。1.0.9の機能（GETKEY修正を含む）を維持し、「ＭＳ ゴシック」「MS Gothic」指定をBIZ UDゴシック（OFL）で代替できるようにしました。端末にMS Gothicがある場合はそれを優先します。
 
 - 冬眠装置向けSAVECHARA／LOADCHARA／FIND_CHARADATA／CHKCHARADATAと、上部「キャラdat」の一覧・メモ・取り込み・書き出し。再読込時にもコミット済みdatを復元。
 - CLEARTEXTBOXを入力欄だけの消去へ修正し、表示履歴・Island・LINECOUNTを保持。

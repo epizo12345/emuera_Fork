@@ -17,7 +17,7 @@ $licenseSource = Join-Path $repoRoot 'license.md'
 $notesSource = Join-Path $PSScriptRoot 'RELEASE_NOTES.md'
 $output = [System.IO.Path]::GetFullPath($OutputDirectory)
 $buildArtifacts = [System.IO.Path]::GetFullPath($ArtifactsPath)
-$zipName = 'EmueraWebPackager-1.0.9-win-x64.zip'
+$zipName = 'EmueraWebPackager-1.0.10-win-x64.zip'
 $tempBase = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
 $tempRoot = [System.IO.Path]::GetFullPath((Join-Path $tempBase "EmueraWebPackager-Release-$([guid]::NewGuid().ToString('N'))"))
 $outputParent = Split-Path -Parent $output
@@ -41,6 +41,7 @@ foreach ($requiredLicense in @('licenses/DOTNET-LICENSE.txt', 'licenses/DOTNET-T
     if (!(Test-Path -LiteralPath (Join-Path $PSScriptRoot $requiredLicense) -PathType Leaf)) { throw "Packager配布に必要なライセンスがありません: $requiredLicense" }
 }
 if (!(Test-Path -LiteralPath (Join-Path $runtimeSource 'fonts/DotGothic16-OFL.txt') -PathType Leaf)) { throw 'runtime-templateにDotGothic16 OFL noticeがありません。' }
+if (!(Test-Path -LiteralPath (Join-Path $runtimeSource 'fonts/BIZUDGothic-OFL.txt') -PathType Leaf)) { throw 'runtime-templateにBIZ UDGothic OFL noticeがありません。' }
 
 # P1 query-only test assets are not part of the user's production runtime template.
 $runtimeFixtureRoots = @('p1a-fixture', 'p1a-r1-guards', 'p1a-r2-fixture', 'p1c1-fixture', 'p1c2-host-fixture')
@@ -68,7 +69,7 @@ try {
     if ($versionProcess.ExitCode -ne 0) { throw "Packager --versionに失敗しました (exit $($versionProcess.ExitCode)): $versionError" }
 }
 finally { $versionProcess.Dispose() }
-if ($version -ne 'Emuera Web Packager 1.0.9 / Runtime UX16-08-RC3-Compat109') { throw "Packager/Runtime versionが想定外です: $version" }
+if ($version -ne 'Emuera Web Packager 1.0.10 / Runtime UX16-08-RC3-Compat110') { throw "Packager/Runtime versionが想定外です: $version" }
 
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $output) | Out-Null
 try {
@@ -99,8 +100,8 @@ try {
 
     # Record the committed build revision and the exact source file table.
     $provenance = [ordered]@{
-        packagerVersion = '1.0.9'
-        runtimeTemplateVersion = 'UX16-08-RC3-Compat109'
+        packagerVersion = '1.0.10'
+        runtimeTemplateVersion = 'UX16-08-RC3-Compat110'
         runtimeSourceCommit = $SourceCommit.ToLowerInvariant()
         runtimeSourceTreeSha256 = $SourceTreeSha256.ToUpperInvariant()
         packagerSourceCommit = $PackagerCommit.ToLowerInvariant()
@@ -144,8 +145,8 @@ try {
     finally { $archive.Dispose() }
 
     [pscustomobject]@{
-        version = '1.0.9'
-        runtime = 'UX16-08-RC3-Compat109'
+        version = '1.0.10'
+        runtime = 'UX16-08-RC3-Compat110'
         runtimeSourceCommit = $SourceCommit.ToLowerInvariant()
         runtimeSourceTreeSha256 = $SourceTreeSha256.ToUpperInvariant()
         packagerSourceCommit = $PackagerCommit.ToLowerInvariant()

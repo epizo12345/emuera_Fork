@@ -1,3 +1,6 @@
+/* MS Gothic未インストール環境やBraveのローカルフォント制限向けに、等幅のBIZ UDゴシックで代替する。 */
+@font-face { font-family: "ＭＳ ゴシック"; src: local("MS Gothic"), local("ＭＳ ゴシック"), url("fonts/BIZUDGothic-Regular.woff2") format("woff2"); }
+@font-face { font-family: "MS Gothic"; src: local("MS Gothic"), local("ＭＳ ゴシック"), url("fonts/BIZUDGothic-Regular.woff2") format("woff2"); }
 :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #111; color: #eee; }
 body { margin: 0; }
 main { max-width: 60rem; margin: 0 auto; padding: 1.5rem; }

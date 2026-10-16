@@ -32,6 +32,8 @@ function diagnostic(stage, detail = null) {
 
 export { diagnostic };
 
+// measureTextは同期呼び出しなので、代替Webフォントの読込完了までモジュール読込を待たせる。
+await document.fonts.load('18px "ＭＳ ゴシック"').catch(() => {});
 let textMeasureContext;
 export function measureText(text, fontName, fontSize) {
   textMeasureContext ??= document.createElement("canvas").getContext("2d");
