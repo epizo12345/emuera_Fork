@@ -136,12 +136,32 @@ internal static class Program
         Run("same-number CBG replacement uses the new target tooltip", TooltipRegression.SameNumberReplacementUsesNewTitle);
         Run("disposed window rejects its delayed tooltip callback", TooltipRegression.DisposedWindowRejectsCallback);
         Run("tooltip callback does not pump a queued window close", TooltipRegression.CallbackDoesNotPumpQueuedClose);
+        Run("prefix increment SET snapshot starts after the ++ operator", PrefixIncrementSnapshotSkipsOperator);
 
         if (_themeConfigDirectory is not null && Directory.Exists(_themeConfigDirectory))
             Directory.Delete(_themeConfigDirectory, recursive: true);
 
         Console.WriteLine($"RESULT: {TotalCases - Failures.Count - SkippedCases}/{TotalCases} passed; {Failures.Count} failed; {SkippedCases} skipped.");
         return Failures.Count == 0 ? 0 : 1;
+    }
+
+    // `++TFLAG:スキル用1` は++をShiftNext済みのWordCollectionをSET左辺として凍結する。
+    private static void PrefixIncrementSnapshotSkipsOperator()
+    {
+        foreach (bool linked in new[] { false, true })
+        {
+            var wc = new MinorShift.Emuera.Runtime.Script.Parser.WordCollection();
+            var op = new MinorShift.Emuera.Runtime.Script.Parser.OperatorWord(MinorShift.Emuera.Runtime.Script.Statements.Expression.OperatorCode.Increment);
+            var name = new MinorShift.Emuera.Runtime.Script.Parser.IdentifierWord("TFLAG");
+            wc.Add(op);
+            wc.Add(name);
+            if (linked)
+                _ = wc.Pointer; // linked表現へ昇格させる
+            wc.ShiftNext();
+            var snapshot = wc.FreezeSetSnapshot();
+            Equal(1, snapshot.Length, $"linked={linked} snapshot length");
+            True(ReferenceEquals(name, snapshot[0]), $"linked={linked} snapshot starts at variable");
+        }
     }
 
     private static void FontFallbackRunsAndSplits()

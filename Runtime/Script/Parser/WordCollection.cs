@@ -314,15 +314,17 @@ internal sealed class WordCollection
     // [Emuera改修:MEM-M3A]
     // SET左辺は初回の引数解析までだけ保持するため、長寿命のWordCollectionを残さずexact-sizeのWord[]へ凍結する。
     // Wordはcloneせず参照同一性と順序を保つ。Collection/Pointerを呼ばないため、compact collectionのlinked昇格やpointer変更もない。
+    // 前置++/--行は演算子をShiftNext済みで渡すため、旧WordCollection保持と同じく現在位置以降だけを凍結する。
     internal Word[] FreezeSetSnapshot()
     {
         if (compactCollection is List<Word> compact)
-            return compact.ToArray();
-        if (linkedCollection is LinkedList<Word> linked)
+            return compactPointer >= compact.Count ? [] : compact.GetRange(compactPointer, compact.Count - compactPointer).ToArray();
+        if (linkedCollection != null)
         {
-            var snapshot = new Word[linked.Count];
-            linked.CopyTo(snapshot, 0);
-            return snapshot;
+            List<Word> snapshot = [];
+            for (var node = linkedPointer; node != null; node = node.Next)
+                snapshot.Add(node.Value);
+            return snapshot.ToArray();
         }
         return [];
     }
