@@ -149,26 +149,19 @@ internal sealed class ErbLoader
 #endif
             }));
 
-            var source = new CancellationTokenSource();
+            // 旧実装はループ条件が逆で1行も出力されなかった。ERHと同じく呼び出し元スレッドで、解析と並行して順次出力する。
             if (displayReport)
             {
-                var locks = new Lock();
-                await Task.Run(() =>
+                while (!task.IsCompleted)
                 {
-                    while (source.IsCancellationRequested)
-                    {
-                        if (logQueue.TryDequeue(out var log))
-                        {
-                            lock (locks)
-                            {
-                                output.PrintSystemLine(log);
-                            }
-                        }
-                    }
-                }, source.Token);
+                    while (logQueue.TryDequeue(out var log))
+                        output.PrintSystemLine(log);
+                    await Task.WhenAny(task, Task.Delay(50));
+                }
+                while (logQueue.TryDequeue(out var log))
+                    output.PrintSystemLine(log);
             }
             await task;
-            source.Cancel();
             PrimaryParseMilliseconds = stageStopwatch.ElapsedMilliseconds;
 
 
