@@ -131,6 +131,9 @@ public partial class DebugDialog : Form
 
     private void updateVarWatch()
     {
+        // 起動・再読込中はERB解析が別スレッドで進行中のため、式評価で解析中の状態に触れない(コンソール側と同じ判定)
+        if (mainConsole == null || mainConsole.IsInProcess)
+            return;
         GlobalStatic.Process.saveCurrentState(false);
 
         for (int i = 0; i < watchView.RowCount - 1; i++)
