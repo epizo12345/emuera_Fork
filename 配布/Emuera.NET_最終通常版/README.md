@@ -1,23 +1,25 @@
 # Emuera.NET 最終通常版
 
-- 更新日: 2026-10-23
+- 更新日: 2026-10-28
 - 基礎: BugFix_Test `7b7dd3bf240eff4fdfc7094f4175de0e014532b7`
-- EXE生成元source commit: `48147ca5889b7076566979e50f3a6558673ece46`（配布資料の更新commitとは別）
+- EXE生成元source commit: `bf6e2d6bf9ef2a6fe68ada662bd6088ab1f2e97f`（配布資料の更新commitとは別）
 - 対象OS: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
 - `Emuera.exe` サイズ: 24,704,746バイト（約23.56 MiB）
-- `Emuera.exe` SHA-256: `8EFB1006732A0C521ABB159E01C3804B08CFB1D111B5E3ADF6DE018E4614C7E8`
-- `Emuera.exe` ProductVersion: `0.2.6.0+48147ca5889b7076566979e50f3a6558673ece46`（suffixはEXEを生成したsource commit）
+- `Emuera.exe` SHA-256: `33BB4345A6213B121D923A99C9BCFB262D70A0243DB67D9D78CF76D00CC8B518`
+- `Emuera.exe` ProductVersion: `0.2.6.0+bf6e2d6bf9ef2a6fe68ada662bd6088ab1f2e97f`（suffixはEXEを生成したsource commit）
 - `Emuera.exe` FileVersion: `0.2.6.0`
 - publish条件: Release / win-x64 / framework-dependent / self-contained false / PublishSingleFile=true
 - publish時の計測: `PERFORMANCE_METRICS`無効
 - source revision検証: PASS（ProductVersion suffixが上記source commitのfull SHAと一致）
+- `GDRAWG`／`GDRAWCIMG`／`GDRAWSPRITE`のカラーマトリクスで、5行目（色に足す値）が無視され元のEmueraより色が明るくなる不具合を修正しました。元のEmuera（GDI+）と同じく5行目から取ります。`画像合成.ERB`の灰・黒・栗・橙など、5行目にマイナス値を書いた色が元どおり暗くなります。平行移動0の行列は変わりません。
+- 今回の正式EXEでsource revision検証PASS、fixtureゲームで起動安定性テスト3/3（失敗・Lv2警告0）を確認しました。回帰試験はsource commitで88/88 PASS（GDI+との画素比較2件を追加）。実ゲーム画面での色の目視確認はしていません。
 - 「ロード時にレポートを表示する」でERBの「読み込み中」が表示されない不具合を修正しました（表示ループの条件が逆で、並列読込のログを1行も出力していなかったもの）。表示順は並列読込の完了順です。
 - `++TFLAG:スキル用1`のような前置インクリメント・デクリメント行が「代入文の左辺に変数以外を指定することはできません」になる不具合を修正しました（MEM-M3AのSET左辺凍結で++演算子まで左辺に含めていたもの）。後置`X++`は影響を受けていません。
 - デバッグウィンドウの変数ウォッチは、起動中・ERB再読込中は評価せず前回の値を表示したままにします（コンソール入力と同じ判定）。ERB解析と並行してウォッチの式評価が走る可能性をなくすための変更で、報告のあった起動時の警告Lv2の原因とは確認できていません。入力待ち中の更新は従来どおりです。
 - `SORTCHARA`で2次元CHARADATA文字列の未代入要素をキーにした場合、1次元・スカラーと同じく空文字として比較するよう修正しました（source commit `6fa2437`、前回EXE差替え分）。
-- 今回の正式EXEでsource revision検証PASS、ShinEraTenseiPの全ERB解析モードで警告0件、通常起動でタイトルまで警告0件、ロード時レポートでERB 9,371件すべての読み込み中表示を確認しました。回帰試験はsource commitで86/86 PASS。
+- 前回（source commit `48147ca`）の正式EXEでsource revision検証PASS、ShinEraTenseiPの全ERB解析モードで警告0件、通常起動でタイトルまで警告0件、ロード時レポートでERB 9,371件すべての読み込み中表示を確認しました。回帰試験はsource commitで86/86 PASS。
 - 終了時のアニメ再描画による例外終了、および終了キャンセル後の時限入力の不具合を修正しました。実ループを追跡・キャンセルし、終了確定後と直接Disposeで停止します。タイマー周期・期限・依存版・GC設定は維持し、速度・メモリ・GPU改善率は未測定です。
 - 今回の正式EXE単体で、自然終了3回、TINPUT表示ON/OFFの早期入力・次の期限・通常入力、アニメ停止再開、時限入力中の終了、実終了メニューのキャンセル後の入力、再起動を専用fixtureで確認しました。試験中のEXE SHAは上記配布値と同じです。
 - 関連回帰試験: EXE生成元source commitの通常Releaseで既存85/85・終了寿命追加9/9 PASS、失敗0・skip 0。追加9試験のWindows対話desktop/OpenGL条件と順序固定hostの区別はShutdownStudy/README.mdを参照。旧A〜D版の固有A81・C66・D111、旧入力matrix・180秒TINPUTは過去の別証拠であり今回再実行した扱いにしません。
