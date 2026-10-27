@@ -242,6 +242,21 @@ internal sealed class GraphicsImage : AbstractImage
         img.GraphicsDraw(canvas, destRect);
     }
 
+    // [Emuera改修:DRAW-06 2026-10-28]
+    // 元Emuera(GDI+のColorMatrix)と同じく、平行移動(色に足す値)は5行目cm[4][0..3]から取る。
+    // 旧実装は5列目cm[0..3][4]を使っていたため、5行目のマイナス値(暗くする指定)が無視され、色が明るくなっていた。
+    // 掛け算部分はGDI+が「行ベクトル×行列」、Skiaが「行列×列ベクトル」なので転置して並べる。
+    // 平行移動の単位はGDI+・Skiaとも1.0=255で同じ。cm[0..3][4]とcm[4][4]はGDI+でも結果に影響しない。
+    internal static float[] ToSkiaColorMatrix(float[][] cm)
+    {
+        return [
+            cm[0][0], cm[1][0], cm[2][0], cm[3][0], cm[4][0],
+            cm[0][1], cm[1][1], cm[2][1], cm[3][1], cm[4][1],
+            cm[0][2], cm[1][2], cm[2][2], cm[3][2], cm[4][2],
+            cm[0][3], cm[1][3], cm[2][3], cm[3][3], cm[4][3],
+        ];
+    }
+
     /// <summary>
     /// GDRAWCIMG(int ID, str imgName, int destX, int destY, int destWidth, int destHeight, float[][] cm)
     /// エラーチェックは呼び出し元でのみ行う
@@ -249,13 +264,7 @@ internal sealed class GraphicsImage : AbstractImage
     public void GDrawCImg(ASprite img, Rectangle destRect, float[][] cm)
     {
         EnsureWritable();
-        //挙動がよくわからないので4行目は単に無視する
-        float[] skiaCM = [
-            cm[0][0],cm[1][0],cm[2][0],cm[3][0],cm[0][4],
-            cm[0][1],cm[1][1],cm[2][1],cm[3][1],cm[1][4],
-            cm[0][2],cm[1][2],cm[2][2],cm[3][2],cm[2][4],
-            cm[0][3],cm[1][3],cm[2][3],cm[3][3],cm[3][4],
-        ];
+        float[] skiaCM = ToSkiaColorMatrix(cm);
         // [Emuera改修:PERF-14N2 2026-08-26]
         // ColorMatrix用filterは描画中だけ必要な一時native resource。paintへ設定したまま描画を完了し、
         // 既存のsampling / pixel semanticsを変えずに描画後だけ解放する。
@@ -290,12 +299,7 @@ internal sealed class GraphicsImage : AbstractImage
         // System.Drawing側の未使用ImageAttributesは生成しない。描画は下のSkia filterだけで行う。
         //g.DrawImage(img.Bitmap, destRect, srcRect, GraphicsUnit.Pixel, imageAttributes);なんでこのパターンないのさ
         //canvas.DrawImage(src.ToBitmap(), destRect, srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height, GraphicsUnit.Pixel, imageAttributes);
-        float[] skiaCM = [
-            cm[0][0],cm[1][0],cm[2][0],cm[3][0],cm[0][4],
-            cm[0][1],cm[1][1],cm[2][1],cm[3][1],cm[1][4],
-            cm[0][2],cm[1][2],cm[2][2],cm[3][2],cm[2][4],
-            cm[0][3],cm[1][3],cm[2][3],cm[3][3],cm[3][4],
-        ];
+        float[] skiaCM = ToSkiaColorMatrix(cm);
         // [Emuera改修:PERF-14N2 2026-08-26]
         // ColorMatrix用filterは描画中だけ必要な一時native resource。描画完了後にDisposeし、既存のsampling / pixel / color-matrix semanticsは変更しない。
         using var filter = SKColorFilter.CreateColorMatrix(skiaCM);

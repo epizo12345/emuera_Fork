@@ -75,6 +75,8 @@ internal static class Program
         Run("file-backed crop and negative offset match original-placement clipping", AnimationCandidateRegression.FileBackedNegativeOffset);
         Run("edge-touching animation frames draw no pixels", AnimationCandidateRegression.EdgeTouchDrawsNothing);
         Run("non-identity color matrix swaps red and blue channels", IntegratedColorMatrix);
+        Run("GDRAWG color matrix translation row matches GDI+ (original Emuera)", ColorMatrixGdiRegression.GDrawGMatchesGdiPlus);
+        Run("GDRAWCIMG color matrix translation row matches GDI+ (original Emuera)", ColorMatrixGdiRegression.GDrawCImgMatchesGdiPlus);
         Run("mask rejects out-of-range coordinates without changing pixels", IntegratedMaskBounds);
         Run("mask composes alpha at offset and preserves outside pixels", IntegratedMaskAlpha);
         Run("file-backed mask output survives PNG save and load", IntegratedMaskFileBacked);
