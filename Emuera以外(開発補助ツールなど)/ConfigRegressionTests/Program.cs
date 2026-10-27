@@ -77,6 +77,10 @@ internal static class Program
         Run("non-identity color matrix swaps red and blue channels", IntegratedColorMatrix);
         Run("GDRAWG color matrix translation row matches GDI+ (original Emuera)", ColorMatrixGdiRegression.GDrawGMatchesGdiPlus);
         Run("GDRAWCIMG color matrix translation row matches GDI+ (original Emuera)", ColorMatrixGdiRegression.GDrawCImgMatchesGdiPlus);
+        Run("DICT string keys do not collide with int keys", DictRegression.StringKeyDoesNotCollideWithIntKey);
+        Run("DICT_CREATE replaces an existing dictionary with an empty one", DictRegression.CreateReplacesWithEmptyDictionary);
+        Run("DICT runtime failures are script errors with names", DictRegression.RuntimeFailuresAreCodeErrors);
+        Run("DICT argument count, type, and omission are checked at load", DictRegression.LoadTimeArgumentChecks);
         Run("mask rejects out-of-range coordinates without changing pixels", IntegratedMaskBounds);
         Run("mask composes alpha at offset and preserves outside pixels", IntegratedMaskAlpha);
         Run("file-backed mask output survives PNG save and load", IntegratedMaskFileBacked);
