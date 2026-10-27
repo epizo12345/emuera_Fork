@@ -2,19 +2,21 @@
 
 - 更新日: 2026-10-28
 - 基礎: BugFix_Test `7b7dd3bf240eff4fdfc7094f4175de0e014532b7`
-- EXE生成元source commit: `bf6e2d6bf9ef2a6fe68ada662bd6088ab1f2e97f`（配布資料の更新commitとは別）
+- EXE生成元source commit: `7fe08d7684e55f888e9997055e1deca1e127d224`（配布資料の更新commitとは別）
 - 対象OS: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
 - `Emuera.exe` サイズ: 24,704,746バイト（約23.56 MiB）
-- `Emuera.exe` SHA-256: `33BB4345A6213B121D923A99C9BCFB262D70A0243DB67D9D78CF76D00CC8B518`
-- `Emuera.exe` ProductVersion: `0.2.6.0+bf6e2d6bf9ef2a6fe68ada662bd6088ab1f2e97f`（suffixはEXEを生成したsource commit）
+- `Emuera.exe` SHA-256: `E852F70BF05FBE561C58A22A9D60D6703A9C9069D4729C8A1F8DBE9FA49C5177`
+- `Emuera.exe` ProductVersion: `0.2.6.0+7fe08d7684e55f888e9997055e1deca1e127d224`（suffixはEXEを生成したsource commit）
 - `Emuera.exe` FileVersion: `0.2.6.0`
 - publish条件: Release / win-x64 / framework-dependent / self-contained false / PublishSingleFile=true
 - publish時の計測: `PERFORMANCE_METRICS`無効
 - source revision検証: PASS（ProductVersion suffixが上記source commitのfull SHAと一致）
+- `DICT_*`関数で、文字列キーが別の文字列や整数キーと衝突して値を取り違えることがある不具合を修正しました。引数の数・型・省略はERB読込時に検査し、辞書なし・キーなし・型違いは関数名・辞書名・キー付きのエラーにします。`DICT_CREATE`で同名の辞書を空で作り直す仕様、自動リセットしない仕様は変わりません。
+- 今回の正式EXEでsource revision検証PASS、fixtureゲームで起動安定性テスト3/3（失敗・Lv2警告0）を確認しました。回帰試験はsource commitで92/92 PASS（DICT試験4件を追加）。実ゲームERBからのDICT呼び出しは確認していません。
 - `GDRAWG`／`GDRAWCIMG`／`GDRAWSPRITE`のカラーマトリクスで、5行目（色に足す値）が無視され元のEmueraより色が明るくなる不具合を修正しました。元のEmuera（GDI+）と同じく5行目から取ります。`画像合成.ERB`の灰・黒・栗・橙など、5行目にマイナス値を書いた色が元どおり暗くなります。平行移動0の行列は変わりません。
-- 今回の正式EXEでsource revision検証PASS、fixtureゲームで起動安定性テスト3/3（失敗・Lv2警告0）を確認しました。回帰試験はsource commitで88/88 PASS（GDI+との画素比較2件を追加）。実ゲーム画面での色の目視確認はしていません。
+- 前回（source commit `bf6e2d6`）の正式EXEでsource revision検証PASS、fixtureゲームで起動安定性テスト3/3（失敗・Lv2警告0）を確認しました。回帰試験はsource commitで88/88 PASS（GDI+との画素比較2件を追加）。実ゲーム画面での色の目視確認はしていません。
 - 「ロード時にレポートを表示する」でERBの「読み込み中」が表示されない不具合を修正しました（表示ループの条件が逆で、並列読込のログを1行も出力していなかったもの）。表示順は並列読込の完了順です。
 - `++TFLAG:スキル用1`のような前置インクリメント・デクリメント行が「代入文の左辺に変数以外を指定することはできません」になる不具合を修正しました（MEM-M3AのSET左辺凍結で++演算子まで左辺に含めていたもの）。後置`X++`は影響を受けていません。
 - デバッグウィンドウの変数ウォッチは、起動中・ERB再読込中は評価せず前回の値を表示したままにします（コンソール入力と同じ判定）。ERB解析と並行してウォッチの式評価が走る可能性をなくすための変更で、報告のあった起動時の警告Lv2の原因とは確認できていません。入力待ち中の更新は従来どおりです。
