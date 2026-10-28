@@ -69,7 +69,10 @@ internal sealed class CharacterData : IDisposable
         {
             UserDefinedVariableData d = varData.UserDefinedCharaVarList[i].DimData;
             object array = null;
-            if (d.TypeIsStr)
+            // [Emuera改修:ARRAY-01] RESIZABLEは容量付きのバッファを置く（1次元のみ）。
+            if (d.Resizable)
+                array = d.TypeIsStr ? new ResizableBuffer<string>(d.Lengths[0], null) : new ResizableBuffer<long>(d.Lengths[0], null);
+            else if (d.TypeIsStr)
             {
                 switch (d.Dimension)
                 {
@@ -267,7 +270,7 @@ internal sealed class CharacterData : IDisposable
                 // [Emuera改修:ARRAY-01] RESIZABLEはキャラごとに長さが違うので、コピー元の配列を丸ごと複製して差し替える。
                 if (var is IResizableToken)
                 {
-                    other.UserDefCVarDataList[var.ArrayIndex] = ((Array)UserDefCVarDataList[var.ArrayIndex]).Clone();
+                    other.UserDefCVarDataList[var.ArrayIndex] = ((IResizableBuffer)UserDefCVarDataList[var.ArrayIndex]).CloneBuffer();
                     continue;
                 }
                 if (var.IsString)
@@ -781,7 +784,7 @@ internal sealed class CharacterData : IDisposable
             else if (sortkey.IsArray1D)
             {
                 string[] array = sortkey is UserDefinedCharaVariableToken token
-                    ? (string[])UserDefCVarDataList[token.ArrayIndex]
+                    ? (string[])ResizableArray.AsArray(UserDefCVarDataList[token.ArrayIndex])
                     : dataStringArray[sortkey.CodeInt];
                 if (elem64 < 0 || elem64 >= array.Length)
                     throw new CodeEE(LocalizationManager.Error.OoRSortKey);
@@ -817,7 +820,7 @@ internal sealed class CharacterData : IDisposable
             else if (sortkey.IsArray1D)
             {
                 long[] array = sortkey is UserDefinedCharaVariableToken token
-                    ? (long[])UserDefCVarDataList[token.ArrayIndex]
+                    ? (long[])ResizableArray.AsArray(UserDefCVarDataList[token.ArrayIndex])
                     : dataIntegerArray[sortkey.CodeInt];
                 if (elem64 < 0 || elem64 >= array.Length)
                     throw new CodeEE(LocalizationManager.Error.OoRSortKey);

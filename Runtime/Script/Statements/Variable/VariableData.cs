@@ -1164,7 +1164,8 @@ internal sealed partial class VariableData : IDisposable
         {
             foreach (UserDefinedCharaVariableToken token in UserDefinedCharaVarList)
             {
-                if (chara.UserDefCVarDataList[token.ArrayIndex] is not Array backing)
+                object stored = chara.UserDefCVarDataList[token.ArrayIndex];
+                if ((stored as Array ?? (stored as IResizableBuffer)?.Backing) is not Array backing)
                     continue;
                 userCharaMaterializedArrays++;
                 userCharaMaterializedSlots += backing.LongLength;

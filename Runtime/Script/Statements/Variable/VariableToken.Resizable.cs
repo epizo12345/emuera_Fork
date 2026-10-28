@@ -11,8 +11,9 @@ namespace MinorShift.Emuera.Runtime.Script.Statements.Variable
 
 // [Emuera改修:ARRAY-01 2026-10-28]
 // #DIM RESIZABLE の1次元配列。設計はプロジェクト資料/調査履歴/10_RESIZABLE可変長配列_設計.md
-// 「配列の全長＝今の長さ」を常に保つ（長さを変えるたびにちょうどの長さへ作り直す）ので、
-// GetArray()で.Lengthを使う既存の配列関数はそのまま動く。既存の固定長トークンには手を入れず、既存変数の読み書きは変えない。
+// 中身は容量を倍々で確保するバッファ（ResizableBuffer）に持ち、今の長さは別に持つ（比較用ブランチ: ①容量確保）。
+// 配列関数がGetArray()／GetArrayChara()で取り出すときだけ今の長さちょうどへ切り詰めて渡すので、
+// .Lengthを使う既存の配列関数はそのまま動く。既存の固定長トークンには手を入れず、既存変数の読み書きは変えない。
 // 伸びるのは範囲外への書き込みとRESIZE・SPLITなどの出力だけ。縮むのはRESIZEだけ。
 internal interface IResizableToken
 {
@@ -22,33 +23,80 @@ internal interface IResizableToken
     void Resize(long charaNo, long newLength);
 }
 
+/// <summary>CHARADATAのキャラごとの格納場所（CharacterData.UserDefCVarDataList）から型を問わず扱うための口。</summary>
+internal interface IResizableBuffer
+{
+    /// <summary>今の長さちょうどの配列（必要なら切り詰めて、その配列を以後の中身にする）。</summary>
+    Array AsExactArray();
+    /// <summary>容量込みの内部配列（メモリ計測用。切り詰めない）。</summary>
+    Array Backing { get; }
+    IResizableBuffer CloneBuffer();
+}
+
+/// <summary>容量を倍々で確保し、今の長さを別に持つ配列。Items[Count..]は常に既定値（0／null）に保つ。</summary>
+internal sealed class ResizableBuffer<T> : IResizableBuffer
+{
+    public T[] Items;
+    public int Count;
+
+    public ResizableBuffer(int length, T[] defArray)
+    {
+        Items = new T[length];
+        Count = length;
+        if (defArray != null)
+            defArray.AsSpan().CopyTo(Items);
+    }
+    ResizableBuffer(T[] items, int count)
+    {
+        Items = items;
+        Count = count;
+    }
+
+    /// <summary>index番目へ書き込めるように今の長さを伸ばす。範囲外への書き込みでだけ呼ぶ。</summary>
+    public void GrowFor(long index, string varName, string argPos)
+    {
+        if (index < 0 || index >= ResizableArray.MaxLength)
+            throw new CodeEE(string.Format(LocalizationManager.Error.OoRVarArg, varName, argPos, index.ToString()));
+        int needed = (int)index + 1;
+        if (needed > Items.Length)
+            Array.Resize(ref Items, ResizableArray.NextCapacity(Items.Length, needed));
+        Count = needed;
+    }
+
+    public void ResizeTo(long newLength, string varName)
+    {
+        if (newLength < 0 || newLength > ResizableArray.MaxLength)
+            throw new CodeEE("RESIZE:変数" + varName + "の長さに" + newLength.ToString() + "は指定できません(0～" + ResizableArray.MaxLength.ToString() + ")");
+        int n = (int)newLength;
+        if (n > Items.Length)
+            Array.Resize(ref Items, n);
+        else if (n < Count)
+            Array.Clear(Items, n, Count - n);
+        Count = n;
+    }
+
+    public T[] AsExact()
+    {
+        if (Items.Length != Count)
+            Array.Resize(ref Items, Count);
+        return Items;
+    }
+
+    Array IResizableBuffer.AsExactArray() => AsExact();
+    Array IResizableBuffer.Backing => Items;
+    public IResizableBuffer CloneBuffer() => new ResizableBuffer<T>(Items.AsSpan(0, Count).ToArray(), Count);
+}
+
 internal static class ResizableArray
 {
     // #DIMで宣言できる要素数の上限と同じ。書き間違えた添字で巨大な配列を作らないための上限。
     public const int MaxLength = 1000000;
 
-    /// <summary>index番目へ書き込めるように伸ばす。範囲外への書き込みでだけ呼ぶ。</summary>
-    public static void GrowFor<T>(ref T[] array, long index, string varName, string argPos)
+    /// <summary>容量は倍々（最低4）。上限はMaxLength。</summary>
+    public static int NextCapacity(int current, int needed)
     {
-        if (index < 0 || index >= MaxLength)
-            throw new CodeEE(string.Format(LocalizationManager.Error.OoRVarArg, varName, argPos, index.ToString()));
-        Array.Resize(ref array, (int)index + 1);
-    }
-
-    public static void ResizeTo<T>(ref T[] array, long newLength, string varName)
-    {
-        if (newLength < 0 || newLength > MaxLength)
-            throw new CodeEE("RESIZE:変数" + varName + "の長さに" + newLength.ToString() + "は指定できません(0～" + MaxLength.ToString() + ")");
-        if (array.Length != newLength)
-            Array.Resize(ref array, (int)newLength);
-    }
-
-    public static T[] CreateInitial<T>(int length, T[] defArray)
-    {
-        var array = new T[length];
-        if (defArray != null)
-            defArray.AsSpan().CopyTo(array);
-        return array;
+        long doubled = Math.Max(4L, (long)current * 2);
+        return (int)Math.Min(ResizableArray.MaxLength, Math.Max(needed, doubled));
     }
 
     /// <summary>startからendまで（endは含まない）を扱う配列関数の範囲確認。空の配列も扱えるよう、位置は長さちょうどまで許す。</summary>
@@ -61,6 +109,9 @@ internal static class ResizableArray
         if (index2 < 0 || index2 > length)
             throw new CodeEE(string.Format(LocalizationManager.Error.OoRInstructionArg, funcName, i2.ToString(), index2.ToString(), varName));
     }
+
+    /// <summary>CHARADATAの格納場所の値を配列として取り出す（RESIZABLEなら今の長さちょうどに切り詰める）。</summary>
+    public static object AsArray(object stored) => stored is IResizableBuffer buffer ? buffer.AsExactArray() : stored;
 }
 
 }
@@ -82,83 +133,71 @@ internal sealed partial class VariableData
         }
         readonly int initLength;
         readonly long[] defArray;
-        long[] array;
+        ResizableBuffer<long> buffer;
 
-        void IfNullInitArray()
-        {
-            array ??= ResizableArray.CreateInitial(initLength, defArray);
-        }
+        ResizableBuffer<long> Buffer => buffer ??= new ResizableBuffer<long>(initLength, defArray);
+
         public override void SetDefault()
         {
-            array = ResizableArray.CreateInitial(initLength, defArray);
+            buffer = new ResizableBuffer<long>(initLength, defArray);
         }
         public override long GetIntValue(ExpressionMediator exm, long[] arguments)
         {
-            IfNullInitArray();
-            return array[arguments[0]];
+            var b = Buffer;
+            long i = arguments[0];
+            if ((ulong)i >= (ulong)b.Count)
+                throw new IndexOutOfRangeException();
+            return b.Items[i];
         }
         public override void SetValue(long value, long[] arguments)
         {
-            IfNullInitArray();
+            var b = Buffer;
             long i = arguments[0];
-            if ((ulong)i >= (ulong)array.Length)
-                ResizableArray.GrowFor(ref array, i, varName, "1");
-            array[i] = value;
+            if ((ulong)i >= (ulong)b.Count)
+                b.GrowFor(i, varName, "1");
+            b.Items[i] = value;
         }
         public override void SetValue(long[] values, long[] arguments)
         {
-            IfNullInitArray();
+            var b = Buffer;
             long start = arguments[0];
             long end = start + values.Length;
-            if (end > array.Length)
-                ResizableArray.GrowFor(ref array, start < 0 ? start : end - 1, varName, "1");
-            values.AsSpan().CopyTo(array.AsSpan((int)start));
+            if (start < 0 || end > b.Count)
+                b.GrowFor(start < 0 ? start : end - 1, varName, "1");
+            values.AsSpan().CopyTo(b.Items.AsSpan((int)start));
         }
         public override void SetValueAll(long value, int start, int end, int charaPos)
         {
-            IfNullInitArray();
-            array.AsSpan()[start..end].Fill(value);
+            Buffer.Items.AsSpan()[start..end].Fill(value);
         }
         public override long PlusValue(long value, long[] arguments)
         {
-            IfNullInitArray();
+            var b = Buffer;
             long i = arguments[0];
-            if ((ulong)i >= (ulong)array.Length)
-                ResizableArray.GrowFor(ref array, i, varName, "1");
-            array[i] += value;
-            return array[i];
+            if ((ulong)i >= (ulong)b.Count)
+                b.GrowFor(i, varName, "1");
+            b.Items[i] += value;
+            return b.Items[i];
         }
-        public override object GetArray()
-        {
-            IfNullInitArray();
-            return array;
-        }
-        public override int GetLength()
-        {
-            IfNullInitArray();
-            return array.Length;
-        }
+        public override object GetArray() => Buffer.AsExact();
+        public override int GetLength() => Buffer.Count;
         public override int GetLength(int dimension)
         {
             if (dimension == 0)
-                return GetLength();
+                return Buffer.Count;
             return base.GetLength(dimension);
         }
         public override void CheckElement(long[] arguments, bool[] doCheck)
         {
-            if (doCheck[0] && (arguments[0] < 0 || arguments[0] >= GetLength()))
+            if (doCheck[0] && (arguments[0] < 0 || arguments[0] >= Buffer.Count))
                 throw new CodeEE(string.Format(LocalizationManager.Error.OoRVarArg, varName, "1", arguments[0].ToString()));
         }
         public override void IsArrayRangeValid(long[] arguments, long index1, long index2, string funcName, long i1, long i2)
         {
-            ResizableArray.CheckRange(GetLength(), arguments.Length > 0 ? arguments[0] : 0, index1, index2, funcName, i1, i2, varName);
+            ResizableArray.CheckRange(Buffer.Count, arguments.Length > 0 ? arguments[0] : 0, index1, index2, funcName, i1, i2, varName);
         }
-        public int GetCurrentLength(long charaNo) => GetLength();
-        public void Resize(long charaNo, long newLength)
-        {
-            IfNullInitArray();
-            ResizableArray.ResizeTo(ref array, newLength, varName);
-        }
+        public int GetCurrentLength(long charaNo) => Buffer.Count;
+        public void Resize(long charaNo, long newLength) => Buffer.ResizeTo(newLength, varName);
         public override void ScopeIn() { }
         public override void ScopeOut() { }
     }
@@ -175,82 +214,70 @@ internal sealed partial class VariableData
         }
         readonly int initLength;
         readonly string[] defArray;
-        string[] array;
+        ResizableBuffer<string> buffer;
 
-        void IfNullInitArray()
-        {
-            array ??= ResizableArray.CreateInitial(initLength, defArray);
-        }
+        ResizableBuffer<string> Buffer => buffer ??= new ResizableBuffer<string>(initLength, defArray);
+
         public override void SetDefault()
         {
-            array = ResizableArray.CreateInitial(initLength, defArray);
+            buffer = new ResizableBuffer<string>(initLength, defArray);
         }
         public override string GetStrValue(ExpressionMediator exm, long[] arguments)
         {
-            IfNullInitArray();
-            return array[arguments[0]];
+            var b = Buffer;
+            long i = arguments[0];
+            if ((ulong)i >= (ulong)b.Count)
+                throw new IndexOutOfRangeException();
+            return b.Items[i];
         }
         public override void SetValue(string value, long[] arguments)
         {
-            IfNullInitArray();
+            var b = Buffer;
             long i = arguments[0];
-            if ((ulong)i >= (ulong)array.Length)
-                ResizableArray.GrowFor(ref array, i, varName, "1");
-            array[i] = value;
+            if ((ulong)i >= (ulong)b.Count)
+                b.GrowFor(i, varName, "1");
+            b.Items[i] = value;
         }
         public override void SetValue(string[] values, long[] arguments)
         {
-            IfNullInitArray();
+            var b = Buffer;
             long start = arguments[0];
             long end = start + values.Length;
-            if (end > array.Length)
-                ResizableArray.GrowFor(ref array, start < 0 ? start : end - 1, varName, "1");
-            values.AsSpan().CopyTo(array.AsSpan((int)start));
+            if (start < 0 || end > b.Count)
+                b.GrowFor(start < 0 ? start : end - 1, varName, "1");
+            values.AsSpan().CopyTo(b.Items.AsSpan((int)start));
         }
         public override void SetValueAll(string value, int start, int end, int charaPos)
         {
-            IfNullInitArray();
-            array.AsSpan()[start..end].Fill(value);
+            Buffer.Items.AsSpan()[start..end].Fill(value);
         }
-        public override object GetArray()
-        {
-            IfNullInitArray();
-            return array;
-        }
-        public override int GetLength()
-        {
-            IfNullInitArray();
-            return array.Length;
-        }
+        public override object GetArray() => Buffer.AsExact();
+        public override int GetLength() => Buffer.Count;
         public override int GetLength(int dimension)
         {
             if (dimension == 0)
-                return GetLength();
+                return Buffer.Count;
             return base.GetLength(dimension);
         }
         public override void CheckElement(long[] arguments, bool[] doCheck)
         {
-            if (doCheck[0] && (arguments[0] < 0 || arguments[0] >= GetLength()))
+            if (doCheck[0] && (arguments[0] < 0 || arguments[0] >= Buffer.Count))
                 throw new CodeEE(string.Format(LocalizationManager.Error.OoRVarArg, varName, "1", arguments[0].ToString()));
         }
         public override void IsArrayRangeValid(long[] arguments, long index1, long index2, string funcName, long i1, long i2)
         {
-            ResizableArray.CheckRange(GetLength(), arguments.Length > 0 ? arguments[0] : 0, index1, index2, funcName, i1, i2, varName);
+            ResizableArray.CheckRange(Buffer.Count, arguments.Length > 0 ? arguments[0] : 0, index1, index2, funcName, i1, i2, varName);
         }
-        public int GetCurrentLength(long charaNo) => GetLength();
-        public void Resize(long charaNo, long newLength)
-        {
-            IfNullInitArray();
-            ResizableArray.ResizeTo(ref array, newLength, varName);
-        }
+        public int GetCurrentLength(long charaNo) => Buffer.Count;
+        public void Resize(long charaNo, long newLength) => Buffer.ResizeTo(newLength, varName);
         public override void ScopeIn() { }
         public override void ScopeOut() { }
     }
     #endregion
 
     #region RESIZABLE（関数内DYNAMIC）
-    // 再帰に備えて呼び出しごとの配列をスタックに退避する（既存のPrivate*1DVariableTokenと同じ）。
-    // 長さは配列ごとに持つので、呼び出し階層ごとに独立する。
+    // 再帰に備えて呼び出しごとのバッファをスタックに退避する（既存のPrivate*1DVariableTokenと同じ）。
+    // 長さはバッファごとに持つので、呼び出し階層ごとに独立する。
     private sealed class ResizablePrivateInt1DVariableToken : UserDefinedVariableToken, IResizableToken
     {
         public ResizablePrivateInt1DVariableToken(UserDefinedVariableData data)
@@ -263,72 +290,76 @@ internal sealed partial class VariableData
         }
         readonly int initLength;
         readonly long[] defArray;
-        readonly Stack<long[]> arrayStack = [];
-        long[] array;
+        readonly Stack<ResizableBuffer<long>> bufferStack = [];
+        ResizableBuffer<long> buffer;
 
         public override void SetDefault() { }
         public override long GetIntValue(ExpressionMediator exm, long[] arguments)
         {
-            return array[arguments[0]];
+            var b = buffer;
+            long i = arguments[0];
+            if ((ulong)i >= (ulong)b.Count)
+                throw new IndexOutOfRangeException();
+            return b.Items[i];
         }
         public override void SetValue(long value, long[] arguments)
         {
+            var b = buffer;
             long i = arguments[0];
-            if ((ulong)i >= (ulong)array.Length)
-                ResizableArray.GrowFor(ref array, i, varName, "1");
-            array[i] = value;
+            if ((ulong)i >= (ulong)b.Count)
+                b.GrowFor(i, varName, "1");
+            b.Items[i] = value;
         }
         public override void SetValue(long[] values, long[] arguments)
         {
+            var b = buffer;
             long start = arguments[0];
             long end = start + values.Length;
-            if (end > array.Length)
-                ResizableArray.GrowFor(ref array, start < 0 ? start : end - 1, varName, "1");
-            values.AsSpan().CopyTo(array.AsSpan((int)start));
+            if (start < 0 || end > b.Count)
+                b.GrowFor(start < 0 ? start : end - 1, varName, "1");
+            values.AsSpan().CopyTo(b.Items.AsSpan((int)start));
         }
         public override void SetValueAll(long value, int start, int end, int charaPos)
         {
-            array.AsSpan()[start..end].Fill(value);
+            buffer.Items.AsSpan()[start..end].Fill(value);
         }
         public override long PlusValue(long value, long[] arguments)
         {
+            var b = buffer;
             long i = arguments[0];
-            if ((ulong)i >= (ulong)array.Length)
-                ResizableArray.GrowFor(ref array, i, varName, "1");
-            array[i] += value;
-            return array[i];
+            if ((ulong)i >= (ulong)b.Count)
+                b.GrowFor(i, varName, "1");
+            b.Items[i] += value;
+            return b.Items[i];
         }
-        public override object GetArray() { return array; }
-        public override int GetLength() => array.Length;
+        public override object GetArray() => buffer.AsExact();
+        public override int GetLength() => buffer.Count;
         public override int GetLength(int dimension)
         {
             if (dimension == 0)
-                return array.Length;
+                return buffer.Count;
             return base.GetLength(dimension);
         }
         public override void CheckElement(long[] arguments, bool[] doCheck)
         {
-            if (doCheck[0] && (arguments[0] < 0 || arguments[0] >= array.Length))
+            if (doCheck[0] && (arguments[0] < 0 || arguments[0] >= buffer.Count))
                 throw new CodeEE(string.Format(LocalizationManager.Error.OoRVarArg, varName, "1", arguments[0].ToString()));
         }
         public override void IsArrayRangeValid(long[] arguments, long index1, long index2, string funcName, long i1, long i2)
         {
-            ResizableArray.CheckRange(array.Length, arguments.Length > 0 ? arguments[0] : 0, index1, index2, funcName, i1, i2, varName);
+            ResizableArray.CheckRange(buffer.Count, arguments.Length > 0 ? arguments[0] : 0, index1, index2, funcName, i1, i2, varName);
         }
-        public int GetCurrentLength(long charaNo) => array.Length;
-        public void Resize(long charaNo, long newLength)
-        {
-            ResizableArray.ResizeTo(ref array, newLength, varName);
-        }
+        public int GetCurrentLength(long charaNo) => buffer.Count;
+        public void Resize(long charaNo, long newLength) => buffer.ResizeTo(newLength, varName);
         public override void ScopeIn()
         {
-            if (array != null)
-                arrayStack.Push(array);
-            array = ResizableArray.CreateInitial(initLength, defArray);
+            if (buffer != null)
+                bufferStack.Push(buffer);
+            buffer = new ResizableBuffer<long>(initLength, defArray);
         }
         public override void ScopeOut()
         {
-            array = arrayStack.Count > 0 ? arrayStack.Pop() : null;
+            buffer = bufferStack.Count > 0 ? bufferStack.Pop() : null;
         }
     }
 
@@ -344,70 +375,74 @@ internal sealed partial class VariableData
         }
         readonly int initLength;
         readonly string[] defArray;
-        readonly Stack<string[]> arrayStack = [];
-        string[] array;
+        readonly Stack<ResizableBuffer<string>> bufferStack = [];
+        ResizableBuffer<string> buffer;
 
         public override void SetDefault() { }
         public override string GetStrValue(ExpressionMediator exm, long[] arguments)
         {
-            return array[arguments[0]];
+            var b = buffer;
+            long i = arguments[0];
+            if ((ulong)i >= (ulong)b.Count)
+                throw new IndexOutOfRangeException();
+            return b.Items[i];
         }
         public override void SetValue(string value, long[] arguments)
         {
+            var b = buffer;
             long i = arguments[0];
-            if ((ulong)i >= (ulong)array.Length)
-                ResizableArray.GrowFor(ref array, i, varName, "1");
-            array[i] = value;
+            if ((ulong)i >= (ulong)b.Count)
+                b.GrowFor(i, varName, "1");
+            b.Items[i] = value;
         }
         public override void SetValue(string[] values, long[] arguments)
         {
+            var b = buffer;
             long start = arguments[0];
             long end = start + values.Length;
-            if (end > array.Length)
-                ResizableArray.GrowFor(ref array, start < 0 ? start : end - 1, varName, "1");
-            values.AsSpan().CopyTo(array.AsSpan((int)start));
+            if (start < 0 || end > b.Count)
+                b.GrowFor(start < 0 ? start : end - 1, varName, "1");
+            values.AsSpan().CopyTo(b.Items.AsSpan((int)start));
         }
         public override void SetValueAll(string value, int start, int end, int charaPos)
         {
-            array.AsSpan()[start..end].Fill(value);
+            buffer.Items.AsSpan()[start..end].Fill(value);
         }
-        public override object GetArray() { return array; }
-        public override int GetLength() => array.Length;
+        public override object GetArray() => buffer.AsExact();
+        public override int GetLength() => buffer.Count;
         public override int GetLength(int dimension)
         {
             if (dimension == 0)
-                return array.Length;
+                return buffer.Count;
             return base.GetLength(dimension);
         }
         public override void CheckElement(long[] arguments, bool[] doCheck)
         {
-            if (doCheck[0] && (arguments[0] < 0 || arguments[0] >= array.Length))
+            if (doCheck[0] && (arguments[0] < 0 || arguments[0] >= buffer.Count))
                 throw new CodeEE(string.Format(LocalizationManager.Error.OoRVarArg, varName, "1", arguments[0].ToString()));
         }
         public override void IsArrayRangeValid(long[] arguments, long index1, long index2, string funcName, long i1, long i2)
         {
-            ResizableArray.CheckRange(array.Length, arguments.Length > 0 ? arguments[0] : 0, index1, index2, funcName, i1, i2, varName);
+            ResizableArray.CheckRange(buffer.Count, arguments.Length > 0 ? arguments[0] : 0, index1, index2, funcName, i1, i2, varName);
         }
-        public int GetCurrentLength(long charaNo) => array.Length;
-        public void Resize(long charaNo, long newLength)
-        {
-            ResizableArray.ResizeTo(ref array, newLength, varName);
-        }
+        public int GetCurrentLength(long charaNo) => buffer.Count;
+        public void Resize(long charaNo, long newLength) => buffer.ResizeTo(newLength, varName);
         public override void ScopeIn()
         {
-            if (array != null)
-                arrayStack.Push(array);
-            array = ResizableArray.CreateInitial(initLength, defArray);
+            if (buffer != null)
+                bufferStack.Push(buffer);
+            buffer = new ResizableBuffer<string>(initLength, defArray);
         }
         public override void ScopeOut()
         {
-            array = arrayStack.Count > 0 ? arrayStack.Pop() : null;
+            buffer = bufferStack.Count > 0 ? bufferStack.Pop() : null;
         }
     }
     #endregion
 
     #region RESIZABLE（CHARADATA）
-    // キャラごとの配列（CharacterData.UserDefCVarDataList[ArrayIndex]）を差し替えて伸縮する。
+    // キャラごとの格納場所（CharacterData.UserDefCVarDataList[ArrayIndex]）にResizableBufferを置く。
+    // 配列として取り出す箇所（GetArrayChara、COPYCHARA、SORTCHARAのキー）はResizableArray.AsArray等で今の長さに切り詰める。
     // GetLength()は従来どおり宣言時の初期サイズ（キャラを指定できないため）。キャラごとの長さはGetCurrentLengthで取る。
     private sealed class ResizableCharaInt1DVariableToken : UserDefinedCharaVariableToken, IResizableToken
     {
@@ -416,53 +451,46 @@ internal sealed partial class VariableData
         {
             IsForbid = false;
         }
+        ResizableBuffer<long> BufferOf(long charaNo) => (ResizableBuffer<long>)varData.CharacterList[(int)charaNo].UserDefCVarDataList[ArrayIndex];
+
+        public override object GetArrayChara(int charano) => BufferOf(charano).AsExact();
         public override long GetIntValue(ExpressionMediator exm, long[] arguments)
         {
-            long[] array = (long[])GetArrayChara((int)arguments[0]);
-            return array[arguments[1]];
+            var b = BufferOf(arguments[0]);
+            long i = arguments[1];
+            if ((ulong)i >= (ulong)b.Count)
+                throw new IndexOutOfRangeException();
+            return b.Items[i];
         }
         public override void SetValue(long value, long[] arguments)
         {
-            List<object> list = varData.CharacterList[(int)arguments[0]].UserDefCVarDataList;
-            long[] array = (long[])list[ArrayIndex];
+            var b = BufferOf(arguments[0]);
             long i = arguments[1];
-            if ((ulong)i >= (ulong)array.Length)
-            {
-                ResizableArray.GrowFor(ref array, i, varName, "2");
-                list[ArrayIndex] = array;
-            }
-            array[i] = value;
+            if ((ulong)i >= (ulong)b.Count)
+                b.GrowFor(i, varName, "2");
+            b.Items[i] = value;
         }
         public override void SetValue(long[] values, long[] arguments)
         {
-            List<object> list = varData.CharacterList[(int)arguments[0]].UserDefCVarDataList;
-            long[] array = (long[])list[ArrayIndex];
+            var b = BufferOf(arguments[0]);
             long start = arguments[1];
             long end = start + values.Length;
-            if (end > array.Length)
-            {
-                ResizableArray.GrowFor(ref array, start < 0 ? start : end - 1, varName, "2");
-                list[ArrayIndex] = array;
-            }
-            values.AsSpan().CopyTo(array.AsSpan((int)start));
+            if (start < 0 || end > b.Count)
+                b.GrowFor(start < 0 ? start : end - 1, varName, "2");
+            values.AsSpan().CopyTo(b.Items.AsSpan((int)start));
         }
         public override void SetValueAll(long value, int start, int end, int charaPos)
         {
-            long[] array = (long[])GetArrayChara(charaPos);
-            array.AsSpan()[start..end].Fill(value);
+            BufferOf(charaPos).Items.AsSpan()[start..end].Fill(value);
         }
         public override long PlusValue(long value, long[] arguments)
         {
-            List<object> list = varData.CharacterList[(int)arguments[0]].UserDefCVarDataList;
-            long[] array = (long[])list[ArrayIndex];
+            var b = BufferOf(arguments[0]);
             long i = arguments[1];
-            if ((ulong)i >= (ulong)array.Length)
-            {
-                ResizableArray.GrowFor(ref array, i, varName, "2");
-                list[ArrayIndex] = array;
-            }
-            array[i] += value;
-            return array[i];
+            if ((ulong)i >= (ulong)b.Count)
+                b.GrowFor(i, varName, "2");
+            b.Items[i] += value;
+            return b.Items[i];
         }
         public override void CheckElement(long[] arguments, bool[] doCheck)
         {
@@ -477,14 +505,8 @@ internal sealed partial class VariableData
                 throw new CodeEE(string.Format(LocalizationManager.Error.OoRCharaVarArg, varName, "1", arguments[0].ToString()));
             ResizableArray.CheckRange(GetCurrentLength(arguments[0]), arguments.Length > 1 ? arguments[1] : 0, index1, index2, funcName, i1, i2, varName);
         }
-        public int GetCurrentLength(long charaNo) => ((long[])GetArrayChara((int)charaNo)).Length;
-        public void Resize(long charaNo, long newLength)
-        {
-            List<object> list = varData.CharacterList[(int)charaNo].UserDefCVarDataList;
-            long[] array = (long[])list[ArrayIndex];
-            ResizableArray.ResizeTo(ref array, newLength, varName);
-            list[ArrayIndex] = array;
-        }
+        public int GetCurrentLength(long charaNo) => BufferOf(charaNo).Count;
+        public void Resize(long charaNo, long newLength) => BufferOf(charaNo).ResizeTo(newLength, varName);
     }
 
     private sealed class ResizableCharaStr1DVariableToken : UserDefinedCharaVariableToken, IResizableToken
@@ -494,40 +516,37 @@ internal sealed partial class VariableData
         {
             IsForbid = false;
         }
+        ResizableBuffer<string> BufferOf(long charaNo) => (ResizableBuffer<string>)varData.CharacterList[(int)charaNo].UserDefCVarDataList[ArrayIndex];
+
+        public override object GetArrayChara(int charano) => BufferOf(charano).AsExact();
         public override string GetStrValue(ExpressionMediator exm, long[] arguments)
         {
-            string[] array = (string[])GetArrayChara((int)arguments[0]);
-            return array[arguments[1]];
+            var b = BufferOf(arguments[0]);
+            long i = arguments[1];
+            if ((ulong)i >= (ulong)b.Count)
+                throw new IndexOutOfRangeException();
+            return b.Items[i];
         }
         public override void SetValue(string value, long[] arguments)
         {
-            List<object> list = varData.CharacterList[(int)arguments[0]].UserDefCVarDataList;
-            string[] array = (string[])list[ArrayIndex];
+            var b = BufferOf(arguments[0]);
             long i = arguments[1];
-            if ((ulong)i >= (ulong)array.Length)
-            {
-                ResizableArray.GrowFor(ref array, i, varName, "2");
-                list[ArrayIndex] = array;
-            }
-            array[i] = value;
+            if ((ulong)i >= (ulong)b.Count)
+                b.GrowFor(i, varName, "2");
+            b.Items[i] = value;
         }
         public override void SetValue(string[] values, long[] arguments)
         {
-            List<object> list = varData.CharacterList[(int)arguments[0]].UserDefCVarDataList;
-            string[] array = (string[])list[ArrayIndex];
+            var b = BufferOf(arguments[0]);
             long start = arguments[1];
             long end = start + values.Length;
-            if (end > array.Length)
-            {
-                ResizableArray.GrowFor(ref array, start < 0 ? start : end - 1, varName, "2");
-                list[ArrayIndex] = array;
-            }
-            values.AsSpan().CopyTo(array.AsSpan((int)start));
+            if (start < 0 || end > b.Count)
+                b.GrowFor(start < 0 ? start : end - 1, varName, "2");
+            values.AsSpan().CopyTo(b.Items.AsSpan((int)start));
         }
         public override void SetValueAll(string value, int start, int end, int charaPos)
         {
-            string[] array = (string[])GetArrayChara(charaPos);
-            array.AsSpan()[start..end].Fill(value);
+            BufferOf(charaPos).Items.AsSpan()[start..end].Fill(value);
         }
         public override void CheckElement(long[] arguments, bool[] doCheck)
         {
@@ -542,14 +561,8 @@ internal sealed partial class VariableData
                 throw new CodeEE(string.Format(LocalizationManager.Error.OoRCharaVarArg, varName, "1", arguments[0].ToString()));
             ResizableArray.CheckRange(GetCurrentLength(arguments[0]), arguments.Length > 1 ? arguments[1] : 0, index1, index2, funcName, i1, i2, varName);
         }
-        public int GetCurrentLength(long charaNo) => ((string[])GetArrayChara((int)charaNo)).Length;
-        public void Resize(long charaNo, long newLength)
-        {
-            List<object> list = varData.CharacterList[(int)charaNo].UserDefCVarDataList;
-            string[] array = (string[])list[ArrayIndex];
-            ResizableArray.ResizeTo(ref array, newLength, varName);
-            list[ArrayIndex] = array;
-        }
+        public int GetCurrentLength(long charaNo) => BufferOf(charaNo).Count;
+        public void Resize(long charaNo, long newLength) => BufferOf(charaNo).ResizeTo(newLength, varName);
     }
     #endregion
 }
