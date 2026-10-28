@@ -62,6 +62,7 @@ CALL CHK, "chara grow per chara", ARRAYSIZE(C_LIST:0:0) == 3 && ARRAYSIZE(C_LIST
 CALL CHK, "chara FINDELEMENT", FINDELEMENT(C_LIST:0:0, "a") == 2
 C_LIST:0:5 '= "z"
 CALL CHK, "chara FINDELEMENT default end per chara", FINDELEMENT(C_LIST:0:0, "z") == 5 && FINDELEMENT(C_LIST:1:0, "z") == -1
+CALL CHK, "chara MATCH default end per chara", MATCH(C_LIST:0:0, "z") == 1 && MATCH(C_LIST:1:0, "z") == 0
 RESIZE C_LIST:1:0, 4
 CALL CHK, "chara RESIZE", ARRAYSIZE(C_LIST:1:0) == 4 && ARRAYSIZE(C_LIST:0:0) == 6
 COPYCHARA 0, 1
