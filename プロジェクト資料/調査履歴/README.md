@@ -4,6 +4,7 @@
 
 - `07_ERB起動詳細Profiling.md` — ERB起動・並列解析・profilingの調査記録
 - `08_ArgumentParser性能設計.md` — ArgumentParser、Lexer、allocation改善の調査記録
+- `09_元Emuera1824v24との差異調査.md` — 元Emuera 1824+v24（GDI+）から.NET版への移行で変わった挙動の段階調査（第1段階: 描画）
 - `MAIN_OPT-C0-summary.md` — CDFLAGのERB使用状況、save219ロード後の疎性、N100アクセス集計
 - `MAIN_OPT-C1W-summary.md` — CDFLAG whole-array lazyの実装、互換性、メモリ・性能検証
 
