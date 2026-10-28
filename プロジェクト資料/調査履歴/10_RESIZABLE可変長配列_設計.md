@@ -76,6 +76,7 @@ RESIZE C_LIST:ARG:0, 0                             ; 空にする
 - `Items[Count..]`（容量の余り）は常に既定値（0／null）に保つ。縮めたときに消去するので、再び伸ばしても古い値は見えない。
 - 読み取りは`Count`との比較を1回行い、範囲外は`IndexOutOfRangeException`→従来どおり`CheckElement`のエラーメッセージ。
 - 縮めても容量はすぐには減らない（次に配列関数へ渡したときの切り詰めで減る）。容量は最大で今の長さの約2倍。
+- 例外として、範囲`[start, end)`だけを読む`FINDELEMENT`／`FINDLASTELEMENT`と整数の`MATCH`は、切り詰めずに容量込みの内部配列（`IResizableToken.GetBackingArray`）を読む（ARRAY-02）。範囲の終わりは今の長さ以下に確認済みなので、余りの部分は読まない。
 
 比較した4方式（詳細は「方式の比較」）:
 
@@ -112,6 +113,25 @@ RESIZE C_LIST:ARG:0, 0                             ; 空にする
 - `GetArray()`／`GetArrayChara()`を使う箇所はすべて「引数を評価してから配列を取り出す」順になっており、取り出した後に同じ変数の長さが変わる経路はない（取り出した後に`GetIntValue(exm)`等を呼ぶ箇所を機械的に検索し、該当は`REF`後の別命令の誤検出1件のみ）。
 - 配列そのものを保持し続けるのは`REF`（`Instraction.Child.cs`の`SetRef`）と参照渡しの引数（`Process.CalledFunction.cs`の`TransporterRef`）だけ。どちらも`RESIZABLE`変数ならエラーにする。
 - このforkの高速化（`FixedVariableTerm`の再利用、`CDFLAG`の遅延確保など）が保持するのはトークンであり、配列ではない。
+
+### 追加の高速化（ARRAY-02、2026-10-28）
+
+- 案1: `FINDELEMENT`／`FINDLASTELEMENT`／整数の`MATCH`は切り詰めずに内部配列を読む。追加と探索を交互に繰り返しても、探索のたびに配列を作り直さない。`SUMARRAY`／`MAXARRAY`／`INRANGEARRAY`／文字列の`MATCH`はもともと要素ごとに読んでおり、切り詰めていない。
+- 案2: `ARRAYSIZE`／`RESIZE`は変数参照を確定する汎用の処理（`RentFixedVariableTerm`）を通さず、`CHARADATA`のキャラ番号（第1添字）だけを評価して範囲確認する。
+
+ERBで100万回あたりのms（修正前は`5ec447e`の配布EXE、3回の平均。「追加だけ」は起動直後の準備時間を除くため2回目の計測）:
+
+| 項目 | 前 | 後 |
+|---|---|---|
+| 追加と`FINDELEMENT`を交互（広域、長さ0〜100） | 273 | 118 |
+| 追加と`MATCH`を交互（広域） | 255 | 112 |
+| 追加と`FINDELEMENT`を交互（CHARADATA） | 301 | 139 |
+| `ARRAYSIZE`だけ（広域） | 178 | 108 |
+| `ARRAYSIZE`だけ（CHARADATA） | 213 | 140 |
+| `RESIZE`だけ | 167 | 95 |
+| 追加だけ（CHARADATA） | 81 | 70 |
+| 追加だけ（広域） | 64 | 53 |
+| 長さ50の`FINDELEMENT`だけ | 63 | 61 |
 
 ## 検証結果（2026-10-28、ブランチのsource、Release単一EXE）
 

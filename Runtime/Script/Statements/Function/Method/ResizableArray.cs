@@ -10,6 +10,17 @@ internal static partial class FunctionMethodCreator
     // RESIZABLE配列の長さ変更と長さ取得。設計はプロジェクト資料/調査履歴/10_RESIZABLE可変長配列_設計.md
     // 引数の評価順は既存の配列関数と同じ（他の引数 → 変数の添字）。CHARADATAは変数の第1添字をキャラ番号として使う。
 
+    // [Emuera改修:ARRAY-02 2026-10-28] 長さの取得・変更に要るのはキャラ番号（CHARADATAの第1添字）だけなので、
+    // RentFixedVariableTermを通さず第1添字だけを評価する。
+    static long CharaNoOf(VariableTerm varTerm, ExpressionMediator exm)
+    {
+        if (!varTerm.Identifier.IsCharacterData)
+            return 0;
+        long charaNo = varTerm.GetElementInt(0, exm);
+        varTerm.Identifier.CheckElement([charaNo, 0], [true, false]);
+        return charaNo;
+    }
+
     /// <summary>RESIZE(変数, 新しい長さ)。伸ばすのも縮めるのも可。新しい長さを返す。</summary>
     public sealed class ResizeArrayMethod : FunctionMethod
     {
@@ -37,12 +48,8 @@ internal static partial class FunctionMethodCreator
         {
             long newLength = arguments[1].GetIntValue(exm);
             VariableTerm varTerm = (VariableTerm)arguments[0];
-            using VariableTerm.FixedVariableTermLease lease = varTerm.RentFixedVariableTerm(exm);
-            FixedVariableTerm p = lease.Term;
-            var resizable = (IResizableToken)p.Identifier;
-            if (p.Identifier.IsCharacterData)
-                p.Identifier.CheckElement([p.Index1, 0], [true, false]);
-            resizable.Resize(p.Index1, newLength);
+            var resizable = (IResizableToken)varTerm.Identifier;
+            resizable.Resize(CharaNoOf(varTerm, exm), newLength);
             return newLength;
         }
     }
@@ -71,11 +78,7 @@ internal static partial class FunctionMethodCreator
             VariableTerm varTerm = (VariableTerm)arguments[0];
             if (varTerm.Identifier is not IResizableToken resizable)
                 return varTerm.GetLength();
-            using VariableTerm.FixedVariableTermLease lease = varTerm.RentFixedVariableTerm(exm);
-            FixedVariableTerm p = lease.Term;
-            if (p.Identifier.IsCharacterData)
-                p.Identifier.CheckElement([p.Index1, 0], [true, false]);
-            return resizable.GetCurrentLength(p.Index1);
+            return resizable.GetCurrentLength(CharaNoOf(varTerm, exm));
         }
     }
 }

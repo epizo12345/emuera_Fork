@@ -21,6 +21,11 @@ internal interface IResizableToken
     int GetCurrentLength(long charaNo);
     /// <summary>長さを変える。伸びた部分は0／null（空文字）。</summary>
     void Resize(long charaNo, long newLength);
+    /// <summary>
+    /// 容量込みの内部配列を切り詰めずに返す（長さはGetCurrentLength）。範囲[start, end)だけを読む配列関数専用。
+    /// GetArray()と違って切り詰めないので、追加と探索を交互に繰り返しても配列を作り直さない。
+    /// </summary>
+    Array GetBackingArray(long charaNo);
 }
 
 /// <summary>CHARADATAのキャラごとの格納場所（CharacterData.UserDefCVarDataList）から型を問わず扱うための口。</summary>
@@ -198,6 +203,7 @@ internal sealed partial class VariableData
         }
         public int GetCurrentLength(long charaNo) => Buffer.Count;
         public void Resize(long charaNo, long newLength) => Buffer.ResizeTo(newLength, varName);
+        public Array GetBackingArray(long charaNo) => Buffer.Items;
         public override void ScopeIn() { }
         public override void ScopeOut() { }
     }
@@ -270,6 +276,7 @@ internal sealed partial class VariableData
         }
         public int GetCurrentLength(long charaNo) => Buffer.Count;
         public void Resize(long charaNo, long newLength) => Buffer.ResizeTo(newLength, varName);
+        public Array GetBackingArray(long charaNo) => Buffer.Items;
         public override void ScopeIn() { }
         public override void ScopeOut() { }
     }
@@ -351,6 +358,7 @@ internal sealed partial class VariableData
         }
         public int GetCurrentLength(long charaNo) => buffer.Count;
         public void Resize(long charaNo, long newLength) => buffer.ResizeTo(newLength, varName);
+        public Array GetBackingArray(long charaNo) => buffer.Items;
         public override void ScopeIn()
         {
             if (buffer != null)
@@ -427,6 +435,7 @@ internal sealed partial class VariableData
         }
         public int GetCurrentLength(long charaNo) => buffer.Count;
         public void Resize(long charaNo, long newLength) => buffer.ResizeTo(newLength, varName);
+        public Array GetBackingArray(long charaNo) => buffer.Items;
         public override void ScopeIn()
         {
             if (buffer != null)
@@ -507,6 +516,7 @@ internal sealed partial class VariableData
         }
         public int GetCurrentLength(long charaNo) => BufferOf(charaNo).Count;
         public void Resize(long charaNo, long newLength) => BufferOf(charaNo).ResizeTo(newLength, varName);
+        public Array GetBackingArray(long charaNo) => BufferOf(charaNo).Items;
     }
 
     private sealed class ResizableCharaStr1DVariableToken : UserDefinedCharaVariableToken, IResizableToken
@@ -563,6 +573,7 @@ internal sealed partial class VariableData
         }
         public int GetCurrentLength(long charaNo) => BufferOf(charaNo).Count;
         public void Resize(long charaNo, long newLength) => BufferOf(charaNo).ResizeTo(newLength, varName);
+        public Array GetBackingArray(long charaNo) => BufferOf(charaNo).Items;
     }
     #endregion
 }
