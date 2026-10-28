@@ -1,20 +1,23 @@
 # Emuera.NET 最終通常版
 
-- 更新日: 2026-10-28
+- 更新日: 2026-10-28（ブランチ`epizo/可変長配列`）
 - 基礎: BugFix_Test `7b7dd3bf240eff4fdfc7094f4175de0e014532b7`
-- EXE生成元source commit: `7fe08d7684e55f888e9997055e1deca1e127d224`（配布資料の更新commitとは別）
+- EXE生成元source commit: `b59c8576ceb02e684e29e1981557e9f14207b532`（ブランチ`epizo/可変長配列`。mainには未マージ）（配布資料の更新commitとは別）
 - 対象OS: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
-- `Emuera.exe` サイズ: 24,704,746バイト（約23.56 MiB）
-- `Emuera.exe` SHA-256: `E852F70BF05FBE561C58A22A9D60D6703A9C9069D4729C8A1F8DBE9FA49C5177`
-- `Emuera.exe` ProductVersion: `0.2.6.0+7fe08d7684e55f888e9997055e1deca1e127d224`（suffixはEXEを生成したsource commit）
+- `Emuera.exe` サイズ: 24,717,034バイト（約23.57 MiB）
+- `Emuera.exe` SHA-256: `C49E5ED88A8AAC0948E703FD089AB66C844A9ED47BDDAFE6A532AC7FEE9A03C3`
+- `Emuera.exe` ProductVersion: `0.2.6.0+b59c8576ceb02e684e29e1981557e9f14207b532`（suffixはEXEを生成したsource commit）
 - `Emuera.exe` FileVersion: `0.2.6.0`
 - publish条件: Release / win-x64 / framework-dependent / self-contained false / PublishSingleFile=true
 - publish時の計測: `PERFORMANCE_METRICS`無効
 - source revision検証: PASS（ProductVersion suffixが上記source commitのfull SHAと一致）
+- **このEXEはブランチ`epizo/可変長配列`から生成した試用版です。mainの正式版には`RESIZABLE`はまだ含まれていません。**
+- `#DIM`／`#DIMS`に`RESIZABLE`キーワードを追加しました（広域・関数内・`CHARADATA`の1次元配列）。範囲外の要素への書き込みで自動的に伸び、`RESIZE 変数, 長さ`で伸縮、`ARRAYSIZE(変数)`で今の長さを取れます。`CHARADATA`は`変数:キャラ:0`で指定します。`SPLIT`の出力先にすると分割数に合わせて伸びます（縮めません）。既存の`#DIM`の動作と速度は変わりません。詳細は`プロジェクト資料/調査履歴/10_RESIZABLE可変長配列_設計.md`。
+- 今回の試用版EXEでsource revision検証PASS、fixtureゲームで起動安定性テスト3/3（失敗・Lv2警告0）、RESIZABLEのERBフィクスチャ6/6 PASSを確認しました。回帰試験はsource commitで92/92 PASS。
 - `DICT_*`関数で、文字列キーが別の文字列や整数キーと衝突して値を取り違えることがある不具合を修正しました。引数の数・型・省略はERB読込時に検査し、辞書なし・キーなし・型違いは関数名・辞書名・キー付きのエラーにします。`DICT_CREATE`で同名の辞書を空で作り直す仕様、自動リセットしない仕様は変わりません。
-- 今回の正式EXEでsource revision検証PASS、fixtureゲームで起動安定性テスト3/3（失敗・Lv2警告0）を確認しました。回帰試験はsource commitで92/92 PASS（DICT試験4件を追加）。実ゲームERBからのDICT呼び出しは確認していません。
+- 前回（source commit `7fe08d7`）の正式EXEでsource revision検証PASS、fixtureゲームで起動安定性テスト3/3（失敗・Lv2警告0）を確認しました。回帰試験はsource commitで92/92 PASS（DICT試験4件を追加）。実ゲームERBからのDICT呼び出しは確認していません。
 - `GDRAWG`／`GDRAWCIMG`／`GDRAWSPRITE`のカラーマトリクスで、5行目（色に足す値）が無視され元のEmueraより色が明るくなる不具合を修正しました。元のEmuera（GDI+）と同じく5行目から取ります。`画像合成.ERB`の灰・黒・栗・橙など、5行目にマイナス値を書いた色が元どおり暗くなります。平行移動0の行列は変わりません。
 - 前回（source commit `bf6e2d6`）の正式EXEでsource revision検証PASS、fixtureゲームで起動安定性テスト3/3（失敗・Lv2警告0）を確認しました。回帰試験はsource commitで88/88 PASS（GDI+との画素比較2件を追加）。実ゲーム画面での色の目視確認はしていません。
 - 「ロード時にレポートを表示する」でERBの「読み込み中」が表示されない不具合を修正しました（表示ループの条件が逆で、並列読込のログを1行も出力していなかったもの）。表示順は並列読込の完了順です。
