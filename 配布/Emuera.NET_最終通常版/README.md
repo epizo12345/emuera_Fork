@@ -2,13 +2,13 @@
 
 - 更新日: 2026-10-28（ブランチ`epizo/可変長配列`）
 - 基礎: BugFix_Test `7b7dd3bf240eff4fdfc7094f4175de0e014532b7`
-- EXE生成元source commit: `7489c5a1cd51993307e81f61681b4c8d5c3bf937`（ブランチ`epizo/可変長配列`。mainには未マージ。前回`5ec447e`からFINDELEMENT/MATCH/ARRAYSIZE/RESIZEを高速化）（配布資料の更新commitとは別）
+- EXE生成元source commit: `4a5983b8a507e54b771403d4e4619eb49f966e70`（ブランチ`epizo/可変長配列`。mainには未マージ。前回`7489c5a`からSAVEDATA/GLOBALとの併用・REF RESIZABLEを追加）（配布資料の更新commitとは別）
 - 対象OS: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
-- `Emuera.exe` サイズ: 24,717,034バイト（約23.57 MiB）
-- `Emuera.exe` SHA-256: `E921601132A18EBC0555FA9E7D01EBDE8554B32B349342B3896236AFD2DD6C7D`
-- `Emuera.exe` ProductVersion: `0.2.6.0+7489c5a1cd51993307e81f61681b4c8d5c3bf937`（suffixはEXEを生成したsource commit）
+- `Emuera.exe` サイズ: 24,721,130バイト（約23.58 MiB）
+- `Emuera.exe` SHA-256: `069476C29160E174107C7406989EE3E482C1F61C7C0527732A600E43F6D19DCA`
+- `Emuera.exe` ProductVersion: `0.2.6.0+4a5983b8a507e54b771403d4e4619eb49f966e70`（suffixはEXEを生成したsource commit）
 - `Emuera.exe` FileVersion: `0.2.6.0`
 - publish条件: Release / win-x64 / framework-dependent / self-contained false / PublishSingleFile=true
 - publish時の計測: `PERFORMANCE_METRICS`無効
