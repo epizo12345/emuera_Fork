@@ -506,9 +506,10 @@ internal abstract class ReferenceToken : UserDefinedVariableToken
         return array;
     }
 
-    public void SetRef(Array refArray)
+    // [Emuera改修:ARRAY-03 2026-10-28] REF RESIZABLEは配列ではなく入れ物を受け取るため、引数をobjectにして上書きできるようにした。
+    public virtual void SetRef(object refArray)
     {
-        array = refArray;
+        array = (Array)refArray;
     }
 
     /// <summary>
@@ -540,6 +541,14 @@ internal abstract class ReferenceToken : UserDefinedVariableToken
         { errMes = LocalizationManager.Error.CanNotRefDifferentType; return false; }
         if (this.Dimension != rother.Dimension)
         { errMes = LocalizationManager.Error.CanNotRefDifferentDim; return false; }
+        // [Emuera改修:ARRAY-03 2026-10-28] RESIZABLE変数はREF RESIZABLEにだけ、REF RESIZABLEにはRESIZABLE変数だけを渡せる。
+        if ((this is IResizableToken) != (rother is IResizableToken))
+        {
+            errMes = this is IResizableToken
+                ? "REF RESIZABLEの引数にはRESIZABLE変数だけを渡せます"
+                : "RESIZABLE変数は#DIM REF RESIZABLEで宣言した引数にだけ渡せます";
+            return false;
+        }
         return true;
     }
 }

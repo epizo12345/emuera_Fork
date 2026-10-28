@@ -241,7 +241,11 @@ internal static partial class FunctionMethodCreator
             ["DICT_CONTAINS_KEY"] = new DictContainsKey(),
             ["DICT_SET_VALUE"] = new DictSetValue(),
             ["DICT_GET_VALUE_STRING"] = new DictGetValueString(),
-            ["DICT_GET_VALUE_LONG"] = new DictGetValueInt()
+            ["DICT_GET_VALUE_LONG"] = new DictGetValueInt(),
+
+            // [Emuera改修:ARRAY-01] RESIZABLE配列
+            ["RESIZE"] = new ResizeArrayMethod(),
+            ["ARRAYSIZE"] = new ArraySizeMethod()
         };
 
 

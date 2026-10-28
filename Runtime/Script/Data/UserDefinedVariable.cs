@@ -24,6 +24,8 @@ internal sealed class UserDefinedVariableData
     public bool Private;
     public bool CharaData;
     public bool Const;
+    // [Emuera改修:ARRAY-01 2026-10-28] 実行中に長さを変えられる1次元配列。設計はプロジェクト資料/調査履歴/10_RESIZABLE可変長配列_設計.md
+    public bool Resizable;
 
     //1822 Privateの方もDIMだけ遅延させようとしたけどちょっと課題がおおいのでやめとく
     public static UserDefinedVariableData Create(DimLineWC dimline)
@@ -166,6 +168,11 @@ internal sealed class UserDefinedVariableData
                         throw new CodeEE(keyword + "キーワードが二重に指定されています", sc);
                     ret.CharaData = true;
                     break;
+                case var s when s.Equals("RESIZABLE", cmp):
+                    if (ret.Resizable)
+                        throw new CodeEE(keyword + "キーワードが二重に指定されています", sc);
+                    ret.Resizable = true;
+                    break;
                 default:
                     ret.Name = keyword;
                     goto whilebreak;
@@ -174,6 +181,12 @@ internal sealed class UserDefinedVariableData
     whilebreak:
         if (ret.Name == null)
             throw new CodeEE(keyword + "の後に有効な変数名が指定されていません", sc);
+        if (ret.Resizable)
+        {
+            // [Emuera改修:ARRAY-03 2026-10-28] REF（REF RESIZABLE）・SAVEDATA・GLOBALと併用できるようにした。CONSTは長さが変わらないため不可。
+            if (ret.Const)
+                throw new CodeEE("RESIZABLEとCONSTキーワードは同時に指定できません", sc);
+        }
         string errMes = "";
         int errLevel = -1;
         if (isPrivate)
@@ -224,7 +237,7 @@ internal sealed class UserDefinedVariableData
 
                     continue;
                 }
-                else if (sizeTerm.Int <= 0 || sizeTerm.Int > 1000000)
+                else if (sizeTerm.Int < (ret.Resizable ? 0 : 1) || sizeTerm.Int > 1000000)
                     throw new CodeEE(LocalizationManager.Error.OoRDefinable, sc);
                 sizeNum.Add((int)sizeTerm.Int);
             }
@@ -253,7 +266,7 @@ internal sealed class UserDefinedVariableData
             var terms = ExpressionParser.ReduceArguments(wc, ArgsEndWith.EoL, false);
             if (terms.Count == 0)
                 throw new CodeEE(LocalizationManager.Error.ArrayVarCanNotOmitInitialValue);
-            if (size > 0)
+            if (size > 0 || ret.Resizable && sizeNum.Count == 1)
             {
                 if (terms.Count > size)
                     throw new CodeEE(LocalizationManager.Error.InitialValueMoreThanArraySize);
@@ -296,6 +309,8 @@ internal sealed class UserDefinedVariableData
             throw new CodeEE(LocalizationManager.Error.CharaVarCanNotDeclareMoreThan3D, sc);
         if (ret.Dimension > 3)
             throw new CodeEE(LocalizationManager.Error.VarCanNotDeclareMoreThan4D, sc);
+        if (ret.Resizable && ret.Dimension != 1)
+            throw new CodeEE("RESIZABLEは1次元配列にのみ指定できます", sc);
         ret.Lengths = new int[sizeNum.Count];
         if (ret.Reference)
             return ret;
@@ -305,7 +320,7 @@ internal sealed class UserDefinedVariableData
             ret.Lengths[i] = sizeNum[i];
             totalBytes *= ret.Lengths[i];
         }
-        if (totalBytes <= 0 || totalBytes > 1000000)
+        if (totalBytes < (ret.Resizable ? 0 : 1) || totalBytes > 1000000)
             throw new CodeEE(LocalizationManager.Error.OoRDefinable, sc);
         if (!isPrivate && ret.Save && !Config.Config.SystemSaveInBinary)
         {

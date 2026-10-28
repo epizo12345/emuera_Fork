@@ -69,7 +69,10 @@ internal sealed class CharacterData : IDisposable
         {
             UserDefinedVariableData d = varData.UserDefinedCharaVarList[i].DimData;
             object array = null;
-            if (d.TypeIsStr)
+            // [Emuera改修:ARRAY-01] RESIZABLEは容量付きのバッファを置く（1次元のみ）。
+            if (d.Resizable)
+                array = d.TypeIsStr ? new ResizableBuffer<string>(d.Lengths[0], null) : new ResizableBuffer<long>(d.Lengths[0], null);
+            else if (d.TypeIsStr)
             {
                 switch (d.Dimension)
                 {
@@ -264,6 +267,12 @@ internal sealed class CharacterData : IDisposable
             {
                 if (!var.IsCharacterData)
                     continue;
+                // [Emuera改修:ARRAY-01] RESIZABLEはキャラごとに長さが違うので、コピー元の配列を丸ごと複製して差し替える。
+                if (var is IResizableToken)
+                {
+                    other.UserDefCVarDataList[var.ArrayIndex] = ((IResizableBuffer)UserDefCVarDataList[var.ArrayIndex]).CloneBuffer();
+                    continue;
+                }
                 if (var.IsString)
                 {
                     if (var.IsArray1D)
@@ -512,7 +521,8 @@ internal sealed class CharacterData : IDisposable
             {
                 if (!var.IsSavedata || !var.IsCharacterData || var.IsGlobal)
                     continue;
-                writer.WriteWithKey(var.Name, UserDefCVarDataList[var.ArrayIndex]);
+                // [Emuera改修:ARRAY-03 2026-10-28] RESIZABLEは今の長さちょうどの配列で書く（長さも保存される）。
+                writer.WriteWithKey(var.Name, ResizableArray.AsArray(UserDefCVarDataList[var.ArrayIndex]));
             }
         }
 
@@ -567,7 +577,10 @@ internal sealed class CharacterData : IDisposable
                         dataString[codeInt] = reader.ReadString();
                     break;
                 case EraSaveDataType.IntArray:
-                    if (userDefineData && array != null)
+                    // [Emuera改修:ARRAY-03 2026-10-28] RESIZABLEは保存されていた長さに合わせて読む。
+                    if (userDefineData && array is IResizableBuffer intBuffer && intBuffer.Backing is long[])
+                        reader.ReadIntArray(null, true, n => (long[])intBuffer.ResizeForLoad(n, nameAndType.Key));
+                    else if (userDefineData && array != null)
                         reader.ReadIntArray(array as long[], true);
                     else if (vToken == null || !vToken.IsInteger || vToken.Dimension != 1)
                         reader.ReadIntArray(null, true);
@@ -575,7 +588,9 @@ internal sealed class CharacterData : IDisposable
                         reader.ReadIntArray(dataIntegerArray[codeInt], true);
                     break;
                 case EraSaveDataType.StrArray:
-                    if (userDefineData && array != null)
+                    if (userDefineData && array is IResizableBuffer strBuffer && strBuffer.Backing is string[])
+                        reader.ReadStrArray(null, true, n => (string[])strBuffer.ResizeForLoad(n, nameAndType.Key));
+                    else if (userDefineData && array != null)
                         reader.ReadStrArray(array as string[], true);
                     else if (vToken == null || !vToken.IsString || vToken.Dimension != 1)
                         reader.ReadStrArray(null, true);
@@ -775,7 +790,7 @@ internal sealed class CharacterData : IDisposable
             else if (sortkey.IsArray1D)
             {
                 string[] array = sortkey is UserDefinedCharaVariableToken token
-                    ? (string[])UserDefCVarDataList[token.ArrayIndex]
+                    ? (string[])ResizableArray.AsArray(UserDefCVarDataList[token.ArrayIndex])
                     : dataStringArray[sortkey.CodeInt];
                 if (elem64 < 0 || elem64 >= array.Length)
                     throw new CodeEE(LocalizationManager.Error.OoRSortKey);
@@ -811,7 +826,7 @@ internal sealed class CharacterData : IDisposable
             else if (sortkey.IsArray1D)
             {
                 long[] array = sortkey is UserDefinedCharaVariableToken token
-                    ? (long[])UserDefCVarDataList[token.ArrayIndex]
+                    ? (long[])ResizableArray.AsArray(UserDefCVarDataList[token.ArrayIndex])
                     : dataIntegerArray[sortkey.CodeInt];
                 if (elem64 < 0 || elem64 >= array.Length)
                     throw new CodeEE(LocalizationManager.Error.OoRSortKey);

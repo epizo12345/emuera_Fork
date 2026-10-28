@@ -565,37 +565,46 @@ internal sealed class EraDataWriter : IDisposable
     }
 
 
-    public void WriteExtended(string key, long[] array)
+    // [Emuera改修:ARRAY-03 2026-10-28] keepLength: RESIZABLE用。末尾の0も省かずに書き、長さ0でも名前と終端を書く（ロードで長さを戻すため）。
+    public void WriteExtended(string key, long[] array, bool keepLength = false)
     {
         if (writer == null)
             throw new FileEE(LocalizationManager.Error.InvalidStream);
         if (array == null)
             throw new FileEE(LocalizationManager.Error.InvalidArray);
-        int count = -1;
-        for (int i = 0; i < array.Length; i++)
-            if (array[i] != 0)
-                count = i;
-        count++;
-        if (count == 0)
-            return;
+        int count = array.Length;
+        if (!keepLength)
+        {
+            count = -1;
+            for (int i = 0; i < array.Length; i++)
+                if (array[i] != 0)
+                    count = i;
+            count++;
+            if (count == 0)
+                return;
+        }
         writer.WriteLine(key);
         for (int i = 0; i < count; i++)
             writer.WriteLine(array[i].ToString());
         writer.WriteLine(FINISHER);
     }
-    public void WriteExtended(string key, string[] array)
+    public void WriteExtended(string key, string[] array, bool keepLength = false)
     {
         if (writer == null)
             throw new FileEE(LocalizationManager.Error.InvalidStream);
         if (array == null)
             throw new FileEE(LocalizationManager.Error.InvalidArray);
-        int count = -1;
-        for (int i = 0; i < array.Length; i++)
-            if (!string.IsNullOrEmpty(array[i]))
-                count = i;
-        count++;
-        if (count == 0)
-            return;
+        int count = array.Length;
+        if (!keepLength)
+        {
+            count = -1;
+            for (int i = 0; i < array.Length; i++)
+                if (!string.IsNullOrEmpty(array[i]))
+                    count = i;
+            count++;
+            if (count == 0)
+                return;
+        }
         writer.WriteLine(key);
         for (int i = 0; i < count; i++)
         {

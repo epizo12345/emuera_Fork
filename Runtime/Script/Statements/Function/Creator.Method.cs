@@ -1304,6 +1304,9 @@ internal static partial class FunctionMethodCreator
 
             using VariableTerm.FixedVariableTermLease lease = varTerm.RentFixedVariableTerm(exm);
             FixedVariableTerm p = lease.Term;
+            // [Emuera改修:ARRAY-01] 範囲省略時、RESIZABLE（特にCHARADATA）は宣言時サイズではなく今の長さを使う。
+            if (!isCharaRange && !(arguments.Count == 3 && arguments[2] != null) && p.Identifier is IResizableToken resizable)
+                index2 = resizable.GetCurrentLength(p.Index1);
             if (!isCharaRange)
             {
                 p.IsArrayRangeValid(index1, index2, "SUMARRAY", 2L, 3L);
@@ -1378,6 +1381,9 @@ internal static partial class FunctionMethodCreator
             // 配列の検索内容、引数評価順、乱数消費順は従来どおり。
             using VariableTerm.FixedVariableTermLease fixedTermLease = varTerm.RentFixedVariableTerm(exm);
             FixedVariableTerm p = fixedTermLease.Term;
+            // [Emuera改修:ARRAY-01] 範囲省略時、RESIZABLE（特にCHARADATA）は宣言時サイズではなく今の長さを使う。
+            if (!isCharaRange && !(arguments.Count > 3 && arguments[3] != null) && p.Identifier is IResizableToken resizable)
+                end = resizable.GetCurrentLength(p.Index1);
             if (!isCharaRange)
             {
                 p.IsArrayRangeValid(start, end, "MATCH", 3L, 4L);
@@ -1639,6 +1645,9 @@ internal static partial class FunctionMethodCreator
             Int64 end = (arguments.Count > 2 && arguments[2] != null) ? arguments[2].GetIntValue(exm) : (isCharaRange ? exm.VEvaluator.CHARANUM : vTerm.GetLength());
             using VariableTerm.FixedVariableTermLease lease = vTerm.RentFixedVariableTerm(exm);
             FixedVariableTerm p = lease.Term;
+            // [Emuera改修:ARRAY-01] 範囲省略時、RESIZABLE（特にCHARADATA）は宣言時サイズではなく今の長さを使う。
+            if (!isCharaRange && !(arguments.Count > 2 && arguments[2] != null) && p.Identifier is IResizableToken resizable)
+                end = resizable.GetCurrentLength(p.Index1);
             if (!isCharaRange)
             {
                 p.IsArrayRangeValid(start, end, funcName, 2L, 3L);
@@ -1870,6 +1879,9 @@ internal static partial class FunctionMethodCreator
 
             using VariableTerm.FixedVariableTermLease lease = varTerm.RentFixedVariableTerm(exm);
             FixedVariableTerm p = lease.Term;
+            // [Emuera改修:ARRAY-01] 範囲省略時、RESIZABLE（特にCHARADATA）は宣言時サイズではなく今の長さを使う。
+            if (!(arguments.Count > 3 && arguments[3] != null) && p.Identifier is IResizableToken resizable)
+                end = resizable.GetCurrentLength(p.Index1);
             p.IsArrayRangeValid(start, end, funcName, 3L, 4L);
 
             if (arguments[0].GetOperandType() == typeof(Int64))
@@ -1987,6 +1999,9 @@ internal static partial class FunctionMethodCreator
 
             using VariableTerm.FixedVariableTermLease lease = varTerm.RentFixedVariableTerm(exm);
             FixedVariableTerm p = lease.Term;
+            // [Emuera改修:ARRAY-01] 範囲省略時、RESIZABLE（特にCHARADATA）は宣言時サイズではなく今の長さを使う。
+            if (!isCharaRange && !(arguments.Count > 4 && arguments[4] != null) && p.Identifier is IResizableToken resizable)
+                end = resizable.GetCurrentLength(p.Index1);
 
             if (!isCharaRange)
             {
@@ -2837,6 +2852,9 @@ internal static partial class FunctionMethodCreator
 
             using VariableTerm.FixedVariableTermLease lease = varTerm.RentFixedVariableTerm(exm);
             FixedVariableTerm p = lease.Term;
+            // [Emuera改修:ARRAY-01] 範囲省略時、RESIZABLE（特にCHARADATA）は宣言時サイズではなく今の長さを使う。
+            if (!(arguments.Count == 4 && arguments[3] != null) && p.Identifier is IResizableToken resizable)
+                index2 = resizable.GetCurrentLength(p.Index1) - index1;
 
             if (index2 < 0)
                 throw new CodeEE("STRJOINの第4引数(" + index2.ToString() + ")が負の値になっています");

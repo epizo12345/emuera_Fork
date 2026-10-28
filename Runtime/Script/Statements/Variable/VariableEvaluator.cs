@@ -120,7 +120,8 @@ internal sealed class VariableEvaluator : IDisposable
         {
             if (p.Identifier.IsArray1D)
             {
-                if (start != 0 || end != p.Identifier.GetLength())
+                // [Emuera改修:ARRAY-01] RESIZABLEは長さがキャラごと・時点ごとに違うので常に範囲確認する（空の配列も許す）。
+                if (start != 0 || end != p.Identifier.GetLength() || p.Identifier is IResizableToken)
                 {
                     p.IsArrayRangeValid(start, end, "VARSET", 3L, 4L);
                 }
@@ -158,7 +159,8 @@ internal sealed class VariableEvaluator : IDisposable
         {
             if (p.Identifier.IsArray1D)
             {
-                if (start != 0 || end != p.Identifier.GetLength())
+                // [Emuera改修:ARRAY-01] RESIZABLEは長さがキャラごと・時点ごとに違うので常に範囲確認する（空の配列も許す）。
+                if (start != 0 || end != p.Identifier.GetLength() || p.Identifier is IResizableToken)
                     p.IsArrayRangeValid(start, end, "VARSET", 3L, 4L);
                 else if (p.Identifier.IsCharacterData)
                     p.Identifier.CheckElement([p.Index1, p.Index2]);
@@ -336,8 +338,11 @@ internal sealed class VariableEvaluator : IDisposable
 
     public static long GetMatch(FixedVariableTerm p, long target, long start, long end)
     {
+        // [Emuera改修:ARRAY-02 2026-10-28] RESIZABLEは切り詰めずに内部配列を読む（範囲[start, end)だけを見るため安全。追加と探索の交互で配列を作り直さない）。
         long ret = 0;
-        long[] array = p.Identifier.IsCharacterData
+        long[] array = p.Identifier is IResizableToken resizable
+            ? (long[])resizable.GetBackingArray(p.Index1)
+            : p.Identifier.IsCharacterData
             ? (long[])p.Identifier.GetArrayChara((int)p.Index1)
             : (long[])p.Identifier.GetArray();
 
@@ -397,7 +402,10 @@ internal sealed class VariableEvaluator : IDisposable
         if (start >= end)
             return -1;
 
-        if (p.Identifier.IsCharacterData)
+        // [Emuera改修:ARRAY-02 2026-10-28] RESIZABLEは切り詰めずに内部配列を読む（範囲[start, end)だけを見るため安全。追加と探索の交互で配列を作り直さない）。
+        if (p.Identifier is IResizableToken resizable)
+            array = (long[])resizable.GetBackingArray(p.Index1);
+        else if (p.Identifier.IsCharacterData)
             array = (long[])p.Identifier.GetArrayChara((int)p.Index1);
         else
             array = (long[])p.Identifier.GetArray();
@@ -429,7 +437,10 @@ internal sealed class VariableEvaluator : IDisposable
         if (start >= end)
             return -1;
 
-        if (p.Identifier.IsCharacterData)
+        // [Emuera改修:ARRAY-02 2026-10-28] RESIZABLEは切り詰めずに内部配列を読む（範囲[start, end)だけを見るため安全。追加と探索の交互で配列を作り直さない）。
+        if (p.Identifier is IResizableToken resizable)
+            array = (string[])resizable.GetBackingArray(p.Index1);
+        else if (p.Identifier.IsCharacterData)
             array = (string[])p.Identifier.GetArrayChara((int)p.Index1);
         else
             array = (string[])p.Identifier.GetArray();

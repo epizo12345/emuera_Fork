@@ -308,7 +308,8 @@ internal class VariableTerm : AExpression
                 transporter[i] = arguments[i].GetIntValue(exm);
             }
         }
-        if (!Identifier.IsReference)
+        // [Emuera改修:ARRAY-01] RESIZABLEは長さが実行時に決まるので、ARGと同様に読み込み時の範囲確認をしない（実行時に確認する）。
+        if (!Identifier.IsReference && Identifier is not IResizableToken)
             Identifier.CheckElement(transporter, canCheck);
         if (Identifier.CanRestructure && allArgIsConst)
             return GetValue(exm);

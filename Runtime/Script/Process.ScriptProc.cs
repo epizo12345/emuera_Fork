@@ -546,7 +546,8 @@ internal sealed partial class Process
                     string[] split = [spSplitArg.Split.GetStrValue(exm)];
                     string[] retStr = target.Split(split, StringSplitOptions.None);
                     spSplitArg.Num.SetValue(retStr.Length, exm);
-                    if (retStr.Length > spSplitArg.Var.GetLength(0))
+                    // [Emuera改修:ARRAY-01] RESIZABLEは切り捨てず、書き込み時に伸びる（縮めない）。
+                    if (spSplitArg.Var is not IResizableToken && retStr.Length > spSplitArg.Var.GetLength(0))
                     {
                         string[] temp = retStr;
                         retStr = new string[spSplitArg.Var.GetLength(0)];
