@@ -54,6 +54,9 @@ internal sealed class UserDefinedFunctionArgument
             if (destinationArgs[i].Identifier.IsReference)
             {
                 VariableTerm vTerm = (VariableTerm)Arguments[i];
+                // [Emuera改修:ARRAY-01] 参照渡しは呼び出し中ずっと配列そのものを保持するため、長さが変わると古い配列を見続ける。
+                if (vTerm.Identifier is IResizableToken)
+                    throw new CodeEE("RESIZABLE変数" + vTerm.Identifier.Name + "は参照渡しの引数にできません");
                 if (vTerm.Identifier.IsCharacterData)
                 {
                     long charaNo = vTerm.GetElementInt(0, exm);

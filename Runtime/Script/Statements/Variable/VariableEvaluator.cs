@@ -120,7 +120,8 @@ internal sealed class VariableEvaluator : IDisposable
         {
             if (p.Identifier.IsArray1D)
             {
-                if (start != 0 || end != p.Identifier.GetLength())
+                // [Emuera改修:ARRAY-01] RESIZABLEは長さがキャラごと・時点ごとに違うので常に範囲確認する（空の配列も許す）。
+                if (start != 0 || end != p.Identifier.GetLength() || p.Identifier is IResizableToken)
                 {
                     p.IsArrayRangeValid(start, end, "VARSET", 3L, 4L);
                 }
@@ -158,7 +159,8 @@ internal sealed class VariableEvaluator : IDisposable
         {
             if (p.Identifier.IsArray1D)
             {
-                if (start != 0 || end != p.Identifier.GetLength())
+                // [Emuera改修:ARRAY-01] RESIZABLEは長さがキャラごと・時点ごとに違うので常に範囲確認する（空の配列も許す）。
+                if (start != 0 || end != p.Identifier.GetLength() || p.Identifier is IResizableToken)
                     p.IsArrayRangeValid(start, end, "VARSET", 3L, 4L);
                 else if (p.Identifier.IsCharacterData)
                     p.Identifier.CheckElement([p.Index1, p.Index2]);

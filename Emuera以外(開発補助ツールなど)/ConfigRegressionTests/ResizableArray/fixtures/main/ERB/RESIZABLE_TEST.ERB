@@ -1,0 +1,121 @@
+﻿; [Emuera改修:ARRAY-01] RESIZABLE配列の動作確認。失敗はRESIZABLE_FAILを表示し、最後に件数を表示して待機する。
+@SYSTEM_TITLE
+;---- 広域・整数 ----
+CALL CHK, "initial size 0", ARRAYSIZE(G_INT) == 0
+CALL CHK, "VARSIZE follows current length", VARSIZE("G_INT") == 0
+G_INT:3 = 7
+CALL CHK, "write beyond end grows", ARRAYSIZE(G_INT) == 4
+CALL CHK, "grown gap is zero", G_INT:0 == 0 && G_INT:2 == 0
+CALL CHK, "written value kept", G_INT:3 == 7
+G_INT:1 += 5
+CALL CHK, "plus in range", G_INT:1 == 5 && ARRAYSIZE(G_INT) == 4
+G_INT:9 += 2
+CALL CHK, "plus beyond end grows", ARRAYSIZE(G_INT) == 10 && G_INT:9 == 2
+RESIZE G_INT, 2
+CALL CHK, "RESIZE shrinks", ARRAYSIZE(G_INT) == 2 && G_INT:1 == 5
+RESIZE G_INT, 5
+CALL CHK, "RESIZE grows with zero", ARRAYSIZE(G_INT) == 5 && G_INT:4 == 0 && G_INT:1 == 5
+G_INT:(ARRAYSIZE(G_INT)) = 11
+CALL CHK, "append at length", ARRAYSIZE(G_INT) == 6 && G_INT:5 == 11
+CALL CHK, "FINDELEMENT uses current length", FINDELEMENT(G_INT, 11) == 5
+CALL CHK, "SUMARRAY uses current length", SUMARRAY(G_INT) == 16
+CALL CHK, "MATCH uses current length", MATCH(G_INT, 0) == 4
+ARRAYREMOVE G_INT, 1, 1
+CALL CHK, "ARRAYREMOVE keeps length", ARRAYSIZE(G_INT) == 6 && G_INT:4 == 11 && G_INT:5 == 0
+RESIZE G_INT, ARRAYSIZE(G_INT) - 1
+CALL CHK, "remove then shrink", ARRAYSIZE(G_INT) == 5 && G_INT:4 == 11
+G_INT:3 = 1, 2, 3, 4
+CALL CHK, "multi assign grows", ARRAYSIZE(G_INT) == 7 && G_INT:3 == 1 && G_INT:6 == 4
+VARSET G_INT, 9
+CALL CHK, "VARSET whole keeps length", ARRAYSIZE(G_INT) == 7 && G_INT:0 == 9 && G_INT:6 == 9
+VARSET G_INT, 3, 2, 4
+CALL CHK, "VARSET range", G_INT:2 == 3 && G_INT:3 == 3 && G_INT:4 == 9
+RESIZE G_INT, 0
+CALL CHK, "RESIZE to empty", ARRAYSIZE(G_INT) == 0
+CALL CHK, "FINDELEMENT on empty", FINDELEMENT(G_INT, 0) == -1
+VARSET G_INT, 1
+CALL CHK, "VARSET on empty", ARRAYSIZE(G_INT) == 0
+CALL CHK, "ARRAYSIZE fixed array", ARRAYSIZE(FIXED_INT) == 3
+;---- 広域・文字列とSPLIT ----
+CALL CHK, "string default size 1", ARRAYSIZE(G_STR) == 1
+SPLIT "a,b,c,d", ",", G_STR, LOCAL
+CALL CHK, "SPLIT grows", LOCAL == 4 && ARRAYSIZE(G_STR) == 4 && G_STR:3 == "d"
+SPLIT "x,y", ",", G_STR, LOCAL
+CALL CHK, "SPLIT does not shrink", LOCAL == 2 && ARRAYSIZE(G_STR) == 4 && G_STR:0 == "x" && G_STR:2 == "c"
+CALL CHK, "STRJOIN uses current length", STRJOIN(G_STR) == "x,y,c,d"
+RESIZE G_STR, LOCAL
+CALL CHK, "SPLIT then RESIZE to count", ARRAYSIZE(G_STR) == 2 && STRJOIN(G_STR) == "x,y"
+HTML_TAGSPLIT "<b>a</b>c", G_STR, LOCAL
+CALL CHK, "HTML_TAGSPLIT grows", LOCAL == 4 && ARRAYSIZE(G_STR) == 4 && G_STR:3 == "c"
+G_STR:6 '= "z"
+CALL CHK, "string grow gap empty", ARRAYSIZE(G_STR) == 7 && G_STR:5 == ""
+;---- 関数内 ----
+CALL CHK, "DYNAMIC recursion keeps own length", REC(0) == 1
+CALL CHK, "STATIC keeps between calls", STATIC_ADD() == 1 && STATIC_ADD() == 2
+CALL CHK, "DYNAMIC restarts each call", DYN_SIZE() == 1 && DYN_SIZE() == 1
+;---- CHARADATA ----
+; キャラ変数は「変数:キャラ番号:要素」で指定する（添字1つだと TARGET の要素になる）
+ADDVOIDCHARA
+ADDVOIDCHARA
+C_LIST:0:2 '= "a"
+CALL CHK, "chara grow per chara", ARRAYSIZE(C_LIST:0:0) == 3 && ARRAYSIZE(C_LIST:1:0) == 0
+CALL CHK, "chara FINDELEMENT", FINDELEMENT(C_LIST:0:0, "a") == 2
+C_LIST:0:5 '= "z"
+CALL CHK, "chara FINDELEMENT default end per chara", FINDELEMENT(C_LIST:0:0, "z") == 5 && FINDELEMENT(C_LIST:1:0, "z") == -1
+RESIZE C_LIST:1:0, 4
+CALL CHK, "chara RESIZE", ARRAYSIZE(C_LIST:1:0) == 4 && ARRAYSIZE(C_LIST:0:0) == 6
+COPYCHARA 0, 1
+CALL CHK, "COPYCHARA copies length", ARRAYSIZE(C_LIST:1:0) == 6 && C_LIST:1:2 == "a"
+C_LIST:1:2 '= "b"
+CALL CHK, "COPYCHARA does not share array", C_LIST:0:2 == "a"
+VARSET C_LIST:0:0, "q"
+CALL CHK, "chara VARSET whole", ARRAYSIZE(C_LIST:0:0) == 6 && C_LIST:0:5 == "q" && C_LIST:1:5 == "z"
+RESIZE C_LIST:1:0, 0
+CALL CHK, "chara empty FINDELEMENT", FINDELEMENT(C_LIST:1:0, "q") == -1
+VARSET C_LIST:1:0, "w"
+CALL CHK, "chara VARSET on empty", ARRAYSIZE(C_LIST:1:0) == 0
+C_INT:1:4 += 3
+CALL CHK, "chara int plus grows", ARRAYSIZE(C_INT:1:0) == 5 && C_INT:1:4 == 3 && ARRAYSIZE(C_INT:0:0) == 2
+CALL CHK, "chara SUMARRAY per chara", SUMARRAY(C_INT:1:0) == 3
+DELCHARA 0
+CALL CHK, "DELCHARA shifts arrays", ARRAYSIZE(C_LIST:0:0) == 0 && ARRAYSIZE(C_INT:0:0) == 5
+ADDVOIDCHARA
+CALL CHK, "ADDCHARA uses initial size", ARRAYSIZE(C_LIST:1:0) == 0 && ARRAYSIZE(C_INT:1:0) == 2
+;---- 結果 ----
+PRINTFORML RESIZABLE_DONE pass={CHK_PASS} fail={CHK_FAIL}
+SIF CHK_FAIL == 0
+	PRINTL RESIZABLE_ALL_PASS
+WAIT
+QUIT
+
+@CHK, CK_NAME, CK_OK
+#DIMS CK_NAME
+#DIM CK_OK
+IF CK_OK
+	CHK_PASS += 1
+ELSE
+	CHK_FAIL += 1
+	PRINTFORML RESIZABLE_FAIL %CK_NAME%
+ENDIF
+
+@REC, REC_N
+#FUNCTION
+#DIM DYNAMIC REC_N
+#DIM DYNAMIC RESIZABLE REC_L, 0
+#DIM DYNAMIC REC_INNER
+REC_L:REC_N = REC_N
+SIF REC_N < 3
+	REC_INNER = REC(REC_N + 1)
+RETURNF ARRAYSIZE(REC_L) == REC_N + 1 && (REC_N == 3 || REC_INNER == 1)
+
+@STATIC_ADD
+#FUNCTION
+#DIM STATIC RESIZABLE ST_S, 0
+ST_S:(ARRAYSIZE(ST_S)) = 1
+RETURNF ARRAYSIZE(ST_S)
+
+@DYN_SIZE
+#FUNCTION
+#DIM DYNAMIC RESIZABLE DY_D, 0
+DY_D:(ARRAYSIZE(DY_D)) = 1
+RETURNF ARRAYSIZE(DY_D)

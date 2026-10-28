@@ -462,6 +462,9 @@ internal sealed partial class FunctionIdentifier
             }
 
             spSplitArg.Num.SetValue(strs.Length, exm);
+            // [Emuera改修:ARRAY-01] RESIZABLEは切り捨てず、足りなければ伸ばす（縮めない）。
+            if (spSplitArg.Var is IResizableToken resizable && strs.Length > resizable.GetCurrentLength(0))
+                resizable.Resize(0, strs.Length);
             string[] output = (string[])spSplitArg.Var.GetArray();
             int outputlength = Math.Min(output.Length, strs.Length);
             Array.Copy(strs, output, outputlength);
@@ -1432,7 +1435,8 @@ internal sealed partial class FunctionIdentifier
             if (spvarsetarg.End != null)
                 end = (int)spvarsetarg.End.GetIntValue(exm);
             else if (var.Identifier.IsArray1D)
-                end = (int)var.GetLength();
+                // [Emuera改修:ARRAY-01] RESIZABLE（特にCHARADATA）は宣言時サイズではなく今の長さ。
+                end = p.Identifier is IResizableToken resizable ? resizable.GetCurrentLength(p.Index1) : (int)var.GetLength();
             if (spvarsetarg.Start != null)
             {
                 start = (int)spvarsetarg.Start.GetIntValue(exm);
@@ -1863,6 +1867,9 @@ internal sealed partial class FunctionIdentifier
             }
             else
             {
+                // [Emuera改修:ARRAY-01] REFは配列そのものを保持するため、長さが変わると古い配列を見続ける。
+                if (srcVar is IResizableToken)
+                    throw new CodeEE("RESIZABLE変数" + srcVar.Name + "はREFの参照先にできません");
                 refVar.SetRef((Array)srcVar.GetArray());
                 exm.VEvaluator.RESULT = 1;
             }

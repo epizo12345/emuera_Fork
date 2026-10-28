@@ -264,6 +264,12 @@ internal sealed class CharacterData : IDisposable
             {
                 if (!var.IsCharacterData)
                     continue;
+                // [Emuera改修:ARRAY-01] RESIZABLEはキャラごとに長さが違うので、コピー元の配列を丸ごと複製して差し替える。
+                if (var is IResizableToken)
+                {
+                    other.UserDefCVarDataList[var.ArrayIndex] = ((Array)UserDefCVarDataList[var.ArrayIndex]).Clone();
+                    continue;
+                }
                 if (var.IsString)
                 {
                     if (var.IsArray1D)

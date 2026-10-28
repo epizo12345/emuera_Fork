@@ -366,7 +366,11 @@ internal sealed partial class VariableData : IDisposable
         if (data.CharaData)
         {
             int index = UserDefinedCharaVarList.Count;
-            if (data.TypeIsStr)
+            if (data.Resizable)
+                ret = data.TypeIsStr
+                    ? new ResizableCharaStr1DVariableToken(data, this, index)
+                    : new ResizableCharaInt1DVariableToken(data, this, index);
+            else if (data.TypeIsStr)
                 switch (data.Dimension)
                 {
                     case 1: ret = new UserDefinedCharaStr1DVariableToken(data, this, index); break;
@@ -387,7 +391,9 @@ internal sealed partial class VariableData : IDisposable
     public UserDefinedVariableToken CreateUserDefVariable(UserDefinedVariableData data)
     {
         UserDefinedVariableToken ret;
-        if (data.TypeIsStr)
+        if (data.Resizable)
+            ret = data.TypeIsStr ? new ResizableStaticStr1DVariableToken(data) : new ResizableStaticInt1DVariableToken(data);
+        else if (data.TypeIsStr)
             switch (data.Dimension)
             {
                 case 1: ret = new StaticStr1DVariableToken(data); break;
@@ -445,6 +451,16 @@ internal sealed partial class VariableData : IDisposable
                     default: throw new ExeEE(LocalizationManager.Error.AbnormalVarDeclaration);
                 }
             }
+        }
+        else if (data.Resizable)
+        {
+            if (data.Static)
+            {
+                ret = data.TypeIsStr ? new ResizableStaticStr1DVariableToken(data) : new ResizableStaticInt1DVariableToken(data);
+                userDefinedStaticVarList.Add(ret);
+            }
+            else
+                ret = data.TypeIsStr ? new ResizablePrivateStr1DVariableToken(data) : new ResizablePrivateInt1DVariableToken(data);
         }
         else if (data.Static)
         {
