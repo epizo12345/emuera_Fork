@@ -80,32 +80,86 @@ static class FontFactory
             }
 
             var font = new SKFont(typeface, fontSize.Value);
-            if (style.HasFlag(FontStyle.Italic))
-            {
-                font.SkewX = -0.3f;
-            }
             //font.Size *= fontSize.Value / font.Spacing;
             if (font == null)
             {
                 return null;
             }
 
-            switch (JSONConfig.Game.FontAntialias)
-            {
-                case FontAntialias.None:
-                    font.Hinting = SKFontHinting.None;
-                    font.Edging = SKFontEdging.Alias;
-                    break;
-                case FontAntialias.Normal:
-                    break;
-                case FontAntialias.Full:
-                    font.Hinting = SKFontHinting.Full;
-                    font.Edging = SKFontEdging.SubpixelAntialias;
-                    break;
-            }
+            ApplyAntialiasSetting(font);
+            if (style.HasFlag(FontStyle.Italic))
+                ApplyItalic(font);
 
             fontDic.Add((familyName, fontSize.Value, style), font);
         }
         return fontDic[(familyName, fontSize.Value, style)];
+    }
+
+    /// <summary>設定画面の文字のアンチエイリアス設定をフォントに反映する。</summary>
+    public static void ApplyAntialiasSetting(SKFont font)
+    {
+        switch (JSONConfig.Game.FontAntialias)
+        {
+            case FontAntialias.None:
+                font.Hinting = SKFontHinting.None;
+                font.Edging = SKFontEdging.Alias;
+                break;
+            case FontAntialias.Normal:
+                break;
+            case FontAntialias.Full:
+                font.Hinting = SKFontHinting.Full;
+                font.Edging = SKFontEdging.SubpixelAntialias;
+                break;
+        }
+    }
+
+    // [Emuera改修:DRAW-09 2026-10-28]
+    // 斜体は書体を傾けて作る（ＭＳ ゴシック等に斜体の書体がないため）。傾けた文字は内蔵のドット絵ではなく輪郭から描かれるので、
+    // 通常の文字をドット絵（アンチエイリアスなし）で描くフォントでは斜体だけにじんでいた。元Emuera（GDI）の斜体はくっきりしているため、
+    // 通常の文字がドット絵で描かれるフォントと大きさでは、斜体もアンチエイリアスなしで描く。滑らかに描くフォントは従来どおり。
+    // 判定はフォント・大きさ・設定の組み合わせごとに1回、試し描きして中間の濃さが出るかで行う。
+    static readonly Dictionary<(SKTypeface, float, SKFontEdging, SKFontHinting), bool> bitmapRenderCache = [];
+    static readonly object bitmapRenderLock = new();
+
+    /// <summary>斜体にする。ApplyAntialiasSettingの後に呼ぶ。</summary>
+    public static void ApplyItalic(SKFont font)
+    {
+        bool bitmap = RendersAsBitmap(font);
+        font.SkewX = -0.3f;
+        if (bitmap)
+            font.Edging = SKFontEdging.Alias;
+    }
+
+    static bool RendersAsBitmap(SKFont font)
+    {
+        if (font.Edging == SKFontEdging.Alias)
+            return true;
+        var key = (font.Typeface, font.Size, font.Edging, font.Hinting);
+        lock (bitmapRenderLock)
+        {
+            if (bitmapRenderCache.TryGetValue(key, out bool cached))
+                return cached;
+        }
+        bool result = true;
+        int size = System.Math.Max(8, (int)System.Math.Ceiling(font.Size));
+        using (var probe = new SKFont(font.Typeface, font.Size) { Edging = font.Edging, Hinting = font.Hinting })
+        using (var bitmap = new SKBitmap(new SKImageInfo(size * 4, size * 2, SKColorType.Alpha8, SKAlphaType.Premul)))
+        using (var canvas = new SKCanvas(bitmap))
+        using (var paint = new SKPaint { Color = SKColors.White })
+        {
+            canvas.Clear(SKColors.Transparent);
+            canvas.DrawText("あAg", new SKPoint(1, 1 - probe.Metrics.Top), SKTextAlign.Left, probe, paint);
+            foreach (byte alpha in bitmap.GetPixelSpan())
+            {
+                if (alpha != 0 && alpha != 255)
+                {
+                    result = false;
+                    break;
+                }
+            }
+        }
+        lock (bitmapRenderLock)
+            bitmapRenderCache[key] = result;
+        return result;
     }
 }

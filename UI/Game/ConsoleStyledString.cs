@@ -99,12 +99,10 @@ internal sealed class ConsoleStyledString : AConsoleColoredNode
             var font = new SKFont(typeface, Font.Size);
             font.Size *= Font.Size / font.Spacing;
             // [Emuera改修:FONT-01] 補完文字も設定画面で選んだHinting/Edgingで描画する。
-            font.Hinting = Font.Hinting;
-            font.Edging = Font.Edging;
+            // [Emuera改修:DRAW-09] 元のフォントは斜体のときEdgingを変えている場合があるので、写さず設定から付け直す。
+            FontFactory.ApplyAntialiasSetting(font);
             if (StringStyle.FontStyle.HasFlag(FontStyle.Italic))
-            {
-                font.SkewX = -0.3f;
-            }
+                FontFactory.ApplyItalic(font);
 
             var textsWithFont = new TextsWithFont()
             {

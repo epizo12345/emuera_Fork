@@ -95,6 +95,8 @@ internal static class Program
         Run("two distinct image frames render during timed input without remaining text", () => AnimatedFramesContinueAcrossTimedInput(false));
         Run("fallback font runs and split fragments retain each Unicode scalar exactly once", FontFallbackRunsAndSplits);
         Run("fallback font retains the selected hinting and edging settings", FontFallbackKeepsAntialiasSettings);
+        Run("bitmap font italic is aliased and matches GDI ink", FontItalicRegression.BitmapFontItalicIsAliasedAndMatchesGdi);
+        Run("smooth font italic keeps anti-aliasing", FontItalicRegression.SmoothFontItalicKeepsAntialias);
         Run("PrintStringBuffer wraps at the fallback glyph's drawn advance", PrintBufferWrapsAtFallbackAdvance);
         Run("AAAA emoji stays on the first line while following BBBB wraps", EmojiBoundaryWrapsBeforeB);
         Run("splitting inside a surrogate pair keeps the whole fallback rune", SplitInsideSurrogateKeepsRune);
@@ -2025,7 +2027,7 @@ internal static class Program
     private static JsonObject ReadObject(string path)
         => JsonNode.Parse(File.ReadAllText(path))!.AsObject();
 
-    private sealed class TestUnavailableException(string message) : Exception(message);
+    internal sealed class TestUnavailableException(string message) : Exception(message);
 
     private static void Run(string name, Action test)
     {
