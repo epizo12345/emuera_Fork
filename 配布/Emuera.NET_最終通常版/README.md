@@ -2,19 +2,21 @@
 
 - 更新日: 2026-10-28
 - 基礎: BugFix_Test `7b7dd3bf240eff4fdfc7094f4175de0e014532b7`
-- EXE生成元source commit: `4009fe0fa3a11cb927c51b08c9664ccf1ebff0b9`（配布資料の更新commitとは別）（配布資料の更新commitとは別）
+- EXE生成元source commit: `a680ca16c5fcc3f16ac2c7d5a9fda02b523640d3`（配布資料の更新commitとは別）
 - 対象OS: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
-- `Emuera.exe` サイズ: 24,704,746バイト（約23.56 MiB）
-- `Emuera.exe` SHA-256: `60DE7B5BCBA0120598FBFA2CF6A1A404A3EDC18A3B5C97024F8AFF1633DF4E4C`
-- `Emuera.exe` ProductVersion: `0.2.6.0+4009fe0fa3a11cb927c51b08c9664ccf1ebff0b9`（suffixはEXEを生成したsource commit）
+- `Emuera.exe` サイズ: 24,721,130バイト（約23.58 MiB）
+- `Emuera.exe` SHA-256: `9D83C49CAC43F01000558ABFAFB34BB0D4A29319A345D6225C69DE93A644730A`
+- `Emuera.exe` ProductVersion: `0.2.6.0+a680ca16c5fcc3f16ac2c7d5a9fda02b523640d3`（suffixはEXEを生成したsource commit）
 - `Emuera.exe` FileVersion: `0.2.6.0`
 - publish条件: Release / win-x64 / framework-dependent / self-contained false / PublishSingleFile=true
 - publish時の計測: `PERFORMANCE_METRICS`無効
 - source revision検証: PASS（ProductVersion suffixが上記source commitのfull SHAと一致）
+- `#DIM`／`#DIMS`に`RESIZABLE`キーワードを追加しました（広域・関数内・`CHARADATA`の1次元配列）。範囲外の要素への書き込みで自動的に伸び、`RESIZE 変数, 長さ`で伸縮、`ARRAYSIZE(変数)`で今の長さを取れます。`CHARADATA`は`変数:キャラ:0`で指定します。`SPLIT`の出力先にすると分割数に合わせて伸びます（縮めません）。`SAVEDATA`・`GLOBAL`と併用でき、長さも保存されます。`#DIM REF RESIZABLE`の引数で参照渡しできます（普通の`#DIM REF`には渡せません）。既存の`#DIM`の動作と速度は変わりません。詳細は`プロジェクト資料/調査履歴/10_RESIZABLE可変長配列_設計.md`。
+- 今回の正式EXEでsource revision検証PASS、fixtureゲームで起動安定性テスト3/3（失敗・Lv2警告0）、RESIZABLEのERBフィクスチャ9/9 PASSを確認しました。回帰試験はsource commitで96/96 PASS。
 - 元のEmuera 1824+v24（GDI+）との描画の違いを3点直しました。`GDRAWG`の拡大縮小が補間なしだったのを設定の画像補間に従うように、`GSETBRUSH`未設定の`GFILLRECTANGLE`が黒で塗っていたのを背景色で塗るように、ＭＳ ゴシック等ドット絵で描くフォントの斜体（太字の斜体を含む）がにじんでいたのをアンチエイリアスなしで描くようにしました。`GDRAWG`を元と同じ見た目にしたい場合は設定の画像補間をCubicにしてください。詳細は`プロジェクト資料/調査履歴/09_元Emuera1824v24との差異調査.md`。
-- 今回の正式EXEでsource revision検証PASS、fixtureゲームで起動安定性テスト3/3（失敗・Lv2警告0）を確認しました。回帰試験はsource commitで96/96 PASS。
+- 前回（source commit `4009fe0`）の正式EXEでsource revision検証PASS、fixtureゲームで起動安定性テスト3/3（失敗・Lv2警告0）を確認しました。回帰試験はsource commitで96/96 PASS。
 - `DICT_*`関数で、文字列キーが別の文字列や整数キーと衝突して値を取り違えることがある不具合を修正しました。引数の数・型・省略はERB読込時に検査し、辞書なし・キーなし・型違いは関数名・辞書名・キー付きのエラーにします。`DICT_CREATE`で同名の辞書を空で作り直す仕様、自動リセットしない仕様は変わりません。
 - 前回（source commit `7fe08d7`）の正式EXEでsource revision検証PASS、fixtureゲームで起動安定性テスト3/3（失敗・Lv2警告0）を確認しました。回帰試験はsource commitで92/92 PASS（DICT試験4件を追加）。実ゲームERBからのDICT呼び出しは確認していません。
 - `GDRAWG`／`GDRAWCIMG`／`GDRAWSPRITE`のカラーマトリクスで、5行目（色に足す値）が無視され元のEmueraより色が明るくなる不具合を修正しました。元のEmuera（GDI+）と同じく5行目から取ります。`画像合成.ERB`の灰・黒・栗・橙など、5行目にマイナス値を書いた色が元どおり暗くなります。平行移動0の行列は変わりません。
