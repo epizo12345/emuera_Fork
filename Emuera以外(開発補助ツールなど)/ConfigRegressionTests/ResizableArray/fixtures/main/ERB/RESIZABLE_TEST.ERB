@@ -15,6 +15,9 @@ RESIZE G_INT, 2
 CALL CHK, "RESIZE shrinks", ARRAYSIZE(G_INT) == 2 && G_INT:1 == 5
 RESIZE G_INT, 5
 CALL CHK, "RESIZE grows with zero", ARRAYSIZE(G_INT) == 5 && G_INT:4 == 0 && G_INT:1 == 5
+CALL CHK, "RESIZE returns previous length", RESIZE(G_INT, 8) == 5 && ARRAYSIZE(G_INT) == 8
+RESIZE G_INT, 5
+CALL CHK, "RESIZE sets RESULT to previous length", RESULT == 8 && ARRAYSIZE(G_INT) == 5
 G_INT:(ARRAYSIZE(G_INT)) = 11
 CALL CHK, "append at length", ARRAYSIZE(G_INT) == 6 && G_INT:5 == 11
 CALL CHK, "FINDELEMENT uses current length", FINDELEMENT(G_INT, 11) == 5
@@ -68,6 +71,8 @@ CALL CHK, "chara FINDELEMENT", FINDELEMENT(C_LIST:0:0, "a") == 2
 C_LIST:0:5 '= "z"
 CALL CHK, "chara FINDELEMENT default end per chara", FINDELEMENT(C_LIST:0:0, "z") == 5 && FINDELEMENT(C_LIST:1:0, "z") == -1
 CALL CHK, "chara MATCH default end per chara", MATCH(C_LIST:0:0, "z") == 1 && MATCH(C_LIST:1:0, "z") == 0
+RESIZE C_LIST:1:0, 4
+CALL CHK, "chara RESIZE returns previous length", RESIZE(C_LIST:1:0, 9) == 4
 RESIZE C_LIST:1:0, 4
 CALL CHK, "chara RESIZE", ARRAYSIZE(C_LIST:1:0) == 4 && ARRAYSIZE(C_LIST:0:0) == 6
 COPYCHARA 0, 1

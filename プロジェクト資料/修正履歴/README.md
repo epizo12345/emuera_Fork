@@ -2,6 +2,7 @@
 
 日付ごとの採用変更説明です。現在の仕様はルートの `更新履歴.md` と `プロジェクト資料/01_仕様書.md`〜`06_コード案内.md` を参照してください。
 
+- `#今回の修正説明_2026-10-28_RESIZABLE可変長配列.md` — `#DIM RESIZABLE`可変長配列（RESIZE／ARRAYSIZE、高速化、SAVEDATA／GLOBAL併用、REF RESIZABLE、RESIZEの戻り値）、ERBフィクスチャ9件
 - `#今回の修正説明_2026-10-28_DICT関数.md` — DICT関数群の文字列キー衝突・引数検査・エラー表示の修正、回帰試験
 - `#今回の修正説明_2026-10-28_カラーマトリクス平行移動.md` — GDRAWG／GDRAWCIMGのカラーマトリクス5行目（平行移動）を元Emuera(GDI+)どおりに修正、GDI+画素比較試験
 - `#今回の修正説明_2026-09-24.md` — LazyERB設定UIのgame/user分離、未知property保持、path safety、TreeView操作、テスト・実機確認と正式採用記録

@@ -21,7 +21,7 @@ internal static partial class FunctionMethodCreator
         return charaNo;
     }
 
-    /// <summary>RESIZE(変数, 新しい長さ)。伸ばすのも縮めるのも可。新しい長さを返す。</summary>
+    /// <summary>RESIZE(変数, 新しい長さ)。伸ばすのも縮めるのも可。変更前の長さを返す。</summary>
     public sealed class ResizeArrayMethod : FunctionMethod
     {
         public ResizeArrayMethod()
@@ -49,8 +49,12 @@ internal static partial class FunctionMethodCreator
             long newLength = arguments[1].GetIntValue(exm);
             VariableTerm varTerm = (VariableTerm)arguments[0];
             var resizable = (IResizableToken)varTerm.Identifier;
-            resizable.Resize(CharaNoOf(varTerm, exm), newLength);
-            return newLength;
+            long charaNo = CharaNoOf(varTerm, exm);
+            // [Emuera改修:ARRAY-04 2026-10-28] 新しい長さは呼び出し側が渡しているので、返すのは変更前の長さ
+            // （空にしたときに消した件数、伸ばしたときに足した部分の始まりの位置として使える）。
+            long oldLength = resizable.GetCurrentLength(charaNo);
+            resizable.Resize(charaNo, newLength);
+            return oldLength;
         }
     }
 
