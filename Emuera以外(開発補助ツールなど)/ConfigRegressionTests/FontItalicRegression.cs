@@ -30,13 +30,23 @@ internal static class FontItalicRegression
             throw new InvalidOperationException("regular font must not be skewed");
 
         // GDIの斜体と線の量（インク）が近いこと。にじんでいた旧実装は約129%だった。
-        const string text = "斜体の行 Italic 0123";
-        double gdiInk = InkGdi(text);
-        double skiaInk = InkSkia(text, italic);
+        CheckInk("ITALIC", "斜体の行 Italic 0123", FontStyle.Italic, italic);
+
+        // 太字の斜体: 太字は普通の書体から擬似的に作られるが、判定は普通の書体で行うので同じくアンチエイリアスなし。
+        SKFont boldItalic = FontFactory.GetFont(BitmapFont, FontStyle.Bold | FontStyle.Italic, Size);
+        if (boldItalic.Edging != SKFontEdging.Alias)
+            throw new InvalidOperationException($"bitmap font bold italic should be aliased, got {boldItalic.Edging}");
+        CheckInk("BOLD_ITALIC", "太字斜体の行 BoldItalic 0123", FontStyle.Bold | FontStyle.Italic, boldItalic);
+    }
+
+    static void CheckInk(string label, string text, FontStyle style, SKFont font)
+    {
+        double gdiInk = InkGdi(text, style);
+        double skiaInk = InkSkia(text, font);
         double ratio = skiaInk / gdiInk;
-        Console.WriteLine($"ITALIC_INK gdi={gdiInk:F0} skia={skiaInk:F0} ratio={ratio:F3}");
+        Console.WriteLine($"{label}_INK gdi={gdiInk:F0} skia={skiaInk:F0} ratio={ratio:F3}");
         if (ratio < 0.9 || ratio > 1.1)
-            throw new InvalidOperationException($"italic ink ratio {ratio:F3} is far from GDI");
+            throw new InvalidOperationException($"{label} ink ratio {ratio:F3} is far from GDI");
     }
 
     internal static void SmoothFontItalicKeepsAntialias()
@@ -51,13 +61,13 @@ internal static class FontItalicRegression
             throw new InvalidOperationException($"italic skew changed: {italic.SkewX}");
     }
 
-    static double InkGdi(string text)
+    static double InkGdi(string text, FontStyle style)
     {
-        using var bmp = new Bitmap(300, 30, PixelFormat.Format32bppArgb);
+        using var bmp = new Bitmap(360, 30, PixelFormat.Format32bppArgb);
         using (var g = Graphics.FromImage(bmp))
         {
             g.Clear(Color.Black);
-            using var f = new Font(BitmapFont, Size, FontStyle.Italic, GraphicsUnit.Pixel);
+            using var f = new Font(BitmapFont, Size, style, GraphicsUnit.Pixel);
             TextRenderer.DrawText(g, text, f, new Point(4, 4), Color.White, TextFormatFlags.NoPrefix);
         }
         double ink = 0;
@@ -72,7 +82,7 @@ internal static class FontItalicRegression
 
     static double InkSkia(string text, SKFont font)
     {
-        using var bmp = new SKBitmap(300, 30);
+        using var bmp = new SKBitmap(360, 30);
         using (var canvas = new SKCanvas(bmp))
         using (var paint = new SKPaint { Color = SKColors.White })
         {

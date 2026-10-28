@@ -118,7 +118,10 @@ static class FontFactory
     // 通常の文字をドット絵（アンチエイリアスなし）で描くフォントでは斜体だけにじんでいた。元Emuera（GDI）の斜体はくっきりしているため、
     // 通常の文字がドット絵で描かれるフォントと大きさでは、斜体もアンチエイリアスなしで描く。滑らかに描くフォントは従来どおり。
     // 判定はフォント・大きさ・設定の組み合わせごとに1回、試し描きして中間の濃さが出るかで行う。
+    // 太字はWindowsが普通の書体から擬似的に作る場合があり（ＭＳ ゴシック等）、その試し描きには中間の濃さが混ざるため、
+    // 判定は同じフォントの普通の太さの書体で行う（太字の斜体も元Emueraと同じくアンチエイリアスなしにする）。
     static readonly Dictionary<(SKTypeface, float, SKFontEdging, SKFontHinting), bool> bitmapRenderCache = [];
+    static readonly Dictionary<string, SKTypeface> regularTypefaceCache = [];
     static readonly object bitmapRenderLock = new();
 
     /// <summary>斜体にする。ApplyAntialiasSettingの後に呼ぶ。</summary>
@@ -130,11 +133,31 @@ static class FontFactory
             font.Edging = SKFontEdging.Alias;
     }
 
+    static SKTypeface RegularTypefaceOf(SKTypeface typeface)
+    {
+        if (typeface == null || typeface.FontStyle.Weight <= (int)SKFontStyleWeight.Normal)
+            return typeface;
+        string family = typeface.FamilyName;
+        lock (bitmapRenderLock)
+        {
+            if (regularTypefaceCache.TryGetValue(family, out SKTypeface cached))
+                return cached ?? typeface;
+        }
+        SKTypeface regular = SKTypeface.FromFamilyName(family, SKFontStyle.Normal);
+        // 見つからず別のフォントが返った場合（外部フォント等）は元の書体で判定する。
+        if (regular != null && regular.FamilyName != family)
+            regular = null;
+        lock (bitmapRenderLock)
+            regularTypefaceCache[family] = regular;
+        return regular ?? typeface;
+    }
+
     static bool RendersAsBitmap(SKFont font)
     {
         if (font.Edging == SKFontEdging.Alias)
             return true;
-        var key = (font.Typeface, font.Size, font.Edging, font.Hinting);
+        SKTypeface probeTypeface = RegularTypefaceOf(font.Typeface);
+        var key = (probeTypeface, font.Size, font.Edging, font.Hinting);
         lock (bitmapRenderLock)
         {
             if (bitmapRenderCache.TryGetValue(key, out bool cached))
@@ -142,7 +165,7 @@ static class FontFactory
         }
         bool result = true;
         int size = System.Math.Max(8, (int)System.Math.Ceiling(font.Size));
-        using (var probe = new SKFont(font.Typeface, font.Size) { Edging = font.Edging, Hinting = font.Hinting })
+        using (var probe = new SKFont(probeTypeface, font.Size) { Edging = font.Edging, Hinting = font.Hinting })
         using (var bitmap = new SKBitmap(new SKImageInfo(size * 4, size * 2, SKColorType.Alpha8, SKAlphaType.Premul)))
         using (var canvas = new SKCanvas(bitmap))
         using (var paint = new SKPaint { Color = SKColors.White })
