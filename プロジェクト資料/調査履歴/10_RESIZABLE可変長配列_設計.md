@@ -151,6 +151,76 @@ RESIZE C_LIST:ARG:0, 0                             ; 空にする
 - 全件を見る処理は10倍以上速い。実際のゲームはERB関数の`ADD_SPLIT`／`AUTO_SPLIT`を使っているため、差はさらに大きい見込み。
 - 比較用ブランチ（無し`9f431bd`、②`b8fa6c6`、①と②`8940692`）は採用決定後に削除した（コミットはreflogから復元可能な期間がある）。
 
+### 実ゲームでの比較（eramegaten_p の TRYSKILL、2026-10-28）
+
+現行ゲーム（ShinEraTenseiP 0.5.10）の作業用コピー1つで、戦闘効果の取り出しを`RESIZABLE`で書き換えて比べた。作業用コピーは比較後に削除した。
+
+#### 方法
+
+- セーブ（ユーザー提供、味方6人）をロードし、イベント67「テスト戦闘」→「サンドバッグ」で戦闘を開始する（入力は手動）。
+- 作業用コピーだけ、`@EVENT_BATTLE_START_EVENT67`から計測用の関数を呼ぶ。戦闘のターンは進めない。
+- 味方6人に、ダミーの戦闘効果を0／10／30件付ける（3種類に振り分け、呼び出し先のない名前）。
+- 計測: `TRYSKILLNUM`＋`GET_TRYSKILL`での全件取り出し×300回、本物の`SYNC_STATUS`を味方全員に×20回。5周の中央値。
+- 取り出した効果名・発動者・`TRYSKILL_STR`をつなげたハッシュを全実行で比べ、結果が同じことを確認した（全実行で一致）。
+- EXEはブランチの試用版（`b59c857`）。無限ループ警告で処理が止まった1周は外れ値として中央値で除いた。以降は作業用コピーの設定で警告時間を延ばした。
+
+#### 書き換え（B3、2ファイル）
+
+効果の文字列（`C_BTL_EFFECT`など3種、1,022か所で使用）はそのまま残し、読み取り用の写しを`RESIZABLE`で持つ。追加・削除（15か所）は変更しない。
+
+```
+; SYSTEM_BATTLE.ERH に追加
+#DIMS CHARADATA RESIZABLE C_BE_NAME, 0   ; 効果名
+#DIM CHARADATA RESIZABLE C_BE_ACT, 0     ; 発動者
+#DIM CHARADATA RESIZABLE C_BE_KIND, 0    ; 種類（0=通常 1=永続 2=チャージ）
+#DIMS CHARADATA C_BE_SRC, 3              ; 写しを作ったときの元の文字列
+#DIMS RESIZABLE BE_TMP, 0
+#DIMS BE_PART, 10
+
+; TRYSKILLNUM の戦闘効果部分
+SIF C_BTL_EFFECT:ARG:0 == "" && C_BTL_EFFECT_PERMANENCE:ARG:0 == "" && C_BTL_EFFECT_CHARGE:ARG:0 == ""
+	RETURNF L_RESULT
+SIF C_BE_SRC:ARG:0 != C_BTL_EFFECT:ARG:0 || C_BE_SRC:ARG:1 != C_BTL_EFFECT_PERMANENCE:ARG:0 || C_BE_SRC:ARG:2 != C_BTL_EFFECT_CHARGE:ARG:0
+	L_RESULT += BE_REBUILD(ARG)
+L_RESULT += ARRAYSIZE(C_BE_NAME:ARG:0)
+RETURNF L_RESULT
+
+; GET_TRYSKILL の戦闘効果部分（AUTO_SPLITを使わず番号で取り出す）
+IF C_BTL_EFFECT:ARG:0 == "" && C_BTL_EFFECT_PERMANENCE:ARG:0 == "" && C_BTL_EFFECT_CHARGE:ARG:0 == ""
+	TRYSKILL_STR = 
+	RETURNF "数値が範囲外です"
+ENDIF
+SIF （写しの確認、上と同じ）
+	TRYSKILL_VAR = BE_REBUILD(ARG)
+IF ARG:1 < ARRAYSIZE(C_BE_NAME:ARG:0)
+	（C_BE_KINDからTRYSKILL_STRを決める）
+	TRYSKILL_VAR = C_BE_ACT:ARG:(ARG:1)
+	RETURNF "C_BTL_EFFECT_" + C_BE_NAME:ARG:(ARG:1)
+ENDIF
+
+; BE_REBUILD（#FUNCTION）: 3種の文字列を"/"でSPLITし、各要素を"_"でSPLITして名前・発動者・種類の配列へ写す。
+```
+
+- `TRYSKILLNUM`／`GET_TRYSKILL`は`#FUNCTION`なので、`CALL`は使えない。写しの作り直しも`#FUNCTION`にして式で呼ぶ。
+- 文字列が空になった後は写しが古いまま残るが、空の間は写しを読まず、再び効果が付けば文字列が変わるので作り直される。
+
+#### 結果（5周の中央値、ms）
+
+| 戦闘効果 | 取り出し×300 A → B3 | `SYNC_STATUS`×20 A → B3 | ステータス計算 |
+|---|---|---|---|
+| 0件 | 72 → 72 | 233 → 232 | 同じ |
+| 10件 | 136 → 94 | 307 → 263 | 約14%速い |
+| 30件 | 298 → 137 | 491 → 319 | 約35%速い |
+
+- A（元のまま）は2回起動して1〜2%以内で一致（233／230）。ERHに変数を足しただけの版（A+ERH）もAと同じ（232）。
+- 途中の版との違い:
+  - B（効果の有無に関係なく写しを確認）: 0件で約6%遅かった（246）。
+  - B2（`IF a != "" || b != "" || c != ""`〜`ENDIF`で囲んだ版）: 0件でまだ約3%遅かった（240）。10件272／30件329。
+  - B3（`SIF`＋`RETURNF`ですぐ返す版）: 0件でAと同じになり、10件・30件もB2より約3%速い。
+- **このエンジンでは`IF`〜`ENDIF`のブロックの出入りが`SIF`より重い**（`TRYSKILLNUM`1回あたり約1µs）。よく呼ばれる関数では、`SIF`や早めの`RETURNF`の形にするだけで速くなる可能性がある。エンジン側の原因は別途調査する。
+- ダミーの効果名には呼び出し先がないため、本物の効果の補正計算は含まない。本物の効果なら、その処理時間がA・B3の両方に同じだけ加わる。
+- 追加・削除も`RESIZABLE`に移せば、`ADD_SPLIT`や`REPLACE`の文字列処理もなくなる（今回は未計測）。
+
 ### 見つかった既存の不具合（今回の変更とは別）
 
 - `REF`／`REFBYNAME`命令が、固定長の配列に対しても「書式が間違っています」になる（`ArgumentBuilder.cs`の`SP_REF_ArgumentBuilder`）。このため`REF`の参照先ガードはフィクスチャで確認できていない。
