@@ -145,10 +145,10 @@ internal sealed class GraphicsImage : AbstractImage
         }
         else
         {
-            //using var b = new SolidBrush(Config.BackColor);
-            //canvas.FillRectangle(b, rect);
-
-            using (var paint = new SKPaint())
+            // [Emuera改修:DRAW-07 2026-10-28]
+            // 元Emuera（GDI+）と同じく、GSETBRUSH未設定なら背景色（コンフィグの背景色）で塗る。
+            // 旧実装は既定のSKPaint（不透明の黒）で塗っていた。
+            using (var paint = new SKPaint { Color = MinorShift.Emuera.Runtime.Config.Config.BackColor.ToSKColor() })
             {
                 canvas.DrawRect(rect.ToSKRect(), paint);
             }
@@ -285,7 +285,10 @@ internal sealed class GraphicsImage : AbstractImage
     public void GDrawG(GraphicsImage srcGra, Rectangle destRect, Rectangle srcRect)
     {
         EnsureWritable();
-        srcGra.Draw(canvas, srcRect.ToSKRect(), destRect.ToSKRect());
+        // [Emuera改修:DRAW-08 2026-10-28]
+        // 拡大縮小時の補間は、GDRAWSPRITE・PRINT_IMGと同じく設定の画像補間に従う。
+        // 旧実装は補間なし（最近傍）固定で、元Emuera（GDI+のbicubic）と比べてギザギザになっていた。
+        srcGra.Draw(canvas, srcRect.ToSKRect(), destRect.ToSKRect(), MinorShift.Emuera.Runtime.Config.JSON.JSONConfig.SamplingOptions);
     }
 
 
@@ -305,7 +308,7 @@ internal sealed class GraphicsImage : AbstractImage
         using var filter = SKColorFilter.CreateColorMatrix(skiaCM);
         using (var paint = new SKPaint() { ColorFilter = filter })
         {
-            srcGra.Draw(canvas, srcRect.ToSKRect(), destRect.ToSKRect(), paint);
+            srcGra.Draw(canvas, srcRect.ToSKRect(), destRect.ToSKRect(), MinorShift.Emuera.Runtime.Config.JSON.JSONConfig.SamplingOptions, paint);
         }
     }
 

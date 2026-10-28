@@ -75,6 +75,8 @@ internal static class Program
         Run("file-backed crop and negative offset match original-placement clipping", AnimationCandidateRegression.FileBackedNegativeOffset);
         Run("edge-touching animation frames draw no pixels", AnimationCandidateRegression.EdgeTouchDrawsNothing);
         Run("non-identity color matrix swaps red and blue channels", IntegratedColorMatrix);
+        Run("GFILLRECTANGLE without GSETBRUSH fills with the background color", DrawingDiffRegression.FillRectangleWithoutBrushUsesBackColor);
+        Run("GDRAWG scaling follows the image sampling setting", DrawingDiffRegression.DrawGScalingFollowsSamplingSetting);
         Run("GDRAWG color matrix translation row matches GDI+ (original Emuera)", ColorMatrixGdiRegression.GDrawGMatchesGdiPlus);
         Run("GDRAWCIMG color matrix translation row matches GDI+ (original Emuera)", ColorMatrixGdiRegression.GDrawCImgMatchesGdiPlus);
         Run("DICT string keys do not collide with int keys", DictRegression.StringKeyDoesNotCollideWithIntKey);
