@@ -81,6 +81,21 @@ DELCHARA 0
 CALL CHK, "DELCHARA shifts arrays", ARRAYSIZE(C_LIST:0:0) == 0 && ARRAYSIZE(C_INT:0:0) == 5
 ADDVOIDCHARA
 CALL CHK, "ADDCHARA uses initial size", ARRAYSIZE(C_LIST:1:0) == 0 && ARRAYSIZE(C_INT:1:0) == 2
+;---- 縮めてから伸ばす・SORTCHARA ----
+RESIZE G_INT, 0
+G_INT:3 = 9
+RESIZE G_INT, 1
+RESIZE G_INT, 5
+CALL CHK, "shrink then grow gives zero", G_INT:3 == 0 && ARRAYSIZE(G_INT) == 5
+RESIZE G_INT, 1
+G_INT:4 = 1
+CALL CHK, "shrink then write-grow gives zero", G_INT:3 == 0 && G_INT:2 == 0
+ADDVOIDCHARA
+RESIZE C_INT:1:0, 7
+C_INT:1:0 = 9
+C_INT:2:0 = 1
+SORTCHARA C_INT:0, FORWARD
+CALL CHK, "SORTCHARA by resizable key moves arrays", ARRAYSIZE(C_INT:1:0) == 2 && C_INT:1:0 == 1 && ARRAYSIZE(C_INT:2:0) == 7 && C_INT:2:0 == 9
 ;---- 結果 ----
 PRINTFORML RESIZABLE_DONE pass={CHK_PASS} fail={CHK_FAIL}
 SIF CHK_FAIL == 0
