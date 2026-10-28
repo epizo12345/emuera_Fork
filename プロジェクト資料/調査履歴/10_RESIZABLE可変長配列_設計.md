@@ -27,7 +27,9 @@
 
 - 1次元のみ。初期サイズは0も可（空）。省略時は従来どおり1。
 - 使える場所: グローバル、関数内（`DYNAMIC`／`STATIC`）、`CHARADATA`。
-- 同時に指定できないもの: `CONST`、`REF`、`SAVEDATA`、`GLOBAL`（セーブ形式で長さを扱う方法を決めるまで対象外）、2次元以上。
+- 同時に指定できないもの: `CONST`、2次元以上。
+- `SAVEDATA`・`GLOBAL`と併用できる（ARRAY-03）。長さも保存され、ロードすると保存したときの長さに戻る（下記「セーブ・ロード」）。
+- `REF`と併用した`#DIM REF RESIZABLE 名前`は、RESIZABLE変数を受け取る参照渡しの引数になる（ARRAY-03、下記「REF RESIZABLE」）。
 - 初期値指定（`= 1,2,3`）は従来どおり可。
 
 ### 動きのルール: 伸びるのは自動、縮むのは明示したときだけ
@@ -41,7 +43,8 @@
 | `FINDELEMENT`など読むだけの配列関数 | 今の長さを全長として、そのまま動く |
 | `ARRAYREMOVE`など中身を動かす配列関数 | 従来どおり。長さは変えない |
 | サイズ変更命令 | 伸ばすのも縮めるのも可。縮める唯一の手段 |
-| `REF`の参照先、参照渡しの引数（`REF`引数） | エラー（古い配列を見続ける問題を防ぐ） |
+| 普通の`REF`引数（`#DIM REF`）に渡す | エラー（古い配列を見続ける問題を防ぐ）。`#DIM REF RESIZABLE`の引数にだけ渡せる |
+| `REF`命令の参照先 | エラー（`REF`命令自体が現行・元のEmueraとも書式エラーになる既存不具合あり） |
 
 - 削除は「`FINDELEMENT`で位置を探す → `ARRAYREMOVE`で詰める → サイズ変更命令で1減らす」。専用の削除・追加命令は作らない。
 - 末尾への追加は「今の長さの位置へ書き込む」（自動で伸びる）。
@@ -51,6 +54,31 @@
 - `RESIZE 変数, 新しい長さ`（`RESIZE(変数, 長さ)`も可）… 長さを変える。伸びた部分は0／空文字。戻り値は新しい長さ。`RESIZABLE`でない変数を渡すと読み込み時エラー。
 - `ARRAYSIZE(変数)` … 今の長さを返す。`RESIZABLE`でない1次元配列は宣言時のサイズを返す。
 - 既存の`VARSIZE("変数名")`は、`RESIZABLE`の広域・関数内変数では今の長さ、`CHARADATA`では宣言時の初期サイズを返す（キャラを指定できないため）。
+
+### REF RESIZABLE（ARRAY-03、2026-10-28）
+
+```
+@APPEND, ARR, V
+#DIM REF RESIZABLE ARR
+#DIM V
+ARR:(ARRAYSIZE(ARR)) = V      ; 呼び出し元の変数が伸びる
+```
+
+- `CALL APPEND, LIST, 5`のように、RESIZABLE変数を参照渡しで受け取る。関数の中で伸ばす・縮める（`RESIZE`）と、呼び出し元の変数も同じ長さになる。`ARRAYSIZE`・`FINDELEMENT`などの配列関数もそのまま使える。
+- 受け取った引数を、別の関数の`REF RESIZABLE`引数へさらに渡せる。再帰呼び出しでも、呼び出し階層ごとに受け取った変数を退避して戻す。
+- 普通の`#DIM REF`にRESIZABLE変数を渡す、または`REF RESIZABLE`に固定長の変数を渡すと、エラーになる（読み込み時の型確認と実行時の両方）。固定長と可変長を同じ関数で受け取る方法（案B）は、既存の`REF`の読み書きに確認を1つ足すことになるため採らなかった。
+- 既存の制限どおり、キャラ変数（`CHARADATA`）は参照渡しできない。
+- 実装: `ResizableRef1DToken<T>`（`ReferenceToken`の派生）は配列ではなく入れ物（`ResizableBuffer<T>`）を持つ。参照渡しの受け渡し（`TransporterRef`）を`object[]`にし、RESIZABLEは入れ物を渡す。`ReferenceToken.SetRef`は`object`を受け取る仮想メソッドにした（普通の`REF`の動きは同じ）。
+- 広域・関数内STATICの`SetDefault`（`RESETDATA`など）は入れ物を作り直さず、中身を宣言時の長さと初期値に戻す（`ResizableBuffer.Reset`）。`REF RESIZABLE`で参照中に`RESETDATA`しても、同じ変数を指し続ける。
+
+### セーブ・ロード（ARRAY-03、2026-10-28）
+
+- バイナリ形式のセーブは1次元配列ごとに要素数を記録するので、今の長さちょうどの配列を書けば長さも保存される。テキスト形式は末尾の0／空文字を省いて書く（すべて0なら変数ごと書かない）ため、RESIZABLEだけは省かずに全要素を書き、長さ0でも名前と終端を書く（`EraDataWriter.WriteExtended`の`keepLength`）。広域変数は既存の書き込みのまま、`CHARADATA`はキャラごとの格納場所から`ResizableArray.AsArray`で取り出して書く。
+- ロードは、保存されていた長さに変えてから読み込む。
+  - バイナリ形式: `EraBinaryDataReader.ReadIntArray`／`ReadStrArray`に、保存されていた長さを受け取って読み込み先を返す引数（`resizeForLoad`）を足した。使う場所は`VariableData.LoadVariableBinary`（`SAVEDATA`・`GLOBAL`・`SAVEVAR`）と`CharacterData.LoadFromStreamBinary`（`CHARADATA`・`SAVECHARA`）。
+  - テキスト形式: `VariableData.LoadFromStreamExtended`／`LoadGlobalFromStream1808`で、読み込む前に保存されていた要素数へ`RESIZE`する。`CHARADATA`の`SAVEDATA`は、従来どおりバイナリ形式の設定が必要。
+- 宣言を固定長から`RESIZABLE`に変えたときは、保存されていた長さで読み込む。逆に`RESIZABLE`から固定長へ戻したときは、従来どおり宣言の長さに収める。
+- 保存されていた長さが上限（1,000,000）を超えるセーブはロード時にエラーにする。
 
 ### CHARADATAの書き方
 
@@ -102,7 +130,7 @@ RESIZE C_LIST:ARG:0, 0                             ; 空にする
   - `COPYCHARA`（`CharacterData.CopyTo`）: バッファを複製する（コピー元と共有しない）。
   - `SORTCHARA`のキー（`CharacterData.SetSortKey`）: `ResizableArray.AsArray`で切り詰めた配列から取る。
   - メモリ計測（`VariableData`）: バッファの容量込みの配列を数える。
-  - セーブ・ロードは`SAVEDATA`の変数だけを扱い、`RESIZABLE`は`SAVEDATA`と併用できないため対象外。**将来`SAVEDATA`に対応するとき、またはキャラごとの格納場所を直接扱う処理を足すときは、この入れ物を考慮する必要がある。**
+  - セーブ・ロード（`CharacterData.SaveToStreamBinary`／`LoadFromStreamBinary`）: 今の長さの配列で書き、保存されていた長さに合わせて読む（ARRAY-03）。**キャラごとの格納場所を直接扱う処理を足すときは、この入れ物を考慮する必要がある。**
 
 ### 読み込み時の範囲確認
 
@@ -111,7 +139,7 @@ RESIZE C_LIST:ARG:0, 0                             ; 空にする
 ### 安全性の確認（2026-10-28）
 
 - `GetArray()`／`GetArrayChara()`を使う箇所はすべて「引数を評価してから配列を取り出す」順になっており、取り出した後に同じ変数の長さが変わる経路はない（取り出した後に`GetIntValue(exm)`等を呼ぶ箇所を機械的に検索し、該当は`REF`後の別命令の誤検出1件のみ）。
-- 配列そのものを保持し続けるのは`REF`（`Instraction.Child.cs`の`SetRef`）と参照渡しの引数（`Process.CalledFunction.cs`の`TransporterRef`）だけ。どちらも`RESIZABLE`変数ならエラーにする。
+- 配列そのものを保持し続けるのは`REF`（`Instraction.Child.cs`の`SetRef`）と参照渡しの引数（`Process.CalledFunction.cs`の`TransporterRef`）だけ。`REF`命令と普通の`REF`引数は`RESIZABLE`変数ならエラーにする。`REF RESIZABLE`引数は配列ではなく入れ物を保持する（ARRAY-03）。
 - このforkの高速化（`FixedVariableTerm`の再利用、`CDFLAG`の遅延確保など）が保持するのはトークンであり、配列ではない。
 
 ### 追加の高速化（ARRAY-02、2026-10-28）
@@ -142,11 +170,16 @@ ERBで100万回あたりのms（修正前は`5ec447e`の配布EXE、3回の平�
 | フィクスチャ | 内容 |
 |---|---|
 | main | 自動伸長（`=`・`+=`・複数代入）、範囲外読み取り以外の全動作、`RESIZE`の伸縮・空、`ARRAYSIZE`、`VARSIZE`、`FINDELEMENT`／`SUMARRAY`／`MATCH`／`STRJOIN`／`VARSET`／`ARRAYREMOVE`、`SPLIT`（伸びる・縮めない）、`HTML_TAGSPLIT`、関数内DYNAMICの再帰、関数内STATIC、CHARADATA（キャラごとの長さ・範囲省略・`COPYCHARA`の独立性・`DELCHARA`・`ADDVOIDCHARA`）、縮めてから伸ばしたときに古い値が見えないこと、`SORTCHARA`のキーにRESIZABLEのCHARADATAを使えること。約55項目 |
-| decl-errors | ERHでのSAVEDATA／GLOBAL／2次元／CONSTとの組み合わせエラー |
+| decl-errors | ERHでの2次元／CONSTとの組み合わせエラー（SAVEDATA／GLOBALはARRAY-03で併用可能になった） |
 | decl-errors-erb | 関数内のREFとの組み合わせエラー |
 | resize-fixed | `RESIZE`に固定長配列を渡すと読み込み時エラー |
 | read-oor | 範囲外読み取りが従来と同じ「配列の範囲外」エラー |
-| refarg-error | 参照渡しの引数に渡すとエラー |
+| refarg-error | 普通の`REF`引数にRESIZABLE変数を渡すとエラー |
+| refarg-fixed-error | `REF RESIZABLE`引数に固定長の変数を渡すとエラー（ARRAY-03） |
+| save-binary | バイナリ形式で、広域・`GLOBAL`・`CHARADATA`のRESIZABLEをセーブ→長さを変える→ロードして長さと中身が戻る。`RESETDATA`後も`REF RESIZABLE`が同じ変数を指す（ARRAY-03） |
+| save-text | テキスト形式（既定）で、広域・`GLOBAL`の同じ確認（ARRAY-03） |
+
+save-binary・save-textでは、末尾が0／空文字の配列と長さ0の配列も長さが戻ることを確かめる（テキスト形式で末尾が省かれて長さが失われる不具合を、修正前のEXEで再現してから直した）。
 
 既存の回帰試験 92/92 PASS。現行ゲーム（fixture）の起動安定性テスト 2/2（Lv2警告0）。
 

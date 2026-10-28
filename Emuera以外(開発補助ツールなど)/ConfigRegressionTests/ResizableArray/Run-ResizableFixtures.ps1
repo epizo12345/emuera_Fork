@@ -1,6 +1,7 @@
 ﻿# [Emuera改修:ARRAY-01] RESIZABLE配列のERBフィクスチャを、指定したEmuera.exeの起動試験モードで実行して判定する。
 # 一時フォルダは1つだけ作り、終了時に削除する。
 # REF/REFBYNAME命令は現行エンジンで書式エラーになる既存不具合があるため、REFの参照先ガードはフィクスチャで確認していない。
+# save-binaryはemuera.config（Shift_JIS）でバイナリ形式のセーブを有効にし、save-textは既定（テキスト形式）で確かめる。
 param([Parameter(Mandatory)][string]$Exe,[int]$TimeoutSeconds=60)
 $ErrorActionPreference='Stop'
 $Exe=(Resolve-Path -LiteralPath $Exe).Path
@@ -8,11 +9,14 @@ $fixtureRoot=Join-Path $PSScriptRoot 'fixtures'
 $work=Join-Path ([IO.Path]::GetTempPath()) ('emuera-resizable-'+[Guid]::NewGuid().ToString('N'))
 $expect=[ordered]@{
 	'main'=@{must=@('RESIZABLE_ALL_PASS');mustNot=@('RESIZABLE_FAIL')}
-	'decl-errors'=@{must=@('RESIZABLEとSAVEDATA','RESIZABLEとGLOBAL','RESIZABLEは1次元','RESIZABLEとCONST');mustNot=@('DECL_REACHED')}
-	'decl-errors-erb'=@{must=@('RESIZABLEとREFキーワードは同時に指定できません');mustNot=@('DECL_REACHED')}
+	'decl-errors'=@{must=@('RESIZABLEは1次元','RESIZABLEとCONST');mustNot=@('DECL_REACHED')}
+	'decl-errors-erb'=@{must=@('RESIZABLEは1次元配列にのみ指定できます');mustNot=@('DECL_REACHED')}
 	'resize-fixed'=@{must=@('RESIZABLE変数ではありません');mustNot=@('FIXED_REACHED')}
 	'read-oor'=@{must=@('配列変数"RG"の第1引数(5)は配列の範囲外です');mustNot=@('READ_SHOULD_NOT_REACH')}
-	'refarg-error'=@{must=@('参照渡しの引数にできません');mustNot=@('REFARG_SHOULD_NOT_REACH')}
+	'refarg-error'=@{must=@('RESIZABLE変数は#DIM REF RESIZABLEで宣言した引数にだけ渡せます');mustNot=@('REFARG_SHOULD_NOT_REACH')}
+	'refarg-fixed-error'=@{must=@('REF RESIZABLEの引数にはRESIZABLE変数だけを渡せます');mustNot=@('REFARG_SHOULD_NOT_REACH')}
+	'save-binary'=@{must=@('SAVE_ALL_PASS');mustNot=@('SAVE_FAIL','SAVE_SHOULD_NOT_REACH')}
+	'save-text'=@{must=@('SAVE_ALL_PASS');mustNot=@('SAVE_FAIL','SAVE_SHOULD_NOT_REACH')}
 }
 $failed=0
 try{

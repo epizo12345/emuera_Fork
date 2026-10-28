@@ -429,7 +429,9 @@ internal sealed partial class VariableData : IDisposable
     public UserDefinedVariableToken CreatePrivateVariable(UserDefinedVariableData data)
     {
         UserDefinedVariableToken ret;
-        if (data.Reference)//参照型
+        if (data.Reference && data.Resizable)// [Emuera改修:ARRAY-03 2026-10-28] REF RESIZABLE（1次元のみ）
+            ret = data.TypeIsStr ? new ResizableRefStr1DToken(data) : new ResizableRefInt1DToken(data);
+        else if (data.Reference)//参照型
         {//すべて非Staticなはず
             if (data.TypeIsStr)
             {
@@ -761,8 +763,9 @@ internal sealed partial class VariableData : IDisposable
                 //if (!var.IsSavedata) continue;
                 switch (i)
                 {
-                    case 0: writer.WriteExtended(var.Name, (string[])var.GetArray()); break;
-                    case 1: writer.WriteExtended(var.Name, (Int64[])var.GetArray()); break;
+                    // [Emuera改修:ARRAY-03 2026-10-28] RESIZABLEは末尾の0／空文字も書いて長さを残す。
+                    case 0: writer.WriteExtended(var.Name, (string[])var.GetArray(), var is IResizableToken); break;
+                    case 1: writer.WriteExtended(var.Name, (Int64[])var.GetArray(), var is IResizableToken); break;
                     case 2: writer.WriteExtended(var.Name, (string[,])var.GetArray()); break;
                     case 3: writer.WriteExtended(var.Name, (Int64[,])var.GetArray()); break;
                     case 4: writer.WriteExtended(var.Name, (string[,,])var.GetArray()); break;
@@ -842,12 +845,12 @@ internal sealed partial class VariableData : IDisposable
         varList = userDefinedSaveVarList[i]; i++;
         foreach (UserDefinedVariableToken var in varList)
             if (strListDic.TryGetValue(var.Name, out List<string> value))
-                copyListToArray(value, (string[])var.GetArray());
+                copyListToArray(value, LoadTarget<string>(var, value.Count));
 
         varList = userDefinedSaveVarList[i]; i++;
         foreach (UserDefinedVariableToken var in varList)
             if (intListDic.TryGetValue(var.Name, out List<long> value))
-                copyListToArray(value, (Int64[])var.GetArray());
+                copyListToArray(value, LoadTarget<Int64>(var, value.Count));
 
         varList = userDefinedSaveVarList[i]; i++;
         foreach (UserDefinedVariableToken var in varList)
@@ -868,6 +871,14 @@ internal sealed partial class VariableData : IDisposable
         foreach (UserDefinedVariableToken var in varList)
             if (int3DListDic.TryGetValue(var.Name, out List<List<long[]>> value))
                 copyListToArray3D(value, (Int64[,,])var.GetArray());
+    }
+
+    // [Emuera改修:ARRAY-03 2026-10-28] RESIZABLEは保存されていた長さに合わせてから読み込む（固定長は従来どおり宣言の長さに収める）。
+    private static T[] LoadTarget<T>(UserDefinedVariableToken var, int savedLength)
+    {
+        if (var is IResizableToken resizable)
+            resizable.Resize(0, savedLength);
+        return (T[])var.GetArray();
     }
 
     private static void copyListToArray<T>(List<T> srcList, T[] destArray)
@@ -936,8 +947,9 @@ internal sealed partial class VariableData : IDisposable
                 //if (!var.IsSavedata) continue;
                 switch (i)
                 {
-                    case 0: writer.WriteExtended(var.Name, (string[])var.GetArray()); break;
-                    case 1: writer.WriteExtended(var.Name, (Int64[])var.GetArray()); break;
+                    // [Emuera改修:ARRAY-03 2026-10-28] RESIZABLEは末尾の0／空文字も書いて長さを残す。
+                    case 0: writer.WriteExtended(var.Name, (string[])var.GetArray(), var is IResizableToken); break;
+                    case 1: writer.WriteExtended(var.Name, (Int64[])var.GetArray(), var is IResizableToken); break;
                     case 2: writer.WriteExtended(var.Name, (string[,])var.GetArray()); break;
                     case 3: writer.WriteExtended(var.Name, (Int64[,])var.GetArray()); break;
                     case 4: writer.WriteExtended(var.Name, (string[,,])var.GetArray()); break;
@@ -963,12 +975,12 @@ internal sealed partial class VariableData : IDisposable
         varList = userDefinedGlobalSaveVarList[i]; i++;
         foreach (UserDefinedVariableToken var in varList)
             if (strListDic.TryGetValue(var.Name, out List<string> value))
-                copyListToArray(value, (string[])var.GetArray());
+                copyListToArray(value, LoadTarget<string>(var, value.Count));
 
         varList = userDefinedGlobalSaveVarList[i]; i++;
         foreach (UserDefinedVariableToken var in varList)
             if (intListDic.TryGetValue(var.Name, out List<long> value))
-                copyListToArray(value, (Int64[])var.GetArray());
+                copyListToArray(value, LoadTarget<Int64>(var, value.Count));
 
         varList = userDefinedGlobalSaveVarList[i]; i++;
         foreach (UserDefinedVariableToken var in varList)
@@ -1062,6 +1074,8 @@ internal sealed partial class VariableData : IDisposable
             case EraSaveDataType.IntArray:
                 if (vToken == null || !vToken.IsInteger || vToken.Dimension != 1)
                     reader.ReadIntArray(null, true);
+                else if (vToken is IResizableToken resizableInt)// [Emuera改修:ARRAY-03 2026-10-28] 保存されていた長さに合わせて読む
+                    reader.ReadIntArray(null, true, n => { resizableInt.Resize(0, n); return (long[])vToken.GetArray(); });
                 else
                     reader.ReadIntArray((long[])vToken.GetArray(), true);
                 break;
@@ -1080,6 +1094,8 @@ internal sealed partial class VariableData : IDisposable
             case EraSaveDataType.StrArray:
                 if (vToken == null || !vToken.IsString || vToken.Dimension != 1)
                     reader.ReadStrArray(null, true);
+                else if (vToken is IResizableToken resizableStr)
+                    reader.ReadStrArray(null, true, n => { resizableStr.Resize(0, n); return (string[])vToken.GetArray(); });
                 else
                     reader.ReadStrArray((string[])vToken.GetArray(), true);
                 break;

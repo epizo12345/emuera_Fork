@@ -183,15 +183,9 @@ internal sealed class UserDefinedVariableData
             throw new CodeEE(keyword + "の後に有効な変数名が指定されていません", sc);
         if (ret.Resizable)
         {
-            // REFは配列そのものを保持するため、長さ変更で古い配列を見続ける。セーブ形式での長さの扱いは未対応。
+            // [Emuera改修:ARRAY-03 2026-10-28] REF（REF RESIZABLE）・SAVEDATA・GLOBALと併用できるようにした。CONSTは長さが変わらないため不可。
             if (ret.Const)
                 throw new CodeEE("RESIZABLEとCONSTキーワードは同時に指定できません", sc);
-            if (ret.Reference)
-                throw new CodeEE("RESIZABLEとREFキーワードは同時に指定できません", sc);
-            if (ret.Save)
-                throw new CodeEE("RESIZABLEとSAVEDATAキーワードは同時に指定できません", sc);
-            if (ret.Global)
-                throw new CodeEE("RESIZABLEとGLOBALキーワードは同時に指定できません", sc);
         }
         string errMes = "";
         int errLevel = -1;

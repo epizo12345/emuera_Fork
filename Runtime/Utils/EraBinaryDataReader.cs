@@ -117,11 +117,12 @@ internal abstract class EraBinaryDataReader : IDisposable
 
     public abstract string ReadString();
     public abstract long ReadInt();
-    public abstract void ReadIntArray(long[] refArray, bool needInit);
+    // [Emuera改修:ARRAY-03 2026-10-28] resizeForLoad: RESIZABLE用。保存されていた長さを受け取り、読み込み先の配列（その長さちょうど）を返す。
+    public abstract void ReadIntArray(long[] refArray, bool needInit, Func<int, long[]> resizeForLoad = null);
     public abstract void ReadIntArray2D(long[,] refArray, bool needInit);
     public abstract long[,] ReadIntArray2DZeroLazy(long[,] refArray, int length0, int length1, bool needInit);
     public abstract void ReadIntArray3D(long[,,] refArray, bool needInit);
-    public abstract void ReadStrArray(string[] refArray, bool needInit);
+    public abstract void ReadStrArray(string[] refArray, bool needInit, Func<int, string[]> resizeForLoad = null);
     public abstract void ReadStrArray2D(string[,] refArray, bool needInit);
     public abstract void ReadStrArray3D(string[,,] refArray, bool needInit);
     public abstract KeyValuePair<string, EraSaveDataType> ReadVariableCode();
@@ -204,12 +205,14 @@ internal abstract class EraBinaryDataReader : IDisposable
             return reader.ReadString();
         }
 
-        public override void ReadIntArray(long[] refArray, bool needInit)
+        public override void ReadIntArray(long[] refArray, bool needInit, Func<int, long[]> resizeForLoad = null)
         {
             long[] oriArray = null;
             byte b;
             int x = 0;
             int saveLength0 = reader.ReadInt32();
+            if (resizeForLoad != null)
+                refArray = resizeForLoad(saveLength0);
             if (refArray == null)//読み捨て。レアケースのはず
             {
                 DiscardIntArray(saveLength0, needInit);
@@ -590,12 +593,14 @@ internal abstract class EraBinaryDataReader : IDisposable
             }
             return;
         }
-        public override void ReadStrArray(string[] refArray, bool needInit)
+        public override void ReadStrArray(string[] refArray, bool needInit, Func<int, string[]> resizeForLoad = null)
         {
             string[] oriArray = null;
             byte b;
             int x = 0;
             int saveLength0 = reader.ReadInt32();
+            if (resizeForLoad != null)
+                refArray = resizeForLoad(saveLength0);
             if (refArray == null)//読み捨て。レアケースのはず
                 refArray = new string[saveLength0];
 

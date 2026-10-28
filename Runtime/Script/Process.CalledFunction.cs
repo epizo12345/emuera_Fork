@@ -38,13 +38,14 @@ internal sealed class UserDefinedFunctionArgument
         }
         TransporterInt = needsInt ? new long[Arguments.Length] : Array.Empty<long>();
         TransporterStr = needsStr ? new string[Arguments.Length] : Array.Empty<string>();
-        TransporterRef = needsRef ? new Array[Arguments.Length] : Array.Empty<Array>();
+        TransporterRef = needsRef ? new object[Arguments.Length] : Array.Empty<object>();
     }
     public readonly AExpression[] Arguments;
     private readonly VariableTerm[] destinationArgs;
     public readonly long[] TransporterInt;
     public readonly string[] TransporterStr;
-    public readonly Array[] TransporterRef;
+    // [Emuera改修:ARRAY-03 2026-10-28] 普通のREFには配列、REF RESIZABLEには入れ物（IResizableBuffer）を入れる。
+    public readonly object[] TransporterRef;
     public void SetTransporter(ExpressionMediator exm)
     {
         for (int i = 0; i < Arguments.Length; i++)
@@ -54,10 +55,17 @@ internal sealed class UserDefinedFunctionArgument
             if (destinationArgs[i].Identifier.IsReference)
             {
                 VariableTerm vTerm = (VariableTerm)Arguments[i];
-                // [Emuera改修:ARRAY-01] 参照渡しは呼び出し中ずっと配列そのものを保持するため、長さが変わると古い配列を見続ける。
-                if (vTerm.Identifier is IResizableToken)
-                    throw new CodeEE("RESIZABLE変数" + vTerm.Identifier.Name + "は参照渡しの引数にできません");
-                if (vTerm.Identifier.IsCharacterData)
+                // [Emuera改修:ARRAY-03 2026-10-28] RESIZABLEは配列ではなく入れ物を渡す（受け取れるのはREF RESIZABLEだけ。MatchTypeでも確認）。
+                // 普通のREFに配列を渡すと、長さが変わったときに古い配列を見続けるため。
+                if (vTerm.Identifier is IResizableToken resizable)
+                {
+                    if (destinationArgs[i].Identifier is not IResizableToken)
+                        throw new CodeEE("RESIZABLE変数" + vTerm.Identifier.Name + "は#DIM REF RESIZABLEで宣言した引数にだけ渡せます");
+                    TransporterRef[i] = resizable.GetBuffer(vTerm.Identifier.IsCharacterData ? vTerm.GetElementInt(0, exm) : 0);
+                }
+                else if (destinationArgs[i].Identifier is IResizableToken)
+                    throw new CodeEE("REF RESIZABLEの引数にはRESIZABLE変数だけを渡せます");
+                else if (vTerm.Identifier.IsCharacterData)
                 {
                     long charaNo = vTerm.GetElementInt(0, exm);
                     if (charaNo < 0 || charaNo >= GlobalStatic.VariableData.CharacterList.Count)
