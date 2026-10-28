@@ -51,4 +51,4 @@ ERBでの計測（100万回あたり、修正前EXEとの比較）:
 
 ## 採用状態
 
-2026-10-28に正式ソースへ採用（ブランチ`epizo/可変長配列`をマージcommit `a680ca1`でmainへ取り込み、ARRAY-04はmainで追加）。
+2026-10-28に正式ソースへ採用（ブランチ`epizo/可変長配列`をマージcommit `a680ca1`でmainへ取り込み、ARRAY-04はmainで追加）。EXE生成元は`1047dfbaf3b70bdaccb0d6ea34298031133602d1`（配布資料の更新commitとは別）。正式EXEは24,721,130 bytes、SHA-256 `FD13999D391AEA6128B741451D933F821ED1B52D65F6745251CA8D28B7C90637`、ProductVersion `0.2.6.0+1047dfbaf3b70bdaccb0d6ea34298031133602d1`、FileVersion `0.2.6.0`。source revision検証PASS、fixtureゲームで起動安定性テスト3/3（失敗・Lv2警告0）、RESIZABLEのERBフィクスチャ9/9 PASS。
