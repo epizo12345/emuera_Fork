@@ -1,6 +1,6 @@
 # Emuera Web Packager — 開発者向け
 
-現行ソースはversion 1.0.11です。itch.ioの展開後500MB制限に収まるよう、package内のPNGを中身だけWebPへ変換するオプション（ファイル名は.pngのまま）を追加しました。利用者の操作は[使い方](使い方.md)、package形式は[Web版パッケージ仕様](../../プロジェクト資料/Web版/03_ゲームデータパッケージ仕様.md)を参照してください。
+現行ソースはversion 1.0.11です。itch.ioの展開後500MB制限に収まるよう、package内のPNGを中身だけWebPへ変換するオプション（ファイル名は.pngのまま）と、itch.ioでは使われない`.br`／`.gz`を出力しないオプションを追加しました。利用者の操作は[使い方](使い方.md)、package形式は[Web版パッケージ仕様](../../プロジェクト資料/Web版/03_ゲームデータパッケージ仕様.md)を参照してください。
 
 1.0.11は1.0.10と同じRuntime UX16-08-RC3-Compat110を同梱します。1.0.10はRuntime UX16-08-RC3-Compat110を同梱し、1.0.9の機能（GETKEY修正を含む）を維持し、「ＭＳ ゴシック」「MS Gothic」指定をBIZ UDゴシック（OFL）で代替できるようにしました。端末にMS Gothicがある場合はそれを優先します。
 
@@ -30,7 +30,7 @@
 
 1.0.2は表示・入力・セーブ取込／キャンセル後のタイトル復帰、WARNING、スケールフィットを含むUX16-08-RC3を使用します。Webの配布ビルド条件はRelease / RunAOTCompilation=true / WasmStripILAfterAOT=false / EnableErbExecutionProfiler=falseです。IL保持はAOTの無効化ではなく、IL削除版とのサイズ・速度差は未測定です。SHA出力領域・root-prefix再利用は割当削減のみ確認済みで、速度改善を保証しません。
 
-GUIを開かず同じ生成処理を実行する場合は、ZIPを展開したフォルダで `EmueraWebPackager.exe --package <game-folder> <new-output-folder> [--png-webp]` を使用できます。`--png-webp`はGUIの「PNGをWebPに圧縮」と同じです。新規出力先のみ受け付け、隣接するsealed runtime-templateを使います。未知の引数・生成失敗は終了コード1となります。
+GUIを開かず同じ生成処理を実行する場合は、ZIPを展開したフォルダで `EmueraWebPackager.exe --package <game-folder> <new-output-folder> [--png-webp] [--no-precompressed]` を使用できます。`--png-webp`はGUIの「PNGをWebPに圧縮」、`--no-precompressed`は「.br/.gzを出力しない」と同じです。新規出力先のみ受け付け、隣接するsealed runtime-templateを使います。未知の引数・生成失敗は終了コード1となります。
 
 ## Fキーとmacro.txt
 

@@ -147,7 +147,7 @@ public static class Packager
             input.CopyTo(compressed);
         }
     }
-    public static PackageResult Build(string gameRoot, string output, string template, bool itch, Action<string>? progress = null, bool pngAsWebp = false)
+    public static PackageResult Build(string gameRoot, string output, string template, bool itch, Action<string>? progress = null, bool pngAsWebp = false, bool noPrecompressed = false)
     {
         gameRoot = ResolveGameRoot(gameRoot); output = Full(output); template = Full(template); NoLinks(output); NoLinks(template);
         if (output == gameRoot || Within(output, gameRoot) || Within(gameRoot, output) || output == template || Within(output, template) || Within(template, output)) throw new IOException("出力先は入力/Runtime templateと重ならない場所を選択してください");
@@ -161,7 +161,10 @@ public static class Packager
         {
             progress?.Invoke("入力snapshotを取得しています"); var snapshot = Capture(gameRoot); var diff = Compare(snapshot, Previous(output));
             progress?.Invoke($"snapshot完了: {snapshot.Files.Count} files" + (snapshot.HasSaves ? " / セーブデータはWeb配布物には含めません" : ""));
-            CopyTemplate(template, stage); string packages = Path.Combine(stage, "p1b-data"); Directory.CreateDirectory(packages);
+            CopyTemplate(template, stage);
+            // itch.io serves files as-is without Content-Encoding negotiation, so the precompressed siblings are never used there.
+            if (noPrecompressed) foreach (string file in Walk(stage).Where(f => Path.GetExtension(f).ToLowerInvariant() is ".br" or ".gz").ToArray()) File.Delete(file);
+            string packages = Path.Combine(stage, "p1b-data"); Directory.CreateDirectory(packages);
             var manifestFiles = new List<ManifestFile>(); var packedFiles = new List<InputFile>(); int webpCount = 0;
             foreach (var category in snapshot.Files.GroupBy(f => f.Category))
             {
@@ -191,13 +194,13 @@ public static class Packager
             var manifest = new Manifest(1, packedFiles.Sum(f => f.Size), manifestFiles);
             WriteJson(Path.Combine(packages, "manifest.json"), manifest); progress?.Invoke("全archive bytes/SHAを検証しています"); VerifyPackages(packages, snapshot with { Files = packedFiles });
             string manifestSha = HashFile(Path.Combine(packages, "manifest.json"));
-            WriteJson(Path.Combine(stage, "web-package-info.json"), new { application = Owner, packagerVersion = Version, runtimeTemplateVersion = RuntimeVersion, packagedUtc = DateTimeOffset.UtcNow, inputFileCount = snapshot.Files.Count, pngAsWebp, gameContentSnapshotSha256 = snapshot.AggregateSha256, packageManifestSha256 = manifestSha });
+            WriteJson(Path.Combine(stage, "web-package-info.json"), new { application = Owner, packagerVersion = Version, runtimeTemplateVersion = RuntimeVersion, packagedUtc = DateTimeOffset.UtcNow, inputFileCount = snapshot.Files.Count, pngAsWebp, precompressed = !noPrecompressed, gameContentSnapshotSha256 = snapshot.AggregateSha256, packageManifestSha256 = manifestSha });
             if (itch) { progress?.Invoke("itch ZIPを生成・検証しています"); CreateWebZip(stage, zipStage); VerifyWebZip(stage, zipStage); }
             var finalSnapshot = Capture(gameRoot); var raced = Compare(finalSnapshot, snapshot);
             if (raced.Changed.Length + raced.Added.Length + raced.Deleted.Length != 0) throw new IOException("パッケージング中に入力ファイルが変更されました: " + string.Join(", ", raced.Changed.Concat(raced.Added).Concat(raced.Deleted)));
             WriteJson(snapshotStage, snapshot);
             string[] packs = manifestFiles.Select(f => f.Pack).Distinct().ToArray();
-            File.WriteAllText(reportStage, $"Emuera Web Packager\n結果: 成功\nRuntime: {RuntimeVersion}\n入力ファイル: {snapshot.Files.Count}\n総入力サイズ: {snapshot.Files.Sum(f => f.Size)} bytes\n生成: {string.Join(", ", packs)}\n変更: {diff.Changed.Length} / 追加: {diff.Added.Length} / 削除: {diff.Deleted.Length}\nManifest: PASS\nArchive Verification: PASS\n{(pngAsWebp ? $"PNG→WebP: {webpCount} files（ファイル名は.pngのまま）\n" : "")}SAV files included: 0\n{(snapshot.HasSaves ? "セーブデータはWeb配布物には含めません\n" : "")}itch.io ZIP: {(itch ? "ITCH_PACKAGE_PASS" : "未選択")}\n出力: {output}\n", new UTF8Encoding(false));
+            File.WriteAllText(reportStage, $"Emuera Web Packager\n結果: 成功\nRuntime: {RuntimeVersion}\n入力ファイル: {snapshot.Files.Count}\n総入力サイズ: {snapshot.Files.Sum(f => f.Size)} bytes\n生成: {string.Join(", ", packs)}\n変更: {diff.Changed.Length} / 追加: {diff.Added.Length} / 削除: {diff.Deleted.Length}\nManifest: PASS\nArchive Verification: PASS\n{(pngAsWebp ? $"PNG→WebP: {webpCount} files（ファイル名は.pngのまま）\n" : "")}{(noPrecompressed ? ".br/.gz: 出力しない\n" : "")}SAV files included: 0\n{(snapshot.HasSaves ? "セーブデータはWeb配布物には含めません\n" : "")}itch.io ZIP: {(itch ? "ITCH_PACKAGE_PASS" : "未選択")}\n出力: {output}\n", new UTF8Encoding(false));
             progress?.Invoke("検証完了。出力を更新しています");
             Promote([(stage, output), (snapshotStage, output + ".packager.json"), (reportStage, output + "-packaging-report.txt"), (zipStage, output + "-itch.zip")], id);
             return new(output, snapshot.Files.Count, manifest.TotalSize, packs, diff, manifestSha, itch ? output + "-itch.zip" : null);

@@ -1,6 +1,6 @@
 # Emuera Web Packager 1.0.11 — Release Notes
 
-1.0.11は、package内のPNGをWebPへ圧縮するオプションを追加します。1.0.10の機能と既存の保存保護を維持します。
+1.0.11は、package内のPNGをWebPへ圧縮するオプションと、`.br`／`.gz`を出力しないオプションを追加します。1.0.10の機能と既存の保存保護を維持します。
 
 ## PNGをWebPに圧縮
 
@@ -9,6 +9,11 @@
 - WebPのほうが大きくなる画像、読めない画像は元のまま入れます。入力ゲームフォルダは変更しません。
 - ShinEra 0.5.10では、画像388MiB→98MiB、Web出力（展開後）536MB→231MBとなり、itch.ioの500MB制限に収まりました。
 - 非可逆圧縮のため、半透明のふちなどで画質がわずかに変わります。配布前にPreviewで確認してください。
+
+## .br/.gzを出力しない
+
+- GUIの「.br/.gzを出力しない（itch.io向け）」、またはCLIの`--no-precompressed`で有効になります。既定は無効です。
+- `.br`／`.gz`は、配信サーバーが圧縮版を出し分けるためのファイルです。itch.ioは出し分けをしないため使われません。有効にすると出力とitch ZIPから除きます（約26MB）。ゲームの動作は変わりません。
 
 ## ビルド条件と出自
 
@@ -21,7 +26,7 @@
 
 ## 利用
 
-EmueraWebPackager-1.0.11-win-x64.zipとSHA256SUMS.txtを照合し、新規フォルダへ展開してください。実EXEでクリーンな配布用ゲーム入力と新しい出力先を指定します。CLIは `--package <game-folder> <new-output-folder> [--png-webp]` です。ツールZIPとゲーム入りitch ZIPは別物です。itchへのアップロードは利用者が行います。技術検証はゲーム素材の再配布許諾を保証しません。
+EmueraWebPackager-1.0.11-win-x64.zipとSHA256SUMS.txtを照合し、新規フォルダへ展開してください。実EXEでクリーンな配布用ゲーム入力と新しい出力先を指定します。CLIは `--package <game-folder> <new-output-folder> [--png-webp] [--no-precompressed]` です。ツールZIPとゲーム入りitch ZIPは別物です。itchへのアップロードは利用者が行います。技術検証はゲーム素材の再配布許諾を保証しません。
 
 ## 既知の制約
 

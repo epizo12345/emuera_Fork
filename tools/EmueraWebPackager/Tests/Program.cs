@@ -173,13 +173,15 @@ try
         var noise = new Random(1); for (int y = 0; y < 64; y++) for (int x = 0; x < 64; x++) bitmap.SetPixel(x, y, new SkiaSharp.SKColor((byte)noise.Next(256), (byte)noise.Next(256), (byte)noise.Next(256), (byte)(x < 32 ? 255 : 128)));
         using var png = SkiaSharp.SKImage.FromBitmap(bitmap).Encode(SkiaSharp.SKEncodedImageFormat.Png, 100); File.WriteAllBytes(facePng, png.ToArray());
     }
-    string facePngSha = Packager.HashFile(facePng), webpOutput = web + "-webp"; var converted = Packager.Build(game, webpOutput, template, true, null, true);
+    string facePngSha = Packager.HashFile(facePng), webpOutput = web + "-webp"; var converted = Packager.Build(game, webpOutput, template, true, null, true, true);
     var wm = Packager.Read<DataPackageManifest>(Path.Combine(webpOutput, "p1b-data", "manifest.json"));
     foreach (string pack in wm.Files.Select(f => f.Pack).Distinct()) { using var stream = File.OpenRead(Path.Combine(webpOutput, "p1b-data", pack)); await DataPackageExtractor.ExtractPackAsync(stream, pack, Path.Combine(root, "extracted-webp"), wm, wm.TotalSize); }
     byte[] face = File.ReadAllBytes(Path.Combine(root, "extracted-webp", "resources", "10_キャラ画像", "顔.png"));
     using (var decoded = SkiaSharp.SKBitmap.Decode(face)) Check(System.Text.Encoding.ASCII.GetString(face, 8, 4) == "WEBP" && decoded?.Width == 64 && decoded.Height == 64, "PNG name kept, WebP bytes decode at same size");
     Check(File.ReadAllBytes(Path.Combine(root, "extracted-webp", "resources", "10_キャラ画像", "ref.PNG")).SequenceEqual(new byte[] { 1, 2, 3 }), "undecodable PNG kept as-is");
     Check(Packager.HashFile(facePng) == facePngSha && File.ReadAllText(Path.Combine(webpOutput, "web-package-info.json")).Contains("\"pngAsWebp\": true"), "input untouched / option recorded");
+    using (var itchZip = ZipFile.OpenRead(converted.ItchZip!))
+        Check(!Directory.EnumerateFiles(webpOutput, "*", SearchOption.AllDirectories).Any(f => f.EndsWith(".br") || f.EndsWith(".gz")) && !itchZip.Entries.Any(e => e.FullName.EndsWith(".br") || e.FullName.EndsWith(".gz")) && File.Exists(Path.Combine(webpOutput, "index.html")) && File.Exists(Path.Combine(web, "index.html.br")), "no .br/.gz only when requested");
     Passed(test, converted);
     test = "localhost-server-own-stop";
     using (var server = new PreviewServer(web))
