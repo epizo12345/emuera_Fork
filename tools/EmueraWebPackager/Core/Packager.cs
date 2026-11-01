@@ -2,6 +2,7 @@ using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using SkiaSharp;
 
 namespace EmueraWebPackager;
 
@@ -12,10 +13,11 @@ public sealed record PackageResult(string Output, int FileCount, long Bytes, str
 
 public static class Packager
 {
-    public const string Version = "1.0.10";
+    public const string Version = "1.0.11";
     public const string RuntimeVersion = "UX16-08-RC3-Compat110";
     const string Owner = "EmueraWebPackager";
     const long PackLimit = 128L * 1024 * 1024;
+    const int WebpQuality = 90;
     static readonly JsonSerializerOptions Json = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, PropertyNameCaseInsensitive = true, WriteIndented = true };
     static readonly HashSet<string> Excluded = new(StringComparer.OrdinalIgnoreCase) { "sav", "reports", "artifacts", "bin", "obj", ".git", "node_modules", "fixture_base", "test", "tests", "chrome", "chrome-profiles" };
     static readonly HashSet<string> Images = new(StringComparer.OrdinalIgnoreCase) { ".png", ".webp", ".bmp", ".gif", ".jpg", ".jpeg", ".svg", ".ico", ".tif", ".tiff" };
@@ -145,7 +147,7 @@ public static class Packager
             input.CopyTo(compressed);
         }
     }
-    public static PackageResult Build(string gameRoot, string output, string template, bool itch, Action<string>? progress = null)
+    public static PackageResult Build(string gameRoot, string output, string template, bool itch, Action<string>? progress = null, bool pngAsWebp = false)
     {
         gameRoot = ResolveGameRoot(gameRoot); output = Full(output); template = Full(template); NoLinks(output); NoLinks(template);
         if (output == gameRoot || Within(output, gameRoot) || Within(gameRoot, output) || output == template || Within(output, template) || Within(template, output)) throw new IOException("出力先は入力/Runtime templateと重ならない場所を選択してください");
@@ -160,7 +162,7 @@ public static class Packager
             progress?.Invoke("入力snapshotを取得しています"); var snapshot = Capture(gameRoot); var diff = Compare(snapshot, Previous(output));
             progress?.Invoke($"snapshot完了: {snapshot.Files.Count} files" + (snapshot.HasSaves ? " / セーブデータはWeb配布物には含めません" : ""));
             CopyTemplate(template, stage); string packages = Path.Combine(stage, "p1b-data"); Directory.CreateDirectory(packages);
-            var manifestFiles = new List<ManifestFile>();
+            var manifestFiles = new List<ManifestFile>(); var packedFiles = new List<InputFile>(); int webpCount = 0;
             foreach (var category in snapshot.Files.GroupBy(f => f.Category))
             {
                 int number = 0; long size = 0; ZipArchive? zip = null; string name = "";
@@ -173,23 +175,29 @@ public static class Packager
                             zip?.Dispose(); name = $"{category.Key}-{++number:000}.zip"; progress?.Invoke($"生成: {name}");
                             zip = ZipFile.Open(Path.Combine(packages, name), ZipArchiveMode.Create); size = 0;
                         }
+                        byte[] bytes = File.ReadAllBytes(file.Source);
+                        if (Convert.ToHexString(SHA256.HashData(bytes)) != file.Sha256) throw new IOException($"パッケージング中に入力ファイルが変更されました: {file.Path}");
+                        var packed = file;
+                        if (pngAsWebp && Path.GetExtension(file.Path).Equals(".png", StringComparison.OrdinalIgnoreCase) && PngAsWebp(bytes) is { } webp)
+                        { bytes = webp; packed = file with { Size = bytes.Length, Sha256 = Convert.ToHexString(SHA256.HashData(bytes)) }; webpCount++; }
                         var entry = zip.CreateEntry(file.Path, CompressionLevel.Optimal); entry.LastWriteTime = new(1980, 1, 1, 0, 0, 0, TimeSpan.Zero);
-                        using (var input = File.OpenRead(file.Source)) using (var target = entry.Open()) input.CopyTo(target);
-                        manifestFiles.Add(new(file.Path, file.Size, file.Sha256, name)); size += file.Size;
+                        using (var target = entry.Open()) target.Write(bytes);
+                        manifestFiles.Add(new(file.Path, packed.Size, packed.Sha256, name)); packedFiles.Add(packed); size += packed.Size;
                     }
                 }
                 finally { zip?.Dispose(); }
             }
-            var manifest = new Manifest(1, snapshot.Files.Sum(f => f.Size), manifestFiles);
-            WriteJson(Path.Combine(packages, "manifest.json"), manifest); progress?.Invoke("全archive bytes/SHAを検証しています"); VerifyPackages(packages, snapshot);
+            if (pngAsWebp) progress?.Invoke($"PNG→WebP: {webpCount} files / {snapshot.Files.Sum(f => f.Size):N0} → {packedFiles.Sum(f => f.Size):N0} bytes");
+            var manifest = new Manifest(1, packedFiles.Sum(f => f.Size), manifestFiles);
+            WriteJson(Path.Combine(packages, "manifest.json"), manifest); progress?.Invoke("全archive bytes/SHAを検証しています"); VerifyPackages(packages, snapshot with { Files = packedFiles });
             string manifestSha = HashFile(Path.Combine(packages, "manifest.json"));
-            WriteJson(Path.Combine(stage, "web-package-info.json"), new { application = Owner, packagerVersion = Version, runtimeTemplateVersion = RuntimeVersion, packagedUtc = DateTimeOffset.UtcNow, inputFileCount = snapshot.Files.Count, gameContentSnapshotSha256 = snapshot.AggregateSha256, packageManifestSha256 = manifestSha });
+            WriteJson(Path.Combine(stage, "web-package-info.json"), new { application = Owner, packagerVersion = Version, runtimeTemplateVersion = RuntimeVersion, packagedUtc = DateTimeOffset.UtcNow, inputFileCount = snapshot.Files.Count, pngAsWebp, gameContentSnapshotSha256 = snapshot.AggregateSha256, packageManifestSha256 = manifestSha });
             if (itch) { progress?.Invoke("itch ZIPを生成・検証しています"); CreateWebZip(stage, zipStage); VerifyWebZip(stage, zipStage); }
             var finalSnapshot = Capture(gameRoot); var raced = Compare(finalSnapshot, snapshot);
             if (raced.Changed.Length + raced.Added.Length + raced.Deleted.Length != 0) throw new IOException("パッケージング中に入力ファイルが変更されました: " + string.Join(", ", raced.Changed.Concat(raced.Added).Concat(raced.Deleted)));
             WriteJson(snapshotStage, snapshot);
             string[] packs = manifestFiles.Select(f => f.Pack).Distinct().ToArray();
-            File.WriteAllText(reportStage, $"Emuera Web Packager\n結果: 成功\nRuntime: {RuntimeVersion}\n入力ファイル: {snapshot.Files.Count}\n総入力サイズ: {manifest.TotalSize} bytes\n生成: {string.Join(", ", packs)}\n変更: {diff.Changed.Length} / 追加: {diff.Added.Length} / 削除: {diff.Deleted.Length}\nManifest: PASS\nArchive Verification: PASS\nSAV files included: 0\n{(snapshot.HasSaves ? "セーブデータはWeb配布物には含めません\n" : "")}itch.io ZIP: {(itch ? "ITCH_PACKAGE_PASS" : "未選択")}\n出力: {output}\n", new UTF8Encoding(false));
+            File.WriteAllText(reportStage, $"Emuera Web Packager\n結果: 成功\nRuntime: {RuntimeVersion}\n入力ファイル: {snapshot.Files.Count}\n総入力サイズ: {snapshot.Files.Sum(f => f.Size)} bytes\n生成: {string.Join(", ", packs)}\n変更: {diff.Changed.Length} / 追加: {diff.Added.Length} / 削除: {diff.Deleted.Length}\nManifest: PASS\nArchive Verification: PASS\n{(pngAsWebp ? $"PNG→WebP: {webpCount} files（ファイル名は.pngのまま）\n" : "")}SAV files included: 0\n{(snapshot.HasSaves ? "セーブデータはWeb配布物には含めません\n" : "")}itch.io ZIP: {(itch ? "ITCH_PACKAGE_PASS" : "未選択")}\n出力: {output}\n", new UTF8Encoding(false));
             progress?.Invoke("検証完了。出力を更新しています");
             Promote([(stage, output), (snapshotStage, output + ".packager.json"), (reportStage, output + "-packaging-report.txt"), (zipStage, output + "-itch.zip")], id);
             return new(output, snapshot.Files.Count, manifest.TotalSize, packs, diff, manifestSha, itch ? output + "-itch.zip" : null);
@@ -206,6 +214,17 @@ public static class Packager
             NoLinks(stage); if (Directory.Exists(stage)) Directory.Delete(stage, true);
             foreach (string file in new[] { zipStage, snapshotStage, reportStage }) { NoLinks(file); if (File.Exists(file)) File.Delete(file); }
         }
+    }
+    // ERB hardcodes ".png" names and Skia decodes by content, so only the bytes change. Null keeps the original (undecodable, not smaller, or fails re-decode).
+    static byte[]? PngAsWebp(byte[] png)
+    {
+        // SKBitmap.Decode(byte[]) throws on unknown formats; going through SKCodec yields null instead.
+        static SKBitmap? Decode(byte[] bytes) { using var codec = SKCodec.Create(new SKMemoryStream(bytes)); return codec == null ? null : SKBitmap.Decode(codec); }
+        using var bitmap = Decode(png); if (bitmap == null) return null;
+        using var image = SKImage.FromBitmap(bitmap); using var data = image.Encode(SKEncodedImageFormat.Webp, WebpQuality);
+        if (data == null || data.Size >= png.Length) return null;
+        byte[] webp = data.ToArray(); using var check = Decode(webp);
+        return check != null && check.Width == bitmap.Width && check.Height == bitmap.Height ? webp : null;
     }
     static bool Owned(string output)
     {

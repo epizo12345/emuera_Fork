@@ -10,9 +10,9 @@ internal static class Program
         {
             try
             {
-                if (args is not ["--package", var game, var output]) throw new ArgumentException("Usage: EmueraWebPackager.exe --package <game-folder> <new-output-folder>");
+                if (args is not ["--package", var game, var output, .. var options] || options is not ([] or ["--png-webp"])) throw new ArgumentException("Usage: EmueraWebPackager.exe --package <game-folder> <new-output-folder> [--png-webp]");
                 if (Directory.Exists(output) || File.Exists(output)) throw new IOException("新しい出力先を指定してください。既存出力は上書きしません。");
-                var result = Packager.Build(game, output, Path.Combine(AppContext.BaseDirectory, "runtime-template"), true, Console.WriteLine);
+                var result = Packager.Build(game, output, Path.Combine(AppContext.BaseDirectory, "runtime-template"), true, Console.WriteLine, options.Length == 1);
                 Console.WriteLine($"PASS: {result.FileCount} files / {result.Bytes} bytes / {result.ItchZip}");
             }
             catch (Exception ex) { Console.Error.WriteLine(ex.Message); Environment.ExitCode = 1; }

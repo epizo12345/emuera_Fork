@@ -1,27 +1,28 @@
-# Emuera Web Packager 1.0.10 — Release Notes
+# Emuera Web Packager 1.0.11 — Release Notes
 
-1.0.10は、ローカルフォントに依存していた表示を修正します。1.0.9の機能（GETKEY修正を含む）と既存の保存保護を維持します。
+1.0.11は、package内のPNGをWebPへ圧縮するオプションを追加します。1.0.10の機能と既存の保存保護を維持します。
 
-## フォント代替
+## PNGをWebPに圧縮
 
-- 「ＭＳ ゴシック」「MS Gothic」が端末にない、または使えない環境で、ブラウザ既定のプロポーショナル体へ置き換わり文字幅・レイアウトが崩れていました。Mac／Linux／スマートフォン、Braveのフィンガープリント対策（Shields）などが該当します。
-- 等幅のBIZ UDゴシック（SIL Open Font License 1.1、woff2 約2.2MB）を同梱し、上記フォント名の代替に割り当てます。端末にMS Gothicがあればそちらを優先します。
-- 文字幅計測の前にフォント読込を待つため、MS Gothicのない環境では初回起動時にフォントのダウンロード分だけ時間がかかります。
-- ＭＳ ゴシック以外のフォント名を指定するゲームは対象外です（従来どおりローカルフォントへ依存します）。
+- GUIの「PNGをWebPに圧縮（名前は.pngのまま・非可逆）」、またはCLIの`--png-webp`で有効になります。既定は無効で、無効時の出力は1.0.10と同じです。
+- package内のPNGを品質90のWebPへ変換します。ERBが`.png`のファイル名を直接指定していても動くよう、ファイル名は変えず中身だけを置き換えます。Runtime（SkiaSharp）は中身で形式を判別します。
+- WebPのほうが大きくなる画像、読めない画像は元のまま入れます。入力ゲームフォルダは変更しません。
+- ShinEra 0.5.10では、画像388MiB→98MiB、Web出力（展開後）536MB→231MBとなり、itch.ioの500MB制限に収まりました。
+- 非可逆圧縮のため、半透明のふちなどで画質がわずかに変わります。配布前にPreviewで確認してください。
 
 ## ビルド条件と出自
 
-- Packager 1.0.10／Runtime UX16-08-RC3-Compat110。SDK 10.0.112、Windows／browser-wasm runtime 10.0.12、SkiaSharp 4.150.1を維持。
+- Packager 1.0.11／Runtime UX16-08-RC3-Compat110。SDK 10.0.112、Windows／browser-wasm runtime 10.0.12、SkiaSharp 4.150.1を維持。
 - Runtimeソースcommit: `{{SOURCE_COMMIT}}`
 - Runtimeソース一覧SHA256: `{{SOURCE_TREE_SHA256}}`
 - Packager版・資料commit: `{{PACKAGER_COMMIT}}`
 - Packagerソース一覧SHA256: `{{PACKAGER_SOURCE_TREE_SHA256}}`
-- 今回の変更は静的資材（app.css、global-persistence.js、フォント）のみです。C#ソースは1.0.9と同一のため、Wasm／framework資材は1.0.9のAOT出力（Release／RunAOTCompilation=true／WasmStripILAfterAOT=false／EnableErbExecutionProfiler=false）を再利用しています。
+- Runtime（C#／Wasm／静的資材）は1.0.10と同一のため、1.0.10のruntime-templateを再利用しています。変更はPackager EXEのみです。
 
 ## 利用
 
-EmueraWebPackager-1.0.10-win-x64.zipとSHA256SUMS.txtを照合し、新規フォルダへ展開してください。実EXEでクリーンな配布用ゲーム入力と新しい出力先を指定します。CLIは `--package <game-folder> <new-output-folder>` です。ツールZIPとゲーム入りitch ZIPは別物です。itchへのアップロードは利用者が行います。技術検証はゲーム素材の再配布許諾を保証しません。
+EmueraWebPackager-1.0.11-win-x64.zipとSHA256SUMS.txtを照合し、新規フォルダへ展開してください。実EXEでクリーンな配布用ゲーム入力と新しい出力先を指定します。CLIは `--package <game-folder> <new-output-folder> [--png-webp]` です。ツールZIPとゲーム入りitch ZIPは別物です。itchへのアップロードは利用者が行います。技術検証はゲーム素材の再配布許諾を保証しません。
 
 ## 既知の制約
 
-1.0.9の既知制約（GETKEYTRIGGERED、ブラウザ予約キー、X1サイドボタンのBack／Forward競合、VK6の物理キー、全ブラウザ／IME保証）は変わりません。BIZ UDゴシックはMS Gothicと字形が異なります。その他の既知制約は同梱READMEと使い方を参照してください。
+1.0.10の既知制約は変わりません。WebP変換後のファイルはWeb出力専用です。その他の既知制約は同梱READMEと使い方を参照してください。
