@@ -1,8 +1,8 @@
 # Emuera Web Packager — 開発者向け
 
-現行ソースはversion 1.0.11です。itch.ioの展開後500MB制限に収まるよう、package内のPNGを中身だけWebPへ変換するオプション（ファイル名は.pngのまま）と、itch.ioでは使われない`.br`／`.gz`を出力しないオプションを追加しました。利用者の操作は[使い方](使い方.md)、package形式は[Web版パッケージ仕様](../../プロジェクト資料/Web版/03_ゲームデータパッケージ仕様.md)を参照してください。
+現行ソースはversion 1.0.12です。2Dダンジョンマップなどで、文字と位置指定DIVを同じボタンに入れた表示が行の左端へ飛ぶ不具合を修正しました。1.0.11で追加した、package内のPNGを中身だけWebPへ変換するオプション（ファイル名は.pngのまま）と、itch.ioでは使われない`.br`／`.gz`を出力しないオプションも維持しています。利用者の操作は[使い方](使い方.md)、package形式は[Web版パッケージ仕様](../../プロジェクト資料/Web版/03_ゲームデータパッケージ仕様.md)を参照してください。
 
-1.0.11は1.0.10と同じRuntime UX16-08-RC3-Compat110を同梱します。1.0.10はRuntime UX16-08-RC3-Compat110を同梱し、1.0.9の機能（GETKEY修正を含む）を維持し、「ＭＳ ゴシック」「MS Gothic」指定をBIZ UDゴシック（OFL）で代替できるようにしました。端末にMS Gothicがある場合はそれを優先します。
+1.0.12はRuntime UX16-08-RC3-Compat111を同梱します。1.0.11は1.0.10と同じRuntime UX16-08-RC3-Compat110を同梱します。1.0.10はRuntime UX16-08-RC3-Compat110を同梱し、1.0.9の機能（GETKEY修正を含む）を維持し、「ＭＳ ゴシック」「MS Gothic」指定をBIZ UDゴシック（OFL）で代替できるようにしました。端末にMS Gothicがある場合はそれを優先します。
 
 - 冬眠装置向けSAVECHARA／LOADCHARA／FIND_CHARADATA／CHKCHARADATAと、上部「キャラdat」の一覧・メモ・取り込み・書き出し。再読込時にもコミット済みdatを復元。
 - CLEARTEXTBOXを入力欄だけの消去へ修正し、表示履歴・Island・LINECOUNTを保持。

@@ -13,8 +13,8 @@ public sealed record PackageResult(string Output, int FileCount, long Bytes, str
 
 public static class Packager
 {
-    public const string Version = "1.0.11";
-    public const string RuntimeVersion = "UX16-08-RC3-Compat110";
+    public const string Version = "1.0.12";
+    public const string RuntimeVersion = "UX16-08-RC3-Compat111";
     const string Owner = "EmueraWebPackager";
     const long PackLimit = 128L * 1024 * 1024;
     const int WebpQuality = 90;

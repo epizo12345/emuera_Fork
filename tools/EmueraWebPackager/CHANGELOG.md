@@ -1,5 +1,11 @@
 # Emuera Web Packager — 更新履歴
 
+## 1.0.12 — ボタン内の位置指定DIV
+
+- 文字と`<div xpos=…>`を同じ`<button>`に入れた表示が、行の左端へ飛ぶ不具合を修正（ブラウザ版のみ）。ShinEraの2Dダンジョンでマップクリック移動をONにすると、自キャラのマスが左端へ飛び＠が消えていました。
+- 位置指定DIVだけのボタンは従来どおり行の左端基準で配置します。
+- Runtime UX16-08-RC3-Compat111。RuntimeのAOTビルドはSDK 10.0.303／wasm-tools 10.0.11で行いました（runtime 10.0.12は維持）。
+
 ## 1.0.11 — PNGのWebP圧縮
 
 - 「PNGをWebPに圧縮（名前は.pngのまま・非可逆）」オプションを追加（CLIは`--png-webp`）。package内のPNGを品質90のWebPへ変換し、itch.ioの展開後500MB制限に収めやすくします。ShinEra 0.5.10では画像388MiB→98MiB、Web出力536MB→231MBでした。
