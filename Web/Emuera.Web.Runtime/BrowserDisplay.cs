@@ -49,6 +49,18 @@ public sealed record BrowserDisplayPart(
 {
     public bool ShouldRenderForNativePaint(bool nativeLinePainted) =>
         nativeLinePainted || Layout?.ExplicitPosition != true;
+
+    // Only a button made of positioned DIVs alone collapses to the line origin.
+    // Flow text beside a DIV (e.g. a map tile with an overlay icon) keeps the
+    // button in its flow position, as Native does.
+    public bool HasOnlyPositionedContent =>
+        Children is { Count: > 0 } children
+        && children.Any(IsPositionedOrigin)
+        && children.All(child => IsPositionedOrigin(child)
+            || child.Kind == BrowserDisplayPartKind.Text && string.IsNullOrWhiteSpace(child.Text));
+
+    static bool IsPositionedOrigin(BrowserDisplayPart part) =>
+        part.Kind == BrowserDisplayPartKind.Group && part.Layout is { Mode: BrowserDisplayMode.Relative, ExplicitPosition: true };
 }
 
 public static class BrowserPartRenderPolicy

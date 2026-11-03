@@ -56,7 +56,7 @@ else if (Part.Kind == BrowserDisplayPartKind.Group)
 }
 else if (Part.Kind == BrowserDisplayPartKind.Button)
 {
-    <button type="button" class="game-button game-part" data-input="@Part.Input" data-input-integer="@Part.IsInteger.ToString().ToLowerInvariant()" data-current-input="@(Part.Activation is not null ? "true" : "false")" data-locked-x="@Part.LockedX" data-game-tooltip="@Part.Tooltip" aria-description="@Part.Tooltip" style="@(PartStyle(Part) + FlowOffsetStyle(Part, FlowOffsetY))" @onmousedown="MouseDown" @onmousedown:stopPropagation @onmousedown:preventDefault>
+    <button type="button" class="game-button game-part @(Part.HasOnlyPositionedContent ? "game-positioned-button" : string.Empty)" data-input="@Part.Input" data-input-integer="@Part.IsInteger.ToString().ToLowerInvariant()" data-current-input="@(Part.Activation is not null ? "true" : "false")" data-locked-x="@Part.LockedX" data-game-tooltip="@Part.Tooltip" aria-description="@Part.Tooltip" style="@(PartStyle(Part) + FlowOffsetStyle(Part, FlowOffsetY))" @onmousedown="MouseDown" @onmousedown:stopPropagation @onmousedown:preventDefault>
         @if (Part.Children is { Count: > 0 })
         {
             @foreach (BrowserDisplayPart child in Part.Children)

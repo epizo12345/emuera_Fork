@@ -952,6 +952,23 @@ if (args is ["vvr-render-membership"])
     return;
 }
 
+if (args is ["positioned-button-flow"])
+{
+    // Map tile with an overlay icon (SinEraTensei mouse-walk player tile) must stay in flow;
+    // a button of positioned DIVs alone still collapses to the line origin.
+    string root = CreateGlobalFixture("@SYSTEM_TITLE\nHTML_PRINT \"<button value='1'><font color='#FFFFFF'>TILE<div xpos='-100' ypos='-25'><img src='NOPE' width='100' height='100'></div></font></button><button value='2'> <div xpos='300'>ONLY</div> </button>\"\nINPUT\nQUIT\n");
+    BrowserRuntimeSession runtime = await BrowserRuntimeSession.StartTitleBootstrapAsync(root, null);
+    runtime.StartTitle();
+    Equal(BrowserInputKind.Integer, runtime.PendingInput?.Kind, $"positioned button fixture reaches INPUT: {runtime.Status} {runtime.FailureDiagnostic.ExceptionMessage}");
+    BrowserDisplayPart[] buttons = Flatten(runtime.DisplayLines.SelectMany(line => line.Parts)).Where(part => part.Kind == BrowserDisplayPartKind.Button).ToArray();
+    Equal(false, buttons.Single(part => part.Input == "1").HasOnlyPositionedContent, "tile text with overlay DIV keeps button in flow");
+    Equal(true, buttons.Single(part => part.Input == "2").HasOnlyPositionedContent, "button of positioned DIV alone collapses to line origin");
+    string css = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "app.css"));
+    Equal(false, css.Contains(".game-button:has(> .game-positioned-origin)", StringComparison.Ordinal), "CSS no longer collapses any button that merely contains a positioned DIV");
+    Console.WriteLine("PASS WEB-POSITIONED-BUTTON-FLOW overlay DIV inside flow button");
+    return;
+}
+
 if (args is ["vpr-part-render-refresh"])
 {
     Type? policyType = typeof(BrowserDisplayPart).Assembly.GetType("MinorShift.Emuera.Web.Runtime.BrowserPartRenderPolicy");

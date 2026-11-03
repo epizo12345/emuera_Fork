@@ -39,16 +39,16 @@ input { flex: 1; min-width: 12rem; }
 #game-screen .game-html-group > span.game-part:not(.game-html-group, .game-nonbutton) { pointer-events: auto; }
 .game-html-origin > .game-html-group { width: max-content; max-width: none; height: auto; white-space: pre; }
 .game-line:has(> .game-html-origin ~ .game-html-origin) { position: relative; }
-.game-line:has(> .game-button > .game-positioned-origin) { position: relative; }
+.game-line:has(> .game-positioned-button) { position: relative; }
 .game-line > .game-html-origin ~ .game-html-origin { position: absolute; left: 0; top: 0; width: 0; }
 .game-html-row > .game-html-origin ~ .game-html-origin,
 .game-button > .game-html-origin ~ .game-html-origin,
 .game-nonbutton > .game-html-origin ~ .game-html-origin { position: absolute; left: 0; top: 0; width: 0; }
 .game-html-group > .game-html-origin.game-positioned-origin ~ .game-html-origin.game-positioned-origin { position: absolute; left: var(--group-padding, 0px); top: var(--group-padding, 0px); width: 0; }
 .game-html-row { display: block; position: relative; min-height: 18px; line-height: 18px; }
-.game-line > .game-button:has(> .game-positioned-origin),
+.game-line > .game-positioned-button,
 .game-html-group > .game-button:has(> .game-html-origin) { position: absolute; left: 0; top: 0; width: 0; height: 0; background-color: transparent !important; pointer-events: none; }
-#game-screen .game-line > .game-button:has(> .game-positioned-origin) > .game-html-origin > .game-html-group { pointer-events: auto; }
+#game-screen .game-line > .game-positioned-button > .game-html-origin > .game-html-group { pointer-events: auto; }
 .game-html-group > .game-button:has(> .game-html-origin) ~ .game-button:has(> .game-html-origin) > .game-html-origin > .game-html-group { pointer-events: auto; }
 .align-center { text-align: center; }
 .align-right { text-align: right; }
