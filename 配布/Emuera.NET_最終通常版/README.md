@@ -1,18 +1,19 @@
 # Emuera.NET 最終通常版
 
-- 更新日: 2026-10-28
+- 更新日: 2026-11-05
 - 基礎: BugFix_Test `7b7dd3bf240eff4fdfc7094f4175de0e014532b7`
-- EXE生成元source commit: `1047dfbaf3b70bdaccb0d6ea34298031133602d1`（配布資料の更新commitとは別）
+- EXE生成元source commit: `db3ba10b4c6258533b3855b9fe4d6fdf9f30539e`（配布資料の更新commitとは別）
 - 対象OS: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 配布形態: フレームワーク依存・単一EXE
-- `Emuera.exe` サイズ: 24,721,130バイト（約23.58 MiB）
-- `Emuera.exe` SHA-256: `FD13999D391AEA6128B741451D933F821ED1B52D65F6745251CA8D28B7C90637`
-- `Emuera.exe` ProductVersion: `0.2.6.0+1047dfbaf3b70bdaccb0d6ea34298031133602d1`（suffixはEXEを生成したsource commit）
+- `Emuera.exe` サイズ: 24,725,226バイト（約23.58 MiB）
+- `Emuera.exe` SHA-256: `93881DC4C3C77BA9E3BE4AD6C5F136BC6E1E9C779828872A0DE0D352F8AACD5A`
+- `Emuera.exe` ProductVersion: `0.2.6.0+db3ba10b4c6258533b3855b9fe4d6fdf9f30539e`（suffixはEXEを生成したsource commit）
 - `Emuera.exe` FileVersion: `0.2.6.0`
 - publish条件: Release / win-x64 / framework-dependent / self-contained false / PublishSingleFile=true
 - publish時の計測: `PERFORMANCE_METRICS`無効
 - source revision検証: PASS（ProductVersion suffixが上記source commitのfull SHAと一致）
+- 命令`ARRAYSORTKANA 変数, FORWARD/BACK, 開始, 個数`を追加しました（引数は`ARRAYSORT`と同じ）。文字列配列を50音順に並べます（ひらがな／カタカナ・全角／半角の違いは無視）。漢字はその字の代表的な音読み順になるだけなので、名前を読み順に並べたいときは読み仮名の配列を作って`ARRAYMSORT`を使ってください。
 - `#DIM`／`#DIMS`に`RESIZABLE`キーワードを追加しました（広域・関数内・`CHARADATA`の1次元配列）。範囲外の要素への書き込みで自動的に伸び、`RESIZE 変数, 長さ`で伸縮（戻り値は変更前の長さ）、`ARRAYSIZE(変数)`で今の長さを取れます。`CHARADATA`は`変数:キャラ:0`で指定します。`SPLIT`の出力先にすると分割数に合わせて伸びます（縮めません）。`SAVEDATA`・`GLOBAL`と併用でき、長さも保存されます。`#DIM REF RESIZABLE`の引数で参照渡しできます（普通の`#DIM REF`には渡せません）。既存の`#DIM`の動作と速度は変わりません。詳細は`プロジェクト資料/調査履歴/10_RESIZABLE可変長配列_設計.md`。
 - 今回の正式EXEでsource revision検証PASS、fixtureゲームで起動安定性テスト3/3（失敗・Lv2警告0）、RESIZABLEのERBフィクスチャ9/9 PASSを確認しました。回帰試験はsource commitで96/96 PASS。
 - 元のEmuera 1824+v24（GDI+）との描画の違いを3点直しました。`GDRAWG`の拡大縮小が補間なしだったのを設定の画像補間に従うように、`GSETBRUSH`未設定の`GFILLRECTANGLE`が黒で塗っていたのを背景色で塗るように、ＭＳ ゴシック等ドット絵で描くフォントの斜体（太字の斜体を含む）がにじんでいたのをアンチエイリアスなしで描くようにしました。`GDRAWG`を元と同じ見た目にしたい場合は設定の画像補間をCubicにしてください。詳細は`プロジェクト資料/調査履歴/09_元Emuera1824v24との差異調査.md`。
