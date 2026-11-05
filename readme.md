@@ -29,6 +29,11 @@ https://gitlab.com/alnatiyan/EmueraDotNet/-/tree/BugFix_Test?ref_type=heads
 『WinRT.Runtime』だけをEXE内へ残して、配布サイズを抑えています。
 
 # 主な修正
+- 文字列配列を50音順に並べる命令`ARRAYSORTKANA 変数, FORWARD/BACK, 開始, 個数`を追加しました（引数は`ARRAYSORT`と同じ）。ひらがな／カタカナ・全角／半角の違いは無視します。漢字はその字の代表的な音読み順になるだけなので、名前を読み順に並べるには読み仮名の配列と`ARRAYMSORT`を使ってください。
+- `#DIM`／`#DIMS`に`RESIZABLE`キーワードを追加し、1次元配列を実行中に伸縮できるようにしました。範囲外への書き込みで伸び、`RESIZE`で伸縮、`ARRAYSIZE`で今の長さを取れます。`SAVEDATA`・`GLOBAL`・`#DIM REF RESIZABLE`と併用できます。
+- `DICT_*`関数で文字列キーが別のキーと衝突して値を取り違える不具合を修正し、引数の誤りを読込時に、辞書・キーの誤りを分かりやすいエラーで知らせるようにしました。
+- 元のEmuera（GDI+）との描画の違いを直しました。カラーマトリクスの5行目（平行移動）、ブラシ未設定の`GFILLRECTANGLE`の色、`GDRAWG`の拡大縮小の補間、ドット絵フォントの斜体です。
+- 前置`++`／`--`行がエラーになる不具合、「ロード時にレポートを表示する」でERBの読み込み表示が出ない不具合を修正し、デバッグウォッチは起動中・ERB再読込中に評価しないようにしました。
 - 非正方形画像の縦反転位置とマスク合成の範囲判定・画素書戻しを修正しました。`TINPUT`ではタイマー通知の再入による強制終了と、古い通知の次入力への干渉を防ぎます。HTML Islandの重複探索と未使用`ImageAttributes`生成も除去しました。GPU使用率やゲーム全体の速度の改善率は未確定です。
 - 設定画面の「表示」タブからWinForms UIのダークモード／通常表示を切り替えられます。既定値はONで従来互換、変更は再起動後に反映されます。ゲーム本文の色設定とは独立しています。
 - LazyERBのゲーム推奨設定とプレイヤー設定を分けました。設定画面の「起動」タブから安全な対象フォルダを変更でき、ゲーム推奨設定へ戻すこともできます。未知の設定項目を通常保存で保持し、変更は次回起動後に反映されます。
@@ -60,20 +65,20 @@ https://gitlab.com/alnatiyan/EmueraDotNet/-/tree/BugFix_Test?ref_type=heads
 - `InstructionLine`のSET左辺専用slotを既存`auxiliaryData`へ統合し、retained shallow sizeを120 bytesから112 bytesへ削減
 
 # 配布フォルダについて
-『配布/Emuera.NET_最終通常版』には、2026-10-05に採用した終了時のアニメ再描画による例外終了と、終了キャンセル後の時限入力の不具合修正を含む.NET 10正式single-file EXEを置いています。従来のA〜D、tooltip、GCLEAR、CSV画像、描画、TINPUT、DIV、代替フォント、LazyERB設定UI、ダークモード切り替えも維持しています。速度・メモリ・GPU改善率は付けません。A〜Dの実ゲーム起動・LOAD比較では、全体の安定した時間・メモリ改善は確認できませんでした。
+『配布/Emuera.NET_最終通常版』には、2026-11-05に`ARRAYSORTKANA`を追加した.NET 10正式single-file EXEを置いています。2026-10-23・10-28の不具合修正・描画互換・DICT・RESIZABLE、それ以前のA〜D、tooltip、GCLEAR、CSV画像、描画、TINPUT、DIV、代替フォント、終了時の再描画、LazyERB設定UI、ダークモード切り替えも維持しています。速度・メモリ・GPU改善率は付けません。
 
 - 対象: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 形式: フレームワーク依存・単一EXE
-- EXE生成元source commit: `e1b3850416a9dd9eb0862ced3f3d5b468b5c8b52`（後続の配布資料更新commitとは別）
-- 『Emuera.exe』: 配布用実行ファイル（24,704,746バイト、SHA-256 `FDC4BB28DFEE7ED0EE6C89369FC6C667C09510832BF7AFCD1391DA63326ADB62`、ProductVersion `0.2.6.0+e1b3850416a9dd9eb0862ced3f3d5b468b5c8b52`、FileVersion `0.2.6.0`）
+- EXE生成元source commit: `db3ba10b4c6258533b3855b9fe4d6fdf9f30539e`（後続の配布資料更新commitとは別）
+- 『Emuera.exe』: 配布用実行ファイル（24,725,226バイト、SHA-256 `93881DC4C3C77BA9E3BE4AD6C5F136BC6E1E9C779828872A0DE0D352F8AACD5A`、ProductVersion `0.2.6.0+db3ba10b4c6258533b3855b9fe4d6fdf9f30539e`、FileVersion `0.2.6.0`）
 - publish条件: Release / win-x64 / framework-dependent / self-contained false / PublishSingleFile=true、`PERFORMANCE_METRICS`無効
-- 生成元source commitの回帰: 既存85/85・終了寿命追加9/9 PASS、失敗0・skip 0。Windows UI条件はShutdownStudyのREADMEを参照。旧A〜D固有・tooltip matrix・長時間TINPUTの記録は過去の証拠として保持
-- 正式EXE確認: 専用fixtureで初期化、自然終了、TINPUT表示ON/OFF・アニメ停止再開、終了キャンセル後の入力、再起動を確認。旧A〜D版のタイトル→LOAD219→ステータス→通常終了は当時の別証拠。元ゲーム・セーブは変更しない
+- 生成元source commitの回帰: 96/96 PASS、ARRAYSORTKANAのERBフィクスチャ2/2・RESIZABLEのERBフィクスチャ9/9 PASS。終了寿命追加9/9・旧A〜D固有・tooltip matrix・長時間TINPUTの記録は過去の証拠として保持
+- 正式EXE確認: source revision検証PASS、fixtureゲームで起動安定性テスト3/3（失敗・Lv2警告0）。終了時の再描画（2026-10-05）や旧A〜D版のタイトル→LOAD219→ステータス→通常終了は当時の別証拠。元ゲーム・セーブは変更しない
 - 『README.md』: 導入方法と採用機能
 - 『SHA256SUMS.txt』: 配布物の改ざん確認用ハッシュ
 
-変更の流れは[更新履歴](更新履歴.md)、現行正式版の変更理由と検証結果は`プロジェクト資料/修正履歴/#今回の修正説明_2026-10-05_起動・変数参照・文字列整理・セーブ読込.md`を参照してください。従来のtooltip・GCLEAR修正説明も過去の検証記録として保持しています。
+変更の流れは[更新履歴](更新履歴.md)、現行正式版の変更理由と検証結果は`プロジェクト資料/修正履歴/#今回の修正説明_2026-11-05_ARRAYSORTKANA.md`を参照してください。それ以前の修正説明も過去の検証記録として保持しています。
 
 ## 起動後メモリ整理
 

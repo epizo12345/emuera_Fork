@@ -9,7 +9,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <!-- A〜D固有試験は別のentry pointで実行し、既存の回帰85件へ混在させない。 -->
+    <!-- A〜D固有試験は別のentry pointで実行し、通常の回帰試験へ混在させない。 -->
     <Compile Remove="StartupStudy\**\*.cs" />
     <!-- 終了寿命のWindows UI試験は別hostで実行する。 -->
     <Compile Remove="ShutdownStudy\**\*.cs" />
