@@ -855,7 +855,7 @@ internal sealed partial class Process(EmueraConsole view)
         }
     }
 
-    private void handleException(Exception exc, LogicalLine current, bool playSound)
+    internal void handleException(Exception exc, LogicalLine current, bool playSound)
     {
         console.ThrowError(playSound);
         ScriptPosition? position = null;

@@ -890,8 +890,10 @@ internal sealed partial class FunctionIdentifier
 
     private sealed class INPUT_Instruction : AInstruction
     {
-        public INPUT_Instruction()
+        readonly bool buttonOnly;
+        public INPUT_Instruction(bool buttonOnly)
         {
+            this.buttonOnly = buttonOnly;
             ArgBuilder = ArgumentParser.GetArgumentBuilder(FunctionArgType.SP_INPUT);
             flag = IS_PRINT | IS_INPUT;
         }
@@ -901,7 +903,8 @@ internal sealed partial class FunctionIdentifier
             ExpressionArgument arg = (ExpressionArgument)func.Argument;
             InputRequest req = new()
             {
-                InputType = InputType.IntValue
+                InputType = InputType.IntValue,
+                ButtonOnly = buttonOnly
             };
             if (arg.Term != null)
             {
@@ -918,8 +921,10 @@ internal sealed partial class FunctionIdentifier
     }
     private sealed class INPUTS_Instruction : AInstruction
     {
-        public INPUTS_Instruction()
+        readonly bool buttonOnly;
+        public INPUTS_Instruction(bool buttonOnly)
         {
+            this.buttonOnly = buttonOnly;
             ArgBuilder = ArgumentParser.GetArgumentBuilder(FunctionArgType.SP_INPUTS);
             flag = IS_PRINT | IS_INPUT;
         }
@@ -929,7 +934,8 @@ internal sealed partial class FunctionIdentifier
             ExpressionArgument arg = (ExpressionArgument)func.Argument;
             InputRequest req = new()
             {
-                InputType = InputType.StrValue
+                InputType = InputType.StrValue,
+                ButtonOnly = buttonOnly
             };
             if (arg.Term != null)
             {

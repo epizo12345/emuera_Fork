@@ -39,6 +39,8 @@ internal sealed class InputRequest
     public bool OneInput;
     public bool StopMesskip;
     public bool IsSystemInput;
+    // [Emuera改修:INPUT-01] BINPUT/BINPUTS: 今有効なボタンの値だけ受け付ける
+    public bool ButtonOnly;
 
     public bool HasDefValue;
     public long DefIntValue;

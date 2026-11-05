@@ -212,8 +212,10 @@ internal sealed partial class FunctionIdentifier
         addFunction(FunctionCode.TIMES, new TIMES_Instruction());//小数計算。TIMES (変数) , (小数値)という形で使う。
 
         addFunction(FunctionCode.WAIT, new WAIT_Instruction(false));
-        addFunction(FunctionCode.INPUT, new INPUT_Instruction());
-        addFunction(FunctionCode.INPUTS, new INPUTS_Instruction());
+        addFunction(FunctionCode.INPUT, new INPUT_Instruction(false));
+        addFunction(FunctionCode.INPUTS, new INPUTS_Instruction(false));
+        addFunction(FunctionCode.BINPUT, new INPUT_Instruction(true), EXTENDED);
+        addFunction(FunctionCode.BINPUTS, new INPUTS_Instruction(true), EXTENDED);
         addFunction(FunctionCode.TINPUT, new TINPUT_Instruction(false));
         addFunction(FunctionCode.TINPUTS, new TINPUTS_Instruction(false));
         addFunction(FunctionCode.TONEINPUT, new TINPUT_Instruction(true));

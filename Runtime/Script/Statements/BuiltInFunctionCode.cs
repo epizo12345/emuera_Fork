@@ -364,4 +364,6 @@ enum FunctionCode
     HTML_PRINT_ISLAND,
     HTML_PRINT_ISLAND_CLEAR,
     ARRAYSORTKANA,
+    BINPUT,
+    BINPUTS,
 }

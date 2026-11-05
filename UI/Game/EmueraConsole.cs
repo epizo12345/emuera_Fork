@@ -381,6 +381,21 @@ internal sealed partial class EmueraConsole : IDisposable
         if (targets.Length == 0)
             return false;
 
+        return TryFindCurrentButtonInput((buttonText, buttonInput) => Array.Exists(targets, target =>
+            buttonText.Contains(target, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(buttonInput, target, StringComparison.OrdinalIgnoreCase)), out input);
+    }
+
+    // [Emuera改修:INPUT-01] BINPUT/BINPUTS用。今有効なボタンに、入力値と完全一致するものがあるか。
+    private bool CurrentButtonHasInput(string value)
+        => TryFindCurrentButtonInput((_, buttonInput) => buttonInput == value, out _);
+
+    private bool HasCurrentButton()
+        => TryFindCurrentButtonInput((_, _) => true, out _);
+
+    private bool TryFindCurrentButtonInput(Func<string, string, bool> match, out string input)
+    {
+        input = null;
         // 通常のマウス選択と同じく、画面へ重ねて描くHTML Islandを先に探す。
         foreach (var (_, islandLines) in _htmlElementListDict.Reverse())
         {
@@ -388,7 +403,7 @@ internal sealed partial class EmueraConsole : IDisposable
             {
                 ConsoleButtonString[] buttons = islandLines[lineIndex].Buttons;
                 for (int buttonIndex = buttons.Length - 1; buttonIndex >= 0; buttonIndex--)
-                    if (TryGetCurrentButtonInput(buttons[buttonIndex], targets, out input))
+                    if (TryGetCurrentButtonInput(buttons[buttonIndex], match, out input))
                         return true;
             }
         }
@@ -398,14 +413,14 @@ internal sealed partial class EmueraConsole : IDisposable
         {
             ConsoleButtonString[] buttons = displayLineList[lineIndex].Buttons;
             for (int buttonIndex = buttons.Length - 1; buttonIndex >= 0; buttonIndex--)
-                if (TryGetCurrentButtonInput(buttons[buttonIndex], targets, out input))
+                if (TryGetCurrentButtonInput(buttons[buttonIndex], match, out input))
                     return true;
         }
         return false;
     }
 
     // HTMLのdiv内にさらにdivやbuttonが入るため、子要素も再帰的に調べる。
-    private bool TryGetCurrentButtonInput(AConsoleDisplayNode node, string[] targets, out string input)
+    private bool TryGetCurrentButtonInput(AConsoleDisplayNode node, Func<string, string, bool> match, out string input)
     {
         input = null;
         if (node == null)
@@ -416,12 +431,8 @@ internal sealed partial class EmueraConsole : IDisposable
             if (button.IsButton && button.Generation == lastButtonGeneration
                 && (inputReq.InputType != InputType.IntValue || button.IsInteger))
             {
-                string buttonText = button.ToString();
                 string buttonInput = inputReq.InputType == InputType.IntValue ? button.Input.ToString() : button.Inputs;
-                bool targetMatched = Array.Exists(targets, target =>
-                    buttonText.Contains(target, StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(buttonInput, target, StringComparison.OrdinalIgnoreCase));
-                if (targetMatched)
+                if (match(button.ToString(), buttonInput))
                 {
                     input = buttonInput;
                     return true;
@@ -429,13 +440,13 @@ internal sealed partial class EmueraConsole : IDisposable
             }
 
             for (int childIndex = button.StrArray.Length - 1; childIndex >= 0; childIndex--)
-                if (TryGetCurrentButtonInput(button.StrArray[childIndex], targets, out input))
+                if (TryGetCurrentButtonInput(button.StrArray[childIndex], match, out input))
                     return true;
         }
         else if (node is ConsoleDivElement div)
         {
             for (int childIndex = div._childNodes.Count - 1; childIndex >= 0; childIndex--)
-                if (TryGetCurrentButtonInput(div._childNodes[childIndex], targets, out input))
+                if (TryGetCurrentButtonInput(div._childNodes[childIndex], match, out input))
                     return true;
         }
         return false;
@@ -594,6 +605,15 @@ internal sealed partial class EmueraConsole : IDisposable
             else if (lastButtonIsInput)
                 lastButtonGeneration = newButtonGeneration;
             lastButtonIsInput = false;
+        }
+        // [Emuera改修:INPUT-01] 押せるボタンが無いBINPUT/BINPUTSは永久に入力待ちになるのでエラーにする。
+        // ボタンの世代はここで確定するため、命令の実行時ではなくここで調べる。
+        if (inputReq.ButtonOnly && !HasCurrentButton())
+        {
+            process.handleException(new CodeEE((inputReq.InputType == InputType.IntValue ? "BINPUT" : "BINPUTS") + ":選択できるボタンがありません"), process.getCurrentLine, true);
+            // 呼び出し元のemuera.log出力は済んでいるので、通常のエラーと同じくここで出す
+            if (!noOutputLog)
+                OutputLog(Program.ExeDir + "emuera.log");
         }
     }
 
@@ -949,6 +969,8 @@ internal sealed partial class EmueraConsole : IDisposable
                     }
                     else if (!Int64.TryParse(str, out inputValue))
                         return false;
+                    else if (inputReq.ButtonOnly && !CurrentButtonHasInput(inputValue.ToString()))
+                        return rejectNonButtonInput();
                     if (inputReq.IsSystemInput)
                         process.InputSystemInteger(inputValue);
                     else
@@ -957,6 +979,8 @@ internal sealed partial class EmueraConsole : IDisposable
                 case InputType.StrValue:
                     if (string.IsNullOrEmpty(str) && inputReq.HasDefValue && !IsRunningTimer)
                         str = inputReq.DefStrValue;
+                    else if (inputReq.ButtonOnly && !CurrentButtonHasInput(str ?? ""))
+                        return rejectNonButtonInput();
                     //空入力と時間切れ
                     if (str == null)
                         str = "";
@@ -968,6 +992,13 @@ internal sealed partial class EmueraConsole : IDisposable
         Print(str);
         PrintFlush(false);
         return true;
+    }
+
+    // [Emuera改修:INPUT-01] 弾いた値は表示もERB実行もしない。マクロの残りが別の入力待ちへ流れないよう止める。
+    private bool rejectNonButtonInput()
+    {
+        KillMacro = true;
+        return false;
     }
     #endregion
 
