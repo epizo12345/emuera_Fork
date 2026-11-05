@@ -30,7 +30,7 @@ https://gitlab.com/alnatiyan/EmueraDotNet/-/tree/BugFix_Test?ref_type=heads
 
 # 主な修正
 - 今押せるボタンの値だけ受け付ける入力命令`BINPUT`／`BINPUTS`を追加しました（使い方は`INPUT`／`INPUTS`と同じ）。ボタンに無い値は画面に出さずに弾くので、ERB側で`CLEARLINE`してやり直す処理が不要になります。
-- `ARRAYSORTLOCALE 変数, 言語名, FORWARD/BACK, 開始, 個数`で、文字列配列を言語別の照合で並べます（言語名の後ろは`ARRAYSORT`と同じ）。`"ja-JP"`はかなを50音順にし、ひらがな／カタカナ・全角／半角の違いは無視します。漢字はその字の代表的な音読み順になるだけなので、名前を読み順に並べるには読み仮名の配列と`ARRAYMSORT`を使ってください。`"zh-CN"`はピンイン順、`"zh-TW"`は画数順、`"ko-KR"`は漢字もハングルの読みの位置に並びます。（同日追加の`ARRAYSORTKANA`を置き換えました。現在の配布EXEはまだ`ARRAYSORTKANA`版です）
+- `ARRAYSORTLOCALE 変数, 言語名, FORWARD/BACK, 開始, 個数`で、文字列配列を言語別の照合で並べます（言語名の後ろは`ARRAYSORT`と同じ）。`"ja-JP"`はかなを50音順にし、ひらがな／カタカナ・全角／半角の違いは無視します。漢字はその字の代表的な音読み順になるだけなので、名前を読み順に並べるには読み仮名の配列と`ARRAYMSORT`を使ってください。`"zh-CN"`はピンイン順、`"zh-TW"`は画数順、`"ko-KR"`は漢字もハングルの読みの位置に並びます。（同日追加の`ARRAYSORTKANA`を置き換えました）
 - `#DIM`／`#DIMS`に`RESIZABLE`キーワードを追加し、1次元配列を実行中に伸縮できるようにしました。範囲外への書き込みで伸び、`RESIZE`で伸縮、`ARRAYSIZE`で今の長さを取れます。`SAVEDATA`・`GLOBAL`・`#DIM REF RESIZABLE`と併用できます。
 - `DICT_*`関数で文字列キーが別のキーと衝突して値を取り違える不具合を修正し、引数の誤りを読込時に、辞書・キーの誤りを分かりやすいエラーで知らせるようにしました。
 - 元のEmuera（GDI+）との描画の違いを直しました。カラーマトリクスの5行目（平行移動）、ブラシ未設定の`GFILLRECTANGLE`の色、`GDRAWG`の拡大縮小の補間、ドット絵フォントの斜体です。
@@ -66,20 +66,20 @@ https://gitlab.com/alnatiyan/EmueraDotNet/-/tree/BugFix_Test?ref_type=heads
 - `InstructionLine`のSET左辺専用slotを既存`auxiliaryData`へ統合し、retained shallow sizeを120 bytesから112 bytesへ削減
 
 # 配布フォルダについて
-『配布/Emuera.NET_最終通常版』には、2026-11-05に`BINPUT`／`BINPUTS`を追加した.NET 10正式single-file EXEを置いています。同日の`ARRAYSORTKANA`、2026-10-23・10-28の不具合修正・描画互換・DICT・RESIZABLE、それ以前のA〜D、tooltip、GCLEAR、CSV画像、描画、TINPUT、DIV、代替フォント、終了時の再描画、LazyERB設定UI、ダークモード切り替えも維持しています。速度・メモリ・GPU改善率は付けません。
+『配布/Emuera.NET_最終通常版』には、2026-11-05に`ARRAYSORTLOCALE`（日本語固定の`ARRAYSORTKANA`を置き換え）を追加した.NET 10正式single-file EXEを置いています。同日の`BINPUT`／`BINPUTS`、2026-10-23・10-28の不具合修正・描画互換・DICT・RESIZABLE、それ以前のA〜D、tooltip、GCLEAR、CSV画像、描画、TINPUT、DIV、代替フォント、終了時の再描画、LazyERB設定UI、ダークモード切り替えも維持しています。速度・メモリ・GPU改善率は付けません。
 
 - 対象: Windows 10 Version 2004以降 / Windows 11（x64）
 - 必要ランタイム: .NET 10 Desktop Runtime（x64）
 - 形式: フレームワーク依存・単一EXE
-- EXE生成元source commit: `75ec2b4dea8906e44ef2dc733a29cc42a09201e7`（後続の配布資料更新commitとは別）
-- 『Emuera.exe』: 配布用実行ファイル（24,725,226バイト、SHA-256 `407C8D7F6F4BA8063F872F12385B5B1D2D0FA73F1363D26652104B0F36AB51DD`、ProductVersion `0.2.6.0+75ec2b4dea8906e44ef2dc733a29cc42a09201e7`、FileVersion `0.2.6.0`）
+- EXE生成元source commit: `52442a59ed1247d11e086c398f45b4d283abb169`（後続の配布資料更新commitとは別）
+- 『Emuera.exe』: 配布用実行ファイル（24,725,226バイト、SHA-256 `85E3B073A0B6E5B61A07E4B4CC7C68F4D563BED373BB6E3FA75531ECAA24B695`、ProductVersion `0.2.6.0+52442a59ed1247d11e086c398f45b4d283abb169`、FileVersion `0.2.6.0`）
 - publish条件: Release / win-x64 / framework-dependent / self-contained false / PublishSingleFile=true、`PERFORMANCE_METRICS`無効
-- 生成元source commitの回帰: 96/96 PASS、BINPUTのERBフィクスチャ5/5・ARRAYSORTKANAのERBフィクスチャ2/2・RESIZABLEのERBフィクスチャ9/9 PASS。終了寿命追加9/9・旧A〜D固有・tooltip matrix・長時間TINPUTの記録は過去の証拠として保持
+- 生成元source commitの回帰: 96/96 PASS、ARRAYSORTLOCALEのERBフィクスチャ4/4・BINPUT 5/5・RESIZABLE 9/9 PASS。終了寿命追加9/9・旧A〜D固有・tooltip matrix・長時間TINPUTの記録は過去の証拠として保持
 - 正式EXE確認: source revision検証PASS、fixtureゲームで起動安定性テスト3/3（失敗・Lv2警告0）。終了時の再描画（2026-10-05）や旧A〜D版のタイトル→LOAD219→ステータス→通常終了は当時の別証拠。元ゲーム・セーブは変更しない
 - 『README.md』: 導入方法と採用機能
 - 『SHA256SUMS.txt』: 配布物の改ざん確認用ハッシュ
 
-変更の流れは[更新履歴](更新履歴.md)、現行正式版の変更理由と検証結果は`プロジェクト資料/修正履歴/#今回の修正説明_2026-11-05_BINPUT.md`を参照してください。それ以前の修正説明も過去の検証記録として保持しています。
+変更の流れは[更新履歴](更新履歴.md)、現行正式版の変更理由と検証結果は`プロジェクト資料/修正履歴/#今回の修正説明_2026-11-05_ARRAYSORTLOCALE.md`を参照してください。それ以前の修正説明も過去の検証記録として保持しています。
 
 ## 起動後メモリ整理
 
