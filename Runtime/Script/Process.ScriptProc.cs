@@ -659,27 +659,28 @@ internal sealed partial class Process
                     break;
                 }
             case FunctionCode.ARRAYSORT:
+            case FunctionCode.ARRAYSORTKANA:
                 {
                     SpArraySortArgument arrayArg = (SpArraySortArgument)func.Argument;
                     if (!arrayArg.VarToken.Identifier.IsArray1D)
-                        throw new CodeEE("ARRAYRESORTは1次元配列および配列型キャラクタ変数のみに対応しています");
+                        throw new CodeEE(func.FunctionCode + "は1次元配列および配列型キャラクタ変数のみに対応しています");
                     using VariableTerm.FixedVariableTermLease lease = arrayArg.VarToken.RentFixedVariableTerm(exm);
                     FixedVariableTerm p = lease.Term;
                     int start = (int)arrayArg.Num1.GetIntValue(exm);
                     if (start < 0)
-                        throw new CodeEE("ARRAYSORTの第３引数が負の値(" + start.ToString() + ")です");
+                        throw new CodeEE(func.FunctionCode + "の第３引数が負の値(" + start.ToString() + ")です");
                     int num = 0;
                     if (arrayArg.Num2 != null)
                     {
                         num = (int)arrayArg.Num2.GetIntValue(exm);
                         if (num < 0)
-                            throw new CodeEE("ARRAYSORTの第４引数が負の値(" + start.ToString() + ")です");
+                            throw new CodeEE(func.FunctionCode + "の第４引数が負の値(" + num.ToString() + ")です");
                         if (num == 0)
                             break;
                     }
                     else
                         num = -1;
-                    VariableEvaluator.SortArray(p, arrayArg.Order, start, num);
+                    VariableEvaluator.SortArray(p, arrayArg.Order, start, num, func.FunctionCode == FunctionCode.ARRAYSORTKANA);
                     break;
                 }
             case FunctionCode.ARRAYCOPY:

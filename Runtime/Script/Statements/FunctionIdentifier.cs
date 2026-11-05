@@ -344,6 +344,7 @@ internal sealed partial class FunctionIdentifier
         addFunction(FunctionCode.ARRAYSHIFT, argb[FunctionArgType.SP_SHIFT_ARRAY], METHOD_SAFE | EXTENDED);
         addFunction(FunctionCode.ARRAYREMOVE, argb[FunctionArgType.SP_CONTROL_ARRAY], METHOD_SAFE | EXTENDED);
         addFunction(FunctionCode.ARRAYSORT, argb[FunctionArgType.SP_SORTARRAY], METHOD_SAFE | EXTENDED);
+        addFunction(FunctionCode.ARRAYSORTKANA, argb[FunctionArgType.SP_SORTARRAY], METHOD_SAFE | EXTENDED);
         addFunction(FunctionCode.ARRAYCOPY, argb[FunctionArgType.SP_COPY_ARRAY], METHOD_SAFE | EXTENDED);
 
 		addFunction(FunctionCode.MATCHALL, new MATCHALL_Instruction());

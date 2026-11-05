@@ -761,10 +761,21 @@ internal sealed class VariableEvaluator : IDisposable
         }
     }
 
-    public static void SortArray(FixedVariableTerm p, SortOrder order, int start, int count)
+    // ICUのja照合: かなは50音順、JIS第1水準漢字は代表音読み順。カタカナ/ひらがな・全角/半角の差は無視し、同値は序数比較で順序を固定する。
+    // 初回使用時に取得する（VariableEvaluatorの静的初期化に巻き込まない）。
+    static CompareInfo kanaCompareInfo;
+    static int CompareKana(string a, string b)
+    {
+        kanaCompareInfo ??= CultureInfo.GetCultureInfo("ja-JP").CompareInfo;
+        int r = kanaCompareInfo.Compare(a, b, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth);
+        return r != 0 ? r : string.CompareOrdinal(a, b);
+    }
+
+    public static void SortArray(FixedVariableTerm p, SortOrder order, int start, int count, bool kana = false)
     {
         if (order == SortOrder.UNDEF)
             order = SortOrder.ASCENDING;
+        string name = kana ? "ARRAYSORTKANA" : "ARRAYSORT";
         if (p.Identifier.IsInteger)
         {
             long[] array;
@@ -775,14 +786,14 @@ internal sealed class VariableEvaluator : IDisposable
 
 
             if (start >= array.Length)
-                throw new CodeEE($"命令ARRAYSORTの第3引数 {start} が配列{p.Identifier.Name}の範囲を超えています");
+                throw new CodeEE($"命令{name}の第3引数 {start} が配列{p.Identifier.Name}の範囲を超えています");
 
             if (count <= 0)
                 count = array.Length - start;
 
             var end = start + count;
             if (end > array.Length)
-                throw new CodeEE($"命令ARRAYSORTの第3引数 {start} と第4引数の和 {count} が配列{p.Identifier.Name}の範囲を超えています");
+                throw new CodeEE($"命令{name}の第3引数 {start} と第4引数の和 {count} が配列{p.Identifier.Name}の範囲を超えています");
 
 
             var reqestSpan = array.AsSpan()[start..end];
@@ -800,19 +811,22 @@ internal sealed class VariableEvaluator : IDisposable
                 array = (string[])p.Identifier.GetArray();
 
             if (start >= array.Length)
-                throw new CodeEE($"命令ARRAYSORTの第3引数 {start} が配列{p.Identifier.Name}の範囲を超えています");
+                throw new CodeEE($"命令{name}の第3引数 {start} が配列{p.Identifier.Name}の範囲を超えています");
 
             if (count <= 0)
                 count = array.Length - start;
 
             var end = start + count;
             if (end > array.Length)
-                throw new CodeEE($"命令ARRAYSORTの第3引数 {start} と第4引数の和 {count} が配列{p.Identifier.Name}の範囲を超えています");
+                throw new CodeEE($"命令{name}の第3引数 {start} と第4引数の和 {count} が配列{p.Identifier.Name}の範囲を超えています");
 
 
             var reqestSpan = array.AsSpan()[start..end];
 
-            reqestSpan.Sort();
+            if (kana)
+                reqestSpan.Sort(CompareKana);
+            else
+                reqestSpan.Sort();
             if (order == SortOrder.DESENDING)
                 reqestSpan.Reverse();
         }
