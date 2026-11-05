@@ -8,6 +8,7 @@ using MinorShift.Emuera.Runtime.Script.Statements.Variable;
 using MinorShift.Emuera.Runtime.Utils;
 using MinorShift.Emuera.UI.Game;
 using System;
+using System.Globalization;
 using System.Collections.Generic;
 using System.Drawing;
 using MinorShift.Emuera.UI.Framework;
@@ -659,28 +660,30 @@ internal sealed partial class Process
                     break;
                 }
             case FunctionCode.ARRAYSORT:
-            case FunctionCode.ARRAYSORTKANA: // [Emuera改修:ARRAY-05 2026-11-05] 比較方法だけが違う
+            case FunctionCode.ARRAYSORTLOCALE: // [Emuera改修:ARRAY-05 2026-11-05] 照合の言語を第2引数で指定し、以降の引数番号が1つずれる
                 {
                     SpArraySortArgument arrayArg = (SpArraySortArgument)func.Argument;
                     if (!arrayArg.VarToken.Identifier.IsArray1D)
                         throw new CodeEE(func.FunctionCode + "は1次元配列および配列型キャラクタ変数のみに対応しています");
                     using VariableTerm.FixedVariableTermLease lease = arrayArg.VarToken.RentFixedVariableTerm(exm);
                     FixedVariableTerm p = lease.Term;
+                    CompareInfo locale = arrayArg.Locale == null ? null : VariableEvaluator.GetSortCompareInfo(arrayArg.Locale.GetStrValue(exm));
+                    int shift = locale == null ? 0 : 1;
                     int start = (int)arrayArg.Num1.GetIntValue(exm);
                     if (start < 0)
-                        throw new CodeEE(func.FunctionCode + "の第３引数が負の値(" + start.ToString() + ")です");
+                        throw new CodeEE(func.FunctionCode + "の第" + (3 + shift) + "引数が負の値(" + start.ToString() + ")です");
                     int num = 0;
                     if (arrayArg.Num2 != null)
                     {
                         num = (int)arrayArg.Num2.GetIntValue(exm);
                         if (num < 0)
-                            throw new CodeEE(func.FunctionCode + "の第４引数が負の値(" + num.ToString() + ")です");
+                            throw new CodeEE(func.FunctionCode + "の第" + (4 + shift) + "引数が負の値(" + num.ToString() + ")です");
                         if (num == 0)
                             break;
                     }
                     else
                         num = -1;
-                    VariableEvaluator.SortArray(p, arrayArg.Order, start, num, func.FunctionCode == FunctionCode.ARRAYSORTKANA);
+                    VariableEvaluator.SortArray(p, arrayArg.Order, start, num, locale);
                     break;
                 }
             case FunctionCode.ARRAYCOPY:

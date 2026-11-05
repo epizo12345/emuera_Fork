@@ -74,5 +74,6 @@ enum FunctionArgType
     SP_HTMLSPLIT,
     SP_HTML_PRINT,
     SP_HTML_PRINT_ISLAND,
-    SP_HTML_PRINT_ISLAND_CLEAR
+    SP_HTML_PRINT_ISLAND_CLEAR,
+    SP_SORTARRAY_LOCALE,//<対象変数>, <言語名>, (<ソート順序>, <範囲初値>, <範囲終値>)
 }

@@ -1,31 +1,31 @@
-﻿; ARRAYSORTKANAの動作確認。失敗はSORTKANA_FAILを表示し、最後に件数を表示する。
+﻿; ARRAYSORTLOCALEの動作確認。失敗はSORTLOCALE_FAILを表示し、最後に件数を表示する。
 @SYSTEM_TITLE
 ;---- かな: 50音順、ひらがな/カタカナ・全角/半角は同順位で序数順に固定 ----
 KS:0 '= "ワ", "さくら", "アイ", "あい", "ｶﾞ", "か", "が", "ん", "ぱ", "は", "ば"
-ARRAYSORTKANA KS, FORWARD, 0, 11
+ARRAYSORTLOCALE KS, "ja-JP", FORWARD, 0, 11
 CALL CHK, "kana forward", JOINS(0, 11) == "あい,アイ,か,が,ｶﾞ,さくら,は,ば,ぱ,ワ,ん"
-ARRAYSORTKANA KS, BACK, 0, 11
+ARRAYSORTLOCALE KS, "ja-JP", BACK, 0, 11
 CALL CHK, "kana back", JOINS(0, 11) == "ん,ワ,ぱ,ば,は,さくら,ｶﾞ,が,か,アイ,あい"
 ;---- 範囲指定: 範囲外は動かない ----
 KS:0 '= "う", "え", "い", "あ", "お"
-ARRAYSORTKANA KS, FORWARD, 1, 3
+ARRAYSORTLOCALE KS, "ja-JP", FORWARD, 1, 3
 CALL CHK, "range only", JOINS(0, 5) == "う,あ,い,え,お"
 ;---- 漢字: JIS第1水準の音読み順 ----
 KS:0 '= "鈴木", "安藤", "佐藤", "伊藤"
-ARRAYSORTKANA KS, FORWARD, 0, 4
+ARRAYSORTLOCALE KS, "ja-JP", FORWARD, 0, 4
 CALL CHK, "kanji JIS order", JOINS(0, 4) == "安藤,伊藤,佐藤,鈴木"
 ;---- かなは漢字より前、空文字は先頭 ----
 KS:0 '= "鈴木", "すずき", ""
-ARRAYSORTKANA KS, FORWARD, 0, 3
+ARRAYSORTLOCALE KS, "ja-JP", FORWARD, 0, 3
 CALL CHK, "empty first, kana before kanji", JOINS(0, 3) == ",すずき,鈴木"
 ;---- 引数省略: 配列全体 ----
 VARSET KS, "ん"
 KS:5 '= "あ"
-ARRAYSORTKANA KS
+ARRAYSORTLOCALE KS, "ja-JP"
 CALL CHK, "whole array", KS:0 == "あ" && KS:1 == "ん" && KS:19 == "ん"
 ;---- 整数配列はARRAYSORTと同じ ----
 KN:0 = 3, -1, 2
-ARRAYSORTKANA KN, FORWARD, 0, 3
+ARRAYSORTLOCALE KN, "ja-JP", FORWARD, 0, 3
 CALL CHK, "integer", KN:0 == -1 && KN:1 == 2 && KN:2 == 3
 ;---- 既存ARRAYSORTは変わらない（漢字はコード順） ----
 KS:0 '= "鈴木", "安藤", "伊藤"
@@ -33,12 +33,29 @@ ARRAYSORT KS, FORWARD, 0, 3
 CALL CHK, "ARRAYSORT unchanged", JOINS(0, 3) == "伊藤,安藤,鈴木"
 ;---- RESIZABLE: 今の長さだけを並べる（容量の空きが混ざらない） ----
 KR:0 '= "ん", "か", "あ"
-ARRAYSORTKANA KR
+ARRAYSORTLOCALE KR, "ja-JP"
 CALL CHK, "resizable", ARRAYSIZE(KR) == 3 && KR:0 == "あ" && KR:1 == "か" && KR:2 == "ん"
+; ---- 中国語（簡体）: ピンイン順 ----
+KS:0 '= "中国", "北京", "上海", "安藤", "李"
+ARRAYSORTLOCALE KS, "zh-CN", FORWARD, 0, 5
+CALL CHK, "zh-CN pinyin", JOINS(0, 5) == "安藤,北京,李,上海,中国"
+; ---- 中国語（繁体）: 画数順 ----
+KS:0 '= "中国", "北京", "上海", "安藤", "李"
+ARRAYSORTLOCALE KS, "zh-TW", FORWARD, 0, 5
+CALL CHK, "zh-TW stroke", JOINS(0, 5) == "上海,中国,北京,安藤,李"
+; ---- 韓国語: 漢字も読みの位置 ----
+KS:0 '= "한국", "中国", "가나", "서울", "金"
+ARRAYSORTLOCALE KS, "ko-KR", FORWARD, 0, 5
+CALL CHK, "ko-KR", JOINS(0, 5) == "가나,金,서울,中国,한국"
+; ---- 言語名を変数で渡す・BACK ----
+KL = zh-CN
+KS:0 '= "中国", "北京", "安藤"
+ARRAYSORTLOCALE KS, KL, BACK, 0, 3
+CALL CHK, "locale from variable", JOINS(0, 3) == "中国,北京,安藤"
 ;---- 結果 ----
-PRINTFORML SORTKANA_DONE pass={CHK_PASS} fail={CHK_FAIL}
+PRINTFORML SORTLOCALE_DONE pass={CHK_PASS} fail={CHK_FAIL}
 SIF CHK_FAIL == 0
-	PRINTL SORTKANA_ALL_PASS
+	PRINTL SORTLOCALE_ALL_PASS
 WAIT
 QUIT
 
@@ -49,7 +66,7 @@ IF CK_OK
 	CHK_PASS += 1
 ELSE
 	CHK_FAIL += 1
-	PRINTFORML SORTKANA_FAIL %CK_NAME% [%JOINS(0, 11)%]
+	PRINTFORML SORTLOCALE_FAIL %CK_NAME% [%JOINS(0, 11)%]
 ENDIF
 
 @JOINS(J_START, J_COUNT)

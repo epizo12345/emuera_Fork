@@ -761,21 +761,19 @@ internal sealed class VariableEvaluator : IDisposable
         }
     }
 
-    // [Emuera改修:ARRAY-05 2026-11-05] ARRAYSORTKANA用。ICUのja照合: かなは50音順、JIS第1水準漢字は代表音読み順。カタカナ/ひらがな・全角/半角の差は無視し、同値は序数比較で順序を固定する。
-    // 初回使用時に取得する（VariableEvaluatorの静的初期化に巻き込まない）。
-    static CompareInfo kanaCompareInfo;
-    static int CompareKana(string a, string b)
+    // [Emuera改修:ARRAY-05 2026-11-05] ARRAYSORTLOCALE用。ICUの言語別照合（ja: かな50音順・漢字はJIS第1水準の音読み順、zh-CN: ピンイン順、zh-TW: 画数順、ko: 漢字も読みの位置）。
+    public static CompareInfo GetSortCompareInfo(string locale)
     {
-        kanaCompareInfo ??= CultureInfo.GetCultureInfo("ja-JP").CompareInfo;
-        int r = kanaCompareInfo.Compare(a, b, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth);
-        return r != 0 ? r : string.CompareOrdinal(a, b);
+        try { return CultureInfo.GetCultureInfo(locale, predefinedOnly: true).CompareInfo; }
+        catch (CultureNotFoundException) { throw new CodeEE($"ARRAYSORTLOCALEの第2引数 \"{locale}\" は使用できる言語名ではありません（例: \"ja-JP\"、\"zh-CN\"）"); }
     }
 
-    public static void SortArray(FixedVariableTerm p, SortOrder order, int start, int count, bool kana = false)
+    public static void SortArray(FixedVariableTerm p, SortOrder order, int start, int count, CompareInfo locale = null)
     {
         if (order == SortOrder.UNDEF)
             order = SortOrder.ASCENDING;
-        string name = kana ? "ARRAYSORTKANA" : "ARRAYSORT";
+        string name = locale == null ? "ARRAYSORT" : "ARRAYSORTLOCALE";
+        int a3 = locale == null ? 3 : 4, a4 = a3 + 1;
         if (p.Identifier.IsInteger)
         {
             long[] array;
@@ -786,14 +784,14 @@ internal sealed class VariableEvaluator : IDisposable
 
 
             if (start >= array.Length)
-                throw new CodeEE($"命令{name}の第3引数 {start} が配列{p.Identifier.Name}の範囲を超えています");
+                throw new CodeEE($"命令{name}の第{a3}引数 {start} が配列{p.Identifier.Name}の範囲を超えています");
 
             if (count <= 0)
                 count = array.Length - start;
 
             var end = start + count;
             if (end > array.Length)
-                throw new CodeEE($"命令{name}の第3引数 {start} と第4引数の和 {count} が配列{p.Identifier.Name}の範囲を超えています");
+                throw new CodeEE($"命令{name}の第{a3}引数 {start} と第{a4}引数の和 {count} が配列{p.Identifier.Name}の範囲を超えています");
 
 
             var reqestSpan = array.AsSpan()[start..end];
@@ -811,20 +809,25 @@ internal sealed class VariableEvaluator : IDisposable
                 array = (string[])p.Identifier.GetArray();
 
             if (start >= array.Length)
-                throw new CodeEE($"命令{name}の第3引数 {start} が配列{p.Identifier.Name}の範囲を超えています");
+                throw new CodeEE($"命令{name}の第{a3}引数 {start} が配列{p.Identifier.Name}の範囲を超えています");
 
             if (count <= 0)
                 count = array.Length - start;
 
             var end = start + count;
             if (end > array.Length)
-                throw new CodeEE($"命令{name}の第3引数 {start} と第4引数の和 {count} が配列{p.Identifier.Name}の範囲を超えています");
+                throw new CodeEE($"命令{name}の第{a3}引数 {start} と第{a4}引数の和 {count} が配列{p.Identifier.Name}の範囲を超えています");
 
 
             var reqestSpan = array.AsSpan()[start..end];
 
-            if (kana)
-                reqestSpan.Sort(CompareKana);
+            // 同順位（かな種別・全半角違いなど）は序数比較で並びを固定する
+            if (locale != null)
+                reqestSpan.Sort((x, y) =>
+                {
+                    int r = locale.Compare(x, y, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth);
+                    return r != 0 ? r : string.CompareOrdinal(x, y);
+                });
             else
                 reqestSpan.Sort();
             if (order == SortOrder.DESENDING)

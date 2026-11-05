@@ -400,17 +400,19 @@ internal sealed class SpArrayShiftArgument : Argument
 
 internal sealed class SpArraySortArgument : Argument
 {
-    public SpArraySortArgument(VariableTerm var, SortOrder order, AExpression num1, AExpression num2)
+    public SpArraySortArgument(VariableTerm var, SortOrder order, AExpression num1, AExpression num2, AExpression locale = null)
     {
         VarToken = var;
         Order = order;
         Num1 = num1;
         Num2 = num2;
+        Locale = locale;
     }
     readonly public VariableTerm VarToken;
     readonly public SortOrder Order;
     readonly public AExpression Num1;
     readonly public AExpression Num2;
+    readonly public AExpression Locale;
 }
 
 internal sealed class SpCopyArrayArgument : Argument

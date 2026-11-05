@@ -30,7 +30,7 @@ https://gitlab.com/alnatiyan/EmueraDotNet/-/tree/BugFix_Test?ref_type=heads
 
 # 主な修正
 - 今押せるボタンの値だけ受け付ける入力命令`BINPUT`／`BINPUTS`を追加しました（使い方は`INPUT`／`INPUTS`と同じ）。ボタンに無い値は画面に出さずに弾くので、ERB側で`CLEARLINE`してやり直す処理が不要になります。
-- 文字列配列を50音順に並べる命令`ARRAYSORTKANA 変数, FORWARD/BACK, 開始, 個数`を追加しました（引数は`ARRAYSORT`と同じ）。ひらがな／カタカナ・全角／半角の違いは無視します。漢字はその字の代表的な音読み順になるだけなので、名前を読み順に並べるには読み仮名の配列と`ARRAYMSORT`を使ってください。
+- `ARRAYSORTLOCALE 変数, 言語名, FORWARD/BACK, 開始, 個数`で、文字列配列を言語別の照合で並べます（言語名の後ろは`ARRAYSORT`と同じ）。`"ja-JP"`はかなを50音順にし、ひらがな／カタカナ・全角／半角の違いは無視します。漢字はその字の代表的な音読み順になるだけなので、名前を読み順に並べるには読み仮名の配列と`ARRAYMSORT`を使ってください。`"zh-CN"`はピンイン順、`"zh-TW"`は画数順、`"ko-KR"`は漢字もハングルの読みの位置に並びます。（同日追加の`ARRAYSORTKANA`を置き換えました。現在の配布EXEはまだ`ARRAYSORTKANA`版です）
 - `#DIM`／`#DIMS`に`RESIZABLE`キーワードを追加し、1次元配列を実行中に伸縮できるようにしました。範囲外への書き込みで伸び、`RESIZE`で伸縮、`ARRAYSIZE`で今の長さを取れます。`SAVEDATA`・`GLOBAL`・`#DIM REF RESIZABLE`と併用できます。
 - `DICT_*`関数で文字列キーが別のキーと衝突して値を取り違える不具合を修正し、引数の誤りを読込時に、辞書・キーの誤りを分かりやすいエラーで知らせるようにしました。
 - 元のEmuera（GDI+）との描画の違いを直しました。カラーマトリクスの5行目（平行移動）、ブラシ未設定の`GFILLRECTANGLE`の色、`GDRAWG`の拡大縮小の補間、ドット絵フォントの斜体です。
