@@ -659,7 +659,7 @@ internal sealed partial class Process
                     break;
                 }
             case FunctionCode.ARRAYSORT:
-            case FunctionCode.ARRAYSORTKANA:
+            case FunctionCode.ARRAYSORTKANA: // [Emuera改修:ARRAY-05 2026-11-05] 比較方法だけが違う
                 {
                     SpArraySortArgument arrayArg = (SpArraySortArgument)func.Argument;
                     if (!arrayArg.VarToken.Identifier.IsArray1D)

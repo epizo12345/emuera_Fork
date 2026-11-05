@@ -761,7 +761,7 @@ internal sealed class VariableEvaluator : IDisposable
         }
     }
 
-    // ICUのja照合: かなは50音順、JIS第1水準漢字は代表音読み順。カタカナ/ひらがな・全角/半角の差は無視し、同値は序数比較で順序を固定する。
+    // [Emuera改修:ARRAY-05 2026-11-05] ARRAYSORTKANA用。ICUのja照合: かなは50音順、JIS第1水準漢字は代表音読み順。カタカナ/ひらがな・全角/半角の差は無視し、同値は序数比較で順序を固定する。
     // 初回使用時に取得する（VariableEvaluatorの静的初期化に巻き込まない）。
     static CompareInfo kanaCompareInfo;
     static int CompareKana(string a, string b)
