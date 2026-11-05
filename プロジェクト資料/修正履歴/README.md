@@ -3,6 +3,7 @@
 日付ごとの採用変更説明です。現在の仕様はルートの `更新履歴.md` と `プロジェクト資料/01_仕様書.md`〜`06_コード案内.md` を参照してください。
 
 - `#今回の修正説明_2026-11-05_ARRAYSORTKANA.md` — 文字列配列を50音順に並べる命令ARRAYSORTKANAの追加、ARRAYSORTのエラー文言修正
+- `#今回の修正説明_2026-11-05_BINPUT.md` — 今押せるボタンの値だけ受け付ける入力命令BINPUT/BINPUTSの追加
 - `#今回の修正説明_2026-10-28_RESIZABLE可変長配列.md` — `#DIM RESIZABLE`可変長配列（RESIZE／ARRAYSIZE、高速化、SAVEDATA／GLOBAL併用、REF RESIZABLE、RESIZEの戻り値）、ERBフィクスチャ9件
 - `#今回の修正説明_2026-10-28_描画差異.md` — 元Emuera(GDI+)との描画差異の修正（GDRAWGの拡大縮小の補間、ブラシ未設定のGFILLRECTANGLEの色、ドット絵フォントの斜体・太字の斜体）、回帰試験4件
 - `#今回の修正説明_2026-10-28_DICT関数.md` — DICT関数群の文字列キー衝突・引数検査・エラー表示の修正、回帰試験
