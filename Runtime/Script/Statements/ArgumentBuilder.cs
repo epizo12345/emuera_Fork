@@ -217,6 +217,7 @@ internal static partial class ArgumentParser
         argb[FunctionArgType.SP_CONTROL_ARRAY] = new SP_CONTROL_ARRAY_ArgumentBuilder();
         argb[FunctionArgType.SP_SHIFT_ARRAY] = new SP_SHIFT_ARRAY_ArgumentBuilder();
         argb[FunctionArgType.SP_SORTARRAY] = new SP_SORT_ARRAY_ArgumentBuilder();
+        argb[FunctionArgType.SP_SORTARRAY_LOCALE] = new SP_SORT_ARRAY_ArgumentBuilder(true);
         argb[FunctionArgType.INT_ANY] = new INT_ANY_ArgumentBuilder();
         argb[FunctionArgType.FORM_STR_ANY] = new FORM_STR_ANY_ArgumentBuilder();
         argb[FunctionArgType.SP_COPYCHARA] = new SP_SWAP_ArgumentBuilder(true);
@@ -506,8 +507,10 @@ internal static partial class ArgumentParser
         }
     }
 
-    private sealed class SP_SORT_ARRAY_ArgumentBuilder : ArgumentBuilder
+    private sealed class SP_SORT_ARRAY_ArgumentBuilder(bool locale = false) : ArgumentBuilder
     {
+        // [Emuera改修:ARRAY-05 2026-11-05] ARRAYSORTLOCALEは第2引数に照合の言語名を取り、以降の引数番号が1つずれる。
+        string argNo(int n) => "第" + (locale ? n + 1 : n) + "引数";
         public override Argument CreateArgument(InstructionLine line, ExpressionMediator exm)
         {
             SortOrder order = SortOrder.ASCENDING;
@@ -533,6 +536,16 @@ internal static partial class ArgumentParser
             { warn("第１引数に１次元配列もしくは配列型キャラクタ変数以外を指定することはできません", line, 2, false); return null; }
 
             wc.ShiftNext();
+            AExpression localeTerm = null;
+            if (locale)
+            {
+                localeTerm = wc.EOL ? null : ExpressionParser.ReduceExpressionTerm(wc, TermEndWith.Comma);
+                if (localeTerm == null)
+                { warn("第２引数（言語名）が指定されていません", line, 2, false); return null; }
+                if (!localeTerm.IsString)
+                { warn("第２引数（言語名）が文字列ではありません", line, 2, false); return null; }
+                wc.ShiftNext();
+            }
             IdentifierWord id = wc.Current as IdentifierWord;
 
             if ((id != null) && (id.Code.Equals("FORWARD", Config.StringComparison) || id.Code.Equals("BACK", Config.StringComparison)))
@@ -542,7 +555,7 @@ internal static partial class ArgumentParser
                 wc.ShiftNext();
             }
             else if (id != null)
-            { warn("第２引数にソート方法指定子（FORWARD or BACK）以外が指定されています", line, 2, false); return null; }
+            { warn(argNo(2) + "にソート方法指定子（FORWARD or BACK）以外が指定されています", line, 2, false); return null; }
 
             if (id != null)
             {
@@ -551,24 +564,24 @@ internal static partial class ArgumentParser
                 {
                     term3 = ExpressionParser.ReduceExpressionTerm(wc, TermEndWith.Comma);
                     if (term3 == null)
-                    { warn("第３引数が解釈出来ません", line, 2, false); return null; }
+                    { warn(argNo(3) + "が解釈出来ません", line, 2, false); return null; }
                     if (!term3.IsInteger)
-                    { warn("第３引数が数値ではありません", line, 2, false); return null; }
+                    { warn(argNo(3) + "が数値ではありません", line, 2, false); return null; }
                     wc.ShiftNext();
                     if (!wc.EOL)
                     {
                         term4 = ExpressionParser.ReduceExpressionTerm(wc, TermEndWith.Comma);
                         if (term4 == null)
-                        { warn("第４引数が解釈出来ません", line, 2, false); return null; }
+                        { warn(argNo(4) + "が解釈出来ません", line, 2, false); return null; }
                         if (!term4.IsInteger)
-                        { warn("第４引数が数値ではありません", line, 2, false); return null; }
+                        { warn(argNo(4) + "が数値ではありません", line, 2, false); return null; }
                         wc.ShiftNext();
                         if (!wc.EOL)
                             warn(LocalizationManager.Error.TooManyArg, line, 1, false);
                     }
                 }
             }
-            return new SpArraySortArgument(varTerm, order, term3, term4);
+            return new SpArraySortArgument(varTerm, order, term3, term4, localeTerm);
         }
     }
 

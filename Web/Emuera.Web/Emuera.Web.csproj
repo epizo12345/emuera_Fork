@@ -5,6 +5,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
+    <!-- ARRAYSORTLOCALE（ARRAY-05）の言語別照合用。ブラウザの言語に関係なく全ICUデータ（ja/zh/ko含む）を読み込む -->
+    <BlazorWebAssemblyLoadAllGlobalizationData>true</BlazorWebAssemblyLoadAllGlobalizationData>
     <EnableErbExecutionProfiler Condition="'$(EnableErbExecutionProfiler)' == ''">false</EnableErbExecutionProfiler>
     <DefineConstants Condition="'$(EnableErbExecutionProfiler)' == 'true'">$(DefineConstants);ERB_EXECUTION_PROFILE</DefineConstants>
   </PropertyGroup>

@@ -363,4 +363,5 @@ enum FunctionCode
     VARS,
     HTML_PRINT_ISLAND,
     HTML_PRINT_ISLAND_CLEAR,
+    ARRAYSORTLOCALE, // [Emuera改修:ARRAY-05 2026-11-05] MAIN版から移植
 }
